@@ -17,7 +17,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "test": "vitest run",
+    "test": "vitest run --dir test",
     "typecheck": "tsc --noEmit",
     "lint": "oxlint .",
     "format": "oxfmt --write .",
@@ -28,6 +28,7 @@
     "effect": "4.0.0-beta.107"
   },
   "devDependencies": {
+    "@oxlint/plugins": "1.82.0",
     "@types/node": "^26.4.0",
     "oxfmt": "^0.65.0",
     "oxlint": "^1.80.0",
