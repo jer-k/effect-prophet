@@ -1,8 +1,10 @@
 export {
   FittingError,
   InputValidationError,
+  ModelSerializationError,
   PredictionError,
   type FittingFailureReason,
+  type ModelSerializationOperation,
   type PredictionFailureReason,
   type ValidationInput,
   type ValidationIssue,
@@ -18,6 +20,14 @@ export {
 
 export { constantMeanFittingBackendLayer } from "./internal/constant-fitting-backend";
 
+export { wasmLinearTrendFittingBackendLayer } from "./internal/wasm-linear-trend-backend";
+
+export {
+  decodeFittedModel,
+  encodeFittedModel,
+  type EncodedFittedModel,
+} from "./model-serialization";
+
 export {
   decodeOptions,
   defaultProphetOptions,
@@ -30,6 +40,8 @@ export {
   fit,
   predict,
   type EncodedPredictionTimestamps,
+  type FittedConstantProphet,
+  type FittedLinearProphet,
   type FittedProphet,
   type Forecast,
   type Forecasts,

@@ -2,7 +2,7 @@ import { Effect, Schema } from "effect";
 
 import { InputValidationError, inputValidationErrorFromIssue } from "./errors";
 
-/** Trend forms supported by the constant and linear reference models. */
+/** Trend forms available to fitting backend implementations. */
 export type Growth = "flat" | "linear";
 
 /** Untrusted options accepted at the public decoding boundary. */

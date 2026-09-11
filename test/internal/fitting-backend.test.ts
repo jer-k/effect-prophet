@@ -19,7 +19,13 @@ const trainingInput: TrainingInput = {
 
 const fitOptions: FitOptions = { growth: "linear" };
 
-const fittedParameters: FittedParameters = { level: 2 };
+const fittedParameters: FittedParameters = {
+  model: "linear-trend",
+  intercept: 1.5,
+  slope: 1,
+  timeOrigin: 1_704_067_200_000,
+  timeScale: 1_000,
+};
 
 const fitWithBackend = Effect.fn("fitWithBackend")(function* (
   input: TrainingInput,

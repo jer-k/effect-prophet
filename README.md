@@ -2,7 +2,7 @@
 
 A private TypeScript package for exploring Effect-based time-series forecasting.
 
-The current forecasting implementation is an intentionally temporary vertical slice: it fits the arithmetic mean of the training values and predicts that constant at every requested timestamp. It exercises validation, Effect service composition, fitting, and prediction, but is not Prophet-compatible behavior.
+The current Rust/WASM backend fits an ordinary least-squares linear trend and predicts point forecasts with a trend component. TypeScript owns validation, Effect service composition, and WASM protocol translation; numerical fitting and trend evaluation run in Rust. The package does not yet implement Prophet features such as changepoints, seasonality, or uncertainty intervals.
 
 ## Prerequisites
 
@@ -47,11 +47,11 @@ Run the complete verification sequence with:
 npm run check
 ```
 
-`npm run test:wasm` generates ignored WASM bindings before running its Node integration test.
+`npm test` and `npm run test:wasm` generate ignored WASM bindings before running their respective integration tests.
 
-## Rust/WASM toolchain spike
+## Rust/WASM numerical backend
 
-`rust/prophet-wasm` is an isolated toolchain experiment. It exports only an arithmetic `mean` function and is not connected to the public fitting API or selected as a fitting backend.
+`rust/prophet-wasm` provides the numerical implementation behind the public linear fitting Layer. In addition to the original arithmetic `mean` spike, it exports coarse `fit_linear_trend` and `predict_linear_trend` operations for ordinary least-squares fitting and batch prediction.
 
 Run each phase independently with:
 
@@ -63,7 +63,11 @@ node --test rust/prophet-wasm/node-tests/*.test.mjs
 
 `wasm-pack` first asks Cargo to compile the crate for `wasm32-unknown-unknown`. It then runs the `wasm-bindgen` tooling over the raw WASM module and writes Node-specific JavaScript, TypeScript declarations, package metadata, and the transformed `.wasm` module to `rust/prophet-wasm/pkg`.
 
-The generated JavaScript is the adapter between Node and the low-level WASM ABI. For `mean`, it allocates enough WASM linear memory for the input, copies the caller's `Float64Array` into that memory, and calls the WASM export with the allocation's pointer and length. The generated ABI shim releases the temporary allocation as part of the call. Rust borrows those copied values as `&[f64]`; the scalar `f64` result crosses the boundary directly. There is one full input copy per call, so future numerical exports should remain coarse-grained rather than crossing the boundary once per observation.
+The generated JavaScript is the adapter between Node and the low-level WASM ABI. It allocates WASM linear memory and copies each caller-supplied `Float64Array` before Rust borrows the copied values as `&[f64]`. The fit and prediction exports each receive all timestamps in one call and copy one packed result back; no per-observation callback crosses the boundary.
+
+A successful fit returns `[0, intercept, slope, timeOrigin, timeScale]`. Timestamps are transformed with `(timestamp - timeOrigin) / timeScale`, where the origin and scale are the minimum timestamp and training range. This removes large epoch offsets and maps the training span to `[0, 1]`; prediction must retain and reuse the same metadata. The fitted equation is `intercept + slope × scaledTime`.
+
+A failed fit returns a one-element packed array containing a `LinearTrendFitStatus` code. Codes distinguish insufficient observations, mismatched array lengths, non-finite timestamps or values, zero time variance, and non-finite numerical results. Batch prediction returns `[0, ...predictions]` on success and a status with the failing timestamp index when evaluation fails. The TypeScript boundary translates these explicit protocol results into the public Effect error channel without implementing the numerical operations itself.
 
 Generated `pkg` and Cargo `target` artifacts are ignored rather than committed. They are reproducible on demand from the committed `Cargo.lock`, exact `wasm-bindgen` dependency, `rust-toolchain.toml`, and documented `wasm-pack` version. This keeps generated binary and glue diffs out of review while the spike is private; shipping an npm package will require a separate decision about when and where release artifacts are built.
 
@@ -101,10 +105,10 @@ const observations = await Effect.runPromise(program);
 
 The only current option is `growth`:
 
-- `"linear"` is the default and will select a linear trend.
-- `"flat"` will select a constant trend.
+- `"linear"` is the default and is supported by `wasmLinearTrendFittingBackendLayer`.
+- `"flat"` is reserved for backends that implement a constant trend.
 
-The temporary constant-mean backend forwards but deliberately ignores this option. Logistic growth and all seasonality, holiday, and changepoint options remain out of scope.
+The explicitly named `constantMeanFittingBackendLayer` remains available as an architectural example and deliberately ignores this option. Logistic growth and all seasonality, holiday, and changepoint options remain out of scope.
 
 ```ts
 import { Effect } from "effect";
@@ -116,38 +120,55 @@ const defaults = await Effect.runPromise(decodeOptions());
 const flat = await Effect.runPromise(decodeOptions({ growth: "flat" }));
 ```
 
-## Temporary constant forecast
+## Linear trend forecast
 
-`fit` validates public observations and options before making one coarse-grained call to the provided fitting backend. `constantMeanFittingBackendLayer` provides the temporary TypeScript implementation. Training timestamps and values are packed into aligned `Float64Array` values at the backend boundary.
+`fit` validates public observations and options before making one coarse-grained call to the provided fitting backend. `wasmLinearTrendFittingBackendLayer` invokes the Rust ordinary-least-squares implementation through generated WASM bindings. Training timestamps and values are packed into aligned `Float64Array` values at the backend boundary.
 
-`predict` validates canonical UTC prediction timestamps and returns point forecasts in the same order. The fitted model contains only the constant level needed at prediction time and a model identifier that explicitly marks the baseline as temporary.
+The fitted model stores the intercept, slope, time origin, and time scale required for prediction. `predict` validates canonical UTC prediction timestamps and sends all timestamps and the fitting-time scaling to one Rust/WASM batch operation. Each ordered forecast currently exposes `value` and its equal `trend` component.
 
 ```ts
 import { Effect } from "effect";
-import { constantMeanFittingBackendLayer, fit, predict } from "effect-prophet";
+import { fit, wasmLinearTrendFittingBackendLayer, predict } from "effect-prophet";
 
 const model = await Effect.runPromise(
   fit([
-    { timestamp: "2024-01-01T00:00:00.000Z", value: 1 },
-    { timestamp: "2024-01-01T00:00:01.000Z", value: 3 },
-  ]).pipe(Effect.provide(constantMeanFittingBackendLayer)),
+    { timestamp: "2024-01-01T00:00:00.000Z", value: 2 },
+    { timestamp: "2024-01-01T00:00:01.000Z", value: 5 },
+    { timestamp: "2024-01-01T00:00:02.000Z", value: 8 },
+  ]).pipe(Effect.provide(wasmLinearTrendFittingBackendLayer)),
 );
 
 const forecasts = await Effect.runPromise(
-  predict(model, ["2024-01-01T00:00:02.000Z", "2024-01-01T00:00:03.000Z"]),
+  predict(model, ["2024-01-01T00:00:03.000Z", "2024-01-01T00:00:04.000Z"]),
 );
-// Both forecast values are 2.
+// Forecast values and trend components are 11 and 14.
 ```
 
-Expected input, fitting, and prediction failures remain in their respective typed Effect error channels.
+The constant-mean implementation remains available only as the explicitly named `constantMeanFittingBackendLayer` example. Expected input, fitting, and prediction failures remain in their respective typed Effect error channels.
+
+## Experimental model serialization
+
+`encodeFittedModel` converts a fitted linear model into a JSON-compatible payload. `decodeFittedModel` validates an untrusted payload and reconstructs the runtime model without selecting a fitting backend. The payload contains only the model kind, linear coefficients, and fitting-time scaling required for prediction; backend identifiers, services, and WASM resources are not serialized.
+
+```ts
+import { Effect } from "effect";
+import { decodeFittedModel, encodeFittedModel } from "effect-prophet";
+
+const encoded = await Effect.runPromise(encodeFittedModel(model));
+const json = JSON.stringify(encoded);
+const decoded = await Effect.runPromise(decodeFittedModel(JSON.parse(json)));
+```
+
+The payload has no independent format version. It is interpreted using the installed package's schema, following Prophet's field-based serialization approach rather than introducing a separate migration protocol. Serialized compatibility remains experimental until the package's `1.0.0` release.
 
 ## Expected errors
 
-The public error channel uses three tagged categories:
+The public error channel uses four tagged categories:
 
 - `InputValidationError` includes the input boundary and structured schema issues.
 - `FittingError` includes a reason and observation count.
 - `PredictionError` includes a reason and the timestamp being evaluated.
+- `ModelSerializationError` includes the failed operation and structured schema issues.
 
 Messages supplement these fields for people; callers can branch on `_tag` and inspect structured context without parsing a message. Expected invalid input and numerical-domain failures belong in the typed error channel. Violated internal invariants and programming errors remain defects rather than being converted into broad domain errors. Stack traces are not included in the errors' schema payloads.
 

@@ -1,7 +1,7 @@
 import { Result } from "effect";
 
 import { FittingError, type FittingFailureReason } from "../errors";
-import type { FittedParameters, TrainingInput } from "./fitting-backend";
+import type { FittedConstantParameters, TrainingInput } from "./fitting-backend";
 
 const fittingFailure = (
   reason: FittingFailureReason,
@@ -37,7 +37,7 @@ const calculateFiniteMean = (values: Float64Array): number => {
 };
 
 /**
- * Fit the temporary constant baseline by calculating the finite arithmetic mean.
+ * Fit the constant example baseline by calculating the finite arithmetic mean.
  *
  * The calculation scales values before summing so repeated large finite values
  * do not overflow an otherwise representable mean.
@@ -47,7 +47,7 @@ const calculateFiniteMean = (values: Float64Array): number => {
  */
 export const fitConstantMean = (
   input: TrainingInput,
-): Result.Result<FittedParameters, FittingError> => {
+): Result.Result<FittedConstantParameters, FittingError> => {
   const observationCount = input.values.length;
 
   if (observationCount === 0) {
@@ -92,5 +92,5 @@ export const fitConstantMean = (
     );
   }
 
-  return Result.succeed({ level });
+  return Result.succeed({ model: "constant-mean-baseline", level });
 };
