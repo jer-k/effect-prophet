@@ -1,8 +1,8 @@
 # effect-prophet
 
-A private TypeScript package scaffold for exploring Effect-based time-series forecasting.
+A private TypeScript package for exploring Effect-based time-series forecasting.
 
-Forecasting behavior is intentionally outside the scope of this initial package.
+Forecasting behavior is not implemented yet. The current API validates observation input for the numerical core.
 
 ## Prerequisites
 
@@ -32,6 +32,32 @@ Run every non-mutating verification step with:
 
 ```sh
 npm run check
+```
+
+## Observations
+
+`decodeObservations` accepts an unknown value and returns an `Effect` that either succeeds with a non-empty observation collection or fails with `ObservationValidationError`.
+
+Encoded observations use this shape:
+
+```ts
+{
+  timestamp: "2024-01-01T00:00:00.000Z",
+  value: 1.5,
+}
+```
+
+Timestamps must use the canonical UTC ISO representation emitted by Effect's `DateTime.formatIso`. Decoded timestamps are integer epoch milliseconds, keeping mutable JavaScript `Date` objects out of the numerical core. Values must be finite numbers.
+
+Collections must be non-empty and arrive in strictly ascending timestamp order. The decoder does not sort input, and duplicate timestamps are rejected.
+
+```ts
+import { Effect } from "effect";
+import { decodeObservations } from "effect-prophet";
+
+const program = decodeObservations([{ timestamp: "2024-01-01T00:00:00.000Z", value: 1.5 }]);
+
+const observations = await Effect.runPromise(program);
 ```
 
 ## Package layout
