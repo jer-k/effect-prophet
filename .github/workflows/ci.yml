@@ -28,6 +28,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install pinned wasm-pack version
+        run: cargo install wasm-pack --version 0.15.0 --locked
+
       - name: Check formatting
         run: npm run format:check
 
