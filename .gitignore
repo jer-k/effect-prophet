@@ -1,6 +1,8 @@
 node_modules/
 dist/
 coverage/
+target/
+rust/prophet-wasm/pkg/
 *.tsbuildinfo
 .DS_Store
 

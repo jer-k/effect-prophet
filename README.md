@@ -8,8 +8,16 @@ The current forecasting implementation is an intentionally temporary vertical sl
 
 - Node.js 26.7.0 (recorded in `.tool-versions`; the package supports Node.js 22.19.0 or newer)
 - npm 11.12.1 (recorded in `package.json`)
+- Rust 1.98.1 and the `wasm32-unknown-unknown` target (recorded in `rust-toolchain.toml`)
+- wasm-pack 0.15.0
 
-With [asdf](https://asdf-vm.com/) installed, run `asdf install` from this directory to install the recorded Node.js version.
+With [asdf](https://asdf-vm.com/) installed, run `asdf install` from this directory to install the recorded Node.js version. With [rustup](https://rustup.rs/) installed, Cargo commands from this checkout install or select the recorded Rust toolchain and WASM target automatically.
+
+Install the pinned `wasm-pack` version separately:
+
+```sh
+cargo install wasm-pack --version 0.15.0 --locked
+```
 
 ## Install
 
@@ -22,17 +30,44 @@ npm ci
 ```sh
 npm run build
 npm test
+npm run test:rust
+npm run test:wasm
 npm run typecheck
 npm run lint
+npm run lint:rust
 npm run format
+npm run format:rust
 npm run format:check
+npm run format:rust:check
 ```
 
-Run every non-mutating verification step with:
+Run the complete verification sequence with:
 
 ```sh
 npm run check
 ```
+
+`npm run test:wasm` generates ignored WASM bindings before running its Node integration test.
+
+## Rust/WASM toolchain spike
+
+`rust/prophet-wasm` is an isolated toolchain experiment. It exports only an arithmetic `mean` function and is not connected to the public fitting API or selected as a fitting backend.
+
+Run each phase independently with:
+
+```sh
+npm run test:rust
+npm run build:wasm
+node --test rust/prophet-wasm/node-tests/*.test.mjs
+```
+
+`wasm-pack` first asks Cargo to compile the crate for `wasm32-unknown-unknown`. It then runs the `wasm-bindgen` tooling over the raw WASM module and writes Node-specific JavaScript, TypeScript declarations, package metadata, and the transformed `.wasm` module to `rust/prophet-wasm/pkg`.
+
+The generated JavaScript is the adapter between Node and the low-level WASM ABI. For `mean`, it allocates enough WASM linear memory for the input, copies the caller's `Float64Array` into that memory, and calls the WASM export with the allocation's pointer and length. The generated ABI shim releases the temporary allocation as part of the call. Rust borrows those copied values as `&[f64]`; the scalar `f64` result crosses the boundary directly. There is one full input copy per call, so future numerical exports should remain coarse-grained rather than crossing the boundary once per observation.
+
+Generated `pkg` and Cargo `target` artifacts are ignored rather than committed. They are reproducible on demand from the committed `Cargo.lock`, exact `wasm-bindgen` dependency, `rust-toolchain.toml`, and documented `wasm-pack` version. This keeps generated binary and glue diffs out of review while the spike is private; shipping an npm package will require a separate decision about when and where release artifacts are built.
+
+The maintenance cost introduced by the spike is a Rust toolchain and WASM compilation target, a separately installed `wasm-pack` executable, Cargo dependency updates, generated-JavaScript/WASM ABI coupling, longer CI setup and build time, and Node-target-specific loading behavior. Browser loading and final npm packaging remain deliberately unresolved.
 
 ## Observations
 
