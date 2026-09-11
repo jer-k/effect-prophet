@@ -17,12 +17,18 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
+    "build:wasm": "wasm-pack build rust/prophet-wasm --target nodejs --dev --out-dir pkg",
     "test": "vitest run --dir test",
+    "test:rust": "cargo test --manifest-path rust/prophet-wasm/Cargo.toml",
+    "test:wasm": "npm run build:wasm && node --test rust/prophet-wasm/node-tests/*.test.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "oxlint .",
+    "lint:rust": "cargo clippy --manifest-path rust/prophet-wasm/Cargo.toml --all-targets -- -D warnings",
     "format": "oxfmt --write .",
+    "format:rust": "cargo fmt --manifest-path rust/prophet-wasm/Cargo.toml",
     "format:check": "oxfmt --check .",
-    "check": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build"
+    "format:rust:check": "cargo fmt --manifest-path rust/prophet-wasm/Cargo.toml --check",
+    "check": "npm run format:check && npm run format:rust:check && npm run lint && npm run lint:rust && npm run typecheck && npm test && npm run test:rust && npm run test:wasm && npm run build"
   },
   "dependencies": {
     "effect": "4.0.0-beta.107"
