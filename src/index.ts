@@ -16,6 +16,8 @@ export {
   type Observations,
 } from "./observation";
 
+export { constantMeanFittingBackendLayer } from "./internal/constant-fitting-backend";
+
 export {
   decodeOptions,
   defaultProphetOptions,
@@ -23,3 +25,13 @@ export {
   type Growth,
   type ProphetOptions,
 } from "./options";
+
+export {
+  fit,
+  predict,
+  type EncodedPredictionTimestamps,
+  type FittedProphet,
+  type Forecast,
+  type Forecasts,
+  type PredictionTimestamps,
+} from "./prophet";
