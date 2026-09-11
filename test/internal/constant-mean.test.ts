@@ -20,13 +20,15 @@ describe("fitConstantMean", () => {
   it("calculates the arithmetic mean without an Effect wrapper", () => {
     const result = fitConstantMean(makeTrainingInput([1, 2, 3], [1, 2, 6]));
 
-    expect(result).toEqual(Result.succeed({ level: 3 }));
+    expect(result).toEqual(Result.succeed({ model: "constant-mean-baseline", level: 3 }));
   });
 
   it("avoids overflowing a representable mean of large values", () => {
     const result = fitConstantMean(makeTrainingInput([1, 2], [Number.MAX_VALUE, Number.MAX_VALUE]));
 
-    expect(result).toEqual(Result.succeed({ level: Number.MAX_VALUE }));
+    expect(result).toEqual(
+      Result.succeed({ model: "constant-mean-baseline", level: Number.MAX_VALUE }),
+    );
   });
 
   it("rejects empty training data", () => {

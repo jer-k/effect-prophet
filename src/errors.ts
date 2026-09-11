@@ -13,7 +13,13 @@ const FittingFailureReasonSchema = Schema.Literals([
   "backend-failure",
 ]);
 
-const PredictionFailureReasonSchema = Schema.Literals(["invalid-model", "non-finite-forecast"]);
+const PredictionFailureReasonSchema = Schema.Literals([
+  "invalid-model",
+  "non-finite-forecast",
+  "backend-failure",
+]);
+
+const ModelSerializationOperationSchema = Schema.Literals(["encode", "decode"]);
 
 export type ValidationInput = "observations" | "options" | "prediction-timestamps";
 
@@ -22,7 +28,10 @@ export type FittingFailureReason =
   | "degenerate-observations"
   | "backend-failure";
 
-export type PredictionFailureReason = "invalid-model" | "non-finite-forecast";
+export type PredictionFailureReason = "invalid-model" | "non-finite-forecast" | "backend-failure";
+
+/** The portable model operation that failed schema validation. */
+export type ModelSerializationOperation = "encode" | "decode";
 
 /** One schema validation issue with a machine-readable path. */
 export interface ValidationIssue {
@@ -54,18 +63,24 @@ export class PredictionError extends Schema.TaggedError<PredictionError>()("Pred
   message: Schema.String,
 }) {}
 
+/** An expected schema failure while encoding or decoding a portable fitted model. */
+export class ModelSerializationError extends Schema.TaggedError<ModelSerializationError>()(
+  "ModelSerializationError",
+  {
+    operation: ModelSerializationOperationSchema,
+    issues: Schema.Array(ValidationIssueSchema),
+    message: Schema.String,
+  },
+) {}
+
 const formatValidationIssues = SchemaIssue.makeFormatterStandardSchemaV1();
 
 const formatValidationMessage = SchemaIssue.makeFormatterDefault();
 
-/** Preserve structured Schema issues while translating them to the public error channel. */
-export const inputValidationErrorFromIssue = (
-  input: ValidationInput,
-  issue: SchemaIssue.Issue,
-): InputValidationError => {
+const validationIssuesFromIssue = (issue: SchemaIssue.Issue): ReadonlyArray<ValidationIssue> => {
   const formatted = formatValidationIssues(issue);
 
-  const issues = formatted.issues.map((formattedIssue): ValidationIssue => {
+  return formatted.issues.map((formattedIssue): ValidationIssue => {
     if (formattedIssue.path === undefined) {
       return { message: formattedIssue.message };
     }
@@ -79,10 +94,26 @@ export const inputValidationErrorFromIssue = (
       path,
     };
   });
+};
 
-  return new InputValidationError({
+/** Preserve structured Schema issues while translating them to the public error channel. */
+export const inputValidationErrorFromIssue = (
+  input: ValidationInput,
+  issue: SchemaIssue.Issue,
+): InputValidationError =>
+  new InputValidationError({
     input,
-    issues,
+    issues: validationIssuesFromIssue(issue),
     message: formatValidationMessage(issue),
   });
-};
+
+/** Preserve structured Schema issues for a portable model operation. */
+export const modelSerializationErrorFromIssue = (
+  operation: ModelSerializationOperation,
+  issue: SchemaIssue.Issue,
+): ModelSerializationError =>
+  new ModelSerializationError({
+    operation,
+    issues: validationIssuesFromIssue(issue),
+    message: formatValidationMessage(issue),
+  });

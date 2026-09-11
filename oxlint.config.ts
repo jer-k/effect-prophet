@@ -15,6 +15,7 @@ export default defineConfig({
     ".opencode/**",
     ".pi/**",
     ".roo/**",
+    ".zed/**",
     ".windsurf/**",
     "dist/**",
     "tools/oxlint/anti-slop/**",
