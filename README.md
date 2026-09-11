@@ -2,7 +2,7 @@
 
 A private TypeScript package for exploring Effect-based time-series forecasting.
 
-Forecasting behavior is not implemented yet. The current API validates observation input and fitting options, and defines the expected error categories used by the upcoming fitting API.
+The current forecasting implementation is an intentionally temporary vertical slice: it fits the arithmetic mean of the training values and predicts that constant at every requested timestamp. It exercises validation, Effect service composition, fitting, and prediction, but is not Prophet-compatible behavior.
 
 ## Prerequisites
 
@@ -66,10 +66,10 @@ const observations = await Effect.runPromise(program);
 
 The only current option is `growth`:
 
-- `"linear"` is the default and selects a linear trend.
-- `"flat"` selects a constant trend.
+- `"linear"` is the default and will select a linear trend.
+- `"flat"` will select a constant trend.
 
-Logistic growth and all seasonality, holiday, and changepoint options remain out of scope.
+The temporary constant-mean backend forwards but deliberately ignores this option. Logistic growth and all seasonality, holiday, and changepoint options remain out of scope.
 
 ```ts
 import { Effect } from "effect";
@@ -80,6 +80,31 @@ const defaults = await Effect.runPromise(decodeOptions());
 
 const flat = await Effect.runPromise(decodeOptions({ growth: "flat" }));
 ```
+
+## Temporary constant forecast
+
+`fit` validates public observations and options before making one coarse-grained call to the provided fitting backend. `constantMeanFittingBackendLayer` provides the temporary TypeScript implementation. Training timestamps and values are packed into aligned `Float64Array` values at the backend boundary.
+
+`predict` validates canonical UTC prediction timestamps and returns point forecasts in the same order. The fitted model contains only the constant level needed at prediction time and a model identifier that explicitly marks the baseline as temporary.
+
+```ts
+import { Effect } from "effect";
+import { constantMeanFittingBackendLayer, fit, predict } from "effect-prophet";
+
+const model = await Effect.runPromise(
+  fit([
+    { timestamp: "2024-01-01T00:00:00.000Z", value: 1 },
+    { timestamp: "2024-01-01T00:00:01.000Z", value: 3 },
+  ]).pipe(Effect.provide(constantMeanFittingBackendLayer)),
+);
+
+const forecasts = await Effect.runPromise(
+  predict(model, ["2024-01-01T00:00:02.000Z", "2024-01-01T00:00:03.000Z"]),
+);
+// Both forecast values are 2.
+```
+
+Expected input, fitting, and prediction failures remain in their respective typed Effect error channels.
 
 ## Expected errors
 

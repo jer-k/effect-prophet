@@ -1,31 +1,7 @@
-import { DateTime, Effect, Option, Schema, SchemaGetter } from "effect";
+import { Effect, Schema } from "effect";
 
 import { InputValidationError, inputValidationErrorFromIssue } from "./errors";
-
-const canonicalTimestampExpected =
-  "a valid canonical UTC timestamp (for example, 2024-01-01T00:00:00.000Z)";
-
-const CanonicalTimestampString = Schema.String.check(
-  Schema.makeFilter(
-    (timestamp) =>
-      Option.match(DateTime.make(timestamp), {
-        onNone: () => false,
-        onSome: (dateTime) => DateTime.formatIso(dateTime) === timestamp,
-      }),
-    { expected: canonicalTimestampExpected },
-  ),
-);
-
-const Timestamp = CanonicalTimestampString.pipe(
-  Schema.decodeTo(Schema.Int, {
-    decode: SchemaGetter.transform((timestamp) =>
-      DateTime.toEpochMillis(DateTime.makeUnsafe(timestamp)),
-    ),
-    encode: SchemaGetter.transform((epochMilliseconds) =>
-      DateTime.formatIso(DateTime.makeUnsafe(epochMilliseconds)),
-    ),
-  }),
-);
+import { TimestampSchema } from "./internal/timestamp";
 
 /** Input representation accepted at the public decoding boundary. */
 export interface EncodedObservation {
@@ -52,7 +28,7 @@ export type EncodedObservations = readonly [EncodedObservation, ...Array<Encoded
 export type Observations = readonly [Observation, ...Array<Observation>];
 
 const ObservationSchema: Schema.Codec<Observation, EncodedObservation> = Schema.Struct({
-  timestamp: Timestamp,
+  timestamp: TimestampSchema,
   value: Schema.Finite,
 });
 
