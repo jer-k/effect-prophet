@@ -2,7 +2,7 @@
 
 A private TypeScript package for exploring Effect-based time-series forecasting.
 
-Forecasting behavior is not implemented yet. The current API validates observation input for the numerical core.
+Forecasting behavior is not implemented yet. The current API validates observation input and fitting options, and defines the expected error categories used by the upcoming fitting API.
 
 ## Prerequisites
 
@@ -36,7 +36,7 @@ npm run check
 
 ## Observations
 
-`decodeObservations` accepts an unknown value and returns an `Effect` that either succeeds with a non-empty observation collection or fails with `ObservationValidationError`.
+`decodeObservations` accepts an unknown value and returns an `Effect` that either succeeds with a non-empty observation collection or fails with `InputValidationError`. The error identifies `observations` as its input boundary and includes structured issue paths.
 
 Encoded observations use this shape:
 
@@ -59,6 +59,37 @@ const program = decodeObservations([{ timestamp: "2024-01-01T00:00:00.000Z", val
 
 const observations = await Effect.runPromise(program);
 ```
+
+## Options
+
+`decodeOptions` validates untrusted fitting options and supplies defaults when called with `undefined` or an empty object. Unknown keys are rejected so misspelled configuration cannot silently reach a fitting backend.
+
+The only current option is `growth`:
+
+- `"linear"` is the default and selects a linear trend.
+- `"flat"` selects a constant trend.
+
+Logistic growth and all seasonality, holiday, and changepoint options remain out of scope.
+
+```ts
+import { Effect } from "effect";
+import { decodeOptions } from "effect-prophet";
+
+const defaults = await Effect.runPromise(decodeOptions());
+// { growth: "linear" }
+
+const flat = await Effect.runPromise(decodeOptions({ growth: "flat" }));
+```
+
+## Expected errors
+
+The public error channel uses three tagged categories:
+
+- `InputValidationError` includes the input boundary and structured schema issues.
+- `FittingError` includes a reason and observation count.
+- `PredictionError` includes a reason and the timestamp being evaluated.
+
+Messages supplement these fields for people; callers can branch on `_tag` and inspect structured context without parsing a message. Expected invalid input and numerical-domain failures belong in the typed error channel. Violated internal invariants and programming errors remain defects rather than being converted into broad domain errors. Stack traces are not included in the errors' schema payloads.
 
 ## Package layout
 

@@ -1,12 +1,13 @@
 import { Effect } from "effect";
 import { describe, expect, it } from "vitest";
 
-import { ObservationValidationError, decodeObservations } from "../src/index.js";
+import { InputValidationError, decodeObservations } from "../src/index";
 
 const expectValidationFailure = async <Input>(input: Input, message: string) => {
   const error = await Effect.runPromise(Effect.flip(decodeObservations(input)));
 
-  expect(error).toBeInstanceOf(ObservationValidationError);
+  expect(error).toBeInstanceOf(InputValidationError);
+  expect(error.input).toBe("observations");
   expect(error.message).toContain(message);
 };
 

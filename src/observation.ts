@@ -1,5 +1,7 @@
 import { DateTime, Effect, Option, Schema, SchemaGetter } from "effect";
 
+import { InputValidationError, inputValidationErrorFromIssue } from "./errors";
+
 const canonicalTimestampExpected =
   "a valid canonical UTC timestamp (for example, 2024-01-01T00:00:00.000Z)";
 
@@ -88,22 +90,11 @@ const decodeObservationsSchema = Schema.decodeUnknownEffect(ObservationsSchema, 
   errors: "all",
 });
 
-/** A typed failure produced when observation input does not satisfy the public schema. */
-export class ObservationValidationError extends Schema.TaggedError<ObservationValidationError>()(
-  "ObservationValidationError",
-  { message: Schema.String },
-) {}
-
 /** Decode untrusted input into validated observations without throwing expected failures. */
 export const decodeObservations = Effect.fn("decodeObservations")(function* (
   input: Parameters<typeof decodeObservationsSchema>[0],
-): Effect.fn.Return<Observations, ObservationValidationError> {
+): Effect.fn.Return<Observations, InputValidationError> {
   return yield* decodeObservationsSchema(input).pipe(
-    Effect.mapError(
-      (error) =>
-        new ObservationValidationError({
-          message: error.message,
-        }),
-    ),
+    Effect.mapError((error) => inputValidationErrorFromIssue("observations", error.issue)),
   );
 });
