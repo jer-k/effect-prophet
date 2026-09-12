@@ -146,6 +146,29 @@ const forecasts = await Effect.runPromise(
 
 The constant-mean implementation remains available only as the explicitly named `constantMeanFittingBackendLayer` example. Expected input, fitting, and prediction failures remain in their respective typed Effect error channels.
 
+## Tracing WASM operations
+
+The public `fit` and `predict` operations create the `Prophet.fit` and `Prophet.predict` spans. When those operations reach the Rust/WASM adapter, the adapter adds these child spans:
+
+| Span                          | Attributes                                                                                                                                                                                     |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `effect-prophet.wasm.fit`     | `effect_prophet.backend.type = "rust-wasm"`, `effect_prophet.operation = "fit"`, `effect_prophet.model.type = "linear-trend"`, `effect_prophet.growth`, and `effect_prophet.observation.count` |
+| `effect-prophet.wasm.predict` | `effect_prophet.backend.type = "rust-wasm"`, `effect_prophet.operation = "predict"`, `effect_prophet.model.type = "linear-trend"`, and `effect_prophet.prediction.count`                       |
+
+Each WASM span covers the complete synchronous adapter operation: lazy Node module loading, typed-array preparation inside the invocation, generated `wasm-bindgen` input copying, Rust execution, generated output copying, and packed-result decoding. Validation and short-circuit paths that do not invoke WASM do not create a WASM span. Typed adapter failures end the corresponding span as failed without changing the returned error.
+
+The spans measure the coarse host/WASM boundary. They cannot break Rust execution into optimizer or numerical phases because the library does not install Rust callbacks or propagate trace context into WASM.
+
+Applications own tracer configuration, sampling, and export. The library uses Effect's built-in tracing API and does not install an OpenTelemetry SDK or exporter. An application can place the operations under its own parent span and provide its compatible tracer when running the program:
+
+```ts
+const program = Effect.gen(function* () {
+  const model = yield* fit(observations).pipe(Effect.provide(wasmLinearTrendFittingBackendLayer));
+
+  return yield* predict(model, predictionTimestamps);
+}).pipe(Effect.withSpan("forecast.job"));
+```
+
 ## Experimental model serialization
 
 `encodeFittedModel` converts a fitted linear model into a JSON-compatible payload. `decodeFittedModel` validates an untrusted payload and reconstructs the runtime model without selecting a fitting backend. The payload contains only the model kind, linear coefficients, and fitting-time scaling required for prediction; backend identifiers, services, and WASM resources are not serialized.
