@@ -146,7 +146,22 @@ const runWasmFit = (input: TrainingInput): Effect.Effect<FittedLinearParameters,
         observationCount,
         message: "Failed to load or execute the WASM fitting backend",
       }),
-  }).pipe(Effect.flatMap((packed) => decodeFittedParameters(packed, observationCount)));
+  }).pipe(
+    Effect.flatMap((packed) => decodeFittedParameters(packed, observationCount)),
+    Effect.withSpan(
+      "effect-prophet.wasm.fit",
+      {
+        attributes: {
+          "effect_prophet.backend.type": "rust-wasm",
+          "effect_prophet.operation": "fit",
+          "effect_prophet.model.type": "linear-trend",
+          "effect_prophet.growth": "linear",
+          "effect_prophet.observation.count": observationCount,
+        },
+      },
+      { captureStackTrace: false },
+    ),
+  );
 };
 
 const predictionFailure = (
@@ -268,8 +283,14 @@ export const wasmLinearTrendFittingBackendLayer: Layer.Layer<FittingBackend> = L
 export const predictLinearTrendWithWasm = (
   model: FittedLinearParameters,
   timestamps: ReadonlyArray<number>,
-): Effect.Effect<ReadonlyArray<number>, PredictionError> =>
-  Effect.try({
+): Effect.Effect<ReadonlyArray<number>, PredictionError> => {
+  const predictionCount = timestamps.length;
+
+  if (predictionCount === 0) {
+    return Effect.succeed([]);
+  }
+
+  return Effect.try({
     try: () =>
       loadWasmLinearTrendModule().predict_linear_trend(
         new Float64Array(timestamps),
@@ -284,4 +305,19 @@ export const predictLinearTrendWithWasm = (
         timestamp: timestamps[0] ?? 0,
         message: "Failed to load or execute the WASM prediction backend",
       }),
-  }).pipe(Effect.flatMap((packed) => decodePredictions(packed, timestamps)));
+  }).pipe(
+    Effect.flatMap((packed) => decodePredictions(packed, timestamps)),
+    Effect.withSpan(
+      "effect-prophet.wasm.predict",
+      {
+        attributes: {
+          "effect_prophet.backend.type": "rust-wasm",
+          "effect_prophet.operation": "predict",
+          "effect_prophet.model.type": "linear-trend",
+          "effect_prophet.prediction.count": predictionCount,
+        },
+      },
+      { captureStackTrace: false },
+    ),
+  );
+};
