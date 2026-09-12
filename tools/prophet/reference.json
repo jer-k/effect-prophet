@@ -1,0 +1,7 @@
+{
+  "distribution": "prophet",
+  "version": "1.4.0",
+  "repository": "https://github.com/facebook/prophet",
+  "tag": "v1.4.0",
+  "sourceCommit": "abf69a215604afcaa7ecb4359f592d13bf6dea9f"
+}
