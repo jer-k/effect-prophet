@@ -4,6 +4,12 @@ A private TypeScript package for exploring Effect-based time-series forecasting.
 
 The current Rust/WASM backend fits an ordinary least-squares linear trend and predicts point forecasts with a trend component. TypeScript owns validation, Effect service composition, and WASM protocol translation; numerical fitting and trend evaluation run in Rust. The package does not yet implement Prophet features such as changepoints, seasonality, or uncertainty intervals.
 
+## Compatibility target
+
+The fixed compatibility reference is the unmodified Python `prophet==1.4.0` release at source commit `abf69a215604afcaa7ecb4359f592d13bf6dea9f`. Compatibility is tracked per capability in the [Prophet 1.4.0 compatibility contract](docs/compatibility/prophet-1.4.0.md); this package does not currently claim blanket Prophet compatibility.
+
+The current OLS fit is a mathematical baseline, not Prophet MAP fitting, and the package deliberately keeps stricter canonical-UTC, ordering, and duplicate policies. Python API shapes, CmdStanPy backend behavior, and Python model-JSON interchange are separate from numerical compatibility. Anomaly detection is a possible package extension, not part of the Prophet 1.4.0 parity target.
+
 ## Prerequisites
 
 - Node.js 26.7.0 (recorded in `.tool-versions`; the package supports Node.js 22.19.0 or newer)
