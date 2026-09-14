@@ -1,7 +1,16 @@
-import { Effect, Schema, SchemaGetter } from "effect";
+import { Effect, Schema } from "effect";
 
-import { ModelSerializationError, modelSerializationErrorFromIssue } from "./errors";
-import type { FittedLinearProphet } from "./prophet";
+import {
+  ModelSerializationError,
+  modelSerializationErrorFromIssue,
+  type ValidationIssue,
+} from "./errors";
+import {
+  parseLinearModel,
+  type FittedLinearProphet,
+  type InvalidFittedModel,
+  type LinearParameters,
+} from "./fitted-model";
 
 /** The portable representation of a fitted linear model. */
 export interface EncodedFittedModel {
@@ -27,58 +36,87 @@ export interface EncodedFittedModel {
   };
 }
 
-const PositiveFinite = Schema.Finite.check(Schema.isGreaterThan(0));
-
 const EncodedFittedModelSchema: Schema.Codec<EncodedFittedModel> = Schema.Struct({
   modelKind: Schema.Literal("linear-trend"),
   coefficients: Schema.Struct({
-    intercept: Schema.Finite,
-    slope: Schema.Finite,
+    intercept: Schema.Number,
+    slope: Schema.Number,
   }),
   timeScaling: Schema.Struct({
-    origin: Schema.Finite,
-    scale: PositiveFinite,
+    origin: Schema.Number,
+    scale: Schema.Number,
   }),
 });
 
-const FittedLinearProphetSchema: Schema.Codec<FittedLinearProphet> = Schema.Struct({
-  model: Schema.Literal("linear-trend"),
-  intercept: Schema.Finite,
-  slope: Schema.Finite,
-  timeOrigin: Schema.Finite,
-  timeScale: PositiveFinite,
-});
-
-const FittedModelSerializationSchema: Schema.Codec<FittedLinearProphet, EncodedFittedModel> =
-  EncodedFittedModelSchema.pipe(
-    Schema.decodeTo(FittedLinearProphetSchema, {
-      decode: SchemaGetter.transform((encoded): FittedLinearProphet => ({
-        model: "linear-trend",
-        intercept: encoded.coefficients.intercept,
-        slope: encoded.coefficients.slope,
-        timeOrigin: encoded.timeScaling.origin,
-        timeScale: encoded.timeScaling.scale,
-      })),
-      encode: SchemaGetter.transform((model): EncodedFittedModel => ({
-        modelKind: "linear-trend",
-        coefficients: {
-          intercept: model.intercept,
-          slope: model.slope,
-        },
-        timeScaling: {
-          origin: model.timeOrigin,
-          scale: model.timeScale,
-        },
-      })),
-    }),
-  );
-
-const encodeFittedModelSchema = Schema.encodeEffect(FittedModelSerializationSchema, {
+const decodeEncodedFittedModel = Schema.decodeUnknownEffect(EncodedFittedModelSchema, {
   errors: "all",
 });
 
-const decodeFittedModelSchema = Schema.decodeUnknownEffect(FittedModelSerializationSchema, {
-  errors: "all",
+const portablePathFromModelPath = (
+  path: ReadonlyArray<PropertyKey>,
+): ReadonlyArray<PropertyKey> => {
+  const [field, ...rest] = path;
+
+  switch (field) {
+    case "model":
+      return ["modelKind", ...rest];
+
+    case "intercept":
+      return ["coefficients", "intercept", ...rest];
+
+    case "slope":
+      return ["coefficients", "slope", ...rest];
+
+    case "timeOrigin":
+      return ["timeScaling", "origin", ...rest];
+
+    case "timeScale":
+      return ["timeScaling", "scale", ...rest];
+
+    default:
+      return path;
+  }
+};
+
+const portableIssueFromModelIssue = (issue: ValidationIssue): ValidationIssue => {
+  if (issue.path === undefined) {
+    return { message: issue.message };
+  }
+
+  return {
+    message: issue.message,
+    path: portablePathFromModelPath(issue.path),
+  };
+};
+
+const serializationErrorFromInvalidModel = (
+  operation: "encode" | "decode",
+  error: InvalidFittedModel,
+): ModelSerializationError =>
+  new ModelSerializationError({
+    operation,
+    issues: operation === "decode" ? error.issues.map(portableIssueFromModelIssue) : error.issues,
+    message: error.message,
+  });
+
+const linearParametersFromEncoded = (encoded: EncodedFittedModel): LinearParameters => ({
+  model: "linear-trend",
+  intercept: encoded.coefficients.intercept,
+  slope: encoded.coefficients.slope,
+  timeOrigin: encoded.timeScaling.origin,
+  timeScale: encoded.timeScaling.scale,
+});
+
+const encodeLinearModel = (model: FittedLinearProphet): EncodedFittedModel => ({
+  modelKind: "linear-trend",
+  coefficients: {
+    intercept: model.intercept,
+    slope: model.slope,
+  },
+  timeScaling: {
+    origin: model.timeOrigin,
+    scale: model.timeScale,
+  },
 });
 
 /**
@@ -93,9 +131,11 @@ const decodeFittedModelSchema = Schema.decodeUnknownEffect(FittedModelSerializat
 export const encodeFittedModel = Effect.fn("Prophet.encodeFittedModel")(function* (
   model: FittedLinearProphet,
 ): Effect.fn.Return<EncodedFittedModel, ModelSerializationError> {
-  return yield* encodeFittedModelSchema(model).pipe(
-    Effect.mapError((error) => modelSerializationErrorFromIssue("encode", error.issue)),
+  const parsedModel = yield* parseLinearModel(model).pipe(
+    Effect.mapError((error) => serializationErrorFromInvalidModel("encode", error)),
   );
+
+  return encodeLinearModel(parsedModel);
 });
 
 /**
@@ -108,9 +148,13 @@ export const encodeFittedModel = Effect.fn("Prophet.encodeFittedModel")(function
  * @returns A fitted linear model or a typed serialization failure.
  */
 export const decodeFittedModel = Effect.fn("Prophet.decodeFittedModel")(function* (
-  input: Parameters<typeof decodeFittedModelSchema>[0],
+  input: Parameters<typeof decodeEncodedFittedModel>[0],
 ): Effect.fn.Return<FittedLinearProphet, ModelSerializationError> {
-  return yield* decodeFittedModelSchema(input).pipe(
+  const encoded = yield* decodeEncodedFittedModel(input).pipe(
     Effect.mapError((error) => modelSerializationErrorFromIssue("decode", error.issue)),
+  );
+
+  return yield* parseLinearModel(linearParametersFromEncoded(encoded)).pipe(
+    Effect.mapError((error) => serializationErrorFromInvalidModel("decode", error)),
   );
 });

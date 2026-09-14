@@ -11,14 +11,17 @@ import {
   type EncodedFittedModel,
   type FittedLinearProphet,
 } from "../src/index";
+import { parseLinearModel, type LinearParameters } from "../src/fitted-model";
 
-const fittedModel: FittedLinearProphet = {
+const fittedParameters: LinearParameters = {
   model: "linear-trend",
   intercept: 2,
   slope: 6,
   timeOrigin: 1_704_067_200_000,
   timeScale: 2_000,
 };
+
+const fittedModel = Effect.runSync(parseLinearModel(fittedParameters));
 
 const encodedModel: EncodedFittedModel = {
   modelKind: "linear-trend",
@@ -67,6 +70,7 @@ describe("fitted model serialization", () => {
 
     expect(encoded).toEqual(encodedModel);
     expect(decoded).toEqual(model);
+    expect(Object.isFrozen(decoded)).toBe(true);
     expect(after).toEqual(before);
   });
 
@@ -124,12 +128,15 @@ describe("fitted model serialization", () => {
   });
 
   it("fails invalid runtime models through the typed encoding path", async () => {
-    const invalidModel: FittedLinearProphet = {
-      ...fittedModel,
+    const invalidModel: LinearParameters = {
+      ...fittedParameters,
       timeScale: Number.NEGATIVE_INFINITY,
     };
 
-    const error = await Effect.runPromise(Effect.flip(encodeFittedModel(invalidModel)));
+    const error = await Effect.runPromise(
+      // @ts-expect-error -- A plain backend record deliberately exercises the JavaScript runtime boundary.
+      Effect.flip(encodeFittedModel(invalidModel)),
+    );
 
     expect(error).toBeInstanceOf(ModelSerializationError);
     expect(error.operation).toBe("encode");

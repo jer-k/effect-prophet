@@ -5,8 +5,8 @@ import { FittingError, type UnsupportedConfigurationError } from "../../src/erro
 import {
   FittingBackend,
   type FitOptions,
-  type FittedLinearParameters,
-  type FittedParameters,
+  type LinearParameters,
+  type Parameters,
   type TrainingInput,
 } from "../../src/internal/fitting-backend";
 
@@ -34,14 +34,14 @@ const makeInput = (
 const fitWith = (
   layer: Layer.Layer<FittingBackend>,
   input: TrainingInput,
-): Effect.Effect<FittedParameters, FittingError | UnsupportedConfigurationError> =>
+): Effect.Effect<Parameters, FittingError | UnsupportedConfigurationError> =>
   Effect.gen(function* () {
     const backend = yield* FittingBackend;
 
     return yield* backend.fit(input, linearOptions);
   }).pipe(Effect.provide(layer));
 
-const requireLinearParameters = (parameters: FittedParameters): FittedLinearParameters => {
+const requireLinearParameters = (parameters: Parameters): LinearParameters => {
   expect(parameters.model).toBe("linear-trend");
 
   if (parameters.model !== "linear-trend") {
@@ -51,7 +51,7 @@ const requireLinearParameters = (parameters: FittedParameters): FittedLinearPara
   return parameters;
 };
 
-const evaluateContract = (parameters: FittedLinearParameters, timestamp: number): number =>
+const evaluateContract = (parameters: LinearParameters, timestamp: number): number =>
   parameters.intercept +
   parameters.slope * ((timestamp - parameters.timeOrigin) / parameters.timeScale);
 

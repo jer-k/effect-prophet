@@ -3,7 +3,7 @@ import { Effect, Layer, Result } from "effect";
 import {
   FittingBackend,
   type FitOptions,
-  type FittedParameters,
+  type Parameters,
   type TrainingInput,
 } from "../../src/internal/fitting-backend";
 import type { FittingError, UnsupportedConfigurationError } from "../../src/errors";
@@ -33,7 +33,7 @@ export interface TestFittingBackend {
  * @returns The test Layer and its live, read-only invocation history.
  */
 export const makeTestFittingBackend = (
-  result: Result.Result<FittedParameters, FittingError | UnsupportedConfigurationError>,
+  result: Result.Result<Parameters, FittingError | UnsupportedConfigurationError>,
 ): TestFittingBackend => {
   const invocations: Array<FittingBackendInvocation> = [];
 

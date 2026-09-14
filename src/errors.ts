@@ -1,6 +1,7 @@
 import { Predicate, Schema, SchemaIssue } from "effect";
 
-const ValidationIssueSchema = Schema.Struct({
+/** Runtime schema for one structured validation issue. */
+export const ValidationIssueSchema = Schema.Struct({
   message: Schema.String,
   path: Schema.optionalKey(Schema.Array(Schema.PropertyKey)),
 });
@@ -90,7 +91,10 @@ const formatValidationIssues = SchemaIssue.makeFormatterStandardSchemaV1();
 
 const formatValidationMessage = SchemaIssue.makeFormatterDefault();
 
-const validationIssuesFromIssue = (issue: SchemaIssue.Issue): ReadonlyArray<ValidationIssue> => {
+/** Convert an Effect Schema issue tree into stable structured validation issues. */
+export const validationIssuesFromIssue = (
+  issue: SchemaIssue.Issue,
+): ReadonlyArray<ValidationIssue> => {
   const formatted = formatValidationIssues(issue);
 
   return formatted.issues.map((formattedIssue): ValidationIssue => {
@@ -109,6 +113,10 @@ const validationIssuesFromIssue = (issue: SchemaIssue.Issue): ReadonlyArray<Vali
   });
 };
 
+/** Format an Effect Schema issue tree for human-readable error messages. */
+export const validationMessageFromIssue = (issue: SchemaIssue.Issue): string =>
+  formatValidationMessage(issue);
+
 /** Preserve structured Schema issues while translating them to the public error channel. */
 export const inputValidationErrorFromIssue = (
   input: ValidationInput,
@@ -117,7 +125,7 @@ export const inputValidationErrorFromIssue = (
   new InputValidationError({
     input,
     issues: validationIssuesFromIssue(issue),
-    message: formatValidationMessage(issue),
+    message: validationMessageFromIssue(issue),
   });
 
 /** Preserve structured Schema issues for a portable model operation. */
@@ -128,5 +136,5 @@ export const modelSerializationErrorFromIssue = (
   new ModelSerializationError({
     operation,
     issues: validationIssuesFromIssue(issue),
-    message: formatValidationMessage(issue),
+    message: validationMessageFromIssue(issue),
   });

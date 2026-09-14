@@ -5,7 +5,7 @@ import { FittingError, UnsupportedConfigurationError } from "../../src/errors";
 import {
   FittingBackend,
   type FitOptions,
-  type FittedParameters,
+  type Parameters,
   type TrainingInput,
 } from "../../src/internal/fitting-backend";
 import { makeTestFittingBackend } from "./fitting-backend-test-layer";
@@ -19,7 +19,7 @@ const trainingInput: TrainingInput = {
 
 const fitOptions: FitOptions = { growth: "linear" };
 
-const fittedParameters: FittedParameters = {
+const fittedParameters: Parameters = {
   model: "linear-trend",
   intercept: 1.5,
   slope: 1,
@@ -30,11 +30,7 @@ const fittedParameters: FittedParameters = {
 const fitWithBackend = Effect.fn("fitWithBackend")(function* (
   input: TrainingInput,
   options: FitOptions,
-): Effect.fn.Return<
-  FittedParameters,
-  FittingError | UnsupportedConfigurationError,
-  FittingBackend
-> {
+): Effect.fn.Return<Parameters, FittingError | UnsupportedConfigurationError, FittingBackend> {
   const backend = yield* FittingBackend;
 
   return yield* backend.fit(input, options);
@@ -46,7 +42,7 @@ describe("FittingBackend", () => {
     const program = fitWithBackend(trainingInput, fitOptions);
 
     expectTypeOf(program).toEqualTypeOf<
-      Effect.Effect<FittedParameters, FittingError | UnsupportedConfigurationError, FittingBackend>
+      Effect.Effect<Parameters, FittingError | UnsupportedConfigurationError, FittingBackend>
     >();
 
     // @ts-expect-error -- The unprovided program intentionally still requires FittingBackend.
@@ -55,7 +51,7 @@ describe("FittingBackend", () => {
     const providedProgram = program.pipe(Effect.provide(testBackend.layer));
 
     expectTypeOf(providedProgram).toEqualTypeOf<
-      Effect.Effect<FittedParameters, FittingError | UnsupportedConfigurationError, never>
+      Effect.Effect<Parameters, FittingError | UnsupportedConfigurationError, never>
     >();
 
     void runnableWithoutServices(providedProgram);
@@ -85,7 +81,7 @@ describe("FittingBackend", () => {
     );
 
     expectTypeOf(providedProgram).toEqualTypeOf<
-      Effect.Effect<FittedParameters, FittingError | UnsupportedConfigurationError, never>
+      Effect.Effect<Parameters, FittingError | UnsupportedConfigurationError, never>
     >();
 
     const error = await Effect.runPromise(Effect.flip(providedProgram));

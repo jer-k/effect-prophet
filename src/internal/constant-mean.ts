@@ -1,7 +1,8 @@
 import { Result } from "effect";
 
 import { FittingError, type FittingFailureReason } from "../errors";
-import type { FittedConstantParameters, TrainingInput } from "./fitting-backend";
+import type { ConstantParameters } from "../fitted-model";
+import type { TrainingInput } from "./fitting-backend";
 
 const fittingFailure = (
   reason: FittingFailureReason,
@@ -47,7 +48,7 @@ const calculateFiniteMean = (values: Float64Array): number => {
  */
 export const fitConstantMean = (
   input: TrainingInput,
-): Result.Result<FittedConstantParameters, FittingError> => {
+): Result.Result<ConstantParameters, FittingError> => {
   const observationCount = input.values.length;
 
   if (observationCount === 0) {

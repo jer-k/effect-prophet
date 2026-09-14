@@ -12,6 +12,7 @@ import {
   predict,
   type FittedProphet,
 } from "../src/index";
+import { parseLinearModel, type LinearParameters } from "../src/fitted-model";
 import { FittingBackend } from "../src/internal/fitting-backend";
 import { makeTestFittingBackend } from "./internal/fitting-backend-test-layer";
 
@@ -51,6 +52,7 @@ describe("linear-trend Prophet integration", () => {
       timeOrigin: 1_704_067_200_000,
       timeScale: 2_000,
     });
+    expect(Object.isFrozen(model)).toBe(true);
     expect(forecasts).toHaveLength(2);
     expect(forecasts[0]?.timestamp).toBe(1_704_067_203_000);
     expect(forecasts[0]?.value).toBeCloseTo(11, linearForecastPrecisionDigits);
@@ -101,6 +103,7 @@ describe("linear-trend Prophet integration", () => {
     const [forecast] = await Effect.runPromise(predict(model, [predictionTimestamps[0]]));
 
     expect(model).toEqual({ model: "constant-mean-baseline", level: 5 });
+    expect(Object.isFrozen(model)).toBe(true);
     expect(forecast).toEqual({
       timestamp: 1_704_067_203_000,
       value: 5,
@@ -281,7 +284,7 @@ describe("linear-trend Prophet integration", () => {
   });
 
   it("rejects an invalid fitted model through the prediction error channel", async () => {
-    const invalidModel: FittedProphet = {
+    const invalidModel: LinearParameters = {
       model: "linear-trend",
       intercept: Number.NaN,
       slope: 1,
@@ -290,6 +293,7 @@ describe("linear-trend Prophet integration", () => {
     };
 
     const error = await Effect.runPromise(
+      // @ts-expect-error -- A plain backend record deliberately exercises the JavaScript runtime boundary.
       Effect.flip(predict(invalidModel, [predictionTimestamps[0]])),
     );
 
@@ -302,13 +306,15 @@ describe("linear-trend Prophet integration", () => {
   });
 
   it("rejects a non-finite forecast through the prediction error channel", async () => {
-    const model: FittedProphet = {
-      model: "linear-trend",
-      intercept: 0,
-      slope: Number.MAX_VALUE,
-      timeOrigin: 1_704_067_200_000,
-      timeScale: 1,
-    };
+    const model = Effect.runSync(
+      parseLinearModel({
+        model: "linear-trend",
+        intercept: 0,
+        slope: Number.MAX_VALUE,
+        timeOrigin: 1_704_067_200_000,
+        timeScale: 1,
+      }),
+    );
 
     const error = await Effect.runPromise(
       Effect.flip(predict(model, ["2024-01-01T00:00:00.002Z"])),
