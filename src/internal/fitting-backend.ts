@@ -1,6 +1,6 @@
 import { Context, type Effect } from "effect";
 
-import type { FittingError } from "../errors";
+import type { FittingError, UnsupportedConfigurationError } from "../errors";
 import type { Growth } from "../options";
 
 /** Packed, index-aligned numerical observations supplied to a fitting backend. */
@@ -55,12 +55,12 @@ export interface FittingBackend {
    *
    * @param input - Packed training timestamps and values.
    * @param options - Backend-facing fitting options.
-   * @returns The fitted trend parameters or a typed fitting failure.
+   * @returns The fitted trend parameters, an unsupported configuration, or a typed fitting failure.
    */
   readonly fit: (
     input: TrainingInput,
     options: FitOptions,
-  ) => Effect.Effect<FittedParameters, FittingError>;
+  ) => Effect.Effect<FittedParameters, FittingError | UnsupportedConfigurationError>;
 }
 
 /** Effect context key for the fitting backend selected by the composition root. */

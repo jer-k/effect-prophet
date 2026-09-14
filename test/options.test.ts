@@ -1,7 +1,12 @@
 import { Effect } from "effect";
 import { describe, expect, it } from "vitest";
 
-import { InputValidationError, decodeOptions, defaultProphetOptions } from "../src/index";
+import {
+  InputValidationError,
+  UnsupportedConfigurationError,
+  decodeOptions,
+  defaultProphetOptions,
+} from "../src/index";
 
 const expectOptionsFailure = async (input: Parameters<typeof decodeOptions>[0]) => {
   const error = await Effect.runPromise(Effect.flip(decodeOptions(input)));
@@ -33,9 +38,10 @@ describe("decodeOptions", () => {
     expect(options).toEqual({ growth });
   });
 
-  it("rejects unsupported growth modes with a structured field path", async () => {
+  it("rejects invalid growth values at the options boundary", async () => {
     const error = await expectOptionsFailure({ growth: "logistic" });
 
+    expect(error).not.toBeInstanceOf(UnsupportedConfigurationError);
     expect(error.issues).toContainEqual({
       message: expect.stringContaining("flat"),
       path: ["growth"],

@@ -125,12 +125,14 @@ const observations = await Effect.runPromise(program);
 
 `decodeOptions` validates untrusted fitting options and supplies defaults when called with `undefined` or an empty object. Unknown keys are rejected so misspelled configuration cannot silently reach a fitting backend.
 
-The only current option is `growth`:
+The only current option is `growth`. Parsing accepts both valid values, while the fitting Layer selected by the caller owns the narrower capability policy:
 
-- `"linear"` is the default and is supported by `wasmLinearTrendFittingBackendLayer`.
-- `"flat"` is reserved for backends that implement a constant trend.
+| Fitting Layer                        | `growth: "linear"`                 | `growth: "flat"`                        |
+| ------------------------------------ | ---------------------------------- | --------------------------------------- |
+| `wasmLinearTrendFittingBackendLayer` | Supported (and the public default) | `UnsupportedConfigurationError`         |
+| `constantMeanFittingBackendLayer`    | `UnsupportedConfigurationError`    | Supported only when selected explicitly |
 
-The explicitly named `constantMeanFittingBackendLayer` remains available as an architectural example and deliberately ignores this option. Logistic growth and all seasonality, holiday, and changepoint options remain out of scope.
+The explicitly named `constantMeanFittingBackendLayer` remains available as a learning example. It fits an arithmetic-mean baseline tagged `"constant-mean-baseline"`; it is not the future full Prophet flat-growth implementation and does not claim prior-informed flat-growth parity. Logistic growth and all seasonality, holiday, and changepoint options remain out of scope.
 
 ```ts
 import { Effect } from "effect";
@@ -166,7 +168,25 @@ const forecasts = await Effect.runPromise(
 // Forecast values and trend components are 11 and 14.
 ```
 
-The constant-mean implementation remains available only as the explicitly named `constantMeanFittingBackendLayer` example. Expected input, fitting, and prediction failures remain in their respective typed Effect error channels.
+The constant-mean implementation remains available only as the explicitly named `constantMeanFittingBackendLayer` example. It requires explicit flat growth:
+
+```ts
+import { Effect } from "effect";
+import { constantMeanFittingBackendLayer, fit } from "effect-prophet";
+
+const baseline = await Effect.runPromise(
+  fit(
+    [
+      { timestamp: "2024-01-01T00:00:00.000Z", value: 2 },
+      { timestamp: "2024-01-01T00:00:01.000Z", value: 5 },
+    ],
+    { growth: "flat" },
+  ).pipe(Effect.provide(constantMeanFittingBackendLayer)),
+);
+// { model: "constant-mean-baseline", level: 3.5 }
+```
+
+Expected input, unsupported-configuration, fitting, and prediction failures remain in their respective typed Effect error channels.
 
 ## Tracing WASM operations
 
@@ -208,9 +228,10 @@ The payload has no independent format version. It is interpreted using the insta
 
 ## Expected errors
 
-The public error channel uses four tagged categories:
+The public error channel uses five tagged categories:
 
 - `InputValidationError` includes the input boundary and structured schema issues.
+- `UnsupportedConfigurationError` identifies a valid option rejected by the selected backend and includes the option, received value, and non-empty supported-value list.
 - `FittingError` includes a reason and observation count.
 - `PredictionError` includes a reason and the timestamp being evaluated.
 - `ModelSerializationError` includes the failed operation and structured schema issues.

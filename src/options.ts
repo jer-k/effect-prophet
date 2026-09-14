@@ -2,7 +2,7 @@ import { Effect, Schema } from "effect";
 
 import { InputValidationError, inputValidationErrorFromIssue } from "./errors";
 
-/** Trend forms available to fitting backend implementations. */
+/** Valid trend forms that fitting backends may support selectively. */
 export type Growth = "flat" | "linear";
 
 /** Untrusted options accepted at the public decoding boundary. */
@@ -10,7 +10,12 @@ export interface EncodedProphetOptions {
   readonly growth?: Growth;
 }
 
-/** Validated fitting configuration with every default applied. */
+/**
+ * Validated fitting configuration with every default applied.
+ *
+ * Successful parsing establishes that a growth value is valid, not that the
+ * fitting backend selected by the caller supports it.
+ */
 export interface ProphetOptions {
   readonly growth: Growth;
 }
@@ -18,7 +23,8 @@ export interface ProphetOptions {
 /**
  * Central defaults for public fitting configuration.
  *
- * Linear growth matches Prophet's default. Select `flat` for a constant trend.
+ * Linear growth matches Prophet's default. A selected backend may reject a
+ * valid growth mode that it does not implement.
  */
 export const defaultProphetOptions: ProphetOptions = {
   growth: "linear",

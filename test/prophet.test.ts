@@ -1,16 +1,18 @@
 import { Effect, Result } from "effect";
-import { describe, expect, it } from "vitest";
+import { describe, expect, expectTypeOf, it } from "vitest";
 
 import {
   FittingError,
   InputValidationError,
   PredictionError,
+  UnsupportedConfigurationError,
   constantMeanFittingBackendLayer,
   fit,
   wasmLinearTrendFittingBackendLayer,
   predict,
   type FittedProphet,
 } from "../src/index";
+import { FittingBackend } from "../src/internal/fitting-backend";
 import { makeTestFittingBackend } from "./internal/fitting-backend-test-layer";
 
 const observations = [
@@ -25,6 +27,16 @@ const predictionTimestamps = ["2024-01-01T00:00:03.000Z", "2024-01-01T00:00:04.0
 const linearForecastPrecisionDigits = 12;
 
 describe("linear-trend Prophet integration", () => {
+  it("exposes validation, capability, and numerical failures precisely", () => {
+    expectTypeOf(fit(observations)).toEqualTypeOf<
+      Effect.Effect<
+        FittedProphet,
+        InputValidationError | UnsupportedConfigurationError | FittingError,
+        FittingBackend
+      >
+    >();
+  });
+
   it("fits through the TypeScript Layer and predicts trend forecasts", async () => {
     const model = await Effect.runPromise(
       fit(observations).pipe(Effect.provide(wasmLinearTrendFittingBackendLayer)),
@@ -81,9 +93,9 @@ describe("linear-trend Prophet integration", () => {
     ]);
   });
 
-  it("keeps the constant backend as an explicitly named example", async () => {
+  it("keeps the constant backend as an explicitly named flat-growth example", async () => {
     const model = await Effect.runPromise(
-      fit(observations).pipe(Effect.provide(constantMeanFittingBackendLayer)),
+      fit(observations, { growth: "flat" }).pipe(Effect.provide(constantMeanFittingBackendLayer)),
     );
 
     const [forecast] = await Effect.runPromise(predict(model, [predictionTimestamps[0]]));
@@ -95,6 +107,42 @@ describe("linear-trend Prophet integration", () => {
       trend: 5,
     });
   });
+
+  it("classifies flat growth as unsupported by the WASM linear backend", async () => {
+    const error = await Effect.runPromise(
+      Effect.flip(
+        fit(observations, { growth: "flat" }).pipe(
+          Effect.provide(wasmLinearTrendFittingBackendLayer),
+        ),
+      ),
+    );
+
+    expect(error).toBeInstanceOf(UnsupportedConfigurationError);
+
+    if (error instanceof UnsupportedConfigurationError) {
+      expect(error.option).toBe("growth");
+      expect(error.received).toBe("flat");
+      expect(error.supported).toEqual(["linear"]);
+    }
+  });
+
+  it.each([undefined, { growth: "linear" as const }])(
+    "requires explicit flat growth for the constant example with options %j",
+    async (options) => {
+      const error = await Effect.runPromise(
+        Effect.flip(
+          fit(observations, options).pipe(Effect.provide(constantMeanFittingBackendLayer)),
+        ),
+      );
+
+      expect(error).toBeInstanceOf(UnsupportedConfigurationError);
+
+      if (error instanceof UnsupportedConfigurationError) {
+        expect(error.received).toBe("linear");
+        expect(error.supported).toEqual(["flat"]);
+      }
+    },
+  );
 
   it("rejects invalid observations before executing the backend", async () => {
     const testBackend = makeTestFittingBackend(
