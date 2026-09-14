@@ -1,4 +1,4 @@
-import { Effect, Layer } from "effect";
+import { Effect, Layer, Match } from "effect";
 
 import { UnsupportedConfigurationError } from "../errors";
 import { fitConstantMean } from "./constant-mean";
@@ -13,19 +13,20 @@ import { FittingBackend } from "./fitting-backend";
 export const constantMeanFittingBackendLayer: Layer.Layer<FittingBackend> = Layer.succeed(
   FittingBackend,
   {
-    fit: (input, options) => {
-      if (options.growth !== "flat") {
-        return Effect.fail(
-          new UnsupportedConfigurationError({
-            option: "growth",
-            received: options.growth,
-            supported: ["flat"],
-            message: `The constant-mean baseline backend does not support ${options.growth} growth`,
-          }),
-        );
-      }
-
-      return Effect.fromResult(fitConstantMean(input));
-    },
+    fit: (input, options) =>
+      Match.value(options.growth).pipe(
+        Match.when("flat", () => Effect.fromResult(fitConstantMean(input))),
+        Match.when("linear", (received) =>
+          Effect.fail(
+            new UnsupportedConfigurationError({
+              option: "growth",
+              received,
+              supported: ["flat"],
+              message: `The constant-mean baseline backend does not support ${received} growth`,
+            }),
+          ),
+        ),
+        Match.exhaustive,
+      ),
   },
 );
