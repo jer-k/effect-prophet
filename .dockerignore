@@ -1,0 +1,13 @@
+.git
+.github
+.agents
+.pi
+node_modules
+dist
+coverage
+target
+rust/prophet-wasm/pkg
+rust/prophet-wasm/target
+*.tsbuildinfo
+.DS_Store
+.generated
