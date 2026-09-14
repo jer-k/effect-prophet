@@ -6,7 +6,7 @@ import {
   type FittedParameters,
   type TrainingInput,
 } from "../../src/internal/fitting-backend";
-import type { FittingError } from "../../src/errors";
+import type { FittingError, UnsupportedConfigurationError } from "../../src/errors";
 
 /** One complete fitting invocation captured by the deterministic test backend. */
 export interface FittingBackendInvocation {
@@ -33,7 +33,7 @@ export interface TestFittingBackend {
  * @returns The test Layer and its live, read-only invocation history.
  */
 export const makeTestFittingBackend = (
-  result: Result.Result<FittedParameters, FittingError>,
+  result: Result.Result<FittedParameters, FittingError | UnsupportedConfigurationError>,
 ): TestFittingBackend => {
   const invocations: Array<FittingBackendInvocation> = [];
 

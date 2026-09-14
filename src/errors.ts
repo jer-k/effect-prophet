@@ -21,6 +21,8 @@ const PredictionFailureReasonSchema = Schema.Literals([
 
 const ModelSerializationOperationSchema = Schema.Literals(["encode", "decode"]);
 
+const GrowthSchema = Schema.Literals(["linear", "flat"]);
+
 export type ValidationInput = "observations" | "options" | "prediction-timestamps";
 
 export type FittingFailureReason =
@@ -45,6 +47,17 @@ export class InputValidationError extends Schema.TaggedError<InputValidationErro
   {
     input: ValidationInputSchema,
     issues: Schema.Array(ValidationIssueSchema),
+    message: Schema.String,
+  },
+) {}
+
+/** An expected failure when a selected backend does not implement a valid growth option. */
+export class UnsupportedConfigurationError extends Schema.TaggedError<UnsupportedConfigurationError>()(
+  "UnsupportedConfigurationError",
+  {
+    option: Schema.Literal("growth"),
+    received: GrowthSchema,
+    supported: Schema.NonEmptyArray(GrowthSchema),
     message: Schema.String,
   },
 ) {}

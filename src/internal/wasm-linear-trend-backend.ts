@@ -2,7 +2,7 @@ import { createRequire } from "node:module";
 
 import { Effect, Layer } from "effect";
 
-import { FittingError, PredictionError } from "../errors";
+import { FittingError, PredictionError, UnsupportedConfigurationError } from "../errors";
 import { FittingBackend, type FittedLinearParameters, type TrainingInput } from "./fitting-backend";
 
 interface WasmLinearTrendModule {
@@ -261,10 +261,13 @@ export const wasmLinearTrendFittingBackendLayer: Layer.Layer<FittingBackend> = L
   {
     fit: (input, options) => {
       if (options.growth !== "linear") {
-        return fittingFailure(
-          "backend-failure",
-          input.values.length,
-          `The WASM linear-trend backend does not support ${options.growth} growth`,
+        return Effect.fail(
+          new UnsupportedConfigurationError({
+            option: "growth",
+            received: options.growth,
+            supported: ["linear"],
+            message: `The WASM linear-trend backend does not support ${options.growth} growth`,
+          }),
         );
       }
 

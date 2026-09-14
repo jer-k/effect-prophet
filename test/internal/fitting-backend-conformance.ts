@@ -1,7 +1,7 @@
 import { Effect, Layer } from "effect";
 import { describe, expect, it } from "vitest";
 
-import { FittingError } from "../../src/errors";
+import { FittingError, type UnsupportedConfigurationError } from "../../src/errors";
 import {
   FittingBackend,
   type FitOptions,
@@ -34,7 +34,7 @@ const makeInput = (
 const fitWith = (
   layer: Layer.Layer<FittingBackend>,
   input: TrainingInput,
-): Effect.Effect<FittedParameters, FittingError> =>
+): Effect.Effect<FittedParameters, FittingError | UnsupportedConfigurationError> =>
   Effect.gen(function* () {
     const backend = yield* FittingBackend;
 
@@ -58,7 +58,15 @@ const evaluateContract = (parameters: FittedLinearParameters, timestamp: number)
 const expectFailure = async (
   layer: Layer.Layer<FittingBackend>,
   input: TrainingInput,
-): Promise<FittingError> => Effect.runPromise(Effect.flip(fitWith(layer, input)));
+): Promise<FittingError> => {
+  const error = await Effect.runPromise(Effect.flip(fitWith(layer, input)));
+
+  if (error instanceof FittingError) {
+    return error;
+  }
+
+  throw new Error(`Linear growth unexpectedly failed with ${error._tag}`);
+};
 
 /**
  * Register the behavior required of every linear fitting backend.

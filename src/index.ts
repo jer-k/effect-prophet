@@ -3,6 +3,7 @@ export {
   InputValidationError,
   ModelSerializationError,
   PredictionError,
+  UnsupportedConfigurationError,
   type FittingFailureReason,
   type ModelSerializationOperation,
   type PredictionFailureReason,

@@ -5,6 +5,7 @@ import {
   InputValidationError,
   PredictionError,
   inputValidationErrorFromIssue,
+  type UnsupportedConfigurationError,
 } from "./errors";
 import { FittingBackend, type FitOptions, type TrainingInput } from "./internal/fitting-backend";
 import { TimestampSchema } from "./internal/timestamp";
@@ -97,12 +98,16 @@ const makeFitOptions = (growth: FitOptions["growth"]): FitOptions => ({ growth }
  *
  * @param observationsInput - Untrusted encoded observations.
  * @param optionsInput - Optional untrusted fitting options.
- * @returns A fitted model, validation failure, or fitting failure.
+ * @returns A fitted model, validation failure, unsupported configuration, or fitting failure.
  */
 export const fit = Effect.fn("Prophet.fit")(function* (
   observationsInput: Parameters<typeof decodeObservations>[0],
   optionsInput?: Parameters<typeof decodeOptions>[0],
-): Effect.fn.Return<FittedProphet, InputValidationError | FittingError, FittingBackend> {
+): Effect.fn.Return<
+  FittedProphet,
+  InputValidationError | UnsupportedConfigurationError | FittingError,
+  FittingBackend
+> {
   const observations = yield* decodeObservations(observationsInput);
   const options = yield* decodeOptions(optionsInput);
 
