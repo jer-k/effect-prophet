@@ -1,0 +1,179 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "scaledPredictionTimes": [
+          -0.3,
+          0.0,
+          0.25,
+          1.0,
+          1.5
+        ],
+        "scaledTrainingTimes": [
+          0.0,
+          0.15,
+          0.4,
+          1.0
+        ],
+        "trend": [
+          -1.375,
+          4.25,
+          8.9375,
+          23.0,
+          32.375
+        ]
+      },
+      "id": "irregular-positive-extrapolation",
+      "kind": "fixed-linear-trend",
+      "observations": [
+        {
+          "timestamp": "2024-01-01T00:00:00.000Z",
+          "value": 8.0
+        },
+        {
+          "timestamp": "2024-01-02T12:00:00.000Z",
+          "value": 12.0
+        },
+        {
+          "timestamp": "2024-01-05T00:00:00.000Z",
+          "value": 15.0
+        },
+        {
+          "timestamp": "2024-01-11T00:00:00.000Z",
+          "value": 30.0
+        }
+      ],
+      "parameters": {
+        "intercept": 4.25,
+        "slope": 18.75,
+        "timeOrigin": 1704067200000,
+        "timeScale": 864000000
+      },
+      "predictionTimestamps": [
+        "2023-12-29T00:00:00.000Z",
+        "2024-01-01T00:00:00.000Z",
+        "2024-01-03T12:00:00.000Z",
+        "2024-01-11T00:00:00.000Z",
+        "2024-01-16T00:00:00.000Z"
+      ],
+      "tolerance": {
+        "absolute": 1e-12,
+        "relative": 1e-12
+      }
+    },
+    {
+      "expected": {
+        "scaledPredictionTimes": [
+          -0.16666666666666666,
+          0.0,
+          0.5,
+          1.3333333333333333
+        ],
+        "scaledTrainingTimes": [
+          0.0,
+          0.20833333333333334,
+          1.0
+        ],
+        "trend": [
+          -7.5,
+          -7.5,
+          -7.5,
+          -7.5
+        ]
+      },
+      "id": "constant-negative-trend",
+      "kind": "fixed-linear-trend",
+      "observations": [
+        {
+          "timestamp": "2024-02-01T00:00:00.000Z",
+          "value": -2.0
+        },
+        {
+          "timestamp": "2024-02-02T06:00:00.000Z",
+          "value": -4.0
+        },
+        {
+          "timestamp": "2024-02-07T00:00:00.000Z",
+          "value": -3.0
+        }
+      ],
+      "parameters": {
+        "intercept": -7.5,
+        "slope": 0.0,
+        "timeOrigin": 1706745600000,
+        "timeScale": 518400000
+      },
+      "predictionTimestamps": [
+        "2024-01-31T00:00:00.000Z",
+        "2024-02-01T00:00:00.000Z",
+        "2024-02-04T00:00:00.000Z",
+        "2024-02-09T00:00:00.000Z"
+      ],
+      "tolerance": {
+        "absolute": 1e-12,
+        "relative": 1e-12
+      }
+    },
+    {
+      "expected": {
+        "scaledPredictionTimes": [
+          -0.2,
+          0.0,
+          0.5,
+          1.0,
+          1.5
+        ],
+        "scaledTrainingTimes": [
+          0.0,
+          0.1,
+          0.45,
+          1.0
+        ],
+        "trend": [
+          44.5,
+          40.0,
+          28.750000000000004,
+          17.5,
+          6.25
+        ]
+      },
+      "id": "irregular-negative-slope",
+      "kind": "fixed-linear-trend",
+      "observations": [
+        {
+          "timestamp": "2024-03-10T00:00:00.000Z",
+          "value": 100.0
+        },
+        {
+          "timestamp": "2024-03-11T00:00:00.000Z",
+          "value": 90.0
+        },
+        {
+          "timestamp": "2024-03-14T12:00:00.000Z",
+          "value": 60.0
+        },
+        {
+          "timestamp": "2024-03-20T00:00:00.000Z",
+          "value": 20.0
+        }
+      ],
+      "parameters": {
+        "intercept": 40.0,
+        "slope": -22.5,
+        "timeOrigin": 1710028800000,
+        "timeScale": 864000000
+      },
+      "predictionTimestamps": [
+        "2024-03-08T00:00:00.000Z",
+        "2024-03-10T00:00:00.000Z",
+        "2024-03-15T00:00:00.000Z",
+        "2024-03-20T00:00:00.000Z",
+        "2024-03-25T00:00:00.000Z"
+      ],
+      "tolerance": {
+        "absolute": 1e-12,
+        "relative": 1e-12
+      }
+    }
+  ]
+}

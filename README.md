@@ -36,6 +36,7 @@ npm ci
 ```sh
 npm run build
 npm test
+npm run test:integration:prophet
 npm run test:rust
 npm run test:wasm
 npm run typecheck
@@ -53,7 +54,22 @@ Run the complete verification sequence with:
 npm run check
 ```
 
-`npm test` and `npm run test:wasm` generate ignored WASM bindings before running their respective integration tests.
+`npm test`, `npm run test:integration:prophet`, and `npm run test:wasm` generate ignored WASM bindings before running tests that exercise the Rust/WASM backend.
+
+The Prophet 1.4.0 compatibility suite is intentionally separate from normal tests. It reads committed references and requires neither Python nor Docker:
+
+```sh
+npm run test:integration:prophet
+```
+
+With Docker available, regenerate or verify the canonical cross-language fixtures separately:
+
+```sh
+npm run fixtures:generate
+npm run fixtures:check
+```
+
+See the [Prophet reference tooling guide](tools/prophet/README.md) for the pinned environments, provenance, and shared-mount design.
 
 ## Rust/WASM numerical backend
 

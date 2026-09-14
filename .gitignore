@@ -5,6 +5,9 @@ target/
 rust/prophet-wasm/pkg/
 *.tsbuildinfo
 .DS_Store
+.venv/
+__pycache__/
+.generated/
 
 .pi/
 .agents/

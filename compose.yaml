@@ -1,0 +1,44 @@
+name: effect-prophet-comparison
+
+x-prophet-reference: &prophet-reference
+  build:
+    context: .
+    dockerfile: tools/prophet/Dockerfile
+  image: effect-prophet/reference-fixtures:1.4.0
+  platform: linux/amd64
+  network_mode: none
+  read_only: true
+  tmpfs:
+    - /tmp
+
+services:
+  prophet-fixtures-generate:
+    <<: *prophet-reference
+    profiles: [fixtures-generate]
+    command: [generate, --output, /fixtures]
+    volumes:
+      - ./integration/fixtures/prophet-1.4.0:/fixtures
+
+  prophet-fixtures-check:
+    <<: *prophet-reference
+    profiles: [fixtures-check]
+    command: [check, --output, /fixtures]
+    volumes:
+      - ./integration/fixtures/prophet-1.4.0:/fixtures:ro
+
+  effect-prophet-fixtures:
+    build:
+      context: .
+      dockerfile: tools/docker/effect-prophet.Dockerfile
+    image: effect-prophet/fixture-tests:local
+    platform: linux/amd64
+    profiles: [fixtures-check]
+    depends_on:
+      prophet-fixtures-check:
+        condition: service_completed_successfully
+    network_mode: none
+    read_only: true
+    tmpfs:
+      - /tmp
+    volumes:
+      - ./integration/fixtures/prophet-1.4.0:/workspace/integration/fixtures/prophet-1.4.0:ro
