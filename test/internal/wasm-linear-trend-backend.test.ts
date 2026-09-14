@@ -2,9 +2,9 @@ import { Cause, Effect, Exit, Option, Predicate, Tracer } from "effect";
 import { describe, expect, it } from "vitest";
 
 import { FittingError, PredictionError } from "../../src/errors";
-import type { FittedLinearParameters } from "../../src/internal/fitting-backend";
+import { parseLinearModel, type LinearParameters } from "../../src/fitted-model";
 import { wasmLinearTrendFittingBackendLayer } from "../../src/internal/wasm-linear-trend-backend";
-import { fit, predict, type FittedProphet } from "../../src/prophet";
+import { fit, predict } from "../../src/prophet";
 import { registerFittingBackendConformance } from "./fitting-backend-conformance";
 
 const observations = [
@@ -15,13 +15,15 @@ const observations = [
 
 const predictionTimestamps = ["2024-01-01T00:00:03.000Z", "2024-01-01T00:00:04.000Z"] as const;
 
-const validLinearModel: FittedLinearParameters = {
+const validLinearParameters: LinearParameters = {
   model: "linear-trend",
   intercept: 2,
   slope: 6,
   timeOrigin: 1_704_067_200_000,
   timeScale: 2_000,
 };
+
+const validLinearModel = Effect.runSync(parseLinearModel(validLinearParameters));
 
 type EndedSpanStatus = Extract<Tracer.SpanStatus, { readonly _tag: "Ended" }>;
 
@@ -197,12 +199,13 @@ describe("Rust/WASM boundary tracing", () => {
       predict(validLinearModel, []).pipe(Effect.withTracer(recording.tracer)),
     );
 
-    const invalidModel: FittedProphet = {
-      ...validLinearModel,
+    const invalidModel: LinearParameters = {
+      ...validLinearParameters,
       intercept: Number.NaN,
     };
 
     const invalidModelExit = await Effect.runPromise(
+      // @ts-expect-error -- A plain backend record deliberately exercises the JavaScript runtime boundary.
       predict(invalidModel, [predictionTimestamps[0]]).pipe(
         Effect.withTracer(recording.tracer),
         Effect.exit,
@@ -217,13 +220,15 @@ describe("Rust/WASM boundary tracing", () => {
   it("marks a numerical prediction failure span failed without replacing its typed error", async () => {
     const recording = makeRecordingTracer();
 
-    const overflowingModel: FittedProphet = {
-      ...validLinearModel,
-      intercept: 0,
-      slope: Number.MAX_VALUE,
-      timeOrigin: 1_704_067_200_000,
-      timeScale: 1,
-    };
+    const overflowingModel = Effect.runSync(
+      parseLinearModel({
+        ...validLinearParameters,
+        intercept: 0,
+        slope: Number.MAX_VALUE,
+        timeOrigin: 1_704_067_200_000,
+        timeScale: 1,
+      }),
+    );
 
     const program = predict(overflowingModel, ["2024-01-01T00:00:00.002Z"]).pipe(
       Effect.withTracer(recording.tracer),

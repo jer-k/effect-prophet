@@ -186,6 +186,8 @@ const baseline = await Effect.runPromise(
 // { model: "constant-mean-baseline", level: 3.5 }
 ```
 
+Fitted model types are branded domain values. Callers obtain trusted models through `fit` or `decodeFittedModel`; plain object literals are intentionally not assignable to these types. `predict` and serialization still parse defensively at runtime to protect JavaScript callers and forged values. While the package API remains WIP, this is a deliberate type-level tightening without a change to the model fields or public operation shapes.
+
 Expected input, unsupported-configuration, fitting, and prediction failures remain in their respective typed Effect error channels.
 
 ## Tracing WASM operations

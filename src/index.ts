@@ -38,12 +38,15 @@ export {
 } from "./options";
 
 export {
-  fit,
-  predict,
-  type EncodedPredictionTimestamps,
   type FittedConstantProphet,
   type FittedLinearProphet,
   type FittedProphet,
+} from "./fitted-model";
+
+export {
+  fit,
+  predict,
+  type EncodedPredictionTimestamps,
   type Forecast,
   type Forecasts,
   type PredictionTimestamps,

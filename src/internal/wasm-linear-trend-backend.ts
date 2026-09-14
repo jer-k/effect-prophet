@@ -3,7 +3,8 @@ import { createRequire } from "node:module";
 import { Effect, Layer, Match } from "effect";
 
 import { FittingError, PredictionError, UnsupportedConfigurationError } from "../errors";
-import { FittingBackend, type FittedLinearParameters, type TrainingInput } from "./fitting-backend";
+import { parseLinearModel, type FittedLinearProphet, type LinearParameters } from "../fitted-model";
+import { FittingBackend, type TrainingInput } from "./fitting-backend";
 
 interface WasmLinearTrendModule {
   readonly fit_linear_trend: (timestamps: Float64Array, values: Float64Array) => Float64Array;
@@ -42,7 +43,7 @@ const fittingFailure = (
 const decodeFittedParameters = (
   packed: Float64Array,
   observationCount: number,
-): Effect.Effect<FittedLinearParameters, FittingError> => {
+): Effect.Effect<LinearParameters, FittingError> => {
   if (packed.length === 0) {
     return fittingFailure(
       "backend-failure",
@@ -64,12 +65,7 @@ const decodeFittedParameters = (
       intercept === undefined ||
       slope === undefined ||
       timeOrigin === undefined ||
-      timeScale === undefined ||
-      !Number.isFinite(intercept) ||
-      !Number.isFinite(slope) ||
-      !Number.isFinite(timeOrigin) ||
-      !Number.isFinite(timeScale) ||
-      timeScale <= 0
+      timeScale === undefined
     ) {
       return fittingFailure(
         "backend-failure",
@@ -78,13 +74,22 @@ const decodeFittedParameters = (
       );
     }
 
-    return Effect.succeed({
+    return parseLinearModel({
       model: "linear-trend",
       intercept,
       slope,
       timeOrigin,
       timeScale,
-    });
+    }).pipe(
+      Effect.mapError(
+        () =>
+          new FittingError({
+            reason: "backend-failure",
+            observationCount,
+            message: "WASM fitting backend returned invalid linear-trend parameters",
+          }),
+      ),
+    );
   }
 
   switch (resultStatus) {
@@ -135,7 +140,7 @@ const decodeFittedParameters = (
   }
 };
 
-const runWasmFit = (input: TrainingInput): Effect.Effect<FittedLinearParameters, FittingError> => {
+const runWasmFit = (input: TrainingInput): Effect.Effect<LinearParameters, FittingError> => {
   const observationCount = input.values.length;
 
   return Effect.try({
@@ -285,7 +290,7 @@ export const wasmLinearTrendFittingBackendLayer: Layer.Layer<FittingBackend> = L
  * @returns Ordered point predictions or a typed WASM/prediction failure.
  */
 export const predictLinearTrendWithWasm = (
-  model: FittedLinearParameters,
+  model: FittedLinearProphet,
   timestamps: ReadonlyArray<number>,
 ): Effect.Effect<ReadonlyArray<number>, PredictionError> => {
   const predictionCount = timestamps.length;

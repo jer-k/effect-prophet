@@ -7,6 +7,7 @@ import {
   inputValidationErrorFromIssue,
   type UnsupportedConfigurationError,
 } from "./errors";
+import { parseFittedModel, type FittedProphet } from "./fitted-model";
 import { FittingBackend, type FitOptions, type TrainingInput } from "./internal/fitting-backend";
 import { TimestampSchema } from "./internal/timestamp";
 import { predictLinearTrendWithWasm } from "./internal/wasm-linear-trend-backend";
@@ -18,36 +19,6 @@ export type EncodedPredictionTimestamps = ReadonlyArray<string>;
 
 /** Validated prediction timestamps represented as integer epoch milliseconds. */
 export type PredictionTimestamps = ReadonlyArray<number>;
-
-/** A fitted ordinary least-squares linear-trend model. */
-export interface FittedLinearProphet {
-  /** Identifies the model's trend equation. */
-  readonly model: "linear-trend";
-
-  /** Predicted value at `timeOrigin`. */
-  readonly intercept: number;
-
-  /** Change in the prediction over one `timeScale` interval. */
-  readonly slope: number;
-
-  /** Training timestamp mapped to scaled time zero. */
-  readonly timeOrigin: number;
-
-  /** Training timestamp interval mapped to one scaled time unit. */
-  readonly timeScale: number;
-}
-
-/** A fitted model from the explicitly named constant-mean example backend. */
-export interface FittedConstantProphet {
-  /** Identifies this model as the constant-mean example. */
-  readonly model: "constant-mean-baseline";
-
-  /** Constant value predicted at every timestamp. */
-  readonly level: number;
-}
-
-/** A fitted model accepted by the public prediction operation. */
-export type FittedProphet = FittedLinearProphet | FittedConstantProphet;
 
 /** One point forecast and its currently available trend component. */
 export interface Forecast {
@@ -115,37 +86,16 @@ export const fit = Effect.fn("Prophet.fit")(function* (
   const backend = yield* FittingBackend;
   const parameters = yield* backend.fit(input, makeFitOptions(options.growth));
 
-  if (parameters.model === "constant-mean-baseline") {
-    if (!Number.isFinite(parameters.level)) {
-      return yield* Effect.fail(
+  return yield* parseFittedModel(parameters).pipe(
+    Effect.mapError(
+      () =>
         new FittingError({
           reason: "backend-failure",
           observationCount: observations.length,
-          message: "Fitting backend returned a non-finite constant level",
+          message: "Fitting backend returned invalid fitted-model parameters",
         }),
-      );
-    }
-
-    return parameters;
-  }
-
-  if (
-    !Number.isFinite(parameters.intercept) ||
-    !Number.isFinite(parameters.slope) ||
-    !Number.isFinite(parameters.timeOrigin) ||
-    !Number.isFinite(parameters.timeScale) ||
-    parameters.timeScale <= 0
-  ) {
-    return yield* Effect.fail(
-      new FittingError({
-        reason: "backend-failure",
-        observationCount: observations.length,
-        message: "Fitting backend returned invalid linear-trend parameters",
-      }),
-    );
-  }
-
-  return parameters;
+    ),
+  );
 });
 
 /**
@@ -169,41 +119,26 @@ export const predict = Effect.fn("Prophet.predict")(function* (
     return [];
   }
 
-  if (model.model === "constant-mean-baseline") {
-    if (!Number.isFinite(model.level)) {
-      return yield* Effect.fail(
+  const parsedModel = yield* parseFittedModel(model).pipe(
+    Effect.mapError(
+      () =>
         new PredictionError({
           reason: "invalid-model",
           timestamp: firstTimestamp,
-          message: "Fitted model contains a non-finite constant level",
+          message: "Fitted model is invalid",
         }),
-      );
-    }
+    ),
+  );
 
+  if (parsedModel.model === "constant-mean-baseline") {
     return timestamps.map((timestamp): Forecast => ({
       timestamp,
-      value: model.level,
-      trend: model.level,
+      value: parsedModel.level,
+      trend: parsedModel.level,
     }));
   }
 
-  if (
-    !Number.isFinite(model.intercept) ||
-    !Number.isFinite(model.slope) ||
-    !Number.isFinite(model.timeOrigin) ||
-    !Number.isFinite(model.timeScale) ||
-    model.timeScale <= 0
-  ) {
-    return yield* Effect.fail(
-      new PredictionError({
-        reason: "invalid-model",
-        timestamp: firstTimestamp,
-        message: "Fitted model contains invalid linear-trend parameters",
-      }),
-    );
-  }
-
-  const predictions = yield* predictLinearTrendWithWasm(model, timestamps);
+  const predictions = yield* predictLinearTrendWithWasm(parsedModel, timestamps);
   const forecasts: Array<Forecast> = [];
 
   for (const [index, timestamp] of timestamps.entries()) {

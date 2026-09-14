@@ -1,7 +1,10 @@
 import { Context, type Effect } from "effect";
 
 import type { FittingError, UnsupportedConfigurationError } from "../errors";
+import type { Parameters } from "../fitted-model";
 import type { Growth } from "../options";
+
+export type { ConstantParameters, LinearParameters, Parameters } from "../fitted-model";
 
 /** Packed, index-aligned numerical observations supplied to a fitting backend. */
 export interface TrainingInput {
@@ -18,36 +21,6 @@ export interface FitOptions {
   readonly growth: Growth;
 }
 
-/** Parameters returned by a linear-trend fitting backend. */
-export interface FittedLinearParameters {
-  /** Identifies ordinary least-squares linear-trend parameters. */
-  readonly model: "linear-trend";
-
-  /** Predicted value at `timeOrigin`. */
-  readonly intercept: number;
-
-  /** Change in the prediction over one `timeScale` interval. */
-  readonly slope: number;
-
-  /** Training timestamp mapped to scaled time zero. */
-  readonly timeOrigin: number;
-
-  /** Training timestamp interval mapped to one scaled time unit. */
-  readonly timeScale: number;
-}
-
-/** Parameters returned by the explicitly named constant-mean example backend. */
-export interface FittedConstantParameters {
-  /** Identifies the constant-mean example model. */
-  readonly model: "constant-mean-baseline";
-
-  /** Constant value predicted at every timestamp. */
-  readonly level: number;
-}
-
-/** Fitted trend parameters understood by the public orchestration layer. */
-export type FittedParameters = FittedLinearParameters | FittedConstantParameters;
-
 /** Coarse-grained fitting capability implemented by TypeScript or WASM backends. */
 export interface FittingBackend {
   /**
@@ -60,7 +33,7 @@ export interface FittingBackend {
   readonly fit: (
     input: TrainingInput,
     options: FitOptions,
-  ) => Effect.Effect<FittedParameters, FittingError | UnsupportedConfigurationError>;
+  ) => Effect.Effect<Parameters, FittingError | UnsupportedConfigurationError>;
 }
 
 /** Effect context key for the fitting backend selected by the composition root. */
