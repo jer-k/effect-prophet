@@ -1,13 +1,22 @@
 import { createRequire } from "node:module";
 
-import { Effect, Layer, Match } from "effect";
+import { Effect, Layer, Predicate } from "effect";
 
-import { FittingError, PredictionError, UnsupportedConfigurationError } from "../errors";
+import {
+  FittingError,
+  PredictionError,
+  UnsupportedConfigurationError,
+  type WasmFailurePhase,
+} from "../errors";
 import { parseLinearModel, type FittedLinearProphet, type LinearParameters } from "../fitted-model";
-import { FittingBackend, type TrainingInput } from "./fitting-backend";
+import { FittingBackend } from "./fitting-backend";
 
-interface WasmLinearTrendModule {
+/** Host bindings required by the Rust/WASM linear-trend adapter. */
+export interface WasmLinearTrendModule {
+  /** Fit one complete linear trend and return the packed Rust protocol result. */
   readonly fit_linear_trend: (timestamps: Float64Array, values: Float64Array) => Float64Array;
+
+  /** Evaluate one complete timestamp batch and return the packed Rust protocol result. */
   readonly predict_linear_trend: (
     timestamps: Float64Array,
     intercept: number,
@@ -15,6 +24,21 @@ interface WasmLinearTrendModule {
     timeOrigin: number,
     timeScale: number,
   ) => Float64Array;
+}
+
+/** Lazy interop loader for the generated Rust/WASM host bindings. */
+export type WasmLinearTrendLoader = () => WasmLinearTrendModule;
+
+/** Internal fitting and prediction operations backed by one WASM module loader. */
+export interface WasmLinearTrendAdapter {
+  /** Fit through the configured WASM boundary. */
+  readonly fit: FittingBackend["fit"];
+
+  /** Predict through the configured WASM boundary. */
+  readonly predict: (
+    model: FittedLinearProphet,
+    timestamps: ReadonlyArray<number>,
+  ) => Effect.Effect<ReadonlyArray<number>, PredictionError>;
 }
 
 const require = createRequire(import.meta.url);
@@ -29,50 +53,89 @@ const status = {
   nonFiniteResult: 6,
 } as const;
 
-// SAFETY: This interface mirrors wasm-pack's generated declaration. Loading or calling missing bindings is caught and translated at each Effect boundary.
-const loadWasmLinearTrendModule = (): WasmLinearTrendModule =>
-  require("../../rust/prophet-wasm/pkg/prophet_wasm.js");
+// oxlint-disable-next-line anti-slop/no-unknown-parameters -- The generated Node module is untyped runtime input parsed at this adapter boundary.
+const parseWasmLinearTrendModule = (input: unknown): WasmLinearTrendModule => {
+  if (!Predicate.isObjectKeyword(input)) {
+    throw new TypeError("WASM linear-trend module must be an object");
+  }
+
+  if (
+    !Predicate.hasProperty(input, "fit_linear_trend") ||
+    !Predicate.isFunction(input.fit_linear_trend) ||
+    !Predicate.hasProperty(input, "predict_linear_trend") ||
+    !Predicate.isFunction(input.predict_linear_trend)
+  ) {
+    throw new TypeError("WASM linear-trend module is missing required exports");
+  }
+
+  // SAFETY: Both required properties were read from the untyped Node boundary and checked to be callable. Their returned values are parsed after every invocation rather than trusted from this annotation.
+  return input as WasmLinearTrendModule;
+};
+
+const loadWasmLinearTrendModule = (): WasmLinearTrendModule => {
+  const loaded: unknown = require("../../rust/prophet-wasm/pkg/prophet_wasm.js");
+
+  return parseWasmLinearTrendModule(loaded);
+};
+
+const makeFittingError = (
+  observationCount: number,
+  fields: {
+    readonly reason: "insufficient-observations" | "degenerate-observations" | "backend-failure";
+    readonly message: string;
+    readonly backendPhase?: WasmFailurePhase;
+  },
+  cause?: unknown,
+): FittingError => {
+  const schemaFields = {
+    ...fields,
+    observationCount,
+  };
+
+  return cause === undefined
+    ? new FittingError(schemaFields)
+    : new FittingError(schemaFields, { cause });
+};
 
 const fittingFailure = (
-  reason: "insufficient-observations" | "degenerate-observations" | "backend-failure",
   observationCount: number,
-  message: string,
-): Effect.Effect<never, FittingError> =>
-  Effect.fail(new FittingError({ reason, observationCount, message }));
+  fields: Parameters<typeof makeFittingError>[1],
+): Effect.Effect<never, FittingError> => Effect.fail(makeFittingError(observationCount, fields));
+
+const fittingProtocolFailure = (observationCount: number): Effect.Effect<never, FittingError> =>
+  fittingFailure(observationCount, {
+    reason: "backend-failure",
+    backendPhase: "protocol",
+    message: "WASM fitting backend returned a malformed protocol result",
+  });
 
 const decodeFittedParameters = (
   packed: Float64Array,
   observationCount: number,
 ): Effect.Effect<LinearParameters, FittingError> => {
-  if (packed.length === 0) {
-    return fittingFailure(
-      "backend-failure",
-      observationCount,
-      "WASM fitting backend returned a malformed result",
-    );
+  if (!(packed instanceof Float64Array) || packed.length === 0) {
+    return fittingProtocolFailure(observationCount);
   }
 
   const resultStatus = packed[0];
 
+  if (
+    resultStatus === undefined ||
+    !Number.isFinite(resultStatus) ||
+    !Number.isInteger(resultStatus)
+  ) {
+    return fittingProtocolFailure(observationCount);
+  }
+
   if (resultStatus === status.success) {
+    if (packed.length !== 5) {
+      return fittingProtocolFailure(observationCount);
+    }
+
     const intercept = packed[1];
     const slope = packed[2];
     const timeOrigin = packed[3];
     const timeScale = packed[4];
-
-    if (
-      packed.length !== 5 ||
-      intercept === undefined ||
-      slope === undefined ||
-      timeOrigin === undefined ||
-      timeScale === undefined
-    ) {
-      return fittingFailure(
-        "backend-failure",
-        observationCount,
-        "WASM fitting backend returned invalid linear-trend parameters",
-      );
-    }
 
     return parseLinearModel({
       model: "linear-trend",
@@ -81,205 +144,334 @@ const decodeFittedParameters = (
       timeOrigin,
       timeScale,
     }).pipe(
-      Effect.mapError(
-        () =>
-          new FittingError({
-            reason: "backend-failure",
-            observationCount,
-            message: "WASM fitting backend returned invalid linear-trend parameters",
-          }),
+      Effect.mapError(() =>
+        makeFittingError(observationCount, {
+          reason: "backend-failure",
+          backendPhase: "protocol",
+          message: "WASM fitting backend returned invalid linear-trend parameters",
+        }),
       ),
     );
   }
 
+  if (packed.length !== 1) {
+    return fittingProtocolFailure(observationCount);
+  }
+
   switch (resultStatus) {
     case status.insufficientObservations:
-      return fittingFailure(
-        "insufficient-observations",
-        observationCount,
-        "At least two observations are required to fit a linear trend",
-      );
+      return fittingFailure(observationCount, {
+        reason: "insufficient-observations",
+        message: "At least two observations are required to fit a linear trend",
+      });
 
     case status.zeroTimeVariance:
-      return fittingFailure(
-        "degenerate-observations",
-        observationCount,
-        "A linear trend requires at least two distinct timestamps",
-      );
+      return fittingFailure(observationCount, {
+        reason: "degenerate-observations",
+        message: "A linear trend requires at least two distinct timestamps",
+      });
 
     case status.nonFiniteResult:
-      return fittingFailure(
-        "degenerate-observations",
-        observationCount,
-        "Training observations did not produce finite linear-trend parameters",
-      );
+      return fittingFailure(observationCount, {
+        reason: "degenerate-observations",
+        message: "Training observations did not produce finite linear-trend parameters",
+      });
 
     case status.lengthMismatch:
-      return fittingFailure(
-        "backend-failure",
-        observationCount,
-        "Training timestamps and values must have equal lengths",
-      );
+      return fittingFailure(observationCount, {
+        reason: "backend-failure",
+        message: "Training timestamps and values must have equal lengths",
+      });
 
     case status.nonFiniteTimestamp:
-      return fittingFailure(
-        "backend-failure",
-        observationCount,
-        "Training timestamps must be finite",
-      );
+      return fittingFailure(observationCount, {
+        reason: "backend-failure",
+        message: "Training timestamps must be finite",
+      });
 
     case status.nonFiniteValue:
-      return fittingFailure("backend-failure", observationCount, "Training values must be finite");
+      return fittingFailure(observationCount, {
+        reason: "backend-failure",
+        message: "Training values must be finite",
+      });
 
     default:
-      return fittingFailure(
-        "backend-failure",
-        observationCount,
-        "WASM fitting backend returned an unknown status",
-      );
+      return fittingProtocolFailure(observationCount);
   }
 };
 
-const runWasmFit = (input: TrainingInput): Effect.Effect<LinearParameters, FittingError> => {
-  const observationCount = input.values.length;
+const makePredictionError = (
+  timestamp: number,
+  fields: {
+    readonly reason: "invalid-model" | "non-finite-forecast" | "backend-failure";
+    readonly message: string;
+    readonly backendPhase?: WasmFailurePhase;
+  },
+  cause?: unknown,
+): PredictionError => {
+  const schemaFields = {
+    ...fields,
+    timestamp,
+  };
 
-  return Effect.try({
-    try: () => loadWasmLinearTrendModule().fit_linear_trend(input.timestamps, input.values),
-    catch: () =>
-      new FittingError({
-        reason: "backend-failure",
-        observationCount,
-        message: "Failed to load or execute the WASM fitting backend",
-      }),
-  }).pipe(
-    Effect.flatMap((packed) => decodeFittedParameters(packed, observationCount)),
-    Effect.withSpan(
-      "effect-prophet.wasm.fit",
-      {
-        attributes: {
-          "effect_prophet.backend.type": "rust-wasm",
-          "effect_prophet.operation": "fit",
-          "effect_prophet.model.type": "linear-trend",
-          "effect_prophet.growth": "linear",
-          "effect_prophet.observation.count": observationCount,
-        },
-      },
-      { captureStackTrace: false },
-    ),
-  );
+  return cause === undefined
+    ? new PredictionError(schemaFields)
+    : new PredictionError(schemaFields, { cause });
 };
 
 const predictionFailure = (
-  reason: "invalid-model" | "non-finite-forecast" | "backend-failure",
   timestamp: number,
-  message: string,
-): Effect.Effect<never, PredictionError> =>
-  Effect.fail(new PredictionError({ reason, timestamp, message }));
+  fields: Parameters<typeof makePredictionError>[1],
+): Effect.Effect<never, PredictionError> => Effect.fail(makePredictionError(timestamp, fields));
 
-const predictionFailureTimestamp = (
-  packed: Float64Array,
-  timestamps: ReadonlyArray<number>,
-): number => {
-  const firstTimestamp = timestamps[0];
-
-  if (firstTimestamp === undefined) {
-    return 0;
-  }
-
-  const index = packed[1];
-
-  if (index === undefined || !Number.isSafeInteger(index)) {
-    return firstTimestamp;
-  }
-
-  return timestamps[index] ?? firstTimestamp;
-};
+const predictionProtocolFailure = (timestamp: number): Effect.Effect<never, PredictionError> =>
+  predictionFailure(timestamp, {
+    reason: "backend-failure",
+    backendPhase: "protocol",
+    message: "WASM prediction backend returned a malformed protocol result",
+  });
 
 const decodePredictions = (
   packed: Float64Array,
   timestamps: ReadonlyArray<number>,
 ): Effect.Effect<ReadonlyArray<number>, PredictionError> => {
-  const firstTimestamp = timestamps[0] ?? 0;
+  const firstTimestamp = timestamps[0];
 
-  if (packed.length === 0) {
-    return predictionFailure(
-      "backend-failure",
-      firstTimestamp,
-      "WASM prediction backend returned a malformed result",
-    );
+  if (firstTimestamp === undefined) {
+    return Effect.succeed([]);
+  }
+
+  if (!(packed instanceof Float64Array) || packed.length === 0) {
+    return predictionProtocolFailure(firstTimestamp);
   }
 
   const resultStatus = packed[0];
 
+  if (
+    resultStatus === undefined ||
+    !Number.isFinite(resultStatus) ||
+    !Number.isInteger(resultStatus)
+  ) {
+    return predictionProtocolFailure(firstTimestamp);
+  }
+
   if (resultStatus === status.success) {
     if (packed.length !== timestamps.length + 1) {
-      return predictionFailure(
-        "backend-failure",
-        firstTimestamp,
-        "WASM prediction backend returned the wrong number of forecasts",
-      );
+      return predictionProtocolFailure(firstTimestamp);
     }
 
     const predictions = packed.slice(1);
 
-    for (const [index, prediction] of predictions.entries()) {
+    for (const prediction of predictions) {
       if (!Number.isFinite(prediction)) {
-        return predictionFailure(
-          "non-finite-forecast",
-          timestamps[index] ?? firstTimestamp,
-          "WASM prediction backend returned a non-finite forecast",
-        );
+        return predictionProtocolFailure(firstTimestamp);
       }
     }
 
     return Effect.succeed(Array.from(predictions));
   }
 
-  const failedTimestamp = predictionFailureTimestamp(packed, timestamps);
+  if (packed.length === 1) {
+    switch (resultStatus) {
+      case status.nonFiniteTimestamp:
+      case status.zeroTimeVariance:
+      case status.nonFiniteResult:
+        return predictionFailure(firstTimestamp, {
+          reason: "invalid-model",
+          message: "WASM prediction backend rejected the fitted model metadata",
+        });
 
-  if (resultStatus === status.zeroTimeVariance) {
-    return predictionFailure(
-      "invalid-model",
-      failedTimestamp,
-      "Fitted model contains an invalid time scale",
-    );
+      default:
+        return predictionProtocolFailure(firstTimestamp);
+    }
   }
 
-  if (resultStatus === status.nonFiniteResult) {
-    return predictionFailure(
-      "non-finite-forecast",
-      failedTimestamp,
-      "Linear-trend evaluation produced a non-finite forecast",
-    );
+  if (packed.length !== 2) {
+    return predictionProtocolFailure(firstTimestamp);
   }
 
-  return predictionFailure(
-    "backend-failure",
-    failedTimestamp,
-    "WASM prediction backend rejected the prediction input",
-  );
+  const failedIndex = packed[1];
+
+  if (
+    failedIndex === undefined ||
+    !Number.isSafeInteger(failedIndex) ||
+    failedIndex < 0 ||
+    failedIndex >= timestamps.length
+  ) {
+    return predictionProtocolFailure(firstTimestamp);
+  }
+
+  const failedTimestamp = timestamps[failedIndex];
+
+  if (failedTimestamp === undefined) {
+    return predictionProtocolFailure(firstTimestamp);
+  }
+
+  switch (resultStatus) {
+    case status.nonFiniteTimestamp:
+      return predictionFailure(failedTimestamp, {
+        reason: "backend-failure",
+        message: "WASM prediction backend rejected a prediction timestamp",
+      });
+
+    case status.nonFiniteResult:
+      return predictionFailure(failedTimestamp, {
+        reason: "non-finite-forecast",
+        message: "Linear-trend evaluation produced a non-finite forecast",
+      });
+
+    default:
+      return predictionProtocolFailure(firstTimestamp);
+  }
 };
+
+const fitSpanOptions = (observationCount: number) => ({
+  attributes: {
+    "effect_prophet.backend.type": "rust-wasm",
+    "effect_prophet.operation": "fit",
+    "effect_prophet.model.type": "linear-trend",
+    "effect_prophet.growth": "linear",
+    "effect_prophet.observation.count": observationCount,
+  },
+});
+
+const predictSpanOptions = (predictionCount: number) => ({
+  attributes: {
+    "effect_prophet.backend.type": "rust-wasm",
+    "effect_prophet.operation": "predict",
+    "effect_prophet.model.type": "linear-trend",
+    "effect_prophet.prediction.count": predictionCount,
+  },
+});
+
+/**
+ * Construct a lazy WASM adapter around an explicit host-binding loader.
+ *
+ * Construction performs no loading. Each non-short-circuited operation parses
+ * the loaded export shape, invokes one external binding, and decodes its packed
+ * response inside the existing coarse WASM span.
+ *
+ * @param loadModule - Lazy loader for generated or in-memory WASM bindings.
+ * @returns Fitting and prediction operations using the supplied boundary.
+ */
+export const makeWasmLinearTrendAdapter = (
+  loadModule: WasmLinearTrendLoader,
+): WasmLinearTrendAdapter => {
+  const fit: WasmLinearTrendAdapter["fit"] = (input, options) => {
+    if (options.growth !== "linear") {
+      return Effect.fail(
+        new UnsupportedConfigurationError({
+          option: "growth",
+          received: options.growth,
+          supported: ["linear"],
+          message: `The WASM linear-trend backend does not support ${options.growth} growth`,
+        }),
+      );
+    }
+
+    const observationCount = input.values.length;
+
+    return Effect.gen(function* () {
+      const module = yield* Effect.try({
+        try: () => parseWasmLinearTrendModule(loadModule()),
+        catch: (cause) =>
+          makeFittingError(
+            observationCount,
+            {
+              reason: "backend-failure",
+              backendPhase: "load",
+              message: "Failed to load the WASM fitting backend",
+            },
+            cause,
+          ),
+      });
+
+      const packed = yield* Effect.try({
+        try: () => module.fit_linear_trend(input.timestamps, input.values),
+        catch: (cause) =>
+          makeFittingError(
+            observationCount,
+            {
+              reason: "backend-failure",
+              backendPhase: "execute",
+              message: "Failed to execute the WASM fitting backend",
+            },
+            cause,
+          ),
+      });
+
+      return yield* decodeFittedParameters(packed, observationCount);
+    }).pipe(
+      Effect.withSpan("effect-prophet.wasm.fit", fitSpanOptions(observationCount), {
+        captureStackTrace: false,
+      }),
+    );
+  };
+
+  const predict: WasmLinearTrendAdapter["predict"] = (model, timestamps) => {
+    const firstTimestamp = timestamps[0];
+
+    if (firstTimestamp === undefined) {
+      return Effect.succeed([]);
+    }
+
+    const predictionCount = timestamps.length;
+
+    return Effect.gen(function* () {
+      const module = yield* Effect.try({
+        try: () => parseWasmLinearTrendModule(loadModule()),
+        catch: (cause) =>
+          makePredictionError(
+            firstTimestamp,
+            {
+              reason: "backend-failure",
+              backendPhase: "load",
+              message: "Failed to load the WASM prediction backend",
+            },
+            cause,
+          ),
+      });
+
+      const packedTimestamps = new Float64Array(timestamps);
+
+      const packed = yield* Effect.try({
+        try: () =>
+          module.predict_linear_trend(
+            packedTimestamps,
+            model.intercept,
+            model.slope,
+            model.timeOrigin,
+            model.timeScale,
+          ),
+        catch: (cause) =>
+          makePredictionError(
+            firstTimestamp,
+            {
+              reason: "backend-failure",
+              backendPhase: "execute",
+              message: "Failed to execute the WASM prediction backend",
+            },
+            cause,
+          ),
+      });
+
+      return yield* decodePredictions(packed, timestamps);
+    }).pipe(
+      Effect.withSpan("effect-prophet.wasm.predict", predictSpanOptions(predictionCount), {
+        captureStackTrace: false,
+      }),
+    );
+  };
+
+  return { fit, predict };
+};
+
+const defaultWasmLinearTrendAdapter = makeWasmLinearTrendAdapter(loadWasmLinearTrendModule);
 
 /** Rust/WASM fitting Layer backed by one coarse linear-trend fit operation. */
 export const wasmLinearTrendFittingBackendLayer: Layer.Layer<FittingBackend> = Layer.succeed(
   FittingBackend,
-  {
-    fit: (input, options) =>
-      Match.value(options.growth).pipe(
-        Match.when("linear", () => runWasmFit(input)),
-        Match.when("flat", (received) =>
-          Effect.fail(
-            new UnsupportedConfigurationError({
-              option: "growth",
-              received,
-              supported: ["linear"],
-              message: `The WASM linear-trend backend does not support ${received} growth`,
-            }),
-          ),
-        ),
-        Match.exhaustive,
-      ),
-  },
+  { fit: defaultWasmLinearTrendAdapter.fit },
 );
 
 /**
@@ -289,44 +481,4 @@ export const wasmLinearTrendFittingBackendLayer: Layer.Layer<FittingBackend> = L
  * @param timestamps - Validated epoch-millisecond prediction timestamps.
  * @returns Ordered point predictions or a typed WASM/prediction failure.
  */
-export const predictLinearTrendWithWasm = (
-  model: FittedLinearProphet,
-  timestamps: ReadonlyArray<number>,
-): Effect.Effect<ReadonlyArray<number>, PredictionError> => {
-  const predictionCount = timestamps.length;
-
-  if (predictionCount === 0) {
-    return Effect.succeed([]);
-  }
-
-  return Effect.try({
-    try: () =>
-      loadWasmLinearTrendModule().predict_linear_trend(
-        new Float64Array(timestamps),
-        model.intercept,
-        model.slope,
-        model.timeOrigin,
-        model.timeScale,
-      ),
-    catch: () =>
-      new PredictionError({
-        reason: "backend-failure",
-        timestamp: timestamps[0] ?? 0,
-        message: "Failed to load or execute the WASM prediction backend",
-      }),
-  }).pipe(
-    Effect.flatMap((packed) => decodePredictions(packed, timestamps)),
-    Effect.withSpan(
-      "effect-prophet.wasm.predict",
-      {
-        attributes: {
-          "effect_prophet.backend.type": "rust-wasm",
-          "effect_prophet.operation": "predict",
-          "effect_prophet.model.type": "linear-trend",
-          "effect_prophet.prediction.count": predictionCount,
-        },
-      },
-      { captureStackTrace: false },
-    ),
-  );
-};
+export const predictLinearTrendWithWasm = defaultWasmLinearTrendAdapter.predict;

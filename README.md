@@ -89,7 +89,11 @@ The generated JavaScript is the adapter between Node and the low-level WASM ABI.
 
 A successful fit returns `[0, intercept, slope, timeOrigin, timeScale]`. Timestamps are transformed with `(timestamp - timeOrigin) / timeScale`, where the origin and scale are the minimum timestamp and training range. This removes large epoch offsets and maps the training span to `[0, 1]`; prediction must retain and reuse the same metadata. The fitted equation is `intercept + slope × scaledTime`.
 
-A failed fit returns a one-element packed array containing a `LinearTrendFitStatus` code. Codes distinguish insufficient observations, mismatched array lengths, non-finite timestamps or values, zero time variance, and non-finite numerical results. Batch prediction returns `[0, ...predictions]` on success and a status with the failing timestamp index when evaluation fails. The TypeScript boundary translates these explicit protocol results into the public Effect error channel without implementing the numerical operations itself.
+A failed fit returns a one-element packed array containing a `LinearTrendFitStatus` code. Codes distinguish insufficient observations, mismatched array lengths, non-finite timestamps or values, zero time variance, and non-finite numerical results. Batch prediction returns `[0, ...predictions]` on success, a one-element status for invalid model metadata, and a status plus the exact failing timestamp index when evaluation fails.
+
+The TypeScript adapter enforces the packed protocol strictly. Results must be `Float64Array` values with the exact frame length, documented integer status, valid model parameters or finite predictions, and an in-range safe-integer evaluation index where required. Wrong containers, unknown statuses, extra entries, and malformed claimed successes fail as `backend-failure` with `backendPhase: "protocol"` instead of being interpreted as numerical outcomes.
+
+The generated Node module is loaded lazily only after option and empty-prediction short circuits. Loading and required-export parsing fail with `backendPhase: "load"`; exceptions or WASM traps raised by a binding fail with `backendPhase: "execute"`. The adapter translates these boundary failures into the public Effect error channel without implementing the numerical operations itself.
 
 Generated `pkg` and Cargo `target` artifacts are ignored rather than committed. They are reproducible on demand from the committed `Cargo.lock`, exact `wasm-bindgen` dependency, `rust-toolchain.toml`, and documented `wasm-pack` version. This keeps generated binary and glue diffs out of review while the spike is private; shipping an npm package will require a separate decision about when and where release artifacts are built.
 
@@ -234,11 +238,13 @@ The public error channel uses five tagged categories:
 
 - `InputValidationError` includes the input boundary and structured schema issues.
 - `UnsupportedConfigurationError` identifies a valid option rejected by the selected backend and includes the option, received value, and non-empty supported-value list.
-- `FittingError` includes a reason and observation count.
-- `PredictionError` includes a reason and the timestamp being evaluated.
+- `FittingError` includes a reason, observation count, and optional WASM backend phase.
+- `PredictionError` includes a reason, the relevant timestamp, and optional WASM backend phase.
 - `ModelSerializationError` includes the failed operation and structured schema issues.
 
-Messages supplement these fields for people; callers can branch on `_tag` and inspect structured context without parsing a message. Expected invalid input and numerical-domain failures belong in the typed error channel. Violated internal invariants and programming errors remain defects rather than being converted into broad domain errors. Stack traces are not included in the errors' schema payloads.
+Messages supplement these fields for people; callers can branch on `_tag` and inspect structured context without parsing a message. When a failure originates in WASM adapter mechanics, `backendPhase` distinguishes `"load"`, `"execute"`, and `"protocol"` failures. Ordinary numerical statuses retain their domain reason and do not fabricate a backend phase.
+
+Loading and execution failures also retain the original exception by identity in the runtime-only, non-enumerable `cause` property. Causes can contain local paths or other sensitive runtime details, so they are deliberately absent from Effect Schema encoding and ordinary JSON fields; inspect them explicitly only when debugging. Expected invalid input and numerical-domain failures belong in the typed error channel. Violated internal invariants and programming errors remain defects rather than being converted into broad domain errors. Stack traces are not included in the errors' schema payloads.
 
 ## Package layout
 

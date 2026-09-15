@@ -9,6 +9,7 @@ export {
   type PredictionFailureReason,
   type ValidationInput,
   type ValidationIssue,
+  type WasmFailurePhase,
 } from "./errors";
 
 export {
