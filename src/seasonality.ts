@@ -91,7 +91,7 @@ const SeasonalityLayoutFieldsSchema = Schema.Struct({
 
 type SeasonalityLayoutFields = typeof SeasonalityLayoutFieldsSchema.Type;
 
-const seasonalityLayoutIsConsistent = Schema.makeFilter<SeasonalityLayoutFields>((layout) => {
+const consistentSeasonalityLayout = Schema.makeFilter<SeasonalityLayoutFields>((layout) => {
   const names = new Set<string>();
   const issues: Array<{ readonly path: ReadonlyArray<PropertyKey>; readonly issue: string }> = [];
   let expectedOffset = 0;
@@ -146,7 +146,7 @@ const seasonalityLayoutIsConsistent = Schema.makeFilter<SeasonalityLayoutFields>
 
 /** Runtime schema for a parsed, deterministic seasonality coefficient layout. */
 export const SeasonalityLayoutSchema = SeasonalityLayoutFieldsSchema.check(
-  seasonalityLayoutIsConsistent,
+  consistentSeasonalityLayout,
 ).pipe(Schema.brand("effect-prophet/SeasonalityLayout"));
 
 /** One seasonal component's identity and contiguous coefficient range. */

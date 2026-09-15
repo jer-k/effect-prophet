@@ -52,7 +52,7 @@ const LinearAdditiveParametersFieldsSchema = Schema.Struct({
 
 type LinearAdditiveParametersFields = typeof LinearAdditiveParametersFieldsSchema.Type;
 
-const linearAdditiveParametersAreConsistent = Schema.makeFilter<LinearAdditiveParametersFields>(
+const consistentLinearAdditiveParameters = Schema.makeFilter<LinearAdditiveParametersFields>(
   (parameters) => {
     const issues: Array<{ readonly path: ReadonlyArray<PropertyKey>; readonly issue: string }> = [];
     const coefficientCount = parameters.seasonalities.coefficientCount;
@@ -94,7 +94,7 @@ const linearAdditiveParametersAreConsistent = Schema.makeFilter<LinearAdditivePa
 );
 
 const LinearAdditiveParametersSchema = LinearAdditiveParametersFieldsSchema.check(
-  linearAdditiveParametersAreConsistent,
+  consistentLinearAdditiveParameters,
 );
 
 const ParametersSchema = Schema.Union([LinearParametersSchema, ConstantParametersSchema]);
