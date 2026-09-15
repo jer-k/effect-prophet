@@ -1,6 +1,4 @@
-import { createRequire } from "node:module";
-
-import { Effect, Layer, Predicate } from "effect";
+import { Effect, Layer } from "effect";
 
 import {
   FittingError,
@@ -10,24 +8,10 @@ import {
 } from "../errors";
 import { parseLinearModel, type FittedLinearProphet, type LinearParameters } from "../fitted-model";
 import { FittingBackend } from "./fitting-backend";
+import { loadProphetWasmModule, type LinearTrendWasmBindings } from "./prophet-wasm-module";
 
-/** Host bindings required by the Rust/WASM linear-trend adapter. */
-export interface WasmLinearTrendModule {
-  /** Fit one complete linear trend and return the packed Rust protocol result. */
-  readonly fit_linear_trend: (timestamps: Float64Array, values: Float64Array) => Float64Array;
-
-  /** Evaluate one complete timestamp batch and return the packed Rust protocol result. */
-  readonly predict_linear_trend: (
-    timestamps: Float64Array,
-    intercept: number,
-    slope: number,
-    timeOrigin: number,
-    timeScale: number,
-  ) => Float64Array;
-}
-
-/** Lazy interop loader for the generated Rust/WASM host bindings. */
-export type WasmLinearTrendLoader = () => WasmLinearTrendModule;
+/** Lazy loader for checked Rust/WASM linear-trend bindings. */
+export type WasmLinearTrendLoader = () => LinearTrendWasmBindings;
 
 /** Internal fitting and prediction operations backed by one WASM module loader. */
 export interface WasmLinearTrendAdapter {
@@ -41,8 +25,6 @@ export interface WasmLinearTrendAdapter {
   ) => Effect.Effect<ReadonlyArray<number>, PredictionError>;
 }
 
-const require = createRequire(import.meta.url);
-
 const status = {
   success: 0,
   insufficientObservations: 1,
@@ -52,31 +34,6 @@ const status = {
   zeroTimeVariance: 5,
   nonFiniteResult: 6,
 } as const;
-
-// oxlint-disable-next-line anti-slop/no-unknown-parameters -- The generated Node module is untyped runtime input parsed at this adapter boundary.
-const parseWasmLinearTrendModule = (input: unknown): WasmLinearTrendModule => {
-  if (!Predicate.isObjectKeyword(input)) {
-    throw new TypeError("WASM linear-trend module must be an object");
-  }
-
-  if (
-    !Predicate.hasProperty(input, "fit_linear_trend") ||
-    !Predicate.isFunction(input.fit_linear_trend) ||
-    !Predicate.hasProperty(input, "predict_linear_trend") ||
-    !Predicate.isFunction(input.predict_linear_trend)
-  ) {
-    throw new TypeError("WASM linear-trend module is missing required exports");
-  }
-
-  // SAFETY: Both required properties were read from the untyped Node boundary and checked to be callable. Their returned values are parsed after every invocation rather than trusted from this annotation.
-  return input as WasmLinearTrendModule;
-};
-
-const loadWasmLinearTrendModule = (): WasmLinearTrendModule => {
-  const loaded: unknown = require("../../rust/prophet-wasm/pkg/prophet_wasm.js");
-
-  return parseWasmLinearTrendModule(loaded);
-};
 
 const makeFittingError = (
   observationCount: number,
@@ -373,7 +330,7 @@ export const makeWasmLinearTrendAdapter = (
 
     return Effect.gen(function* () {
       const module = yield* Effect.try({
-        try: () => parseWasmLinearTrendModule(loadModule()),
+        try: loadModule,
         catch: (cause) =>
           makeFittingError(
             observationCount,
@@ -419,7 +376,7 @@ export const makeWasmLinearTrendAdapter = (
 
     return Effect.gen(function* () {
       const module = yield* Effect.try({
-        try: () => parseWasmLinearTrendModule(loadModule()),
+        try: loadModule,
         catch: (cause) =>
           makePredictionError(
             firstTimestamp,
@@ -466,7 +423,7 @@ export const makeWasmLinearTrendAdapter = (
   return { fit, predict };
 };
 
-const defaultWasmLinearTrendAdapter = makeWasmLinearTrendAdapter(loadWasmLinearTrendModule);
+const defaultWasmLinearTrendAdapter = makeWasmLinearTrendAdapter(loadProphetWasmModule);
 
 /** Rust/WASM fitting Layer backed by one coarse linear-trend fit operation. */
 export const wasmLinearTrendFittingBackendLayer: Layer.Layer<FittingBackend> = Layer.succeed(

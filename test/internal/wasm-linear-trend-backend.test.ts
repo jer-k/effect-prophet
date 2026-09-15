@@ -4,9 +4,12 @@ import { describe, expect, it } from "vitest";
 import { FittingError, PredictionError } from "../../src/errors";
 import { parseLinearModel, type LinearParameters } from "../../src/fitted-model";
 import {
+  assertProphetWasmModule,
+  type LinearTrendWasmBindings,
+} from "../../src/internal/prophet-wasm-module";
+import {
   makeWasmLinearTrendAdapter,
   wasmLinearTrendFittingBackendLayer,
-  type WasmLinearTrendModule,
 } from "../../src/internal/wasm-linear-trend-backend";
 import { fit, predict } from "../../src/prophet";
 import { registerFittingBackendConformance } from "./fitting-backend-conformance";
@@ -100,7 +103,7 @@ const linearFitOptions = { growth: "linear" } as const;
 const moduleReturning = (
   fitResult: Float64Array,
   predictionResult: Float64Array,
-): WasmLinearTrendModule => ({
+): LinearTrendWasmBindings => ({
   fit_linear_trend: () => fitResult,
   predict_linear_trend: () => predictionResult,
 });
@@ -197,10 +200,15 @@ describe("Rust/WASM adapter boundary", () => {
   });
 
   it("rejects malformed module exports during loading", async () => {
-    const adapter = makeWasmLinearTrendAdapter(
-      // @ts-expect-error -- Missing exports deliberately exercise the untyped Node module boundary.
-      () => ({ fit_linear_trend: () => new Float64Array([0, 2, 6, 100, 200]) }),
-    );
+    const adapter = makeWasmLinearTrendAdapter(() => {
+      const loaded = {
+        fit_linear_trend: () => new Float64Array([0, 2, 6, 100, 200]),
+      };
+
+      assertProphetWasmModule(loaded);
+
+      return loaded;
+    });
 
     const error = await Effect.runPromise(Effect.flip(adapter.fit(fittingInput, linearFitOptions)));
 
