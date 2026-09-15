@@ -8,6 +8,8 @@ import {
 const validModule: ProphetWasmModule = {
   fit_linear_trend: () => new Float64Array([0, 2, 6, 100, 200]),
   predict_linear_trend: () => new Float64Array([0, 11]),
+  fit_additive_ridge: () => new Float64Array([0, 2, 6, 100, 200, 8, 4, 0, 0, 0, 0]),
+  predict_additive_ridge: () => new Float64Array([0, 11, 1, 12, 1]),
 };
 
 describe("Prophet WASM module boundary", () => {
@@ -40,6 +42,20 @@ describe("Prophet WASM module boundary", () => {
       "a non-callable prediction export",
       { ...validModule, predict_linear_trend: 1 },
       "Prophet WASM module export predict_linear_trend must be a function",
+    ],
+    [
+      "a missing additive fit export",
+      {
+        fit_linear_trend: validModule.fit_linear_trend,
+        predict_linear_trend: validModule.predict_linear_trend,
+        predict_additive_ridge: validModule.predict_additive_ridge,
+      },
+      "Prophet WASM module export fit_additive_ridge must be a function",
+    ],
+    [
+      "a non-callable additive prediction export",
+      { ...validModule, predict_additive_ridge: 1 },
+      "Prophet WASM module export predict_additive_ridge must be a function",
     ],
   ])("rejects %s", (_label, loaded, message) => {
     expect(() => assertProphetWasmModule(loaded)).toThrowError(message);

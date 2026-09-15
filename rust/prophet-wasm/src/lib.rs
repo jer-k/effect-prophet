@@ -1,6 +1,10 @@
 use wasm_bindgen::prelude::wasm_bindgen;
 
+pub mod additive_ridge;
+pub mod fourier;
 pub mod linear_trend;
+pub mod ridge_least_squares;
+mod wasm_additive;
 
 use linear_trend::{LinearTrend, LinearTrendError, fit_linear_trend as fit_linear_trend_kernel};
 

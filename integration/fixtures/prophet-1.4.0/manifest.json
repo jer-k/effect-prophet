@@ -3,6 +3,10 @@
     {
       "path": "linear-trend.json",
       "sha256": "b94a74efedaf65aa5fa3e027292e9633463ed47f3c3c2ef76cd6c3f17026a958"
+    },
+    {
+      "path": "fourier.json",
+      "sha256": "57d99d9fbdd86f71cc34b857a072406bff7ce426fdb319d03db726f9260ac552"
     }
   ],
   "backendArtifacts": [
@@ -18,7 +22,7 @@
     "platform": "linux/amd64",
     "uvVersion": "0.8.15"
   },
-  "generatorRevision": "452a40ebfa8ff9e4ecb738db3a790cdc31fbd646b1c4cf694349a097cd0dbef2",
+  "generatorRevision": "359713f8533ad719a623a763137ce65f05ce25c7984319b36ee87da1e266a10b",
   "numericalEnvironment": [
     {
       "name": "cmdstanpy",

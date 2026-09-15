@@ -17,15 +17,44 @@ export interface LinearTrendWasmBindings {
   ) => Float64Array;
 }
 
+/** Rust/WASM bindings for the packed additive ridge protocol. */
+export interface AdditiveRidgeWasmBindings {
+  /** Fit one complete additive ridge model and return its packed protocol frame. */
+  readonly fit_additive_ridge: (
+    timestamps: Float64Array,
+    values: Float64Array,
+    periodsDays: Float64Array,
+    fourierOrders: Float64Array,
+    priorScales: Float64Array,
+  ) => Float64Array;
+
+  /** Evaluate one complete additive prediction batch and return its packed protocol frame. */
+  readonly predict_additive_ridge: (
+    timestamps: Float64Array,
+    intercept: number,
+    slope: number,
+    timeOrigin: number,
+    timeScale: number,
+    periodsDays: Float64Array,
+    fourierOrders: Float64Array,
+    coefficients: Float64Array,
+  ) => Float64Array;
+}
+
 /** Complete generated Rust/WASM module contract required by this package version. */
-export type ProphetWasmModule = LinearTrendWasmBindings;
+export type ProphetWasmModule = LinearTrendWasmBindings & AdditiveRidgeWasmBindings;
 
 /** Lazy loader that returns a checked Rust/WASM module. */
 export type ProphetWasmModuleLoader = () => ProphetWasmModule;
 
 const require = createRequire(import.meta.url);
 
-const requiredFunctionExports = ["fit_linear_trend", "predict_linear_trend"] as const;
+const requiredFunctionExports = [
+  "fit_linear_trend",
+  "predict_linear_trend",
+  "fit_additive_ridge",
+  "predict_additive_ridge",
+] as const;
 
 /**
  * Refine an unchecked JavaScript module value into the required Prophet WASM contract.

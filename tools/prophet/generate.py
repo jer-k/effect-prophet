@@ -25,7 +25,8 @@ from prophet import Prophet
 
 EXPECTED_PROPHET_VERSION = "1.4.0"
 EXPECTED_CONTAINER_PLATFORM = "linux/amd64"
-FIXTURE_FILENAME = "linear-trend.json"
+LINEAR_TREND_FILENAME = "linear-trend.json"
+FOURIER_FILENAME = "fourier.json"
 MANIFEST_FILENAME = "manifest.json"
 ROOT = Path(__file__).resolve().parents[2]
 REFERENCE_PATH = ROOT / "tools" / "prophet" / "reference.json"
@@ -54,7 +55,7 @@ class CaseSpec:
     relative_tolerance: float = 1e-12
 
 
-CASES = (
+LINEAR_TREND_CASES = (
     CaseSpec(
         identifier="irregular-positive-extrapolation",
         observations=(
@@ -106,6 +107,60 @@ CASES = (
         ),
         intercept=40.0,
         slope=-22.5,
+    ),
+)
+
+
+@dataclass(frozen=True)
+class FourierSeasonalitySpec:
+    """One ordered seasonal component used by a fixed-feature fixture."""
+
+    name: str
+    period_days: float
+    fourier_order: int
+    prior_scale: float
+
+
+@dataclass(frozen=True)
+class FourierCaseSpec:
+    """Authored timestamps, layout, and coefficients for Fourier parity."""
+
+    identifier: str
+    timestamps: tuple[str, ...]
+    seasonalities: tuple[FourierSeasonalitySpec, ...]
+    coefficients: tuple[float, ...]
+    absolute_tolerance: float = 1e-11
+    relative_tolerance: float = 1e-11
+
+
+FOURIER_CASES = (
+    FourierCaseSpec(
+        identifier="weekly-and-fractional-day-irregular",
+        timestamps=(
+            "2023-12-31T18:00:00.000Z",
+            "2024-01-01T00:00:00.000Z",
+            "2024-01-02T07:30:00.000Z",
+            "2024-02-14T12:00:00.125Z",
+            "2025-06-01T03:15:00.000Z",
+        ),
+        seasonalities=(
+            FourierSeasonalitySpec("custom-week", 7.0, 2, 10.0),
+            FourierSeasonalitySpec("half-day", 0.5, 1, 2.5),
+        ),
+        coefficients=(0.25, -0.5, 1.25, 0.75, -2.0, 0.125),
+    ),
+    FourierCaseSpec(
+        identifier="epoch-pre-epoch-and-repeated",
+        timestamps=(
+            "1970-01-01T00:00:00.000Z",
+            "1969-12-31T18:00:00.000Z",
+            "1970-01-01T06:00:00.000Z",
+            "1970-01-01T00:00:00.000Z",
+        ),
+        seasonalities=(
+            FourierSeasonalitySpec("one-day", 1.0, 2, 10.0),
+        ),
+        coefficients=(2.0, 3.0, -1.0, 0.5),
     ),
 )
 
@@ -280,6 +335,81 @@ def make_case(spec: CaseSpec) -> dict[str, Any]:
     }
 
 
+def make_fourier_case(spec: FourierCaseSpec) -> dict[str, Any]:
+    """Generate Fourier columns with unmodified Prophet and evaluate fixed components."""
+
+    dates = pd.Series(
+        pd.to_datetime(
+            [prophet_timestamp(timestamp) for timestamp in spec.timestamps], format="mixed"
+        )
+    )
+    feature_blocks: list[np.ndarray] = []
+    component_blocks: list[np.ndarray] = []
+    coefficient_offset = 0
+
+    for seasonality in spec.seasonalities:
+        block = Prophet.fourier_series(
+            dates,
+            period=seasonality.period_days,
+            series_order=seasonality.fourier_order,
+        )
+        component_coefficient_count = seasonality.fourier_order * 2
+        component_coefficients = np.asarray(
+            spec.coefficients[
+                coefficient_offset : coefficient_offset + component_coefficient_count
+            ],
+            dtype=np.float64,
+        )
+
+        if component_coefficients.size != component_coefficient_count:
+            fail(f"Misaligned Fourier coefficients for case {spec.identifier}")
+
+        feature_blocks.append(block)
+        component_blocks.append(block @ component_coefficients)
+        coefficient_offset += component_coefficient_count
+
+    if coefficient_offset != len(spec.coefficients):
+        fail(f"Extra Fourier coefficients for case {spec.identifier}")
+
+    row_count = len(spec.timestamps)
+    features = (
+        np.concatenate(feature_blocks, axis=1)
+        if feature_blocks
+        else np.empty((row_count, 0), dtype=np.float64)
+    )
+    components = (
+        np.column_stack(component_blocks)
+        if component_blocks
+        else np.empty((row_count, 0), dtype=np.float64)
+    )
+
+    return {
+        "coefficients": list(spec.coefficients),
+        "expected": {
+            "columnCount": int(features.shape[1]),
+            "componentsRowMajor": [float(value) for value in components.ravel()],
+            "featuresRowMajor": [float(value) for value in features.ravel()],
+            "rowCount": row_count,
+        },
+        "id": spec.identifier,
+        "kind": "fourier-features",
+        "seasonalities": [
+            {
+                "fourierOrder": seasonality.fourier_order,
+                "name": seasonality.name,
+                "periodDays": seasonality.period_days,
+                "priorScale": seasonality.prior_scale,
+            }
+            for seasonality in spec.seasonalities
+        ],
+        "timestamps": list(spec.timestamps),
+        "tolerance": {
+            "absolute": spec.absolute_tolerance,
+            "relative": spec.relative_tolerance,
+        },
+    }
+
+
 def find_prophet_model() -> Path:
     """Locate the model binary bundled in the installed Prophet distribution."""
 
@@ -304,16 +434,26 @@ def write_outputs(output: Path, execution: dict[str, str], reference: dict[str, 
 
     output.mkdir(parents=True, exist_ok=True)
 
-    fixture_path = output / FIXTURE_FILENAME
-    fixture_path.write_bytes(stable_json({"cases": [make_case(spec) for spec in CASES]}))
+    linear_trend_path = output / LINEAR_TREND_FILENAME
+    linear_trend_path.write_bytes(
+        stable_json({"cases": [make_case(spec) for spec in LINEAR_TREND_CASES]})
+    )
+    fourier_path = output / FOURIER_FILENAME
+    fourier_path.write_bytes(
+        stable_json({"cases": [make_fourier_case(spec) for spec in FOURIER_CASES]})
+    )
 
     model_path = find_prophet_model()
     manifest = {
         "artifacts": [
             {
-                "path": FIXTURE_FILENAME,
-                "sha256": sha256_file(fixture_path),
-            }
+                "path": LINEAR_TREND_FILENAME,
+                "sha256": sha256_file(linear_trend_path),
+            },
+            {
+                "path": FOURIER_FILENAME,
+                "sha256": sha256_file(fourier_path),
+            },
         ],
         "backendArtifacts": [
             {
@@ -339,7 +479,7 @@ def compare_outputs(generated: Path, committed: Path) -> None:
 
     differences: list[str] = []
 
-    for filename in (FIXTURE_FILENAME, MANIFEST_FILENAME):
+    for filename in (LINEAR_TREND_FILENAME, FOURIER_FILENAME, MANIFEST_FILENAME):
         generated_path = generated / filename
         committed_path = committed / filename
 
