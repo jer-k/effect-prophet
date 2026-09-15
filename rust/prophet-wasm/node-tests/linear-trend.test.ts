@@ -1,26 +1,38 @@
 import assert from "node:assert/strict";
-import { createRequire } from "node:module";
 import test from "node:test";
 
-const require = createRequire(import.meta.url);
+import { loadProphetWasmNodeBindings } from "./wasm-bindings.ts";
 
 const {
   LinearTrendFitStatus,
   fit_linear_trend: fitLinearTrend,
   predict_linear_trend: predictLinearTrend,
-} = require("../pkg/prophet_wasm.js");
+} = loadProphetWasmNodeBindings();
 
-const unpackSuccessfulFit = (packed) => {
-  assert.equal(packed.length, 5);
-  assert.equal(packed[0], LinearTrendFitStatus.Success);
+const numberAt = (values: Float64Array, index: number): number => {
+  const value = values[index];
 
-  const [, intercept, slope, timeOrigin, timeScale] = packed;
+  if (value === undefined) {
+    assert.fail(`expected a number at index ${index}`);
+  }
 
-  return { intercept, slope, timeOrigin, timeScale };
+  return value;
 };
 
-const unpackSuccessfulPredictions = (packed) => {
-  assert.equal(packed[0], LinearTrendFitStatus.Success);
+const unpackSuccessfulFit = (packed: Float64Array) => {
+  assert.equal(packed.length, 5);
+  assert.equal(numberAt(packed, 0), LinearTrendFitStatus.Success);
+
+  return {
+    intercept: numberAt(packed, 1),
+    slope: numberAt(packed, 2),
+    timeOrigin: numberAt(packed, 3),
+    timeScale: numberAt(packed, 4),
+  };
+};
+
+const unpackSuccessfulPredictions = (packed: Float64Array): Float64Array => {
+  assert.equal(numberAt(packed, 0), LinearTrendFitStatus.Success);
 
   return packed.slice(1);
 };

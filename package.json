@@ -24,7 +24,7 @@
     "fixtures:generate": "docker compose --profile fixtures-generate run --rm --build prophet-fixtures-generate",
     "fixtures:check": "docker compose --profile fixtures-check up --build --abort-on-container-exit --exit-code-from effect-prophet-fixtures effect-prophet-fixtures; status=$?; docker compose --profile fixtures-check down; exit $status",
     "test:rust": "cargo test --manifest-path rust/prophet-wasm/Cargo.toml",
-    "test:wasm": "npm run build:wasm && node --test rust/prophet-wasm/node-tests/*.test.mjs",
+    "test:wasm": "npm run build:wasm && node --test rust/prophet-wasm/node-tests/*.test.ts",
     "typecheck": "tsc --noEmit",
     "lint": "oxlint .",
     "lint:rust": "cargo clippy --manifest-path rust/prophet-wasm/Cargo.toml --all-targets -- -D warnings",

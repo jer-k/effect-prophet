@@ -1,10 +1,9 @@
 import assert from "node:assert/strict";
-import { createRequire } from "node:module";
 import test from "node:test";
 
-const require = createRequire(import.meta.url);
+import { loadProphetWasmNodeBindings } from "./wasm-bindings.ts";
 
-const { mean } = require("../pkg/prophet_wasm.js");
+const { mean } = loadProphetWasmNodeBindings();
 
 test("calls the Rust mean export through generated WASM bindings", () => {
   const values = new Float64Array([1, 2, 6, 7]);

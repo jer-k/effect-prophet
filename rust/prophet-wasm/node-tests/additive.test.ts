@@ -1,51 +1,77 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { createRequire } from "node:module";
 import test from "node:test";
 
-const require = createRequire(import.meta.url);
+import { Effect } from "effect";
+
+import { decodeFourierReference } from "../../../integration/helpers/prophet-fixture.ts";
+import { loadProphetWasmNodeBindings } from "./wasm-bindings.ts";
 
 const {
   AdditiveFitStatus,
   AdditivePredictionStatus,
   fit_additive_ridge: fitAdditiveRidge,
   predict_additive_ridge: predictAdditiveRidge,
-} = require("../pkg/prophet_wasm.js");
+} = loadProphetWasmNodeBindings();
 
 const DAY = 86_400_000;
 
-const closeTo = (actual, expected, tolerance = 1e-10) => {
+const itemAt = <T>(values: ReadonlyArray<T>, index: number): T => {
+  const value = values[index];
+
+  if (value === undefined) {
+    assert.fail(`expected an item at index ${index}`);
+  }
+
+  return value;
+};
+
+const numberAt = (values: ArrayLike<number>, index: number): number => {
+  const value = values[index];
+
+  if (value === undefined) {
+    assert.fail(`expected a number at index ${index}`);
+  }
+
+  return value;
+};
+
+const closeTo = (actual: number, expected: number, tolerance = 1e-10): void => {
   assert.ok(
     Math.abs(actual - expected) <= tolerance,
     `expected ${actual} to be within ${tolerance} of ${expected}`,
   );
 };
 
-const unpackFit = (packed, coefficientCount) => {
-  assert.equal(packed[0], AdditiveFitStatus.Success);
+const unpackFit = (packed: Float64Array, coefficientCount: number) => {
+  assert.equal(numberAt(packed, 0), AdditiveFitStatus.Success);
   assert.equal(packed.length, 9 + coefficientCount);
 
   return {
-    intercept: packed[1],
-    slope: packed[2],
-    timeOrigin: packed[3],
-    timeScale: packed[4],
-    valueScale: packed[5],
-    numericalRank: packed[6],
-    normalizedResidualSumSquares: packed[7],
-    penalizedObjective: packed[8],
+    intercept: numberAt(packed, 1),
+    slope: numberAt(packed, 2),
+    timeOrigin: numberAt(packed, 3),
+    timeScale: numberAt(packed, 4),
+    valueScale: numberAt(packed, 5),
+    numericalRank: numberAt(packed, 6),
+    normalizedResidualSumSquares: numberAt(packed, 7),
+    penalizedObjective: numberAt(packed, 8),
     coefficients: packed.slice(9),
   };
 };
 
-const fourierRow = (timestamp, periods, orders) => {
+const fourierRow = (
+  timestamp: number,
+  periods: Float64Array,
+  orders: Float64Array,
+): ReadonlyArray<number> => {
   const epochDays = timestamp / DAY;
   const angularDays = 2 * Math.PI * epochDays;
-  const row = [];
+  const row: Array<number> = [];
 
   for (let component = 0; component < periods.length; component += 1) {
-    for (let harmonic = 1; harmonic <= orders[component]; harmonic += 1) {
-      const angle = (harmonic / periods[component]) * angularDays;
+    for (let harmonic = 1; harmonic <= numberAt(orders, component); harmonic += 1) {
+      const angle = (harmonic / numberAt(periods, component)) * angularDays;
 
       row.push(Math.sin(angle), Math.cos(angle));
     }
@@ -60,7 +86,8 @@ test("matches Prophet 1.4.0 Fourier features and fixed components", () => {
     import.meta.url,
   );
 
-  const fixture = JSON.parse(readFileSync(fixturePath, "utf8"));
+  const fixtureInput: unknown = JSON.parse(readFileSync(fixturePath, "utf8"));
+  const fixture = Effect.runSync(decodeFourierReference(fixtureInput, fixturePath.pathname));
 
   for (const referenceCase of fixture.cases) {
     const timestamps = new Float64Array(referenceCase.timestamps.map(Date.parse));
@@ -91,10 +118,12 @@ test("matches Prophet 1.4.0 Fourier features and fixed components", () => {
 
     for (let row = 0; row < timestamps.length; row += 1) {
       for (let component = 0; component < componentCount; component += 1) {
-        const actual = packed[1 + row * rowWidth + 3 + component];
+        const actual = numberAt(packed, 1 + row * rowWidth + 3 + component);
 
-        const expected =
-          referenceCase.expected.componentsRowMajor[row * componentCount + component];
+        const expected = numberAt(
+          referenceCase.expected.componentsRowMajor,
+          row * componentCount + component,
+        );
 
         const tolerance =
           referenceCase.tolerance.absolute + referenceCase.tolerance.relative * Math.abs(expected);
@@ -104,12 +133,12 @@ test("matches Prophet 1.4.0 Fourier features and fixed components", () => {
     }
 
     let ownerComponent = 0;
-    let ownerUpperBound = referenceCase.seasonalities[0].fourierOrder * 2;
+    let ownerUpperBound = itemAt(referenceCase.seasonalities, 0).fourierOrder * 2;
 
     for (let column = 0; column < referenceCase.expected.columnCount; column += 1) {
       while (column >= ownerUpperBound) {
         ownerComponent += 1;
-        ownerUpperBound += referenceCase.seasonalities[ownerComponent].fourierOrder * 2;
+        ownerUpperBound += itemAt(referenceCase.seasonalities, ownerComponent).fourierOrder * 2;
       }
 
       const basis = new Float64Array(referenceCase.expected.columnCount);
@@ -119,12 +148,12 @@ test("matches Prophet 1.4.0 Fourier features and fixed components", () => {
       assert.equal(featurePacked[0], AdditivePredictionStatus.Success, referenceCase.id);
 
       for (let row = 0; row < timestamps.length; row += 1) {
-        const actual = featurePacked[1 + row * rowWidth + 3 + ownerComponent];
+        const actual = numberAt(featurePacked, 1 + row * rowWidth + 3 + ownerComponent);
 
-        const expected =
-          referenceCase.expected.featuresRowMajor[
-            row * referenceCase.expected.columnCount + column
-          ];
+        const expected = numberAt(
+          referenceCase.expected.featuresRowMajor,
+          row * referenceCase.expected.columnCount + column,
+        );
 
         const tolerance =
           referenceCase.tolerance.absolute + referenceCase.tolerance.relative * Math.abs(expected);
@@ -153,16 +182,18 @@ test("fits the documented objective and satisfies its stationarity equations", (
   let residualSumSquares = 0;
 
   for (let row = 0; row < timestamps.length; row += 1) {
+    const timestamp = numberAt(timestamps, row);
+
     const design = [
       1,
-      (timestamps[row] - fit.timeOrigin) / fit.timeScale,
-      ...fourierRow(timestamps[row], periods, orders),
+      (timestamp - fit.timeOrigin) / fit.timeScale,
+      ...fourierRow(timestamp, periods, orders),
     ];
 
-    const target = values[row] / fit.valueScale;
+    const target = numberAt(values, row) / fit.valueScale;
 
     const prediction = design.reduce(
-      (sum, feature, column) => sum + feature * normalizedCoefficients[column],
+      (sum, feature, column) => sum + feature * numberAt(normalizedCoefficients, column),
       0,
     );
 
@@ -171,16 +202,17 @@ test("fits the documented objective and satisfies its stationarity equations", (
     residualSumSquares += residual * residual;
 
     for (let column = 0; column < gradient.length; column += 1) {
-      gradient[column] += design[column] * residual;
+      gradient[column] = numberAt(gradient, column) + numberAt(design, column) * residual;
     }
   }
 
   let penaltySumSquares = 0;
+  const priorScale = numberAt(priors, 0);
 
   for (let column = 2; column < normalizedCoefficients.length; column += 1) {
-    const penalized = normalizedCoefficients[column] / priors[0];
+    const penalized = numberAt(normalizedCoefficients, column) / priorScale;
 
-    gradient[column] += penalized / priors[0];
+    gradient[column] = numberAt(gradient, column) + penalized / priorScale;
     penaltySumSquares += penalized * penalized;
   }
 
@@ -238,15 +270,24 @@ test("returns trend, additive total, value, and ordered components", () => {
   const expectedSecondComponent = 5 * Math.sin(angle) + 7 * Math.cos(angle);
   const quarterRow = packed.slice(6, 11);
 
-  closeTo(quarterRow[0], 1.5);
-  closeTo(quarterRow[3], expectedFirstComponent);
-  closeTo(quarterRow[4], expectedSecondComponent);
-  closeTo(quarterRow[1], expectedFirstComponent + expectedSecondComponent);
-  closeTo(quarterRow[2], quarterRow[0] + quarterRow[1]);
+  closeTo(numberAt(quarterRow, 0), 1.5);
+  closeTo(numberAt(quarterRow, 3), expectedFirstComponent);
+  closeTo(numberAt(quarterRow, 4), expectedSecondComponent);
+  closeTo(numberAt(quarterRow, 1), expectedFirstComponent + expectedSecondComponent);
+  closeTo(numberAt(quarterRow, 2), numberAt(quarterRow, 0) + numberAt(quarterRow, 1));
 });
 
 test("returns documented fit failures", () => {
-  const cases = [
+  const cases: ReadonlyArray<{
+    readonly args: readonly [
+      ReadonlyArray<number>,
+      ReadonlyArray<number>,
+      ReadonlyArray<number>,
+      ReadonlyArray<number>,
+      ReadonlyArray<number>,
+    ];
+    readonly status: number;
+  }> = [
     {
       args: [[], [], [], [], []],
       status: AdditiveFitStatus.InsufficientObservations,
@@ -274,7 +315,15 @@ test("returns documented fit failures", () => {
   ];
 
   for (const { args, status } of cases) {
-    const packed = fitAdditiveRidge(...args.map((values) => new Float64Array(values)));
+    const [timestamps, values, periods, orders, priors] = args;
+
+    const packed = fitAdditiveRidge(
+      new Float64Array(timestamps),
+      new Float64Array(values),
+      new Float64Array(periods),
+      new Float64Array(orders),
+      new Float64Array(priors),
+    );
 
     assert.deepEqual(packed, new Float64Array([status]));
   }
