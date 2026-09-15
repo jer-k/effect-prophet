@@ -22,6 +22,8 @@ const PredictionFailureReasonSchema = Schema.Literals([
 
 const ModelSerializationOperationSchema = Schema.Literals(["encode", "decode"]);
 
+const WasmFailurePhaseSchema = Schema.Literals(["load", "execute", "protocol"]);
+
 const GrowthSchema = Schema.Literals(["linear", "flat"]);
 
 export type ValidationInput = "observations" | "options" | "prediction-timestamps";
@@ -32,6 +34,9 @@ export type FittingFailureReason =
   | "backend-failure";
 
 export type PredictionFailureReason = "invalid-model" | "non-finite-forecast" | "backend-failure";
+
+/** The WASM adapter phase that failed. */
+export type WasmFailurePhase = "load" | "execute" | "protocol";
 
 /** The portable model operation that failed schema validation. */
 export type ModelSerializationOperation = "encode" | "decode";
@@ -63,19 +68,72 @@ export class UnsupportedConfigurationError extends Schema.TaggedError<Unsupporte
   },
 ) {}
 
+interface RuntimeCauseOptions {
+  readonly cause?: unknown;
+}
+
+const defineRuntimeCause = (target: Error, options: RuntimeCauseOptions | undefined): void => {
+  if (options === undefined || !("cause" in options)) {
+    return;
+  }
+
+  Object.defineProperty(target, "cause", {
+    value: options.cause,
+    configurable: true,
+    writable: true,
+    enumerable: false,
+  });
+};
+
 /** An expected failure while fitting a model. */
 export class FittingError extends Schema.TaggedError<FittingError>()("FittingError", {
   reason: FittingFailureReasonSchema,
   observationCount: Schema.Natural,
+  backendPhase: Schema.optionalKey(WasmFailurePhaseSchema),
   message: Schema.String,
-}) {}
+}) {
+  /** Original runtime failure, retained in memory but excluded from the portable schema. */
+  declare readonly cause?: unknown;
+
+  /** Construct a fitting failure with optional runtime-only diagnostic context. */
+  constructor(
+    fields: {
+      readonly reason: FittingFailureReason;
+      readonly observationCount: number;
+      readonly backendPhase?: WasmFailurePhase;
+      readonly message: string;
+    },
+    options?: RuntimeCauseOptions,
+  ) {
+    super(fields);
+    defineRuntimeCause(this, options);
+  }
+}
 
 /** An expected failure while evaluating a fitted model. */
 export class PredictionError extends Schema.TaggedError<PredictionError>()("PredictionError", {
   reason: PredictionFailureReasonSchema,
   timestamp: Schema.Int,
+  backendPhase: Schema.optionalKey(WasmFailurePhaseSchema),
   message: Schema.String,
-}) {}
+}) {
+  /** Original runtime failure, retained in memory but excluded from the portable schema. */
+  declare readonly cause?: unknown;
+
+  /** Construct a prediction failure with optional runtime-only diagnostic context. */
+  constructor(
+    fields: {
+      readonly reason: PredictionFailureReason;
+      readonly timestamp: number;
+      readonly backendPhase?: WasmFailurePhase;
+      readonly message: string;
+    },
+    options?: RuntimeCauseOptions,
+  ) {
+    super(fields);
+    defineRuntimeCause(this, options);
+  }
+}
 
 /** An expected schema failure while encoding or decoding a portable fitted model. */
 export class ModelSerializationError extends Schema.TaggedError<ModelSerializationError>()(

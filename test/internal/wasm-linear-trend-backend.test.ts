@@ -3,7 +3,14 @@ import { describe, expect, it } from "vitest";
 
 import { FittingError, PredictionError } from "../../src/errors";
 import { parseLinearModel, type LinearParameters } from "../../src/fitted-model";
-import { wasmLinearTrendFittingBackendLayer } from "../../src/internal/wasm-linear-trend-backend";
+import {
+  assertProphetWasmModule,
+  type LinearTrendWasmBindings,
+} from "../../src/internal/prophet-wasm-module";
+import {
+  makeWasmLinearTrendAdapter,
+  wasmLinearTrendFittingBackendLayer,
+} from "../../src/internal/wasm-linear-trend-backend";
 import { fit, predict } from "../../src/prophet";
 import { registerFittingBackendConformance } from "./fitting-backend-conformance";
 
@@ -85,6 +92,265 @@ const expectContainedInterval = (child: Tracer.Span, parent: Tracer.Span): void 
 };
 
 registerFittingBackendConformance("Rust/WASM linear-trend", wasmLinearTrendFittingBackendLayer);
+
+const fittingInput = {
+  timestamps: new Float64Array([100, 200, 300]),
+  values: new Float64Array([2, 5, 8]),
+};
+
+const linearFitOptions = { growth: "linear" } as const;
+
+const moduleReturning = (
+  fitResult: Float64Array,
+  predictionResult: Float64Array,
+): LinearTrendWasmBindings => ({
+  fit_linear_trend: () => fitResult,
+  predict_linear_trend: () => predictionResult,
+});
+
+describe("Rust/WASM adapter boundary", () => {
+  it("distinguishes loader failures and preserves their causes", async () => {
+    const sentinel = new Error("private loader details");
+
+    const adapter = makeWasmLinearTrendAdapter(() => {
+      throw sentinel;
+    });
+
+    const fittingError = await Effect.runPromise(
+      Effect.flip(adapter.fit(fittingInput, linearFitOptions)),
+    );
+
+    const predictionError = await Effect.runPromise(
+      Effect.flip(adapter.predict(validLinearModel, [300])),
+    );
+
+    expect(fittingError).toBeInstanceOf(FittingError);
+    expect(predictionError).toBeInstanceOf(PredictionError);
+
+    if (fittingError instanceof FittingError) {
+      expect(fittingError.backendPhase).toBe("load");
+      expect(fittingError.cause).toBe(sentinel);
+      expect(fittingError.message).not.toContain(sentinel.message);
+    }
+
+    if (predictionError instanceof PredictionError) {
+      expect(predictionError.backendPhase).toBe("load");
+      expect(predictionError.timestamp).toBe(300);
+      expect(predictionError.cause).toBe(sentinel);
+      expect(predictionError.message).not.toContain(sentinel.message);
+    }
+  });
+
+  it("distinguishes fitting and prediction execution failures", async () => {
+    const fitSentinel = new Error("private fit trap");
+    const predictionSentinel = new Error("private prediction trap");
+
+    const adapter = makeWasmLinearTrendAdapter(() => ({
+      fit_linear_trend: () => {
+        throw fitSentinel;
+      },
+      predict_linear_trend: () => {
+        throw predictionSentinel;
+      },
+    }));
+
+    const fittingError = await Effect.runPromise(
+      Effect.flip(adapter.fit(fittingInput, linearFitOptions)),
+    );
+
+    const predictionError = await Effect.runPromise(
+      Effect.flip(adapter.predict(validLinearModel, [300])),
+    );
+
+    expect(fittingError).toBeInstanceOf(FittingError);
+    expect(predictionError).toBeInstanceOf(PredictionError);
+
+    if (fittingError instanceof FittingError) {
+      expect(fittingError.backendPhase).toBe("execute");
+      expect(fittingError.cause).toBe(fitSentinel);
+    }
+
+    if (predictionError instanceof PredictionError) {
+      expect(predictionError.backendPhase).toBe("execute");
+      expect(predictionError.cause).toBe(predictionSentinel);
+    }
+  });
+
+  it("checks unsupported growth before loading", async () => {
+    const adapter = makeWasmLinearTrendAdapter(() => {
+      throw new Error("loader must not run");
+    });
+
+    const error = await Effect.runPromise(
+      Effect.flip(adapter.fit(fittingInput, { growth: "flat" })),
+    );
+
+    expect(error).toBeInstanceOf(Error);
+    expect(error._tag).toBe("UnsupportedConfigurationError");
+  });
+
+  it("returns an empty prediction without loading", async () => {
+    const adapter = makeWasmLinearTrendAdapter(() => {
+      throw new Error("loader must not run");
+    });
+
+    const predictions = await Effect.runPromise(adapter.predict(validLinearModel, []));
+
+    expect(predictions).toEqual([]);
+  });
+
+  it("rejects malformed module exports during loading", async () => {
+    const adapter = makeWasmLinearTrendAdapter(() => {
+      const loaded = {
+        fit_linear_trend: () => new Float64Array([0, 2, 6, 100, 200]),
+      };
+
+      assertProphetWasmModule(loaded);
+
+      return loaded;
+    });
+
+    const error = await Effect.runPromise(Effect.flip(adapter.fit(fittingInput, linearFitOptions)));
+
+    expect(error).toBeInstanceOf(FittingError);
+
+    if (error instanceof FittingError) {
+      expect(error.backendPhase).toBe("load");
+      expect(error.cause).toBeInstanceOf(TypeError);
+    }
+  });
+
+  it.each([
+    ["an empty frame", []],
+    ["a fractional status", [1.5]],
+    ["an unknown status", [99]],
+    ["the wrong success length", [0, 2, 6, 100]],
+    ["an invalid successful scale", [0, 2, 6, 100, 0]],
+    ["a non-finite successful parameter", [0, Number.NaN, 6, 100, 200]],
+    ["an extra fitting failure entry", [1, 0]],
+    ["an extra numerical failure entry", [6, 0]],
+  ])("rejects fitting protocol result with %s", async (_label, values) => {
+    const adapter = makeWasmLinearTrendAdapter(() =>
+      moduleReturning(new Float64Array(values), new Float64Array([0])),
+    );
+
+    const error = await Effect.runPromise(Effect.flip(adapter.fit(fittingInput, linearFitOptions)));
+
+    expect(error).toBeInstanceOf(FittingError);
+
+    if (error instanceof FittingError) {
+      expect(error.reason).toBe("backend-failure");
+      expect(error.backendPhase).toBe("protocol");
+      expect(error.observationCount).toBe(3);
+      expect(error.cause).toBeUndefined();
+    }
+  });
+
+  it("rejects a JavaScript-shaped fitting result container", async () => {
+    const adapter = makeWasmLinearTrendAdapter(
+      // @ts-expect-error -- A plain array deliberately violates the generated binding contract.
+      () => moduleReturning([0, 2, 6, 100, 200], new Float64Array([0])),
+    );
+
+    const error = await Effect.runPromise(Effect.flip(adapter.fit(fittingInput, linearFitOptions)));
+
+    expect(error).toBeInstanceOf(FittingError);
+
+    if (error instanceof FittingError) {
+      expect(error.backendPhase).toBe("protocol");
+    }
+  });
+
+  it.each([
+    ["an empty frame", []],
+    ["a fractional status", [1.5]],
+    ["an unknown status", [99]],
+    ["the wrong success length", [0, 11]],
+    ["a non-finite claimed success", [0, 11, Number.POSITIVE_INFINITY]],
+    ["an unsupported metadata failure", [1]],
+    ["an indexed metadata-only status", [5, 0]],
+    ["an extra failure entry", [6, 0, 1]],
+    ["a missing evaluation index", [6, Number.NaN]],
+    ["a negative evaluation index", [6, -1]],
+    ["a fractional evaluation index", [6, 0.5]],
+    ["an out-of-range evaluation index", [6, 2]],
+  ])("rejects prediction protocol result with %s", async (_label, values) => {
+    const adapter = makeWasmLinearTrendAdapter(() =>
+      moduleReturning(new Float64Array([0, 2, 6, 100, 200]), new Float64Array(values)),
+    );
+
+    const error = await Effect.runPromise(
+      Effect.flip(adapter.predict(validLinearModel, [300, 400])),
+    );
+
+    expect(error).toBeInstanceOf(PredictionError);
+
+    if (error instanceof PredictionError) {
+      expect(error.reason).toBe("backend-failure");
+      expect(error.backendPhase).toBe("protocol");
+      expect(error.timestamp).toBe(300);
+      expect(error.cause).toBeUndefined();
+    }
+  });
+
+  it("rejects a JavaScript-shaped prediction result container", async () => {
+    const adapter = makeWasmLinearTrendAdapter(
+      // @ts-expect-error -- A plain array deliberately violates the generated binding contract.
+      () => moduleReturning(new Float64Array([0, 2, 6, 100, 200]), [0, 11]),
+    );
+
+    const error = await Effect.runPromise(Effect.flip(adapter.predict(validLinearModel, [300])));
+
+    expect(error).toBeInstanceOf(PredictionError);
+
+    if (error instanceof PredictionError) {
+      expect(error.backendPhase).toBe("protocol");
+    }
+  });
+
+  it("maps metadata and indexed numerical failures using their frame context", async () => {
+    const metadataAdapter = makeWasmLinearTrendAdapter(() =>
+      moduleReturning(new Float64Array([0, 2, 6, 100, 200]), new Float64Array([6])),
+    );
+
+    const evaluationAdapter = makeWasmLinearTrendAdapter(() =>
+      moduleReturning(new Float64Array([0, 2, 6, 100, 200]), new Float64Array([6, 1])),
+    );
+
+    const metadataError = await Effect.runPromise(
+      Effect.flip(metadataAdapter.predict(validLinearModel, [300, 400])),
+    );
+
+    const evaluationError = await Effect.runPromise(
+      Effect.flip(evaluationAdapter.predict(validLinearModel, [300, 400])),
+    );
+
+    expect(metadataError).toBeInstanceOf(PredictionError);
+    expect(evaluationError).toBeInstanceOf(PredictionError);
+
+    if (metadataError instanceof PredictionError) {
+      expect(metadataError.reason).toBe("invalid-model");
+      expect(metadataError.timestamp).toBe(300);
+      expect(metadataError.backendPhase).toBeUndefined();
+    }
+
+    if (evaluationError instanceof PredictionError) {
+      expect(evaluationError.reason).toBe("non-finite-forecast");
+      expect(evaluationError.timestamp).toBe(400);
+      expect(evaluationError.backendPhase).toBeUndefined();
+    }
+  });
+
+  it("preserves successful prediction ordering", async () => {
+    const adapter = makeWasmLinearTrendAdapter(() =>
+      moduleReturning(new Float64Array([0, 2, 6, 100, 200]), new Float64Array([0, 30, 10])),
+    );
+
+    const predictions = await Effect.runPromise(adapter.predict(validLinearModel, [300, 100]));
+
+    expect(predictions).toEqual([30, 10]);
+  });
+});
 
 describe("Rust/WASM boundary tracing", () => {
   it("records fit and prediction spans under the public operations", async () => {
