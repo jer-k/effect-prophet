@@ -4,10 +4,14 @@ import { describe, expect, it } from "vitest";
 import {
   InvalidFittedModel,
   parseFittedModel,
+  parseLinearAdditiveModel,
   parseLinearModel,
+  type FittedLinearAdditiveProphet,
   type FittedLinearProphet,
+  type LinearAdditiveParameters,
   type LinearParameters,
 } from "../src/fitted-model";
+import { makeSeasonalityLayout, parseSeasonalities } from "../src/seasonality";
 
 const linearParameters: LinearParameters = {
   model: "linear-trend",
@@ -17,8 +21,34 @@ const linearParameters: LinearParameters = {
   timeScale: 2_000,
 };
 
+const validLinearAdditiveParameters = async (): Promise<LinearAdditiveParameters> => {
+  const definitions = await Effect.runPromise(
+    parseSeasonalities([{ name: "custom-week", periodDays: 7, fourierOrder: 1 }]),
+  );
+
+  const seasonalities = await Effect.runPromise(makeSeasonalityLayout(definitions));
+
+  return {
+    model: "linear-additive-ridge",
+    intercept: 2,
+    slope: 6,
+    timeOrigin: 1_704_067_200_000,
+    timeScale: 2_000,
+    seasonalities,
+    coefficients: [0.25, -0.5],
+    fitSummary: {
+      method: "normalized-ridge-v1",
+      valueScale: 8,
+      observationCount: 12,
+      numericalRank: 4,
+      normalizedResidualSumSquares: 0.125,
+      penalizedObjective: 0.25,
+    },
+  };
+};
+
 const expectInvalidModel = async (
-  parsing: ReturnType<typeof parseFittedModel>,
+  parsing: Effect.Effect<unknown, InvalidFittedModel>,
   expectedPathSegment: PropertyKey,
 ): Promise<InvalidFittedModel> => {
   const error = await Effect.runPromise(Effect.flip(parsing));
@@ -121,10 +151,221 @@ describe("fitted model domain", () => {
     await expectInvalidModel(parseFittedModel(incomplete), "slope");
   });
 
-  it("requires parsing before a raw parameter record is trusted", () => {
-    const requiresTrustedModel = (_model: FittedLinearProphet): void => undefined;
+  it("parses complete additive state with full-rank diagnostics", async () => {
+    const parameters = await validLinearAdditiveParameters();
+    const model = await Effect.runPromise(parseLinearAdditiveModel(parameters));
+
+    expect(model).toEqual(parameters);
+    expect(model).not.toBe(parameters);
+    expect(Object.isFrozen(model)).toBe(true);
+  });
+
+  it("deeply clones and freezes all additive state", async () => {
+    const definition = {
+      name: "custom-week",
+      periodDays: 7,
+      fourierOrder: 1,
+      priorScale: 10,
+    };
+
+    const component = {
+      definition,
+      coefficientOffset: 0,
+      coefficientCount: 2,
+    };
+
+    const components = [component];
+    const seasonalities = { components, coefficientCount: 2 };
+    const coefficients = [0.25, -0.5];
+
+    const fitSummary = {
+      method: "normalized-ridge-v1",
+      valueScale: 8,
+      observationCount: 12,
+      numericalRank: 4,
+      normalizedResidualSumSquares: 0.125,
+      penalizedObjective: 0.25,
+    };
+
+    const input = {
+      model: "linear-additive-ridge",
+      intercept: 2,
+      slope: 6,
+      timeOrigin: 1_704_067_200_000,
+      timeScale: 2_000,
+      seasonalities,
+      coefficients,
+      fitSummary,
+    };
+
+    const model = await Effect.runPromise(parseLinearAdditiveModel(input));
+    const parsedComponent = model.seasonalities.components[0];
+
+    if (parsedComponent === undefined) {
+      throw new Error("Expected one parsed seasonal component");
+    }
+
+    expect(model.seasonalities).not.toBe(seasonalities);
+    expect(model.seasonalities.components).not.toBe(components);
+    expect(parsedComponent).not.toBe(component);
+    expect(parsedComponent.definition).not.toBe(definition);
+    expect(model.coefficients).not.toBe(coefficients);
+    expect(model.fitSummary).not.toBe(fitSummary);
+
+    expect(Object.isFrozen(model.seasonalities)).toBe(true);
+    expect(Object.isFrozen(model.seasonalities.components)).toBe(true);
+    expect(Object.isFrozen(parsedComponent)).toBe(true);
+    expect(Object.isFrozen(parsedComponent.definition)).toBe(true);
+    expect(Object.isFrozen(model.coefficients)).toBe(true);
+    expect(Object.isFrozen(model.fitSummary)).toBe(true);
+
+    input.intercept = 100;
+    definition.name = "changed";
+    component.coefficientOffset = 100;
+    components.push({ ...component });
+    coefficients[0] = 100;
+    fitSummary.valueScale = 100;
+
+    expect(model.intercept).toBe(2);
+    expect(parsedComponent.definition.name).toBe("custom-week");
+    expect(parsedComponent.coefficientOffset).toBe(0);
+    expect(model.seasonalities.components).toHaveLength(1);
+    expect(model.coefficients[0]).toBe(0.25);
+    expect(model.fitSummary.valueScale).toBe(8);
+  });
+
+  it.each([
+    ["intercept", Number.NaN],
+    ["slope", Number.POSITIVE_INFINITY],
+    ["timeOrigin", Number.NEGATIVE_INFINITY],
+    ["timeScale", 0],
+  ] as const)("rejects invalid additive %s state", async (field, value) => {
+    const parameters = await validLinearAdditiveParameters();
+
+    await expectInvalidModel(parseLinearAdditiveModel({ ...parameters, [field]: value }), field);
+  });
+
+  it("rejects non-finite and misaligned seasonal coefficients", async () => {
+    const parameters = await validLinearAdditiveParameters();
+
+    await expectInvalidModel(
+      parseLinearAdditiveModel({ ...parameters, coefficients: [Number.NaN, 0] }),
+      "coefficients",
+    );
+    await expectInvalidModel(
+      parseLinearAdditiveModel({ ...parameters, coefficients: [0] }),
+      "coefficients",
+    );
+  });
+
+  it("rejects inconsistent persisted seasonality metadata", async () => {
+    const parameters = await validLinearAdditiveParameters();
+    const component = parameters.seasonalities.components[0];
+
+    if (component === undefined) {
+      throw new Error("Expected one seasonal component");
+    }
+
+    await expectInvalidModel(
+      parseLinearAdditiveModel({
+        ...parameters,
+        seasonalities: {
+          components: [{ ...component, coefficientOffset: 1 }],
+          coefficientCount: 2,
+        },
+      }),
+      "coefficientOffset",
+    );
+  });
+
+  it.each([
+    ["method", "other"],
+    ["valueScale", 0],
+    ["valueScale", Number.POSITIVE_INFINITY],
+    ["observationCount", 1],
+    ["observationCount", 3.5],
+    ["numericalRank", 3],
+    ["normalizedResidualSumSquares", -1],
+    ["normalizedResidualSumSquares", Number.NaN],
+    ["penalizedObjective", -1],
+    ["penalizedObjective", Number.POSITIVE_INFINITY],
+  ] as const)("rejects invalid additive fit summary %s", async (field, value) => {
+    const parameters = await validLinearAdditiveParameters();
+
+    await expectInvalidModel(
+      parseLinearAdditiveModel({
+        ...parameters,
+        fitSummary: { ...parameters.fitSummary, [field]: value },
+      }),
+      field,
+    );
+  });
+
+  it("requires enough observations for the reported full-rank design", async () => {
+    const parameters = await validLinearAdditiveParameters();
+
+    await expectInvalidModel(
+      parseLinearAdditiveModel({
+        ...parameters,
+        fitSummary: { ...parameters.fitSummary, observationCount: 3 },
+      }),
+      "observationCount",
+    );
+  });
+
+  it("rejects additive design-size overflow without coefficient-sized allocation", async () => {
+    const maximumFourierOrder = Math.floor(Number.MAX_SAFE_INTEGER / 2);
+
+    await expectInvalidModel(
+      parseLinearAdditiveModel({
+        model: "linear-additive-ridge",
+        intercept: 0,
+        slope: 0,
+        timeOrigin: 0,
+        timeScale: 1,
+        seasonalities: {
+          components: [
+            {
+              definition: {
+                name: "huge",
+                periodDays: 1,
+                fourierOrder: maximumFourierOrder,
+                priorScale: 10,
+              },
+              coefficientOffset: 0,
+              coefficientCount: maximumFourierOrder * 2,
+            },
+          ],
+          coefficientCount: maximumFourierOrder * 2,
+        },
+        coefficients: [],
+        fitSummary: {
+          method: "normalized-ridge-v1",
+          valueScale: 1,
+          observationCount: 2,
+          numericalRank: 2,
+          normalizedResidualSumSquares: 0,
+          penalizedObjective: 0,
+        },
+      }),
+      "coefficientCount",
+    );
+  });
+
+  it("does not add the additive family to the current fitted-model union", async () => {
+    const parameters = await validLinearAdditiveParameters();
+
+    await expectInvalidModel(parseFittedModel(parameters), "model");
+  });
+
+  it("requires parsing before raw parameter records are trusted", async () => {
+    const requiresTrustedLinearModel = (_model: FittedLinearProphet): void => undefined;
+    const requiresTrustedAdditiveModel = (_model: FittedLinearAdditiveProphet): void => undefined;
+    const additiveParameters = await validLinearAdditiveParameters();
 
     // @ts-expect-error -- Raw backend parameters do not carry the fitted-model brand.
-    requiresTrustedModel(linearParameters);
+    requiresTrustedLinearModel(linearParameters);
+    // @ts-expect-error -- Raw additive parameters do not carry the fitted-model brand.
+    requiresTrustedAdditiveModel(additiveParameters);
   });
 });
