@@ -10,9 +10,15 @@ import {
 import { parseFittedModel, type FittedProphet } from "./fitted-model";
 import { FittingBackend, type FitOptions, type TrainingInput } from "./internal/fitting-backend";
 import { TimestampSchema } from "./internal/timestamp";
+import { predictAdditiveWithWasm } from "./internal/wasm-additive-backend";
 import { predictLinearTrendWithWasm } from "./internal/wasm-linear-trend-backend";
 import { decodeObservations, type Observations } from "./observation";
-import { decodeOptions } from "./options";
+import {
+  decodeOptions,
+  optionsValidationErrorFromSeasonality,
+  type ProphetOptions,
+} from "./options";
+import * as Seasonality from "./seasonality";
 
 /** Canonical UTC timestamps accepted by the public prediction boundary. */
 export type EncodedPredictionTimestamps = ReadonlyArray<string>;
@@ -20,7 +26,16 @@ export type EncodedPredictionTimestamps = ReadonlyArray<string>;
 /** Validated prediction timestamps represented as integer epoch milliseconds. */
 export type PredictionTimestamps = ReadonlyArray<number>;
 
-/** One point forecast and its currently available trend component. */
+/** One named additive seasonal contribution in observation units. */
+export interface SeasonalForecastComponent {
+  /** Exact configured seasonality name. */
+  readonly name: string;
+
+  /** This seasonality's additive contribution in observation units. */
+  readonly value: number;
+}
+
+/** One point forecast and its decomposed trend and additive components. */
 export interface Forecast {
   /** Prediction timestamp represented as integer epoch milliseconds. */
   readonly timestamp: number;
@@ -30,6 +45,12 @@ export interface Forecast {
 
   /** Trend contribution to `value`. */
   readonly trend: number;
+
+  /** Total additive seasonal contribution to `value`. */
+  readonly additive: number;
+
+  /** Ordered named seasonal contributions. */
+  readonly seasonalities: ReadonlyArray<SeasonalForecastComponent>;
 }
 
 /** Forecasts in the same order as the supplied prediction timestamps. */
@@ -62,7 +83,11 @@ const packTrainingInput = (observations: Observations): TrainingInput => {
   return { timestamps, values };
 };
 
-const makeFitOptions = (growth: FitOptions["growth"]): FitOptions => ({ growth });
+const makeFitOptions = (options: ProphetOptions): Effect.Effect<FitOptions, InputValidationError> =>
+  Seasonality.makeSeasonalityLayout(options.seasonalities).pipe(
+    Effect.map((seasonalities) => ({ growth: options.growth, seasonalities })),
+    Effect.mapError(optionsValidationErrorFromSeasonality),
+  );
 
 /**
  * Validate observations and options, then fit through the provided backend Layer.
@@ -81,10 +106,11 @@ export const fit = Effect.fn("Prophet.fit")(function* (
 > {
   const observations = yield* decodeObservations(observationsInput);
   const options = yield* decodeOptions(optionsInput);
+  const fitOptions = yield* makeFitOptions(options);
 
   const input = packTrainingInput(observations);
   const backend = yield* FittingBackend;
-  const parameters = yield* backend.fit(input, makeFitOptions(options.growth));
+  const parameters = yield* backend.fit(input, fitOptions);
 
   return yield* parseFittedModel(parameters).pipe(
     Effect.mapError(
@@ -99,12 +125,12 @@ export const fit = Effect.fn("Prophet.fit")(function* (
 });
 
 /**
- * Predict point forecasts and trend components at validated timestamps.
+ * Predict point forecasts and decomposed components at validated timestamps.
  *
- * Linear models reuse their fitting-time origin and scale without recomputing
- * either value from prediction timestamps.
+ * Every model reuses fitting-time state without deriving scales or selected
+ * features from prediction timestamps.
  *
- * @param model - A fitted trend model.
+ * @param model - A fitted model returned by `fit` or model decoding.
  * @param timestampsInput - Untrusted canonical UTC timestamps.
  * @returns Ordered point forecasts or a typed validation or prediction failure.
  */
@@ -135,30 +161,83 @@ export const predict = Effect.fn("Prophet.predict")(function* (
       timestamp,
       value: parsedModel.level,
       trend: parsedModel.level,
+      additive: 0,
+      seasonalities: [],
     }));
   }
 
-  const predictions = yield* predictLinearTrendWithWasm(parsedModel, timestamps);
+  if (parsedModel.model === "linear-trend") {
+    const predictions = yield* predictLinearTrendWithWasm(parsedModel, timestamps);
+    const forecasts: Array<Forecast> = [];
+
+    for (const [index, timestamp] of timestamps.entries()) {
+      const prediction = predictions[index];
+
+      if (prediction === undefined) {
+        return yield* Effect.fail(
+          new PredictionError({
+            reason: "backend-failure",
+            timestamp,
+            message: "WASM prediction backend omitted an expected forecast",
+          }),
+        );
+      }
+
+      forecasts.push({
+        timestamp,
+        value: prediction,
+        trend: prediction,
+        additive: 0,
+        seasonalities: [],
+      });
+    }
+
+    return forecasts;
+  }
+
+  const batch = yield* predictAdditiveWithWasm(parsedModel, timestamps);
+  const componentCount = parsedModel.seasonalities.components.length;
+  const rowWidth = componentCount + 3;
   const forecasts: Array<Forecast> = [];
 
-  for (const [index, timestamp] of timestamps.entries()) {
-    const prediction = predictions[index];
+  for (const [row, timestamp] of timestamps.entries()) {
+    const rowOffset = row * rowWidth;
+    const trend = batch.values[rowOffset];
+    const additive = batch.values[rowOffset + 1];
+    const value = batch.values[rowOffset + 2];
 
-    if (prediction === undefined) {
+    if (trend === undefined || additive === undefined || value === undefined) {
       return yield* Effect.fail(
         new PredictionError({
           reason: "backend-failure",
           timestamp,
-          message: "WASM prediction backend omitted an expected forecast",
+          message: "WASM additive prediction backend omitted an expected forecast value",
         }),
       );
     }
 
-    forecasts.push({
-      timestamp,
-      value: prediction,
-      trend: prediction,
-    });
+    const seasonalities: Array<SeasonalForecastComponent> = [];
+
+    for (const [componentIndex, component] of parsedModel.seasonalities.components.entries()) {
+      const componentValue = batch.values[rowOffset + 3 + componentIndex];
+
+      if (componentValue === undefined) {
+        return yield* Effect.fail(
+          new PredictionError({
+            reason: "backend-failure",
+            timestamp,
+            message: "WASM additive prediction backend omitted a seasonal component",
+          }),
+        );
+      }
+
+      seasonalities.push({
+        name: component.definition.name,
+        value: componentValue,
+      });
+    }
+
+    forecasts.push({ timestamp, trend, additive, value, seasonalities });
   }
 
   return forecasts;

@@ -18,30 +18,53 @@ describe("typed domain errors", () => {
 
   it("exposes schema-backed unsupported configuration context", () => {
     const error = new UnsupportedConfigurationError({
-      option: "growth",
-      received: "flat",
-      supported: ["linear"],
+      configuration: {
+        option: "growth",
+        received: "flat",
+        supported: ["linear"],
+      },
       message: "The selected backend supports only linear growth",
     });
 
     expect(error._tag).toBe("UnsupportedConfigurationError");
-    expect(error.option).toBe("growth");
-    expect(error.received).toBe("flat");
-    expect(error.supported).toEqual(["linear"]);
+    expect(error.configuration).toEqual({
+      option: "growth",
+      received: "flat",
+      supported: ["linear"],
+    });
 
     const encoded = Schema.encodeSync(UnsupportedConfigurationError)(error);
 
     expect(encoded._tag).toBe("UnsupportedConfigurationError");
-    expect(encoded.option).toBe("growth");
-    expect(encoded.received).toBe("flat");
-    expect(encoded.supported).toEqual(["linear"]);
+    expect(encoded.configuration).toEqual({
+      option: "growth",
+      received: "flat",
+      supported: ["linear"],
+    });
     expect(encoded.message).toBe("The selected backend supports only linear growth");
     expect(() =>
       Schema.decodeUnknownSync(UnsupportedConfigurationError)({
         ...encoded,
-        supported: [],
+        configuration: { ...encoded.configuration, supported: [] },
       }),
     ).toThrow();
+  });
+
+  it("represents unsupported configured seasonalities coherently", () => {
+    const error = new UnsupportedConfigurationError({
+      configuration: {
+        option: "seasonalities",
+        received: "configured",
+        supported: ["none"],
+      },
+      message: "The selected backend does not fit seasonalities",
+    });
+
+    expect(error.configuration).toEqual({
+      option: "seasonalities",
+      received: "configured",
+      supported: ["none"],
+    });
   });
 
   it("exposes structured prediction failure context", () => {

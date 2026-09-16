@@ -3,8 +3,14 @@ import { Context, type Effect } from "effect";
 import type { FittingError, UnsupportedConfigurationError } from "../errors";
 import type { Parameters } from "../fitted-model";
 import type { Growth } from "../options";
+import type { SeasonalityLayout } from "../seasonality";
 
-export type { ConstantParameters, LinearParameters, Parameters } from "../fitted-model";
+export type {
+  ConstantParameters,
+  LinearAdditiveParameters,
+  LinearParameters,
+  Parameters,
+} from "../fitted-model";
 
 /** Packed, index-aligned numerical observations supplied to a fitting backend. */
 export interface TrainingInput {
@@ -15,10 +21,13 @@ export interface TrainingInput {
   readonly values: Float64Array;
 }
 
-/** Backend-facing options for the currently supported trend models. */
+/** Resolved backend-facing options for one complete model fit. */
 export interface FitOptions {
   /** The trend form the backend must fit. */
   readonly growth: Growth;
+
+  /** Ordered seasonal definitions and their deterministic coefficient layout. */
+  readonly seasonalities: SeasonalityLayout;
 }
 
 /** Coarse-grained fitting capability implemented by TypeScript or WASM backends. */

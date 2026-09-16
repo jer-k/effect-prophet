@@ -13,8 +13,10 @@ const LinearModel = Schema.Literal("linear-trend");
 
 const ConstantModel = Schema.Literal("constant-mean-baseline");
 
+const LinearAdditiveModel = Schema.Literal("linear-additive-ridge");
+
 const ModelDiscriminantSchema = Schema.Struct({
-  model: Schema.Union([LinearModel, ConstantModel]),
+  model: Schema.Union([LinearModel, ConstantModel, LinearAdditiveModel]),
 });
 
 const LinearParametersSchema = Schema.Struct({
@@ -40,7 +42,7 @@ const LinearAdditiveFitSummarySchema = Schema.Struct({
 });
 
 const LinearAdditiveParametersFieldsSchema = Schema.Struct({
-  model: Schema.Literal("linear-additive-ridge"),
+  model: LinearAdditiveModel,
   intercept: Schema.Finite,
   slope: Schema.Finite,
   timeOrigin: Schema.Finite,
@@ -90,7 +92,11 @@ const LinearAdditiveParametersSchema = LinearAdditiveParametersFieldsSchema.chec
   consistentLinearAdditiveParameters,
 );
 
-const ParametersSchema = Schema.Union([LinearParametersSchema, ConstantParametersSchema]);
+const ParametersSchema = Schema.Union([
+  LinearParametersSchema,
+  ConstantParametersSchema,
+  LinearAdditiveParametersSchema,
+]);
 
 const FittedLinearProphetSchema = LinearParametersSchema.pipe(
   Schema.brand("effect-prophet/FittedLinearProphet"),
@@ -104,7 +110,11 @@ const FittedLinearAdditiveProphetSchema = LinearAdditiveParametersSchema.pipe(
   Schema.brand("effect-prophet/FittedLinearAdditiveProphet"),
 );
 
-const FittedProphetSchema = Schema.Union([FittedLinearProphetSchema, FittedConstantProphetSchema]);
+const FittedProphetSchema = Schema.Union([
+  FittedLinearProphetSchema,
+  FittedConstantProphetSchema,
+  FittedLinearAdditiveProphetSchema,
+]);
 
 /** Untrusted parameters returned by a linear-trend fitting backend. */
 export type LinearParameters = typeof LinearParametersSchema.Type;
@@ -179,7 +189,13 @@ const freezeLinearAdditiveModel = (
   return Object.freeze(model);
 };
 
-const freezeFittedModel = (model: FittedProphet): FittedProphet => Object.freeze(model);
+const freezeFittedModel = (model: FittedProphet): FittedProphet => {
+  if (model.model === "linear-additive-ridge") {
+    return freezeLinearAdditiveModel(model);
+  }
+
+  return Object.freeze(model);
+};
 
 type FirstArgument<Function> = Function extends (
   input: infer Input,
@@ -204,8 +220,6 @@ export const parseLinearModel = (
 
 /**
  * Parse complete additive ridge state into a fresh, deeply frozen fitted model.
- *
- * This standalone parser does not add the model family to the public prediction union.
  *
  * @param input - Values at a fitting or future serialization trust boundary.
  * @returns A trusted additive model or structured fitted-model issues.

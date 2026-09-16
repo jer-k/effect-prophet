@@ -23,7 +23,7 @@ describe("decodeOptions", () => {
     const options = await Effect.runPromise(decodeOptions());
 
     expect(options).toEqual(defaultProphetOptions);
-    expect(options).toEqual({ growth: "linear" });
+    expect(options).toEqual({ growth: "linear", seasonalities: [] });
   });
 
   it("applies defaults to an empty options object", async () => {
@@ -35,7 +35,41 @@ describe("decodeOptions", () => {
   it.each(["flat", "linear"] as const)("accepts %s growth", async (growth) => {
     const options = await Effect.runPromise(decodeOptions({ growth }));
 
-    expect(options).toEqual({ growth });
+    expect(options).toEqual({ growth, seasonalities: [] });
+  });
+
+  it("parses ordered explicit seasonalities and applies prior defaults", async () => {
+    const options = await Effect.runPromise(
+      decodeOptions({
+        seasonalities: [
+          { name: "work-week", periodDays: 7, fourierOrder: 3 },
+          { name: "quarter", periodDays: 91.25, fourierOrder: 2, priorScale: 4 },
+        ],
+      }),
+    );
+
+    expect(options).toEqual({
+      growth: "linear",
+      seasonalities: [
+        { name: "work-week", periodDays: 7, fourierOrder: 3, priorScale: 10 },
+        { name: "quarter", periodDays: 91.25, fourierOrder: 2, priorScale: 4 },
+      ],
+    });
+    expect(Object.isFrozen(options.seasonalities)).toBe(true);
+  });
+
+  it("reports nested seasonality failures at option-relative paths", async () => {
+    const error = await expectOptionsFailure({
+      seasonalities: [
+        { name: "duplicate", periodDays: 7, fourierOrder: 1 },
+        { name: "duplicate", periodDays: 30, fourierOrder: 2 },
+      ],
+    });
+
+    expect(error.issues).toContainEqual({
+      message: expect.stringContaining("duplicated"),
+      path: ["seasonalities", 1, "name"],
+    });
   });
 
   it("rejects invalid growth values at the options boundary", async () => {

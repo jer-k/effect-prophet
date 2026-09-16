@@ -8,6 +8,7 @@ export {
   type ModelSerializationOperation,
   type PredictionFailureReason,
   type ValidationInput,
+  type UnsupportedConfiguration,
   type ValidationIssue,
   type WasmFailurePhase,
 } from "./errors";
@@ -22,12 +23,17 @@ export {
 
 export { constantMeanFittingBackendLayer } from "./internal/constant-fitting-backend";
 
+export { wasmAdditiveFittingBackendLayer } from "./internal/wasm-additive-backend";
+
 export { wasmLinearTrendFittingBackendLayer } from "./internal/wasm-linear-trend-backend";
 
 export {
   decodeFittedModel,
   encodeFittedModel,
   type EncodedFittedModel,
+  type EncodedLinearAdditiveModel,
+  type EncodedLinearModel,
+  type SerializableFittedModel,
 } from "./model-serialization";
 
 export {
@@ -40,9 +46,17 @@ export {
 
 export {
   type FittedConstantProphet,
+  type FittedLinearAdditiveProphet,
   type FittedLinearProphet,
   type FittedProphet,
+  type LinearAdditiveParameters,
 } from "./fitted-model";
+
+export {
+  defaultSeasonalityPriorScale,
+  type EncodedSeasonality,
+  type SeasonalityDefinition,
+} from "./seasonality";
 
 export {
   fit,
@@ -51,4 +65,5 @@ export {
   type Forecast,
   type Forecasts,
   type PredictionTimestamps,
+  type SeasonalForecastComponent,
 } from "./prophet";

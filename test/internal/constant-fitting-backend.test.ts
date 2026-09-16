@@ -8,6 +8,9 @@ import {
   type FitOptions,
   type TrainingInput,
 } from "../../src/internal/fitting-backend";
+import { makeSeasonalityLayout } from "../../src/seasonality";
+
+const emptySeasonalities = Effect.runSync(makeSeasonalityLayout([]));
 
 const trainingInput: TrainingInput = {
   timestamps: new Float64Array([1, 2, 3]),
@@ -24,7 +27,7 @@ const fitWithConstantBackend = (input: TrainingInput, options: FitOptions) =>
 describe("constantMeanFittingBackendLayer", () => {
   it("fits the arithmetic-mean baseline when flat growth is explicit", async () => {
     const parameters = await Effect.runPromise(
-      fitWithConstantBackend(trainingInput, { growth: "flat" }),
+      fitWithConstantBackend(trainingInput, { growth: "flat", seasonalities: emptySeasonalities }),
     );
 
     expect(parameters).toEqual({ model: "constant-mean-baseline", level: 3 });
@@ -32,15 +35,22 @@ describe("constantMeanFittingBackendLayer", () => {
 
   it("rejects linear growth with structured capability context", async () => {
     const error = await Effect.runPromise(
-      Effect.flip(fitWithConstantBackend(trainingInput, { growth: "linear" })),
+      Effect.flip(
+        fitWithConstantBackend(trainingInput, {
+          growth: "linear",
+          seasonalities: emptySeasonalities,
+        }),
+      ),
     );
 
     expect(error).toBeInstanceOf(UnsupportedConfigurationError);
 
     if (error instanceof UnsupportedConfigurationError) {
-      expect(error.option).toBe("growth");
-      expect(error.received).toBe("linear");
-      expect(error.supported).toEqual(["flat"]);
+      expect(error.configuration).toEqual({
+        option: "growth",
+        received: "linear",
+        supported: ["flat"],
+      });
     }
   });
 
@@ -51,11 +61,21 @@ describe("constantMeanFittingBackendLayer", () => {
     };
 
     const unsupportedError = await Effect.runPromise(
-      Effect.flip(fitWithConstantBackend(emptyInput, { growth: "linear" })),
+      Effect.flip(
+        fitWithConstantBackend(emptyInput, {
+          growth: "linear",
+          seasonalities: emptySeasonalities,
+        }),
+      ),
     );
 
     const fittingError = await Effect.runPromise(
-      Effect.flip(fitWithConstantBackend(emptyInput, { growth: "flat" })),
+      Effect.flip(
+        fitWithConstantBackend(emptyInput, {
+          growth: "flat",
+          seasonalities: emptySeasonalities,
+        }),
+      ),
     );
 
     expect(unsupportedError).toBeInstanceOf(UnsupportedConfigurationError);

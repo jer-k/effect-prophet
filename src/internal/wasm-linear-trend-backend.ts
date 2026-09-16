@@ -318,10 +318,25 @@ export const makeWasmLinearTrendAdapter = (
     if (options.growth !== "linear") {
       return Effect.fail(
         new UnsupportedConfigurationError({
-          option: "growth",
-          received: options.growth,
-          supported: ["linear"],
+          configuration: {
+            option: "growth",
+            received: options.growth,
+            supported: ["linear"],
+          },
           message: `The WASM linear-trend backend does not support ${options.growth} growth`,
+        }),
+      );
+    }
+
+    if (options.seasonalities.components.length > 0) {
+      return Effect.fail(
+        new UnsupportedConfigurationError({
+          configuration: {
+            option: "seasonalities",
+            received: "configured",
+            supported: ["none"],
+          },
+          message: "The WASM linear-trend backend does not support configured seasonalities",
         }),
       );
     }

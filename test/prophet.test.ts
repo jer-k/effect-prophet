@@ -8,8 +8,9 @@ import {
   UnsupportedConfigurationError,
   constantMeanFittingBackendLayer,
   fit,
-  wasmLinearTrendFittingBackendLayer,
   predict,
+  wasmAdditiveFittingBackendLayer,
+  wasmLinearTrendFittingBackendLayer,
   type FittedProphet,
 } from "../src/index";
 import { parseLinearModel, type LinearParameters } from "../src/fitted-model";
@@ -83,6 +84,8 @@ describe("linear-trend Prophet integration", () => {
       timestamp: 1_704_067_203_000,
       value: 14,
       trend: 14,
+      additive: 0,
+      seasonalities: [],
     });
     expect(testBackend.invocations).toEqual([
       {
@@ -90,7 +93,10 @@ describe("linear-trend Prophet integration", () => {
           timestamps: new Float64Array([1_704_067_200_000, 1_704_067_201_000, 1_704_067_202_000]),
           values: new Float64Array([2, 5, 8]),
         },
-        options: { growth: "linear" },
+        options: {
+          growth: "linear",
+          seasonalities: { components: [], coefficientCount: 0 },
+        },
       },
     ]);
   });
@@ -108,6 +114,8 @@ describe("linear-trend Prophet integration", () => {
       timestamp: 1_704_067_203_000,
       value: 5,
       trend: 5,
+      additive: 0,
+      seasonalities: [],
     });
   });
 
@@ -123,9 +131,11 @@ describe("linear-trend Prophet integration", () => {
     expect(error).toBeInstanceOf(UnsupportedConfigurationError);
 
     if (error instanceof UnsupportedConfigurationError) {
-      expect(error.option).toBe("growth");
-      expect(error.received).toBe("flat");
-      expect(error.supported).toEqual(["linear"]);
+      expect(error.configuration).toEqual({
+        option: "growth",
+        received: "flat",
+        supported: ["linear"],
+      });
     }
   });
 
@@ -141,8 +151,11 @@ describe("linear-trend Prophet integration", () => {
       expect(error).toBeInstanceOf(UnsupportedConfigurationError);
 
       if (error instanceof UnsupportedConfigurationError) {
-        expect(error.received).toBe("linear");
-        expect(error.supported).toEqual(["flat"]);
+        expect(error.configuration).toEqual({
+          option: "growth",
+          received: "linear",
+          supported: ["flat"],
+        });
       }
     },
   );
@@ -325,6 +338,117 @@ describe("linear-trend Prophet integration", () => {
     if (error instanceof PredictionError) {
       expect(error.reason).toBe("non-finite-forecast");
       expect(error.timestamp).toBe(1_704_067_200_002);
+    }
+  });
+});
+
+const DAY = 86_400_000;
+
+const syntheticValue = (timestamp: number): number => {
+  const epochDays = timestamp / DAY;
+  const trend = 4 + 0.05 * epochDays;
+  const daily = 2 * Math.sin(2 * Math.PI * epochDays);
+  const weekly = 3 * Math.cos((2 * Math.PI * epochDays) / 7);
+
+  return trend + daily + weekly;
+};
+
+const syntheticStart = Date.parse("2024-01-01T00:00:00.000Z");
+
+const syntheticObservations = Array.from({ length: 56 }, (_, index) => {
+  const timestamp = syntheticStart + index * (DAY / 4);
+
+  return {
+    timestamp: new Date(timestamp).toISOString(),
+    value: syntheticValue(timestamp),
+  };
+});
+
+const additiveOptions = {
+  seasonalities: [
+    { name: "daily-custom", periodDays: 1, fourierOrder: 1, priorScale: 1_000 },
+    { name: "weekly-custom", periodDays: 7, fourierOrder: 1, priorScale: 1_000 },
+  ],
+} as const;
+
+describe("linear-additive Prophet integration", () => {
+  it("fits multiple components and forecasts held-out timestamps through real WASM", async () => {
+    const model = await Effect.runPromise(
+      fit(syntheticObservations, additiveOptions).pipe(
+        Effect.provide(wasmAdditiveFittingBackendLayer),
+      ),
+    );
+
+    expect(model.model).toBe("linear-additive-ridge");
+
+    if (model.model !== "linear-additive-ridge") {
+      throw new Error("Expected a linear-additive-ridge model");
+    }
+
+    expect(model.seasonalities.components.map((component) => component.definition.name)).toEqual([
+      "daily-custom",
+      "weekly-custom",
+    ]);
+    expect(model.fitSummary.method).toBe("normalized-ridge-v1");
+    expect(Number.isFinite(model.fitSummary.penalizedObjective)).toBe(true);
+
+    const heldOutTimestamps = [
+      syntheticStart + 56 * (DAY / 4),
+      syntheticStart + 57 * (DAY / 4),
+      syntheticStart + 56 * (DAY / 4),
+    ];
+
+    const encodedTimestamps = heldOutTimestamps.map((timestamp) =>
+      new Date(timestamp).toISOString(),
+    );
+
+    const forecasts = await Effect.runPromise(predict(model, encodedTimestamps));
+
+    expect(forecasts.map((forecast) => forecast.timestamp)).toEqual(heldOutTimestamps);
+
+    for (const [index, forecast] of forecasts.entries()) {
+      const expected = heldOutTimestamps[index];
+
+      expect(expected).toBeDefined();
+
+      if (expected === undefined) {
+        continue;
+      }
+
+      expect(forecast.seasonalities.map((component) => component.name)).toEqual([
+        "daily-custom",
+        "weekly-custom",
+      ]);
+      expect(forecast.additive).toBeCloseTo(
+        forecast.seasonalities.reduce((sum, component) => sum + component.value, 0),
+        10,
+      );
+      expect(forecast.value).toBeCloseTo(forecast.trend + forecast.additive, 10);
+      expect(forecast.value).toBeCloseTo(syntheticValue(expected), 3);
+    }
+
+    expect(forecasts[2]).toEqual(forecasts[0]);
+  });
+
+  it.each([
+    ["linear", wasmLinearTrendFittingBackendLayer],
+    ["constant", constantMeanFittingBackendLayer],
+  ] as const)("requires the %s backend to reject configured seasonalities", async (name, layer) => {
+    const options =
+      name === "constant" ? { ...additiveOptions, growth: "flat" as const } : additiveOptions;
+
+    const error = await Effect.runPromise(
+      Effect.flip(fit(syntheticObservations, options).pipe(Effect.provide(layer))),
+    );
+
+    expect(error).toBeInstanceOf(UnsupportedConfigurationError);
+
+    if (error instanceof UnsupportedConfigurationError) {
+      expect(error.configuration).toEqual({
+        option: "seasonalities",
+        received: "configured",
+        supported: ["none"],
+      });
     }
   });
 });

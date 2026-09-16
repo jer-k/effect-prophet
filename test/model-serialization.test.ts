@@ -7,6 +7,7 @@ import {
   encodeFittedModel,
   fit,
   predict,
+  wasmAdditiveFittingBackendLayer,
   wasmLinearTrendFittingBackendLayer,
   type EncodedFittedModel,
   type FittedLinearProphet,
@@ -72,6 +73,142 @@ describe("fitted model serialization", () => {
     expect(decoded).toEqual(model);
     expect(Object.isFrozen(decoded)).toBe(true);
     expect(after).toEqual(before);
+  });
+
+  it("round-trips complete additive state and preserves named predictions", async () => {
+    const model = await Effect.runPromise(
+      fit(
+        [
+          { timestamp: "1970-01-01T00:00:00.000Z", value: 1 },
+          { timestamp: "1970-01-01T06:00:00.000Z", value: 3 },
+          { timestamp: "1970-01-01T12:00:00.000Z", value: 1 },
+          { timestamp: "1970-01-01T18:00:00.000Z", value: -1 },
+          { timestamp: "1970-01-02T00:00:00.000Z", value: 1 },
+        ],
+        {
+          seasonalities: [
+            { name: "daily-custom", periodDays: 1, fourierOrder: 1, priorScale: 10 },
+            { name: "weekly-custom", periodDays: 7, fourierOrder: 1, priorScale: 4 },
+          ],
+        },
+      ).pipe(Effect.provide(wasmAdditiveFittingBackendLayer)),
+    );
+
+    if (model.model !== "linear-additive-ridge") {
+      throw new Error("The additive fitting backend returned an unexpected model kind");
+    }
+
+    const encoded = await Effect.runPromise(encodeFittedModel(model));
+    const jsonValue: unknown = JSON.parse(JSON.stringify(encoded));
+    const decoded = await Effect.runPromise(decodeFittedModel(jsonValue));
+    const timestamps = ["1970-01-01T06:00:00.000Z", "1970-01-03T06:00:00.000Z"] as const;
+    const before = await Effect.runPromise(predict(model, timestamps));
+    const after = await Effect.runPromise(predict(decoded, timestamps));
+
+    expect(encoded.modelKind).toBe("linear-additive-ridge");
+
+    if (encoded.modelKind === "linear-additive-ridge") {
+      expect(encoded.seasonalities.map((seasonality) => seasonality.name)).toEqual([
+        "daily-custom",
+        "weekly-custom",
+      ]);
+      expect(encoded.coefficients.seasonal).toEqual(model.coefficients);
+      expect(encoded.fitSummary).toEqual(model.fitSummary);
+    }
+
+    expect(decoded).toEqual(model);
+    expect(after).toEqual(before);
+    expect(Object.isFrozen(decoded)).toBe(true);
+
+    if (decoded.model === "linear-additive-ridge") {
+      expect(Object.isFrozen(decoded.coefficients)).toBe(true);
+      expect(Object.isFrozen(decoded.seasonalities)).toBe(true);
+      expect(Object.isFrozen(decoded.fitSummary)).toBe(true);
+    }
+  });
+
+  it("reconstructs additive layout metadata and rejects coefficient misalignment", async () => {
+    const encoded = {
+      modelKind: "linear-additive-ridge",
+      coefficients: {
+        intercept: 1,
+        slope: 2,
+        seasonal: [0.5],
+      },
+      timeScaling: {
+        origin: 0,
+        scale: 86_400_000,
+      },
+      seasonalities: [
+        {
+          name: "daily-custom",
+          periodDays: 1,
+          fourierOrder: 1,
+          priorScale: 10,
+        },
+      ],
+      fitSummary: {
+        method: "normalized-ridge-v1",
+        valueScale: 3,
+        observationCount: 5,
+        numericalRank: 4,
+        normalizedResidualSumSquares: 0.1,
+        penalizedObjective: 0.2,
+      },
+    } as const;
+
+    await expectDecodeFailure(decodeFittedModel(encoded), "seasonal");
+  });
+
+  it("reports persisted seasonality failures at portable paths", async () => {
+    const error = await Effect.runPromise(
+      Effect.flip(
+        decodeFittedModel({
+          modelKind: "linear-additive-ridge",
+          coefficients: {
+            intercept: 1,
+            slope: 2,
+            seasonal: [0.5, 0.25, 0.1, -0.1],
+          },
+          timeScaling: {
+            origin: 0,
+            scale: 86_400_000,
+          },
+          seasonalities: [
+            { name: "duplicate", periodDays: 1, fourierOrder: 1, priorScale: 10 },
+            { name: "duplicate", periodDays: 7, fourierOrder: 1, priorScale: 4 },
+          ],
+          fitSummary: {
+            method: "normalized-ridge-v1",
+            valueScale: 3,
+            observationCount: 5,
+            numericalRank: 6,
+            normalizedResidualSumSquares: 0.1,
+            penalizedObjective: 0.2,
+          },
+        }),
+      ),
+    );
+
+    expect(error).toBeInstanceOf(ModelSerializationError);
+    expect(error.issues).toContainEqual({
+      path: ["seasonalities", 1, "name"],
+      message: expect.stringContaining("duplicated"),
+    });
+  });
+
+  it("keeps the constant baseline outside the portable model union", async () => {
+    const error = await Effect.runPromise(
+      // @ts-expect-error -- Runtime JavaScript may still supply an unsupported fitted family.
+      Effect.flip(encodeFittedModel({ model: "constant-mean-baseline", level: 3 })),
+    );
+
+    expect(error).toBeInstanceOf(ModelSerializationError);
+    expect(error.operation).toBe("encode");
+    expect(error.issues).toContainEqual({
+      path: ["model"],
+      message: "Expected a serializable fitted model kind",
+    });
   });
 
   it("serializes only portable prediction state", async () => {

@@ -9,6 +9,7 @@ import {
   type Parameters,
   type TrainingInput,
 } from "../../src/internal/fitting-backend";
+import * as Seasonality from "../../src/seasonality";
 
 /**
  * Absolute tolerance for coefficients fitted from small normalized fixtures.
@@ -21,7 +22,10 @@ const parameterTolerance = 1e-12;
 /** Forecast tolerance allows coefficient rounding to accumulate during evaluation. */
 const forecastTolerance = 1e-11;
 
-const linearOptions: FitOptions = { growth: "linear" };
+const linearOptions: FitOptions = {
+  growth: "linear",
+  seasonalities: Effect.runSync(Seasonality.makeSeasonalityLayout([])),
+};
 
 const makeInput = (
   timestamps: ReadonlyArray<number>,

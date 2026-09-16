@@ -8,6 +8,7 @@ import {
   type Parameters,
   type TrainingInput,
 } from "../../src/internal/fitting-backend";
+import { makeSeasonalityLayout } from "../../src/seasonality";
 import { makeTestFittingBackend } from "./fitting-backend-test-layer";
 
 const runnableWithoutServices = <A, E>(effect: Effect.Effect<A, E>): Effect.Effect<A, E> => effect;
@@ -17,7 +18,10 @@ const trainingInput: TrainingInput = {
   values: new Float64Array([1.5, 2.5]),
 };
 
-const fitOptions: FitOptions = { growth: "linear" };
+const fitOptions: FitOptions = {
+  growth: "linear",
+  seasonalities: Effect.runSync(makeSeasonalityLayout([])),
+};
 
 const fittedParameters: Parameters = {
   model: "linear-trend",

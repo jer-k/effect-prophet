@@ -11,6 +11,8 @@ const ValidationInputSchema = Schema.Literals(["observations", "options", "predi
 const FittingFailureReasonSchema = Schema.Literals([
   "insufficient-observations",
   "degenerate-observations",
+  "rank-deficient",
+  "non-finite-result",
   "backend-failure",
 ]);
 
@@ -26,11 +28,29 @@ const WasmFailurePhaseSchema = Schema.Literals(["load", "execute", "protocol"]);
 
 const GrowthSchema = Schema.Literals(["linear", "flat"]);
 
+const UnsupportedConfigurationSchema = Schema.Union([
+  Schema.Struct({
+    option: Schema.Literal("growth"),
+    received: GrowthSchema,
+    supported: Schema.NonEmptyArray(GrowthSchema),
+  }),
+  Schema.Struct({
+    option: Schema.Literal("seasonalities"),
+    received: Schema.Literal("configured"),
+    supported: Schema.Tuple([Schema.Literal("none")]),
+  }),
+]);
+
+/** A valid public option that a selected fitting backend does not implement. */
+export type UnsupportedConfiguration = typeof UnsupportedConfigurationSchema.Type;
+
 export type ValidationInput = "observations" | "options" | "prediction-timestamps";
 
 export type FittingFailureReason =
   | "insufficient-observations"
   | "degenerate-observations"
+  | "rank-deficient"
+  | "non-finite-result"
   | "backend-failure";
 
 export type PredictionFailureReason = "invalid-model" | "non-finite-forecast" | "backend-failure";
@@ -57,13 +77,11 @@ export class InputValidationError extends Schema.TaggedError<InputValidationErro
   },
 ) {}
 
-/** An expected failure when a selected backend does not implement a valid growth option. */
+/** An expected failure when a selected backend does not implement valid public options. */
 export class UnsupportedConfigurationError extends Schema.TaggedError<UnsupportedConfigurationError>()(
   "UnsupportedConfigurationError",
   {
-    option: Schema.Literal("growth"),
-    received: GrowthSchema,
-    supported: Schema.NonEmptyArray(GrowthSchema),
+    configuration: UnsupportedConfigurationSchema,
     message: Schema.String,
   },
 ) {}
@@ -89,6 +107,7 @@ const defineRuntimeCause = (target: Error, options: RuntimeCauseOptions | undefi
 export class FittingError extends Schema.TaggedError<FittingError>()("FittingError", {
   reason: FittingFailureReasonSchema,
   observationCount: Schema.Natural,
+  parameterCount: Schema.optionalKey(Schema.Natural),
   backendPhase: Schema.optionalKey(WasmFailurePhaseSchema),
   message: Schema.String,
 }) {
@@ -100,6 +119,7 @@ export class FittingError extends Schema.TaggedError<FittingError>()("FittingErr
     fields: {
       readonly reason: FittingFailureReason;
       readonly observationCount: number;
+      readonly parameterCount?: number;
       readonly backendPhase?: WasmFailurePhase;
       readonly message: string;
     },

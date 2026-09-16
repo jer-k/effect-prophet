@@ -12,6 +12,7 @@ import {
   wasmLinearTrendFittingBackendLayer,
 } from "../../src/internal/wasm-linear-trend-backend";
 import { fit, predict } from "../../src/prophet";
+import { makeSeasonalityLayout } from "../../src/seasonality";
 import { registerFittingBackendConformance } from "./fitting-backend-conformance";
 
 const observations = [
@@ -98,7 +99,9 @@ const fittingInput = {
   values: new Float64Array([2, 5, 8]),
 };
 
-const linearFitOptions = { growth: "linear" } as const;
+const emptySeasonalities = Effect.runSync(makeSeasonalityLayout([]));
+
+const linearFitOptions = { growth: "linear", seasonalities: emptySeasonalities } as const;
 
 const moduleReturning = (
   fitResult: Float64Array,
@@ -182,7 +185,7 @@ describe("Rust/WASM adapter boundary", () => {
     });
 
     const error = await Effect.runPromise(
-      Effect.flip(adapter.fit(fittingInput, { growth: "flat" })),
+      Effect.flip(adapter.fit(fittingInput, { growth: "flat", seasonalities: emptySeasonalities })),
     );
 
     expect(error).toBeInstanceOf(Error);
@@ -434,7 +437,7 @@ describe("Rust/WASM boundary tracing", () => {
     }
   });
 
-  it("does not record fit boundary spans for validation or unsupported growth failures", async () => {
+  it("does not record fit boundary spans for validation or unsupported options", async () => {
     const recording = makeRecordingTracer();
 
     const invalidInputExit = await Effect.runPromise(
@@ -453,8 +456,19 @@ describe("Rust/WASM boundary tracing", () => {
       ),
     );
 
+    const unsupportedSeasonalityExit = await Effect.runPromise(
+      fit(observations, {
+        seasonalities: [{ name: "custom-week", periodDays: 7, fourierOrder: 1 }],
+      }).pipe(
+        Effect.provide(wasmLinearTrendFittingBackendLayer),
+        Effect.withTracer(recording.tracer),
+        Effect.exit,
+      ),
+    );
+
     expect(Exit.isFailure(invalidInputExit)).toBe(true);
     expect(Exit.isFailure(unsupportedGrowthExit)).toBe(true);
+    expect(Exit.isFailure(unsupportedSeasonalityExit)).toBe(true);
     expect(recording.spans.some((span) => span.name === "effect-prophet.wasm.fit")).toBe(false);
   });
 
