@@ -70,14 +70,100 @@ A trusted additive model stores:
 - the complete validated seasonality layout;
 - exactly one finite public coefficient per layout coefficient;
 - required `normalized-ridge-v1` fit diagnostics;
-- at least two observations and enough observations for the fitted design;
-- numerical rank equal to the full design width, `2 + coefficientCount`; and
+- at least two observations at distinct timestamps;
+- numerical rank of the augmented ridge system equal to the full design width,
+  `2 + coefficientCount` (the observation count may be smaller than this width); and
 - finite, non-negative normalized residual sum of squares and penalized objective values.
 
 All count arithmetic is checked as safe-integer arithmetic. Parsing clones and deeply freezes the
 layout, definitions, components, coefficient array, and fit summary, so caller-owned input aliases
 cannot mutate trusted fitted state.
 
-The exact normalized ridge objective and fitting procedure are specified by EP-020. Fit summaries
-contain finite scalar diagnostics only; they do not retain training rows, backend resources, or
-protocol payloads.
+Fit summaries contain finite scalar diagnostics only; they do not retain training rows, backend
+resources, or protocol payloads.
+
+## Normalized ridge objective
+
+For training origin `min(timestamp)`, training range `timeScale`, and
+`valueScale = max(abs(y))` (or `1` for an all-zero series), fitting uses:
+
+```text
+u_i = (timestamp_i - timeOrigin) / timeScale
+z_i = y_i / valueScale
+X_i = [1, u_i, Fourier features_i]
+θ   = [intercept, slope, seasonal coefficients...]
+
+J(θ) = 0.5 * Σ_i (z_i - X_i θ)^2
+     + 0.5 * Σ_j (β_j / priorScale(component(j)))^2
+```
+
+The residual is a sum rather than a mean. Intercept and slope are unpenalized. Every seasonal
+coefficient has a positive penalty and all columns are solved jointly. Public coefficients are
+multiplied by `valueScale` before leaving the kernel.
+
+The solver uses augmented least squares, `[X; R] θ ≈ [z; 0]`, and column-pivoted Householder QR.
+Each seasonal coefficient contributes one diagonal `1 / priorScale` row to `R`. Consequently,
+two distinct timestamps and positive representable penalties can identify an augmented system with
+more columns than observations. An unregularized rank-deficient system still fails.
+
+Numerical rank uses this single threshold:
+
+```text
+epsilon * max(augmentedRowCount, columnCount) * max(abs(diagonal(QR)))
+```
+
+A diagonal magnitude must be strictly greater than the threshold to count toward rank. The solver
+never falls back to normal equations or a different objective.
+
+One dense Rust numerical buffer is limited to `16,777,216` `f64` entries (128 MiB). Integer
+arithmetic and this limit are checked before allocation. The fit requires dense design, Fourier,
+and augmented QR buffers, so peak memory is larger than one buffer and scales as
+`O((N + K) * (K + 2))`.
+
+## Rust/WASM packed protocol
+
+Additive fit and prediction use status enums separate from the legacy linear protocol.
+
+Fit statuses are:
+
+| Code | Meaning                             |
+| ---: | ----------------------------------- |
+|    0 | success                             |
+|    1 | insufficient observations           |
+|    2 | aligned input length mismatch       |
+|    3 | invalid observation                 |
+|    4 | invalid configuration               |
+|    5 | zero time range                     |
+|    6 | rank deficient                      |
+|    7 | size overflow or dense-buffer limit |
+|    8 | non-finite result                   |
+
+A successful fit is packed as:
+
+```text
+[0, intercept, slope, timeOrigin, timeScale, valueScale,
+ numericalRank, normalizedResidualSumSquares, penalizedObjective,
+ ...coefficients]
+```
+
+A failed fit is `[status]`.
+
+Prediction statuses are:
+
+| Code | Meaning                                         |
+| ---: | ----------------------------------------------- |
+|    0 | success                                         |
+|    1 | invalid timestamp                               |
+|    2 | invalid model metadata or coefficient alignment |
+|    3 | invalid configuration                           |
+|    4 | aligned input length mismatch                   |
+|    5 | size overflow or dense-buffer limit             |
+|    6 | non-finite result                               |
+
+A successful prediction is `[0, ...rowMajorValues]`. Each row is
+`[trend, additive, value, component_0, ...]`. Metadata/configuration failures are `[status]`;
+timestamp evaluation failures are `[status, timestampIndex]`. An empty prediction batch is `[0]`.
+
+Periods, orders, and priors cross the fit boundary once. Prediction omits priors. Fourier orders
+cross as finite positive integer-valued `f64` values no larger than `u32::MAX` and are checked
+before conversion. Legacy linear exports and status codes are unchanged.

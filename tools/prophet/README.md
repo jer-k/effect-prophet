@@ -66,7 +66,11 @@ The suite is intentionally excluded from ordinary `npm test`.
 3. converts observation-unit fixed parameters into Prophet's scaled representation;
 4. calls `setup_dataframe` for prediction rows and `predict_trend`, which delegates to Prophet's
    `piecewise_linear` implementation;
-5. writes stable JSON with non-finite values rejected.
+5. calls Prophet 1.4.0's unmodified `fourier_series` for ordered weekly, fractional-day,
+   epoch, pre-epoch, subdaily, irregular, and repeated timestamp cases;
+6. evaluates authored fixed coefficients against those feature blocks without fitting a model;
+7. rounds CPU-sensitive Fourier and component values to 12 decimal places, well inside the
+   fixture's `1e-11` absolute tolerance, and writes stable JSON with non-finite values rejected.
 
 No model fit or optimizer invocation occurs. The explicitly populated fields are
 `changepoints_t`, `params.k`, `params.m`, and `params.delta`. With the default zero floor, Prophet
@@ -79,7 +83,10 @@ m = observation_unit_intercept / y_scale
 ```
 
 Keeping this conversion in the generator ensures Python Prophet remains the preprocessing and
-fixed-evaluation oracle rather than silently substituting the Effect/Rust equation.
+fixed-evaluation oracle rather than silently substituting the Effect/Rust equation. Fourier
+fixtures similarly use Prophet for every expected feature column; explicit matrix multiplication
+produces their fixed component values. Neither fixture family invokes an optimizer, so Fourier
+parity must not be described as fit parity.
 
 ## Shared comparison substrate
 

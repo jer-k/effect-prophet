@@ -114,6 +114,95 @@ const LinearTrendReferenceFileSchema = Schema.Struct({
   }),
 );
 
+const FourierReferenceCaseSchema = Schema.Struct({
+  kind: Schema.Literal("fourier-features"),
+  id: Schema.NonEmptyString,
+  timestamps: Schema.Array(CanonicalTimestamp),
+  seasonalities: Schema.Array(
+    Schema.Struct({
+      name: Schema.NonEmptyString,
+      periodDays: PositiveFinite,
+      fourierOrder: Schema.Int.check(Schema.isGreaterThan(0)),
+      priorScale: PositiveFinite,
+    }),
+  ),
+  coefficients: Schema.Array(Schema.Finite),
+  expected: Schema.Struct({
+    rowCount: Schema.Natural,
+    columnCount: Schema.Natural,
+    featuresRowMajor: Schema.Array(Schema.Finite),
+    componentsRowMajor: Schema.Array(Schema.Finite),
+  }),
+  tolerance: NumericToleranceSchema,
+}).check(
+  Schema.makeFilter((referenceCase) => {
+    const issues: Array<{ readonly path: ReadonlyArray<PropertyKey>; readonly issue: string }> = [];
+
+    const expectedColumnCount = referenceCase.seasonalities.reduce(
+      (count, seasonality) => count + seasonality.fourierOrder * 2,
+      0,
+    );
+
+    if (referenceCase.expected.rowCount !== referenceCase.timestamps.length) {
+      issues.push({
+        path: ["expected", "rowCount"],
+        issue: "Fourier row count must align with timestamps",
+      });
+    }
+
+    if (
+      referenceCase.expected.columnCount !== expectedColumnCount ||
+      referenceCase.coefficients.length !== expectedColumnCount
+    ) {
+      issues.push({
+        path: ["expected", "columnCount"],
+        issue: "Fourier columns and coefficients must align with seasonalities",
+      });
+    }
+
+    if (
+      referenceCase.expected.featuresRowMajor.length !==
+      referenceCase.expected.rowCount * referenceCase.expected.columnCount
+    ) {
+      issues.push({
+        path: ["expected", "featuresRowMajor"],
+        issue: "Fourier feature values must match the declared matrix dimensions",
+      });
+    }
+
+    if (
+      referenceCase.expected.componentsRowMajor.length !==
+      referenceCase.expected.rowCount * referenceCase.seasonalities.length
+    ) {
+      issues.push({
+        path: ["expected", "componentsRowMajor"],
+        issue: "Fourier component values must align with timestamps and seasonalities",
+      });
+    }
+
+    return issues;
+  }),
+);
+
+const FourierReferenceFileSchema = Schema.Struct({
+  cases: Schema.NonEmptyArray(FourierReferenceCaseSchema),
+}).check(
+  Schema.makeFilter((fixture) => {
+    const identifiers = new Set<string>();
+
+    for (const [index, referenceCase] of fixture.cases.entries()) {
+      if (identifiers.has(referenceCase.id)) {
+        return {
+          path: ["cases", index, "id"],
+          issue: "Fourier reference case IDs must be unique",
+        };
+      }
+
+      identifiers.add(referenceCase.id);
+    }
+  }),
+);
+
 const ArtifactPath = Schema.String.check(
   Schema.makeFilter(
     (value) =>
@@ -172,11 +261,13 @@ const FixtureManifestSchema = Schema.Struct({
       paths.add(artifact.path);
     }
 
-    if (!paths.has("linear-trend.json")) {
-      return {
-        path: ["artifacts"],
-        issue: "Manifest must declare linear-trend.json",
-      };
+    for (const requiredPath of ["linear-trend.json", "fourier.json"]) {
+      if (!paths.has(requiredPath)) {
+        return {
+          path: ["artifacts"],
+          issue: `Manifest must declare ${requiredPath}`,
+        };
+      }
     }
   }),
 );
@@ -185,6 +276,10 @@ const decodeLinearTrendReferenceSchema = Schema.decodeUnknownEffect(
   LinearTrendReferenceFileSchema,
   { errors: "all" },
 );
+
+const decodeFourierReferenceSchema = Schema.decodeUnknownEffect(FourierReferenceFileSchema, {
+  errors: "all",
+});
 
 const decodeFixtureManifestSchema = Schema.decodeUnknownEffect(FixtureManifestSchema, {
   errors: "all",
@@ -200,6 +295,12 @@ export type LinearTrendReferenceCase = typeof LinearTrendReferenceCaseSchema.Typ
 
 /** A parsed collection of uniquely identified linear-trend reference cases. */
 export type LinearTrendReferenceFile = typeof LinearTrendReferenceFileSchema.Type;
+
+/** A parsed fixed-parameter Prophet Fourier reference case. */
+export type FourierReferenceCase = typeof FourierReferenceCaseSchema.Type;
+
+/** A parsed collection of Prophet Fourier reference cases. */
+export type FourierReferenceFile = typeof FourierReferenceFileSchema.Type;
 
 /** Parsed provenance and artifact integrity metadata for the fixture folder. */
 export type FixtureManifest = typeof FixtureManifestSchema.Type;
@@ -255,6 +356,24 @@ export const decodeLinearTrendReference = Effect.fn("ProphetFixture.decodeLinear
   },
 );
 
+/** Parse an untrusted Fourier fixture payload with matrix-alignment checks. */
+export const decodeFourierReference = Effect.fn("ProphetFixture.decodeFourierReference")(function* (
+  input: Parameters<typeof decodeFourierReferenceSchema>[0],
+  path = "<memory>",
+): Effect.fn.Return<FourierReferenceFile, FixtureLoadError> {
+  return yield* decodeFourierReferenceSchema(input).pipe(
+    Effect.mapError(
+      (cause) =>
+        new FixtureLoadError({
+          operation: "schema",
+          fixturePath: path,
+          message: formatSchemaIssue(cause.issue),
+          cause,
+        }),
+    ),
+  );
+});
+
 /** Parse an untrusted fixture manifest, including safe relative artifact paths. */
 export const decodeFixtureManifest = Effect.fn("ProphetFixture.decodeFixtureManifest")(function* (
   input: Parameters<typeof decodeFixtureManifestSchema>[0],
@@ -308,7 +427,7 @@ const verifyArtifact = Effect.fn("ProphetFixture.verifyArtifact")(function* (
  * Load the committed Prophet fixture bundle and verify every declared artifact digest.
  *
  * @param root - Fixture directory, defaulting to the directory containing this module.
- * @returns Parsed provenance and linear-trend references, or an explicit infrastructure failure.
+ * @returns Parsed provenance, linear-trend references, and Fourier references, or an explicit infrastructure failure.
  */
 export const loadProphetFixtureBundle = Effect.fn("ProphetFixture.loadBundle")(function* (
   root = fixtureRoot,
@@ -339,6 +458,15 @@ export const loadProphetFixtureBundle = Effect.fn("ProphetFixture.loadBundle")(f
   });
 
   const linearTrend = yield* decodeLinearTrendReference(linearTrendInput, linearTrendPath);
+  const fourierPath = nodePath.join(root, "fourier.json");
+  const fourierContents = yield* readFixtureText(fourierPath);
 
-  return { linearTrend, manifest };
+  const fourierInput: unknown = yield* Effect.try({
+    try: () => JSON.parse(fourierContents),
+    catch: (cause) => invalidJson(fourierPath, cause),
+  });
+
+  const fourier = yield* decodeFourierReference(fourierInput, fourierPath);
+
+  return { fourier, linearTrend, manifest };
 });

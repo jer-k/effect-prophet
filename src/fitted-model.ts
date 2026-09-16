@@ -82,13 +82,6 @@ const consistentLinearAdditiveParameters = Schema.makeFilter<LinearAdditiveParam
       });
     }
 
-    if (parameters.fitSummary.observationCount < designColumnCount) {
-      issues.push({
-        path: ["fitSummary", "observationCount"],
-        issue: `A full-rank design with ${designColumnCount} columns requires at least that many observations`,
-      });
-    }
-
     return issues;
   },
 );

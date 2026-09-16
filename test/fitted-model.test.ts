@@ -301,16 +301,18 @@ describe("fitted model domain", () => {
     );
   });
 
-  it("requires enough observations for the reported full-rank design", async () => {
+  it("accepts fewer observations than design columns for a full-rank ridge fit", async () => {
     const parameters = await validLinearAdditiveParameters();
 
-    await expectInvalidModel(
+    const model = await Effect.runPromise(
       parseLinearAdditiveModel({
         ...parameters,
-        fitSummary: { ...parameters.fitSummary, observationCount: 3 },
+        fitSummary: { ...parameters.fitSummary, observationCount: 2 },
       }),
-      "observationCount",
     );
+
+    expect(model.fitSummary.observationCount).toBe(2);
+    expect(model.fitSummary.numericalRank).toBe(4);
   });
 
   it("rejects additive design-size overflow without coefficient-sized allocation", async () => {

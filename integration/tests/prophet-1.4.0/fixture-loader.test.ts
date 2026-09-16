@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   FixtureLoadError,
   decodeFixtureManifest,
+  decodeFourierReference,
   decodeLinearTrendReference,
   loadProphetFixtureBundle,
 } from "../../helpers/prophet-fixture";
@@ -30,6 +31,28 @@ const validCase = () => ({
   tolerance: { absolute: 1e-12, relative: 1e-12 },
 });
 
+const validFourierCase = () => ({
+  kind: "fourier-features",
+  id: "valid-fourier",
+  timestamps: ["1970-01-01T00:00:00.000Z"],
+  seasonalities: [
+    {
+      name: "one-day",
+      periodDays: 1,
+      fourierOrder: 1,
+      priorScale: 10,
+    },
+  ],
+  coefficients: [2, 3],
+  expected: {
+    rowCount: 1,
+    columnCount: 2,
+    featuresRowMajor: [0, 1],
+    componentsRowMajor: [3],
+  },
+  tolerance: { absolute: 1e-12, relative: 1e-12 },
+});
+
 describe("Prophet fixture loader", () => {
   it("loads committed fixtures and verifies their digests", async () => {
     const bundle = await Effect.runPromise(loadProphetFixtureBundle());
@@ -39,6 +62,10 @@ describe("Prophet fixture loader", () => {
       "irregular-positive-extrapolation",
       "constant-negative-trend",
       "irregular-negative-slope",
+    ]);
+    expect(bundle.fourier.cases.map((referenceCase) => referenceCase.id)).toEqual([
+      "weekly-and-fractional-day-irregular",
+      "epoch-pre-epoch-and-repeated",
     ]);
   });
 
@@ -53,6 +80,18 @@ describe("Prophet fixture loader", () => {
     expect(error).toBeInstanceOf(FixtureLoadError);
     expect(error.operation).toBe("schema");
     expect(error.message).toContain("Trend values must align");
+  });
+
+  it("rejects misaligned Fourier matrices", async () => {
+    const referenceCase = validFourierCase();
+    referenceCase.expected.featuresRowMajor = [0];
+
+    const error = await Effect.runPromise(
+      Effect.flip(decodeFourierReference({ cases: [referenceCase] })),
+    );
+
+    expect(error).toBeInstanceOf(FixtureLoadError);
+    expect(error.message).toContain("matrix dimensions");
   });
 
   it("rejects negative tolerances", async () => {
