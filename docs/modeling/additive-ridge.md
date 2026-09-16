@@ -6,8 +6,10 @@ Stage B models a linear trend plus additive Fourier seasonalities. Its fitted mo
 `linear-additive-ridge`. This is distinct from the existing `linear-trend` ordinary least-squares
 model and must not be described as a full Prophet MAP fit.
 
-EP-018 defines metadata and trusted fitted state only. Fourier evaluation, fitting, public options,
-prediction dispatch, and portable serialization are connected in later tickets.
+The public `prophetFittingBackendLayer` selects the narrow additive WASM adapter for the non-empty
+seasonality configuration variant and connects it to option decoding, fitting, prediction dispatch,
+named component forecasts, tracing, and portable serialization. Automatic built-in seasonality
+resolution remains a later capability.
 
 ## Time and units
 
@@ -119,6 +121,24 @@ One dense Rust numerical buffer is limited to `16,777,216` `f64` entries (128 Mi
 arithmetic and this limit are checked before allocation. The fit requires dense design, Fourier,
 and augmented QR buffers, so peak memory is larger than one buffer and scales as
 `O((N + K) * (K + 2))`.
+
+## Public options and forecasts
+
+Callers configure ordered custom definitions through `seasonalities`. Omission means an empty
+layout; it does not enable daily, weekly, or yearly defaults. The public fit operation parses the
+definitions, constructs the deterministic layout, and supplies resolved numeric metadata to the
+complete public backend. A non-empty list selects the additive adapter; omission selects ordinary
+linear fitting. The provisional flat baseline is a separate union member that cannot contain
+seasonalities.
+
+Every forecast has `timestamp`, `trend`, `additive`, `value`, and `seasonalities`. Named component
+values use observation units and retain definition order. Within floating-point tolerance,
+`additive` is the sum of the named components and `value` is `trend + additive`. Ordinary linear
+and constant forecasts use zero additive contribution and an empty component list.
+
+Portable additive payloads retain coefficients, scaling, ordered definitions, and the complete fit
+summary. Decoding reconstructs layout offsets and counts through this domain owner and requires no
+fitting backend.
 
 ## Rust/WASM packed protocol
 

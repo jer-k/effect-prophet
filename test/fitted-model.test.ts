@@ -354,10 +354,18 @@ describe("fitted model domain", () => {
     );
   });
 
-  it("does not add the additive family to the current fitted-model union", async () => {
+  it("includes deeply immutable additive models in the public fitted-model union", async () => {
     const parameters = await validLinearAdditiveParameters();
+    const model = await Effect.runPromise(parseFittedModel(parameters));
 
-    await expectInvalidModel(parseFittedModel(parameters), "model");
+    expect(model.model).toBe("linear-additive-ridge");
+    expect(Object.isFrozen(model)).toBe(true);
+
+    if (model.model === "linear-additive-ridge") {
+      expect(Object.isFrozen(model.coefficients)).toBe(true);
+      expect(Object.isFrozen(model.seasonalities)).toBe(true);
+      expect(Object.isFrozen(model.fitSummary)).toBe(true);
+    }
   });
 
   it("requires parsing before raw parameter records are trusted", async () => {

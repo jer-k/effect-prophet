@@ -2,11 +2,11 @@ import { Effect, Layer, Result } from "effect";
 
 import {
   FittingBackend,
-  type FitOptions,
+  type FitPlan,
   type Parameters,
   type TrainingInput,
 } from "../../src/internal/fitting-backend";
-import type { FittingError, UnsupportedConfigurationError } from "../../src/errors";
+import type { FittingError } from "../../src/errors";
 
 /** One complete fitting invocation captured by the deterministic test backend. */
 export interface FittingBackendInvocation {
@@ -14,7 +14,7 @@ export interface FittingBackendInvocation {
   readonly input: TrainingInput;
 
   /** The fitting options received with the training input. */
-  readonly options: FitOptions;
+  readonly options: FitPlan;
 }
 
 /** A deterministic fitting Layer and its observable invocation history. */
@@ -33,7 +33,7 @@ export interface TestFittingBackend {
  * @returns The test Layer and its live, read-only invocation history.
  */
 export const makeTestFittingBackend = (
-  result: Result.Result<Parameters, FittingError | UnsupportedConfigurationError>,
+  result: Result.Result<Parameters, FittingError>,
 ): TestFittingBackend => {
   const invocations: Array<FittingBackendInvocation> = [];
 

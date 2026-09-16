@@ -3,7 +3,6 @@ export {
   InputValidationError,
   ModelSerializationError,
   PredictionError,
-  UnsupportedConfigurationError,
   type FittingFailureReason,
   type ModelSerializationOperation,
   type PredictionFailureReason,
@@ -20,29 +19,44 @@ export {
   type Observations,
 } from "./observation";
 
-export { constantMeanFittingBackendLayer } from "./internal/constant-fitting-backend";
-
-export { wasmLinearTrendFittingBackendLayer } from "./internal/wasm-linear-trend-backend";
+export { prophetFittingBackendLayer } from "./internal/prophet-fitting-backend";
 
 export {
   decodeFittedModel,
   encodeFittedModel,
   type EncodedFittedModel,
+  type EncodedLinearAdditiveModel,
+  type EncodedLinearModel,
+  type SerializableFittedModel,
 } from "./model-serialization";
 
 export {
   decodeOptions,
   defaultProphetOptions,
+  type EncodedFlatBaselineOptions,
+  type EncodedLinearAdditiveOptions,
+  type EncodedLinearTrendOptions,
   type EncodedProphetOptions,
+  type FlatBaselineOptions,
   type Growth,
+  type LinearAdditiveOptions,
+  type LinearTrendOptions,
   type ProphetOptions,
 } from "./options";
 
 export {
   type FittedConstantProphet,
+  type FittedLinearAdditiveProphet,
   type FittedLinearProphet,
   type FittedProphet,
+  type LinearAdditiveParameters,
 } from "./fitted-model";
+
+export {
+  defaultSeasonalityPriorScale,
+  type EncodedSeasonality,
+  type SeasonalityDefinition,
+} from "./seasonality";
 
 export {
   fit,
@@ -51,4 +65,5 @@ export {
   type Forecast,
   type Forecasts,
   type PredictionTimestamps,
+  type SeasonalForecastComponent,
 } from "./prophet";

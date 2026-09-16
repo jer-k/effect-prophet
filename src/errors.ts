@@ -11,6 +11,8 @@ const ValidationInputSchema = Schema.Literals(["observations", "options", "predi
 const FittingFailureReasonSchema = Schema.Literals([
   "insufficient-observations",
   "degenerate-observations",
+  "rank-deficient",
+  "non-finite-result",
   "backend-failure",
 ]);
 
@@ -24,13 +26,13 @@ const ModelSerializationOperationSchema = Schema.Literals(["encode", "decode"]);
 
 const WasmFailurePhaseSchema = Schema.Literals(["load", "execute", "protocol"]);
 
-const GrowthSchema = Schema.Literals(["linear", "flat"]);
-
 export type ValidationInput = "observations" | "options" | "prediction-timestamps";
 
 export type FittingFailureReason =
   | "insufficient-observations"
   | "degenerate-observations"
+  | "rank-deficient"
+  | "non-finite-result"
   | "backend-failure";
 
 export type PredictionFailureReason = "invalid-model" | "non-finite-forecast" | "backend-failure";
@@ -57,17 +59,6 @@ export class InputValidationError extends Schema.TaggedError<InputValidationErro
   },
 ) {}
 
-/** An expected failure when a selected backend does not implement a valid growth option. */
-export class UnsupportedConfigurationError extends Schema.TaggedError<UnsupportedConfigurationError>()(
-  "UnsupportedConfigurationError",
-  {
-    option: Schema.Literal("growth"),
-    received: GrowthSchema,
-    supported: Schema.NonEmptyArray(GrowthSchema),
-    message: Schema.String,
-  },
-) {}
-
 interface RuntimeCauseOptions {
   readonly cause?: unknown;
 }
@@ -89,6 +80,7 @@ const defineRuntimeCause = (target: Error, options: RuntimeCauseOptions | undefi
 export class FittingError extends Schema.TaggedError<FittingError>()("FittingError", {
   reason: FittingFailureReasonSchema,
   observationCount: Schema.Natural,
+  parameterCount: Schema.optionalKey(Schema.Natural),
   backendPhase: Schema.optionalKey(WasmFailurePhaseSchema),
   message: Schema.String,
 }) {
@@ -100,6 +92,7 @@ export class FittingError extends Schema.TaggedError<FittingError>()("FittingErr
     fields: {
       readonly reason: FittingFailureReason;
       readonly observationCount: number;
+      readonly parameterCount?: number;
       readonly backendPhase?: WasmFailurePhase;
       readonly message: string;
     },

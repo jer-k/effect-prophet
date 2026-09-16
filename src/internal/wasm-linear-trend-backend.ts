@@ -1,13 +1,8 @@
-import { Effect, Layer } from "effect";
+import { Effect } from "effect";
 
-import {
-  FittingError,
-  PredictionError,
-  UnsupportedConfigurationError,
-  type WasmFailurePhase,
-} from "../errors";
+import { FittingError, PredictionError, type WasmFailurePhase } from "../errors";
 import { parseLinearModel, type FittedLinearProphet, type LinearParameters } from "../fitted-model";
-import { FittingBackend } from "./fitting-backend";
+import type { TrainingInput } from "./fitting-backend";
 import { loadProphetWasmModule, type LinearTrendWasmBindings } from "./prophet-wasm-module";
 
 /** Lazy loader for checked Rust/WASM linear-trend bindings. */
@@ -15,8 +10,8 @@ export type WasmLinearTrendLoader = () => LinearTrendWasmBindings;
 
 /** Internal fitting and prediction operations backed by one WASM module loader. */
 export interface WasmLinearTrendAdapter {
-  /** Fit through the configured WASM boundary. */
-  readonly fit: FittingBackend["fit"];
+  /** Fit a linear trend through the configured WASM boundary. */
+  readonly fit: (input: TrainingInput) => Effect.Effect<LinearParameters, FittingError>;
 
   /** Predict through the configured WASM boundary. */
   readonly predict: (
@@ -314,18 +309,7 @@ const predictSpanOptions = (predictionCount: number) => ({
 export const makeWasmLinearTrendAdapter = (
   loadModule: WasmLinearTrendLoader,
 ): WasmLinearTrendAdapter => {
-  const fit: WasmLinearTrendAdapter["fit"] = (input, options) => {
-    if (options.growth !== "linear") {
-      return Effect.fail(
-        new UnsupportedConfigurationError({
-          option: "growth",
-          received: options.growth,
-          supported: ["linear"],
-          message: `The WASM linear-trend backend does not support ${options.growth} growth`,
-        }),
-      );
-    }
-
+  const fit: WasmLinearTrendAdapter["fit"] = (input) => {
     const observationCount = input.values.length;
 
     return Effect.gen(function* () {
@@ -425,11 +409,8 @@ export const makeWasmLinearTrendAdapter = (
 
 const defaultWasmLinearTrendAdapter = makeWasmLinearTrendAdapter(loadProphetWasmModule);
 
-/** Rust/WASM fitting Layer backed by one coarse linear-trend fit operation. */
-export const wasmLinearTrendFittingBackendLayer: Layer.Layer<FittingBackend> = Layer.succeed(
-  FittingBackend,
-  { fit: defaultWasmLinearTrendAdapter.fit },
-);
+/** Fit a linear trend through the default coarse Rust/WASM operation. */
+export const fitLinearTrendWithWasm = defaultWasmLinearTrendAdapter.fit;
 
 /**
  * Evaluate all requested timestamps through one coarse Rust/WASM operation.

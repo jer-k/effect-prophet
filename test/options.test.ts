@@ -3,9 +3,9 @@ import { describe, expect, it } from "vitest";
 
 import {
   InputValidationError,
-  UnsupportedConfigurationError,
   decodeOptions,
   defaultProphetOptions,
+  type EncodedProphetOptions,
 } from "../src/index";
 
 const expectOptionsFailure = async (input: Parameters<typeof decodeOptions>[0]) => {
@@ -23,7 +23,7 @@ describe("decodeOptions", () => {
     const options = await Effect.runPromise(decodeOptions());
 
     expect(options).toEqual(defaultProphetOptions);
-    expect(options).toEqual({ growth: "linear" });
+    expect(options).toEqual({ growth: "linear", seasonalities: [] });
   });
 
   it("applies defaults to an empty options object", async () => {
@@ -32,16 +32,81 @@ describe("decodeOptions", () => {
     expect(options).toEqual(defaultProphetOptions);
   });
 
-  it.each(["flat", "linear"] as const)("accepts %s growth", async (growth) => {
-    const options = await Effect.runPromise(decodeOptions({ growth }));
+  it.each(["flat", "linear"] as const)(
+    "accepts supported featureless %s growth",
+    async (growth) => {
+      const options = await Effect.runPromise(decodeOptions({ growth }));
 
-    expect(options).toEqual({ growth });
+      expect(options).toEqual({ growth, seasonalities: [] });
+    },
+  );
+
+  it("represents supported public configurations as a union", () => {
+    const flat: EncodedProphetOptions = { growth: "flat" };
+    const linear: EncodedProphetOptions = {};
+
+    const additive: EncodedProphetOptions = {
+      seasonalities: [{ name: "work-week", periodDays: 7, fourierOrder: 3 }],
+    };
+
+    // @ts-expect-error -- Flat additive fitting is not a supported public variant yet.
+    const unsupportedFlatAdditive: EncodedProphetOptions = {
+      growth: "flat",
+      seasonalities: [{ name: "work-week", periodDays: 7, fourierOrder: 3 }],
+    };
+
+    expect([flat, linear, additive, unsupportedFlatAdditive]).toHaveLength(4);
+  });
+
+  it("rejects flat seasonalities at the untyped decoding boundary", async () => {
+    const error = await expectOptionsFailure({
+      growth: "flat",
+      seasonalities: [{ name: "work-week", periodDays: 7, fourierOrder: 3 }],
+    });
+
+    expect(error.issues).toContainEqual({
+      message: "The provisional flat baseline does not support seasonalities",
+      path: ["seasonalities"],
+    });
+  });
+
+  it("parses ordered explicit seasonalities and applies prior defaults", async () => {
+    const options = await Effect.runPromise(
+      decodeOptions({
+        seasonalities: [
+          { name: "work-week", periodDays: 7, fourierOrder: 3 },
+          { name: "quarter", periodDays: 91.25, fourierOrder: 2, priorScale: 4 },
+        ],
+      }),
+    );
+
+    expect(options).toEqual({
+      growth: "linear",
+      seasonalities: [
+        { name: "work-week", periodDays: 7, fourierOrder: 3, priorScale: 10 },
+        { name: "quarter", periodDays: 91.25, fourierOrder: 2, priorScale: 4 },
+      ],
+    });
+    expect(Object.isFrozen(options.seasonalities)).toBe(true);
+  });
+
+  it("reports nested seasonality failures at option-relative paths", async () => {
+    const error = await expectOptionsFailure({
+      seasonalities: [
+        { name: "duplicate", periodDays: 7, fourierOrder: 1 },
+        { name: "duplicate", periodDays: 30, fourierOrder: 2 },
+      ],
+    });
+
+    expect(error.issues).toContainEqual({
+      message: expect.stringContaining("duplicated"),
+      path: ["seasonalities", 1, "name"],
+    });
   });
 
   it("rejects invalid growth values at the options boundary", async () => {
     const error = await expectOptionsFailure({ growth: "logistic" });
 
-    expect(error).not.toBeInstanceOf(UnsupportedConfigurationError);
     expect(error.issues).toContainEqual({
       message: expect.stringContaining("flat"),
       path: ["growth"],

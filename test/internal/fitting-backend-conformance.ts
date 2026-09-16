@@ -1,14 +1,8 @@
-import { Effect, Layer } from "effect";
+import { Effect } from "effect";
 import { describe, expect, it } from "vitest";
 
-import { FittingError, type UnsupportedConfigurationError } from "../../src/errors";
-import {
-  FittingBackend,
-  type FitOptions,
-  type LinearParameters,
-  type Parameters,
-  type TrainingInput,
-} from "../../src/internal/fitting-backend";
+import { FittingError } from "../../src/errors";
+import type { LinearParameters, TrainingInput } from "../../src/internal/fitting-backend";
 
 /**
  * Absolute tolerance for coefficients fitted from small normalized fixtures.
@@ -21,7 +15,7 @@ const parameterTolerance = 1e-12;
 /** Forecast tolerance allows coefficient rounding to accumulate during evaluation. */
 const forecastTolerance = 1e-11;
 
-const linearOptions: FitOptions = { growth: "linear" };
+type FitLinearTrend = (input: TrainingInput) => Effect.Effect<LinearParameters, FittingError>;
 
 const makeInput = (
   timestamps: ReadonlyArray<number>,
@@ -31,17 +25,9 @@ const makeInput = (
   values: new Float64Array(values),
 });
 
-const fitWith = (
-  layer: Layer.Layer<FittingBackend>,
-  input: TrainingInput,
-): Effect.Effect<Parameters, FittingError | UnsupportedConfigurationError> =>
-  Effect.gen(function* () {
-    const backend = yield* FittingBackend;
+const fitWith = (fit: FitLinearTrend, input: TrainingInput) => fit(input);
 
-    return yield* backend.fit(input, linearOptions);
-  }).pipe(Effect.provide(layer));
-
-const requireLinearParameters = (parameters: Parameters): LinearParameters => {
+const requireLinearParameters = (parameters: LinearParameters): LinearParameters => {
   expect(parameters.model).toBe("linear-trend");
 
   if (parameters.model !== "linear-trend") {
@@ -55,17 +41,10 @@ const evaluateContract = (parameters: LinearParameters, timestamp: number): numb
   parameters.intercept +
   parameters.slope * ((timestamp - parameters.timeOrigin) / parameters.timeScale);
 
-const expectFailure = async (
-  layer: Layer.Layer<FittingBackend>,
-  input: TrainingInput,
-): Promise<FittingError> => {
-  const error = await Effect.runPromise(Effect.flip(fitWith(layer, input)));
+const expectFailure = async (fit: FitLinearTrend, input: TrainingInput): Promise<FittingError> => {
+  const error = await Effect.runPromise(Effect.flip(fitWith(fit, input)));
 
-  if (error instanceof FittingError) {
-    return error;
-  }
-
-  throw new Error(`Linear growth unexpectedly failed with ${error._tag}`);
+  return error;
 };
 
 /**
@@ -76,11 +55,11 @@ const expectFailure = async (
  * deterministic finite output, and equivalent typed failures.
  *
  * @param backendName - Human-readable implementation name used in test output.
- * @param layer - Layer providing the backend implementation under test.
+ * @param fit - Linear fitting operation under test.
  */
 export const registerFittingBackendConformance = (
   backendName: string,
-  layer: Layer.Layer<FittingBackend>,
+  fit: FitLinearTrend,
 ): void => {
   describe(`${backendName} fitting backend conformance`, () => {
     it("fits known linear data and returns reusable scaling metadata", async () => {
@@ -88,7 +67,7 @@ export const registerFittingBackendConformance = (
 
       const parameters = requireLinearParameters(
         await Effect.runPromise(
-          fitWith(layer, makeInput([base, base + 1_000, base + 2_000], [2, 5, 8])),
+          fitWith(fit, makeInput([base, base + 1_000, base + 2_000], [2, 5, 8])),
         ),
       );
 
@@ -103,14 +82,14 @@ export const registerFittingBackendConformance = (
 
     it("returns deterministic parameters for repeated fits", async () => {
       const input = makeInput([0, 1, 2, 3], [1.1, 2.9, 5.2, 6.8]);
-      const first = await Effect.runPromise(fitWith(layer, input));
-      const second = await Effect.runPromise(fitWith(layer, input));
+      const first = await Effect.runPromise(fitWith(fit, input));
+      const second = await Effect.runPromise(fitWith(fit, input));
 
       expect(second).toEqual(first);
     });
 
     it("reports zero time variance as degenerate observations", async () => {
-      const error = await expectFailure(layer, makeInput([1, 1, 1], [3, 4, 5]));
+      const error = await expectFailure(fit, makeInput([1, 1, 1], [3, 4, 5]));
 
       expect(error).toBeInstanceOf(FittingError);
       expect(error._tag).toBe("FittingError");
@@ -121,7 +100,7 @@ export const registerFittingBackendConformance = (
 
     it("prevents non-finite coefficients from escaping", async () => {
       const error = await expectFailure(
-        layer,
+        fit,
         makeInput([0, 1], [-Number.MAX_VALUE, Number.MAX_VALUE]),
       );
 
@@ -157,7 +136,7 @@ export const registerFittingBackendConformance = (
         observationCount: 2,
       },
     ])("returns structured diagnostics for $name", async ({ input, reason, observationCount }) => {
-      const error = await expectFailure(layer, input);
+      const error = await expectFailure(fit, input);
 
       expect(error._tag).toBe("FittingError");
       expect(error.reason).toBe(reason);
