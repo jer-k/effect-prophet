@@ -5,16 +5,13 @@ import {
   FittingError,
   InputValidationError,
   PredictionError,
-  UnsupportedConfigurationError,
-  constantMeanFittingBackendLayer,
   fit,
   predict,
-  wasmAdditiveFittingBackendLayer,
-  wasmLinearTrendFittingBackendLayer,
+  prophetFittingBackendLayer,
   type FittedProphet,
 } from "../src/index";
 import { parseLinearModel, type LinearParameters } from "../src/fitted-model";
-import { FittingBackend } from "../src/internal/fitting-backend";
+import { FitPlan, FittingBackend } from "../src/internal/fitting-backend";
 import { makeTestFittingBackend } from "./internal/fitting-backend-test-layer";
 
 const observations = [
@@ -29,19 +26,15 @@ const predictionTimestamps = ["2024-01-01T00:00:03.000Z", "2024-01-01T00:00:04.0
 const linearForecastPrecisionDigits = 12;
 
 describe("linear-trend Prophet integration", () => {
-  it("exposes validation, capability, and numerical failures precisely", () => {
+  it("exposes validation and numerical failures precisely", () => {
     expectTypeOf(fit(observations)).toEqualTypeOf<
-      Effect.Effect<
-        FittedProphet,
-        InputValidationError | UnsupportedConfigurationError | FittingError,
-        FittingBackend
-      >
+      Effect.Effect<FittedProphet, InputValidationError | FittingError, FittingBackend>
     >();
   });
 
   it("fits through the TypeScript Layer and predicts trend forecasts", async () => {
     const model = await Effect.runPromise(
-      fit(observations).pipe(Effect.provide(wasmLinearTrendFittingBackendLayer)),
+      fit(observations).pipe(Effect.provide(prophetFittingBackendLayer)),
     );
 
     const forecasts = await Effect.runPromise(predict(model, predictionTimestamps));
@@ -93,17 +86,14 @@ describe("linear-trend Prophet integration", () => {
           timestamps: new Float64Array([1_704_067_200_000, 1_704_067_201_000, 1_704_067_202_000]),
           values: new Float64Array([2, 5, 8]),
         },
-        options: {
-          growth: "linear",
-          seasonalities: { components: [], coefficientCount: 0 },
-        },
+        options: FitPlan.LinearTrend(),
       },
     ]);
   });
 
-  it("keeps the constant backend as an explicitly named flat-growth example", async () => {
+  it("routes explicit flat growth to the provisional constant-mean baseline", async () => {
     const model = await Effect.runPromise(
-      fit(observations, { growth: "flat" }).pipe(Effect.provide(constantMeanFittingBackendLayer)),
+      fit(observations, { growth: "flat" }).pipe(Effect.provide(prophetFittingBackendLayer)),
     );
 
     const [forecast] = await Effect.runPromise(predict(model, [predictionTimestamps[0]]));
@@ -118,47 +108,6 @@ describe("linear-trend Prophet integration", () => {
       seasonalities: [],
     });
   });
-
-  it("classifies flat growth as unsupported by the WASM linear backend", async () => {
-    const error = await Effect.runPromise(
-      Effect.flip(
-        fit(observations, { growth: "flat" }).pipe(
-          Effect.provide(wasmLinearTrendFittingBackendLayer),
-        ),
-      ),
-    );
-
-    expect(error).toBeInstanceOf(UnsupportedConfigurationError);
-
-    if (error instanceof UnsupportedConfigurationError) {
-      expect(error.configuration).toEqual({
-        option: "growth",
-        received: "flat",
-        supported: ["linear"],
-      });
-    }
-  });
-
-  it.each([undefined, { growth: "linear" as const }])(
-    "requires explicit flat growth for the constant example with options %j",
-    async (options) => {
-      const error = await Effect.runPromise(
-        Effect.flip(
-          fit(observations, options).pipe(Effect.provide(constantMeanFittingBackendLayer)),
-        ),
-      );
-
-      expect(error).toBeInstanceOf(UnsupportedConfigurationError);
-
-      if (error instanceof UnsupportedConfigurationError) {
-        expect(error.configuration).toEqual({
-          option: "growth",
-          received: "linear",
-          supported: ["flat"],
-        });
-      }
-    },
-  );
 
   it("rejects invalid observations before executing the backend", async () => {
     const testBackend = makeTestFittingBackend(
@@ -197,6 +146,7 @@ describe("linear-trend Prophet integration", () => {
       }),
     );
 
+    // @ts-expect-error -- Invalid JavaScript input still exercises runtime option parsing.
     const program = fit(observations, { growth: "logistic" }).pipe(
       Effect.provide(testBackend.layer),
     );
@@ -214,7 +164,7 @@ describe("linear-trend Prophet integration", () => {
 
   it("maps insufficient data from the linear kernel to a fitting error", async () => {
     const program = fit([{ timestamp: "2024-01-01T00:00:00.000Z", value: 2 }]).pipe(
-      Effect.provide(wasmLinearTrendFittingBackendLayer),
+      Effect.provide(prophetFittingBackendLayer),
     );
 
     const error = await Effect.runPromise(Effect.flip(program));
@@ -233,9 +183,7 @@ describe("linear-trend Prophet integration", () => {
       { timestamp: "2024-01-01T00:00:01.000Z", value: Number.MAX_VALUE },
     ] as const;
 
-    const program = fit(extremeObservations).pipe(
-      Effect.provide(wasmLinearTrendFittingBackendLayer),
-    );
+    const program = fit(extremeObservations).pipe(Effect.provide(prophetFittingBackendLayer));
 
     const error = await Effect.runPromise(Effect.flip(program));
 
@@ -284,7 +232,7 @@ describe("linear-trend Prophet integration", () => {
 
   it("rejects invalid prediction timestamps", async () => {
     const model = await Effect.runPromise(
-      fit(observations).pipe(Effect.provide(wasmLinearTrendFittingBackendLayer)),
+      fit(observations).pipe(Effect.provide(prophetFittingBackendLayer)),
     );
 
     const error = await Effect.runPromise(Effect.flip(predict(model, ["not-a-timestamp"])));
@@ -374,9 +322,7 @@ const additiveOptions = {
 describe("linear-additive Prophet integration", () => {
   it("fits multiple components and forecasts held-out timestamps through real WASM", async () => {
     const model = await Effect.runPromise(
-      fit(syntheticObservations, additiveOptions).pipe(
-        Effect.provide(wasmAdditiveFittingBackendLayer),
-      ),
+      fit(syntheticObservations, additiveOptions).pipe(Effect.provide(prophetFittingBackendLayer)),
     );
 
     expect(model.model).toBe("linear-additive-ridge");
@@ -428,27 +374,5 @@ describe("linear-additive Prophet integration", () => {
     }
 
     expect(forecasts[2]).toEqual(forecasts[0]);
-  });
-
-  it.each([
-    ["linear", wasmLinearTrendFittingBackendLayer],
-    ["constant", constantMeanFittingBackendLayer],
-  ] as const)("requires the %s backend to reject configured seasonalities", async (name, layer) => {
-    const options =
-      name === "constant" ? { ...additiveOptions, growth: "flat" as const } : additiveOptions;
-
-    const error = await Effect.runPromise(
-      Effect.flip(fit(syntheticObservations, options).pipe(Effect.provide(layer))),
-    );
-
-    expect(error).toBeInstanceOf(UnsupportedConfigurationError);
-
-    if (error instanceof UnsupportedConfigurationError) {
-      expect(error.configuration).toEqual({
-        option: "seasonalities",
-        received: "configured",
-        supported: ["none"],
-      });
-    }
   });
 });

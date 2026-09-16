@@ -1,14 +1,14 @@
 import { Cause, Effect, Exit, Option, Predicate, Tracer } from "effect";
 import { describe, expect, it } from "vitest";
 
-import { FittingError, PredictionError, UnsupportedConfigurationError } from "../../src/errors";
+import { FittingError, PredictionError } from "../../src/errors";
 import { parseLinearAdditiveModel } from "../../src/fitted-model";
-import type { FitOptions } from "../../src/internal/fitting-backend";
 import type { AdditiveRidgeWasmBindings } from "../../src/internal/prophet-wasm-module";
+import { prophetFittingBackendLayer } from "../../src/internal/prophet-fitting-backend";
 import {
+  fitAdditiveWithWasm,
   makeWasmAdditiveAdapter,
   predictAdditiveWithWasm,
-  wasmAdditiveFittingBackendLayer,
 } from "../../src/internal/wasm-additive-backend";
 import { fit, predict } from "../../src/prophet";
 import * as Seasonality from "../../src/seasonality";
@@ -25,8 +25,6 @@ const definitions = Effect.runSync(
 const seasonalities = Effect.runSync(Seasonality.makeSeasonalityLayout(definitions));
 
 const emptySeasonalities = Effect.runSync(Seasonality.makeSeasonalityLayout([]));
-
-const additiveOptions: FitOptions = { growth: "linear", seasonalities };
 
 const fittingInput = {
   timestamps: new Float64Array([0, DAY / 4, DAY / 2]),
@@ -61,11 +59,7 @@ const moduleReturning = (
   predict_additive_ridge: () => predictionResult,
 });
 
-registerAdditiveBackendConformance(
-  "Rust/WASM",
-  wasmAdditiveFittingBackendLayer,
-  predictAdditiveWithWasm,
-);
+registerAdditiveBackendConformance("Rust/WASM", fitAdditiveWithWasm, predictAdditiveWithWasm);
 
 describe("Rust/WASM additive adapter boundary", () => {
   it("distinguishes loader failures and preserves their causes", async () => {
@@ -76,7 +70,7 @@ describe("Rust/WASM additive adapter boundary", () => {
     });
 
     const fittingError = await Effect.runPromise(
-      Effect.flip(adapter.fit(fittingInput, additiveOptions)),
+      Effect.flip(adapter.fit(fittingInput, seasonalities)),
     );
 
     const predictionError = await Effect.runPromise(
@@ -113,7 +107,7 @@ describe("Rust/WASM additive adapter boundary", () => {
     }));
 
     const fittingError = await Effect.runPromise(
-      Effect.flip(adapter.fit(fittingInput, additiveOptions)),
+      Effect.flip(adapter.fit(fittingInput, seasonalities)),
     );
 
     const predictionError = await Effect.runPromise(
@@ -131,26 +125,6 @@ describe("Rust/WASM additive adapter boundary", () => {
     if (predictionError instanceof PredictionError) {
       expect(predictionError.backendPhase).toBe("execute");
       expect(predictionError.cause).toBe(predictionSentinel);
-    }
-  });
-
-  it("rejects unsupported growth before loading", async () => {
-    const adapter = makeWasmAdditiveAdapter(() => {
-      throw new Error("loader must not run");
-    });
-
-    const error = await Effect.runPromise(
-      Effect.flip(adapter.fit(fittingInput, { growth: "flat", seasonalities: emptySeasonalities })),
-    );
-
-    expect(error).toBeInstanceOf(UnsupportedConfigurationError);
-
-    if (error instanceof UnsupportedConfigurationError) {
-      expect(error.configuration).toEqual({
-        option: "growth",
-        received: "flat",
-        supported: ["linear"],
-      });
     }
   });
 
@@ -181,7 +155,7 @@ describe("Rust/WASM additive adapter boundary", () => {
       moduleReturning(new Float64Array(values), new Float64Array([0])),
     );
 
-    const error = await Effect.runPromise(Effect.flip(adapter.fit(fittingInput, additiveOptions)));
+    const error = await Effect.runPromise(Effect.flip(adapter.fit(fittingInput, seasonalities)));
 
     expect(error).toBeInstanceOf(FittingError);
 
@@ -200,7 +174,7 @@ describe("Rust/WASM additive adapter boundary", () => {
       moduleReturning(new Float64Array([status]), new Float64Array([0])),
     );
 
-    const error = await Effect.runPromise(Effect.flip(adapter.fit(fittingInput, additiveOptions)));
+    const error = await Effect.runPromise(Effect.flip(adapter.fit(fittingInput, seasonalities)));
 
     expect(error).toBeInstanceOf(FittingError);
 
@@ -357,7 +331,7 @@ describe("Rust/WASM additive boundary tracing", () => {
     const forecasts = await Effect.runPromise(
       Effect.gen(function* () {
         const model = yield* fit(publicObservations, publicOptions).pipe(
-          Effect.provide(wasmAdditiveFittingBackendLayer),
+          Effect.provide(prophetFittingBackendLayer),
         );
 
         return yield* predict(model, ["1970-01-01T06:00:00.000Z", "1970-01-02T06:00:00.000Z"]);
@@ -408,7 +382,7 @@ describe("Rust/WASM additive boundary tracing", () => {
     const recording = makeRecordingTracer();
 
     const program = fit([publicObservations[0]], publicOptions).pipe(
-      Effect.provide(wasmAdditiveFittingBackendLayer),
+      Effect.provide(prophetFittingBackendLayer),
       Effect.withTracer(recording.tracer),
     );
 
@@ -473,14 +447,14 @@ describe("Rust/WASM additive boundary tracing", () => {
     }
   });
 
-  it("does not record additive boundaries for validation, unsupported growth, or empty prediction", async () => {
+  it("does not record additive boundaries for validation, flat-baseline dispatch, or empty prediction", async () => {
     const recording = makeRecordingTracer();
 
     await Effect.runPromise(
       fit(publicObservations, {
         seasonalities: [{ name: "daily", periodDays: 1, fourierOrder: 1 }],
       }).pipe(
-        Effect.provide(wasmAdditiveFittingBackendLayer),
+        Effect.provide(prophetFittingBackendLayer),
         Effect.withTracer(recording.tracer),
         Effect.exit,
       ),
@@ -488,7 +462,19 @@ describe("Rust/WASM additive boundary tracing", () => {
 
     await Effect.runPromise(
       fit(publicObservations, { growth: "flat" }).pipe(
-        Effect.provide(wasmAdditiveFittingBackendLayer),
+        Effect.provide(prophetFittingBackendLayer),
+        Effect.withTracer(recording.tracer),
+        Effect.exit,
+      ),
+    );
+
+    const invalidFlatAdditiveExit = await Effect.runPromise(
+      fit(publicObservations, {
+        growth: "flat",
+        // @ts-expect-error -- Invalid JavaScript input exercises the runtime union parser.
+        seasonalities: publicOptions.seasonalities,
+      }).pipe(
+        Effect.provide(prophetFittingBackendLayer),
         Effect.withTracer(recording.tracer),
         Effect.exit,
       ),
@@ -510,6 +496,7 @@ describe("Rust/WASM additive boundary tracing", () => {
       ),
     );
 
+    expect(Exit.isFailure(invalidFlatAdditiveExit)).toBe(true);
     expect(empty).toEqual([]);
     expect(Exit.isFailure(invalidModelExit)).toBe(true);
     expect(recording.spans.some((span) => span.name === "effect-prophet.wasm.fit")).toBe(false);

@@ -7,8 +7,7 @@ import {
   encodeFittedModel,
   fit,
   predict,
-  wasmAdditiveFittingBackendLayer,
-  wasmLinearTrendFittingBackendLayer,
+  prophetFittingBackendLayer,
   type EncodedFittedModel,
   type FittedLinearProphet,
 } from "../src/index";
@@ -54,7 +53,7 @@ describe("fitted model serialization", () => {
         { timestamp: "2024-01-01T00:00:00.000Z", value: 2 },
         { timestamp: "2024-01-01T00:00:01.000Z", value: 5 },
         { timestamp: "2024-01-01T00:00:02.000Z", value: 8 },
-      ]).pipe(Effect.provide(wasmLinearTrendFittingBackendLayer)),
+      ]).pipe(Effect.provide(prophetFittingBackendLayer)),
     );
 
     if (model.model !== "linear-trend") {
@@ -91,7 +90,7 @@ describe("fitted model serialization", () => {
             { name: "weekly-custom", periodDays: 7, fourierOrder: 1, priorScale: 4 },
           ],
         },
-      ).pipe(Effect.provide(wasmAdditiveFittingBackendLayer)),
+      ).pipe(Effect.provide(prophetFittingBackendLayer)),
     );
 
     if (model.model !== "linear-additive-ridge") {

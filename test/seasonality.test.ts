@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   InvalidSeasonality,
   defaultSeasonalityPriorScale,
+  makeNonEmptySeasonalityLayout,
   makeSeasonalityLayout,
   parseSeasonalities,
   parseSeasonalityLayout,
@@ -96,6 +97,28 @@ describe("seasonality domain", () => {
     expect(layout.components.every((component) => Object.isFrozen(component.definition))).toBe(
       true,
     );
+  });
+
+  it("constructs a non-empty layout that retains its tuple evidence", async () => {
+    const definitions = await Effect.runPromise(parseSeasonalities(encodedSeasonalities));
+    const firstDefinition = definitions[0];
+
+    expect(firstDefinition).toBeDefined();
+
+    if (firstDefinition === undefined) {
+      return;
+    }
+
+    const layout = await Effect.runPromise(
+      makeNonEmptySeasonalityLayout([firstDefinition, ...definitions.slice(1)]),
+    );
+
+    const firstComponent = layout.components[0];
+
+    expect(firstComponent.definition).toEqual(firstDefinition);
+    expect(layout.components).toHaveLength(2);
+    expect(Object.isFrozen(layout)).toBe(true);
+    expect(Object.isFrozen(layout.components)).toBe(true);
   });
 
   it("constructs an empty frozen layout", async () => {

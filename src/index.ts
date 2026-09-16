@@ -3,12 +3,10 @@ export {
   InputValidationError,
   ModelSerializationError,
   PredictionError,
-  UnsupportedConfigurationError,
   type FittingFailureReason,
   type ModelSerializationOperation,
   type PredictionFailureReason,
   type ValidationInput,
-  type UnsupportedConfiguration,
   type ValidationIssue,
   type WasmFailurePhase,
 } from "./errors";
@@ -21,11 +19,7 @@ export {
   type Observations,
 } from "./observation";
 
-export { constantMeanFittingBackendLayer } from "./internal/constant-fitting-backend";
-
-export { wasmAdditiveFittingBackendLayer } from "./internal/wasm-additive-backend";
-
-export { wasmLinearTrendFittingBackendLayer } from "./internal/wasm-linear-trend-backend";
+export { prophetFittingBackendLayer } from "./internal/prophet-fitting-backend";
 
 export {
   decodeFittedModel,
@@ -39,8 +33,14 @@ export {
 export {
   decodeOptions,
   defaultProphetOptions,
+  type EncodedFlatBaselineOptions,
+  type EncodedLinearAdditiveOptions,
+  type EncodedLinearTrendOptions,
   type EncodedProphetOptions,
+  type FlatBaselineOptions,
   type Growth,
+  type LinearAdditiveOptions,
+  type LinearTrendOptions,
   type ProphetOptions,
 } from "./options";
 

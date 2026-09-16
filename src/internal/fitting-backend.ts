@@ -1,9 +1,8 @@
-import { Context, type Effect } from "effect";
+import { Context, Data, type Effect } from "effect";
 
-import type { FittingError, UnsupportedConfigurationError } from "../errors";
+import type { FittingError } from "../errors";
 import type { Parameters } from "../fitted-model";
-import type { Growth } from "../options";
-import type { SeasonalityLayout } from "../seasonality";
+import type { NonEmptySeasonalityLayout } from "../seasonality";
 
 export type {
   ConstantParameters,
@@ -21,28 +20,40 @@ export interface TrainingInput {
   readonly values: Float64Array;
 }
 
-/** Resolved backend-facing options for one complete model fit. */
-export interface FitOptions {
-  /** The trend form the backend must fit. */
-  readonly growth: Growth;
-
-  /** Ordered seasonal definitions and their deterministic coefficient layout. */
-  readonly seasonalities: SeasonalityLayout;
+/** Request for the provisional constant-mean flat baseline. */
+export interface ConstantMeanFitPlan {
+  readonly _tag: "ConstantMeanBaseline";
 }
 
-/** Coarse-grained fitting capability implemented by TypeScript or WASM backends. */
+/** Request for ordinary linear-trend fitting without seasonal components. */
+export interface LinearTrendFitPlan {
+  readonly _tag: "LinearTrend";
+}
+
+/** Request for joint linear-trend and additive-seasonality fitting. */
+export interface LinearAdditiveFitPlan {
+  readonly _tag: "LinearAdditive";
+
+  /** Non-empty ordered seasonality coefficient layout established by public parsing. */
+  readonly seasonalities: NonEmptySeasonalityLayout;
+}
+
+/** Exhaustive set of configurations supported by the public fitting backend. */
+export type FitPlan = ConstantMeanFitPlan | LinearTrendFitPlan | LinearAdditiveFitPlan;
+
+/** Constructors and exhaustive matching for supported fitting plans. */
+export const FitPlan = Data.taggedEnum<FitPlan>();
+
+/** Coarse-grained fitting capability that is total over every public fit plan. */
 export interface FittingBackend {
   /**
    * Fit one complete model without per-row or per-iteration service calls.
    *
    * @param input - Packed training timestamps and values.
-   * @param options - Backend-facing fitting options.
-   * @returns The fitted trend parameters, an unsupported configuration, or a typed fitting failure.
+   * @param plan - Parsed, supported fitting plan.
+   * @returns Fitted model parameters or a typed fitting failure.
    */
-  readonly fit: (
-    input: TrainingInput,
-    options: FitOptions,
-  ) => Effect.Effect<Parameters, FittingError | UnsupportedConfigurationError>;
+  readonly fit: (input: TrainingInput, plan: FitPlan) => Effect.Effect<Parameters, FittingError>;
 }
 
 /** Effect context key for the fitting backend selected by the composition root. */

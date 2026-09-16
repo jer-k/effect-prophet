@@ -6,9 +6,10 @@ Stage B models a linear trend plus additive Fourier seasonalities. Its fitted mo
 `linear-additive-ridge`. This is distinct from the existing `linear-trend` ordinary least-squares
 model and must not be described as a full Prophet MAP fit.
 
-The public `wasmAdditiveFittingBackendLayer` connects this model to option decoding, fitting,
-prediction dispatch, named component forecasts, tracing, and portable serialization. Automatic
-built-in seasonality resolution remains a later capability.
+The public `prophetFittingBackendLayer` selects the narrow additive WASM adapter for the non-empty
+seasonality configuration variant and connects it to option decoding, fitting, prediction dispatch,
+named component forecasts, tracing, and portable serialization. Automatic built-in seasonality
+resolution remains a later capability.
 
 ## Time and units
 
@@ -126,8 +127,9 @@ and augmented QR buffers, so peak memory is larger than one buffer and scales as
 Callers configure ordered custom definitions through `seasonalities`. Omission means an empty
 layout; it does not enable daily, weekly, or yearly defaults. The public fit operation parses the
 definitions, constructs the deterministic layout, and supplies resolved numeric metadata to the
-selected backend. The additive Layer supports linear growth. The ordinary linear and constant-mean
-Layers reject configured seasonalities instead of ignoring them.
+complete public backend. A non-empty list selects the additive adapter; omission selects ordinary
+linear fitting. The provisional flat baseline is a separate union member that cannot contain
+seasonalities.
 
 Every forecast has `timestamp`, `trend`, `additive`, `value`, and `seasonalities`. Named component
 values use observation units and retain definition order. Within floating-point tolerance,

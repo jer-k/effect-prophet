@@ -129,24 +129,18 @@ const observations = await Effect.runPromise(program);
 
 `decodeOptions` validates untrusted fitting options and supplies defaults when called with `undefined` or an empty object. Unknown keys are rejected so misspelled configuration cannot silently reach a fitting backend.
 
-Public options include `growth` and ordered explicit `seasonalities`. Omitted seasonalities default to an empty list. Each seasonality requires a unique custom name, positive period in fixed 24-hour days, and positive integer Fourier order; `priorScale` is positive and defaults to `10`.
+Public options are a union of supported configurations rather than independent fields. Linear growth accepts either no seasonalities or a non-empty ordered list. The provisional flat-growth variant accepts no seasonalities and routes to the arithmetic-mean teaching baseline tagged `"constant-mean-baseline"`; flat growth with seasonalities is not represented until real joint flat MAP fitting is implemented.
 
-The selected fitting Layer owns the narrower capability policy:
+Each configured seasonality requires a unique custom name, positive period in fixed 24-hour days, and positive integer Fourier order; `priorScale` is positive and defaults to `10`. `prophetFittingBackendLayer` is total over every configuration accepted by `fit` and dispatches to the corresponding narrow numerical adapter. Callers cannot select a Layer that disagrees with their options.
 
-| Fitting Layer                        | Growth support | Configured seasonalities |
-| ------------------------------------ | -------------- | ------------------------ |
-| `wasmAdditiveFittingBackendLayer`    | Linear only    | Supported                |
-| `wasmLinearTrendFittingBackendLayer` | Linear only    | Rejected explicitly      |
-| `constantMeanFittingBackendLayer`    | Flat only      | Rejected explicitly      |
-
-The explicitly named `constantMeanFittingBackendLayer` remains a learning example. It fits an arithmetic-mean baseline tagged `"constant-mean-baseline"`; it is not a full Prophet flat-growth implementation. Logistic growth, automatic built-in seasonalities, holidays, and changepoints remain out of scope.
+The provisional flat baseline is not Python Prophet flat growth and does not claim prior-informed parity. Logistic growth, automatic built-in seasonalities, holidays, and changepoints remain out of scope.
 
 ```ts
 import { Effect } from "effect";
 import { decodeOptions } from "effect-prophet";
 
 const defaults = await Effect.runPromise(decodeOptions());
-// { growth: "linear" }
+// { growth: "linear", seasonalities: [] }
 
 const flat = await Effect.runPromise(decodeOptions({ growth: "flat" }));
 
@@ -159,20 +153,20 @@ const seasonal = await Effect.runPromise(
 
 ## Linear trend forecast
 
-`fit` validates public observations and options before making one coarse-grained call to the provided fitting backend. `wasmLinearTrendFittingBackendLayer` invokes the Rust ordinary-least-squares implementation through generated WASM bindings. Training timestamps and values are packed into aligned `Float64Array` values at the backend boundary.
+`fit` validates public observations and options, constructs an explicit fitting plan, and makes one coarse-grained call to the complete public backend. For featureless linear growth, `prophetFittingBackendLayer` invokes the Rust ordinary-least-squares implementation through generated WASM bindings. Training timestamps and values are packed into aligned `Float64Array` values at the backend boundary.
 
 The fitted model stores the intercept, slope, time origin, and time scale required for prediction. `predict` validates canonical UTC prediction timestamps and sends all timestamps and fitting-time state to one Rust/WASM batch operation. Every ordered forecast exposes `value`, `trend`, `additive`, and `seasonalities`; ordinary linear and constant models return `additive: 0` and an empty component list.
 
 ```ts
 import { Effect } from "effect";
-import { fit, wasmLinearTrendFittingBackendLayer, predict } from "effect-prophet";
+import { fit, predict, prophetFittingBackendLayer } from "effect-prophet";
 
 const model = await Effect.runPromise(
   fit([
     { timestamp: "2024-01-01T00:00:00.000Z", value: 2 },
     { timestamp: "2024-01-01T00:00:01.000Z", value: 5 },
     { timestamp: "2024-01-01T00:00:02.000Z", value: 8 },
-  ]).pipe(Effect.provide(wasmLinearTrendFittingBackendLayer)),
+  ]).pipe(Effect.provide(prophetFittingBackendLayer)),
 );
 
 const forecasts = await Effect.runPromise(
@@ -183,11 +177,11 @@ const forecasts = await Effect.runPromise(
 
 ## Explicit additive seasonalities
 
-`wasmAdditiveFittingBackendLayer` jointly fits the linear trend and every configured Fourier component using the documented `normalized-ridge-v1` objective. An empty layout still produces a distinct `linear-additive-ridge` model with fit diagnostics.
+For a non-empty seasonality list, `prophetFittingBackendLayer` jointly fits the linear trend and every configured Fourier component using the documented `normalized-ridge-v1` objective. Featureless linear options select the ordinary linear-trend model instead.
 
 ```ts
 import { Effect } from "effect";
-import { fit, predict, wasmAdditiveFittingBackendLayer } from "effect-prophet";
+import { fit, predict, prophetFittingBackendLayer } from "effect-prophet";
 
 const observations = [
   { timestamp: "2024-01-01T00:00:00.000Z", value: 1 },
@@ -203,7 +197,7 @@ const model = await Effect.runPromise(
   fit(observations, {
     growth: "linear",
     seasonalities: [{ name: "weekly-custom", periodDays: 7, fourierOrder: 3, priorScale: 10 }],
-  }).pipe(Effect.provide(wasmAdditiveFittingBackendLayer)),
+  }).pipe(Effect.provide(prophetFittingBackendLayer)),
 );
 
 const forecasts = await Effect.runPromise(predict(model, predictionTimestamps));
@@ -212,11 +206,11 @@ const forecasts = await Effect.runPromise(predict(model, predictionTimestamps));
 
 Names and component order are retained in the fitted model and portable JSON. The ridge objective is intentionally distinct from Prophet MAP fitting; see [the additive ridge contract](docs/modeling/additive-ridge.md).
 
-The constant-mean implementation remains available only as the explicitly named `constantMeanFittingBackendLayer` example. It requires explicit flat growth:
+Explicit featureless flat growth currently selects the provisional constant-mean teaching baseline through the same complete Layer:
 
 ```ts
 import { Effect } from "effect";
-import { constantMeanFittingBackendLayer, fit } from "effect-prophet";
+import { fit, prophetFittingBackendLayer } from "effect-prophet";
 
 const baseline = await Effect.runPromise(
   fit(
@@ -225,14 +219,14 @@ const baseline = await Effect.runPromise(
       { timestamp: "2024-01-01T00:00:01.000Z", value: 5 },
     ],
     { growth: "flat" },
-  ).pipe(Effect.provide(constantMeanFittingBackendLayer)),
+  ).pipe(Effect.provide(prophetFittingBackendLayer)),
 );
 // { model: "constant-mean-baseline", level: 3.5 }
 ```
 
 Fitted model types are branded domain values. Callers obtain trusted models through `fit` or `decodeFittedModel`; plain object literals are intentionally not assignable to these types. `predict` and serialization still parse defensively at runtime to protect JavaScript callers and forged values. While the package API remains WIP, this is a deliberate type-level tightening without a change to the model fields or public operation shapes.
 
-Expected input, unsupported-configuration, fitting, and prediction failures remain in their respective typed Effect error channels.
+Expected input, fitting, and prediction failures remain in their respective typed Effect error channels. Unsupported option combinations are absent from the public TypeScript union and fail as input validation at untyped JavaScript boundaries.
 
 ## Tracing WASM operations
 
@@ -251,7 +245,7 @@ Applications own tracer configuration, sampling, and export. The library uses Ef
 
 ```ts
 const program = Effect.gen(function* () {
-  const model = yield* fit(observations).pipe(Effect.provide(wasmLinearTrendFittingBackendLayer));
+  const model = yield* fit(observations).pipe(Effect.provide(prophetFittingBackendLayer));
 
   return yield* predict(model, predictionTimestamps);
 }).pipe(Effect.withSpan("forecast.job"));
@@ -276,10 +270,9 @@ The payload has no independent format version. It is interpreted using the insta
 
 ## Expected errors
 
-The public error channel uses five tagged categories:
+The public error channel uses four tagged categories:
 
-- `InputValidationError` includes the input boundary and structured schema issues.
-- `UnsupportedConfigurationError` identifies a valid option rejected by the selected backend through a discriminated `configuration` payload for growth or configured seasonalities.
+- `InputValidationError` includes the input boundary and structured schema issues, including unsupported option combinations received from untyped callers.
 - `FittingError` includes a reason, observation count, optional parameter count, and optional WASM backend phase. Additive direct-solver failures distinguish rank deficiency and non-finite results.
 - `PredictionError` includes a reason, the relevant timestamp, and optional WASM backend phase.
 - `ModelSerializationError` includes the failed operation and structured schema issues.

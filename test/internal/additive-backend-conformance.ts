@@ -1,17 +1,13 @@
-import { Effect, Layer } from "effect";
+import { Effect } from "effect";
 import { describe, expect, it } from "vitest";
 
-import { FittingError, type UnsupportedConfigurationError } from "../../src/errors";
+import { FittingError } from "../../src/errors";
 import {
   parseLinearAdditiveModel,
   type FittedLinearAdditiveProphet,
   type Parameters as FittedParameters,
 } from "../../src/fitted-model";
-import {
-  FittingBackend,
-  type FitOptions,
-  type TrainingInput,
-} from "../../src/internal/fitting-backend";
+import type { TrainingInput } from "../../src/internal/fitting-backend";
 import type { AdditivePredictionBatch } from "../../src/internal/wasm-additive-backend";
 import * as Seasonality from "../../src/seasonality";
 
@@ -27,25 +23,22 @@ const makeInput = (
   values: new Float64Array(values),
 });
 
-const makeOptions = (input: Parameters<typeof Seasonality.parseSeasonalities>[0]): FitOptions => {
+const makeLayout = (input: Parameters<typeof Seasonality.parseSeasonalities>[0]) => {
   const definitions = Effect.runSync(Seasonality.parseSeasonalities(input));
 
-  return {
-    growth: "linear",
-    seasonalities: Effect.runSync(Seasonality.makeSeasonalityLayout(definitions)),
-  };
+  return Effect.runSync(Seasonality.makeSeasonalityLayout(definitions));
 };
 
-const fitWith = (
-  layer: Layer.Layer<FittingBackend>,
+type FitAdditive = (
   input: TrainingInput,
-  options: FitOptions,
-): Effect.Effect<FittedParameters, FittingError | UnsupportedConfigurationError> =>
-  Effect.gen(function* () {
-    const backend = yield* FittingBackend;
+  seasonalities: Seasonality.SeasonalityLayout,
+) => Effect.Effect<FittedParameters, FittingError>;
 
-    return yield* backend.fit(input, options);
-  }).pipe(Effect.provide(layer));
+const fitWith = (
+  fit: FitAdditive,
+  input: TrainingInput,
+  seasonalities: Seasonality.SeasonalityLayout,
+) => fit(input, seasonalities);
 
 const requireAdditiveModel = (parameters: FittedParameters): FittedLinearAdditiveProphet => {
   expect(parameters.model).toBe("linear-additive-ridge");
@@ -61,12 +54,12 @@ const requireAdditiveModel = (parameters: FittedParameters): FittedLinearAdditiv
  * Register reusable behavioral cases for a normalized additive ridge backend.
  *
  * @param backendName - Human-readable backend name used in test output.
- * @param layer - Layer providing the fitting backend under test.
+ * @param fit - Additive fitting operation under test.
  * @param predict - Matching checked prediction operation.
  */
 export const registerAdditiveBackendConformance = (
   backendName: string,
-  layer: Layer.Layer<FittingBackend>,
+  fit: FitAdditive,
   predict: (
     model: FittedLinearAdditiveProphet,
     timestamps: ReadonlyArray<number>,
@@ -76,7 +69,7 @@ export const registerAdditiveBackendConformance = (
     it("reduces an empty seasonal layout to the established linear equation", async () => {
       const model = requireAdditiveModel(
         await Effect.runPromise(
-          fitWith(layer, makeInput([100, 200, 300], [2, 5, 8]), makeOptions([])),
+          fitWith(fit, makeInput([100, 200, 300], [2, 5, 8]), makeLayout([])),
         ),
       );
 
@@ -98,13 +91,13 @@ export const registerAdditiveBackendConformance = (
       const timestamps = [0, DAY / 4, DAY / 2, (3 * DAY) / 4, DAY];
       const values = [1, 3, 1, -1, 1];
 
-      const options = makeOptions([
+      const options = makeLayout([
         { name: "daily-custom", periodDays: 1, fourierOrder: 1, priorScale: 10 },
         { name: "weekly-custom", periodDays: 7, fourierOrder: 1, priorScale: 4 },
       ]);
 
       const model = requireAdditiveModel(
-        await Effect.runPromise(fitWith(layer, makeInput(timestamps, values), options)),
+        await Effect.runPromise(fitWith(fit, makeInput(timestamps, values), options)),
       );
 
       const prediction = await Effect.runPromise(predict(model, [DAY / 4, 0, DAY / 4]));
@@ -153,26 +146,26 @@ export const registerAdditiveBackendConformance = (
     it("returns deterministic parameters for repeated fits", async () => {
       const input = makeInput([0, DAY / 2, DAY, DAY * 1.5], [1, 4, 2, -1]);
 
-      const options = makeOptions([
+      const options = makeLayout([
         { name: "daily-custom", periodDays: 1, fourierOrder: 1, priorScale: 10 },
       ]);
 
-      const first = await Effect.runPromise(fitWith(layer, input, options));
+      const first = await Effect.runPromise(fitWith(fit, input, options));
 
-      const second = await Effect.runPromise(fitWith(layer, input, options));
+      const second = await Effect.runPromise(fitWith(fit, input, options));
 
       expect(second).toEqual(first);
     });
 
     it("maps insufficient data and zero time range precisely", async () => {
-      const options = makeOptions([]);
+      const options = makeLayout([]);
 
       const insufficient = await Effect.runPromise(
-        Effect.flip(fitWith(layer, makeInput([], []), options)),
+        Effect.flip(fitWith(fit, makeInput([], []), options)),
       );
 
       const degenerate = await Effect.runPromise(
-        Effect.flip(fitWith(layer, makeInput([1, 1], [2, 3]), options)),
+        Effect.flip(fitWith(fit, makeInput([1, 1], [2, 3]), options)),
       );
 
       expect(insufficient).toBeInstanceOf(FittingError);

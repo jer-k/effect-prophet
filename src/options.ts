@@ -8,25 +8,60 @@ import {
   type SeasonalityDefinition,
 } from "./seasonality";
 
-/** Valid trend forms that fitting backends may support selectively. */
+/** Valid trend forms represented by the current public fitting configuration. */
 export type Growth = "flat" | "linear";
 
-/** Untrusted options accepted at the public decoding boundary. */
-export interface EncodedProphetOptions {
-  readonly growth?: Growth;
-  readonly seasonalities?: ReadonlyArray<EncodedSeasonality>;
+/** Public linear-growth options without configured seasonalities. */
+export interface EncodedLinearTrendOptions {
+  readonly growth?: "linear";
+  readonly seasonalities?: readonly [];
+}
+
+/** Public linear-growth options with at least one configured seasonality. */
+export interface EncodedLinearAdditiveOptions {
+  readonly growth?: "linear";
+  readonly seasonalities: readonly [EncodedSeasonality, ...ReadonlyArray<EncodedSeasonality>];
 }
 
 /**
- * Validated fitting configuration with every default applied.
+ * Provisional flat-growth baseline options.
  *
- * Successful parsing establishes that each option is valid, not that the
- * fitting backend selected by the caller supports the complete configuration.
+ * The current implementation is the explicitly tagged constant-mean teaching
+ * baseline, not Python Prophet's jointly fitted flat MAP model.
  */
-export interface ProphetOptions {
-  readonly growth: Growth;
-  readonly seasonalities: ReadonlyArray<SeasonalityDefinition>;
+export interface EncodedFlatBaselineOptions {
+  readonly growth: "flat";
+  readonly seasonalities?: readonly [];
 }
+
+/** Supported configurations accepted by the public fitting operation. */
+export type EncodedProphetOptions =
+  | EncodedLinearTrendOptions
+  | EncodedLinearAdditiveOptions
+  | EncodedFlatBaselineOptions;
+
+/** Parsed linear-growth options without configured seasonalities. */
+export interface LinearTrendOptions {
+  readonly growth: "linear";
+  readonly seasonalities: readonly [];
+}
+
+/** Parsed linear-growth options with at least one configured seasonality. */
+export interface LinearAdditiveOptions {
+  readonly growth: "linear";
+  readonly seasonalities: readonly [SeasonalityDefinition, ...ReadonlyArray<SeasonalityDefinition>];
+}
+
+/** Parsed options for the provisional constant-mean flat baseline. */
+export interface FlatBaselineOptions {
+  readonly growth: "flat";
+  readonly seasonalities: readonly [];
+}
+
+/** Validated and defaulted public fitting configuration. */
+export type ProphetOptions = LinearTrendOptions | LinearAdditiveOptions | FlatBaselineOptions;
+
+const emptySeasonalities: readonly [] = Object.freeze([]);
 
 /**
  * Central defaults for public fitting configuration.
@@ -34,9 +69,9 @@ export interface ProphetOptions {
  * Linear growth matches Prophet's default. Built-in seasonalities remain
  * disabled until their fit-time resolution policy is implemented.
  */
-export const defaultProphetOptions: ProphetOptions = Object.freeze({
+export const defaultProphetOptions: LinearTrendOptions = Object.freeze({
   growth: "linear",
-  seasonalities: Object.freeze([]),
+  seasonalities: emptySeasonalities,
 });
 
 const GrowthSchema = Schema.Literals(["flat", "linear"]);
@@ -55,7 +90,7 @@ const decodeProphetOptionsSyntax = Schema.decodeUnknownEffect(ProphetOptionsSynt
   onExcessProperty: "error",
 });
 
-const emptyOptions: EncodedProphetOptions = {};
+const emptyOptions: EncodedLinearTrendOptions = {};
 
 /**
  * Translate seasonality-domain issues at the public options boundary.
@@ -89,8 +124,41 @@ export const decodeOptions = Effect.fn("decodeOptions")(function* (
     Effect.mapError(optionsValidationErrorFromSeasonality),
   );
 
+  const firstSeasonality = seasonalities[0];
+
+  if (syntax.growth === "flat") {
+    if (firstSeasonality !== undefined) {
+      return yield* Effect.fail(
+        new InputValidationError({
+          input: "options",
+          issues: [
+            {
+              path: ["seasonalities"],
+              message: "The provisional flat baseline does not support seasonalities",
+            },
+          ],
+          message: "Flat growth with seasonalities is not implemented yet",
+        }),
+      );
+    }
+
+    return {
+      growth: "flat",
+      seasonalities: emptySeasonalities,
+    };
+  }
+
+  if (firstSeasonality === undefined) {
+    return defaultProphetOptions;
+  }
+
+  const nonEmptySeasonalities: readonly [
+    SeasonalityDefinition,
+    ...ReadonlyArray<SeasonalityDefinition>,
+  ] = Object.freeze([firstSeasonality, ...seasonalities.slice(1)]);
+
   return {
-    growth: syntax.growth,
-    seasonalities,
+    growth: "linear",
+    seasonalities: nonEmptySeasonalities,
   };
 });

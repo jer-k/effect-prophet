@@ -7,12 +7,12 @@ import {
   assertProphetWasmModule,
   type LinearTrendWasmBindings,
 } from "../../src/internal/prophet-wasm-module";
+import { prophetFittingBackendLayer } from "../../src/internal/prophet-fitting-backend";
 import {
+  fitLinearTrendWithWasm,
   makeWasmLinearTrendAdapter,
-  wasmLinearTrendFittingBackendLayer,
 } from "../../src/internal/wasm-linear-trend-backend";
 import { fit, predict } from "../../src/prophet";
-import { makeSeasonalityLayout } from "../../src/seasonality";
 import { registerFittingBackendConformance } from "./fitting-backend-conformance";
 
 const observations = [
@@ -92,16 +92,12 @@ const expectContainedInterval = (child: Tracer.Span, parent: Tracer.Span): void 
   expect(childStatus.endTime <= parentStatus.endTime).toBe(true);
 };
 
-registerFittingBackendConformance("Rust/WASM linear-trend", wasmLinearTrendFittingBackendLayer);
+registerFittingBackendConformance("Rust/WASM linear-trend", fitLinearTrendWithWasm);
 
 const fittingInput = {
   timestamps: new Float64Array([100, 200, 300]),
   values: new Float64Array([2, 5, 8]),
 };
-
-const emptySeasonalities = Effect.runSync(makeSeasonalityLayout([]));
-
-const linearFitOptions = { growth: "linear", seasonalities: emptySeasonalities } as const;
 
 const moduleReturning = (
   fitResult: Float64Array,
@@ -119,9 +115,7 @@ describe("Rust/WASM adapter boundary", () => {
       throw sentinel;
     });
 
-    const fittingError = await Effect.runPromise(
-      Effect.flip(adapter.fit(fittingInput, linearFitOptions)),
-    );
+    const fittingError = await Effect.runPromise(Effect.flip(adapter.fit(fittingInput)));
 
     const predictionError = await Effect.runPromise(
       Effect.flip(adapter.predict(validLinearModel, [300])),
@@ -157,9 +151,7 @@ describe("Rust/WASM adapter boundary", () => {
       },
     }));
 
-    const fittingError = await Effect.runPromise(
-      Effect.flip(adapter.fit(fittingInput, linearFitOptions)),
-    );
+    const fittingError = await Effect.runPromise(Effect.flip(adapter.fit(fittingInput)));
 
     const predictionError = await Effect.runPromise(
       Effect.flip(adapter.predict(validLinearModel, [300])),
@@ -177,19 +169,6 @@ describe("Rust/WASM adapter boundary", () => {
       expect(predictionError.backendPhase).toBe("execute");
       expect(predictionError.cause).toBe(predictionSentinel);
     }
-  });
-
-  it("checks unsupported growth before loading", async () => {
-    const adapter = makeWasmLinearTrendAdapter(() => {
-      throw new Error("loader must not run");
-    });
-
-    const error = await Effect.runPromise(
-      Effect.flip(adapter.fit(fittingInput, { growth: "flat", seasonalities: emptySeasonalities })),
-    );
-
-    expect(error).toBeInstanceOf(Error);
-    expect(error._tag).toBe("UnsupportedConfigurationError");
   });
 
   it("returns an empty prediction without loading", async () => {
@@ -213,7 +192,7 @@ describe("Rust/WASM adapter boundary", () => {
       return loaded;
     });
 
-    const error = await Effect.runPromise(Effect.flip(adapter.fit(fittingInput, linearFitOptions)));
+    const error = await Effect.runPromise(Effect.flip(adapter.fit(fittingInput)));
 
     expect(error).toBeInstanceOf(FittingError);
 
@@ -237,7 +216,7 @@ describe("Rust/WASM adapter boundary", () => {
       moduleReturning(new Float64Array(values), new Float64Array([0])),
     );
 
-    const error = await Effect.runPromise(Effect.flip(adapter.fit(fittingInput, linearFitOptions)));
+    const error = await Effect.runPromise(Effect.flip(adapter.fit(fittingInput)));
 
     expect(error).toBeInstanceOf(FittingError);
 
@@ -255,7 +234,7 @@ describe("Rust/WASM adapter boundary", () => {
       () => moduleReturning([0, 2, 6, 100, 200], new Float64Array([0])),
     );
 
-    const error = await Effect.runPromise(Effect.flip(adapter.fit(fittingInput, linearFitOptions)));
+    const error = await Effect.runPromise(Effect.flip(adapter.fit(fittingInput)));
 
     expect(error).toBeInstanceOf(FittingError);
 
@@ -361,9 +340,7 @@ describe("Rust/WASM boundary tracing", () => {
 
     const forecasts = await Effect.runPromise(
       Effect.gen(function* () {
-        const model = yield* fit(observations).pipe(
-          Effect.provide(wasmLinearTrendFittingBackendLayer),
-        );
+        const model = yield* fit(observations).pipe(Effect.provide(prophetFittingBackendLayer));
 
         return yield* predict(model, predictionTimestamps);
       }).pipe(Effect.withSpan("forecast.job"), Effect.withTracer(recording.tracer)),
@@ -410,7 +387,7 @@ describe("Rust/WASM boundary tracing", () => {
     const recording = makeRecordingTracer();
 
     const program = fit([{ timestamp: observations[0].timestamp, value: 2 }]).pipe(
-      Effect.provide(wasmLinearTrendFittingBackendLayer),
+      Effect.provide(prophetFittingBackendLayer),
       Effect.withSpan("forecast.job"),
       Effect.withTracer(recording.tracer),
     );
@@ -437,38 +414,18 @@ describe("Rust/WASM boundary tracing", () => {
     }
   });
 
-  it("does not record fit boundary spans for validation or unsupported options", async () => {
+  it("does not record a fit boundary span for validation failures", async () => {
     const recording = makeRecordingTracer();
 
     const invalidInputExit = await Effect.runPromise(
       fit([{ timestamp: "not-a-timestamp", value: 1 }]).pipe(
-        Effect.provide(wasmLinearTrendFittingBackendLayer),
-        Effect.withTracer(recording.tracer),
-        Effect.exit,
-      ),
-    );
-
-    const unsupportedGrowthExit = await Effect.runPromise(
-      fit(observations, { growth: "flat" }).pipe(
-        Effect.provide(wasmLinearTrendFittingBackendLayer),
-        Effect.withTracer(recording.tracer),
-        Effect.exit,
-      ),
-    );
-
-    const unsupportedSeasonalityExit = await Effect.runPromise(
-      fit(observations, {
-        seasonalities: [{ name: "custom-week", periodDays: 7, fourierOrder: 1 }],
-      }).pipe(
-        Effect.provide(wasmLinearTrendFittingBackendLayer),
+        Effect.provide(prophetFittingBackendLayer),
         Effect.withTracer(recording.tracer),
         Effect.exit,
       ),
     );
 
     expect(Exit.isFailure(invalidInputExit)).toBe(true);
-    expect(Exit.isFailure(unsupportedGrowthExit)).toBe(true);
-    expect(Exit.isFailure(unsupportedSeasonalityExit)).toBe(true);
     expect(recording.spans.some((span) => span.name === "effect-prophet.wasm.fit")).toBe(false);
   });
 

@@ -5,10 +5,9 @@ import {
   InputValidationError,
   PredictionError,
   inputValidationErrorFromIssue,
-  type UnsupportedConfigurationError,
 } from "./errors";
 import { parseFittedModel, type FittedProphet } from "./fitted-model";
-import { FittingBackend, type FitOptions, type TrainingInput } from "./internal/fitting-backend";
+import { FitPlan, FittingBackend, type TrainingInput } from "./internal/fitting-backend";
 import { TimestampSchema } from "./internal/timestamp";
 import { predictAdditiveWithWasm } from "./internal/wasm-additive-backend";
 import { predictLinearTrendWithWasm } from "./internal/wasm-linear-trend-backend";
@@ -16,6 +15,7 @@ import { decodeObservations, type Observations } from "./observation";
 import {
   decodeOptions,
   optionsValidationErrorFromSeasonality,
+  type EncodedProphetOptions,
   type ProphetOptions,
 } from "./options";
 import * as Seasonality from "./seasonality";
@@ -83,34 +83,43 @@ const packTrainingInput = (observations: Observations): TrainingInput => {
   return { timestamps, values };
 };
 
-const makeFitOptions = (options: ProphetOptions): Effect.Effect<FitOptions, InputValidationError> =>
-  Seasonality.makeSeasonalityLayout(options.seasonalities).pipe(
-    Effect.map((seasonalities) => ({ growth: options.growth, seasonalities })),
+const makeFitPlan = (options: ProphetOptions): Effect.Effect<FitPlan, InputValidationError> => {
+  if (options.growth === "flat") {
+    return Effect.succeed(FitPlan.ConstantMeanBaseline());
+  }
+
+  const firstSeasonality = options.seasonalities[0];
+
+  if (firstSeasonality === undefined) {
+    return Effect.succeed(FitPlan.LinearTrend());
+  }
+
+  const seasonalities = [firstSeasonality, ...options.seasonalities.slice(1)] as const;
+
+  return Seasonality.makeNonEmptySeasonalityLayout(seasonalities).pipe(
+    Effect.map((seasonalities) => FitPlan.LinearAdditive({ seasonalities })),
     Effect.mapError(optionsValidationErrorFromSeasonality),
   );
+};
 
 /**
  * Validate observations and options, then fit through the provided backend Layer.
  *
  * @param observationsInput - Untrusted encoded observations.
  * @param optionsInput - Optional untrusted fitting options.
- * @returns A fitted model, validation failure, unsupported configuration, or fitting failure.
+ * @returns A fitted model, validation failure, or fitting failure.
  */
 export const fit = Effect.fn("Prophet.fit")(function* (
   observationsInput: Parameters<typeof decodeObservations>[0],
-  optionsInput?: Parameters<typeof decodeOptions>[0],
-): Effect.fn.Return<
-  FittedProphet,
-  InputValidationError | UnsupportedConfigurationError | FittingError,
-  FittingBackend
-> {
+  optionsInput?: EncodedProphetOptions,
+): Effect.fn.Return<FittedProphet, InputValidationError | FittingError, FittingBackend> {
   const observations = yield* decodeObservations(observationsInput);
   const options = yield* decodeOptions(optionsInput);
-  const fitOptions = yield* makeFitOptions(options);
+  const fitPlan = yield* makeFitPlan(options);
 
   const input = packTrainingInput(observations);
   const backend = yield* FittingBackend;
-  const parameters = yield* backend.fit(input, fitOptions);
+  const parameters = yield* backend.fit(input, fitPlan);
 
   return yield* parseFittedModel(parameters).pipe(
     Effect.mapError(

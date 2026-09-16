@@ -1,17 +1,13 @@
-import { Effect, Layer } from "effect";
+import { Effect } from "effect";
 
-import {
-  FittingError,
-  PredictionError,
-  UnsupportedConfigurationError,
-  type WasmFailurePhase,
-} from "../errors";
+import { FittingError, PredictionError, type WasmFailurePhase } from "../errors";
 import {
   parseLinearAdditiveModel,
   type FittedLinearAdditiveProphet,
   type LinearAdditiveParameters,
 } from "../fitted-model";
-import { FittingBackend } from "./fitting-backend";
+import type { TrainingInput } from "./fitting-backend";
+import type { SeasonalityLayout } from "../seasonality";
 import { loadProphetWasmModule, type AdditiveRidgeWasmBindings } from "./prophet-wasm-module";
 
 /** Lazy loader for checked Rust/WASM additive ridge bindings. */
@@ -31,8 +27,11 @@ export interface AdditivePredictionBatch {
 
 /** Internal additive fitting and prediction operations backed by one WASM loader. */
 export interface WasmAdditiveAdapter {
-  /** Fit through the configured WASM boundary. */
-  readonly fit: FittingBackend["fit"];
+  /** Fit a linear trend and non-empty additive layout through the configured WASM boundary. */
+  readonly fit: (
+    input: TrainingInput,
+    seasonalities: SeasonalityLayout,
+  ) => Effect.Effect<LinearAdditiveParameters, FittingError>;
 
   /** Predict through the configured WASM boundary. */
   readonly predict: (
@@ -437,23 +436,10 @@ const predictSpanOptions = (predictionCount: number, componentCount: number) => 
  * @returns Fitting and prediction operations using the supplied boundary.
  */
 export const makeWasmAdditiveAdapter = (loadModule: WasmAdditiveLoader): WasmAdditiveAdapter => {
-  const fit: WasmAdditiveAdapter["fit"] = (input, options) => {
-    if (options.growth !== "linear") {
-      return Effect.fail(
-        new UnsupportedConfigurationError({
-          configuration: {
-            option: "growth",
-            received: options.growth,
-            supported: ["linear"],
-          },
-          message: `The WASM additive backend does not support ${options.growth} growth`,
-        }),
-      );
-    }
-
+  const fit: WasmAdditiveAdapter["fit"] = (input, seasonalities) => {
     const observationCount = input.values.length;
-    const componentCount = options.seasonalities.components.length;
-    const coefficientCount = options.seasonalities.coefficientCount;
+    const componentCount = seasonalities.components.length;
+    const coefficientCount = seasonalities.coefficientCount;
     const parameterCount = checkedAdd(2, coefficientCount);
     const expectedLength = checkedAdd(9, coefficientCount);
 
@@ -484,7 +470,7 @@ export const makeWasmAdditiveAdapter = (loadModule: WasmAdditiveLoader): WasmAdd
       const orders = new Float64Array(componentCount);
       const priors = new Float64Array(componentCount);
 
-      for (const [index, component] of options.seasonalities.components.entries()) {
+      for (const [index, component] of seasonalities.components.entries()) {
         periods[index] = component.definition.periodDays;
         orders[index] = component.definition.fourierOrder;
         priors[index] = component.definition.priorScale;
@@ -506,7 +492,7 @@ export const makeWasmAdditiveAdapter = (loadModule: WasmAdditiveLoader): WasmAdd
           ),
       });
 
-      return yield* decodeFittedParameters(packed, observationCount, options.seasonalities);
+      return yield* decodeFittedParameters(packed, observationCount, seasonalities);
     }).pipe(
       Effect.withSpan(
         "effect-prophet.wasm.fit",
@@ -591,11 +577,8 @@ export const makeWasmAdditiveAdapter = (loadModule: WasmAdditiveLoader): WasmAdd
 
 const defaultWasmAdditiveAdapter = makeWasmAdditiveAdapter(loadProphetWasmModule);
 
-/** Rust/WASM fitting Layer for linear trend plus explicit additive seasonalities. */
-export const wasmAdditiveFittingBackendLayer: Layer.Layer<FittingBackend> = Layer.succeed(
-  FittingBackend,
-  { fit: defaultWasmAdditiveAdapter.fit },
-);
+/** Fit a linear trend with additive seasonalities through the default coarse Rust/WASM operation. */
+export const fitAdditiveWithWasm = defaultWasmAdditiveAdapter.fit;
 
 /**
  * Evaluate an additive model through one coarse Rust/WASM operation.

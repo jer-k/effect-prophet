@@ -1,7 +1,7 @@
 import { Schema } from "effect";
 import { describe, expect, it } from "vitest";
 
-import { FittingError, PredictionError, UnsupportedConfigurationError } from "../src/index";
+import { FittingError, PredictionError } from "../src/index";
 
 describe("typed domain errors", () => {
   it("exposes structured fitting failure context", () => {
@@ -14,57 +14,6 @@ describe("typed domain errors", () => {
     expect(error._tag).toBe("FittingError");
     expect(error.reason).toBe("insufficient-observations");
     expect(error.observationCount).toBe(1);
-  });
-
-  it("exposes schema-backed unsupported configuration context", () => {
-    const error = new UnsupportedConfigurationError({
-      configuration: {
-        option: "growth",
-        received: "flat",
-        supported: ["linear"],
-      },
-      message: "The selected backend supports only linear growth",
-    });
-
-    expect(error._tag).toBe("UnsupportedConfigurationError");
-    expect(error.configuration).toEqual({
-      option: "growth",
-      received: "flat",
-      supported: ["linear"],
-    });
-
-    const encoded = Schema.encodeSync(UnsupportedConfigurationError)(error);
-
-    expect(encoded._tag).toBe("UnsupportedConfigurationError");
-    expect(encoded.configuration).toEqual({
-      option: "growth",
-      received: "flat",
-      supported: ["linear"],
-    });
-    expect(encoded.message).toBe("The selected backend supports only linear growth");
-    expect(() =>
-      Schema.decodeUnknownSync(UnsupportedConfigurationError)({
-        ...encoded,
-        configuration: { ...encoded.configuration, supported: [] },
-      }),
-    ).toThrow();
-  });
-
-  it("represents unsupported configured seasonalities coherently", () => {
-    const error = new UnsupportedConfigurationError({
-      configuration: {
-        option: "seasonalities",
-        received: "configured",
-        supported: ["none"],
-      },
-      message: "The selected backend does not fit seasonalities",
-    });
-
-    expect(error.configuration).toEqual({
-      option: "seasonalities",
-      received: "configured",
-      supported: ["none"],
-    });
   });
 
   it("exposes structured prediction failure context", () => {

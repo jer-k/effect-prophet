@@ -2,7 +2,7 @@ import { Effect } from "effect";
 import { describe, expect, it } from "vitest";
 
 import { loadProphetFixtureBundle } from "../../helpers/prophet-fixture";
-import { fit, wasmLinearTrendFittingBackendLayer } from "../../../src/index";
+import { fit, prophetFittingBackendLayer } from "../../../src/index";
 
 describe("Prophet 1.4.0 preprocessing compatibility", () => {
   it("returns matching training origins and scales", async () => {
@@ -10,7 +10,7 @@ describe("Prophet 1.4.0 preprocessing compatibility", () => {
 
     for (const referenceCase of linearTrend.cases) {
       const model = await Effect.runPromise(
-        fit(referenceCase.observations).pipe(Effect.provide(wasmLinearTrendFittingBackendLayer)),
+        fit(referenceCase.observations).pipe(Effect.provide(prophetFittingBackendLayer)),
       );
 
       expect(model.model, referenceCase.id).toBe("linear-trend");

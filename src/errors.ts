@@ -26,24 +26,6 @@ const ModelSerializationOperationSchema = Schema.Literals(["encode", "decode"]);
 
 const WasmFailurePhaseSchema = Schema.Literals(["load", "execute", "protocol"]);
 
-const GrowthSchema = Schema.Literals(["linear", "flat"]);
-
-const UnsupportedConfigurationSchema = Schema.Union([
-  Schema.Struct({
-    option: Schema.Literal("growth"),
-    received: GrowthSchema,
-    supported: Schema.NonEmptyArray(GrowthSchema),
-  }),
-  Schema.Struct({
-    option: Schema.Literal("seasonalities"),
-    received: Schema.Literal("configured"),
-    supported: Schema.Tuple([Schema.Literal("none")]),
-  }),
-]);
-
-/** A valid public option that a selected fitting backend does not implement. */
-export type UnsupportedConfiguration = typeof UnsupportedConfigurationSchema.Type;
-
 export type ValidationInput = "observations" | "options" | "prediction-timestamps";
 
 export type FittingFailureReason =
@@ -73,15 +55,6 @@ export class InputValidationError extends Schema.TaggedError<InputValidationErro
   {
     input: ValidationInputSchema,
     issues: Schema.Array(ValidationIssueSchema),
-    message: Schema.String,
-  },
-) {}
-
-/** An expected failure when a selected backend does not implement valid public options. */
-export class UnsupportedConfigurationError extends Schema.TaggedError<UnsupportedConfigurationError>()(
-  "UnsupportedConfigurationError",
-  {
-    configuration: UnsupportedConfigurationSchema,
     message: Schema.String,
   },
 ) {}
