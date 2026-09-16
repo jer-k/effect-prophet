@@ -6,7 +6,7 @@
     },
     {
       "path": "fourier.json",
-      "sha256": "57d99d9fbdd86f71cc34b857a072406bff7ce426fdb319d03db726f9260ac552"
+      "sha256": "4400d9e76cc36faaa38c4e938a6ae88174fa8eb9fa44a36bcb912e79d8935a3e"
     }
   ],
   "backendArtifacts": [
@@ -22,7 +22,7 @@
     "platform": "linux/amd64",
     "uvVersion": "0.8.15"
   },
-  "generatorRevision": "359713f8533ad719a623a763137ce65f05ce25c7984319b36ee87da1e266a10b",
+  "generatorRevision": "d5e0a94cd7d766ddad3f510b262d76bfc06cb24ffefb1c82783a05a666e9bf5a",
   "numericalEnvironment": [
     {
       "name": "cmdstanpy",

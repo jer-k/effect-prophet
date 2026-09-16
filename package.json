@@ -22,7 +22,7 @@
     "test": "vitest run --dir test",
     "test:integration:prophet": "npm run build:wasm && vitest run --dir integration/tests/prophet-1.4.0",
     "fixtures:generate": "docker compose --profile fixtures-generate run --rm --build prophet-fixtures-generate",
-    "fixtures:check": "docker compose --profile fixtures-check up --build --abort-on-container-exit --exit-code-from effect-prophet-fixtures effect-prophet-fixtures; status=$?; docker compose --profile fixtures-check down; exit $status",
+    "fixtures:check": "docker compose --profile fixtures-check run --rm --build prophet-fixtures-check && docker compose --profile fixtures-check run --rm --build --no-deps effect-prophet-fixtures",
     "test:rust": "cargo test --manifest-path rust/prophet-wasm/Cargo.toml",
     "test:wasm": "npm run build:wasm && node --test rust/prophet-wasm/node-tests/*.test.ts",
     "typecheck": "tsc --noEmit",

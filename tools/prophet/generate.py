@@ -25,6 +25,7 @@ from prophet import Prophet
 
 EXPECTED_PROPHET_VERSION = "1.4.0"
 EXPECTED_CONTAINER_PLATFORM = "linux/amd64"
+FOURIER_DECIMAL_PLACES = 12
 LINEAR_TREND_FILENAME = "linear-trend.json"
 FOURIER_FILENAME = "fourier.json"
 MANIFEST_FILENAME = "manifest.json"
@@ -187,6 +188,14 @@ def stable_json(value: Any) -> bytes:
     """Encode JSON with deterministic ordering and no non-finite extensions."""
 
     return (json.dumps(value, allow_nan=False, indent=2, sort_keys=True) + "\n").encode("utf-8")
+
+
+def canonical_fourier_float(value: np.floating[Any]) -> float:
+    """Round CPU-sensitive trigonometric output into the fixture precision contract."""
+
+    rounded = round(float(value), FOURIER_DECIMAL_PLACES)
+
+    return 0.0 if rounded == 0.0 else rounded
 
 
 def read_reference() -> dict[str, str]:
@@ -387,8 +396,12 @@ def make_fourier_case(spec: FourierCaseSpec) -> dict[str, Any]:
         "coefficients": list(spec.coefficients),
         "expected": {
             "columnCount": int(features.shape[1]),
-            "componentsRowMajor": [float(value) for value in components.ravel()],
-            "featuresRowMajor": [float(value) for value in features.ravel()],
+            "componentsRowMajor": [
+                canonical_fourier_float(value) for value in components.ravel()
+            ],
+            "featuresRowMajor": [
+                canonical_fourier_float(value) for value in features.ravel()
+            ],
             "rowCount": row_count,
         },
         "id": spec.identifier,

@@ -69,7 +69,8 @@ The suite is intentionally excluded from ordinary `npm test`.
 5. calls Prophet 1.4.0's unmodified `fourier_series` for ordered weekly, fractional-day,
    epoch, pre-epoch, subdaily, irregular, and repeated timestamp cases;
 6. evaluates authored fixed coefficients against those feature blocks without fitting a model;
-7. writes stable JSON with non-finite values rejected.
+7. rounds CPU-sensitive Fourier and component values to 12 decimal places, well inside the
+   fixture's `1e-11` absolute tolerance, and writes stable JSON with non-finite values rejected.
 
 No model fit or optimizer invocation occurs. The explicitly populated fields are
 `changepoints_t`, `params.k`, `params.m`, and `params.delta`. With the default zero floor, Prophet
