@@ -44,10 +44,15 @@ A flat payload stores all state required to rebuild Fourier features and predict
 }
 ```
 
-Decoding reconstructs deterministic coefficient offsets from the ordered definitions. It rejects
-non-finite levels/coefficients/diagnostics, non-positive noise and value scales, coefficient-count
-misalignment, duplicated or invalid definitions, and inconsistent shortcut summaries. It never
-infers metadata from prediction rows or current defaults.
+Decoding reconstructs deterministic coefficient offsets from the ordered definitions. Automatic
+built-in controls are resolved before fitting, so payloads store concrete canonical definitions
+(`yearly`, `weekly`, and `daily`) rather than `"auto"`. Reload never reruns history/cadence rules and
+prediction timestamps cannot change the saved layout.
+
+Decoding rejects non-finite levels/coefficients/diagnostics, non-positive noise and value scales,
+coefficient-count misalignment, duplicated or invalid definitions, non-canonical built-in periods,
+and inconsistent shortcut summaries. It never infers metadata from prediction rows or current
+defaults.
 
 The payload has no independent format version and is interpreted by the installed package's
 schema. Compatibility therefore remains experimental until the package reaches `1.0.0`.

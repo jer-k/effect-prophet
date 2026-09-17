@@ -7,6 +7,7 @@ import {
   makeNonEmptySeasonalityLayout,
   makeSeasonalityLayout,
   parseSeasonalities,
+  parseSeasonalityDefinitions,
   parseSeasonalityLayout,
   type EncodedSeasonality,
   type SeasonalityDefinition,
@@ -142,6 +143,25 @@ describe("seasonality domain", () => {
     await expectInvalidSeasonality(
       parseSeasonalities([{ name, periodDays: 7, fourierOrder: 2 }]),
       "name",
+    );
+  });
+
+  it("accepts canonical resolved built-ins and rejects mismatched built-in periods", async () => {
+    const definitions = await Effect.runPromise(
+      parseSeasonalityDefinitions([
+        { name: "yearly", periodDays: 365.25, fourierOrder: 6, priorScale: 2 },
+        { name: "weekly", periodDays: 7, fourierOrder: 3, priorScale: 10 },
+        { name: "daily", periodDays: 1, fourierOrder: 4, priorScale: 10 },
+      ]),
+    );
+
+    expect(definitions.map((definition) => definition.name)).toEqual(["yearly", "weekly", "daily"]);
+
+    await expectInvalidSeasonality(
+      parseSeasonalityDefinitions([
+        { name: "daily", periodDays: 2, fourierOrder: 4, priorScale: 10 },
+      ]),
+      "periodDays",
     );
   });
 

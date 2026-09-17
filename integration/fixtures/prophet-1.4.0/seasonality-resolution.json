@@ -1,0 +1,691 @@
+{
+  "cases": [
+    {
+      "configurationMapping": {
+        "effectProphetBuiltIns": {
+          "daily": "auto",
+          "weekly": "off",
+          "yearly": "off"
+        },
+        "effectProphetCustomSeasonalities": [],
+        "note": "Controls map directly; package built-ins are opt-in and default to off."
+      },
+      "expectedEnabled": [],
+      "id": "daily-span-just-below",
+      "kind": "seasonality-resolution",
+      "trainingTimestamps": [
+        "2020-01-01T00:00:00.000Z",
+        "2020-01-01T12:00:00.000Z",
+        "2020-01-02T23:59:59.999Z"
+      ],
+      "upstreamControls": {
+        "daily": "auto",
+        "weekly": false,
+        "yearly": false
+      }
+    },
+    {
+      "configurationMapping": {
+        "effectProphetBuiltIns": {
+          "daily": "auto",
+          "weekly": "off",
+          "yearly": "off"
+        },
+        "effectProphetCustomSeasonalities": [],
+        "note": "Controls map directly; package built-ins are opt-in and default to off."
+      },
+      "expectedEnabled": [
+        {
+          "fourierOrder": 4,
+          "name": "daily",
+          "periodDays": 1,
+          "priorScale": 10.0
+        }
+      ],
+      "id": "daily-span-exact",
+      "kind": "seasonality-resolution",
+      "trainingTimestamps": [
+        "2020-01-01T00:00:00.000Z",
+        "2020-01-01T12:00:00.000Z",
+        "2020-01-03T00:00:00.000Z"
+      ],
+      "upstreamControls": {
+        "daily": "auto",
+        "weekly": false,
+        "yearly": false
+      }
+    },
+    {
+      "configurationMapping": {
+        "effectProphetBuiltIns": {
+          "daily": "auto",
+          "weekly": "off",
+          "yearly": "off"
+        },
+        "effectProphetCustomSeasonalities": [],
+        "note": "Controls map directly; package built-ins are opt-in and default to off."
+      },
+      "expectedEnabled": [
+        {
+          "fourierOrder": 4,
+          "name": "daily",
+          "periodDays": 1,
+          "priorScale": 10.0
+        }
+      ],
+      "id": "daily-span-just-above",
+      "kind": "seasonality-resolution",
+      "trainingTimestamps": [
+        "2020-01-01T00:00:00.000Z",
+        "2020-01-01T12:00:00.000Z",
+        "2020-01-03T00:00:00.001Z"
+      ],
+      "upstreamControls": {
+        "daily": "auto",
+        "weekly": false,
+        "yearly": false
+      }
+    },
+    {
+      "configurationMapping": {
+        "effectProphetBuiltIns": {
+          "daily": "off",
+          "weekly": "auto",
+          "yearly": "off"
+        },
+        "effectProphetCustomSeasonalities": [],
+        "note": "Controls map directly; package built-ins are opt-in and default to off."
+      },
+      "expectedEnabled": [],
+      "id": "weekly-span-just-below",
+      "kind": "seasonality-resolution",
+      "trainingTimestamps": [
+        "2020-01-01T00:00:00.000Z",
+        "2020-01-02T00:00:00.000Z",
+        "2020-01-14T23:59:59.999Z"
+      ],
+      "upstreamControls": {
+        "daily": false,
+        "weekly": "auto",
+        "yearly": false
+      }
+    },
+    {
+      "configurationMapping": {
+        "effectProphetBuiltIns": {
+          "daily": "off",
+          "weekly": "auto",
+          "yearly": "off"
+        },
+        "effectProphetCustomSeasonalities": [],
+        "note": "Controls map directly; package built-ins are opt-in and default to off."
+      },
+      "expectedEnabled": [
+        {
+          "fourierOrder": 3,
+          "name": "weekly",
+          "periodDays": 7,
+          "priorScale": 10.0
+        }
+      ],
+      "id": "weekly-span-exact",
+      "kind": "seasonality-resolution",
+      "trainingTimestamps": [
+        "2020-01-01T00:00:00.000Z",
+        "2020-01-02T00:00:00.000Z",
+        "2020-01-15T00:00:00.000Z"
+      ],
+      "upstreamControls": {
+        "daily": false,
+        "weekly": "auto",
+        "yearly": false
+      }
+    },
+    {
+      "configurationMapping": {
+        "effectProphetBuiltIns": {
+          "daily": "off",
+          "weekly": "auto",
+          "yearly": "off"
+        },
+        "effectProphetCustomSeasonalities": [],
+        "note": "Controls map directly; package built-ins are opt-in and default to off."
+      },
+      "expectedEnabled": [
+        {
+          "fourierOrder": 3,
+          "name": "weekly",
+          "periodDays": 7,
+          "priorScale": 10.0
+        }
+      ],
+      "id": "weekly-span-just-above",
+      "kind": "seasonality-resolution",
+      "trainingTimestamps": [
+        "2020-01-01T00:00:00.000Z",
+        "2020-01-02T00:00:00.000Z",
+        "2020-01-15T00:00:00.001Z"
+      ],
+      "upstreamControls": {
+        "daily": false,
+        "weekly": "auto",
+        "yearly": false
+      }
+    },
+    {
+      "configurationMapping": {
+        "effectProphetBuiltIns": {
+          "daily": "off",
+          "weekly": "off",
+          "yearly": "auto"
+        },
+        "effectProphetCustomSeasonalities": [],
+        "note": "Controls map directly; package built-ins are opt-in and default to off."
+      },
+      "expectedEnabled": [],
+      "id": "yearly-span-just-below",
+      "kind": "seasonality-resolution",
+      "trainingTimestamps": [
+        "2020-01-01T00:00:00.000Z",
+        "2021-12-30T23:59:59.999Z"
+      ],
+      "upstreamControls": {
+        "daily": false,
+        "weekly": false,
+        "yearly": "auto"
+      }
+    },
+    {
+      "configurationMapping": {
+        "effectProphetBuiltIns": {
+          "daily": "off",
+          "weekly": "off",
+          "yearly": "auto"
+        },
+        "effectProphetCustomSeasonalities": [],
+        "note": "Controls map directly; package built-ins are opt-in and default to off."
+      },
+      "expectedEnabled": [
+        {
+          "fourierOrder": 10,
+          "name": "yearly",
+          "periodDays": 365.25,
+          "priorScale": 10.0
+        }
+      ],
+      "id": "yearly-span-exact",
+      "kind": "seasonality-resolution",
+      "trainingTimestamps": [
+        "2020-01-01T00:00:00.000Z",
+        "2021-12-31T00:00:00.000Z"
+      ],
+      "upstreamControls": {
+        "daily": false,
+        "weekly": false,
+        "yearly": "auto"
+      }
+    },
+    {
+      "configurationMapping": {
+        "effectProphetBuiltIns": {
+          "daily": "off",
+          "weekly": "off",
+          "yearly": "auto"
+        },
+        "effectProphetCustomSeasonalities": [],
+        "note": "Controls map directly; package built-ins are opt-in and default to off."
+      },
+      "expectedEnabled": [
+        {
+          "fourierOrder": 10,
+          "name": "yearly",
+          "periodDays": 365.25,
+          "priorScale": 10.0
+        }
+      ],
+      "id": "yearly-span-just-above",
+      "kind": "seasonality-resolution",
+      "trainingTimestamps": [
+        "2020-01-01T00:00:00.000Z",
+        "2021-12-31T00:00:00.001Z"
+      ],
+      "upstreamControls": {
+        "daily": false,
+        "weekly": false,
+        "yearly": "auto"
+      }
+    },
+    {
+      "configurationMapping": {
+        "effectProphetBuiltIns": {
+          "daily": "auto",
+          "weekly": "off",
+          "yearly": "off"
+        },
+        "effectProphetCustomSeasonalities": [],
+        "note": "Controls map directly; package built-ins are opt-in and default to off."
+      },
+      "expectedEnabled": [],
+      "id": "daily-gap-exact",
+      "kind": "seasonality-resolution",
+      "trainingTimestamps": [
+        "2020-01-01T00:00:00.000Z",
+        "2020-01-02T00:00:00.000Z",
+        "2020-01-03T00:00:00.000Z"
+      ],
+      "upstreamControls": {
+        "daily": "auto",
+        "weekly": false,
+        "yearly": false
+      }
+    },
+    {
+      "configurationMapping": {
+        "effectProphetBuiltIns": {
+          "daily": "auto",
+          "weekly": "off",
+          "yearly": "off"
+        },
+        "effectProphetCustomSeasonalities": [],
+        "note": "Controls map directly; package built-ins are opt-in and default to off."
+      },
+      "expectedEnabled": [
+        {
+          "fourierOrder": 4,
+          "name": "daily",
+          "periodDays": 1,
+          "priorScale": 10.0
+        }
+      ],
+      "id": "daily-gap-just-below",
+      "kind": "seasonality-resolution",
+      "trainingTimestamps": [
+        "2020-01-01T00:00:00.000Z",
+        "2020-01-01T23:59:59.999Z",
+        "2020-01-03T00:00:00.000Z"
+      ],
+      "upstreamControls": {
+        "daily": "auto",
+        "weekly": false,
+        "yearly": false
+      }
+    },
+    {
+      "configurationMapping": {
+        "effectProphetBuiltIns": {
+          "daily": "off",
+          "weekly": "auto",
+          "yearly": "off"
+        },
+        "effectProphetCustomSeasonalities": [],
+        "note": "Controls map directly; package built-ins are opt-in and default to off."
+      },
+      "expectedEnabled": [],
+      "id": "weekly-gap-exact",
+      "kind": "seasonality-resolution",
+      "trainingTimestamps": [
+        "2020-01-01T00:00:00.000Z",
+        "2020-01-08T00:00:00.000Z",
+        "2020-01-15T00:00:00.000Z"
+      ],
+      "upstreamControls": {
+        "daily": false,
+        "weekly": "auto",
+        "yearly": false
+      }
+    },
+    {
+      "configurationMapping": {
+        "effectProphetBuiltIns": {
+          "daily": "off",
+          "weekly": "auto",
+          "yearly": "off"
+        },
+        "effectProphetCustomSeasonalities": [],
+        "note": "Controls map directly; package built-ins are opt-in and default to off."
+      },
+      "expectedEnabled": [
+        {
+          "fourierOrder": 3,
+          "name": "weekly",
+          "periodDays": 7,
+          "priorScale": 10.0
+        }
+      ],
+      "id": "weekly-gap-just-below",
+      "kind": "seasonality-resolution",
+      "trainingTimestamps": [
+        "2020-01-01T00:00:00.000Z",
+        "2020-01-07T23:59:59.999Z",
+        "2020-01-15T00:00:00.000Z"
+      ],
+      "upstreamControls": {
+        "daily": false,
+        "weekly": "auto",
+        "yearly": false
+      }
+    },
+    {
+      "configurationMapping": {
+        "effectProphetBuiltIns": {
+          "daily": "auto",
+          "weekly": "auto",
+          "yearly": "off"
+        },
+        "effectProphetCustomSeasonalities": [],
+        "note": "Controls map directly; package built-ins are opt-in and default to off."
+      },
+      "expectedEnabled": [
+        {
+          "fourierOrder": 3,
+          "name": "weekly",
+          "periodDays": 7,
+          "priorScale": 10.0
+        },
+        {
+          "fourierOrder": 4,
+          "name": "daily",
+          "periodDays": 1,
+          "priorScale": 10.0
+        }
+      ],
+      "id": "irregular-minimum-gap",
+      "kind": "seasonality-resolution",
+      "trainingTimestamps": [
+        "2020-01-01T00:00:00.000Z",
+        "2020-01-01T12:00:00.000Z",
+        "2020-01-21T00:00:00.000Z"
+      ],
+      "upstreamControls": {
+        "daily": "auto",
+        "weekly": "auto",
+        "yearly": false
+      }
+    },
+    {
+      "configurationMapping": {
+        "effectProphetBuiltIns": {
+          "daily": "auto",
+          "weekly": "auto",
+          "yearly": "auto"
+        },
+        "effectProphetCustomSeasonalities": [],
+        "note": "Controls map directly; package built-ins are opt-in and default to off."
+      },
+      "expectedEnabled": [],
+      "id": "one-point-history",
+      "kind": "seasonality-resolution",
+      "trainingTimestamps": [
+        "2020-01-01T00:00:00.000Z"
+      ],
+      "upstreamControls": {
+        "daily": "auto",
+        "weekly": "auto",
+        "yearly": "auto"
+      }
+    },
+    {
+      "configurationMapping": {
+        "effectProphetBuiltIns": {
+          "daily": "auto",
+          "weekly": "auto",
+          "yearly": "off"
+        },
+        "effectProphetCustomSeasonalities": [],
+        "note": "Controls map directly; package built-ins are opt-in and default to off."
+      },
+      "expectedEnabled": [
+        {
+          "fourierOrder": 3,
+          "name": "weekly",
+          "periodDays": 7,
+          "priorScale": 10.0
+        }
+      ],
+      "id": "daily-only-sampling",
+      "kind": "seasonality-resolution",
+      "trainingTimestamps": [
+        "2020-01-01T00:00:00.000Z",
+        "2020-01-02T00:00:00.000Z",
+        "2020-01-03T00:00:00.000Z",
+        "2020-01-04T00:00:00.000Z",
+        "2020-01-05T00:00:00.000Z",
+        "2020-01-06T00:00:00.000Z",
+        "2020-01-07T00:00:00.000Z",
+        "2020-01-08T00:00:00.000Z",
+        "2020-01-09T00:00:00.000Z",
+        "2020-01-10T00:00:00.000Z",
+        "2020-01-11T00:00:00.000Z",
+        "2020-01-12T00:00:00.000Z",
+        "2020-01-13T00:00:00.000Z",
+        "2020-01-14T00:00:00.000Z",
+        "2020-01-15T00:00:00.000Z"
+      ],
+      "upstreamControls": {
+        "daily": "auto",
+        "weekly": "auto",
+        "yearly": false
+      }
+    },
+    {
+      "configurationMapping": {
+        "effectProphetBuiltIns": {
+          "daily": "auto",
+          "weekly": "auto",
+          "yearly": "off"
+        },
+        "effectProphetCustomSeasonalities": [],
+        "note": "Controls map directly; package built-ins are opt-in and default to off."
+      },
+      "expectedEnabled": [],
+      "id": "weekly-only-sampling",
+      "kind": "seasonality-resolution",
+      "trainingTimestamps": [
+        "2020-01-01T00:00:00.000Z",
+        "2020-01-08T00:00:00.000Z",
+        "2020-01-15T00:00:00.000Z"
+      ],
+      "upstreamControls": {
+        "daily": "auto",
+        "weekly": "auto",
+        "yearly": false
+      }
+    },
+    {
+      "configurationMapping": {
+        "effectProphetBuiltIns": {
+          "daily": "auto",
+          "weekly": "off",
+          "yearly": "off"
+        },
+        "effectProphetCustomSeasonalities": [],
+        "note": "Controls map directly; package built-ins are opt-in and default to off."
+      },
+      "expectedEnabled": [
+        {
+          "fourierOrder": 4,
+          "name": "daily",
+          "periodDays": 1,
+          "priorScale": 10.0
+        }
+      ],
+      "id": "subdaily-history",
+      "kind": "seasonality-resolution",
+      "trainingTimestamps": [
+        "2020-01-01T00:00:00.000Z",
+        "2020-01-01T12:00:00.000Z",
+        "2020-01-03T00:00:00.000Z"
+      ],
+      "upstreamControls": {
+        "daily": "auto",
+        "weekly": false,
+        "yearly": false
+      }
+    },
+    {
+      "configurationMapping": {
+        "effectProphetBuiltIns": {
+          "daily": "off",
+          "weekly": "off",
+          "yearly": "off"
+        },
+        "effectProphetCustomSeasonalities": [],
+        "note": "Controls map directly; package built-ins are opt-in and default to off."
+      },
+      "expectedEnabled": [],
+      "id": "explicit-off-long-history",
+      "kind": "seasonality-resolution",
+      "trainingTimestamps": [
+        "2020-01-01T00:00:00.000Z",
+        "2020-01-01T12:00:00.000Z",
+        "2021-12-31T00:00:00.000Z"
+      ],
+      "upstreamControls": {
+        "daily": false,
+        "weekly": false,
+        "yearly": false
+      }
+    },
+    {
+      "configurationMapping": {
+        "effectProphetBuiltIns": {
+          "daily": {
+            "mode": "on"
+          },
+          "weekly": {
+            "mode": "on"
+          },
+          "yearly": {
+            "mode": "on"
+          }
+        },
+        "effectProphetCustomSeasonalities": [],
+        "note": "Controls map directly; package built-ins are opt-in and default to off."
+      },
+      "expectedEnabled": [
+        {
+          "fourierOrder": 10,
+          "name": "yearly",
+          "periodDays": 365.25,
+          "priorScale": 10.0
+        },
+        {
+          "fourierOrder": 3,
+          "name": "weekly",
+          "periodDays": 7,
+          "priorScale": 10.0
+        },
+        {
+          "fourierOrder": 4,
+          "name": "daily",
+          "periodDays": 1,
+          "priorScale": 10.0
+        }
+      ],
+      "id": "explicit-on-short-history",
+      "kind": "seasonality-resolution",
+      "trainingTimestamps": [
+        "2020-01-01T00:00:00.000Z"
+      ],
+      "upstreamControls": {
+        "daily": true,
+        "weekly": true,
+        "yearly": true
+      }
+    },
+    {
+      "configurationMapping": {
+        "effectProphetBuiltIns": {
+          "daily": {
+            "fourierOrder": 2,
+            "mode": "on"
+          },
+          "weekly": {
+            "fourierOrder": 5,
+            "mode": "on"
+          },
+          "yearly": {
+            "fourierOrder": 6,
+            "mode": "on"
+          }
+        },
+        "effectProphetCustomSeasonalities": [],
+        "note": "Controls map directly; package built-ins are opt-in and default to off."
+      },
+      "expectedEnabled": [
+        {
+          "fourierOrder": 6,
+          "name": "yearly",
+          "periodDays": 365.25,
+          "priorScale": 10.0
+        },
+        {
+          "fourierOrder": 5,
+          "name": "weekly",
+          "periodDays": 7,
+          "priorScale": 10.0
+        },
+        {
+          "fourierOrder": 2,
+          "name": "daily",
+          "periodDays": 1,
+          "priorScale": 10.0
+        }
+      ],
+      "id": "explicit-order-overrides",
+      "kind": "seasonality-resolution",
+      "trainingTimestamps": [
+        "2020-01-01T00:00:00.000Z"
+      ],
+      "upstreamControls": {
+        "daily": 2,
+        "weekly": 5,
+        "yearly": 6
+      }
+    },
+    {
+      "configurationMapping": {
+        "effectProphetBuiltIns": {
+          "daily": "auto",
+          "weekly": "auto",
+          "yearly": "off"
+        },
+        "effectProphetCustomSeasonalities": [
+          {
+            "fourierOrder": 1,
+            "name": "weekly-custom",
+            "periodDays": 7.0,
+            "priorScale": 4.0
+          }
+        ],
+        "note": "The non-reserved custom component coexists with built-ins; package output keeps custom definitions first."
+      },
+      "expectedEnabled": [
+        {
+          "fourierOrder": 3,
+          "name": "weekly",
+          "periodDays": 7,
+          "priorScale": 10.0
+        },
+        {
+          "fourierOrder": 4,
+          "name": "daily",
+          "periodDays": 1,
+          "priorScale": 10.0
+        }
+      ],
+      "id": "custom-coexistence",
+      "kind": "seasonality-resolution",
+      "trainingTimestamps": [
+        "2020-01-01T00:00:00.000Z",
+        "2020-01-01T12:00:00.000Z",
+        "2020-01-15T00:00:00.000Z"
+      ],
+      "upstreamControls": {
+        "daily": "auto",
+        "weekly": "auto",
+        "yearly": false
+      }
+    }
+  ]
+}

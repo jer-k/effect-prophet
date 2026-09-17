@@ -385,6 +385,61 @@ describe("flat MAP Prophet integration", () => {
 });
 
 describe("linear-additive Prophet integration", () => {
+  it("resolves automatic built-ins from training history before real WASM fitting", async () => {
+    const automaticObservations = Array.from({ length: 57 }, (_, index) => {
+      const timestamp = syntheticStart + index * (DAY / 4);
+
+      return {
+        timestamp: new Date(timestamp).toISOString(),
+        value: syntheticValue(timestamp),
+      };
+    });
+
+    const model = await Effect.runPromise(
+      fit(automaticObservations, {
+        seasonalities: [{ name: "custom-cycle", periodDays: 2.5, fourierOrder: 1 }],
+        builtInSeasonalities: { daily: "auto", weekly: "auto", yearly: "auto" },
+      }).pipe(Effect.provide(prophetFittingBackendLayer)),
+    );
+
+    expect(model.model).toBe("linear-additive-ridge");
+
+    if (model.model !== "linear-additive-ridge") {
+      throw new Error("Expected a linear-additive-ridge model");
+    }
+
+    expect(model.seasonalities.components.map((component) => component.definition)).toEqual([
+      { name: "custom-cycle", periodDays: 2.5, fourierOrder: 1, priorScale: 10 },
+      { name: "weekly", periodDays: 7, fourierOrder: 3, priorScale: 10 },
+      { name: "daily", periodDays: 1, fourierOrder: 4, priorScale: 10 },
+    ]);
+
+    const originalNames = model.seasonalities.components.map(
+      (component) => component.definition.name,
+    );
+
+    const forecasts = await Effect.runPromise(
+      predict(model, [
+        "1900-01-01T00:00:00.000Z",
+        "2024-12-31T23:59:59.999Z",
+        "2200-01-01T00:00:00.000Z",
+      ]),
+    );
+
+    expect(model.seasonalities.components.map((component) => component.definition.name)).toEqual(
+      originalNames,
+    );
+    expect(forecasts).toHaveLength(3);
+
+    for (const forecast of forecasts) {
+      expect(forecast.seasonalities.map((component) => component.name)).toEqual([
+        "custom-cycle",
+        "weekly",
+        "daily",
+      ]);
+    }
+  });
+
   it("fits multiple components and forecasts held-out timestamps through real WASM", async () => {
     const model = await Effect.runPromise(
       fit(syntheticObservations, additiveOptions).pipe(Effect.provide(prophetFittingBackendLayer)),

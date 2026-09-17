@@ -31,23 +31,79 @@ const PositiveFourierOrder = Schema.Int.check(
   Schema.isLessThanOrEqualTo(maximumFourierOrder),
 );
 
-const SeasonalityNameSchema = Schema.NonEmptyString.check(
-  Schema.makeFilter((name) => !reservedSeasonalityNames.has(name), {
-    message: "Seasonality name is reserved",
-  }),
-).pipe(Schema.brand("effect-prophet/SeasonalityName"));
+const builtInSeasonalityNames: ReadonlySet<string> = new Set(["daily", "weekly", "yearly"]);
 
-const SeasonalityDefinitionSchema = Schema.Struct({
-  name: SeasonalityNameSchema,
+const validDefinitionName = Schema.makeFilter(
+  (name: string) => !reservedSeasonalityNames.has(name) || builtInSeasonalityNames.has(name),
+  { message: "Seasonality name is reserved" },
+);
+
+const priorScaleSchema = PositiveFinite.pipe(
+  Schema.withDecodingDefaultKey(Effect.succeed(defaultSeasonalityPriorScale)),
+);
+
+const SeasonalityDefinitionFieldsSchema = Schema.Struct({
+  name: Schema.NonEmptyString.check(validDefinitionName),
   periodDays: PositiveFinite,
   fourierOrder: PositiveFourierOrder,
-  priorScale: PositiveFinite.pipe(
-    Schema.withDecodingDefaultKey(Effect.succeed(defaultSeasonalityPriorScale)),
+  priorScale: priorScaleSchema,
+});
+
+const expectedBuiltInPeriod = (name: string): number | undefined => {
+  switch (name) {
+    case "daily":
+      return 1;
+    case "weekly":
+      return 7;
+    case "yearly":
+      return 365.25;
+    default:
+      return undefined;
+  }
+};
+
+const canonicalBuiltInPeriod = Schema.makeFilter<typeof SeasonalityDefinitionFieldsSchema.Type>(
+  (definition) => {
+    const expectedPeriod = expectedBuiltInPeriod(definition.name);
+
+    if (expectedPeriod !== undefined && definition.periodDays !== expectedPeriod) {
+      return {
+        path: ["periodDays"],
+        issue: `Expected canonical ${definition.name} period ${expectedPeriod}`,
+      };
+    }
+  },
+);
+
+const ResolvedSeasonalityDefinitionFieldsSchema =
+  SeasonalityDefinitionFieldsSchema.check(canonicalBuiltInPeriod);
+
+const SeasonalityDefinitionSchema = ResolvedSeasonalityDefinitionFieldsSchema.pipe(
+  Schema.brand("effect-prophet/SeasonalityDefinition"),
+);
+
+const CustomSeasonalityDefinitionSchema = Schema.Struct({
+  name: Schema.NonEmptyString.check(
+    Schema.makeFilter((name) => !reservedSeasonalityNames.has(name), {
+      message: "Seasonality name is reserved",
+    }),
   ),
+  periodDays: PositiveFinite,
+  fourierOrder: PositiveFourierOrder,
+  priorScale: priorScaleSchema,
 }).pipe(Schema.brand("effect-prophet/SeasonalityDefinition"));
 
+const BuiltInSeasonalityDefinitionSchema = Schema.Struct({
+  name: Schema.Literals(["daily", "weekly", "yearly"]),
+  periodDays: PositiveFinite,
+  fourierOrder: PositiveFourierOrder,
+  priorScale: priorScaleSchema,
+})
+  .check(canonicalBuiltInPeriod)
+  .pipe(Schema.brand("effect-prophet/SeasonalityDefinition"));
+
 /** A custom seasonality representation accepted before parsing and default application. */
-export type EncodedSeasonality = typeof SeasonalityDefinitionSchema.Encoded;
+export type EncodedSeasonality = typeof CustomSeasonalityDefinitionSchema.Encoded;
 
 /** A parsed additive Fourier seasonality definition. */
 export type SeasonalityDefinition = typeof SeasonalityDefinitionSchema.Type;
@@ -72,7 +128,11 @@ const seasonalitiesHaveUniqueNames = Schema.makeFilter<ReadonlyArray<Seasonality
   },
 );
 
-const SeasonalitiesSchema = Schema.Array(SeasonalityDefinitionSchema).check(
+const SeasonalitiesSchema = Schema.Array(CustomSeasonalityDefinitionSchema).check(
+  seasonalitiesHaveUniqueNames,
+);
+
+const SeasonalityDefinitionsSchema = Schema.Array(SeasonalityDefinitionSchema).check(
   seasonalitiesHaveUniqueNames,
 );
 
@@ -186,6 +246,19 @@ const decodeSeasonalities = Schema.decodeUnknownEffect(SeasonalitiesSchema, {
   onExcessProperty: "error",
 });
 
+const decodeSeasonalityDefinitions = Schema.decodeUnknownEffect(SeasonalityDefinitionsSchema, {
+  errors: "all",
+  onExcessProperty: "error",
+});
+
+const decodeBuiltInSeasonalityDefinition = Schema.decodeUnknownEffect(
+  BuiltInSeasonalityDefinitionSchema,
+  {
+    errors: "all",
+    onExcessProperty: "error",
+  },
+);
+
 const decodeSeasonalityLayout = Schema.decodeUnknownEffect(SeasonalityLayoutSchema, {
   errors: "all",
   onExcessProperty: "error",
@@ -223,6 +296,36 @@ export const parseSeasonalities = (
 ): Effect.Effect<ReadonlyArray<SeasonalityDefinition>, InvalidSeasonality> =>
   decodeSeasonalities(input).pipe(
     Effect.map(freezeDefinitions),
+    Effect.mapError((error) => invalidSeasonalityFromIssue(error.issue)),
+  );
+
+/**
+ * Parse trusted-format definitions that may include canonical built-in names.
+ *
+ * This parser is for resolved model state, not public custom-seasonality options.
+ *
+ * @param input - Untrusted resolved seasonality definitions.
+ * @returns Parsed, fresh, frozen definitions or structured seasonality issues.
+ */
+export const parseSeasonalityDefinitions = (
+  input: Parameters<typeof decodeSeasonalityDefinitions>[0],
+): Effect.Effect<ReadonlyArray<SeasonalityDefinition>, InvalidSeasonality> =>
+  decodeSeasonalityDefinitions(input).pipe(
+    Effect.map(freezeDefinitions),
+    Effect.mapError((error) => invalidSeasonalityFromIssue(error.issue)),
+  );
+
+/**
+ * Construct one canonical built-in definition through the seasonality domain parser.
+ *
+ * @param input - Complete built-in definition fields selected by fit-time resolution.
+ * @returns A parsed frozen definition or structured seasonality issues.
+ */
+export const makeBuiltInSeasonalityDefinition = (
+  input: Parameters<typeof decodeBuiltInSeasonalityDefinition>[0],
+): Effect.Effect<SeasonalityDefinition, InvalidSeasonality> =>
+  decodeBuiltInSeasonalityDefinition(input).pipe(
+    Effect.map(freezeDefinition),
     Effect.mapError((error) => invalidSeasonalityFromIssue(error.issue)),
   );
 

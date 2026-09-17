@@ -361,7 +361,7 @@ const encodeFlatMapModel = (model: FittedFlatMapProphet): EncodedFlatMapModel =>
 const decodeLinearAdditiveModel = Effect.fn("decodeLinearAdditiveModel")(function* (
   encoded: EncodedLinearAdditiveModel,
 ): Effect.fn.Return<FittedLinearAdditiveProphet, ModelSerializationError> {
-  const definitions = yield* Seasonality.parseSeasonalities(encoded.seasonalities).pipe(
+  const definitions = yield* Seasonality.parseSeasonalityDefinitions(encoded.seasonalities).pipe(
     Effect.mapError(serializationErrorFromInvalidSeasonality),
   );
 
@@ -388,7 +388,7 @@ const decodeLinearAdditiveModel = Effect.fn("decodeLinearAdditiveModel")(functio
 const decodeFlatMapModel = Effect.fn("decodeFlatMapModel")(function* (
   encoded: EncodedFlatMapModel,
 ): Effect.fn.Return<FittedFlatMapProphet, ModelSerializationError> {
-  const definitions = yield* Seasonality.parseSeasonalities(encoded.seasonalities).pipe(
+  const definitions = yield* Seasonality.parseSeasonalityDefinitions(encoded.seasonalities).pipe(
     Effect.mapError(serializationErrorFromInvalidSeasonality),
   );
 

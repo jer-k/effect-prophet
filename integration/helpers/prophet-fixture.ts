@@ -203,6 +203,84 @@ const FourierReferenceFileSchema = Schema.Struct({
   }),
 );
 
+const EncodedBuiltInSettingSchema = Schema.Union([
+  Schema.Literals(["off", "auto"]),
+  Schema.Struct({
+    mode: Schema.Literal("on"),
+    fourierOrder: Schema.optionalKey(Schema.Int.check(Schema.isGreaterThan(0))),
+  }),
+]);
+
+const BuiltInControlsSchema = Schema.Struct({
+  daily: EncodedBuiltInSettingSchema,
+  weekly: EncodedBuiltInSettingSchema,
+  yearly: EncodedBuiltInSettingSchema,
+});
+
+const UpstreamBuiltInControlsSchema = Schema.Struct({
+  daily: Schema.Union([
+    Schema.Literal("auto"),
+    Schema.Boolean,
+    Schema.Int.check(Schema.isGreaterThan(0)),
+  ]),
+  weekly: Schema.Union([
+    Schema.Literal("auto"),
+    Schema.Boolean,
+    Schema.Int.check(Schema.isGreaterThan(0)),
+  ]),
+  yearly: Schema.Union([
+    Schema.Literal("auto"),
+    Schema.Boolean,
+    Schema.Int.check(Schema.isGreaterThan(0)),
+  ]),
+});
+
+const ResolvedSeasonalitySchema = Schema.Struct({
+  name: Schema.Literals(["yearly", "weekly", "daily"]),
+  periodDays: PositiveFinite,
+  fourierOrder: Schema.Int.check(Schema.isGreaterThan(0)),
+  priorScale: PositiveFinite,
+});
+
+const MappedCustomSeasonalitySchema = Schema.Struct({
+  name: Schema.NonEmptyString,
+  periodDays: PositiveFinite,
+  fourierOrder: Schema.Int.check(Schema.isGreaterThan(0)),
+  priorScale: PositiveFinite,
+});
+
+const SeasonalityResolutionReferenceCaseSchema = Schema.Struct({
+  id: Schema.NonEmptyString,
+  kind: Schema.Literal("seasonality-resolution"),
+  trainingTimestamps: Schema.NonEmptyArray(CanonicalTimestamp),
+  upstreamControls: UpstreamBuiltInControlsSchema,
+  configurationMapping: Schema.Struct({
+    effectProphetBuiltIns: BuiltInControlsSchema,
+    effectProphetCustomSeasonalities: Schema.Array(MappedCustomSeasonalitySchema),
+    note: Schema.NonEmptyString,
+  }),
+  expectedEnabled: Schema.Array(ResolvedSeasonalitySchema),
+});
+
+const SeasonalityResolutionReferenceFileSchema = Schema.Struct({
+  cases: Schema.NonEmptyArray(SeasonalityResolutionReferenceCaseSchema),
+}).check(
+  Schema.makeFilter((fixture) => {
+    const identifiers = new Set<string>();
+
+    for (const [index, referenceCase] of fixture.cases.entries()) {
+      if (identifiers.has(referenceCase.id)) {
+        return {
+          path: ["cases", index, "id"],
+          issue: "Seasonality-resolution reference case IDs must be unique",
+        };
+      }
+
+      identifiers.add(referenceCase.id);
+    }
+  }),
+);
+
 const ArtifactPath = Schema.String.check(
   Schema.makeFilter(
     (value) =>
@@ -261,7 +339,11 @@ const FixtureManifestSchema = Schema.Struct({
       paths.add(artifact.path);
     }
 
-    for (const requiredPath of ["linear-trend.json", "fourier.json"]) {
+    for (const requiredPath of [
+      "linear-trend.json",
+      "fourier.json",
+      "seasonality-resolution.json",
+    ]) {
       if (!paths.has(requiredPath)) {
         return {
           path: ["artifacts"],
@@ -280,6 +362,11 @@ const decodeLinearTrendReferenceSchema = Schema.decodeUnknownEffect(
 const decodeFourierReferenceSchema = Schema.decodeUnknownEffect(FourierReferenceFileSchema, {
   errors: "all",
 });
+
+const decodeSeasonalityResolutionReferenceSchema = Schema.decodeUnknownEffect(
+  SeasonalityResolutionReferenceFileSchema,
+  { errors: "all" },
+);
 
 const decodeFixtureManifestSchema = Schema.decodeUnknownEffect(FixtureManifestSchema, {
   errors: "all",
@@ -301,6 +388,14 @@ export type FourierReferenceCase = typeof FourierReferenceCaseSchema.Type;
 
 /** A parsed collection of Prophet Fourier reference cases. */
 export type FourierReferenceFile = typeof FourierReferenceFileSchema.Type;
+
+/** A parsed Prophet built-in seasonality-resolution reference case. */
+export type SeasonalityResolutionReferenceCase =
+  typeof SeasonalityResolutionReferenceCaseSchema.Type;
+
+/** A parsed collection of Prophet seasonality-resolution reference cases. */
+export type SeasonalityResolutionReferenceFile =
+  typeof SeasonalityResolutionReferenceFileSchema.Type;
 
 /** Parsed provenance and artifact integrity metadata for the fixture folder. */
 export type FixtureManifest = typeof FixtureManifestSchema.Type;
@@ -374,6 +469,26 @@ export const decodeFourierReference = Effect.fn("ProphetFixture.decodeFourierRef
   );
 });
 
+/** Parse untrusted seasonality-resolution fixture evidence and configuration mappings. */
+export const decodeSeasonalityResolutionReference = Effect.fn(
+  "ProphetFixture.decodeSeasonalityResolutionReference",
+)(function* (
+  input: Parameters<typeof decodeSeasonalityResolutionReferenceSchema>[0],
+  path = "<memory>",
+): Effect.fn.Return<SeasonalityResolutionReferenceFile, FixtureLoadError> {
+  return yield* decodeSeasonalityResolutionReferenceSchema(input).pipe(
+    Effect.mapError(
+      (cause) =>
+        new FixtureLoadError({
+          operation: "schema",
+          fixturePath: path,
+          message: formatSchemaIssue(cause.issue),
+          cause,
+        }),
+    ),
+  );
+});
+
 /** Parse an untrusted fixture manifest, including safe relative artifact paths. */
 export const decodeFixtureManifest = Effect.fn("ProphetFixture.decodeFixtureManifest")(function* (
   input: Parameters<typeof decodeFixtureManifestSchema>[0],
@@ -427,7 +542,7 @@ const verifyArtifact = Effect.fn("ProphetFixture.verifyArtifact")(function* (
  * Load the committed Prophet fixture bundle and verify every declared artifact digest.
  *
  * @param root - Fixture directory, defaulting to the directory containing this module.
- * @returns Parsed provenance, linear-trend references, and Fourier references, or an explicit infrastructure failure.
+ * @returns Parsed provenance plus linear, Fourier, and seasonality-policy references, or an explicit infrastructure failure.
  */
 export const loadProphetFixtureBundle = Effect.fn("ProphetFixture.loadBundle")(function* (
   root = fixtureRoot,
@@ -467,6 +582,18 @@ export const loadProphetFixtureBundle = Effect.fn("ProphetFixture.loadBundle")(f
   });
 
   const fourier = yield* decodeFourierReference(fourierInput, fourierPath);
+  const seasonalityResolutionPath = nodePath.join(root, "seasonality-resolution.json");
+  const seasonalityResolutionContents = yield* readFixtureText(seasonalityResolutionPath);
 
-  return { fourier, linearTrend, manifest };
+  const seasonalityResolutionInput: unknown = yield* Effect.try({
+    try: () => JSON.parse(seasonalityResolutionContents),
+    catch: (cause) => invalidJson(seasonalityResolutionPath, cause),
+  });
+
+  const seasonalityResolution = yield* decodeSeasonalityResolutionReference(
+    seasonalityResolutionInput,
+    seasonalityResolutionPath,
+  );
+
+  return { fourier, linearTrend, manifest, seasonalityResolution };
 });

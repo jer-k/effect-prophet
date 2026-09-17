@@ -6,6 +6,7 @@ import {
   decodeFixtureManifest,
   decodeFourierReference,
   decodeLinearTrendReference,
+  decodeSeasonalityResolutionReference,
   loadProphetFixtureBundle,
 } from "../../helpers/prophet-fixture";
 
@@ -67,6 +68,8 @@ describe("Prophet fixture loader", () => {
       "weekly-and-fractional-day-irregular",
       "epoch-pre-epoch-and-repeated",
     ]);
+    expect(bundle.seasonalityResolution.cases).toHaveLength(22);
+    expect(bundle.seasonalityResolution.cases[0]?.kind).toBe("seasonality-resolution");
   });
 
   it("rejects misaligned expected arrays", async () => {
@@ -127,6 +130,28 @@ describe("Prophet fixture loader", () => {
     expect(error.message).toContain("canonical UTC timestamp");
   });
 
+  it("rejects duplicate seasonality-resolution case IDs", async () => {
+    const referenceCase = {
+      id: "duplicate",
+      kind: "seasonality-resolution",
+      trainingTimestamps: ["2024-01-01T00:00:00.000Z"],
+      upstreamControls: { daily: "auto", weekly: false, yearly: false },
+      configurationMapping: {
+        effectProphetBuiltIns: { daily: "auto", weekly: "off", yearly: "off" },
+        effectProphetCustomSeasonalities: [],
+        note: "Direct mapping",
+      },
+      expectedEnabled: [],
+    } as const;
+
+    const error = await Effect.runPromise(
+      Effect.flip(decodeSeasonalityResolutionReference({ cases: [referenceCase, referenceCase] })),
+    );
+
+    expect(error).toBeInstanceOf(FixtureLoadError);
+    expect(error.message).toContain("case IDs must be unique");
+  });
+
   it("rejects manifest paths that escape the fixture folder", async () => {
     const error = await Effect.runPromise(
       Effect.flip(
@@ -143,7 +168,12 @@ describe("Prophet fixture loader", () => {
           },
           numericalEnvironment: [],
           backendArtifacts: [],
-          artifacts: [{ path: "../linear-trend.json", sha256: "c".repeat(64) }],
+          artifacts: [
+            { path: "linear-trend.json", sha256: "c".repeat(64) },
+            { path: "fourier.json", sha256: "d".repeat(64) },
+            { path: "seasonality-resolution.json", sha256: "e".repeat(64) },
+            { path: "../escape.json", sha256: "f".repeat(64) },
+          ],
         }),
       ),
     );

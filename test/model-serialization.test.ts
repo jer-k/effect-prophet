@@ -126,6 +126,40 @@ describe("fitted model serialization", () => {
     }
   });
 
+  it("persists the fitting-time automatic layout without rerunning resolution", async () => {
+    const observations = Array.from({ length: 15 }, (_, index) => ({
+      timestamp: new Date(
+        Date.parse("2024-01-01T00:00:00.000Z") + index * 86_400_000,
+      ).toISOString(),
+      value: index + Math.sin((2 * Math.PI * index) / 7),
+    }));
+
+    const model = await Effect.runPromise(
+      fit(observations, {
+        builtInSeasonalities: { daily: "auto", weekly: "auto", yearly: "auto" },
+      }).pipe(Effect.provide(prophetFittingBackendLayer)),
+    );
+
+    expect(model.model).toBe("linear-additive-ridge");
+
+    if (model.model !== "linear-additive-ridge") {
+      throw new Error("Expected an automatically resolved additive model");
+    }
+
+    expect(model.seasonalities.components.map((component) => component.definition.name)).toEqual([
+      "weekly",
+    ]);
+
+    const encoded = await Effect.runPromise(encodeFittedModel(model));
+    const decoded = await Effect.runPromise(decodeFittedModel(JSON.parse(JSON.stringify(encoded))));
+    const timestamps = ["1900-01-01T00:00:00.000Z", "2200-01-01T00:00:00.000Z"] as const;
+    const before = await Effect.runPromise(predict(model, timestamps));
+    const after = await Effect.runPromise(predict(decoded, timestamps));
+
+    expect(decoded).toEqual(model);
+    expect(after).toEqual(before);
+  });
+
   it("round-trips complete flat MAP state and preserves a constant trend", async () => {
     const model = await Effect.runPromise(
       fit(

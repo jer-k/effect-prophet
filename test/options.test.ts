@@ -23,7 +23,11 @@ describe("decodeOptions", () => {
     const options = await Effect.runPromise(decodeOptions());
 
     expect(options).toEqual(defaultProphetOptions);
-    expect(options).toEqual({ growth: "linear", seasonalities: [] });
+    expect(options).toEqual({
+      growth: "linear",
+      seasonalities: [],
+      builtInSeasonalities: { daily: "off", weekly: "off", yearly: "off" },
+    });
   });
 
   it("applies defaults to an empty options object", async () => {
@@ -37,7 +41,11 @@ describe("decodeOptions", () => {
     async (growth) => {
       const options = await Effect.runPromise(decodeOptions({ growth }));
 
-      expect(options).toEqual({ growth, seasonalities: [] });
+      expect(options).toEqual({
+        growth,
+        seasonalities: [],
+        builtInSeasonalities: { daily: "off", weekly: "off", yearly: "off" },
+      });
     },
   );
 
@@ -68,6 +76,7 @@ describe("decodeOptions", () => {
     expect(options).toEqual({
       growth: "flat",
       seasonalities: [{ name: "work-week", periodDays: 7, fourierOrder: 3, priorScale: 10 }],
+      builtInSeasonalities: { daily: "off", weekly: "off", yearly: "off" },
     });
   });
 
@@ -87,8 +96,42 @@ describe("decodeOptions", () => {
         { name: "work-week", periodDays: 7, fourierOrder: 3, priorScale: 10 },
         { name: "quarter", periodDays: 91.25, fourierOrder: 2, priorScale: 4 },
       ],
+      builtInSeasonalities: { daily: "off", weekly: "off", yearly: "off" },
     });
     expect(Object.isFrozen(options.seasonalities)).toBe(true);
+  });
+
+  it("parses built-in controls and applies per-component defaults", async () => {
+    const options = await Effect.runPromise(
+      decodeOptions({
+        builtInSeasonalities: {
+          daily: "auto",
+          weekly: { mode: "on", priorScale: 2 },
+          yearly: { mode: "on", fourierOrder: 6 },
+        },
+      }),
+    );
+
+    expect(options.builtInSeasonalities).toEqual({
+      daily: "auto",
+      weekly: { mode: "on", fourierOrder: 3, priorScale: 2 },
+      yearly: { mode: "on", fourierOrder: 6, priorScale: 10 },
+    });
+    expect(Object.isFrozen(options.builtInSeasonalities)).toBe(true);
+    expect(Object.isFrozen(options.builtInSeasonalities.weekly)).toBe(true);
+  });
+
+  it.each([
+    ["unknown setting", { daily: "sometimes" }, "daily"],
+    ["unknown key", { hourly: "auto" }, "hourly"],
+    ["zero order", { weekly: { mode: "on", fourierOrder: 0 } }, "fourierOrder"],
+    ["fractional order", { weekly: { mode: "on", fourierOrder: 1.5 } }, "fourierOrder"],
+    ["invalid prior", { yearly: { mode: "on", priorScale: 0 } }, "priorScale"],
+    ["unknown on key", { daily: { mode: "on", extra: true } }, "extra"],
+  ])("rejects %s in built-in controls", async (_label, builtInSeasonalities, path) => {
+    const error = await expectOptionsFailure({ builtInSeasonalities });
+
+    expect(error.issues.some((issue) => issue.path?.includes(path))).toBe(true);
   });
 
   it("reports nested seasonality failures at option-relative paths", async () => {

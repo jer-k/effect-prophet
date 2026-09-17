@@ -7,6 +7,10 @@
     {
       "path": "fourier.json",
       "sha256": "4400d9e76cc36faaa38c4e938a6ae88174fa8eb9fa44a36bcb912e79d8935a3e"
+    },
+    {
+      "path": "seasonality-resolution.json",
+      "sha256": "3e96a6c6514344472141f749a4319b4d7c509714ca9acb53f138d0153b773896"
     }
   ],
   "backendArtifacts": [
@@ -22,7 +26,7 @@
     "platform": "linux/amd64",
     "uvVersion": "0.8.15"
   },
-  "generatorRevision": "d5e0a94cd7d766ddad3f510b262d76bfc06cb24ffefb1c82783a05a666e9bf5a",
+  "generatorRevision": "df0b0794ce4cf3496be35163c7ed2f157e55d619e4163ec94e62072610a5e84f",
   "numericalEnvironment": [
     {
       "name": "cmdstanpy",

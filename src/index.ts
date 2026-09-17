@@ -34,6 +34,10 @@ export {
 export {
   decodeOptions,
   defaultProphetOptions,
+  type BuiltInSeasonalities,
+  type BuiltInSeasonalitySetting,
+  type EncodedBuiltInSeasonalities,
+  type EncodedBuiltInSeasonalitySetting,
   type EncodedFlatAdditiveOptions,
   type EncodedFlatTrendOptions,
   type EncodedLinearAdditiveOptions,

@@ -2,7 +2,7 @@
 
 A private TypeScript package for exploring Effect-based time-series forecasting.
 
-The Rust/WASM backends fit either an ordinary least-squares linear trend or a jointly estimated linear trend with explicit additive Fourier seasonalities. Forecasts expose trend, additive total, final value, and ordered named seasonal components. TypeScript owns validation, Effect service composition, persistence, and WASM protocol translation; numerical fitting and evaluation run in Rust. The package does not yet implement Prophet MAP fitting, changepoints, automatic seasonalities, or uncertainty intervals.
+The Rust/WASM backends fit either an ordinary least-squares linear trend or a jointly estimated linear trend with explicit or automatically selected additive Fourier seasonalities. Forecasts expose trend, additive total, final value, and ordered named seasonal components. TypeScript owns validation, Effect service composition, persistence, and WASM protocol translation; numerical fitting and evaluation run in Rust. The package does not yet implement full Prophet MAP fitting, changepoints, or uncertainty intervals.
 
 ## Compatibility target
 
@@ -129,18 +129,20 @@ const observations = await Effect.runPromise(program);
 
 `decodeOptions` validates untrusted fitting options and supplies defaults when called with `undefined` or an empty object. Unknown keys are rejected so misspelled configuration cannot silently reach a fitting backend.
 
-Public options are a union of supported configurations rather than independent fields. Linear and flat growth each accept either no seasonalities or a non-empty ordered list. Public `growth: "flat"` selects the reduced `"flat-map"` model.
+Public options are a union of supported configurations rather than independent fields. Linear and flat growth each accept either no custom seasonalities or a non-empty ordered list. Public `growth: "flat"` selects the reduced `"flat-map"` model.
 
-Each configured seasonality requires a unique custom name, positive period in fixed 24-hour days, and positive integer Fourier order; `priorScale` is positive and defaults to `10`. `prophetFittingBackendLayer` is total over every configuration accepted by `fit` and dispatches to the corresponding narrow numerical adapter. Callers cannot select a Layer that disagrees with their options.
+Each configured custom seasonality requires a unique name, positive period in fixed 24-hour days, and positive integer Fourier order; `priorScale` is positive and defaults to `10`. The names `yearly`, `weekly`, and `daily` are reserved for built-ins. Different named components may share a period, although overlapping Fourier bases can make component interpretation difficult.
 
-The flat MAP slice currently uses absmax scaling and additive custom seasonalities. Logistic growth, minmax scaling, automatic built-in seasonalities, holidays, and changepoints remain out of scope. See [the reduced flat MAP contract](docs/modeling/flat-map.md).
+Built-ins deliberately default to `"off"`, unlike Python Prophet. Set an individual control to `"auto"` for Prophet 1.4.0's training-history rule, or use `{ mode: "on" }` to force its default order. Forced controls also accept positive `fourierOrder` and `priorScale` overrides. `prophetFittingBackendLayer` is total over every configuration accepted by `fit` and dispatches to the corresponding narrow numerical adapter.
+
+The flat MAP slice currently uses absmax scaling and additive seasonalities. Logistic growth, minmax scaling, holidays, and changepoints remain out of scope. See [the reduced flat MAP contract](docs/modeling/flat-map.md).
 
 ```ts
 import { Effect } from "effect";
 import { decodeOptions } from "effect-prophet";
 
 const defaults = await Effect.runPromise(decodeOptions());
-// { growth: "linear", seasonalities: [] }
+// { growth: "linear", seasonalities: [], builtInSeasonalities: { daily: "off", weekly: "off", yearly: "off" } }
 
 const flat = await Effect.runPromise(decodeOptions({ growth: "flat" }));
 
@@ -174,6 +176,35 @@ const forecasts = await Effect.runPromise(
 );
 // Forecast values and trend components are 11 and 14; additive is zero.
 ```
+
+## Automatic built-in seasonalities
+
+Automatic selection uses training timestamps only. Yearly requires at least 730 fixed 24-hour days; weekly requires at least 14 days and a minimum consecutive gap below 7 days; daily requires at least 2 days and a minimum gap below 1 day. Irregular histories are accepted, and the minimum positive gap—not average cadence—controls the sampling test. Prediction timestamps never alter the fitted layout, and serialized models store the resolved definitions rather than `"auto"` controls.
+
+```ts
+import { Effect } from "effect";
+import { fit, predict, prophetFittingBackendLayer } from "effect-prophet";
+
+const observations = Array.from({ length: 57 }, (_, index) => ({
+  timestamp: new Date(Date.UTC(2024, 0, 1) + index * 6 * 60 * 60 * 1_000).toISOString(),
+  value: 10 + Math.sin((2 * Math.PI * index) / 4),
+}));
+
+const model = await Effect.runPromise(
+  fit(observations, {
+    builtInSeasonalities: {
+      yearly: "auto",
+      weekly: "auto",
+      daily: "auto",
+    },
+  }).pipe(Effect.provide(prophetFittingBackendLayer)),
+);
+
+const forecast = await Effect.runPromise(predict(model, ["2024-01-16T00:00:00.000Z"]));
+// This 14-day subdaily history enables weekly and daily, but not yearly.
+```
+
+`{ mode: "on" }` bypasses history and cadence checks. Forcing yearly seasonality with less than 730 days can be under-identified and can make trend/seasonality decomposition unstable. More generally, only force components when the observed windows support meaningful extrapolation. Automatic selection matches Prophet's feature rule, but fitting here remains additive ridge or reduced flat MAP—not full Prophet MAP.
 
 ## Explicit additive seasonalities
 
@@ -246,6 +277,8 @@ The public `fit` and `predict` operations create the `Prophet.fit` and `Prophet.
 Each WASM span covers the complete synchronous adapter operation: lazy Node module loading, typed-array preparation inside the invocation, generated `wasm-bindgen` input copying, Rust execution, generated output copying, and packed-result decoding. Validation and short-circuit paths that do not invoke WASM do not create a WASM span. Typed adapter failures end the corresponding span as failed without changing the returned error.
 
 The spans measure the coarse host/WASM boundary. They cannot break Rust execution into optimizer or numerical phases because the library does not install Rust callbacks or propagate trace context into WASM.
+
+The `Prophet.fit` span records bounded custom/enabled-built-in counts and one resolution reason for each canonical built-in. It never records observations, timestamps, coefficients, or option payloads.
 
 Applications own tracer configuration, sampling, and export. The library uses Effect's built-in tracing API and does not install an OpenTelemetry SDK or exporter. An application can place the operations under its own parent span and provide its compatible tracer when running the program:
 
