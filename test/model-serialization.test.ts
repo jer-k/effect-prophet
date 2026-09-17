@@ -238,20 +238,6 @@ describe("fitted model serialization", () => {
     });
   });
 
-  it("keeps the constant baseline outside the portable model union", async () => {
-    const error = await Effect.runPromise(
-      // @ts-expect-error -- Runtime JavaScript may still supply an unsupported fitted family.
-      Effect.flip(encodeFittedModel({ model: "constant-mean-baseline", level: 3 })),
-    );
-
-    expect(error).toBeInstanceOf(ModelSerializationError);
-    expect(error.operation).toBe("encode");
-    expect(error.issues).toContainEqual({
-      path: ["model"],
-      message: "Expected a serializable fitted model kind",
-    });
-  });
-
   it("serializes only portable prediction state", async () => {
     const modelWithBackendState: FittedLinearProphet & {
       readonly backend: "wasm";

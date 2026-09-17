@@ -11,8 +11,6 @@ const PositiveFinite = Schema.Finite.check(Schema.isGreaterThan(0));
 
 const LinearModel = Schema.Literal("linear-trend");
 
-const ConstantModel = Schema.Literal("constant-mean-baseline");
-
 const LinearAdditiveModel = Schema.Literal("linear-additive-ridge");
 
 const FlatMapModel = Schema.Literal("flat-map");
@@ -27,11 +25,6 @@ const LinearParametersSchema = Schema.Struct({
   slope: Schema.Finite,
   timeOrigin: Schema.Finite,
   timeScale: PositiveFinite,
-});
-
-const ConstantParametersSchema = Schema.Struct({
-  model: ConstantModel,
-  level: Schema.Finite,
 });
 
 const LinearAdditiveFitSummarySchema = Schema.Struct({
@@ -166,9 +159,6 @@ const FittedProphetSchema = Schema.Union([
 
 /** Untrusted parameters returned by a linear-trend fitting backend. */
 export type LinearParameters = typeof LinearParametersSchema.Type;
-
-/** Untrusted parameters returned by the constant-mean example backend. */
-export type ConstantParameters = typeof ConstantParametersSchema.Type;
 
 /** Untrusted fitted parameters returned by a fitting backend. */
 export type Parameters = typeof ParametersSchema.Type;

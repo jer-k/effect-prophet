@@ -1,8 +1,7 @@
 # Reduced flat MAP model
 
-`growth: "flat"` fits a real reduced Prophet MAP model. It is distinct from the internal
-`constant-mean-baseline` teaching example: the level, additive Fourier coefficients, and
-observation noise are estimated under Prophet's priors.
+`growth: "flat"` fits a reduced Prophet MAP model in which the level, additive Fourier
+coefficients, and observation noise are estimated under Prophet's priors.
 
 ## Supported scope
 
@@ -15,8 +14,7 @@ The current public slice supports:
 
 Minmax scaling, events, regressors, conditional masks, multiplicative components,
 changepoints, and uncertainty remain deferred to their own roadmap tickets. A flat fit
-requires at least two observations. The internal constant-mean example remains available
-to its focused tests but is no longer selected by public `growth: "flat"`.
+requires at least two observations.
 
 The fixed upstream reference is Prophet 1.4.0 commit
 [`abf69a2`](https://github.com/facebook/prophet/tree/abf69a215604afcaa7ecb4359f592d13bf6dea9f).

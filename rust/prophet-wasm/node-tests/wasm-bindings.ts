@@ -103,7 +103,6 @@ export interface ProphetWasmNodeBindings {
     timeOrigin: number,
     timeScale: number,
   ) => Float64Array;
-  readonly mean: (values: Float64Array) => number;
 }
 
 const require = createRequire(import.meta.url);
@@ -115,7 +114,6 @@ const requiredFunctionExports = [
   "predict_flat_map",
   "fit_linear_trend",
   "predict_linear_trend",
-  "mean",
 ] as const;
 
 const requiredStatusMembers = {

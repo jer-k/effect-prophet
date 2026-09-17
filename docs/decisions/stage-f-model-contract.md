@@ -16,10 +16,9 @@ pretending the unfinished piecewise or mixed-mode tracks exist.
 
 ## Decision
 
-1. Public `growth: "flat"` always means the real reduced `flat-map` model. It is never an alias
-   for `constant-mean-baseline`.
-2. The teaching constant mean remains internal and independently tested. It has no public fitting
-   plan and remains outside portable model state.
+1. Public `growth: "flat"` always means the reduced `flat-map` model.
+2. The package has no arithmetic-mean fitting model or fallback. Flat fitting either returns its
+   prior-informed MAP result or a typed failure.
 3. Supported options are a closed union of featureless/additive linear and featureless/additive
    flat variants. Every accepted variant is total under `prophetFittingBackendLayer`; untyped
    malformed options fail as `InputValidationError` before a numerical boundary.
@@ -45,7 +44,7 @@ pretending the unfinished piecewise or mixed-mode tracks exist.
   cases as specification only. Do not add a TypeScript numerical implementation or backend.
 - **EP-057:** port the same objective and constant/noise policy to a narrow Rust/WASM adapter with
   strict fit and prediction frames. Do not introduce broad MAP capability checks.
-- **EP-058:** replace provisional public flat-baseline routing atomically across options, plans,
+- **EP-058:** replace provisional public flat routing atomically across options, plans,
   fitted/raw/portable unions, prediction, components, exports, tracing, and tests.
 - **EP-053–055:** unchanged and still blocked. Public minmax/target-scaling selection is not a
   prerequisite for the bounded absmax flat slice.
@@ -59,10 +58,9 @@ ordinary prerequisites and must not infer readiness from the completed reduced f
 
 ## Consequences
 
-The public meaning of `growth: "flat"` is now unambiguous and serializable. Existing callers that
-used it as a teaching arithmetic mean receive a different model discriminator and prior-informed
-fit; that behavior was explicitly provisional. Consumers needing an arithmetic mean should own
-that baseline directly rather than selecting it through Prophet growth syntax.
+The public meaning of `growth: "flat"` is unambiguous and serializable. Consumers needing an
+arithmetic-mean benchmark should own that baseline outside the Prophet fitting model rather than
+selecting it through growth syntax.
 
 The package can add minmax, additional additive feature sources, and mixed modes later by
 extending the flat configuration and state without changing the reduced model's current equation

@@ -5,7 +5,6 @@ import type { Parameters } from "../fitted-model";
 import type { EmptySeasonalityLayout, NonEmptySeasonalityLayout } from "../seasonality";
 
 export type {
-  ConstantParameters,
   FlatMapParameters,
   LinearAdditiveParameters,
   LinearParameters,

@@ -73,7 +73,7 @@ See the [Prophet reference tooling guide](tools/prophet/README.md) for the pinne
 
 ## Rust/WASM numerical backend
 
-`rust/prophet-wasm` provides the numerical implementations behind the public fitting Layers. In addition to the original arithmetic `mean` spike, it exports coarse operations for ordinary least-squares linear fitting and normalized additive ridge fitting, with matching batch prediction exports.
+`rust/prophet-wasm` provides the numerical implementations behind the public fitting Layers. It exports coarse operations for ordinary least-squares linear fitting, normalized additive ridge fitting, and reduced flat MAP fitting, with matching batch prediction exports.
 
 Run each phase independently with:
 
@@ -129,7 +129,7 @@ const observations = await Effect.runPromise(program);
 
 `decodeOptions` validates untrusted fitting options and supplies defaults when called with `undefined` or an empty object. Unknown keys are rejected so misspelled configuration cannot silently reach a fitting backend.
 
-Public options are a union of supported configurations rather than independent fields. Linear and flat growth each accept either no seasonalities or a non-empty ordered list. Public `growth: "flat"` selects the reduced `"flat-map"` model; it never aliases the arithmetic-mean teaching example.
+Public options are a union of supported configurations rather than independent fields. Linear and flat growth each accept either no seasonalities or a non-empty ordered list. Public `growth: "flat"` selects the reduced `"flat-map"` model.
 
 Each configured seasonality requires a unique custom name, positive period in fixed 24-hour days, and positive integer Fourier order; `priorScale` is positive and defaults to `10`. `prophetFittingBackendLayer` is total over every configuration accepted by `fit` and dispatches to the corresponding narrow numerical adapter. Callers cannot select a Layer that disagrees with their options.
 
@@ -259,7 +259,7 @@ const program = Effect.gen(function* () {
 
 ## Experimental model serialization
 
-`encodeFittedModel` converts a fitted linear, linear-additive, or flat MAP model into a JSON-compatible payload. `decodeFittedModel` validates an untrusted payload and reconstructs the runtime model without selecting a fitting backend. Featureful payloads retain all prediction coefficients, ordered definitions, and fit diagnostics; layout offsets are reconstructed during decoding. Flat MAP payloads additionally retain observation noise. Backend identifiers, services, and WASM resources are not serialized. The internal constant-mean teaching baseline remains unsupported.
+`encodeFittedModel` converts a fitted linear, linear-additive, or flat MAP model into a JSON-compatible payload. `decodeFittedModel` validates an untrusted payload and reconstructs the runtime model without selecting a fitting backend. Featureful payloads retain all prediction coefficients, ordered definitions, and fit diagnostics; layout offsets are reconstructed during decoding. Flat MAP payloads additionally retain observation noise. Backend identifiers, services, and WASM resources are not serialized.
 
 ```ts
 import { Effect } from "effect";

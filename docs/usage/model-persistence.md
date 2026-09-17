@@ -12,8 +12,6 @@ The current portable model kinds are:
 - `flat-map` — constant level, ordered seasonality definitions and coefficients, positive
   observation noise, and flat MAP diagnostics.
 
-The internal `constant-mean-baseline` teaching example is deliberately not portable.
-
 ## Flat MAP payload
 
 A flat payload stores all state required to rebuild Fourier features and predict:
