@@ -91,19 +91,26 @@ describe("linear-trend Prophet integration", () => {
     ]);
   });
 
-  it("routes explicit flat growth to the provisional constant-mean baseline", async () => {
+  it("routes explicit flat growth to reduced MAP fitting", async () => {
     const model = await Effect.runPromise(
       fit(observations, { growth: "flat" }).pipe(Effect.provide(prophetFittingBackendLayer)),
     );
 
     const [forecast] = await Effect.runPromise(predict(model, [predictionTimestamps[0]]));
 
-    expect(model).toEqual({ model: "constant-mean-baseline", level: 5 });
+    expect(model.model).toBe("flat-map");
     expect(Object.isFrozen(model)).toBe(true);
+
+    if (model.model !== "flat-map") {
+      throw new Error("Expected a flat-map model");
+    }
+
+    expect(model.fitSummary.method).toBe("flat-map-coordinate-v1");
+    expect(model.level).not.toBe(5);
     expect(forecast).toEqual({
       timestamp: 1_704_067_203_000,
-      value: 5,
-      trend: 5,
+      value: model.level,
+      trend: model.level,
       additive: 0,
       seasonalities: [],
     });
@@ -318,6 +325,64 @@ const additiveOptions = {
     { name: "weekly-custom", periodDays: 7, fourierOrder: 1, priorScale: 1_000 },
   ],
 } as const;
+
+describe("flat MAP Prophet integration", () => {
+  it("fits additive seasonalities while keeping the trend flat", async () => {
+    const model = await Effect.runPromise(
+      fit(syntheticObservations, { ...additiveOptions, growth: "flat" }).pipe(
+        Effect.provide(prophetFittingBackendLayer),
+      ),
+    );
+
+    expect(model.model).toBe("flat-map");
+
+    if (model.model !== "flat-map") {
+      throw new Error("Expected a flat-map model");
+    }
+
+    const timestamps = [
+      new Date(syntheticStart + 56 * (DAY / 4)).toISOString(),
+      new Date(syntheticStart + 57 * (DAY / 4)).toISOString(),
+    ] as const;
+
+    const forecasts = await Effect.runPromise(predict(model, timestamps));
+
+    expect(model.coefficients).toHaveLength(4);
+    expect(model.fitSummary.termination).toBe("converged");
+    expect(forecasts[0]?.trend).toBe(model.level);
+    expect(forecasts[1]?.trend).toBe(model.level);
+    expect(forecasts[0]?.additive).not.toBe(forecasts[1]?.additive);
+
+    for (const forecast of forecasts) {
+      expect(forecast.value).toBeCloseTo(forecast.trend + forecast.additive, 10);
+      expect(forecast.additive).toBeCloseTo(
+        forecast.seasonalities.reduce((sum, component) => sum + component.value, 0),
+        10,
+      );
+    }
+  });
+
+  it("uses the constant-target shortcut for zero and nonzero histories", async () => {
+    for (const value of [0, -4]) {
+      const model = await Effect.runPromise(
+        fit(
+          [
+            { timestamp: "2024-01-01T00:00:00.000Z", value },
+            { timestamp: "2024-01-02T00:00:00.000Z", value },
+          ],
+          { growth: "flat" },
+        ).pipe(Effect.provide(prophetFittingBackendLayer)),
+      );
+
+      expect(model.model).toBe("flat-map");
+
+      if (model.model === "flat-map") {
+        expect(model.level).toBe(value);
+        expect(model.fitSummary.termination).toBe("constant-target-shortcut");
+      }
+    }
+  });
+});
 
 describe("linear-additive Prophet integration", () => {
   it("fits multiple components and forecasts held-out timestamps through real WASM", async () => {

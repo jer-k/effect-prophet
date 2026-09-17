@@ -6,10 +6,13 @@ import {
   type ValidationIssue,
 } from "./errors";
 import {
+  parseFlatMapModel,
   parseLinearAdditiveModel,
   parseLinearModel,
+  type FittedFlatMapProphet,
   type FittedLinearAdditiveProphet,
   type FittedLinearProphet,
+  type FlatMapParameters,
   type InvalidFittedModel,
   type LinearAdditiveParameters,
   type LinearParameters,
@@ -70,11 +73,43 @@ export interface EncodedLinearAdditiveModel {
   readonly fitSummary: LinearAdditiveParameters["fitSummary"];
 }
 
+/** Portable representation of a reduced flat MAP model. */
+export interface EncodedFlatMapModel {
+  /** Identifies the reduced flat MAP prediction equation. */
+  readonly modelKind: "flat-map";
+
+  /** Constant trend level and ordered seasonal coefficients in observation units. */
+  readonly coefficients: {
+    readonly level: number;
+    readonly seasonal: ReadonlyArray<number>;
+  };
+
+  /** Ordered definitions from which coefficient offsets are reconstructed. */
+  readonly seasonalities: ReadonlyArray<{
+    readonly name: string;
+    readonly periodDays: number;
+    readonly fourierOrder: number;
+    readonly priorScale: number;
+  }>;
+
+  /** Positive fitted observation noise in observation units. */
+  readonly noiseScale: number;
+
+  /** Finite diagnostics for the reduced flat MAP objective. */
+  readonly fitSummary: FlatMapParameters["fitSummary"];
+}
+
 /** Every currently supported JSON-compatible fitted-model payload. */
-export type EncodedFittedModel = EncodedLinearModel | EncodedLinearAdditiveModel;
+export type EncodedFittedModel =
+  | EncodedLinearModel
+  | EncodedLinearAdditiveModel
+  | EncodedFlatMapModel;
 
 /** Fitted models with complete portable prediction state. */
-export type SerializableFittedModel = FittedLinearProphet | FittedLinearAdditiveProphet;
+export type SerializableFittedModel =
+  | FittedLinearProphet
+  | FittedLinearAdditiveProphet
+  | FittedFlatMapProphet;
 
 const EncodedLinearModelSchema = Schema.Struct({
   modelKind: Schema.Literal("linear-trend"),
@@ -117,13 +152,40 @@ const EncodedLinearAdditiveModelSchema = Schema.Struct({
   }),
 });
 
+const EncodedFlatMapModelSchema = Schema.Struct({
+  modelKind: Schema.Literal("flat-map"),
+  coefficients: Schema.Struct({
+    level: Schema.Number,
+    seasonal: Schema.Array(Schema.Number),
+  }),
+  seasonalities: Schema.Array(
+    Schema.Struct({
+      name: Schema.String,
+      periodDays: Schema.Number,
+      fourierOrder: Schema.Number,
+      priorScale: Schema.Number,
+    }),
+  ),
+  noiseScale: Schema.Number,
+  fitSummary: Schema.Struct({
+    method: Schema.Literal("flat-map-coordinate-v1"),
+    termination: Schema.Literals(["converged", "constant-target-shortcut"]),
+    valueScale: Schema.Number,
+    observationCount: Schema.Number,
+    iterations: Schema.Number,
+    objective: Schema.Number,
+    stationarityResidual: Schema.Number,
+  }),
+});
+
 const EncodedModelDiscriminantSchema = Schema.Struct({
-  modelKind: Schema.Literals(["linear-trend", "linear-additive-ridge"]),
+  modelKind: Schema.Literals(["linear-trend", "linear-additive-ridge", "flat-map"]),
 });
 
 const EncodedFittedModelSchema = Schema.Union([
   EncodedLinearModelSchema,
   EncodedLinearAdditiveModelSchema,
+  EncodedFlatMapModelSchema,
 ]);
 
 const decodeEncodedModelDiscriminant = Schema.decodeUnknownEffect(EncodedModelDiscriminantSchema, {
@@ -147,11 +209,14 @@ const portablePathFromModelPath = (
     case "intercept":
       return ["coefficients", "intercept", ...rest];
 
+    case "level":
+      return ["coefficients", "level", ...rest];
+
     case "slope":
       return ["coefficients", "slope", ...rest];
 
     case "coefficients":
-      return modelKind === "linear-additive-ridge"
+      return modelKind === "linear-additive-ridge" || modelKind === "flat-map"
         ? ["coefficients", "seasonal", ...rest]
         : ["coefficients", ...rest];
 
@@ -162,7 +227,7 @@ const portablePathFromModelPath = (
       return ["timeScaling", "scale", ...rest];
 
     case "seasonalities": {
-      if (modelKind !== "linear-additive-ridge") {
+      if (modelKind !== "linear-additive-ridge" && modelKind !== "flat-map") {
         return path;
       }
 
@@ -269,6 +334,30 @@ const encodeLinearAdditiveModel = (
   },
 });
 
+const encodeFlatMapModel = (model: FittedFlatMapProphet): EncodedFlatMapModel => ({
+  modelKind: "flat-map",
+  coefficients: {
+    level: model.level,
+    seasonal: Array.from(model.coefficients),
+  },
+  seasonalities: model.seasonalities.components.map((component) => ({
+    name: component.definition.name,
+    periodDays: component.definition.periodDays,
+    fourierOrder: component.definition.fourierOrder,
+    priorScale: component.definition.priorScale,
+  })),
+  noiseScale: model.noiseScale,
+  fitSummary: {
+    method: model.fitSummary.method,
+    termination: model.fitSummary.termination,
+    valueScale: model.fitSummary.valueScale,
+    observationCount: model.fitSummary.observationCount,
+    iterations: model.fitSummary.iterations,
+    objective: model.fitSummary.objective,
+    stationarityResidual: model.fitSummary.stationarityResidual,
+  },
+});
+
 const decodeLinearAdditiveModel = Effect.fn("decodeLinearAdditiveModel")(function* (
   encoded: EncodedLinearAdditiveModel,
 ): Effect.fn.Return<FittedLinearAdditiveProphet, ModelSerializationError> {
@@ -293,6 +382,29 @@ const decodeLinearAdditiveModel = Effect.fn("decodeLinearAdditiveModel")(functio
     Effect.mapError((error) =>
       serializationErrorFromInvalidModel("decode", "linear-additive-ridge", error),
     ),
+  );
+});
+
+const decodeFlatMapModel = Effect.fn("decodeFlatMapModel")(function* (
+  encoded: EncodedFlatMapModel,
+): Effect.fn.Return<FittedFlatMapProphet, ModelSerializationError> {
+  const definitions = yield* Seasonality.parseSeasonalities(encoded.seasonalities).pipe(
+    Effect.mapError(serializationErrorFromInvalidSeasonality),
+  );
+
+  const seasonalities = yield* Seasonality.makeSeasonalityLayout(definitions).pipe(
+    Effect.mapError(serializationErrorFromInvalidSeasonality),
+  );
+
+  return yield* parseFlatMapModel({
+    model: "flat-map",
+    level: encoded.coefficients.level,
+    seasonalities,
+    coefficients: encoded.coefficients.seasonal,
+    noiseScale: encoded.noiseScale,
+    fitSummary: encoded.fitSummary,
+  }).pipe(
+    Effect.mapError((error) => serializationErrorFromInvalidModel("decode", "flat-map", error)),
   );
 });
 
@@ -323,6 +435,14 @@ export const encodeFittedModel = Effect.fn("Prophet.encodeFittedModel")(function
     );
 
     return encodeLinearAdditiveModel(parsedModel);
+  }
+
+  if (model.model === "flat-map") {
+    const parsedModel = yield* parseFlatMapModel(model).pipe(
+      Effect.mapError((error) => serializationErrorFromInvalidModel("encode", "flat-map", error)),
+    );
+
+    return encodeFlatMapModel(parsedModel);
   }
 
   return yield* Effect.fail(
@@ -361,5 +481,7 @@ export const decodeFittedModel = Effect.fn("Prophet.decodeFittedModel")(function
     );
   }
 
-  return yield* decodeLinearAdditiveModel(encoded);
+  return encoded.modelKind === "flat-map"
+    ? yield* decodeFlatMapModel(encoded)
+    : yield* decodeLinearAdditiveModel(encoded);
 });

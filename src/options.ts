@@ -23,22 +23,24 @@ export interface EncodedLinearAdditiveOptions {
   readonly seasonalities: readonly [EncodedSeasonality, ...ReadonlyArray<EncodedSeasonality>];
 }
 
-/**
- * Provisional flat-growth baseline options.
- *
- * The current implementation is the explicitly tagged constant-mean teaching
- * baseline, not Python Prophet's jointly fitted flat MAP model.
- */
-export interface EncodedFlatBaselineOptions {
+/** Public flat-growth MAP options without configured seasonalities. */
+export interface EncodedFlatTrendOptions {
   readonly growth: "flat";
   readonly seasonalities?: readonly [];
+}
+
+/** Public flat-growth MAP options with at least one configured seasonality. */
+export interface EncodedFlatAdditiveOptions {
+  readonly growth: "flat";
+  readonly seasonalities: readonly [EncodedSeasonality, ...ReadonlyArray<EncodedSeasonality>];
 }
 
 /** Supported configurations accepted by the public fitting operation. */
 export type EncodedProphetOptions =
   | EncodedLinearTrendOptions
   | EncodedLinearAdditiveOptions
-  | EncodedFlatBaselineOptions;
+  | EncodedFlatTrendOptions
+  | EncodedFlatAdditiveOptions;
 
 /** Parsed linear-growth options without configured seasonalities. */
 export interface LinearTrendOptions {
@@ -52,14 +54,24 @@ export interface LinearAdditiveOptions {
   readonly seasonalities: readonly [SeasonalityDefinition, ...ReadonlyArray<SeasonalityDefinition>];
 }
 
-/** Parsed options for the provisional constant-mean flat baseline. */
-export interface FlatBaselineOptions {
+/** Parsed flat-growth MAP options without configured seasonalities. */
+export interface FlatTrendOptions {
   readonly growth: "flat";
   readonly seasonalities: readonly [];
 }
 
+/** Parsed flat-growth MAP options with at least one configured seasonality. */
+export interface FlatAdditiveOptions {
+  readonly growth: "flat";
+  readonly seasonalities: readonly [SeasonalityDefinition, ...ReadonlyArray<SeasonalityDefinition>];
+}
+
 /** Validated and defaulted public fitting configuration. */
-export type ProphetOptions = LinearTrendOptions | LinearAdditiveOptions | FlatBaselineOptions;
+export type ProphetOptions =
+  | LinearTrendOptions
+  | LinearAdditiveOptions
+  | FlatTrendOptions
+  | FlatAdditiveOptions;
 
 const emptySeasonalities: readonly [] = Object.freeze([]);
 
@@ -126,30 +138,10 @@ export const decodeOptions = Effect.fn("decodeOptions")(function* (
 
   const firstSeasonality = seasonalities[0];
 
-  if (syntax.growth === "flat") {
-    if (firstSeasonality !== undefined) {
-      return yield* Effect.fail(
-        new InputValidationError({
-          input: "options",
-          issues: [
-            {
-              path: ["seasonalities"],
-              message: "The provisional flat baseline does not support seasonalities",
-            },
-          ],
-          message: "Flat growth with seasonalities is not implemented yet",
-        }),
-      );
-    }
-
-    return {
-      growth: "flat",
-      seasonalities: emptySeasonalities,
-    };
-  }
-
   if (firstSeasonality === undefined) {
-    return defaultProphetOptions;
+    return syntax.growth === "flat"
+      ? { growth: "flat", seasonalities: emptySeasonalities }
+      : defaultProphetOptions;
   }
 
   const nonEmptySeasonalities: readonly [
@@ -157,8 +149,7 @@ export const decodeOptions = Effect.fn("decodeOptions")(function* (
     ...ReadonlyArray<SeasonalityDefinition>,
   ] = Object.freeze([firstSeasonality, ...seasonalities.slice(1)]);
 
-  return {
-    growth: "linear",
-    seasonalities: nonEmptySeasonalities,
-  };
+  return syntax.growth === "linear"
+    ? { growth: "linear", seasonalities: nonEmptySeasonalities }
+    : { growth: "flat", seasonalities: nonEmptySeasonalities };
 });

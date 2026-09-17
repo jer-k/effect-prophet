@@ -4,10 +4,13 @@ import { describe, expect, it } from "vitest";
 import {
   InvalidFittedModel,
   parseFittedModel,
+  parseFlatMapModel,
   parseLinearAdditiveModel,
   parseLinearModel,
+  type FittedFlatMapProphet,
   type FittedLinearAdditiveProphet,
   type FittedLinearProphet,
+  type FlatMapParameters,
   type LinearAdditiveParameters,
   type LinearParameters,
 } from "../src/fitted-model";
@@ -19,6 +22,31 @@ const linearParameters: LinearParameters = {
   slope: 6,
   timeOrigin: 1_704_067_200_000,
   timeScale: 2_000,
+};
+
+const validFlatMapParameters = async (): Promise<FlatMapParameters> => {
+  const definitions = await Effect.runPromise(
+    parseSeasonalities([{ name: "custom-day", periodDays: 1, fourierOrder: 1 }]),
+  );
+
+  const seasonalities = await Effect.runPromise(makeSeasonalityLayout(definitions));
+
+  return {
+    model: "flat-map",
+    level: 2,
+    seasonalities,
+    coefficients: [1, 0],
+    noiseScale: 0.25,
+    fitSummary: {
+      method: "flat-map-coordinate-v1",
+      termination: "converged",
+      valueScale: 3,
+      observationCount: 6,
+      iterations: 5,
+      objective: -2,
+      stationarityResidual: 1e-12,
+    },
+  };
 };
 
 const validLinearAdditiveParameters = async (): Promise<LinearAdditiveParameters> => {
@@ -74,27 +102,6 @@ describe("fitted model domain", () => {
     expect(model.intercept).toBe(2);
   });
 
-  it("parses valid constant parameters into a fresh frozen model", async () => {
-    const input = {
-      model: "constant-mean-baseline" as const,
-      level: 5,
-    };
-
-    const model = await Effect.runPromise(parseFittedModel(input));
-
-    expect(model).toEqual(input);
-    expect(model).not.toBe(input);
-    expect(Object.isFrozen(model)).toBe(true);
-
-    input.level = 100;
-
-    if (model.model !== "constant-mean-baseline") {
-      throw new Error("Expected the constant-mean fitted model");
-    }
-
-    expect(model.level).toBe(5);
-  });
-
   it.each([
     ["intercept", Number.NaN],
     ["intercept", Number.POSITIVE_INFINITY],
@@ -127,19 +134,6 @@ describe("fitted model domain", () => {
       "timeScale",
     );
   });
-
-  it.each([Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY])(
-    "rejects a non-finite constant level of %s",
-    async (level) => {
-      await expectInvalidModel(
-        parseFittedModel({
-          model: "constant-mean-baseline",
-          level,
-        }),
-        "level",
-      );
-    },
-  );
 
   it("rejects unrecognized model tags with a structured path", async () => {
     await expectInvalidModel(parseFittedModel({ ...linearParameters, model: "seasonal" }), "model");
@@ -366,6 +360,52 @@ describe("fitted model domain", () => {
       expect(Object.isFrozen(model.seasonalities)).toBe(true);
       expect(Object.isFrozen(model.fitSummary)).toBe(true);
     }
+  });
+
+  it("parses and deeply freezes complete flat MAP state", async () => {
+    const parameters = await validFlatMapParameters();
+
+    const model = await Effect.runPromise(parseFlatMapModel(parameters));
+
+    expect(model).toEqual(parameters);
+    expect(Object.isFrozen(model)).toBe(true);
+    expect(Object.isFrozen(model.seasonalities)).toBe(true);
+    expect(Object.isFrozen(model.coefficients)).toBe(true);
+    expect(Object.isFrozen(model.fitSummary)).toBe(true);
+  });
+
+  it("rejects inconsistent flat MAP coefficients and shortcut summaries", async () => {
+    const parameters = await validFlatMapParameters();
+
+    const coefficientError = await Effect.runPromise(
+      Effect.flip(parseFlatMapModel({ ...parameters, coefficients: [1] })),
+    );
+
+    const shortcutError = await Effect.runPromise(
+      Effect.flip(
+        parseFlatMapModel({
+          ...parameters,
+          fitSummary: {
+            ...parameters.fitSummary,
+            termination: "constant-target-shortcut",
+            iterations: 1,
+          },
+        }),
+      ),
+    );
+
+    expect(coefficientError).toBeInstanceOf(InvalidFittedModel);
+    expect(shortcutError).toBeInstanceOf(InvalidFittedModel);
+  });
+
+  it("includes flat MAP in the fitted-model union", async () => {
+    const model: FittedFlatMapProphet = await Effect.runPromise(
+      parseFlatMapModel(await validFlatMapParameters()),
+    );
+
+    const parsed = await Effect.runPromise(parseFittedModel(model));
+
+    expect(parsed.model).toBe("flat-map");
   });
 
   it("requires parsing before raw parameter records are trusted", async () => {

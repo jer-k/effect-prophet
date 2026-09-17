@@ -24,6 +24,28 @@ interface AdditivePredictionStatuses {
   readonly NonFiniteResult: number;
 }
 
+interface FlatMapFitStatuses {
+  readonly Success: number;
+  readonly InsufficientObservations: number;
+  readonly LengthMismatch: number;
+  readonly InvalidObservation: number;
+  readonly InvalidConfiguration: number;
+  readonly SizeOverflow: number;
+  readonly NonFiniteResult: number;
+  readonly NoiseCollapse: number;
+  readonly NonConvergence: number;
+}
+
+interface FlatMapPredictionStatuses {
+  readonly Success: number;
+  readonly InvalidTimestamp: number;
+  readonly InvalidModel: number;
+  readonly InvalidConfiguration: number;
+  readonly LengthMismatch: number;
+  readonly SizeOverflow: number;
+  readonly NonFiniteResult: number;
+}
+
 interface LinearTrendFitStatuses {
   readonly Success: number;
   readonly InsufficientObservations: number;
@@ -38,6 +60,8 @@ interface LinearTrendFitStatuses {
 export interface ProphetWasmNodeBindings {
   readonly AdditiveFitStatus: AdditiveFitStatuses;
   readonly AdditivePredictionStatus: AdditivePredictionStatuses;
+  readonly FlatMapFitStatus: FlatMapFitStatuses;
+  readonly FlatMapPredictionStatus: FlatMapPredictionStatuses;
   readonly LinearTrendFitStatus: LinearTrendFitStatuses;
   readonly fit_additive_ridge: (
     timestamps: Float64Array,
@@ -56,6 +80,21 @@ export interface ProphetWasmNodeBindings {
     fourierOrders: Float64Array,
     coefficients: Float64Array,
   ) => Float64Array;
+  readonly fit_flat_map: (
+    timestamps: Float64Array,
+    values: Float64Array,
+    periodsDays: Float64Array,
+    fourierOrders: Float64Array,
+    priorScales: Float64Array,
+  ) => Float64Array;
+  readonly predict_flat_map: (
+    timestamps: Float64Array,
+    level: number,
+    noiseScale: number,
+    periodsDays: Float64Array,
+    fourierOrders: Float64Array,
+    coefficients: Float64Array,
+  ) => Float64Array;
   readonly fit_linear_trend: (timestamps: Float64Array, values: Float64Array) => Float64Array;
   readonly predict_linear_trend: (
     timestamps: Float64Array,
@@ -64,7 +103,6 @@ export interface ProphetWasmNodeBindings {
     timeOrigin: number,
     timeScale: number,
   ) => Float64Array;
-  readonly mean: (values: Float64Array) => number;
 }
 
 const require = createRequire(import.meta.url);
@@ -72,9 +110,10 @@ const require = createRequire(import.meta.url);
 const requiredFunctionExports = [
   "fit_additive_ridge",
   "predict_additive_ridge",
+  "fit_flat_map",
+  "predict_flat_map",
   "fit_linear_trend",
   "predict_linear_trend",
-  "mean",
 ] as const;
 
 const requiredStatusMembers = {
@@ -90,6 +129,26 @@ const requiredStatusMembers = {
     "NonFiniteResult",
   ],
   AdditivePredictionStatus: [
+    "Success",
+    "InvalidTimestamp",
+    "InvalidModel",
+    "InvalidConfiguration",
+    "LengthMismatch",
+    "SizeOverflow",
+    "NonFiniteResult",
+  ],
+  FlatMapFitStatus: [
+    "Success",
+    "InsufficientObservations",
+    "LengthMismatch",
+    "InvalidObservation",
+    "InvalidConfiguration",
+    "SizeOverflow",
+    "NonFiniteResult",
+    "NoiseCollapse",
+    "NonConvergence",
+  ],
+  FlatMapPredictionStatus: [
     "Success",
     "InvalidTimestamp",
     "InvalidModel",

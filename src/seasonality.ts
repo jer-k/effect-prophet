@@ -155,6 +155,12 @@ export type SeasonalComponent = (typeof SeasonalityLayoutSchema.Type)["component
 /** A parsed coefficient layout ordered by definition, harmonic, then sine before cosine. */
 export type SeasonalityLayout = typeof SeasonalityLayoutSchema.Type;
 
+/** A parsed coefficient layout containing no seasonal components. */
+export type EmptySeasonalityLayout = SeasonalityLayout & {
+  readonly components: readonly [];
+  readonly coefficientCount: 0;
+};
+
 /** A parsed coefficient layout containing at least one seasonal component. */
 export type NonEmptySeasonalityLayout = SeasonalityLayout & {
   readonly components: readonly [SeasonalComponent, ...ReadonlyArray<SeasonalComponent>];
@@ -282,6 +288,27 @@ export const makeSeasonalityLayout = (
 
   return parseSeasonalityLayout({ components, coefficientCount });
 };
+
+/**
+ * Construct the canonical empty coefficient layout.
+ *
+ * @returns A deeply frozen empty layout or structured layout issues.
+ */
+export const makeEmptySeasonalityLayout = (): Effect.Effect<
+  EmptySeasonalityLayout,
+  InvalidSeasonality
+> =>
+  makeSeasonalityLayout([]).pipe(
+    Effect.map((layout) => {
+      const components: readonly [] = Object.freeze([]);
+
+      return Object.freeze({
+        ...layout,
+        components,
+        coefficientCount: 0 as const,
+      });
+    }),
+  );
 
 /**
  * Construct a deterministic coefficient layout from at least one definition.

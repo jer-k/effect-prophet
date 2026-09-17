@@ -2,10 +2,10 @@ import { Context, Data, type Effect } from "effect";
 
 import type { FittingError } from "../errors";
 import type { Parameters } from "../fitted-model";
-import type { NonEmptySeasonalityLayout } from "../seasonality";
+import type { EmptySeasonalityLayout, NonEmptySeasonalityLayout } from "../seasonality";
 
 export type {
-  ConstantParameters,
+  FlatMapParameters,
   LinearAdditiveParameters,
   LinearParameters,
   Parameters,
@@ -18,11 +18,6 @@ export interface TrainingInput {
 
   /** Observation values whose indexes correspond to `timestamps`. */
   readonly values: Float64Array;
-}
-
-/** Request for the provisional constant-mean flat baseline. */
-export interface ConstantMeanFitPlan {
-  readonly _tag: "ConstantMeanBaseline";
 }
 
 /** Request for ordinary linear-trend fitting without seasonal components. */
@@ -38,8 +33,28 @@ export interface LinearAdditiveFitPlan {
   readonly seasonalities: NonEmptySeasonalityLayout;
 }
 
+/** Request for featureless reduced flat MAP fitting. */
+export interface FlatMapFitPlan {
+  readonly _tag: "FlatMap";
+
+  /** Canonical empty feature layout established by public parsing. */
+  readonly seasonalities: EmptySeasonalityLayout;
+}
+
+/** Request for reduced flat MAP fitting with a non-empty additive layout. */
+export interface FlatAdditiveMapFitPlan {
+  readonly _tag: "FlatAdditiveMap";
+
+  /** Non-empty ordered seasonality coefficient layout established by public parsing. */
+  readonly seasonalities: NonEmptySeasonalityLayout;
+}
+
 /** Exhaustive set of configurations supported by the public fitting backend. */
-export type FitPlan = ConstantMeanFitPlan | LinearTrendFitPlan | LinearAdditiveFitPlan;
+export type FitPlan =
+  | LinearTrendFitPlan
+  | LinearAdditiveFitPlan
+  | FlatMapFitPlan
+  | FlatAdditiveMapFitPlan;
 
 /** Constructors and exhaustive matching for supported fitting plans. */
 export const FitPlan = Data.taggedEnum<FitPlan>();

@@ -10,6 +10,7 @@ import { parseFittedModel, type FittedProphet } from "./fitted-model";
 import { FitPlan, FittingBackend, type TrainingInput } from "./internal/fitting-backend";
 import { TimestampSchema } from "./internal/timestamp";
 import { predictAdditiveWithWasm } from "./internal/wasm-additive-backend";
+import { predictFlatMapWithWasm } from "./internal/wasm-flat-map-backend";
 import { predictLinearTrendWithWasm } from "./internal/wasm-linear-trend-backend";
 import { decodeObservations, type Observations } from "./observation";
 import {
@@ -83,24 +84,33 @@ const packTrainingInput = (observations: Observations): TrainingInput => {
   return { timestamps, values };
 };
 
-const makeFitPlan = (options: ProphetOptions): Effect.Effect<FitPlan, InputValidationError> => {
-  if (options.growth === "flat") {
-    return Effect.succeed(FitPlan.ConstantMeanBaseline());
-  }
-
+const makeFitPlan = Effect.fn("makeFitPlan")(function* (
+  options: ProphetOptions,
+): Effect.fn.Return<FitPlan, InputValidationError> {
   const firstSeasonality = options.seasonalities[0];
 
   if (firstSeasonality === undefined) {
-    return Effect.succeed(FitPlan.LinearTrend());
+    if (options.growth === "linear") {
+      return FitPlan.LinearTrend();
+    }
+
+    const seasonalities = yield* Seasonality.makeEmptySeasonalityLayout().pipe(
+      Effect.mapError(optionsValidationErrorFromSeasonality),
+    );
+
+    return FitPlan.FlatMap({ seasonalities });
   }
 
-  const seasonalities = [firstSeasonality, ...options.seasonalities.slice(1)] as const;
+  const definitions = [firstSeasonality, ...options.seasonalities.slice(1)] as const;
 
-  return Seasonality.makeNonEmptySeasonalityLayout(seasonalities).pipe(
-    Effect.map((seasonalities) => FitPlan.LinearAdditive({ seasonalities })),
+  const seasonalities = yield* Seasonality.makeNonEmptySeasonalityLayout(definitions).pipe(
     Effect.mapError(optionsValidationErrorFromSeasonality),
   );
-};
+
+  return options.growth === "linear"
+    ? FitPlan.LinearAdditive({ seasonalities })
+    : FitPlan.FlatAdditiveMap({ seasonalities });
+});
 
 /**
  * Validate observations and options, then fit through the provided backend Layer.
@@ -165,16 +175,6 @@ export const predict = Effect.fn("Prophet.predict")(function* (
     ),
   );
 
-  if (parsedModel.model === "constant-mean-baseline") {
-    return timestamps.map((timestamp): Forecast => ({
-      timestamp,
-      value: parsedModel.level,
-      trend: parsedModel.level,
-      additive: 0,
-      seasonalities: [],
-    }));
-  }
-
   if (parsedModel.model === "linear-trend") {
     const predictions = yield* predictLinearTrendWithWasm(parsedModel, timestamps);
     const forecasts: Array<Forecast> = [];
@@ -199,6 +199,52 @@ export const predict = Effect.fn("Prophet.predict")(function* (
         additive: 0,
         seasonalities: [],
       });
+    }
+
+    return forecasts;
+  }
+
+  if (parsedModel.model === "flat-map") {
+    const batch = yield* predictFlatMapWithWasm(parsedModel, timestamps);
+    const componentCount = parsedModel.seasonalities.components.length;
+    const rowWidth = componentCount + 3;
+    const forecasts: Array<Forecast> = [];
+
+    for (const [row, timestamp] of timestamps.entries()) {
+      const rowOffset = row * rowWidth;
+      const trend = batch.values[rowOffset];
+      const additive = batch.values[rowOffset + 1];
+      const value = batch.values[rowOffset + 2];
+
+      if (trend === undefined || additive === undefined || value === undefined) {
+        return yield* Effect.fail(
+          new PredictionError({
+            reason: "backend-failure",
+            timestamp,
+            message: "WASM flat MAP prediction backend omitted an expected forecast value",
+          }),
+        );
+      }
+
+      const seasonalities: Array<SeasonalForecastComponent> = [];
+
+      for (const [componentIndex, component] of parsedModel.seasonalities.components.entries()) {
+        const componentValue = batch.values[rowOffset + 3 + componentIndex];
+
+        if (componentValue === undefined) {
+          return yield* Effect.fail(
+            new PredictionError({
+              reason: "backend-failure",
+              timestamp,
+              message: "WASM flat MAP prediction backend omitted a seasonal component",
+            }),
+          );
+        }
+
+        seasonalities.push({ name: component.definition.name, value: componentValue });
+      }
+
+      forecasts.push({ timestamp, trend, additive, value, seasonalities });
     }
 
     return forecasts;

@@ -73,7 +73,7 @@ See the [Prophet reference tooling guide](tools/prophet/README.md) for the pinne
 
 ## Rust/WASM numerical backend
 
-`rust/prophet-wasm` provides the numerical implementations behind the public fitting Layers. In addition to the original arithmetic `mean` spike, it exports coarse operations for ordinary least-squares linear fitting and normalized additive ridge fitting, with matching batch prediction exports.
+`rust/prophet-wasm` provides the numerical implementations behind the public fitting Layers. It exports coarse operations for ordinary least-squares linear fitting, normalized additive ridge fitting, and reduced flat MAP fitting, with matching batch prediction exports.
 
 Run each phase independently with:
 
@@ -129,11 +129,11 @@ const observations = await Effect.runPromise(program);
 
 `decodeOptions` validates untrusted fitting options and supplies defaults when called with `undefined` or an empty object. Unknown keys are rejected so misspelled configuration cannot silently reach a fitting backend.
 
-Public options are a union of supported configurations rather than independent fields. Linear growth accepts either no seasonalities or a non-empty ordered list. The provisional flat-growth variant accepts no seasonalities and routes to the arithmetic-mean teaching baseline tagged `"constant-mean-baseline"`; flat growth with seasonalities is not represented until real joint flat MAP fitting is implemented.
+Public options are a union of supported configurations rather than independent fields. Linear and flat growth each accept either no seasonalities or a non-empty ordered list. Public `growth: "flat"` selects the reduced `"flat-map"` model.
 
 Each configured seasonality requires a unique custom name, positive period in fixed 24-hour days, and positive integer Fourier order; `priorScale` is positive and defaults to `10`. `prophetFittingBackendLayer` is total over every configuration accepted by `fit` and dispatches to the corresponding narrow numerical adapter. Callers cannot select a Layer that disagrees with their options.
 
-The provisional flat baseline is not Python Prophet flat growth and does not claim prior-informed parity. Logistic growth, automatic built-in seasonalities, holidays, and changepoints remain out of scope.
+The flat MAP slice currently uses absmax scaling and additive custom seasonalities. Logistic growth, minmax scaling, automatic built-in seasonalities, holidays, and changepoints remain out of scope. See [the reduced flat MAP contract](docs/modeling/flat-map.md).
 
 ```ts
 import { Effect } from "effect";
@@ -155,7 +155,7 @@ const seasonal = await Effect.runPromise(
 
 `fit` validates public observations and options, constructs an explicit fitting plan, and makes one coarse-grained call to the complete public backend. For featureless linear growth, `prophetFittingBackendLayer` invokes the Rust ordinary-least-squares implementation through generated WASM bindings. Training timestamps and values are packed into aligned `Float64Array` values at the backend boundary.
 
-The fitted model stores the intercept, slope, time origin, and time scale required for prediction. `predict` validates canonical UTC prediction timestamps and sends all timestamps and fitting-time state to one Rust/WASM batch operation. Every ordered forecast exposes `value`, `trend`, `additive`, and `seasonalities`; ordinary linear and constant models return `additive: 0` and an empty component list.
+The fitted model stores the intercept, slope, time origin, and time scale required for prediction. `predict` validates canonical UTC prediction timestamps and sends all timestamps and fitting-time state to one Rust/WASM batch operation. Every ordered forecast exposes `value`, `trend`, `additive`, and `seasonalities`; featureless models return `additive: 0` and an empty component list.
 
 ```ts
 import { Effect } from "effect";
@@ -206,22 +206,28 @@ const forecasts = await Effect.runPromise(predict(model, predictionTimestamps));
 
 Names and component order are retained in the fitted model and portable JSON. The ridge objective is intentionally distinct from Prophet MAP fitting; see [the additive ridge contract](docs/modeling/additive-ridge.md).
 
-Explicit featureless flat growth currently selects the provisional constant-mean teaching baseline through the same complete Layer:
+## Flat MAP forecast
+
+Flat growth jointly fits a constant trend level, configured additive Fourier coefficients, and observation noise. Seasonal components may vary while every forecast retains the same trend:
 
 ```ts
 import { Effect } from "effect";
 import { fit, prophetFittingBackendLayer } from "effect-prophet";
 
-const baseline = await Effect.runPromise(
+const flat = await Effect.runPromise(
   fit(
     [
-      { timestamp: "2024-01-01T00:00:00.000Z", value: 2 },
-      { timestamp: "2024-01-01T00:00:01.000Z", value: 5 },
+      { timestamp: "2024-01-01T00:00:00.000Z", value: 2.1 },
+      { timestamp: "2024-01-02T00:00:00.000Z", value: 3.2 },
+      { timestamp: "2024-01-03T00:00:00.000Z", value: 1.9 },
     ],
-    { growth: "flat" },
+    {
+      growth: "flat",
+      seasonalities: [{ name: "weekly-custom", periodDays: 7, fourierOrder: 1 }],
+    },
   ).pipe(Effect.provide(prophetFittingBackendLayer)),
 );
-// { model: "constant-mean-baseline", level: 3.5 }
+// flat.model === "flat-map"
 ```
 
 Fitted model types are branded domain values. Callers obtain trusted models through `fit` or `decodeFittedModel`; plain object literals are intentionally not assignable to these types. `predict` and serialization still parse defensively at runtime to protect JavaScript callers and forged values. While the package API remains WIP, this is a deliberate type-level tightening without a change to the model fields or public operation shapes.
@@ -253,13 +259,17 @@ const program = Effect.gen(function* () {
 
 ## Experimental model serialization
 
-`encodeFittedModel` converts a fitted linear or linear-additive model into a JSON-compatible payload. `decodeFittedModel` validates an untrusted payload and reconstructs the runtime model without selecting a fitting backend. Additive payloads retain trend and seasonal coefficients, scaling, ordered definitions, and fit diagnostics; layout offsets are reconstructed during decoding. Backend identifiers, services, and WASM resources are not serialized. The constant-mean teaching baseline remains unsupported.
+`encodeFittedModel` converts a fitted linear, linear-additive, or flat MAP model into a JSON-compatible payload. `decodeFittedModel` validates an untrusted payload and reconstructs the runtime model without selecting a fitting backend. Featureful payloads retain all prediction coefficients, ordered definitions, and fit diagnostics; layout offsets are reconstructed during decoding. Flat MAP payloads additionally retain observation noise. Backend identifiers, services, and WASM resources are not serialized.
 
 ```ts
 import { Effect } from "effect";
 import { decodeFittedModel, encodeFittedModel } from "effect-prophet";
 
-if (model.model !== "constant-mean-baseline") {
+if (
+  model.model === "linear-trend" ||
+  model.model === "linear-additive-ridge" ||
+  model.model === "flat-map"
+) {
   const encoded = await Effect.runPromise(encodeFittedModel(model));
   const json = JSON.stringify(encoded);
   const decoded = await Effect.runPromise(decodeFittedModel(JSON.parse(json)));
@@ -273,7 +283,7 @@ The payload has no independent format version. It is interpreted using the insta
 The public error channel uses four tagged categories:
 
 - `InputValidationError` includes the input boundary and structured schema issues, including unsupported option combinations received from untyped callers.
-- `FittingError` includes a reason, observation count, optional parameter count, and optional WASM backend phase. Additive direct-solver failures distinguish rank deficiency and non-finite results.
+- `FittingError` includes a reason, observation count, optional parameter count, and optional WASM backend phase. Numerical failures distinguish rank deficiency, non-finite results, flat noise collapse, and non-convergence.
 - `PredictionError` includes a reason, the relevant timestamp, and optional WASM backend phase.
 - `ModelSerializationError` includes the failed operation and structured schema issues.
 

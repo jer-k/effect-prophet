@@ -49,24 +49,25 @@ describe("decodeOptions", () => {
       seasonalities: [{ name: "work-week", periodDays: 7, fourierOrder: 3 }],
     };
 
-    // @ts-expect-error -- Flat additive fitting is not a supported public variant yet.
-    const unsupportedFlatAdditive: EncodedProphetOptions = {
+    const flatAdditive: EncodedProphetOptions = {
       growth: "flat",
       seasonalities: [{ name: "work-week", periodDays: 7, fourierOrder: 3 }],
     };
 
-    expect([flat, linear, additive, unsupportedFlatAdditive]).toHaveLength(4);
+    expect([flat, linear, additive, flatAdditive]).toHaveLength(4);
   });
 
-  it("rejects flat seasonalities at the untyped decoding boundary", async () => {
-    const error = await expectOptionsFailure({
-      growth: "flat",
-      seasonalities: [{ name: "work-week", periodDays: 7, fourierOrder: 3 }],
-    });
+  it("accepts and parses flat seasonalities", async () => {
+    const options = await Effect.runPromise(
+      decodeOptions({
+        growth: "flat",
+        seasonalities: [{ name: "work-week", periodDays: 7, fourierOrder: 3 }],
+      }),
+    );
 
-    expect(error.issues).toContainEqual({
-      message: "The provisional flat baseline does not support seasonalities",
-      path: ["seasonalities"],
+    expect(options).toEqual({
+      growth: "flat",
+      seasonalities: [{ name: "work-week", periodDays: 7, fourierOrder: 3, priorScale: 10 }],
     });
   });
 
