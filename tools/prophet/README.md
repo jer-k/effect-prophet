@@ -85,7 +85,9 @@ m = observation_unit_intercept / y_scale
 Keeping this conversion in the generator ensures Python Prophet remains the preprocessing and
 fixed-evaluation oracle rather than silently substituting the Effect/Rust equation. Fourier
 fixtures similarly use Prophet for every expected feature column; explicit matrix multiplication
-produces their fixed component values. Neither fixture family invokes an optimizer, so Fourier
+produces their fixed component values. Seasonality-resolution fixtures invoke the release's
+`set_auto_seasonalities` policy with explicit controls and training timestamps, recording enabled
+built-ins separately from the package-option mapping. None of these fixture families invokes an optimizer, so Fourier
 parity must not be described as fit parity.
 
 ## Shared comparison substrate

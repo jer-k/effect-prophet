@@ -8,7 +8,7 @@ coefficients, and observation noise are estimated under Prophet's priors.
 The current public slice supports:
 
 - absmax target scaling;
-- a featureless flat level or a non-empty ordered list of additive custom seasonalities;
+- a featureless flat level or a non-empty resolved list of additive custom and built-in seasonalities;
 - exact constant-target histories through an explicit shortcut;
 - fit, prediction, named component inspection, and JSON round trips.
 

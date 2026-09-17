@@ -8,8 +8,8 @@ model and must not be described as a full Prophet MAP fit.
 
 The public `prophetFittingBackendLayer` selects the narrow additive WASM adapter for the non-empty
 seasonality configuration variant and connects it to option decoding, fitting, prediction dispatch,
-named component forecasts, tracing, and portable serialization. Automatic built-in seasonality
-resolution remains a later capability.
+named component forecasts, tracing, and portable serialization. Built-in daily, weekly, and yearly
+components are resolved from training history before the same concrete layout reaches the adapter.
 
 ## Time and units
 
@@ -124,12 +124,26 @@ and augmented QR buffers, so peak memory is larger than one buffer and scales as
 
 ## Public options and forecasts
 
-Callers configure ordered custom definitions through `seasonalities`. Omission means an empty
-layout; it does not enable daily, weekly, or yearly defaults. The public fit operation parses the
-definitions, constructs the deterministic layout, and supplies resolved numeric metadata to the
-complete public backend. For linear growth, a non-empty list selects the additive ridge adapter;
-omission selects ordinary linear fitting. Flat growth uses its separate reduced MAP objective and
-adapter described in [the flat MAP contract](flat-map.md).
+Callers configure ordered custom definitions through `seasonalities`. Built-in controls are
+separate and deliberately default to `"off"`; this differs from Python Prophet's default-auto API.
+At fit time, `"auto"` uses only the parsed training history: yearly requires a span of at least 730
+fixed days, weekly requires 14 days and a minimum positive gap below 7 days, and daily requires 2
+days and a minimum gap below 1 day. Enabled built-ins use periods/orders `365.25/10`, `7/3`, and
+`1/4`, with prior scale `10`. Explicit `{ mode: "on" }` bypasses those checks and permits positive
+order and prior overrides.
+
+Custom definitions retain caller order, followed by enabled built-ins in yearly, weekly, daily
+order. Canonical built-in names remain unavailable to custom definitions, deliberately differing
+from Prophet's same-name override behavior. Different names may share a period; this is numerically
+supported but can limit component interpretability. The public fit operation supplies only the
+resolved layout to the backend. For linear growth, a non-empty resolved layout selects additive
+ridge; otherwise ordinary linear fitting is used. Flat growth uses the separate reduced MAP
+objective described in [the flat MAP contract](flat-map.md).
+
+Automatic resolution never inspects prediction timestamps and is not rerun during model decoding.
+Portable payloads retain the concrete definitions selected at fit time. Forcing yearly seasonality
+with less than 730 days can under-identify the decomposition; callers should force any component
+only when observed time windows support its interpretation and extrapolation.
 
 Every forecast has `timestamp`, `trend`, `additive`, `value`, and `seasonalities`. Named component
 values use observation units and retain definition order. Within floating-point tolerance,

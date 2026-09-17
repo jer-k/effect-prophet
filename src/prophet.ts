@@ -8,6 +8,7 @@ import {
 } from "./errors";
 import { parseFittedModel, type FittedProphet } from "./fitted-model";
 import { FitPlan, FittingBackend, type TrainingInput } from "./internal/fitting-backend";
+import { resolveSeasonalities } from "./internal/seasonality-resolution";
 import { TimestampSchema } from "./internal/timestamp";
 import { predictAdditiveWithWasm } from "./internal/wasm-additive-backend";
 import { predictFlatMapWithWasm } from "./internal/wasm-flat-map-backend";
@@ -17,9 +18,13 @@ import {
   decodeOptions,
   optionsValidationErrorFromSeasonality,
   type EncodedProphetOptions,
-  type ProphetOptions,
+  type Growth,
 } from "./options";
-import * as Seasonality from "./seasonality";
+import type {
+  EmptySeasonalityLayout,
+  NonEmptySeasonalityLayout,
+  SeasonalityLayout,
+} from "./seasonality";
 
 /** Canonical UTC timestamps accepted by the public prediction boundary. */
 export type EncodedPredictionTimestamps = ReadonlyArray<string>;
@@ -84,33 +89,46 @@ const packTrainingInput = (observations: Observations): TrainingInput => {
   return { timestamps, values };
 };
 
-const makeFitPlan = Effect.fn("makeFitPlan")(function* (
-  options: ProphetOptions,
-): Effect.fn.Return<FitPlan, InputValidationError> {
-  const firstSeasonality = options.seasonalities[0];
+const emptyLayoutFromResolved = (layout: SeasonalityLayout): EmptySeasonalityLayout => {
+  const components: readonly [] = Object.freeze([]);
 
-  if (firstSeasonality === undefined) {
-    if (options.growth === "linear") {
-      return FitPlan.LinearTrend();
-    }
+  return Object.freeze({
+    ...layout,
+    components,
+    coefficientCount: 0 as const,
+  });
+};
 
-    const seasonalities = yield* Seasonality.makeEmptySeasonalityLayout().pipe(
-      Effect.mapError(optionsValidationErrorFromSeasonality),
-    );
+const nonEmptyLayoutFromResolved = (
+  layout: SeasonalityLayout,
+  firstComponent: SeasonalityLayout["components"][number],
+): NonEmptySeasonalityLayout => {
+  const components: NonEmptySeasonalityLayout["components"] = Object.freeze([
+    firstComponent,
+    ...layout.components.slice(1),
+  ]);
 
-    return FitPlan.FlatMap({ seasonalities });
+  return Object.freeze({
+    ...layout,
+    components,
+  });
+};
+
+const makeFitPlan = (growth: Growth, layout: SeasonalityLayout): FitPlan => {
+  const firstComponent = layout.components[0];
+
+  if (firstComponent === undefined) {
+    return growth === "linear"
+      ? FitPlan.LinearTrend()
+      : FitPlan.FlatMap({ seasonalities: emptyLayoutFromResolved(layout) });
   }
 
-  const definitions = [firstSeasonality, ...options.seasonalities.slice(1)] as const;
+  const seasonalities = nonEmptyLayoutFromResolved(layout, firstComponent);
 
-  const seasonalities = yield* Seasonality.makeNonEmptySeasonalityLayout(definitions).pipe(
-    Effect.mapError(optionsValidationErrorFromSeasonality),
-  );
-
-  return options.growth === "linear"
+  return growth === "linear"
     ? FitPlan.LinearAdditive({ seasonalities })
     : FitPlan.FlatAdditiveMap({ seasonalities });
-});
+};
 
 /**
  * Validate observations and options, then fit through the provided backend Layer.
@@ -124,8 +142,30 @@ export const fit = Effect.fn("Prophet.fit")(function* (
   optionsInput?: EncodedProphetOptions,
 ): Effect.fn.Return<FittedProphet, InputValidationError | FittingError, FittingBackend> {
   const observations = yield* decodeObservations(observationsInput);
+
   const options = yield* decodeOptions(optionsInput);
-  const fitPlan = yield* makeFitPlan(options);
+
+  const resolved = yield* resolveSeasonalities(observations, options).pipe(
+    Effect.mapError(optionsValidationErrorFromSeasonality),
+  );
+
+  const fitPlan = makeFitPlan(options.growth, resolved.layout);
+
+  const enabledBuiltInCount = resolved.decisions.reduce(
+    (count, decision) => count + (decision.enabled ? 1 : 0),
+    0,
+  );
+
+  yield* Effect.annotateCurrentSpan({
+    "effect_prophet.seasonality.custom.count": options.seasonalities.length,
+    "effect_prophet.seasonality.builtin.enabled.count": enabledBuiltInCount,
+    ...Object.fromEntries(
+      resolved.decisions.map((decision) => [
+        `effect_prophet.seasonality.builtin.${decision.name}.resolution`,
+        decision.reason,
+      ]),
+    ),
+  });
 
   const input = packTrainingInput(observations);
   const backend = yield* FittingBackend;

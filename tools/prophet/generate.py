@@ -14,6 +14,7 @@ import subprocess
 import sys
 import tempfile
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, NoReturn, Sequence
 
@@ -28,6 +29,7 @@ EXPECTED_CONTAINER_PLATFORM = "linux/amd64"
 FOURIER_DECIMAL_PLACES = 12
 LINEAR_TREND_FILENAME = "linear-trend.json"
 FOURIER_FILENAME = "fourier.json"
+SEASONALITY_RESOLUTION_FILENAME = "seasonality-resolution.json"
 MANIFEST_FILENAME = "manifest.json"
 ROOT = Path(__file__).resolve().parents[2]
 REFERENCE_PATH = ROOT / "tools" / "prophet" / "reference.json"
@@ -162,6 +164,55 @@ FOURIER_CASES = (
             FourierSeasonalitySpec("one-day", 1.0, 2, 10.0),
         ),
         coefficients=(2.0, 3.0, -1.0, 0.5),
+    ),
+)
+
+
+@dataclass(frozen=True)
+class SeasonalityResolutionCaseSpec:
+    """Training history and explicit controls for one built-in policy fixture."""
+
+    identifier: str
+    offsets_milliseconds: tuple[int, ...]
+    yearly: str | bool | int = False
+    weekly: str | bool | int = False
+    daily: str | bool | int = False
+    custom_seasonalities: tuple[FourierSeasonalitySpec, ...] = ()
+    mapping_note: str = "Controls map directly; package built-ins are opt-in and default to off."
+
+
+DAY_MILLISECONDS = 86_400_000
+
+
+SEASONALITY_RESOLUTION_CASES = (
+    SeasonalityResolutionCaseSpec("daily-span-just-below", (0, DAY_MILLISECONDS // 2, 2 * DAY_MILLISECONDS - 1), daily="auto"),
+    SeasonalityResolutionCaseSpec("daily-span-exact", (0, DAY_MILLISECONDS // 2, 2 * DAY_MILLISECONDS), daily="auto"),
+    SeasonalityResolutionCaseSpec("daily-span-just-above", (0, DAY_MILLISECONDS // 2, 2 * DAY_MILLISECONDS + 1), daily="auto"),
+    SeasonalityResolutionCaseSpec("weekly-span-just-below", (0, DAY_MILLISECONDS, 14 * DAY_MILLISECONDS - 1), weekly="auto"),
+    SeasonalityResolutionCaseSpec("weekly-span-exact", (0, DAY_MILLISECONDS, 14 * DAY_MILLISECONDS), weekly="auto"),
+    SeasonalityResolutionCaseSpec("weekly-span-just-above", (0, DAY_MILLISECONDS, 14 * DAY_MILLISECONDS + 1), weekly="auto"),
+    SeasonalityResolutionCaseSpec("yearly-span-just-below", (0, 730 * DAY_MILLISECONDS - 1), yearly="auto"),
+    SeasonalityResolutionCaseSpec("yearly-span-exact", (0, 730 * DAY_MILLISECONDS), yearly="auto"),
+    SeasonalityResolutionCaseSpec("yearly-span-just-above", (0, 730 * DAY_MILLISECONDS + 1), yearly="auto"),
+    SeasonalityResolutionCaseSpec("daily-gap-exact", (0, DAY_MILLISECONDS, 2 * DAY_MILLISECONDS), daily="auto"),
+    SeasonalityResolutionCaseSpec("daily-gap-just-below", (0, DAY_MILLISECONDS - 1, 2 * DAY_MILLISECONDS), daily="auto"),
+    SeasonalityResolutionCaseSpec("weekly-gap-exact", (0, 7 * DAY_MILLISECONDS, 14 * DAY_MILLISECONDS), weekly="auto"),
+    SeasonalityResolutionCaseSpec("weekly-gap-just-below", (0, 7 * DAY_MILLISECONDS - 1, 14 * DAY_MILLISECONDS), weekly="auto"),
+    SeasonalityResolutionCaseSpec("irregular-minimum-gap", (0, DAY_MILLISECONDS // 2, 20 * DAY_MILLISECONDS), weekly="auto", daily="auto"),
+    SeasonalityResolutionCaseSpec("one-point-history", (0,), yearly="auto", weekly="auto", daily="auto"),
+    SeasonalityResolutionCaseSpec("daily-only-sampling", tuple(index * DAY_MILLISECONDS for index in range(15)), weekly="auto", daily="auto"),
+    SeasonalityResolutionCaseSpec("weekly-only-sampling", (0, 7 * DAY_MILLISECONDS, 14 * DAY_MILLISECONDS), weekly="auto", daily="auto"),
+    SeasonalityResolutionCaseSpec("subdaily-history", (0, DAY_MILLISECONDS // 2, 2 * DAY_MILLISECONDS), daily="auto"),
+    SeasonalityResolutionCaseSpec("explicit-off-long-history", (0, DAY_MILLISECONDS // 2, 730 * DAY_MILLISECONDS), yearly=False, weekly=False, daily=False),
+    SeasonalityResolutionCaseSpec("explicit-on-short-history", (0,), yearly=True, weekly=True, daily=True),
+    SeasonalityResolutionCaseSpec("explicit-order-overrides", (0,), yearly=6, weekly=5, daily=2),
+    SeasonalityResolutionCaseSpec(
+        "custom-coexistence",
+        (0, DAY_MILLISECONDS // 2, 14 * DAY_MILLISECONDS),
+        weekly="auto",
+        daily="auto",
+        custom_seasonalities=(FourierSeasonalitySpec("weekly-custom", 7.0, 1, 4.0),),
+        mapping_note="The non-reserved custom component coexists with built-ins; package output keeps custom definitions first.",
     ),
 )
 
@@ -423,6 +474,106 @@ def make_fourier_case(spec: FourierCaseSpec) -> dict[str, Any]:
     }
 
 
+def timestamp_from_offset(offset_milliseconds: int) -> str:
+    """Render a fixture offset as canonical UTC text with millisecond precision."""
+
+    instant = datetime(2020, 1, 1, tzinfo=timezone.utc) + timedelta(milliseconds=offset_milliseconds)
+
+    return instant.isoformat(timespec="milliseconds").replace("+00:00", "Z")
+
+
+def effect_built_in_setting(control: str | bool | int) -> str | dict[str, Any]:
+    """Map an explicit Python Prophet control to the package's public option syntax."""
+
+    if control == "auto":
+        return "auto"
+
+    if control is False:
+        return "off"
+
+    if control is True:
+        return {"mode": "on"}
+
+    return {"fourierOrder": control, "mode": "on"}
+
+
+def make_seasonality_resolution_case(spec: SeasonalityResolutionCaseSpec) -> dict[str, Any]:
+    """Resolve built-ins through unmodified Prophet's training-history policy."""
+
+    model = Prophet(
+        yearly_seasonality=spec.yearly,
+        weekly_seasonality=spec.weekly,
+        daily_seasonality=spec.daily,
+    )
+
+    for seasonality in spec.custom_seasonalities:
+        model.add_seasonality(
+            name=seasonality.name,
+            period=seasonality.period_days,
+            fourier_order=seasonality.fourier_order,
+            prior_scale=seasonality.prior_scale,
+        )
+
+    training_timestamps = [
+        timestamp_from_offset(offset) for offset in spec.offsets_milliseconds
+    ]
+    model.history = pd.DataFrame(
+        {
+            "ds": pd.to_datetime(
+                [prophet_timestamp(timestamp) for timestamp in training_timestamps],
+                format="mixed",
+            )
+        }
+    )
+    model.set_auto_seasonalities()
+
+    expected_enabled = []
+
+    for name in ("yearly", "weekly", "daily"):
+        resolved = model.seasonalities.get(name)
+
+        if resolved is None:
+            continue
+
+        expected_enabled.append(
+            {
+                "fourierOrder": resolved["fourier_order"],
+                "name": name,
+                "periodDays": resolved["period"],
+                "priorScale": resolved["prior_scale"],
+            }
+        )
+
+    return {
+        "configurationMapping": {
+            "effectProphetBuiltIns": {
+                "daily": effect_built_in_setting(spec.daily),
+                "weekly": effect_built_in_setting(spec.weekly),
+                "yearly": effect_built_in_setting(spec.yearly),
+            },
+            "effectProphetCustomSeasonalities": [
+                {
+                    "fourierOrder": seasonality.fourier_order,
+                    "name": seasonality.name,
+                    "periodDays": seasonality.period_days,
+                    "priorScale": seasonality.prior_scale,
+                }
+                for seasonality in spec.custom_seasonalities
+            ],
+            "note": spec.mapping_note,
+        },
+        "expectedEnabled": expected_enabled,
+        "id": spec.identifier,
+        "kind": "seasonality-resolution",
+        "trainingTimestamps": training_timestamps,
+        "upstreamControls": {
+            "daily": spec.daily,
+            "weekly": spec.weekly,
+            "yearly": spec.yearly,
+        },
+    }
+
+
 def find_prophet_model() -> Path:
     """Locate the model binary bundled in the installed Prophet distribution."""
 
@@ -455,6 +606,17 @@ def write_outputs(output: Path, execution: dict[str, str], reference: dict[str, 
     fourier_path.write_bytes(
         stable_json({"cases": [make_fourier_case(spec) for spec in FOURIER_CASES]})
     )
+    seasonality_resolution_path = output / SEASONALITY_RESOLUTION_FILENAME
+    seasonality_resolution_path.write_bytes(
+        stable_json(
+            {
+                "cases": [
+                    make_seasonality_resolution_case(spec)
+                    for spec in SEASONALITY_RESOLUTION_CASES
+                ]
+            }
+        )
+    )
 
     model_path = find_prophet_model()
     manifest = {
@@ -466,6 +628,10 @@ def write_outputs(output: Path, execution: dict[str, str], reference: dict[str, 
             {
                 "path": FOURIER_FILENAME,
                 "sha256": sha256_file(fourier_path),
+            },
+            {
+                "path": SEASONALITY_RESOLUTION_FILENAME,
+                "sha256": sha256_file(seasonality_resolution_path),
             },
         ],
         "backendArtifacts": [
@@ -492,7 +658,12 @@ def compare_outputs(generated: Path, committed: Path) -> None:
 
     differences: list[str] = []
 
-    for filename in (LINEAR_TREND_FILENAME, FOURIER_FILENAME, MANIFEST_FILENAME):
+    for filename in (
+        LINEAR_TREND_FILENAME,
+        FOURIER_FILENAME,
+        SEASONALITY_RESOLUTION_FILENAME,
+        MANIFEST_FILENAME,
+    ):
         generated_path = generated / filename
         committed_path = committed / filename
 

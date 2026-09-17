@@ -355,6 +355,13 @@ describe("Rust/WASM additive boundary tracing", () => {
     expect(requireParent(predictSpan).spanId).toBe(rootSpan.spanId);
     expect(requireParent(wasmPredictSpan).spanId).toBe(predictSpan.spanId);
 
+    expect(Object.fromEntries(fitSpan.attributes)).toEqual({
+      "effect_prophet.seasonality.custom.count": 1,
+      "effect_prophet.seasonality.builtin.enabled.count": 0,
+      "effect_prophet.seasonality.builtin.yearly.resolution": "explicitly-disabled",
+      "effect_prophet.seasonality.builtin.weekly.resolution": "explicitly-disabled",
+      "effect_prophet.seasonality.builtin.daily.resolution": "explicitly-disabled",
+    });
     expect(Object.fromEntries(wasmFitSpan.attributes)).toEqual({
       "effect_prophet.backend.type": "rust-wasm",
       "effect_prophet.operation": "fit",
