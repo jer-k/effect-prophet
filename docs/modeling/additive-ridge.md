@@ -127,14 +127,14 @@ and augmented QR buffers, so peak memory is larger than one buffer and scales as
 Callers configure ordered custom definitions through `seasonalities`. Omission means an empty
 layout; it does not enable daily, weekly, or yearly defaults. The public fit operation parses the
 definitions, constructs the deterministic layout, and supplies resolved numeric metadata to the
-complete public backend. A non-empty list selects the additive adapter; omission selects ordinary
-linear fitting. The provisional flat baseline is a separate union member that cannot contain
-seasonalities.
+complete public backend. For linear growth, a non-empty list selects the additive ridge adapter;
+omission selects ordinary linear fitting. Flat growth uses its separate reduced MAP objective and
+adapter described in [the flat MAP contract](flat-map.md).
 
 Every forecast has `timestamp`, `trend`, `additive`, `value`, and `seasonalities`. Named component
 values use observation units and retain definition order. Within floating-point tolerance,
-`additive` is the sum of the named components and `value` is `trend + additive`. Ordinary linear
-and constant forecasts use zero additive contribution and an empty component list.
+`additive` is the sum of the named components and `value` is `trend + additive`. Featureless
+models use zero additive contribution and an empty component list.
 
 Portable additive payloads retain coefficients, scaling, ordered definitions, and the complete fit
 summary. Decoding reconstructs layout offsets and counts through this domain owner and requires no

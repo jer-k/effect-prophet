@@ -1,24 +1,20 @@
 import { Layer } from "effect";
 
-import { fitWithConstantMeanBackend } from "./constant-fitting-backend";
 import { FitPlan, FittingBackend } from "./fitting-backend";
 import { fitAdditiveWithWasm } from "./wasm-additive-backend";
+import { fitFlatMapWithWasm } from "./wasm-flat-map-backend";
 import { fitLinearTrendWithWasm } from "./wasm-linear-trend-backend";
 
-/**
- * Complete public fitting Layer for every currently accepted Prophet configuration.
- *
- * Flat growth temporarily routes to the explicitly tagged constant-mean teaching
- * baseline. It does not claim Python Prophet flat MAP numerical compatibility.
- */
+/** Complete public fitting Layer for every currently accepted Prophet configuration. */
 export const prophetFittingBackendLayer: Layer.Layer<FittingBackend> = Layer.succeed(
   FittingBackend,
   {
     fit: (input, plan) =>
       FitPlan.$match(plan, {
-        ConstantMeanBaseline: () => fitWithConstantMeanBackend(input),
         LinearTrend: () => fitLinearTrendWithWasm(input),
         LinearAdditive: ({ seasonalities }) => fitAdditiveWithWasm(input, seasonalities),
+        FlatMap: ({ seasonalities }) => fitFlatMapWithWasm(input, seasonalities),
+        FlatAdditiveMap: ({ seasonalities }) => fitFlatMapWithWasm(input, seasonalities),
       }),
   },
 );

@@ -41,8 +41,32 @@ export interface AdditiveRidgeWasmBindings {
   ) => Float64Array;
 }
 
+/** Rust/WASM bindings for the packed reduced flat MAP protocol. */
+export interface FlatMapWasmBindings {
+  /** Fit one complete flat MAP model and return its packed protocol frame. */
+  readonly fit_flat_map: (
+    timestamps: Float64Array,
+    values: Float64Array,
+    periodsDays: Float64Array,
+    fourierOrders: Float64Array,
+    priorScales: Float64Array,
+  ) => Float64Array;
+
+  /** Evaluate one complete flat MAP prediction batch. */
+  readonly predict_flat_map: (
+    timestamps: Float64Array,
+    level: number,
+    noiseScale: number,
+    periodsDays: Float64Array,
+    fourierOrders: Float64Array,
+    coefficients: Float64Array,
+  ) => Float64Array;
+}
+
 /** Complete generated Rust/WASM module contract required by this package version. */
-export type ProphetWasmModule = LinearTrendWasmBindings & AdditiveRidgeWasmBindings;
+export type ProphetWasmModule = LinearTrendWasmBindings &
+  AdditiveRidgeWasmBindings &
+  FlatMapWasmBindings;
 
 /** Lazy loader that returns a checked Rust/WASM module. */
 export type ProphetWasmModuleLoader = () => ProphetWasmModule;
@@ -54,6 +78,8 @@ const requiredFunctionExports = [
   "predict_linear_trend",
   "fit_additive_ridge",
   "predict_additive_ridge",
+  "fit_flat_map",
+  "predict_flat_map",
 ] as const;
 
 /**

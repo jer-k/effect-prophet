@@ -126,6 +126,48 @@ describe("fitted model serialization", () => {
     }
   });
 
+  it("round-trips complete flat MAP state and preserves a constant trend", async () => {
+    const model = await Effect.runPromise(
+      fit(
+        [
+          { timestamp: "1970-01-01T00:00:00.000Z", value: 1.1 },
+          { timestamp: "1970-01-01T06:00:00.000Z", value: 3 },
+          { timestamp: "1970-01-01T12:00:00.000Z", value: 0.9 },
+          { timestamp: "1970-01-01T18:00:00.000Z", value: -1.2 },
+          { timestamp: "1970-01-02T00:00:00.000Z", value: 1.2 },
+          { timestamp: "1970-01-02T06:00:00.000Z", value: 2.9 },
+        ],
+        {
+          growth: "flat",
+          seasonalities: [{ name: "daily-custom", periodDays: 1, fourierOrder: 1, priorScale: 10 }],
+        },
+      ).pipe(Effect.provide(prophetFittingBackendLayer)),
+    );
+
+    if (model.model !== "flat-map") {
+      throw new Error("The flat fitting backend returned an unexpected model kind");
+    }
+
+    const encoded = await Effect.runPromise(encodeFittedModel(model));
+    const decoded = await Effect.runPromise(decodeFittedModel(JSON.parse(JSON.stringify(encoded))));
+    const timestamps = ["1970-01-01T06:00:00.000Z", "1970-01-03T06:00:00.000Z"] as const;
+    const before = await Effect.runPromise(predict(model, timestamps));
+    const after = await Effect.runPromise(predict(decoded, timestamps));
+
+    expect(encoded.modelKind).toBe("flat-map");
+    expect(decoded).toEqual(model);
+    expect(after).toEqual(before);
+    expect(before[0]?.trend).toBe(model.level);
+    expect(before[1]?.trend).toBe(model.level);
+    expect(Object.isFrozen(decoded)).toBe(true);
+
+    if (decoded.model === "flat-map") {
+      expect(Object.isFrozen(decoded.coefficients)).toBe(true);
+      expect(Object.isFrozen(decoded.seasonalities)).toBe(true);
+      expect(Object.isFrozen(decoded.fitSummary)).toBe(true);
+    }
+  });
+
   it("reconstructs additive layout metadata and rejects coefficient misalignment", async () => {
     const encoded = {
       modelKind: "linear-additive-ridge",

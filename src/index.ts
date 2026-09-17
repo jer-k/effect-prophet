@@ -25,6 +25,7 @@ export {
   decodeFittedModel,
   encodeFittedModel,
   type EncodedFittedModel,
+  type EncodedFlatMapModel,
   type EncodedLinearAdditiveModel,
   type EncodedLinearModel,
   type SerializableFittedModel,
@@ -33,11 +34,13 @@ export {
 export {
   decodeOptions,
   defaultProphetOptions,
-  type EncodedFlatBaselineOptions,
+  type EncodedFlatAdditiveOptions,
+  type EncodedFlatTrendOptions,
   type EncodedLinearAdditiveOptions,
   type EncodedLinearTrendOptions,
   type EncodedProphetOptions,
-  type FlatBaselineOptions,
+  type FlatAdditiveOptions,
+  type FlatTrendOptions,
   type Growth,
   type LinearAdditiveOptions,
   type LinearTrendOptions,
@@ -45,10 +48,11 @@ export {
 } from "./options";
 
 export {
-  type FittedConstantProphet,
+  type FittedFlatMapProphet,
   type FittedLinearAdditiveProphet,
   type FittedLinearProphet,
   type FittedProphet,
+  type FlatMapParameters,
   type LinearAdditiveParameters,
 } from "./fitted-model";
 

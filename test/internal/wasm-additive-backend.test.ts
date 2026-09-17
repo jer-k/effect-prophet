@@ -447,32 +447,12 @@ describe("Rust/WASM additive boundary tracing", () => {
     }
   });
 
-  it("does not record additive boundaries for validation, flat-baseline dispatch, or empty prediction", async () => {
+  it("does not record WASM boundaries for validation or empty prediction", async () => {
     const recording = makeRecordingTracer();
 
     await Effect.runPromise(
       fit(publicObservations, {
         seasonalities: [{ name: "daily", periodDays: 1, fourierOrder: 1 }],
-      }).pipe(
-        Effect.provide(prophetFittingBackendLayer),
-        Effect.withTracer(recording.tracer),
-        Effect.exit,
-      ),
-    );
-
-    await Effect.runPromise(
-      fit(publicObservations, { growth: "flat" }).pipe(
-        Effect.provide(prophetFittingBackendLayer),
-        Effect.withTracer(recording.tracer),
-        Effect.exit,
-      ),
-    );
-
-    const invalidFlatAdditiveExit = await Effect.runPromise(
-      fit(publicObservations, {
-        growth: "flat",
-        // @ts-expect-error -- Invalid JavaScript input exercises the runtime union parser.
-        seasonalities: publicOptions.seasonalities,
       }).pipe(
         Effect.provide(prophetFittingBackendLayer),
         Effect.withTracer(recording.tracer),
@@ -496,7 +476,6 @@ describe("Rust/WASM additive boundary tracing", () => {
       ),
     );
 
-    expect(Exit.isFailure(invalidFlatAdditiveExit)).toBe(true);
     expect(empty).toEqual([]);
     expect(Exit.isFailure(invalidModelExit)).toBe(true);
     expect(recording.spans.some((span) => span.name === "effect-prophet.wasm.fit")).toBe(false);

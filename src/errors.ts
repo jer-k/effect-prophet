@@ -13,6 +13,8 @@ const FittingFailureReasonSchema = Schema.Literals([
   "degenerate-observations",
   "rank-deficient",
   "non-finite-result",
+  "noise-collapse",
+  "non-convergence",
   "backend-failure",
 ]);
 
@@ -33,6 +35,8 @@ export type FittingFailureReason =
   | "degenerate-observations"
   | "rank-deficient"
   | "non-finite-result"
+  | "noise-collapse"
+  | "non-convergence"
   | "backend-failure";
 
 export type PredictionFailureReason = "invalid-model" | "non-finite-forecast" | "backend-failure";

@@ -10,6 +10,8 @@ const validModule: ProphetWasmModule = {
   predict_linear_trend: () => new Float64Array([0, 11]),
   fit_additive_ridge: () => new Float64Array([0, 2, 6, 100, 200, 8, 4, 0, 0, 0, 0]),
   predict_additive_ridge: () => new Float64Array([0, 11, 1, 12, 1]),
+  fit_flat_map: () => new Float64Array([0, 2, 0.5, 2, 4, 3, 1, 0, 0]),
+  predict_flat_map: () => new Float64Array([0, 2, 0, 2]),
 };
 
 describe("Prophet WASM module boundary", () => {
