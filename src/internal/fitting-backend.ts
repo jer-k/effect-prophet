@@ -2,13 +2,19 @@ import { Context, Data, type Effect } from "effect";
 
 import type { FittingError } from "../errors";
 import type { Parameters } from "../fitted-model";
-import type { EmptySeasonalityLayout, NonEmptySeasonalityLayout } from "../seasonality";
+import type { ChangepointSetting, MapOptimizerControls } from "../options";
+import type {
+  EmptySeasonalityLayout,
+  NonEmptySeasonalityLayout,
+  SeasonalityLayout,
+} from "../seasonality";
 
 export type {
   FlatMapParameters,
   LinearAdditiveParameters,
   LinearParameters,
   Parameters,
+  PiecewiseMapParameters,
 } from "../fitted-model";
 
 /** Packed, index-aligned numerical observations supplied to a fitting backend. */
@@ -33,6 +39,23 @@ export interface LinearAdditiveFitPlan {
   readonly seasonalities: NonEmptySeasonalityLayout;
 }
 
+/** Request for joint linear piecewise MAP fitting and additive-seasonality fitting. */
+export interface LinearPiecewiseMapFitPlan {
+  readonly _tag: "LinearPiecewiseMap";
+
+  /** Ordered resolved seasonality layout, possibly empty. */
+  readonly seasonalities: SeasonalityLayout;
+
+  /** Explicit or automatic changepoint request parsed from public options. */
+  readonly changepoints: ChangepointSetting;
+
+  /** Positive Laplace scale for changepoint rate adjustments. */
+  readonly changepointPriorScale: number;
+
+  /** Deterministic optimizer controls. */
+  readonly optimizer: MapOptimizerControls;
+}
+
 /** Request for featureless reduced flat MAP fitting. */
 export interface FlatMapFitPlan {
   readonly _tag: "FlatMap";
@@ -53,6 +76,7 @@ export interface FlatAdditiveMapFitPlan {
 export type FitPlan =
   | LinearTrendFitPlan
   | LinearAdditiveFitPlan
+  | LinearPiecewiseMapFitPlan
   | FlatMapFitPlan
   | FlatAdditiveMapFitPlan;
 

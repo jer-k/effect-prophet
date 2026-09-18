@@ -6,6 +6,7 @@ import {
   decodeFixtureManifest,
   decodeFourierReference,
   decodeLinearTrendReference,
+  decodePiecewiseLinearReference,
   decodeSeasonalityResolutionReference,
   loadProphetFixtureBundle,
 } from "../../helpers/prophet-fixture";
@@ -54,6 +55,37 @@ const validFourierCase = () => ({
   tolerance: { absolute: 1e-12, relative: 1e-12 },
 });
 
+const validPiecewiseCase = () => ({
+  id: "valid-piecewise",
+  kind: "fixed-piecewise-linear",
+  observations: [
+    { timestamp: "2024-01-01T00:00:00.000Z", value: 1 },
+    { timestamp: "2024-01-03T00:00:00.000Z", value: 2 },
+  ],
+  predictionTimestamps: ["2024-01-02T00:00:00.000Z"],
+  changepointTimestamps: ["2024-01-02T00:00:00.000Z"],
+  seasonalities: [],
+  parameters: {
+    intercept: 1,
+    slope: 2,
+    timeOrigin: 1_704_067_200_000,
+    timeScale: 172_800_000,
+    deltas: [-1],
+    seasonalCoefficients: [],
+  },
+  expected: {
+    scaledTrainingTimes: [0, 1],
+    scaledPredictionTimes: [0.5],
+    scaledChangepointTimes: [0.5],
+    featuresRowMajor: [],
+    trend: [2],
+    seasonalComponentsRowMajor: [],
+    additive: [0],
+    value: [2],
+  },
+  tolerance: { absolute: 1e-10, relative: 1e-10 },
+});
+
 describe("Prophet fixture loader", () => {
   it("loads committed fixtures and verifies their digests", async () => {
     const bundle = await Effect.runPromise(loadProphetFixtureBundle());
@@ -68,6 +100,13 @@ describe("Prophet fixture loader", () => {
       "weekly-and-fractional-day-irregular",
       "epoch-pre-epoch-and-repeated",
     ]);
+    expect(bundle.piecewiseLinear.cases.map((referenceCase) => referenceCase.id)).toEqual([
+      "two-break-irregular-with-seasonalities",
+      "inclusive-endpoint-changepoints",
+      "no-changepoint-linear-reduction",
+    ]);
+    expect(bundle.changepointResolution.cases).toHaveLength(7);
+    expect(bundle.linearMapFit.cases).toHaveLength(1);
     expect(bundle.seasonalityResolution.cases).toHaveLength(22);
     expect(bundle.seasonalityResolution.cases[0]?.kind).toBe("seasonality-resolution");
   });
@@ -95,6 +134,18 @@ describe("Prophet fixture loader", () => {
 
     expect(error).toBeInstanceOf(FixtureLoadError);
     expect(error.message).toContain("matrix dimensions");
+  });
+
+  it("rejects misaligned piecewise changepoints and deltas", async () => {
+    const referenceCase = validPiecewiseCase();
+    referenceCase.parameters.deltas = [];
+
+    const error = await Effect.runPromise(
+      Effect.flip(decodePiecewiseLinearReference({ cases: [referenceCase] })),
+    );
+
+    expect(error).toBeInstanceOf(FixtureLoadError);
+    expect(error.message).toContain("Changepoint timestamps, scaled times, and deltas must align");
   });
 
   it("rejects negative tolerances", async () => {
@@ -171,8 +222,11 @@ describe("Prophet fixture loader", () => {
           artifacts: [
             { path: "linear-trend.json", sha256: "c".repeat(64) },
             { path: "fourier.json", sha256: "d".repeat(64) },
-            { path: "seasonality-resolution.json", sha256: "e".repeat(64) },
-            { path: "../escape.json", sha256: "f".repeat(64) },
+            { path: "piecewise-linear.json", sha256: "e".repeat(64) },
+            { path: "changepoint-resolution.json", sha256: "f".repeat(64) },
+            { path: "linear-map-fit.json", sha256: "0".repeat(64) },
+            { path: "seasonality-resolution.json", sha256: "1".repeat(64) },
+            { path: "../escape.json", sha256: "2".repeat(64) },
           ],
         }),
       ),

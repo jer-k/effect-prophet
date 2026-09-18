@@ -69,12 +69,15 @@ The suite is intentionally excluded from ordinary `npm test`.
 5. calls Prophet 1.4.0's unmodified `fourier_series` for ordered weekly, fractional-day,
    epoch, pre-epoch, subdaily, irregular, and repeated timestamp cases;
 6. evaluates authored fixed coefficients against those feature blocks without fitting a model;
-7. rounds CPU-sensitive Fourier and component values to 12 decimal places, well inside the
-   fixture's `1e-11` absolute tolerance, and writes stable JSON with non-finite values rejected.
+7. evaluates explicit fixed changepoints, output-unit slope adjustments, and composed Fourier
+   components for interior, endpoint, and no-changepoint cases;
+8. invokes release `set_changepoints` for exact automatic row-index candidate fixtures;
+9. fits one noisy nonempty explicit-changepoint case through the bundled CmdStan Newton optimizer;
+10. rounds CPU-sensitive Fourier and component values to 12 decimal places, well inside the
+    fixture tolerances, and writes stable JSON with non-finite values rejected.
 
-No model fit or optimizer invocation occurs. The explicitly populated fields are
-`changepoints_t`, `params.k`, `params.m`, and `params.delta`. With the default zero floor, Prophet
-evaluates:
+The fixed-parameter fixture families explicitly populate `changepoints_t`, `params.k`, `params.m`,
+and `params.delta` without fitting. With the default zero floor, Prophet evaluates:
 
 ```text
 trend = (k * scaled_time + m) * y_scale
@@ -82,13 +85,23 @@ k = observation_unit_slope / y_scale
 m = observation_unit_intercept / y_scale
 ```
 
-Keeping this conversion in the generator ensures Python Prophet remains the preprocessing and
-fixed-evaluation oracle rather than silently substituting the Effect/Rust equation. Fourier
-fixtures similarly use Prophet for every expected feature column; explicit matrix multiplication
-produces their fixed component values. Seasonality-resolution fixtures invoke the release's
-`set_auto_seasonalities` policy with explicit controls and training timestamps, recording enabled
-built-ins separately from the package-option mapping. None of these fixture families invokes an optimizer, so Fourier
-parity must not be described as fit parity.
+For explicit changepoints, the same conversion applies independently to every output-unit delta,
+and the release evaluates the equivalent hinge form documented in
+[`piecewise-map.md`](../../docs/modeling/piecewise-map.md). Keeping this conversion in the
+generator ensures Python Prophet remains the preprocessing and fixed-evaluation oracle rather
+than silently substituting the Effect/Rust equation. Fourier fixtures similarly use Prophet for
+every expected feature column; explicit matrix multiplication produces their fixed component
+values. Seasonality-resolution fixtures invoke the release's `set_auto_seasonalities` policy with
+explicit controls and training timestamps, recording enabled built-ins separately from the
+package-option mapping. Automatic changepoint fixtures record logical selected dates and omit the
+release's private dummy fitting column. These fixed and policy fixture families do not invoke an
+optimizer, so their parity must not be described as fitted MAP parity.
+
+`linear-map-fit.json` is separately labeled fitted evidence. It invokes the bundled release model
+with one explicit changepoint, no seasonal columns, `changepoint_prior_scale=0.2`, and the Newton
+algorithm, then records fitted output-unit trend/noise parameters and predictions. Its looser,
+quantity-specific tolerance reflects cross-optimizer agreement rather than bitwise algorithm
+identity.
 
 ## Shared comparison substrate
 

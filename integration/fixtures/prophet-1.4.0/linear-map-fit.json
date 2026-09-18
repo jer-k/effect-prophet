@@ -1,0 +1,100 @@
+{
+  "cases": [
+    {
+      "changepointTimestamps": [
+        "2020-01-05T00:00:00.000Z"
+      ],
+      "expected": {
+        "deltas": [
+          -5.684705019
+        ],
+        "intercept": 0.967310064,
+        "noiseScale": 0.02911794441,
+        "slope": 7.8602772000000005,
+        "trend": [
+          0.967310064,
+          1.8406741973333334,
+          2.714038330666667,
+          3.587402464,
+          4.4607665973333335,
+          4.702496839666667,
+          4.944227081999999,
+          5.185957324333334,
+          5.427687566666666,
+          5.6694178090000005,
+          6.394608536000001
+        ]
+      },
+      "id": "one-explicit-break-no-seasonality",
+      "kind": "fitted-linear-map",
+      "observations": [
+        {
+          "timestamp": "2020-01-01T00:00:00.000Z",
+          "value": 1.0
+        },
+        {
+          "timestamp": "2020-01-02T00:00:00.000Z",
+          "value": 1.8
+        },
+        {
+          "timestamp": "2020-01-03T00:00:00.000Z",
+          "value": 2.7
+        },
+        {
+          "timestamp": "2020-01-04T00:00:00.000Z",
+          "value": 3.6
+        },
+        {
+          "timestamp": "2020-01-05T00:00:00.000Z",
+          "value": 4.5
+        },
+        {
+          "timestamp": "2020-01-06T00:00:00.000Z",
+          "value": 4.7
+        },
+        {
+          "timestamp": "2020-01-07T00:00:00.000Z",
+          "value": 4.9
+        },
+        {
+          "timestamp": "2020-01-08T00:00:00.000Z",
+          "value": 5.2
+        },
+        {
+          "timestamp": "2020-01-09T00:00:00.000Z",
+          "value": 5.4
+        },
+        {
+          "timestamp": "2020-01-10T00:00:00.000Z",
+          "value": 5.7
+        }
+      ],
+      "predictionTimestamps": [
+        "2020-01-01T00:00:00.000Z",
+        "2020-01-02T00:00:00.000Z",
+        "2020-01-03T00:00:00.000Z",
+        "2020-01-04T00:00:00.000Z",
+        "2020-01-05T00:00:00.000Z",
+        "2020-01-06T00:00:00.000Z",
+        "2020-01-07T00:00:00.000Z",
+        "2020-01-08T00:00:00.000Z",
+        "2020-01-09T00:00:00.000Z",
+        "2020-01-10T00:00:00.000Z",
+        "2020-01-13T00:00:00.000Z"
+      ],
+      "settings": {
+        "algorithm": "Newton",
+        "changepointPriorScale": 0.2,
+        "densityConvention": "constrained-parameter MAP without transform Jacobian",
+        "timeOrigin": 1577836800000,
+        "timeScale": 777600000,
+        "valueScale": 5.7
+      },
+      "tolerance": {
+        "coefficientAbsolute": 0.002,
+        "forecastAbsolute": 0.002,
+        "noiseAbsolute": 0.002
+      }
+    }
+  ]
+}

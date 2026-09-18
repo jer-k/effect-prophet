@@ -15,8 +15,10 @@ const LinearAdditiveModel = Schema.Literal("linear-additive-ridge");
 
 const FlatMapModel = Schema.Literal("flat-map");
 
+const PiecewiseMapModel = Schema.Literal("linear-piecewise-map");
+
 const ModelDiscriminantSchema = Schema.Struct({
-  model: Schema.Union([LinearModel, LinearAdditiveModel, FlatMapModel]),
+  model: Schema.Union([LinearModel, LinearAdditiveModel, FlatMapModel, PiecewiseMapModel]),
 });
 
 const LinearParametersSchema = Schema.Struct({
@@ -133,10 +135,120 @@ const consistentFlatMapParameters = Schema.makeFilter<FlatMapParametersFields>((
 
 const FlatMapParametersSchema = FlatMapParametersFieldsSchema.check(consistentFlatMapParameters);
 
+const PiecewiseMapFitSummarySchema = Schema.Struct({
+  method: Schema.Literal("piecewise-map-coordinate-v1"),
+  termination: Schema.Literals(["converged", "constant-target-shortcut"]),
+  valueScale: PositiveFinite,
+  observationCount: Schema.Int.check(Schema.isGreaterThanOrEqualTo(2)),
+  iterations: Schema.Natural,
+  objective: Schema.Finite,
+  stationarityResidual: Schema.Finite.check(Schema.isGreaterThanOrEqualTo(0)),
+  changepointPriorScale: PositiveFinite,
+});
+
+const PiecewiseMapParametersFieldsSchema = Schema.Struct({
+  model: PiecewiseMapModel,
+  intercept: Schema.Finite,
+  slope: Schema.Finite,
+  timeOrigin: Schema.Int,
+  timeScale: Schema.Int.check(Schema.isGreaterThan(0)),
+  changepointTimestamps: Schema.Array(Schema.Int),
+  deltas: Schema.Array(Schema.Finite),
+  seasonalities: SeasonalityLayoutSchema,
+  coefficients: Schema.Array(Schema.Finite),
+  noiseScale: PositiveFinite,
+  fitSummary: PiecewiseMapFitSummarySchema,
+});
+
+type PiecewiseMapParametersFields = typeof PiecewiseMapParametersFieldsSchema.Type;
+
+const consistentPiecewiseMapParameters = Schema.makeFilter<PiecewiseMapParametersFields>(
+  (parameters) => {
+    const issues: Array<{ readonly path: ReadonlyArray<PropertyKey>; readonly issue: string }> = [];
+
+    if (parameters.changepointTimestamps.length !== parameters.deltas.length) {
+      issues.push({
+        path: ["deltas"],
+        issue: "Changepoint timestamps and deltas must align",
+      });
+    }
+
+    if (parameters.coefficients.length !== parameters.seasonalities.coefficientCount) {
+      issues.push({
+        path: ["coefficients"],
+        issue: `Expected exactly ${parameters.seasonalities.coefficientCount} seasonal coefficients`,
+      });
+    }
+
+    const end = parameters.timeOrigin + parameters.timeScale;
+
+    if (
+      !Number.isSafeInteger(parameters.timeOrigin) ||
+      !Number.isSafeInteger(parameters.timeScale) ||
+      !Number.isSafeInteger(end)
+    ) {
+      issues.push({
+        path: ["timeScale"],
+        issue: "Training time bounds must remain inside safe integer arithmetic",
+      });
+    }
+
+    for (const [index, changepoint] of parameters.changepointTimestamps.entries()) {
+      const previous = parameters.changepointTimestamps[index - 1];
+
+      if (
+        !Number.isSafeInteger(changepoint) ||
+        changepoint < parameters.timeOrigin ||
+        changepoint > end ||
+        (previous !== undefined && changepoint <= previous)
+      ) {
+        issues.push({
+          path: ["changepointTimestamps", index],
+          issue: "Changepoints must be safe, strictly increasing timestamps in training bounds",
+        });
+      }
+    }
+
+    if (parameters.fitSummary.termination === "constant-target-shortcut") {
+      if (parameters.fitSummary.iterations !== 0) {
+        issues.push({
+          path: ["fitSummary", "iterations"],
+          issue: "Expected zero iterations for the constant-target shortcut",
+        });
+      }
+
+      if (
+        parameters.slope !== 0 ||
+        parameters.deltas.some((delta) => delta !== 0) ||
+        parameters.coefficients.some((coefficient) => coefficient !== 0)
+      ) {
+        issues.push({
+          path: ["fitSummary", "termination"],
+          issue: "Constant-target shortcut state requires zero rate and feature coefficients",
+        });
+      }
+
+      if (parameters.noiseScale !== parameters.fitSummary.valueScale * 1e-9) {
+        issues.push({
+          path: ["noiseScale"],
+          issue: "Constant-target shortcut noise must equal valueScale times 1e-9",
+        });
+      }
+    }
+
+    return issues;
+  },
+);
+
+const PiecewiseMapParametersSchema = PiecewiseMapParametersFieldsSchema.check(
+  consistentPiecewiseMapParameters,
+);
+
 const ParametersSchema = Schema.Union([
   LinearParametersSchema,
   LinearAdditiveParametersSchema,
   FlatMapParametersSchema,
+  PiecewiseMapParametersSchema,
 ]);
 
 const FittedLinearProphetSchema = LinearParametersSchema.pipe(
@@ -151,10 +263,15 @@ const FittedFlatMapProphetSchema = FlatMapParametersSchema.pipe(
   Schema.brand("effect-prophet/FittedFlatMapProphet"),
 );
 
+const FittedPiecewiseMapProphetSchema = PiecewiseMapParametersSchema.pipe(
+  Schema.brand("effect-prophet/FittedPiecewiseMapProphet"),
+);
+
 const FittedProphetSchema = Schema.Union([
   FittedLinearProphetSchema,
   FittedLinearAdditiveProphetSchema,
   FittedFlatMapProphetSchema,
+  FittedPiecewiseMapProphetSchema,
 ]);
 
 /** Untrusted parameters returned by a linear-trend fitting backend. */
@@ -169,6 +286,9 @@ export type LinearAdditiveParameters = typeof LinearAdditiveParametersSchema.Typ
 /** Complete, untrusted fitted state for a reduced flat MAP model. */
 export type FlatMapParameters = typeof FlatMapParametersSchema.Type;
 
+/** Complete, untrusted fitted state for a linear piecewise MAP model. */
+export type PiecewiseMapParameters = typeof PiecewiseMapParametersSchema.Type;
+
 /** A parsed ordinary least-squares linear-trend model. */
 export type FittedLinearProphet = typeof FittedLinearProphetSchema.Type;
 
@@ -177,6 +297,9 @@ export type FittedLinearAdditiveProphet = typeof FittedLinearAdditiveProphetSche
 
 /** A trusted, deeply immutable reduced flat MAP model. */
 export type FittedFlatMapProphet = typeof FittedFlatMapProphetSchema.Type;
+
+/** A trusted, deeply immutable linear piecewise MAP model. */
+export type FittedPiecewiseMapProphet = typeof FittedPiecewiseMapProphetSchema.Type;
 
 /** A parsed fitted model accepted by the public prediction operation. */
 export type FittedProphet = typeof FittedProphetSchema.Type;
@@ -212,13 +335,19 @@ const decodeFlatMapModel = Schema.decodeUnknownEffect(FittedFlatMapProphetSchema
   errors: "all",
 });
 
+const decodePiecewiseMapModel = Schema.decodeUnknownEffect(FittedPiecewiseMapProphetSchema, {
+  errors: "all",
+});
+
 const decodeFittedModel = Schema.decodeUnknownEffect(FittedProphetSchema, {
   errors: "all",
 });
 
 const freezeLinearModel = (model: FittedLinearProphet): FittedLinearProphet => Object.freeze(model);
 
-const freezeFeatureModel = <Model extends FittedLinearAdditiveProphet | FittedFlatMapProphet>(
+const freezeFeatureModel = <
+  Model extends FittedLinearAdditiveProphet | FittedFlatMapProphet | FittedPiecewiseMapProphet,
+>(
   model: Model,
 ): Model => {
   for (const component of model.seasonalities.components) {
@@ -229,13 +358,23 @@ const freezeFeatureModel = <Model extends FittedLinearAdditiveProphet | FittedFl
   Object.freeze(model.seasonalities.components);
   Object.freeze(model.seasonalities);
   Object.freeze(model.coefficients);
+
+  if (model.model === "linear-piecewise-map") {
+    Object.freeze(model.changepointTimestamps);
+    Object.freeze(model.deltas);
+  }
+
   Object.freeze(model.fitSummary);
 
   return Object.freeze(model);
 };
 
 const freezeFittedModel = (model: FittedProphet): FittedProphet => {
-  if (model.model === "linear-additive-ridge" || model.model === "flat-map") {
+  if (
+    model.model === "linear-additive-ridge" ||
+    model.model === "flat-map" ||
+    model.model === "linear-piecewise-map"
+  ) {
     return freezeFeatureModel(model);
   }
 
@@ -287,6 +426,20 @@ export const parseFlatMapModel = (
   input: FirstArgument<typeof decodeFlatMapModel>,
 ): Effect.Effect<FittedFlatMapProphet, InvalidFittedModel> =>
   decodeFlatMapModel(input).pipe(
+    Effect.map(freezeFeatureModel),
+    Effect.mapError((error) => invalidFittedModelFromIssue(error.issue)),
+  );
+
+/**
+ * Parse complete linear piecewise MAP state into a fresh, deeply frozen model.
+ *
+ * @param input - Values at a fitting or serialization trust boundary.
+ * @returns A trusted linear piecewise MAP model or structured issues.
+ */
+export const parsePiecewiseMapModel = (
+  input: FirstArgument<typeof decodePiecewiseMapModel>,
+): Effect.Effect<FittedPiecewiseMapProphet, InvalidFittedModel> =>
+  decodePiecewiseMapModel(input).pipe(
     Effect.map(freezeFeatureModel),
     Effect.mapError((error) => invalidFittedModelFromIssue(error.issue)),
   );

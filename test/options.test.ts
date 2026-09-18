@@ -101,6 +101,61 @@ describe("decodeOptions", () => {
     expect(Object.isFrozen(options.seasonalities)).toBe(true);
   });
 
+  it("parses explicit and automatic linear MAP controls", async () => {
+    const explicit = await Effect.runPromise(
+      decodeOptions({
+        map: {
+          changepoints: {
+            mode: "explicit",
+            timestamps: ["2024-01-02T00:00:00.000Z"],
+          },
+        },
+      }),
+    );
+
+    const automatic = await Effect.runPromise(
+      decodeOptions({ map: { changepoints: { mode: "auto" } } }),
+    );
+
+    expect(explicit).toMatchObject({
+      map: {
+        changepoints: { mode: "explicit", timestamps: [1_704_153_600_000] },
+        changepointPriorScale: 0.05,
+        optimizer: {
+          maxIterations: 10_000,
+          relativeTolerance: 1e-10,
+          absoluteTolerance: 1e-12,
+        },
+      },
+    });
+    expect(automatic).toMatchObject({
+      map: { changepoints: { mode: "auto", count: 25, range: 0.8 } },
+    });
+    expect("map" in explicit && Object.isFrozen(explicit.map)).toBe(true);
+  });
+
+  it.each([
+    [
+      "duplicate explicit points",
+      { mode: "explicit", timestamps: ["2024-01-02T00:00:00.000Z", "2024-01-02T00:00:00.000Z"] },
+    ],
+    ["invalid automatic count", { mode: "auto", count: -1 }],
+    ["invalid automatic range", { mode: "auto", range: 0 }],
+  ])("rejects %s", async (_label, changepoints) => {
+    const error = await expectOptionsFailure({ map: { changepoints } });
+
+    expect(error.issues.some((issue) => issue.path?.includes("changepoints"))).toBe(true);
+  });
+
+  it("rejects linear MAP options with flat growth", async () => {
+    const error = await expectOptionsFailure({ growth: "flat", map: {} });
+
+    expect(error.issues).toContainEqual({
+      path: ["map"],
+      message: "Linear MAP options require linear growth",
+    });
+  });
+
   it("parses built-in controls and applies per-component defaults", async () => {
     const options = await Effect.runPromise(
       decodeOptions({

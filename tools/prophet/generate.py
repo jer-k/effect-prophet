@@ -29,6 +29,9 @@ EXPECTED_CONTAINER_PLATFORM = "linux/amd64"
 FOURIER_DECIMAL_PLACES = 12
 LINEAR_TREND_FILENAME = "linear-trend.json"
 FOURIER_FILENAME = "fourier.json"
+PIECEWISE_LINEAR_FILENAME = "piecewise-linear.json"
+CHANGEPOINT_RESOLUTION_FILENAME = "changepoint-resolution.json"
+LINEAR_MAP_FIT_FILENAME = "linear-map-fit.json"
 SEASONALITY_RESOLUTION_FILENAME = "seasonality-resolution.json"
 MANIFEST_FILENAME = "manifest.json"
 ROOT = Path(__file__).resolve().parents[2]
@@ -169,6 +172,106 @@ FOURIER_CASES = (
 
 
 @dataclass(frozen=True)
+class PiecewiseLinearCaseSpec:
+    """Fixed piecewise trend and optional Fourier composition inputs."""
+
+    identifier: str
+    observations: tuple[Observation, ...]
+    prediction_timestamps: tuple[str, ...]
+    changepoint_timestamps: tuple[str, ...]
+    intercept: float
+    slope: float
+    deltas: tuple[float, ...]
+    seasonalities: tuple[FourierSeasonalitySpec, ...] = ()
+    seasonal_coefficients: tuple[float, ...] = ()
+    absolute_tolerance: float = 1e-10
+    relative_tolerance: float = 1e-10
+
+
+PIECEWISE_LINEAR_CASES = (
+    PiecewiseLinearCaseSpec(
+        identifier="two-break-irregular-with-seasonalities",
+        observations=(
+            Observation("2024-01-01T00:00:00.000Z", 8.0),
+            Observation("2024-01-02T12:00:00.000Z", 12.0),
+            Observation("2024-01-05T00:00:00.000Z", 15.0),
+            Observation("2024-01-11T00:00:00.000Z", 30.0),
+        ),
+        prediction_timestamps=(
+            "2023-12-30T00:00:00.000Z",
+            "2024-01-01T00:00:00.000Z",
+            "2024-01-03T06:00:00.000Z",
+            "2024-01-05T00:00:00.000Z",
+            "2024-01-08T00:00:00.000Z",
+            "2024-01-12T00:00:00.000Z",
+        ),
+        changepoint_timestamps=(
+            "2024-01-03T06:00:00.000Z",
+            "2024-01-08T00:00:00.000Z",
+        ),
+        intercept=4.25,
+        slope=18.75,
+        deltas=(-8.5, 12.0),
+        seasonalities=(
+            FourierSeasonalitySpec("custom-week", 7.0, 1, 10.0),
+            FourierSeasonalitySpec("half-day", 0.5, 1, 2.5),
+        ),
+        seasonal_coefficients=(0.25, -0.5, -2.0, 0.125),
+    ),
+    PiecewiseLinearCaseSpec(
+        identifier="inclusive-endpoint-changepoints",
+        observations=(
+            Observation("2024-02-01T00:00:00.000Z", -2.0),
+            Observation("2024-02-02T12:00:00.000Z", 4.0),
+            Observation("2024-02-05T00:00:00.000Z", 1.0),
+        ),
+        prediction_timestamps=(
+            "2024-01-31T00:00:00.000Z",
+            "2024-02-01T00:00:00.000Z",
+            "2024-02-03T00:00:00.000Z",
+            "2024-02-05T00:00:00.000Z",
+            "2024-02-07T00:00:00.000Z",
+        ),
+        changepoint_timestamps=(
+            "2024-02-01T00:00:00.000Z",
+            "2024-02-05T00:00:00.000Z",
+        ),
+        intercept=-2.0,
+        slope=4.0,
+        deltas=(1.5, -3.0),
+    ),
+    PiecewiseLinearCaseSpec(
+        identifier="no-changepoint-linear-reduction",
+        observations=(
+            Observation("2024-03-01T00:00:00.000Z", 2.0),
+            Observation("2024-03-04T00:00:00.000Z", -1.0),
+        ),
+        prediction_timestamps=(
+            "2024-02-28T00:00:00.000Z",
+            "2024-03-01T00:00:00.000Z",
+            "2024-03-02T12:00:00.000Z",
+            "2024-03-04T00:00:00.000Z",
+            "2024-03-06T00:00:00.000Z",
+        ),
+        changepoint_timestamps=(),
+        intercept=3.0,
+        slope=-5.0,
+        deltas=(),
+    ),
+)
+
+
+@dataclass(frozen=True)
+class ChangepointResolutionCaseSpec:
+    """Ordered training rows and automatic candidate controls."""
+
+    identifier: str
+    offsets_milliseconds: tuple[int, ...]
+    count: int
+    range: float
+
+
+@dataclass(frozen=True)
 class SeasonalityResolutionCaseSpec:
     """Training history and explicit controls for one built-in policy fixture."""
 
@@ -182,6 +285,39 @@ class SeasonalityResolutionCaseSpec:
 
 
 DAY_MILLISECONDS = 86_400_000
+
+
+CHANGEPOINT_RESOLUTION_CASES = (
+    ChangepointResolutionCaseSpec(
+        "ties-to-even-six-rows", tuple(index * DAY_MILLISECONDS for index in range(6)), 2, 1.0
+    ),
+    ChangepointResolutionCaseSpec(
+        "irregular-row-index-spacing",
+        (
+            0,
+            DAY_MILLISECONDS,
+            2 * DAY_MILLISECONDS,
+            20 * DAY_MILLISECONDS,
+            21 * DAY_MILLISECONDS,
+            90 * DAY_MILLISECONDS,
+        ),
+        3,
+        0.8,
+    ),
+    ChangepointResolutionCaseSpec(
+        "requested-zero", tuple(index * DAY_MILLISECONDS for index in range(8)), 0, 0.8
+    ),
+    ChangepointResolutionCaseSpec(
+        "count-reduced", tuple(index * DAY_MILLISECONDS for index in range(4)), 25, 1.0
+    ),
+    ChangepointResolutionCaseSpec("one-row", (0,), 25, 0.8),
+    ChangepointResolutionCaseSpec(
+        "tiny-range", tuple(index * DAY_MILLISECONDS for index in range(10)), 25, 0.01
+    ),
+    ChangepointResolutionCaseSpec(
+        "default-controls", tuple(index * DAY_MILLISECONDS for index in range(40)), 25, 0.8
+    ),
+)
 
 
 SEASONALITY_RESOLUTION_CASES = (
@@ -474,6 +610,146 @@ def make_fourier_case(spec: FourierCaseSpec) -> dict[str, Any]:
     }
 
 
+def make_piecewise_linear_case(spec: PiecewiseLinearCaseSpec) -> dict[str, Any]:
+    """Evaluate fixed piecewise and Fourier parameters through unmodified Prophet."""
+
+    if len(spec.changepoint_timestamps) != len(spec.deltas):
+        fail(f"Misaligned changepoints and deltas for case {spec.identifier}")
+
+    model = Prophet(
+        growth="linear",
+        changepoints=[],
+        yearly_seasonality=False,
+        weekly_seasonality=False,
+        daily_seasonality=False,
+        uncertainty_samples=0,
+    )
+    training = pd.DataFrame(
+        {
+            "ds": [prophet_timestamp(item.timestamp) for item in spec.observations],
+            "y": [item.value for item in spec.observations],
+        }
+    )
+    prepared_training = model.setup_dataframe(training, initialize_scales=True)
+
+    if model.start is None or model.t_scale is None or model.y_scale is None:
+        fail(f"Prophet did not initialize scales for case {spec.identifier}")
+
+    changepoints = pd.Series(
+        pd.to_datetime(
+            [prophet_timestamp(timestamp) for timestamp in spec.changepoint_timestamps],
+            format="mixed",
+        )
+    )
+    scaled_changepoints = np.asarray(
+        (changepoints - model.start) / model.t_scale,
+        dtype=np.float64,
+    )
+
+    model.changepoints_t = scaled_changepoints
+    model.params = {
+        "k": np.array([[spec.slope / model.y_scale]], dtype=np.float64),
+        "m": np.array([[spec.intercept / model.y_scale]], dtype=np.float64),
+        "delta": np.array(
+            [[delta / model.y_scale for delta in spec.deltas]],
+            dtype=np.float64,
+        ),
+    }
+
+    prediction = pd.DataFrame(
+        {"ds": [prophet_timestamp(timestamp) for timestamp in spec.prediction_timestamps]}
+    )
+    prepared_prediction = model.setup_dataframe(prediction, initialize_scales=False)
+    trend = np.asarray(model.predict_trend(prepared_prediction), dtype=np.float64)
+
+    feature_blocks: list[np.ndarray] = []
+    component_blocks: list[np.ndarray] = []
+    coefficient_offset = 0
+
+    for seasonality in spec.seasonalities:
+        block = Prophet.fourier_series(
+            prepared_prediction["ds"],
+            period=seasonality.period_days,
+            series_order=seasonality.fourier_order,
+        )
+        component_coefficient_count = seasonality.fourier_order * 2
+        coefficients = np.asarray(
+            spec.seasonal_coefficients[
+                coefficient_offset : coefficient_offset + component_coefficient_count
+            ],
+            dtype=np.float64,
+        )
+
+        if coefficients.size != component_coefficient_count:
+            fail(f"Misaligned seasonal coefficients for case {spec.identifier}")
+
+        feature_blocks.append(block)
+        component_blocks.append(block @ coefficients)
+        coefficient_offset += component_coefficient_count
+
+    if coefficient_offset != len(spec.seasonal_coefficients):
+        fail(f"Extra seasonal coefficients for case {spec.identifier}")
+
+    row_count = len(spec.prediction_timestamps)
+    features = (
+        np.concatenate(feature_blocks, axis=1)
+        if feature_blocks
+        else np.empty((row_count, 0), dtype=np.float64)
+    )
+    components = (
+        np.column_stack(component_blocks)
+        if component_blocks
+        else np.empty((row_count, 0), dtype=np.float64)
+    )
+    additive = components.sum(axis=1)
+    value = trend + additive
+
+    return {
+        "changepointTimestamps": list(spec.changepoint_timestamps),
+        "expected": {
+            "additive": [float(item) for item in additive],
+            "featuresRowMajor": [
+                canonical_fourier_float(item) for item in features.ravel()
+            ],
+            "scaledChangepointTimes": [float(item) for item in scaled_changepoints],
+            "scaledPredictionTimes": [float(item) for item in prepared_prediction["t"]],
+            "scaledTrainingTimes": [float(item) for item in prepared_training["t"]],
+            "seasonalComponentsRowMajor": [
+                canonical_fourier_float(item) for item in components.ravel()
+            ],
+            "trend": [float(item) for item in trend],
+            "value": [float(item) for item in value],
+        },
+        "id": spec.identifier,
+        "kind": "fixed-piecewise-linear",
+        "observations": [
+            {"timestamp": item.timestamp, "value": item.value} for item in spec.observations
+        ],
+        "parameters": {
+            "deltas": list(spec.deltas),
+            "intercept": spec.intercept,
+            "seasonalCoefficients": list(spec.seasonal_coefficients),
+            "slope": spec.slope,
+            "timeOrigin": epoch_milliseconds(model.start),
+            "timeScale": int(model.t_scale.total_seconds() * 1_000),
+        },
+        "predictionTimestamps": list(spec.prediction_timestamps),
+        "seasonalities": [
+            {
+                "fourierOrder": seasonality.fourier_order,
+                "name": seasonality.name,
+                "periodDays": seasonality.period_days,
+                "priorScale": seasonality.prior_scale,
+            }
+            for seasonality in spec.seasonalities
+        ],
+        "tolerance": {
+            "absolute": spec.absolute_tolerance,
+            "relative": spec.relative_tolerance,
+        },
+    }
+
+
 def timestamp_from_offset(offset_milliseconds: int) -> str:
     """Render a fixture offset as canonical UTC text with millisecond precision."""
 
@@ -495,6 +771,50 @@ def effect_built_in_setting(control: str | bool | int) -> str | dict[str, Any]:
         return {"mode": "on"}
 
     return {"fourierOrder": control, "mode": "on"}
+
+
+def make_changepoint_resolution_case(spec: ChangepointResolutionCaseSpec) -> dict[str, Any]:
+    """Resolve automatic candidates through the unmodified release policy."""
+
+    training_timestamps = [
+        timestamp_from_offset(offset) for offset in spec.offsets_milliseconds
+    ]
+    history_dates = pd.to_datetime(
+        [prophet_timestamp(timestamp) for timestamp in training_timestamps],
+        format="mixed",
+    )
+    model = Prophet(
+        n_changepoints=spec.count,
+        changepoint_range=spec.range,
+        yearly_seasonality=False,
+        weekly_seasonality=False,
+        daily_seasonality=False,
+    )
+    model.history = pd.DataFrame({"ds": history_dates})
+    model.start = history_dates.min()
+    model.t_scale = history_dates.max() - model.start
+    model.set_changepoints()
+    selected_indexes = [
+        int(np.flatnonzero(history_dates == timestamp)[0])
+        for timestamp in model.changepoints
+    ]
+    selected_timestamps = [
+        pd.Timestamp(timestamp)
+        .tz_localize("UTC")
+        .isoformat(timespec="milliseconds")
+        .replace("+00:00", "Z")
+        for timestamp in model.changepoints
+    ]
+
+    return {
+        "controls": {"count": spec.count, "range": spec.range},
+        "expectedSelectedIndexes": selected_indexes,
+        "expectedSelectedTimestamps": selected_timestamps,
+        "id": spec.identifier,
+        "kind": "changepoint-resolution",
+        "note": "Expected values exclude Prophet's private dummy zero-time fitting column.",
+        "trainingTimestamps": training_timestamps,
+    }
 
 
 def make_seasonality_resolution_case(spec: SeasonalityResolutionCaseSpec) -> dict[str, Any]:
@@ -574,6 +894,74 @@ def make_seasonality_resolution_case(spec: SeasonalityResolutionCaseSpec) -> dic
     }
 
 
+def make_linear_map_fit_fixture() -> dict[str, Any]:
+    """Fit one explicit nonempty-changepoint MAP case through pinned CmdStan."""
+
+    timestamps = [timestamp_from_offset(index * DAY_MILLISECONDS) for index in range(10)]
+    values = (1.0, 1.8, 2.7, 3.6, 4.5, 4.7, 4.9, 5.2, 5.4, 5.7)
+    changepoint_timestamp = timestamps[4]
+    model = Prophet(
+        growth="linear",
+        changepoints=[prophet_timestamp(changepoint_timestamp)],
+        changepoint_prior_scale=0.2,
+        yearly_seasonality=False,
+        weekly_seasonality=False,
+        daily_seasonality=False,
+        uncertainty_samples=0,
+    )
+    training = pd.DataFrame(
+        {
+            "ds": [prophet_timestamp(timestamp) for timestamp in timestamps],
+            "y": values,
+        }
+    )
+    model.fit(training, algorithm="Newton")
+    prediction_timestamps = timestamps + [timestamp_from_offset(12 * DAY_MILLISECONDS)]
+    prediction = model.predict(
+        pd.DataFrame(
+            {
+                "ds": [
+                    prophet_timestamp(timestamp) for timestamp in prediction_timestamps
+                ]
+            }
+        )
+    )
+
+    if model.start is None or model.t_scale is None or model.y_scale is None:
+        fail("Prophet did not retain scaling for the fitted linear MAP fixture")
+
+    return {
+        "changepointTimestamps": [changepoint_timestamp],
+        "expected": {
+            "deltas": [float(value * model.y_scale) for value in model.params["delta"][0]],
+            "intercept": float(model.params["m"][0][0] * model.y_scale),
+            "noiseScale": float(model.params["sigma_obs"][0][0] * model.y_scale),
+            "slope": float(model.params["k"][0][0] * model.y_scale),
+            "trend": [float(value) for value in prediction["trend"]],
+        },
+        "id": "one-explicit-break-no-seasonality",
+        "kind": "fitted-linear-map",
+        "observations": [
+            {"timestamp": timestamp, "value": value}
+            for timestamp, value in zip(timestamps, values, strict=True)
+        ],
+        "predictionTimestamps": prediction_timestamps,
+        "settings": {
+            "algorithm": "Newton",
+            "changepointPriorScale": 0.2,
+            "densityConvention": "constrained-parameter MAP without transform Jacobian",
+            "timeOrigin": epoch_milliseconds(model.start),
+            "timeScale": int(model.t_scale.total_seconds() * 1_000),
+            "valueScale": float(model.y_scale),
+        },
+        "tolerance": {
+            "coefficientAbsolute": 2e-3,
+            "forecastAbsolute": 2e-3,
+            "noiseAbsolute": 2e-3,
+        },
+    }
+
+
 def find_prophet_model() -> Path:
     """Locate the model binary bundled in the installed Prophet distribution."""
 
@@ -606,6 +994,23 @@ def write_outputs(output: Path, execution: dict[str, str], reference: dict[str, 
     fourier_path.write_bytes(
         stable_json({"cases": [make_fourier_case(spec) for spec in FOURIER_CASES]})
     )
+    piecewise_linear_path = output / PIECEWISE_LINEAR_FILENAME
+    piecewise_linear_path.write_bytes(
+        stable_json({"cases": [make_piecewise_linear_case(spec) for spec in PIECEWISE_LINEAR_CASES]})
+    )
+    changepoint_resolution_path = output / CHANGEPOINT_RESOLUTION_FILENAME
+    changepoint_resolution_path.write_bytes(
+        stable_json(
+            {
+                "cases": [
+                    make_changepoint_resolution_case(spec)
+                    for spec in CHANGEPOINT_RESOLUTION_CASES
+                ]
+            }
+        )
+    )
+    linear_map_fit_path = output / LINEAR_MAP_FIT_FILENAME
+    linear_map_fit_path.write_bytes(stable_json({"cases": [make_linear_map_fit_fixture()]}))
     seasonality_resolution_path = output / SEASONALITY_RESOLUTION_FILENAME
     seasonality_resolution_path.write_bytes(
         stable_json(
@@ -628,6 +1033,18 @@ def write_outputs(output: Path, execution: dict[str, str], reference: dict[str, 
             {
                 "path": FOURIER_FILENAME,
                 "sha256": sha256_file(fourier_path),
+            },
+            {
+                "path": PIECEWISE_LINEAR_FILENAME,
+                "sha256": sha256_file(piecewise_linear_path),
+            },
+            {
+                "path": CHANGEPOINT_RESOLUTION_FILENAME,
+                "sha256": sha256_file(changepoint_resolution_path),
+            },
+            {
+                "path": LINEAR_MAP_FIT_FILENAME,
+                "sha256": sha256_file(linear_map_fit_path),
             },
             {
                 "path": SEASONALITY_RESOLUTION_FILENAME,
@@ -661,6 +1078,9 @@ def compare_outputs(generated: Path, committed: Path) -> None:
     for filename in (
         LINEAR_TREND_FILENAME,
         FOURIER_FILENAME,
+        PIECEWISE_LINEAR_FILENAME,
+        CHANGEPOINT_RESOLUTION_FILENAME,
+        LINEAR_MAP_FIT_FILENAME,
         SEASONALITY_RESOLUTION_FILENAME,
         MANIFEST_FILENAME,
     ):

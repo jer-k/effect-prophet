@@ -7,12 +7,14 @@ import {
   parseFlatMapModel,
   parseLinearAdditiveModel,
   parseLinearModel,
+  parsePiecewiseMapModel,
   type FittedFlatMapProphet,
   type FittedLinearAdditiveProphet,
   type FittedLinearProphet,
   type FlatMapParameters,
   type LinearAdditiveParameters,
   type LinearParameters,
+  type PiecewiseMapParameters,
 } from "../src/fitted-model";
 import { makeSeasonalityLayout, parseSeasonalities } from "../src/seasonality";
 
@@ -75,6 +77,34 @@ const validLinearAdditiveParameters = async (): Promise<LinearAdditiveParameters
   };
 };
 
+const validPiecewiseMapParameters = async (): Promise<PiecewiseMapParameters> => {
+  const definitions = await Effect.runPromise(parseSeasonalities([]));
+  const seasonalities = await Effect.runPromise(makeSeasonalityLayout(definitions));
+
+  return {
+    model: "linear-piecewise-map",
+    intercept: 1,
+    slope: 2,
+    timeOrigin: 1_704_067_200_000,
+    timeScale: 172_800_000,
+    changepointTimestamps: [1_704_153_600_000],
+    deltas: [-1],
+    seasonalities,
+    coefficients: [],
+    noiseScale: 0.1,
+    fitSummary: {
+      method: "piecewise-map-coordinate-v1",
+      termination: "converged",
+      valueScale: 3,
+      observationCount: 4,
+      iterations: 20,
+      objective: -2,
+      stationarityResidual: 1e-6,
+      changepointPriorScale: 0.05,
+    },
+  };
+};
+
 const expectInvalidModel = async (
   parsing: Effect.Effect<unknown, InvalidFittedModel>,
   expectedPathSegment: PropertyKey,
@@ -100,6 +130,35 @@ describe("fitted model domain", () => {
     input.intercept = 100;
 
     expect(model.intercept).toBe(2);
+  });
+
+  it("owns and freezes aligned piecewise MAP prediction state", async () => {
+    const parameters = await validPiecewiseMapParameters();
+    const changepointTimestamps = Array.from(parameters.changepointTimestamps);
+    const input = { ...parameters, changepointTimestamps };
+    const model = await Effect.runPromise(parsePiecewiseMapModel(input));
+
+    expect(model).toEqual(parameters);
+    expect(Object.isFrozen(model)).toBe(true);
+    expect(Object.isFrozen(model.changepointTimestamps)).toBe(true);
+    expect(Object.isFrozen(model.deltas)).toBe(true);
+
+    changepointTimestamps[0] = parameters.timeOrigin;
+
+    expect(model.changepointTimestamps[0]).toBe(1_704_153_600_000);
+  });
+
+  it("rejects misaligned and out-of-range piecewise MAP changepoints", async () => {
+    const parameters = await validPiecewiseMapParameters();
+
+    await expectInvalidModel(parsePiecewiseMapModel({ ...parameters, deltas: [] }), "deltas");
+    await expectInvalidModel(
+      parsePiecewiseMapModel({
+        ...parameters,
+        changepointTimestamps: [parameters.timeOrigin - 1],
+      }),
+      "changepointTimestamps",
+    );
   });
 
   it.each([

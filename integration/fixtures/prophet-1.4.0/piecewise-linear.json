@@ -1,0 +1,314 @@
+{
+  "cases": [
+    {
+      "changepointTimestamps": [
+        "2024-01-03T06:00:00.000Z",
+        "2024-01-08T00:00:00.000Z"
+      ],
+      "expected": {
+        "additive": [
+          0.4799924450539106,
+          0.46701349917022367,
+          -0.6717881917299215,
+          0.008712969731636766,
+          0.46701349916598783,
+          0.008712969728054243
+        ],
+        "featuresRowMajor": [
+          0.974927912183,
+          -0.222520933953,
+          -1.6e-11,
+          1.0,
+          -0.433883739116,
+          -0.900968867903,
+          1e-12,
+          1.0,
+          -0.623489801861,
+          0.781831482466,
+          1.6e-11,
+          -1.0,
+          0.781831482467,
+          0.62348980186,
+          -2.3e-11,
+          1.0,
+          -0.433883739116,
+          -0.900968867903,
+          3e-12,
+          1.0,
+          0.781831482467,
+          0.62348980186,
+          -2.1e-11,
+          1.0
+        ],
+        "scaledChangepointTimes": [
+          0.225,
+          0.7
+        ],
+        "scaledPredictionTimes": [
+          -0.2,
+          0.0,
+          0.225,
+          0.4,
+          0.7,
+          1.1
+        ],
+        "scaledTrainingTimes": [
+          0.0,
+          0.15,
+          0.4,
+          1.0
+        ],
+        "seasonalComponentsRowMajor": [
+          0.354992445022,
+          0.125000000032,
+          0.342013499173,
+          0.124999999998,
+          -0.546788191698,
+          -0.125000000032,
+          -0.116287030314,
+          0.125000000045,
+          0.342013499172,
+          0.124999999994,
+          -0.116287030313,
+          0.125000000041
+        ],
+        "trend": [
+          0.4999999999999999,
+          4.25,
+          8.46875,
+          10.262500000000001,
+          13.3375,
+          22.2375
+        ],
+        "value": [
+          0.9799924450539105,
+          4.717013499170224,
+          7.796961808270078,
+          10.271212969731637,
+          13.804513499165989,
+          22.246212969728056
+        ]
+      },
+      "id": "two-break-irregular-with-seasonalities",
+      "kind": "fixed-piecewise-linear",
+      "observations": [
+        {
+          "timestamp": "2024-01-01T00:00:00.000Z",
+          "value": 8.0
+        },
+        {
+          "timestamp": "2024-01-02T12:00:00.000Z",
+          "value": 12.0
+        },
+        {
+          "timestamp": "2024-01-05T00:00:00.000Z",
+          "value": 15.0
+        },
+        {
+          "timestamp": "2024-01-11T00:00:00.000Z",
+          "value": 30.0
+        }
+      ],
+      "parameters": {
+        "deltas": [
+          -8.5,
+          12.0
+        ],
+        "intercept": 4.25,
+        "seasonalCoefficients": [
+          0.25,
+          -0.5,
+          -2.0,
+          0.125
+        ],
+        "slope": 18.75,
+        "timeOrigin": 1704067200000,
+        "timeScale": 864000000
+      },
+      "predictionTimestamps": [
+        "2023-12-30T00:00:00.000Z",
+        "2024-01-01T00:00:00.000Z",
+        "2024-01-03T06:00:00.000Z",
+        "2024-01-05T00:00:00.000Z",
+        "2024-01-08T00:00:00.000Z",
+        "2024-01-12T00:00:00.000Z"
+      ],
+      "seasonalities": [
+        {
+          "fourierOrder": 1,
+          "name": "custom-week",
+          "periodDays": 7.0,
+          "priorScale": 10.0
+        },
+        {
+          "fourierOrder": 1,
+          "name": "half-day",
+          "periodDays": 0.5,
+          "priorScale": 2.5
+        }
+      ],
+      "tolerance": {
+        "absolute": 1e-10,
+        "relative": 1e-10
+      }
+    },
+    {
+      "changepointTimestamps": [
+        "2024-02-01T00:00:00.000Z",
+        "2024-02-05T00:00:00.000Z"
+      ],
+      "expected": {
+        "additive": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "featuresRowMajor": [],
+        "scaledChangepointTimes": [
+          0.0,
+          1.0
+        ],
+        "scaledPredictionTimes": [
+          -0.25,
+          0.0,
+          0.5,
+          1.0,
+          1.5
+        ],
+        "scaledTrainingTimes": [
+          0.0,
+          0.375,
+          1.0
+        ],
+        "seasonalComponentsRowMajor": [],
+        "trend": [
+          -3.0,
+          -2.0,
+          0.75,
+          3.5,
+          4.75
+        ],
+        "value": [
+          -3.0,
+          -2.0,
+          0.75,
+          3.5,
+          4.75
+        ]
+      },
+      "id": "inclusive-endpoint-changepoints",
+      "kind": "fixed-piecewise-linear",
+      "observations": [
+        {
+          "timestamp": "2024-02-01T00:00:00.000Z",
+          "value": -2.0
+        },
+        {
+          "timestamp": "2024-02-02T12:00:00.000Z",
+          "value": 4.0
+        },
+        {
+          "timestamp": "2024-02-05T00:00:00.000Z",
+          "value": 1.0
+        }
+      ],
+      "parameters": {
+        "deltas": [
+          1.5,
+          -3.0
+        ],
+        "intercept": -2.0,
+        "seasonalCoefficients": [],
+        "slope": 4.0,
+        "timeOrigin": 1706745600000,
+        "timeScale": 345600000
+      },
+      "predictionTimestamps": [
+        "2024-01-31T00:00:00.000Z",
+        "2024-02-01T00:00:00.000Z",
+        "2024-02-03T00:00:00.000Z",
+        "2024-02-05T00:00:00.000Z",
+        "2024-02-07T00:00:00.000Z"
+      ],
+      "seasonalities": [],
+      "tolerance": {
+        "absolute": 1e-10,
+        "relative": 1e-10
+      }
+    },
+    {
+      "changepointTimestamps": [],
+      "expected": {
+        "additive": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "featuresRowMajor": [],
+        "scaledChangepointTimes": [],
+        "scaledPredictionTimes": [
+          -0.6666666666666666,
+          0.0,
+          0.5,
+          1.0,
+          1.6666666666666667
+        ],
+        "scaledTrainingTimes": [
+          0.0,
+          1.0
+        ],
+        "seasonalComponentsRowMajor": [],
+        "trend": [
+          6.333333333333333,
+          3.0,
+          0.5,
+          -2.0,
+          -5.333333333333334
+        ],
+        "value": [
+          6.333333333333333,
+          3.0,
+          0.5,
+          -2.0,
+          -5.333333333333334
+        ]
+      },
+      "id": "no-changepoint-linear-reduction",
+      "kind": "fixed-piecewise-linear",
+      "observations": [
+        {
+          "timestamp": "2024-03-01T00:00:00.000Z",
+          "value": 2.0
+        },
+        {
+          "timestamp": "2024-03-04T00:00:00.000Z",
+          "value": -1.0
+        }
+      ],
+      "parameters": {
+        "deltas": [],
+        "intercept": 3.0,
+        "seasonalCoefficients": [],
+        "slope": -5.0,
+        "timeOrigin": 1709251200000,
+        "timeScale": 259200000
+      },
+      "predictionTimestamps": [
+        "2024-02-28T00:00:00.000Z",
+        "2024-03-01T00:00:00.000Z",
+        "2024-03-02T12:00:00.000Z",
+        "2024-03-04T00:00:00.000Z",
+        "2024-03-06T00:00:00.000Z"
+      ],
+      "seasonalities": [],
+      "tolerance": {
+        "absolute": 1e-10,
+        "relative": 1e-10
+      }
+    }
+  ]
+}

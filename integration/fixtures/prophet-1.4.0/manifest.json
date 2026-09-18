@@ -9,6 +9,18 @@
       "sha256": "4400d9e76cc36faaa38c4e938a6ae88174fa8eb9fa44a36bcb912e79d8935a3e"
     },
     {
+      "path": "piecewise-linear.json",
+      "sha256": "128c10a31a5128910874a2202a485941a323ff1668f0cb643afc3e3968b87ba3"
+    },
+    {
+      "path": "changepoint-resolution.json",
+      "sha256": "2f4b18dd716c12cab68ad1657eac4bd005ee88f7ea836dfba2c688c4b24e7749"
+    },
+    {
+      "path": "linear-map-fit.json",
+      "sha256": "eade8e2f1a9348a4fbb065000e83f78be5a22ad4e7789825d511d757d55b3f26"
+    },
+    {
       "path": "seasonality-resolution.json",
       "sha256": "3e96a6c6514344472141f749a4319b4d7c509714ca9acb53f138d0153b773896"
     }
@@ -26,7 +38,7 @@
     "platform": "linux/amd64",
     "uvVersion": "0.8.15"
   },
-  "generatorRevision": "df0b0794ce4cf3496be35163c7ed2f157e55d619e4163ec94e62072610a5e84f",
+  "generatorRevision": "6627f1bf9c51d39a5d974eedd6d814516db1a1091f71c10831afa8b4eff61ac1",
   "numericalEnvironment": [
     {
       "name": "cmdstanpy",
