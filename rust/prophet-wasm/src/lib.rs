@@ -4,9 +4,13 @@ pub mod additive_ridge;
 pub mod flat_map;
 pub mod fourier;
 pub mod linear_trend;
+pub mod map_objective;
+pub mod piecewise_linear;
+pub mod piecewise_map;
 pub mod ridge_least_squares;
 mod wasm_additive;
 mod wasm_flat_map;
+mod wasm_map;
 
 use linear_trend::{LinearTrend, LinearTrendError, fit_linear_trend as fit_linear_trend_kernel};
 

@@ -2,7 +2,7 @@
 
 A private TypeScript package for exploring Effect-based time-series forecasting.
 
-The Rust/WASM backends fit either an ordinary least-squares linear trend or a jointly estimated linear trend with explicit or automatically selected additive Fourier seasonalities. Forecasts expose trend, additive total, final value, and ordered named seasonal components. TypeScript owns validation, Effect service composition, persistence, and WASM protocol translation; numerical fitting and evaluation run in Rust. The package does not yet implement full Prophet MAP fitting, changepoints, or uncertainty intervals.
+The Rust/WASM backends fit ordinary least-squares linear trends, additive ridge models, reduced flat MAP models, and linear piecewise MAP models with explicit or automatically selected changepoints. Forecasts expose trend, additive total, final value, and ordered named seasonal components. TypeScript owns validation, Effect service composition, persistence, and WASM protocol translation; numerical fitting, changepoint resolution, and evaluation run in Rust. The package does not yet implement uncertainty intervals or the broader logistic/multiplicative Prophet families.
 
 ## Compatibility target
 
@@ -73,14 +73,14 @@ See the [Prophet reference tooling guide](tools/prophet/README.md) for the pinne
 
 ## Rust/WASM numerical backend
 
-`rust/prophet-wasm` provides the numerical implementations behind the public fitting Layers. It exports coarse operations for ordinary least-squares linear fitting, normalized additive ridge fitting, and reduced flat MAP fitting, with matching batch prediction exports.
+`rust/prophet-wasm` provides the numerical implementations behind the public fitting Layer. It exports coarse operations for ordinary least-squares linear fitting, normalized additive ridge fitting, reduced flat MAP fitting, and linear piecewise MAP fitting, with matching batch prediction exports.
 
 Run each phase independently with:
 
 ```sh
 npm run test:rust
 npm run build:wasm
-node --test rust/prophet-wasm/node-tests/*.test.mjs
+node --test rust/prophet-wasm/node-tests/*.test.ts
 ```
 
 `wasm-pack` first asks Cargo to compile the crate for `wasm32-unknown-unknown`. It then runs the `wasm-bindgen` tooling over the raw WASM module and writes Node-specific JavaScript, TypeScript declarations, package metadata, and the transformed `.wasm` module to `rust/prophet-wasm/pkg`.
@@ -135,7 +135,7 @@ Each configured custom seasonality requires a unique name, positive period in fi
 
 Built-ins deliberately default to `"off"`, unlike Python Prophet. Set an individual control to `"auto"` for Prophet 1.4.0's training-history rule, or use `{ mode: "on" }` to force its default order. Forced controls also accept positive `fourierOrder` and `priorScale` overrides. `prophetFittingBackendLayer` is total over every configuration accepted by `fit` and dispatches to the corresponding narrow numerical adapter.
 
-The flat MAP slice currently uses absmax scaling and additive seasonalities. Logistic growth, minmax scaling, holidays, and changepoints remain out of scope. See [the reduced flat MAP contract](docs/modeling/flat-map.md).
+The MAP slices currently use absmax scaling and additive seasonalities. Logistic growth, minmax scaling, holidays, multiplicative components, and uncertainty remain out of scope. See the [linear piecewise MAP contract](docs/modeling/piecewise-map.md) and [reduced flat MAP contract](docs/modeling/flat-map.md).
 
 ```ts
 import { Effect } from "effect";
@@ -236,6 +236,45 @@ const forecasts = await Effect.runPromise(predict(model, predictionTimestamps));
 ```
 
 Names and component order are retained in the fitted model and portable JSON. The ridge objective is intentionally distinct from Prophet MAP fitting; see [the additive ridge contract](docs/modeling/additive-ridge.md).
+
+## Linear piecewise MAP forecast
+
+Supplying `map` explicitly opts into the Rust linear piecewise MAP objective. Omitting `map`
+continues to select the existing OLS or additive ridge model. Explicit changepoints must be
+canonical, strictly increasing UTC timestamps inside the inclusive training range. Automatic
+candidates use Prophet 1.4.0's row-index policy and are resolved in Rust from training timestamps.
+Resolved timestamps and every aligned delta are retained in the model and portable JSON.
+
+```ts
+import { Effect } from "effect";
+import { fit, predict, prophetFittingBackendLayer } from "effect-prophet";
+
+const observations = Array.from({ length: 10 }, (_, index) => ({
+  timestamp: new Date(Date.UTC(2024, 0, index + 1)).toISOString(),
+  value: 2 + index * 0.4 + (index >= 5 ? 1 : 0),
+}));
+
+const model = await Effect.runPromise(
+  fit(observations, {
+    map: {
+      changepoints: { mode: "auto", count: 2, range: 0.8 },
+      changepointPriorScale: 0.05,
+    },
+    builtInSeasonalities: { weekly: "auto" },
+  }).pipe(Effect.provide(prophetFittingBackendLayer)),
+);
+
+const forecasts = await Effect.runPromise(
+  predict(model, ["2024-01-11T00:00:00.000Z", "2024-01-15T00:00:00.000Z"]),
+);
+```
+
+The deterministic optimizer reports finite objective/stationarity diagnostics, uses an explicit
+constant-target shortcut, and fails rather than falling back when noise collapses or the iteration
+budget is exhausted. No-point MAP uses a true empty candidate design and therefore does not claim
+fitted-objective parity with Prophet's private dummy-delta parameterization. See the
+[piecewise MAP contract](docs/modeling/piecewise-map.md) and
+[optimizer decision](docs/decisions/map-optimizer.md).
 
 ## Flat MAP forecast
 

@@ -116,6 +116,112 @@ describe("linear-trend Prophet integration", () => {
     });
   });
 
+  it("fits, predicts, and preserves explicit linear MAP changepoints", async () => {
+    const mapObservations = [
+      { timestamp: "2024-01-01T00:00:00.000Z", value: 1 },
+      { timestamp: "2024-01-02T00:00:00.000Z", value: 2.1 },
+      { timestamp: "2024-01-03T00:00:00.000Z", value: 3.2 },
+      { timestamp: "2024-01-04T00:00:00.000Z", value: 3.3 },
+      { timestamp: "2024-01-05T00:00:00.000Z", value: 3.5 },
+      { timestamp: "2024-01-06T00:00:00.000Z", value: 3.6 },
+    ] as const;
+
+    const model = await Effect.runPromise(
+      fit(mapObservations, {
+        map: {
+          changepoints: {
+            mode: "explicit",
+            timestamps: ["2024-01-03T00:00:00.000Z"],
+          },
+          changepointPriorScale: 0.5,
+        },
+      }).pipe(Effect.provide(prophetFittingBackendLayer)),
+    );
+
+    expect(model.model).toBe("linear-piecewise-map");
+
+    if (model.model !== "linear-piecewise-map") {
+      throw new Error("Expected a linear-piecewise-map model");
+    }
+
+    expect(model.changepointTimestamps).toEqual([1_704_240_000_000]);
+    expect(model.deltas).toHaveLength(1);
+    expect(model.fitSummary.method).toBe("piecewise-map-coordinate-v1");
+    expect(Object.isFrozen(model.changepointTimestamps)).toBe(true);
+
+    const forecasts = await Effect.runPromise(
+      predict(model, ["2024-01-03T00:00:00.000Z", "2024-01-08T00:00:00.000Z"]),
+    );
+
+    expect(forecasts).toHaveLength(2);
+    expect(forecasts.every((forecast) => Number.isFinite(forecast.value))).toBe(true);
+    expect(forecasts.every((forecast) => forecast.value === forecast.trend)).toBe(true);
+  });
+
+  it("rejects out-of-range explicit changepoints before entering WASM", async () => {
+    const error = await Effect.runPromise(
+      Effect.flip(
+        fit(observations, {
+          map: {
+            changepoints: {
+              mode: "explicit",
+              timestamps: ["2023-12-31T00:00:00.000Z"],
+            },
+          },
+        }).pipe(Effect.provide(prophetFittingBackendLayer)),
+      ),
+    );
+
+    expect(error).toBeInstanceOf(InputValidationError);
+
+    if (error instanceof InputValidationError) {
+      expect(error.issues).toContainEqual({
+        path: ["map", "changepoints", "timestamps", 0],
+        message: "Explicit changepoints must be inside the inclusive training range",
+      });
+    }
+  });
+
+  it("lets insufficient MAP history win before range-dependent changepoint validation", async () => {
+    const error = await Effect.runPromise(
+      Effect.flip(
+        fit([{ timestamp: "2024-01-01T00:00:00.000Z", value: 1 }], {
+          map: {
+            changepoints: {
+              mode: "explicit",
+              timestamps: ["2023-12-31T00:00:00.000Z"],
+            },
+          },
+        }).pipe(Effect.provide(prophetFittingBackendLayer)),
+      ),
+    );
+
+    expect(error).toBeInstanceOf(FittingError);
+
+    if (error instanceof FittingError) {
+      expect(error.reason).toBe("insufficient-observations");
+    }
+  });
+
+  it("resolves automatic changepoints in Rust and stores the selected timestamps", async () => {
+    const history = Array.from({ length: 10 }, (_, index) => ({
+      timestamp: new Date(Date.UTC(2024, 0, index + 1)).toISOString(),
+      value: 2 + index * 0.4 + (index >= 5 ? 1 : 0) + (index % 2) * 0.1,
+    }));
+
+    const model = await Effect.runPromise(
+      fit(history, {
+        map: { changepoints: { mode: "auto", count: 2, range: 0.8 } },
+      }).pipe(Effect.provide(prophetFittingBackendLayer)),
+    );
+
+    expect(model.model).toBe("linear-piecewise-map");
+
+    if (model.model === "linear-piecewise-map") {
+      expect(model.changepointTimestamps).toEqual([Date.UTC(2024, 0, 5), Date.UTC(2024, 0, 8)]);
+    }
+  });
+
   it("rejects invalid observations before executing the backend", async () => {
     const testBackend = makeTestFittingBackend(
       Result.succeed({

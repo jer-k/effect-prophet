@@ -1,4 +1,4 @@
-import { Effect, Schema } from "effect";
+import { Effect, Match, Schema } from "effect";
 
 import {
   FittingError,
@@ -6,19 +6,27 @@ import {
   PredictionError,
   inputValidationErrorFromIssue,
 } from "./errors";
-import { parseFittedModel, type FittedProphet } from "./fitted-model";
+import {
+  parseFittedModel,
+  type FittedFlatMapProphet,
+  type FittedLinearAdditiveProphet,
+  type FittedLinearProphet,
+  type FittedPiecewiseMapProphet,
+  type FittedProphet,
+} from "./fitted-model";
 import { FitPlan, FittingBackend, type TrainingInput } from "./internal/fitting-backend";
 import { resolveSeasonalities } from "./internal/seasonality-resolution";
 import { TimestampSchema } from "./internal/timestamp";
 import { predictAdditiveWithWasm } from "./internal/wasm-additive-backend";
 import { predictFlatMapWithWasm } from "./internal/wasm-flat-map-backend";
 import { predictLinearTrendWithWasm } from "./internal/wasm-linear-trend-backend";
+import { predictPiecewiseMapWithWasm } from "./internal/wasm-piecewise-map-backend";
 import { decodeObservations, type Observations } from "./observation";
 import {
   decodeOptions,
   optionsValidationErrorFromSeasonality,
   type EncodedProphetOptions,
-  type Growth,
+  type ProphetOptions,
 } from "./options";
 import type {
   EmptySeasonalityLayout,
@@ -114,18 +122,67 @@ const nonEmptyLayoutFromResolved = (
   });
 };
 
-const makeFitPlan = (growth: Growth, layout: SeasonalityLayout): FitPlan => {
+const checkExplicitChangepointBounds = (
+  observations: Observations,
+  options: ProphetOptions,
+): Effect.Effect<void, InputValidationError> => {
+  if (
+    observations.length < 2 ||
+    options.growth !== "linear" ||
+    options.map === undefined ||
+    options.map.changepoints.mode !== "explicit"
+  ) {
+    return Effect.void;
+  }
+
+  const first = observations[0];
+  const last = observations.at(-1);
+
+  if (first === undefined || last === undefined) {
+    return Effect.void;
+  }
+
+  for (const [index, changepoint] of options.map.changepoints.timestamps.entries()) {
+    if (changepoint < first.timestamp || changepoint > last.timestamp) {
+      return Effect.fail(
+        new InputValidationError({
+          input: "options",
+          issues: [
+            {
+              path: ["map", "changepoints", "timestamps", index],
+              message: "Explicit changepoints must be inside the inclusive training range",
+            },
+          ],
+          message: "Explicit changepoints must be inside the inclusive training range",
+        }),
+      );
+    }
+  }
+
+  return Effect.void;
+};
+
+const makeFitPlan = (options: ProphetOptions, layout: SeasonalityLayout): FitPlan => {
+  if (options.growth === "linear" && options.map !== undefined) {
+    return FitPlan.LinearPiecewiseMap({
+      seasonalities: layout,
+      changepoints: options.map.changepoints,
+      changepointPriorScale: options.map.changepointPriorScale,
+      optimizer: options.map.optimizer,
+    });
+  }
+
   const firstComponent = layout.components[0];
 
   if (firstComponent === undefined) {
-    return growth === "linear"
+    return options.growth === "linear"
       ? FitPlan.LinearTrend()
       : FitPlan.FlatMap({ seasonalities: emptyLayoutFromResolved(layout) });
   }
 
   const seasonalities = nonEmptyLayoutFromResolved(layout, firstComponent);
 
-  return growth === "linear"
+  return options.growth === "linear"
     ? FitPlan.LinearAdditive({ seasonalities })
     : FitPlan.FlatAdditiveMap({ seasonalities });
 };
@@ -149,7 +206,9 @@ export const fit = Effect.fn("Prophet.fit")(function* (
     Effect.mapError(optionsValidationErrorFromSeasonality),
   );
 
-  const fitPlan = makeFitPlan(options.growth, resolved.layout);
+  yield* checkExplicitChangepointBounds(observations, options);
+
+  const fitPlan = makeFitPlan(options, resolved.layout);
 
   const enabledBuiltInCount = resolved.decisions.reduce(
     (count, decision) => count + (decision.enabled ? 1 : 0),
@@ -183,6 +242,140 @@ export const fit = Effect.fn("Prophet.fit")(function* (
   );
 });
 
+const predictLinearForecasts = (
+  model: FittedLinearProphet,
+  timestamps: PredictionTimestamps,
+): Effect.Effect<Forecasts, PredictionError> =>
+  Effect.gen(function* () {
+    const predictions = yield* predictLinearTrendWithWasm(model, timestamps);
+    const forecasts: Array<Forecast> = [];
+
+    for (const [index, timestamp] of timestamps.entries()) {
+      const prediction = predictions[index];
+
+      if (prediction === undefined) {
+        return yield* Effect.fail(
+          new PredictionError({
+            reason: "backend-failure",
+            timestamp,
+            message: "WASM prediction backend omitted an expected forecast",
+          }),
+        );
+      }
+
+      forecasts.push({
+        timestamp,
+        value: prediction,
+        trend: prediction,
+        additive: 0,
+        seasonalities: [],
+      });
+    }
+
+    return forecasts;
+  });
+
+type FittedSeasonalProphet =
+  | FittedLinearAdditiveProphet
+  | FittedFlatMapProphet
+  | FittedPiecewiseMapProphet;
+
+type SeasonalPredictionBatch = {
+  readonly values: Float64Array;
+};
+
+type SeasonalPredictionBackend = "additive" | "flat MAP" | "linear MAP";
+
+const forecastsFromSeasonalBatch = (
+  model: FittedSeasonalProphet,
+  timestamps: PredictionTimestamps,
+  batch: SeasonalPredictionBatch,
+  backend: SeasonalPredictionBackend,
+): Effect.Effect<Forecasts, PredictionError> =>
+  Effect.gen(function* () {
+    const componentCount = model.seasonalities.components.length;
+    const rowWidth = componentCount + 3;
+    const forecasts: Array<Forecast> = [];
+
+    for (const [row, timestamp] of timestamps.entries()) {
+      const rowOffset = row * rowWidth;
+      const trend = batch.values[rowOffset];
+      const additive = batch.values[rowOffset + 1];
+      const value = batch.values[rowOffset + 2];
+
+      if (trend === undefined || additive === undefined || value === undefined) {
+        return yield* Effect.fail(
+          new PredictionError({
+            reason: "backend-failure",
+            timestamp,
+            message: `WASM ${backend} prediction backend omitted an expected forecast value`,
+          }),
+        );
+      }
+
+      const seasonalities: Array<SeasonalForecastComponent> = [];
+
+      for (const [componentIndex, component] of model.seasonalities.components.entries()) {
+        const componentValue = batch.values[rowOffset + 3 + componentIndex];
+
+        if (componentValue === undefined) {
+          return yield* Effect.fail(
+            new PredictionError({
+              reason: "backend-failure",
+              timestamp,
+              message: `WASM ${backend} prediction backend omitted a seasonal component`,
+            }),
+          );
+        }
+
+        seasonalities.push({ name: component.definition.name, value: componentValue });
+      }
+
+      forecasts.push({ timestamp, trend, additive, value, seasonalities });
+    }
+
+    return forecasts;
+  });
+
+const predictLinearAdditiveForecasts = (
+  model: FittedLinearAdditiveProphet,
+  timestamps: PredictionTimestamps,
+): Effect.Effect<Forecasts, PredictionError> =>
+  predictAdditiveWithWasm(model, timestamps).pipe(
+    Effect.flatMap((batch) => forecastsFromSeasonalBatch(model, timestamps, batch, "additive")),
+  );
+
+const predictFlatMapForecasts = (
+  model: FittedFlatMapProphet,
+  timestamps: PredictionTimestamps,
+): Effect.Effect<Forecasts, PredictionError> =>
+  predictFlatMapWithWasm(model, timestamps).pipe(
+    Effect.flatMap((batch) => forecastsFromSeasonalBatch(model, timestamps, batch, "flat MAP")),
+  );
+
+const predictPiecewiseMapForecasts = (
+  model: FittedPiecewiseMapProphet,
+  timestamps: PredictionTimestamps,
+): Effect.Effect<Forecasts, PredictionError> =>
+  predictPiecewiseMapWithWasm(model, timestamps).pipe(
+    Effect.flatMap((batch) => forecastsFromSeasonalBatch(model, timestamps, batch, "linear MAP")),
+  );
+
+const predictFittedModel = (
+  model: FittedProphet,
+  timestamps: PredictionTimestamps,
+): Effect.Effect<Forecasts, PredictionError> =>
+  Match.value(model).pipe(
+    Match.discriminatorsExhaustive("model")({
+      "linear-trend": (linearModel) => predictLinearForecasts(linearModel, timestamps),
+      "linear-additive-ridge": (additiveModel) =>
+        predictLinearAdditiveForecasts(additiveModel, timestamps),
+      "flat-map": (flatModel) => predictFlatMapForecasts(flatModel, timestamps),
+      "linear-piecewise-map": (piecewiseModel) =>
+        predictPiecewiseMapForecasts(piecewiseModel, timestamps),
+    }),
+  );
+
 /**
  * Predict point forecasts and decomposed components at validated timestamps.
  *
@@ -215,125 +408,5 @@ export const predict = Effect.fn("Prophet.predict")(function* (
     ),
   );
 
-  if (parsedModel.model === "linear-trend") {
-    const predictions = yield* predictLinearTrendWithWasm(parsedModel, timestamps);
-    const forecasts: Array<Forecast> = [];
-
-    for (const [index, timestamp] of timestamps.entries()) {
-      const prediction = predictions[index];
-
-      if (prediction === undefined) {
-        return yield* Effect.fail(
-          new PredictionError({
-            reason: "backend-failure",
-            timestamp,
-            message: "WASM prediction backend omitted an expected forecast",
-          }),
-        );
-      }
-
-      forecasts.push({
-        timestamp,
-        value: prediction,
-        trend: prediction,
-        additive: 0,
-        seasonalities: [],
-      });
-    }
-
-    return forecasts;
-  }
-
-  if (parsedModel.model === "flat-map") {
-    const batch = yield* predictFlatMapWithWasm(parsedModel, timestamps);
-    const componentCount = parsedModel.seasonalities.components.length;
-    const rowWidth = componentCount + 3;
-    const forecasts: Array<Forecast> = [];
-
-    for (const [row, timestamp] of timestamps.entries()) {
-      const rowOffset = row * rowWidth;
-      const trend = batch.values[rowOffset];
-      const additive = batch.values[rowOffset + 1];
-      const value = batch.values[rowOffset + 2];
-
-      if (trend === undefined || additive === undefined || value === undefined) {
-        return yield* Effect.fail(
-          new PredictionError({
-            reason: "backend-failure",
-            timestamp,
-            message: "WASM flat MAP prediction backend omitted an expected forecast value",
-          }),
-        );
-      }
-
-      const seasonalities: Array<SeasonalForecastComponent> = [];
-
-      for (const [componentIndex, component] of parsedModel.seasonalities.components.entries()) {
-        const componentValue = batch.values[rowOffset + 3 + componentIndex];
-
-        if (componentValue === undefined) {
-          return yield* Effect.fail(
-            new PredictionError({
-              reason: "backend-failure",
-              timestamp,
-              message: "WASM flat MAP prediction backend omitted a seasonal component",
-            }),
-          );
-        }
-
-        seasonalities.push({ name: component.definition.name, value: componentValue });
-      }
-
-      forecasts.push({ timestamp, trend, additive, value, seasonalities });
-    }
-
-    return forecasts;
-  }
-
-  const batch = yield* predictAdditiveWithWasm(parsedModel, timestamps);
-  const componentCount = parsedModel.seasonalities.components.length;
-  const rowWidth = componentCount + 3;
-  const forecasts: Array<Forecast> = [];
-
-  for (const [row, timestamp] of timestamps.entries()) {
-    const rowOffset = row * rowWidth;
-    const trend = batch.values[rowOffset];
-    const additive = batch.values[rowOffset + 1];
-    const value = batch.values[rowOffset + 2];
-
-    if (trend === undefined || additive === undefined || value === undefined) {
-      return yield* Effect.fail(
-        new PredictionError({
-          reason: "backend-failure",
-          timestamp,
-          message: "WASM additive prediction backend omitted an expected forecast value",
-        }),
-      );
-    }
-
-    const seasonalities: Array<SeasonalForecastComponent> = [];
-
-    for (const [componentIndex, component] of parsedModel.seasonalities.components.entries()) {
-      const componentValue = batch.values[rowOffset + 3 + componentIndex];
-
-      if (componentValue === undefined) {
-        return yield* Effect.fail(
-          new PredictionError({
-            reason: "backend-failure",
-            timestamp,
-            message: "WASM additive prediction backend omitted a seasonal component",
-          }),
-        );
-      }
-
-      seasonalities.push({
-        name: component.definition.name,
-        value: componentValue,
-      });
-    }
-
-    forecasts.push({ timestamp, trend, additive, value, seasonalities });
-  }
-
-  return forecasts;
+  return yield* predictFittedModel(parsedModel, timestamps);
 });

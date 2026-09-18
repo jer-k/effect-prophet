@@ -4,6 +4,7 @@ import { FitPlan, FittingBackend } from "./fitting-backend";
 import { fitAdditiveWithWasm } from "./wasm-additive-backend";
 import { fitFlatMapWithWasm } from "./wasm-flat-map-backend";
 import { fitLinearTrendWithWasm } from "./wasm-linear-trend-backend";
+import { fitPiecewiseMapWithWasm } from "./wasm-piecewise-map-backend";
 
 /** Complete public fitting Layer for every currently accepted Prophet configuration. */
 export const prophetFittingBackendLayer: Layer.Layer<FittingBackend> = Layer.succeed(
@@ -13,6 +14,14 @@ export const prophetFittingBackendLayer: Layer.Layer<FittingBackend> = Layer.suc
       FitPlan.$match(plan, {
         LinearTrend: () => fitLinearTrendWithWasm(input),
         LinearAdditive: ({ seasonalities }) => fitAdditiveWithWasm(input, seasonalities),
+        LinearPiecewiseMap: ({ seasonalities, changepoints, changepointPriorScale, optimizer }) =>
+          fitPiecewiseMapWithWasm(
+            input,
+            seasonalities,
+            changepoints,
+            changepointPriorScale,
+            optimizer,
+          ),
         FlatMap: ({ seasonalities }) => fitFlatMapWithWasm(input, seasonalities),
         FlatAdditiveMap: ({ seasonalities }) => fitFlatMapWithWasm(input, seasonalities),
       }),

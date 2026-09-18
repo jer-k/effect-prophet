@@ -28,6 +28,7 @@ export {
   type EncodedFlatMapModel,
   type EncodedLinearAdditiveModel,
   type EncodedLinearModel,
+  type EncodedPiecewiseMapModel,
   type SerializableFittedModel,
 } from "./model-serialization";
 
@@ -42,12 +43,17 @@ export {
   type EncodedFlatTrendOptions,
   type EncodedLinearAdditiveOptions,
   type EncodedLinearTrendOptions,
+  type EncodedMapOptions,
+  type EncodedChangepointSetting,
   type EncodedProphetOptions,
   type FlatAdditiveOptions,
   type FlatTrendOptions,
   type Growth,
   type LinearAdditiveOptions,
   type LinearTrendOptions,
+  type MapOptions,
+  type MapOptimizerControls,
+  type ChangepointSetting,
   type ProphetOptions,
 } from "./options";
 
@@ -55,9 +61,11 @@ export {
   type FittedFlatMapProphet,
   type FittedLinearAdditiveProphet,
   type FittedLinearProphet,
+  type FittedPiecewiseMapProphet,
   type FittedProphet,
   type FlatMapParameters,
   type LinearAdditiveParameters,
+  type PiecewiseMapParameters,
 } from "./fitted-model";
 
 export {

@@ -202,6 +202,40 @@ describe("fitted model serialization", () => {
     }
   });
 
+  it("round-trips resolved linear MAP state without rerunning automatic selection", async () => {
+    const observations = Array.from({ length: 10 }, (_, index) => ({
+      timestamp: new Date(Date.UTC(2024, 0, index + 1)).toISOString(),
+      value: 1 + index * 0.5 + (index >= 5 ? 1 : 0) + (index % 2) * 0.05,
+    }));
+
+    const model = await Effect.runPromise(
+      fit(observations, {
+        map: { changepoints: { mode: "auto", count: 2, range: 0.8 } },
+        seasonalities: [{ name: "weekly-custom", periodDays: 7, fourierOrder: 1 }],
+      }).pipe(Effect.provide(prophetFittingBackendLayer)),
+    );
+
+    if (model.model !== "linear-piecewise-map") {
+      throw new Error("Expected a linear-piecewise-map model");
+    }
+
+    const encoded = await Effect.runPromise(encodeFittedModel(model));
+    const decoded = await Effect.runPromise(decodeFittedModel(JSON.parse(JSON.stringify(encoded))));
+    const timestamps = ["2024-01-05T00:00:00.000Z", "2024-01-15T00:00:00.000Z"] as const;
+    const before = await Effect.runPromise(predict(model, timestamps));
+    const after = await Effect.runPromise(predict(decoded, timestamps));
+
+    expect(encoded.modelKind).toBe("linear-piecewise-map");
+    expect(decoded).toEqual(model);
+    expect(after).toEqual(before);
+
+    if (decoded.model === "linear-piecewise-map") {
+      expect(Object.isFrozen(decoded.changepointTimestamps)).toBe(true);
+      expect(Object.isFrozen(decoded.deltas)).toBe(true);
+      expect(Object.isFrozen(decoded.fitSummary)).toBe(true);
+    }
+  });
+
   it("reconstructs additive layout metadata and rejects coefficient misalignment", async () => {
     const encoded = {
       modelKind: "linear-additive-ridge",

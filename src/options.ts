@@ -1,6 +1,7 @@
 import { Effect, Schema } from "effect";
 
 import { InputValidationError, inputValidationErrorFromIssue } from "./errors";
+import { TimestampSchema } from "./internal/timestamp";
 import {
   parseSeasonalities,
   type EncodedSeasonality,
@@ -49,16 +50,67 @@ interface EncodedBuiltInOptions {
   readonly builtInSeasonalities?: EncodedBuiltInSeasonalities;
 }
 
+/** Public explicit or automatic changepoint configuration for linear MAP fitting. */
+export type EncodedChangepointSetting =
+  | {
+      readonly mode: "explicit";
+      readonly timestamps: ReadonlyArray<string>;
+    }
+  | {
+      readonly mode: "auto";
+      readonly count?: number;
+      readonly range?: number;
+    };
+
+/** Public linear piecewise MAP controls. */
+export interface EncodedMapOptions {
+  readonly changepoints?: EncodedChangepointSetting;
+  readonly changepointPriorScale?: number;
+  readonly optimizer?: {
+    readonly maxIterations?: number;
+    readonly relativeTolerance?: number;
+    readonly absoluteTolerance?: number;
+  };
+}
+
+/** Parsed explicit or automatic changepoint request. */
+export type ChangepointSetting =
+  | {
+      readonly mode: "explicit";
+      readonly timestamps: ReadonlyArray<number>;
+    }
+  | {
+      readonly mode: "auto";
+      readonly count: number;
+      readonly range: number;
+    };
+
+/** Parsed deterministic optimizer controls. */
+export interface MapOptimizerControls {
+  readonly maxIterations: number;
+  readonly relativeTolerance: number;
+  readonly absoluteTolerance: number;
+}
+
+/** Parsed linear piecewise MAP configuration. */
+export interface MapOptions {
+  readonly changepoints: ChangepointSetting;
+  readonly changepointPriorScale: number;
+  readonly optimizer: MapOptimizerControls;
+}
+
 /** Public linear-growth options without configured custom seasonalities. */
 export interface EncodedLinearTrendOptions extends EncodedBuiltInOptions {
   readonly growth?: "linear";
   readonly seasonalities?: readonly [];
+  readonly map?: EncodedMapOptions;
 }
 
 /** Public linear-growth options with at least one configured custom seasonality. */
 export interface EncodedLinearAdditiveOptions extends EncodedBuiltInOptions {
   readonly growth?: "linear";
   readonly seasonalities: readonly [EncodedSeasonality, ...ReadonlyArray<EncodedSeasonality>];
+  readonly map?: EncodedMapOptions;
 }
 
 /** Public flat-growth MAP options without configured custom seasonalities. */
@@ -88,12 +140,14 @@ interface ParsedBuiltInOptions {
 export interface LinearTrendOptions extends ParsedBuiltInOptions {
   readonly growth: "linear";
   readonly seasonalities: readonly [];
+  readonly map?: MapOptions;
 }
 
 /** Parsed linear-growth options with at least one configured custom seasonality. */
 export interface LinearAdditiveOptions extends ParsedBuiltInOptions {
   readonly growth: "linear";
   readonly seasonalities: readonly [SeasonalityDefinition, ...ReadonlyArray<SeasonalityDefinition>];
+  readonly map?: MapOptions;
 }
 
 /** Parsed flat-growth MAP options without configured custom seasonalities. */
@@ -166,6 +220,60 @@ const BuiltInSeasonalitiesSchema = Schema.Struct({
   yearly: builtInSettingSchema(10).pipe(Schema.withDecodingDefaultKey(Effect.succeed("off"))),
 });
 
+const ExplicitChangepointTimestampsSchema = Schema.Array(TimestampSchema).check(
+  Schema.makeFilter((timestamps) => {
+    for (let index = 1; index < timestamps.length; index += 1) {
+      const previous = timestamps[index - 1];
+      const current = timestamps[index];
+
+      if (previous !== undefined && current !== undefined && current <= previous) {
+        return {
+          path: [index],
+          issue: "Explicit changepoint timestamps must be strictly increasing and unique",
+        };
+      }
+    }
+  }),
+);
+
+const MapOptionsSchema = Schema.Struct({
+  changepoints: Schema.Union([
+    Schema.Struct({
+      mode: Schema.Literal("explicit"),
+      timestamps: ExplicitChangepointTimestampsSchema,
+    }),
+    Schema.Struct({
+      mode: Schema.Literal("auto"),
+      count: Schema.Int.check(
+        Schema.isGreaterThanOrEqualTo(0),
+        Schema.isLessThanOrEqualTo(Number.MAX_SAFE_INTEGER),
+      ).pipe(Schema.withDecodingDefaultKey(Effect.succeed(25))),
+      range: Schema.Finite.check(Schema.isGreaterThan(0), Schema.isLessThanOrEqualTo(1)).pipe(
+        Schema.withDecodingDefaultKey(Effect.succeed(0.8)),
+      ),
+    }),
+  ]).pipe(
+    Schema.withDecodingDefaultKey(Effect.succeed({ mode: "explicit", timestamps: [] } as const)),
+  ),
+  changepointPriorScale: PositiveFinite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(0.05))),
+  optimizer: Schema.Struct({
+    maxIterations: Schema.Int.check(
+      Schema.isGreaterThan(0),
+      Schema.isLessThanOrEqualTo(4_294_967_295),
+    ).pipe(Schema.withDecodingDefaultKey(Effect.succeed(10_000))),
+    relativeTolerance: PositiveFinite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(1e-10))),
+    absoluteTolerance: PositiveFinite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(1e-12))),
+  }).pipe(
+    Schema.withDecodingDefaultKey(
+      Effect.succeed({
+        maxIterations: 10_000,
+        relativeTolerance: 1e-10,
+        absoluteTolerance: 1e-12,
+      }),
+    ),
+  ),
+});
+
 const ProphetOptionsSyntaxSchema = Schema.Struct({
   growth: GrowthSchema.pipe(
     Schema.withDecodingDefaultKey(Effect.succeed(defaultProphetOptions.growth)),
@@ -176,6 +284,7 @@ const ProphetOptionsSyntaxSchema = Schema.Struct({
   builtInSeasonalities: BuiltInSeasonalitiesSchema.pipe(
     Schema.withDecodingDefaultKey(Effect.succeed(defaultBuiltInSeasonalities)),
   ),
+  map: Schema.optionalKey(MapOptionsSchema),
 });
 
 const decodeProphetOptionsSyntax = Schema.decodeUnknownEffect(ProphetOptionsSyntaxSchema, {
@@ -194,6 +303,22 @@ const freezeBuiltInSeasonalities = (seasonalities: BuiltInSeasonalities): BuiltI
     weekly: freezeBuiltInSetting(seasonalities.weekly),
     yearly: freezeBuiltInSetting(seasonalities.yearly),
   });
+
+const freezeMapOptions = (options: MapOptions): MapOptions => {
+  const changepoints: ChangepointSetting =
+    options.changepoints.mode === "explicit"
+      ? Object.freeze({
+          mode: "explicit",
+          timestamps: Object.freeze(Array.from(options.changepoints.timestamps)),
+        })
+      : Object.freeze({ ...options.changepoints });
+
+  return Object.freeze({
+    changepoints,
+    changepointPriorScale: options.changepointPriorScale,
+    optimizer: Object.freeze({ ...options.optimizer }),
+  });
+};
 
 /**
  * Translate seasonality-domain issues at the public options boundary.
@@ -227,13 +352,28 @@ export const decodeOptions = Effect.fn("decodeOptions")(function* (
     Effect.mapError(optionsValidationErrorFromSeasonality),
   );
 
+  if (syntax.growth === "flat" && syntax.map !== undefined) {
+    return yield* Effect.fail(
+      new InputValidationError({
+        input: "options",
+        issues: [{ path: ["map"], message: "Linear MAP options require linear growth" }],
+        message: "Linear MAP options require linear growth",
+      }),
+    );
+  }
+
   const builtInSeasonalities = freezeBuiltInSeasonalities(syntax.builtInSeasonalities);
+  const map = syntax.map === undefined ? undefined : freezeMapOptions(syntax.map);
   const firstSeasonality = seasonalities[0];
 
   if (firstSeasonality === undefined) {
-    return syntax.growth === "flat"
-      ? { growth: "flat", seasonalities: emptySeasonalities, builtInSeasonalities }
-      : { growth: "linear", seasonalities: emptySeasonalities, builtInSeasonalities };
+    if (syntax.growth === "flat") {
+      return { growth: "flat", seasonalities: emptySeasonalities, builtInSeasonalities };
+    }
+
+    return map === undefined
+      ? { growth: "linear", seasonalities: emptySeasonalities, builtInSeasonalities }
+      : { growth: "linear", seasonalities: emptySeasonalities, builtInSeasonalities, map };
   }
 
   const nonEmptySeasonalities: readonly [
@@ -241,7 +381,11 @@ export const decodeOptions = Effect.fn("decodeOptions")(function* (
     ...ReadonlyArray<SeasonalityDefinition>,
   ] = Object.freeze([firstSeasonality, ...seasonalities.slice(1)]);
 
-  return syntax.growth === "linear"
+  if (syntax.growth === "flat") {
+    return { growth: "flat", seasonalities: nonEmptySeasonalities, builtInSeasonalities };
+  }
+
+  return map === undefined
     ? { growth: "linear", seasonalities: nonEmptySeasonalities, builtInSeasonalities }
-    : { growth: "flat", seasonalities: nonEmptySeasonalities, builtInSeasonalities };
+    : { growth: "linear", seasonalities: nonEmptySeasonalities, builtInSeasonalities, map };
 });

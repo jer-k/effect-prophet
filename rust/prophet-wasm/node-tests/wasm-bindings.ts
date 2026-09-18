@@ -46,6 +46,28 @@ interface FlatMapPredictionStatuses {
   readonly NonFiniteResult: number;
 }
 
+interface PiecewiseMapFitStatuses {
+  readonly Success: number;
+  readonly InsufficientObservations: number;
+  readonly LengthMismatch: number;
+  readonly InvalidObservation: number;
+  readonly InvalidConfiguration: number;
+  readonly ZeroTimeRange: number;
+  readonly SizeOverflow: number;
+  readonly NonFiniteResult: number;
+  readonly NoiseCollapse: number;
+  readonly NonConvergence: number;
+}
+
+interface PiecewiseMapPredictionStatuses {
+  readonly Success: number;
+  readonly InvalidTimestamp: number;
+  readonly InvalidModel: number;
+  readonly InvalidConfiguration: number;
+  readonly SizeOverflow: number;
+  readonly NonFiniteResult: number;
+}
+
 interface LinearTrendFitStatuses {
   readonly Success: number;
   readonly InsufficientObservations: number;
@@ -63,6 +85,8 @@ export interface ProphetWasmNodeBindings {
   readonly FlatMapFitStatus: FlatMapFitStatuses;
   readonly FlatMapPredictionStatus: FlatMapPredictionStatuses;
   readonly LinearTrendFitStatus: LinearTrendFitStatuses;
+  readonly PiecewiseMapFitStatus: PiecewiseMapFitStatuses;
+  readonly PiecewiseMapPredictionStatus: PiecewiseMapPredictionStatuses;
   readonly fit_additive_ridge: (
     timestamps: Float64Array,
     values: Float64Array,
@@ -95,6 +119,34 @@ export interface ProphetWasmNodeBindings {
     fourierOrders: Float64Array,
     coefficients: Float64Array,
   ) => Float64Array;
+  readonly fit_piecewise_map: (
+    timestamps: Float64Array,
+    values: Float64Array,
+    changepointMode: number,
+    explicitChangepoints: Float64Array,
+    automaticCount: number,
+    automaticRange: number,
+    periodsDays: Float64Array,
+    fourierOrders: Float64Array,
+    priorScales: Float64Array,
+    changepointPriorScale: number,
+    maxIterations: number,
+    relativeTolerance: number,
+    absoluteTolerance: number,
+  ) => Float64Array;
+  readonly predict_piecewise_map: (
+    timestamps: Float64Array,
+    intercept: number,
+    slope: number,
+    timeOrigin: number,
+    timeScale: number,
+    changepointTimestamps: Float64Array,
+    deltas: Float64Array,
+    noiseScale: number,
+    periodsDays: Float64Array,
+    fourierOrders: Float64Array,
+    coefficients: Float64Array,
+  ) => Float64Array;
   readonly fit_linear_trend: (timestamps: Float64Array, values: Float64Array) => Float64Array;
   readonly predict_linear_trend: (
     timestamps: Float64Array,
@@ -112,6 +164,8 @@ const requiredFunctionExports = [
   "predict_additive_ridge",
   "fit_flat_map",
   "predict_flat_map",
+  "fit_piecewise_map",
+  "predict_piecewise_map",
   "fit_linear_trend",
   "predict_linear_trend",
 ] as const;
@@ -154,6 +208,26 @@ const requiredStatusMembers = {
     "InvalidModel",
     "InvalidConfiguration",
     "LengthMismatch",
+    "SizeOverflow",
+    "NonFiniteResult",
+  ],
+  PiecewiseMapFitStatus: [
+    "Success",
+    "InsufficientObservations",
+    "LengthMismatch",
+    "InvalidObservation",
+    "InvalidConfiguration",
+    "ZeroTimeRange",
+    "SizeOverflow",
+    "NonFiniteResult",
+    "NoiseCollapse",
+    "NonConvergence",
+  ],
+  PiecewiseMapPredictionStatus: [
+    "Success",
+    "InvalidTimestamp",
+    "InvalidModel",
+    "InvalidConfiguration",
     "SizeOverflow",
     "NonFiniteResult",
   ],

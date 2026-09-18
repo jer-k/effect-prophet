@@ -63,10 +63,46 @@ export interface FlatMapWasmBindings {
   ) => Float64Array;
 }
 
+/** Rust/WASM bindings for linear piecewise MAP fitting and prediction. */
+export interface PiecewiseMapWasmBindings {
+  /** Fit one complete explicit or automatic linear piecewise MAP model. */
+  readonly fit_piecewise_map: (
+    timestamps: Float64Array,
+    values: Float64Array,
+    changepointMode: number,
+    explicitChangepoints: Float64Array,
+    automaticCount: number,
+    automaticRange: number,
+    periodsDays: Float64Array,
+    fourierOrders: Float64Array,
+    priorScales: Float64Array,
+    changepointPriorScale: number,
+    maxIterations: number,
+    relativeTolerance: number,
+    absoluteTolerance: number,
+  ) => Float64Array;
+
+  /** Evaluate one complete linear piecewise MAP prediction batch. */
+  readonly predict_piecewise_map: (
+    timestamps: Float64Array,
+    intercept: number,
+    slope: number,
+    timeOrigin: number,
+    timeScale: number,
+    changepointTimestamps: Float64Array,
+    deltas: Float64Array,
+    noiseScale: number,
+    periodsDays: Float64Array,
+    fourierOrders: Float64Array,
+    coefficients: Float64Array,
+  ) => Float64Array;
+}
+
 /** Complete generated Rust/WASM module contract required by this package version. */
 export type ProphetWasmModule = LinearTrendWasmBindings &
   AdditiveRidgeWasmBindings &
-  FlatMapWasmBindings;
+  FlatMapWasmBindings &
+  PiecewiseMapWasmBindings;
 
 /** Lazy loader that returns a checked Rust/WASM module. */
 export type ProphetWasmModuleLoader = () => ProphetWasmModule;
@@ -80,6 +116,8 @@ const requiredFunctionExports = [
   "predict_additive_ridge",
   "fit_flat_map",
   "predict_flat_map",
+  "fit_piecewise_map",
+  "predict_piecewise_map",
 ] as const;
 
 /**
