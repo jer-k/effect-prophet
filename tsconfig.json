@@ -20,6 +20,9 @@
     "test/**/*.ts",
     "integration/**/*.ts",
     "rust/prophet-wasm/node-tests/**/*.ts",
+    "tools/clean-build.ts",
+    "tools/prepare-wasm-package.ts",
+    "tools/test-package.ts",
     "oxlint.config.ts"
   ]
 }

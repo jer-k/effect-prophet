@@ -2,14 +2,14 @@ import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 
-import { Effect } from "effect";
+import { Effect, Schema } from "effect";
 import { fit, predict, prophetFittingBackendLayer } from "effect-prophet";
 
 const projectRoot = new URL("../", import.meta.url);
 
-const collectFiles = async (directory, prefix = "") => {
+const collectFiles = async (directory: URL, prefix = ""): Promise<Array<string>> => {
   const entries = await readdir(directory, { withFileTypes: true });
-  const files = [];
+  const files: Array<string> = [];
 
   for (const entry of entries) {
     const relativePath = prefix === "" ? entry.name : `${prefix}/${entry.name}`;
@@ -67,11 +67,21 @@ const pack = spawnSync("npm", ["pack", "--dry-run", "--json", "--ignore-scripts"
 
 assert.equal(pack.status, 0, pack.stderr || pack.stdout);
 
-const packResults = JSON.parse(pack.stdout);
+const PackResultsSchema = Schema.Array(
+  Schema.Struct({
+    files: Schema.Array(Schema.Struct({ path: Schema.String })),
+  }),
+);
+
+const packResults = Schema.decodeUnknownSync(PackResultsSchema)(JSON.parse(pack.stdout));
 
 assert.equal(packResults.length, 1);
 
-const packedFiles = packResults[0].files.map(({ path }) => path).sort();
+const packResult = packResults.at(0);
+
+assert.ok(packResult);
+
+const packedFiles = packResult.files.map(({ path }) => path).sort();
 
 const expectedPackedFiles = [
   "README.md",
