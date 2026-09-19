@@ -1,6 +1,6 @@
 # effect-prophet
 
-A private TypeScript package for exploring Effect-based time-series forecasting.
+An Effect-based TypeScript package for time-series forecasting.
 
 The Rust/WASM backends fit ordinary least-squares linear trends, additive ridge models, reduced flat MAP models, and linear piecewise MAP models with explicit or automatically selected changepoints. Forecasts expose trend, additive total, final value, and ordered named seasonal components. TypeScript owns validation, Effect service composition, persistence, and WASM protocol translation; numerical fitting, changepoint resolution, and evaluation run in Rust. The package does not yet implement uncertainty intervals or the broader logistic/multiplicative Prophet families.
 
@@ -35,6 +35,7 @@ npm ci
 
 ```sh
 npm run build
+npm run test:package
 npm test
 npm run test:integration:prophet
 npm run test:rust
@@ -54,7 +55,7 @@ Run the complete verification sequence with:
 npm run check
 ```
 
-`npm test`, `npm run test:integration:prophet`, and `npm run test:wasm` generate ignored WASM bindings before running tests that exercise the Rust/WASM backend.
+`npm test`, `npm run test:integration:prophet`, and `npm run test:wasm` generate ignored development WASM bindings before running tests that exercise the Rust/WASM backend. `npm run build` starts from clean output and creates the release-mode JavaScript, declarations, source maps, and WASM files included in the npm package. `npm run test:package` builds that production artifact, verifies its exact file manifest, loads it through the package export, and runs a forecast through the packaged WASM backend.
 
 The Prophet 1.4.0 compatibility suite is intentionally separate from normal tests. It reads committed references and requires neither Python nor Docker:
 
@@ -83,7 +84,7 @@ npm run build:wasm
 node --test rust/prophet-wasm/node-tests/*.test.ts
 ```
 
-`wasm-pack` first asks Cargo to compile the crate for `wasm32-unknown-unknown`. It then runs the `wasm-bindgen` tooling over the raw WASM module and writes Node-specific JavaScript, TypeScript declarations, package metadata, and the transformed `.wasm` module to `rust/prophet-wasm/pkg`.
+`wasm-pack` first asks Cargo to compile the crate for `wasm32-unknown-unknown`. It then runs the `wasm-bindgen` tooling over the raw WASM module and writes Node-specific JavaScript, TypeScript declarations, package metadata, and the transformed `.wasm` module to the ignored top-level `wasm/` directory.
 
 The generated JavaScript is the adapter between Node and the low-level WASM ABI. It allocates WASM linear memory and copies each caller-supplied `Float64Array` before Rust borrows the copied values as `&[f64]`. Each fit and prediction export receives all timestamps and model metadata in one call and copies one packed result back; no per-observation or per-component callback crosses the boundary.
 
@@ -95,9 +96,9 @@ The TypeScript adapter enforces the packed protocol strictly. Results must be `F
 
 The generated Node module is loaded lazily only after option and empty-prediction short circuits. Loading and required-export parsing fail with `backendPhase: "load"`; exceptions or WASM traps raised by a binding fail with `backendPhase: "execute"`. The adapter translates these boundary failures into the public Effect error channel without implementing the numerical operations itself.
 
-Generated `pkg` and Cargo `target` artifacts are ignored rather than committed. They are reproducible on demand from the committed `Cargo.lock`, exact `wasm-bindgen` dependency, `rust-toolchain.toml`, and documented `wasm-pack` version. This keeps generated binary and glue diffs out of review while the spike is private; shipping an npm package will require a separate decision about when and where release artifacts are built.
+Generated development and production WASM artifacts, along with Cargo `target` output, are ignored rather than committed. They are reproducible on demand from the committed `Cargo.lock`, exact `wasm-bindgen` dependency, `rust-toolchain.toml`, and documented `wasm-pack` version. Development commands write debug bindings to `wasm/`; the clean production build replaces them with release bindings before TypeScript compilation. npm packaging includes that `wasm/` directory beside `dist/`.
 
-The maintenance cost introduced by the spike is a Rust toolchain and WASM compilation target, a separately installed `wasm-pack` executable, Cargo dependency updates, generated-JavaScript/WASM ABI coupling, longer CI setup and build time, and Node-target-specific loading behavior. Browser loading and final npm packaging remain deliberately unresolved.
+The maintenance cost introduced by the Rust backend is a Rust toolchain and WASM compilation target, a separately installed `wasm-pack` executable, Cargo dependency updates, generated-JavaScript/WASM ABI coupling, longer CI setup and build time, and Node-target-specific loading behavior. Browser loading remains deliberately unsupported.
 
 ## Observations
 
@@ -367,9 +368,11 @@ Loading and execution failures also retain the original exception by identity in
 
 - `src/index.ts` is the authored package entry point.
 - `test/` contains authored Vitest tests.
-- `dist/` is generated by TypeScript and is not committed.
-- `tsconfig.build.json` owns JavaScript, source-map, and declaration generation.
-- Vitest owns test execution; TypeScript owns type checking and builds.
+- `dist/` is generated by the production build and is not committed.
+- `wasm/` contains generated Node-target bindings and the release WASM binary and is not committed.
+- `rolldown.config.ts` emits Node-compatible ESM JavaScript, source maps, and bundled declarations while preserving the authored TypeScript import style.
+- `tsconfig.build.json` supplies production declaration compiler settings.
+- Vitest owns test execution, TypeScript owns type checking, and Rolldown owns package builds.
 - Oxlint checks source correctness, and Oxfmt checks or writes formatting.
 
-The `exports` map exposes only the package root. ESM consumers load `dist/index.js`, while TypeScript consumers resolve its matching `dist/index.d.ts` declaration. Internal files that are not listed in `exports` are not public package entry points.
+The `exports` map exposes only the package root. ESM consumers load `dist/index.js`, while TypeScript consumers resolve its matching `dist/index.d.ts` declaration. Internal files that are not listed in `exports` are not public package entry points. The `prepack` lifecycle rebuilds from clean output so `npm pack` and a future `npm publish` cannot include stale generated modules.

@@ -286,7 +286,7 @@ const assertProphetWasmNodeBindings: (
  * @throws TypeError when a required generated export is missing or has the wrong runtime kind.
  */
 export const loadProphetWasmNodeBindings = (): ProphetWasmNodeBindings => {
-  const loaded: unknown = require("../pkg/prophet_wasm.js");
+  const loaded: unknown = require("../../../wasm/prophet_wasm.js");
 
   assertProphetWasmNodeBindings(loaded);
 
