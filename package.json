@@ -46,7 +46,7 @@
     "check": "npm run format:check && npm run format:rust:check && npm run lint && npm run lint:rust && npm run typecheck && npm test && npm run test:integration:prophet && npm run test:rust && npm run test:wasm && npm run test:package"
   },
   "dependencies": {
-    "effect": "4.0.0-beta.107"
+    "effect": "4.0.0-rc.115"
   },
   "devDependencies": {
     "@oxlint/plugins": "1.82.0",
