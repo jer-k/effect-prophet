@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "runId": "2026-09-19T205822-746Z-bbd36f0b",
+  "createdAt": "2026-09-19T21:31:52.383Z",
+  "gitRevision": "bbd36f0b733a56c0b77e0d3b1c66c8cb86beb7ce",
+  "gitDirty": true,
+  "hostPlatform": "darwin",
+  "hostArchitecture": "arm64",
+  "containerPlatform": "linux/amd64",
+  "emulated": true,
+  "selectedCases": [
+    "linear-small",
+    "linear-medium",
+    "linear-large",
+    "fixed-linear-prediction-medium",
+    "map-no-points-small",
+    "map-explicit-break-small",
+    "map-seasonal-breaks-irregular-medium",
+    "map-explicit-breaks-large"
+  ],
+  "commands": [
+    "docker compose -f benchmark/compose.yaml run --rm effect-prophet-benchmark",
+    "docker compose -f benchmark/compose.yaml run --rm python-prophet-benchmark",
+    "docker compose -f benchmark/compose.yaml run --rm benchmark-report"
+  ],
+  "inputHashes": [
+    {
+      "name": "benchmark/cases/public-api.json",
+      "value": "47e989655486896bf4df46a632b92542d9b53c702c317f4ba5cd73de68cd0588"
+    },
+    {
+      "name": "benchmark/evidence/comparisons.json",
+      "value": "c85b53f916b1d9ddeaa93ea600fbbd47942ba769040e827299b79e3a4664816c"
+    },
+    {
+      "name": "benchmark/python/uv.lock",
+      "value": "c90f2464e1d50dbe489bdcdaf8350f04c162f6c617559cfb75d6977b0f430ab1"
+    },
+    {
+      "name": "package-lock.json",
+      "value": "99bda82607c5764a965fc84c4f1c3aeb518b7a1604975e958b3ad63e4887d936"
+    },
+    {
+      "name": "benchmark/data/generated/linear-small.json",
+      "value": "1861ec76326bda83c8dc032ec103563e4104bf4a3fec4e1f8a433b4de176a9f6"
+    },
+    {
+      "name": "benchmark/data/generated/linear-medium.json",
+      "value": "8b72900290930f0414c9f9778e3c7525d67381c9ebd2e36e0177bcf18e781987"
+    },
+    {
+      "name": "benchmark/data/generated/linear-large.json",
+      "value": "fd7325ca3ad2ae28df6063de928a1e330a2066d53adfeb0ef64e67fe3d116df9"
+    },
+    {
+      "name": "benchmark/data/generated/map-irregular-medium.json",
+      "value": "9110f4ff54e8778dafabe51e8a259aadc28bf3f919ebaed2263566a142395eca"
+    }
+  ],
+  "containerImages": [
+    {
+      "name": "effect-prophet/benchmark-effect:local",
+      "value": "sha256:d61f91c75bc4b1d079677a12f3c8318a004cda6bff5d4cf74f9435cad0418a5e"
+    },
+    {
+      "name": "effect-prophet/benchmark-python:1.4.0",
+      "value": "sha256:842f5e7a53b0ea57c4dfbfd3667d13a11644aa412593ae7c5132d0931476a754"
+    }
+  ]
+}

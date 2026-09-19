@@ -1,0 +1,3 @@
+# Exclude generated benchmark data and results from GitHub language statistics
+benchmark/data/generated/** linguist-generated
+benchmark/results/** linguist-generated

@@ -1,0 +1,51 @@
+name: effect-prophet-public-benchmark
+
+x-runtime: &runtime
+  platform: linux/amd64
+  network_mode: none
+  read_only: true
+  tmpfs:
+    - /tmp
+  environment: &runtime-environment
+    BENCHMARK_CASE_IDS: ${BENCHMARK_CASE_IDS:-}
+    BENCHMARK_CASES_PATH: /workspace/benchmark/cases/public-api.json
+    BENCHMARK_DATA_ROOT: /workspace/benchmark/data
+    BENCHMARK_CONTAINER_PLATFORM: ${BENCHMARK_CONTAINER_PLATFORM:-linux/amd64}
+    OMP_NUM_THREADS: "1"
+    OPENBLAS_NUM_THREADS: "1"
+    MKL_NUM_THREADS: "1"
+  volumes:
+    - ./cases:/workspace/benchmark/cases:ro
+    - ./data:/workspace/benchmark/data:ro
+    - ./evidence:/workspace/benchmark/evidence:ro
+    - ${BENCHMARK_HOST_RUN_DIRECTORY:?BENCHMARK_HOST_RUN_DIRECTORY is required}:/results
+
+services:
+  effect-prophet-benchmark:
+    <<: *runtime
+    build:
+      context: ..
+      dockerfile: benchmark/docker/effect-prophet.Dockerfile
+    image: effect-prophet/benchmark-effect:local
+    environment:
+      <<: *runtime-environment
+      BENCHMARK_OUTPUT_PATH: /results/effect-prophet.json
+
+  python-prophet-benchmark:
+    <<: *runtime
+    build:
+      context: ..
+      dockerfile: benchmark/docker/python-prophet.Dockerfile
+    image: effect-prophet/benchmark-python:1.4.0
+    environment:
+      <<: *runtime-environment
+      BENCHMARK_OUTPUT_PATH: /results/python-prophet.json
+
+  benchmark-report:
+    <<: *runtime
+    image: effect-prophet/benchmark-effect:local
+    command: [node, benchmark/report-cli.ts]
+    environment:
+      <<: *runtime-environment
+      BENCHMARK_RUN_DIRECTORY: /results
+      BENCHMARK_EVIDENCE_PATH: /workspace/benchmark/evidence/comparisons.json
