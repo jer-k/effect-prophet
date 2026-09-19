@@ -4,6 +4,9 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "Bundler",
+    "paths": {
+      "effect-prophet": ["./src/index.ts"]
+    },
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "types": ["node"],
@@ -20,6 +23,9 @@
     "test/**/*.ts",
     "integration/**/*.ts",
     "rust/prophet-wasm/node-tests/**/*.ts",
+    "tools/clean-build.ts",
+    "tools/prepare-wasm-package.ts",
+    "tools/test-package.ts",
     "oxlint.config.ts"
   ]
 }
