@@ -43,8 +43,8 @@ jobs:
       - name: Test
         run: npm test
 
-      - name: Build
-        run: npm run build
+      - name: Build and test package artifact
+        run: npm run test:package
 
   rust:
     runs-on: ubuntu-22.04

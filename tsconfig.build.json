@@ -3,11 +3,10 @@
   "compilerOptions": {
     "allowImportingTsExtensions": false,
     "declaration": true,
-    "declarationMap": true,
+    "emitDeclarationOnly": true,
     "noEmit": false,
     "outDir": "dist",
-    "rootDir": "src",
-    "sourceMap": true
+    "rootDir": "src"
   },
   "include": ["src/**/*.ts"],
   "exclude": ["test/**/*.ts"]

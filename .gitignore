@@ -3,6 +3,7 @@ dist/
 coverage/
 target/
 rust/prophet-wasm/pkg/
+wasm/
 *.tsbuildinfo
 .DS_Store
 .venv/

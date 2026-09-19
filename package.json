@@ -1,9 +1,15 @@
 {
   "name": "effect-prophet",
   "version": "0.0.0",
-  "private": true,
+  "description": "Effect-based time-series forecasting with a Rust/WASM numerical backend",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jer-k/effect-prophet.git"
+  },
   "files": [
-    "dist"
+    "dist",
+    "wasm"
   ],
   "type": "module",
   "main": "./dist/index.js",
@@ -16,10 +22,15 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
-    "build:wasm": "wasm-pack build rust/prophet-wasm --target nodejs --dev --out-dir pkg",
+    "clean": "node tools/clean-build.mjs",
+    "build": "npm run clean && npm run build:wasm:production && npm run build:typescript",
+    "build:typescript": "rolldown -c",
+    "build:wasm": "wasm-pack build rust/prophet-wasm --target nodejs --dev --out-dir ../../wasm && node tools/prepare-wasm-package.mjs",
+    "build:wasm:production": "wasm-pack build rust/prophet-wasm --target nodejs --release --out-dir ../../wasm && node tools/prepare-wasm-package.mjs",
+    "prepack": "npm run build",
     "pretest": "npm run build:wasm",
     "test": "vitest run --dir test",
+    "test:package": "npm run build && node tools/test-package.mjs",
     "test:integration:prophet": "npm run build:wasm && vitest run --dir integration/tests/prophet-1.4.0",
     "fixtures:generate": "docker compose --profile fixtures-generate run --rm --build prophet-fixtures-generate",
     "fixtures:check": "docker compose --profile fixtures-check run --rm --build prophet-fixtures-check && docker compose --profile fixtures-check run --rm --build --no-deps effect-prophet-fixtures",
@@ -32,7 +43,7 @@
     "format:rust": "cargo fmt --manifest-path rust/prophet-wasm/Cargo.toml",
     "format:check": "oxfmt --check .",
     "format:rust:check": "cargo fmt --manifest-path rust/prophet-wasm/Cargo.toml --check",
-    "check": "npm run format:check && npm run format:rust:check && npm run lint && npm run lint:rust && npm run typecheck && npm test && npm run test:integration:prophet && npm run test:rust && npm run test:wasm && npm run build"
+    "check": "npm run format:check && npm run format:rust:check && npm run lint && npm run lint:rust && npm run typecheck && npm test && npm run test:integration:prophet && npm run test:rust && npm run test:wasm && npm run test:package"
   },
   "dependencies": {
     "effect": "4.0.0-beta.107"
@@ -42,6 +53,8 @@
     "@types/node": "^26.4.0",
     "oxfmt": "^0.65.0",
     "oxlint": "^1.80.0",
+    "rolldown": "^1.2.8",
+    "rolldown-plugin-dts": "^0.28.0",
     "typescript": "^7.0.2",
     "vitest": "^4.1.11"
   },

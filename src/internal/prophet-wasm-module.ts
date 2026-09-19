@@ -149,7 +149,7 @@ export function assertProphetWasmModule(input: unknown): asserts input is Prophe
  * TypeError when the loaded module does not satisfy the required export contract.
  */
 export const loadProphetWasmModule: ProphetWasmModuleLoader = () => {
-  const loaded: unknown = require("../../rust/prophet-wasm/pkg/prophet_wasm.js");
+  const loaded: unknown = require("../../wasm/prophet_wasm.js");
 
   assertProphetWasmModule(loaded);
 
