@@ -72,6 +72,8 @@ npm run fixtures:check
 
 See the [Prophet reference tooling guide](tools/prophet/README.md) for the pinned environments, provenance, and shared-mount design.
 
+The Docker Compose [public API benchmark suite](benchmark/README.md) records correctness-gated absolute timings across deterministic dataset sizes. It is a descriptive comparison rather than a performance ranking. Local runs retain raw samples and provenance, and deliberately reviewed snapshots are indexed under [benchmark results](benchmark/results/baselines/README.md).
+
 ## Rust/WASM numerical backend
 
 `rust/prophet-wasm` provides the numerical implementations behind the public fitting Layer. It exports coarse operations for ordinary least-squares linear fitting, normalized additive ridge fitting, reduced flat MAP fitting, and linear piecewise MAP fitting, with matching batch prediction exports.

@@ -1,0 +1,251 @@
+[
+  {
+    "id": "linear-small",
+    "dataset": "generated/linear-small.json",
+    "workload": {
+      "kind": "linear-fit",
+      "comparison": {
+        "kind": "different-objective",
+        "effectObjective": "ordinary-least-squares",
+        "pythonObjective": "prophet-map",
+        "explanation": "Effect Prophet fits OLS while Python Prophet fits a prior-informed MAP objective."
+      }
+    },
+    "phases": [
+      "input-preparation",
+      "warm-fit",
+      "warm-predict",
+      "warm-fit-predict",
+      "warm-fit-predict-with-conversion",
+      "cold-first-forecast",
+      "model-json-encode",
+      "model-json-decode"
+    ],
+    "warmupIterations": 2,
+    "measuredIterations": 5,
+    "independentRuns": 2,
+    "timeoutSeconds": 180,
+    "correctnessTolerance": { "absolute": 0.000001, "relative": 0.000001 }
+  },
+  {
+    "id": "linear-medium",
+    "dataset": "generated/linear-medium.json",
+    "workload": {
+      "kind": "linear-fit",
+      "comparison": {
+        "kind": "different-objective",
+        "effectObjective": "ordinary-least-squares",
+        "pythonObjective": "prophet-map",
+        "explanation": "Effect Prophet fits OLS while Python Prophet fits a prior-informed MAP objective."
+      }
+    },
+    "phases": [
+      "input-preparation",
+      "warm-fit",
+      "warm-predict",
+      "warm-fit-predict",
+      "warm-fit-predict-with-conversion"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 3,
+    "independentRuns": 2,
+    "timeoutSeconds": 240,
+    "correctnessTolerance": { "absolute": 0.000001, "relative": 0.000001 }
+  },
+  {
+    "id": "linear-large",
+    "dataset": "generated/linear-large.json",
+    "workload": {
+      "kind": "linear-fit",
+      "comparison": {
+        "kind": "different-objective",
+        "effectObjective": "ordinary-least-squares",
+        "pythonObjective": "prophet-map",
+        "explanation": "Effect Prophet fits OLS while Python Prophet fits a prior-informed MAP objective."
+      }
+    },
+    "phases": ["input-preparation", "warm-fit", "warm-predict", "warm-fit-predict"],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 1,
+    "timeoutSeconds": 300,
+    "correctnessTolerance": { "absolute": 0.000001, "relative": 0.000001 }
+  },
+  {
+    "id": "fixed-linear-prediction-medium",
+    "dataset": "generated/linear-medium.json",
+    "workload": {
+      "kind": "fixed-linear-prediction",
+      "comparison": {
+        "kind": "equivalent-equation",
+        "evidenceId": "fixed-linear-equation-v1"
+      },
+      "parameters": {
+        "intercept": 5,
+        "slope": 31,
+        "timeOrigin": 1577836800000,
+        "timeScale": 22032000000
+      }
+    },
+    "phases": ["input-preparation", "warm-predict"],
+    "warmupIterations": 3,
+    "measuredIterations": 10,
+    "independentRuns": 3,
+    "timeoutSeconds": 180,
+    "correctnessTolerance": { "absolute": 0.0000001, "relative": 0.0000001 }
+  },
+  {
+    "id": "map-no-points-small",
+    "dataset": "generated/linear-small.json",
+    "workload": {
+      "kind": "explicit-linear-map",
+      "comparison": {
+        "kind": "different-objective",
+        "effectObjective": "prophet-map-linear-v1-true-empty",
+        "pythonObjective": "prophet-map-dummy-delta",
+        "explanation": "Prophet fits and folds a private dummy delta while Effect Prophet uses a true-empty changepoint design."
+      },
+      "configuration": {
+        "changepointTimestamps": [],
+        "changepointPriorScale": 0.05,
+        "seasonalities": []
+      },
+      "effectOptimizer": {
+        "maxIterations": 10000,
+        "relativeTolerance": 1e-10,
+        "absoluteTolerance": 1e-12
+      },
+      "pythonOptimizer": {
+        "algorithm": "Newton",
+        "maxIterations": 10000,
+        "newtonFallback": false
+      }
+    },
+    "phases": ["warm-fit", "warm-predict", "warm-fit-predict"],
+    "warmupIterations": 1,
+    "measuredIterations": 3,
+    "independentRuns": 2,
+    "timeoutSeconds": 240,
+    "correctnessTolerance": { "absolute": 0.002, "relative": 0.002 }
+  },
+  {
+    "id": "map-explicit-break-small",
+    "dataset": "generated/linear-small.json",
+    "workload": {
+      "kind": "explicit-linear-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "explicit-linear-map-objective-v1"
+      },
+      "configuration": {
+        "changepointTimestamps": ["2020-01-13T00:00:00.000Z"],
+        "changepointPriorScale": 0.2,
+        "seasonalities": []
+      },
+      "effectOptimizer": {
+        "maxIterations": 10000,
+        "relativeTolerance": 1e-10,
+        "absoluteTolerance": 1e-12
+      },
+      "pythonOptimizer": {
+        "algorithm": "Newton",
+        "maxIterations": 10000,
+        "newtonFallback": false
+      }
+    },
+    "phases": [
+      "input-preparation",
+      "warm-fit",
+      "warm-predict",
+      "warm-fit-predict",
+      "warm-fit-predict-with-conversion",
+      "cold-first-forecast",
+      "model-json-encode",
+      "model-json-decode"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 3,
+    "independentRuns": 2,
+    "timeoutSeconds": 300,
+    "correctnessTolerance": { "absolute": 0.01, "relative": 0.002 }
+  },
+  {
+    "id": "map-seasonal-breaks-irregular-medium",
+    "dataset": "generated/map-irregular-medium.json",
+    "workload": {
+      "kind": "explicit-linear-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "explicit-linear-map-seasonal-objective-v1"
+      },
+      "configuration": {
+        "changepointTimestamps": ["2020-03-26T00:00:00.000Z", "2020-06-09T00:00:00.000Z"],
+        "changepointPriorScale": 0.2,
+        "seasonalities": [
+          {
+            "name": "weekly-custom",
+            "periodDays": 7,
+            "fourierOrder": 3,
+            "priorScale": 10
+          }
+        ]
+      },
+      "effectOptimizer": {
+        "maxIterations": 10000,
+        "relativeTolerance": 1e-10,
+        "absoluteTolerance": 1e-12
+      },
+      "pythonOptimizer": {
+        "algorithm": "LBFGS",
+        "maxIterations": 10000,
+        "newtonFallback": false
+      }
+    },
+    "phases": [
+      "input-preparation",
+      "warm-fit",
+      "warm-predict",
+      "warm-fit-predict",
+      "warm-fit-predict-with-conversion",
+      "model-json-encode",
+      "model-json-decode"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 3,
+    "independentRuns": 2,
+    "timeoutSeconds": 300,
+    "correctnessTolerance": { "absolute": 0.05, "relative": 0.005 }
+  },
+  {
+    "id": "map-explicit-breaks-large",
+    "dataset": "generated/linear-large.json",
+    "workload": {
+      "kind": "explicit-linear-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "explicit-linear-map-objective-v1"
+      },
+      "configuration": {
+        "changepointTimestamps": ["2021-01-24T00:00:00.000Z", "2021-12-17T00:00:00.000Z"],
+        "changepointPriorScale": 0.2,
+        "seasonalities": []
+      },
+      "effectOptimizer": {
+        "maxIterations": 10000,
+        "relativeTolerance": 1e-10,
+        "absoluteTolerance": 1e-12
+      },
+      "pythonOptimizer": {
+        "algorithm": "LBFGS",
+        "maxIterations": 10000,
+        "newtonFallback": false
+      }
+    },
+    "phases": ["input-preparation", "warm-fit", "warm-predict", "warm-fit-predict"],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 1,
+    "timeoutSeconds": 300,
+    "correctnessTolerance": { "absolute": 0.1, "relative": 0.005 }
+  }
+]

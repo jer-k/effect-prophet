@@ -9,6 +9,9 @@ target
 rust/prophet-wasm/pkg
 rust/prophet-wasm/target
 wasm
+benchmark/adapters/__pycache__
+benchmark/data/generated
+benchmark/results
 *.tsbuildinfo
 .DS_Store
 .generated

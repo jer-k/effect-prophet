@@ -4,6 +4,7 @@ coverage/
 target/
 rust/prophet-wasm/pkg/
 wasm/
+benchmark/results/runs/
 *.tsbuildinfo
 .DS_Store
 .venv/

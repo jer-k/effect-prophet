@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "evidence": [
+    {
+      "id": "fixed-linear-equation-v1",
+      "classification": "equivalent-equation",
+      "statement": "Both adapters restore the same intercept, slope, time origin, and time scale before public prediction. Setup fitting is untimed and its fitted parameters are replaced before public model serialization/restoration.",
+      "checks": ["all projected forecasts", "timestamps", "finite output"]
+    },
+    {
+      "id": "explicit-linear-map-objective-v1",
+      "classification": "equivalent-objective",
+      "statement": "A nonempty explicit changepoint design uses matching absmax scaling, linear trend priors, Laplace delta prior, Gaussian likelihood, half-normal noise prior, and no seasonal columns. Optimizers differ, so forecast and noise quality gates remain mandatory.",
+      "checks": ["trend", "total forecast", "noise scale", "finite converged fit"]
+    },
+    {
+      "id": "explicit-linear-map-seasonal-objective-v1",
+      "classification": "equivalent-objective",
+      "statement": "A nonempty explicit changepoint design uses matching absmax scaling and MAP terms, with identically ordered custom Fourier columns and prior scales. Optimizers differ, so component, forecast, and noise quality gates remain mandatory.",
+      "checks": [
+        "trend",
+        "named seasonal components",
+        "total forecast",
+        "noise scale",
+        "finite converged fit"
+      ]
+    }
+  ]
+}

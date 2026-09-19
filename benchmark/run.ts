@@ -1,0 +1,236 @@
+import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { platform } from "node:os";
+import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+import { Effect } from "effect";
+
+import { parseBenchmarkCases } from "./case.ts";
+import { generateBenchmarkData } from "./generate-data.ts";
+import type { RunManifest } from "./result.ts";
+
+const projectRoot = fileURLToPath(new URL("../", import.meta.url));
+
+const benchmarkRoot = fileURLToPath(new URL("./", import.meta.url));
+
+const composePath = resolve(benchmarkRoot, "compose.yaml");
+
+const casesPath = resolve(benchmarkRoot, "cases/public-api.json");
+
+const evidencePath = resolve(benchmarkRoot, "evidence/comparisons.json");
+
+const generatedDataRoot = resolve(benchmarkRoot, "data/generated");
+
+const commandOutput = (command: string, args: ReadonlyArray<string>): string => {
+  const result = spawnSync(command, args, {
+    cwd: projectRoot,
+    encoding: "utf8",
+  });
+
+  if (result.status !== 0) {
+    throw new Error(result.stderr || result.stdout || `${command} failed`);
+  }
+
+  return result.stdout.trim();
+};
+
+const runCommand = (
+  command: string,
+  args: ReadonlyArray<string>,
+  environment: NodeJS.ProcessEnv,
+): void => {
+  const result = spawnSync(command, args, {
+    cwd: projectRoot,
+    env: environment,
+    stdio: "inherit",
+  });
+
+  if (result.status !== 0) {
+    throw new Error(
+      `${command} ${args.join(" ")} failed with status ${result.status ?? "unknown"}`,
+    );
+  }
+};
+
+const sha256File = async (path: string): Promise<string> => {
+  const contents = await readFile(path);
+
+  return createHash("sha256").update(contents).digest("hex");
+};
+
+interface RunArguments {
+  readonly caseIds: ReadonlyArray<string>;
+  readonly build: boolean;
+}
+
+const parseArguments = (): RunArguments => {
+  const caseIds: Array<string> = [];
+  let build = true;
+
+  for (let index = 2; index < process.argv.length; index += 1) {
+    const argument = process.argv[index];
+
+    if (argument === "--no-build") {
+      build = false;
+      continue;
+    }
+
+    if (argument === "--case") {
+      const caseId = process.argv[index + 1];
+
+      if (caseId === undefined) {
+        throw new Error("--case requires a benchmark case id");
+      }
+
+      caseIds.push(caseId);
+      index += 1;
+      continue;
+    }
+
+    throw new Error(`Unknown benchmark argument: ${argument ?? "undefined"}`);
+  }
+
+  return { caseIds, build };
+};
+
+const timestampRunId = (): string =>
+  new Date().toISOString().replaceAll(":", "").replaceAll(".", "-");
+
+const main = async (): Promise<void> => {
+  const arguments_ = parseArguments();
+
+  await generateBenchmarkData(new URL("data/generated/", import.meta.url));
+
+  const casesInput: unknown = JSON.parse(await readFile(casesPath, "utf8"));
+  const cases = await Effect.runPromise(parseBenchmarkCases(casesInput));
+  const knownIds = new Set(cases.map((benchmarkCase) => benchmarkCase.id));
+
+  const selectedCases =
+    arguments_.caseIds.length === 0
+      ? Array.from(knownIds)
+      : Array.from(new Set(arguments_.caseIds));
+
+  for (const caseId of selectedCases) {
+    if (!knownIds.has(caseId)) {
+      throw new Error(`Unknown benchmark case: ${caseId}`);
+    }
+  }
+
+  const gitRevision = commandOutput("git", ["rev-parse", "HEAD"]);
+  const gitDirty = commandOutput("git", ["status", "--porcelain"]) !== "";
+  const runId = `${timestampRunId()}-${gitRevision.slice(0, 8)}`;
+  const runDirectory = resolve(benchmarkRoot, "results/runs", runId);
+
+  await mkdir(runDirectory, { recursive: true });
+
+  const inputPaths = Array.from(
+    new Set([
+      casesPath,
+      evidencePath,
+      resolve(benchmarkRoot, "python/uv.lock"),
+      resolve(projectRoot, "package-lock.json"),
+      ...cases
+        .filter((benchmarkCase) => selectedCases.includes(benchmarkCase.id))
+        .map((benchmarkCase) =>
+          resolve(generatedDataRoot, benchmarkCase.dataset.replace("generated/", "")),
+        ),
+    ]),
+  );
+
+  const inputHashes = await Promise.all(
+    inputPaths.map(async (path) => ({
+      name: path.slice(projectRoot.length),
+      value: await sha256File(path),
+    })),
+  );
+
+  const commands = [
+    `docker compose -f benchmark/compose.yaml run --rm effect-prophet-benchmark`,
+    `docker compose -f benchmark/compose.yaml run --rm python-prophet-benchmark`,
+    `docker compose -f benchmark/compose.yaml run --rm benchmark-report`,
+  ];
+
+  const containerPlatform = "linux/amd64";
+
+  const environment: NodeJS.ProcessEnv = {
+    ...process.env,
+    BENCHMARK_CASE_IDS: selectedCases.join(","),
+    BENCHMARK_CONTAINER_PLATFORM: containerPlatform,
+    BENCHMARK_HOST_RUN_DIRECTORY: runDirectory,
+  };
+
+  const compose = ["compose", "-f", composePath];
+
+  if (arguments_.build) {
+    runCommand("docker", [...compose, "build"], environment);
+  }
+
+  const containerImages = [
+    {
+      name: "effect-prophet/benchmark-effect:local",
+      value: commandOutput("docker", [
+        "image",
+        "inspect",
+        "effect-prophet/benchmark-effect:local",
+        "--format",
+        "{{.Id}}",
+      ]),
+    },
+    {
+      name: "effect-prophet/benchmark-python:1.4.0",
+      value: commandOutput("docker", [
+        "image",
+        "inspect",
+        "effect-prophet/benchmark-python:1.4.0",
+        "--format",
+        "{{.Id}}",
+      ]),
+    },
+  ];
+
+  const hostArchitecture = process.arch;
+  const normalizedHostArchitecture = hostArchitecture === "x64" ? "amd64" : hostArchitecture;
+
+  const manifest: RunManifest = {
+    schemaVersion: 1,
+    runId,
+    createdAt: new Date().toISOString(),
+    gitRevision,
+    gitDirty,
+    hostPlatform: platform(),
+    hostArchitecture,
+    containerPlatform,
+    emulated: normalizedHostArchitecture !== "amd64",
+    selectedCases,
+    commands,
+    inputHashes,
+    containerImages,
+  };
+
+  await writeFile(resolve(runDirectory, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`);
+
+  runCommand(
+    "docker",
+    [...compose, "run", "--rm", "--no-deps", "effect-prophet-benchmark"],
+    environment,
+  );
+  runCommand(
+    "docker",
+    [...compose, "run", "--rm", "--no-deps", "python-prophet-benchmark"],
+    environment,
+  );
+  runCommand("docker", [...compose, "run", "--rm", "--no-deps", "benchmark-report"], environment);
+
+  process.stdout.write(`Benchmark report: ${resolve(runDirectory, "report.md")}\n`);
+};
+
+try {
+  await main();
+} catch (error) {
+  process.stderr.write(
+    `${error instanceof Error ? (error.stack ?? error.message) : String(error)}\n`,
+  );
+  process.exitCode = 1;
+}
