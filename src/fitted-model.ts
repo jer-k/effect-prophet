@@ -8,8 +8,7 @@ import {
 import { EventCalendarSchema, emptyEventCalendar } from "./event";
 import { FittedRegressorSchema } from "./regressor";
 import { SeasonalityLayoutSchema } from "./seasonality";
-
-const PositiveFinite = Schema.Finite.check(Schema.isGreaterThan(0));
+import { PositiveFinite } from "./internal/numeric-schemas";
 
 const LinearModel = Schema.Literal("linear-trend");
 

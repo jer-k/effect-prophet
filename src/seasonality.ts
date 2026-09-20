@@ -11,18 +11,10 @@ import {
   isReservedFeatureName,
   type FeatureName,
 } from "./feature-name";
+import { PositiveFinite, PositiveFourierOrder } from "./internal/numeric-schemas";
 
 /** The Stage B default ridge penalty control for a seasonal component. */
 export const defaultSeasonalityPriorScale = 10;
-
-const PositiveFinite = Schema.Finite.check(Schema.isGreaterThan(0));
-
-const maximumFourierOrder = Math.floor(Number.MAX_SAFE_INTEGER / 2);
-
-const PositiveFourierOrder = Schema.Int.check(
-  Schema.isGreaterThan(0),
-  Schema.isLessThanOrEqualTo(maximumFourierOrder),
-);
 
 const builtInSeasonalityNames: ReadonlySet<string> = new Set(["daily", "weekly", "yearly"]);
 

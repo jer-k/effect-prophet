@@ -1,13 +1,14 @@
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { platform } from "node:os";
+import { cpus, platform, release } from "node:os";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { Effect } from "effect";
 
 import { parseBenchmarkCases } from "./case.ts";
+import { resolveContainerPlatform } from "./container-platform.ts";
 import { generateBenchmarkData } from "./generate-data.ts";
 import type { RunManifest } from "./result.ts";
 
@@ -130,6 +131,7 @@ const main = async (): Promise<void> => {
       casesPath,
       evidencePath,
       resolve(benchmarkRoot, "python/uv.lock"),
+      resolve(generatedDataRoot, "manifest.json"),
       resolve(projectRoot, "package-lock.json"),
       ...cases
         .filter((benchmarkCase) => selectedCases.includes(benchmarkCase.id))
@@ -146,13 +148,23 @@ const main = async (): Promise<void> => {
     })),
   );
 
-  const commands = [
-    `docker compose -f benchmark/compose.yaml run --rm effect-prophet-benchmark`,
-    `docker compose -f benchmark/compose.yaml run --rm python-prophet-benchmark`,
-    `docker compose -f benchmark/compose.yaml run --rm benchmark-report`,
-  ];
+  const hostArchitecture = process.arch;
 
-  const containerPlatform = "linux/amd64";
+  const platformResolution = resolveContainerPlatform(
+    hostArchitecture,
+    process.env.BENCHMARK_CONTAINER_PLATFORM,
+  );
+
+  const containerPlatform = platformResolution.platform;
+
+  const commands = [
+    `BENCHMARK_STAGE=correctness BENCHMARK_CONTAINER_PLATFORM=${containerPlatform} docker compose -f benchmark/compose.yaml run --rm effect-prophet-benchmark`,
+    `BENCHMARK_STAGE=correctness BENCHMARK_CONTAINER_PLATFORM=${containerPlatform} docker compose -f benchmark/compose.yaml run --rm python-prophet-benchmark`,
+    `BENCHMARK_REPORT_MODE=eligibility BENCHMARK_CONTAINER_PLATFORM=${containerPlatform} docker compose -f benchmark/compose.yaml run --rm benchmark-report`,
+    `BENCHMARK_STAGE=timing BENCHMARK_CONTAINER_PLATFORM=${containerPlatform} docker compose -f benchmark/compose.yaml run --rm effect-prophet-benchmark`,
+    `BENCHMARK_STAGE=timing BENCHMARK_CONTAINER_PLATFORM=${containerPlatform} docker compose -f benchmark/compose.yaml run --rm python-prophet-benchmark`,
+    `BENCHMARK_REPORT_MODE=final BENCHMARK_CONTAINER_PLATFORM=${containerPlatform} docker compose -f benchmark/compose.yaml run --rm benchmark-report`,
+  ];
 
   const environment: NodeJS.ProcessEnv = {
     ...process.env,
@@ -190,9 +202,6 @@ const main = async (): Promise<void> => {
     },
   ];
 
-  const hostArchitecture = process.arch;
-  const normalizedHostArchitecture = hostArchitecture === "x64" ? "amd64" : hostArchitecture;
-
   const manifest: RunManifest = {
     schemaVersion: 1,
     runId,
@@ -200,9 +209,11 @@ const main = async (): Promise<void> => {
     gitRevision,
     gitDirty,
     hostPlatform: platform(),
+    hostRelease: release(),
     hostArchitecture,
+    hostProcessor: cpus()[0]?.model ?? "unavailable",
     containerPlatform,
-    emulated: normalizedHostArchitecture !== "amd64",
+    emulated: platformResolution.emulated,
     selectedCases,
     commands,
     inputHashes,
@@ -211,17 +222,18 @@ const main = async (): Promise<void> => {
 
   await writeFile(resolve(runDirectory, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`);
 
-  runCommand(
-    "docker",
-    [...compose, "run", "--rm", "--no-deps", "effect-prophet-benchmark"],
-    environment,
-  );
-  runCommand(
-    "docker",
-    [...compose, "run", "--rm", "--no-deps", "python-prophet-benchmark"],
-    environment,
-  );
-  runCommand("docker", [...compose, "run", "--rm", "--no-deps", "benchmark-report"], environment);
+  const runService = (service: string, overrides: NodeJS.ProcessEnv): void =>
+    runCommand("docker", [...compose, "run", "--rm", "--no-deps", service], {
+      ...environment,
+      ...overrides,
+    });
+
+  runService("effect-prophet-benchmark", { BENCHMARK_STAGE: "correctness" });
+  runService("python-prophet-benchmark", { BENCHMARK_STAGE: "correctness" });
+  runService("benchmark-report", { BENCHMARK_REPORT_MODE: "eligibility" });
+  runService("effect-prophet-benchmark", { BENCHMARK_STAGE: "timing" });
+  runService("python-prophet-benchmark", { BENCHMARK_STAGE: "timing" });
+  runService("benchmark-report", { BENCHMARK_REPORT_MODE: "final" });
 
   process.stdout.write(`Benchmark report: ${resolve(runDirectory, "report.md")}\n`);
 };

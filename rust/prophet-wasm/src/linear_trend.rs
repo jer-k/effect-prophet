@@ -1,3 +1,5 @@
+use crate::compensated_sum::CompensatedSum;
+
 /// Parameters for `y = intercept + slope * scaled_time`.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct LinearTrend {
@@ -207,32 +209,6 @@ fn scale_value(value: f64, value_scale: f64) -> f64 {
   }
 
   value / value_scale
-}
-
-/// Neumaier compensated summation limits avoidable rounding error without
-/// requiring an allocation for centered observations.
-#[derive(Default)]
-struct CompensatedSum {
-  sum: f64,
-  correction: f64,
-}
-
-impl CompensatedSum {
-  fn add(&mut self, value: f64) {
-    let next = self.sum + value;
-
-    if self.sum.abs() >= value.abs() {
-      self.correction += (self.sum - next) + value;
-    } else {
-      self.correction += (value - next) + self.sum;
-    }
-
-    self.sum = next;
-  }
-
-  fn total(self) -> f64 {
-    self.sum + self.correction
-  }
 }
 
 #[cfg(test)]

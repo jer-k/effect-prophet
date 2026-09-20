@@ -2,6 +2,7 @@ import { Effect, Schema } from "effect";
 
 import { ValidationIssueSchema, type ValidationInput, type ValidationIssue } from "./errors";
 import type { FeatureName } from "./feature-name";
+import { checkedElementCount } from "./internal/safe-arithmetic";
 import type { SeasonalityDefinition, SeasonalityLayout } from "./seasonality";
 
 /** A row that may carry named boolean seasonality conditions. */
@@ -25,17 +26,8 @@ export class InvalidConditionValues extends Schema.TaggedError<InvalidConditionV
   },
 ) {}
 
-const checkedElementCount = (rows: number, columns: number): number | undefined => {
-  if (!Number.isSafeInteger(rows) || rows < 0 || !Number.isSafeInteger(columns) || columns < 0) {
-    return undefined;
-  }
-
-  const count = rows * columns;
-
-  return Number.isSafeInteger(count) ? count : undefined;
-};
-
-const invalidConditionValues = (
+/** Construct an invalid condition-values error from structured validation issues. */
+export const invalidConditionValues = (
   issues: ReadonlyArray<ValidationIssue>,
   message: string,
 ): InvalidConditionValues => new InvalidConditionValues({ issues, message });

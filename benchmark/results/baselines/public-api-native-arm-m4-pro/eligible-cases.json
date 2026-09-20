@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "caseIds": [
+    "fixed-linear-prediction-medium",
+    "map-explicit-break-small",
+    "map-seasonal-breaks-irregular-medium",
+    "map-events-small",
+    "map-regressors-medium",
+    "map-conditional-seasonalities-medium",
+    "map-mixed-features-explicit-small",
+    "map-mixed-features-automatic-large"
+  ]
+}

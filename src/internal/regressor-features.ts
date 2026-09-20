@@ -7,6 +7,7 @@ import {
   type InvalidAdditionalFeatures,
   type KnownAdditiveFeatures,
 } from "./additional-features";
+import { checkedElementCount } from "./safe-arithmetic";
 
 /** Failure while resolving or applying regressor preprocessing. */
 export class RegressorFeatureError extends Schema.TaggedError<RegressorFeatureError>()(
@@ -143,9 +144,9 @@ const makeFeatures = (
   Effect.gen(function* () {
     yield* checkRows(values, regressors.length);
 
-    const elementCount = values.length * regressors.length;
+    const elementCount = checkedElementCount(values.length, regressors.length);
 
-    if (!Number.isSafeInteger(elementCount)) {
+    if (elementCount === undefined) {
       return yield* fail([], "Regressor feature dimensions exceed safe arithmetic");
     }
 

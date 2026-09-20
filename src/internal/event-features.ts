@@ -6,8 +6,8 @@ import {
   type AdditionalFeatureMatrix,
   type InvalidAdditionalFeatures,
 } from "./additional-features";
-
-const millisecondsPerDay = 86_400_000;
+import { checkedElementCount } from "./safe-arithmetic";
+import { millisecondsPerDay } from "./time";
 
 /** Failure while aligning timestamps to a parsed event calendar. */
 export class EventFeatureError extends Schema.TaggedError<EventFeatureError>()(
@@ -27,9 +27,9 @@ export const createEventFeatures = (
   calendar: EventCalendar,
 ): Effect.Effect<AdditionalFeatureMatrix, EventFeatureError> => {
   const columnCount = calendar.columns.length;
-  const elementCount = epochMilliseconds.length * columnCount;
+  const elementCount = checkedElementCount(epochMilliseconds.length, columnCount);
 
-  if (!Number.isSafeInteger(elementCount)) {
+  if (elementCount === undefined) {
     return Effect.fail(
       new EventFeatureError({ message: "Event feature dimensions exceed safe arithmetic" }),
     );

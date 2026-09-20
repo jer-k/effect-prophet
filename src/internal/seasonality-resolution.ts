@@ -3,8 +3,7 @@ import { Effect } from "effect";
 import type { Observations } from "../observation";
 import type { BuiltInSeasonalities, BuiltInSeasonalitySetting } from "../options";
 import * as Seasonality from "../seasonality";
-
-const dayMilliseconds = 86_400_000;
+import { millisecondsPerDay } from "./time";
 
 /** Canonical names of the built-in seasonalities resolved from training history. */
 export type BuiltInSeasonalityName = "daily" | "weekly" | "yearly";
@@ -161,7 +160,7 @@ const resolveBuiltIn = (
     );
   }
 
-  if (history.spanMilliseconds < specification.minimumHistoryDays * dayMilliseconds) {
+  if (history.spanMilliseconds < specification.minimumHistoryDays * millisecondsPerDay) {
     return {
       decision: Object.freeze({
         name: specification.name,
@@ -174,7 +173,7 @@ const resolveBuiltIn = (
   if (specification.maximumGapDays !== undefined) {
     const minGap = history.minPositiveGapMilliseconds;
 
-    if (minGap === undefined || minGap >= specification.maximumGapDays * dayMilliseconds) {
+    if (minGap === undefined || minGap >= specification.maximumGapDays * millisecondsPerDay) {
       return {
         decision: Object.freeze({
           name: specification.name,

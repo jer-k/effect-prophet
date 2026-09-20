@@ -1,6 +1,7 @@
 import { Effect, Schema } from "effect";
 
 import type { FeatureName } from "../feature-name";
+import { checkedElementCount } from "./safe-arithmetic";
 
 /** Source kind represented by one contiguous additional-feature component. */
 export type AdditionalFeatureKind = "event" | "regressor";
@@ -51,16 +52,6 @@ export class InvalidAdditionalFeatures extends Schema.TaggedError<InvalidAdditio
 
 const fail = (path: ReadonlyArray<PropertyKey>, message: string) =>
   Effect.fail(new InvalidAdditionalFeatures({ path, message }));
-
-const checkedElementCount = (rows: number, columns: number): number | undefined => {
-  if (!Number.isSafeInteger(rows) || rows < 0 || !Number.isSafeInteger(columns) || columns < 0) {
-    return undefined;
-  }
-
-  const count = rows * columns;
-
-  return Number.isSafeInteger(count) ? count : undefined;
-};
 
 /** Construct and deeply freeze an ordered additional-feature layout. */
 export const createAdditionalFeatureLayout = <Component extends AdditionalFeatureComponent>(

@@ -9,6 +9,9 @@ import {
 } from "../errors";
 import type { SeasonalityLayout } from "../seasonality";
 import type { KnownAdditiveFeatures, SeasonalityMaskMatrix } from "./additional-features";
+import { checkedAdd, checkedMultiply } from "./safe-arithmetic";
+
+export { checkedAdd, checkedMultiply } from "./safe-arithmetic";
 
 /** One checked row-major prediction batch with seasonal component values. */
 export interface WasmSeasonalPredictionBatch {
@@ -32,28 +35,6 @@ export const seasonalPredictionStatus = {
   sizeOverflow: 5,
   nonFiniteResult: 6,
 } as const;
-
-/** Add two safe integers, returning `undefined` when the result is not safe. */
-export const checkedAdd = (left: number, right: number): number | undefined => {
-  if (!Number.isSafeInteger(left) || !Number.isSafeInteger(right)) {
-    return undefined;
-  }
-
-  const result = left + right;
-
-  return Number.isSafeInteger(result) ? result : undefined;
-};
-
-/** Multiply two safe integers, returning `undefined` when the result is not safe. */
-export const checkedMultiply = (left: number, right: number): number | undefined => {
-  if (!Number.isSafeInteger(left) || !Number.isSafeInteger(right)) {
-    return undefined;
-  }
-
-  const result = left * right;
-
-  return Number.isSafeInteger(result) ? result : undefined;
-};
 
 /** Construct a fitting error with common WASM boundary context. */
 export const wasmFittingError = (

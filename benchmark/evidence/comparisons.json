@@ -4,25 +4,122 @@
     {
       "id": "fixed-linear-equation-v1",
       "classification": "equivalent-equation",
-      "statement": "Both adapters restore the same intercept, slope, time origin, and time scale before public prediction. Setup fitting is untimed and its fitted parameters are replaced before public model serialization/restoration.",
-      "checks": ["all projected forecasts", "timestamps", "finite output"]
+      "statement": "Both adapters publicly restore the same intercept, slope, time origin, and time scale before prediction.",
+      "checks": ["timestamps", "finite output", "authored equation", "persistence equivalence"]
     },
     {
       "id": "explicit-linear-map-objective-v1",
       "classification": "equivalent-objective",
-      "statement": "A nonempty explicit changepoint design uses matching absmax scaling, linear trend priors, Laplace delta prior, Gaussian likelihood, half-normal noise prior, and no seasonal columns. Optimizers differ, so forecast and noise quality gates remain mandatory.",
-      "checks": ["trend", "total forecast", "noise scale", "finite converged fit"]
+      "statement": "Both adapters fit the same nonempty explicit-changepoint linear MAP objective with no additive feature columns.",
+      "prerequisiteFixtures": ["linear-map-fit.json"],
+      "checks": [
+        "model kind",
+        "resolved changepoints",
+        "trend",
+        "forecast",
+        "noise scale",
+        "persistence equivalence"
+      ]
     },
     {
       "id": "explicit-linear-map-seasonal-objective-v1",
       "classification": "equivalent-objective",
-      "statement": "A nonempty explicit changepoint design uses matching absmax scaling and MAP terms, with identically ordered custom Fourier columns and prior scales. Optimizers differ, so component, forecast, and noise quality gates remain mandatory.",
+      "statement": "Both adapters fit matching explicit changepoints and identically ordered custom Fourier columns and prior scales.",
+      "prerequisiteFixtures": ["linear-map-fit.json"],
       "checks": [
-        "trend",
+        "model kind",
+        "resolved changepoints",
         "named seasonal components",
-        "total forecast",
+        "additive",
+        "forecast",
+        "noise scale"
+      ]
+    },
+    {
+      "id": "events-map-v1",
+      "classification": "equivalent-objective",
+      "statement": "Both adapters fit two matching UTC/naive-calendar event groups with six offset columns, overlapping activation, future occurrences, and one explicit changepoint.",
+      "prerequisiteFixtures": ["linear-map-fit.json", "conditional-map-fit.json"],
+      "checks": [
+        "event metadata",
+        "event-window activation",
+        "grouped event reconstruction",
+        "trend",
+        "component",
+        "additive",
+        "forecast",
         "noise scale",
-        "finite converged fit"
+        "persistence equivalence"
+      ]
+    },
+    {
+      "id": "regressors-map-v1",
+      "classification": "equivalent-objective",
+      "statement": "Both adapters fit four ordered additive regressors using binary auto, numeric auto, numeric always, and numeric never transforms with matching explicit changepoints.",
+      "prerequisiteFixtures": ["linear-map-fit.json", "conditional-map-fit.json"],
+      "checks": [
+        "regressor order",
+        "stored transforms",
+        "coefficient metadata",
+        "named regressor components",
+        "trend",
+        "additive",
+        "forecast",
+        "noise scale"
+      ]
+    },
+    {
+      "id": "conditional-seasonalities-map-v1",
+      "classification": "equivalent-objective",
+      "statement": "Both adapters fit two order-three weekly seasonalities gated by matching dense and sparse boolean masks with matching explicit changepoints.",
+      "prerequisiteFixtures": ["conditional-seasonality.json", "conditional-map-fit.json"],
+      "checks": [
+        "condition names",
+        "condition-false exact zero",
+        "named seasonal components",
+        "trend",
+        "additive",
+        "forecast",
+        "noise scale",
+        "persistence equivalence"
+      ]
+    },
+    {
+      "id": "mixed-features-explicit-map-v1",
+      "classification": "equivalent-objective",
+      "statement": "The fixture-scale control combines unconditional and conditional seasonalities, one event, one never-standardized regressor, and the explicit changepoint settings represented by conditional-map-fit.json.",
+      "prerequisiteFixtures": ["conditional-map-fit.json"],
+      "checks": [
+        "complete fitted metadata",
+        "complete named components",
+        "trend",
+        "additive",
+        "forecast",
+        "noise scale",
+        "persistence equivalence"
+      ]
+    },
+    {
+      "id": "mixed-features-automatic-map-v1",
+      "classification": "equivalent-objective",
+      "statement": "Effect omits map and resolves its automatic 25/0.8 defaults while Python explicitly receives n_changepoints=25 and changepoint_range=0.8; both fit the same ten Fourier and ten additional-feature columns.",
+      "prerequisiteFixtures": [
+        "linear-map-fit.json",
+        "conditional-seasonality.json",
+        "conditional-map-fit.json"
+      ],
+      "checks": [
+        "automatic changepoints",
+        "complete fitted metadata",
+        "all named components",
+        "condition-false exact zero",
+        "event activation",
+        "regressor transforms",
+        "trend",
+        "additive",
+        "forecast",
+        "noise scale",
+        "persistence equivalence"
       ]
     }
   ]

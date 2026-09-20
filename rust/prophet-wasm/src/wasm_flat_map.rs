@@ -5,8 +5,7 @@ use crate::flat_map::{
   predict_flat_map as predict_flat_map_kernel,
 };
 use crate::seasonality::SeasonalitySpec;
-
-const MAX_WIRE_FOURIER_ORDER: f64 = u32::MAX as f64;
+use crate::wasm_protocol::parse_positive_integer;
 
 /// Status at index zero of a packed flat MAP fit result.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -180,23 +179,16 @@ fn parse_seasonalities(
     .map(|(component, (&period_days, &order))| {
       let prior_scale = prior_scales.map_or(1.0, |scales| scales[component]);
 
-      if !period_days.is_finite()
-        || period_days <= 0.0
-        || !order.is_finite()
-        || order <= 0.0
-        || order.fract() != 0.0
-        || order > MAX_WIRE_FOURIER_ORDER
-        || !prior_scale.is_finite()
-        || prior_scale <= 0.0
-      {
+      let order =
+        parse_positive_integer(order).ok_or(ProtocolConfigurationError::InvalidConfiguration)?;
+
+      if !period_days.is_finite() || !prior_scale.is_finite() || prior_scale <= 0.0 {
         return Err(ProtocolConfigurationError::InvalidConfiguration);
       }
 
-      let order_u32 = order as u32;
-
       Ok(SeasonalitySpec {
         period_days,
-        fourier_order: order_u32 as usize,
+        fourier_order: order,
         prior_scale,
       })
     })

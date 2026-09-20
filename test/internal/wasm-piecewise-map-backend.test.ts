@@ -1,10 +1,11 @@
-import { Effect, Exit, Option, Predicate, Tracer } from "effect";
+import { Effect, Exit, Option, Tracer } from "effect";
 import { describe, expect, it } from "vitest";
 
 import { FittingError } from "../../src/errors";
 import type { PiecewiseMapWasmBindings } from "../../src/internal/prophet-wasm-module";
 import { prophetFittingBackendLayer } from "../../src/internal/prophet-fitting-backend";
 import { makeWasmPiecewiseMapAdapter } from "../../src/internal/wasm-piecewise-map-backend";
+import { requireEndedSpan as requireEnded } from "./tracing-test-helpers";
 import { fit, predict } from "../../src/prophet";
 import * as Seasonality from "../../src/seasonality";
 
@@ -76,16 +77,6 @@ describe("Rust/WASM linear piecewise MAP adapter", () => {
     expect(error.backendPhase).toBe("protocol");
   });
 });
-
-type EndedSpanStatus = Extract<Tracer.SpanStatus, { readonly _tag: "Ended" }>;
-
-const requireEnded = (span: Tracer.Span): EndedSpanStatus => {
-  if (!Predicate.isTagged("Ended")(span.status)) {
-    throw new Error(`Expected ${span.name} to have ended`);
-  }
-
-  return span.status;
-};
 
 describe("linear piecewise MAP tracing", () => {
   it("records complete fit and prediction boundaries under public spans", async () => {
