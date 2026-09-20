@@ -1,14 +1,13 @@
 use wasm_bindgen::prelude::wasm_bindgen;
 
-pub mod additive_ridge;
 pub mod flat_map;
 pub mod fourier;
 pub mod linear_trend;
+pub mod map_least_squares;
 pub mod map_objective;
 pub mod piecewise_linear;
 pub mod piecewise_map;
-pub mod ridge_least_squares;
-mod wasm_additive;
+pub mod seasonality;
 mod wasm_flat_map;
 mod wasm_map;
 

@@ -1,11 +1,11 @@
-use crate::additive_ridge::SeasonalitySpec;
 use crate::fourier::{
   FourierError, FourierSeasonality, checked_element_count, coefficient_count,
   evaluate_seasonal_components, make_fourier_features,
 };
-use crate::ridge_least_squares::{
+use crate::map_least_squares::{
   RidgeLeastSquaresInput, RidgeSolveError, solve_ridge_least_squares,
 };
+use crate::seasonality::SeasonalitySpec;
 
 const TREND_PRIOR_SCALE: f64 = 5.0;
 const NOISE_PRIOR_SCALE: f64 = 0.5;
@@ -527,7 +527,7 @@ fn map_fourier_prediction_error(error: FourierError) -> FlatMapPredictionError {
 #[cfg(test)]
 mod tests {
   use super::{FlatMapError, FlatMapTermination, fit_flat_map, predict_flat_map};
-  use crate::additive_ridge::SeasonalitySpec;
+  use crate::seasonality::SeasonalitySpec;
 
   fn assert_close(actual: f64, expected: f64, tolerance: f64) {
     assert!(

@@ -2,7 +2,7 @@
 
 An Effect-based TypeScript package for time-series forecasting.
 
-The Rust/WASM backends fit ordinary least-squares linear trends, additive ridge models, reduced flat MAP models, and linear piecewise MAP models with explicit or automatically selected changepoints. Forecasts expose trend, additive total, final value, and ordered named seasonal components. TypeScript owns validation, Effect service composition, persistence, and WASM protocol translation; numerical fitting, changepoint resolution, and evaluation run in Rust. The package does not yet implement uncertainty intervals or the broader logistic/multiplicative Prophet families.
+The Rust/WASM backends fit ordinary least-squares linear trends, reduced flat MAP models, and linear piecewise MAP models with explicit or automatically selected changepoints. Forecasts expose trend, additive total, final value, and ordered named seasonal components. TypeScript owns validation, Effect service composition, persistence, and WASM protocol translation; numerical fitting, changepoint resolution, and evaluation run in Rust. The package does not yet implement uncertainty intervals or the broader logistic/multiplicative Prophet families.
 
 ## Compatibility target
 
@@ -76,7 +76,7 @@ The Docker Compose [public API benchmark suite](benchmark/README.md) records cor
 
 ## Rust/WASM numerical backend
 
-`rust/prophet-wasm` provides the numerical implementations behind the public fitting Layer. It exports coarse operations for ordinary least-squares linear fitting, normalized additive ridge fitting, reduced flat MAP fitting, and linear piecewise MAP fitting, with matching batch prediction exports.
+`rust/prophet-wasm` provides the numerical implementations behind the public fitting Layer. It exports coarse operations for ordinary least-squares linear fitting, reduced flat MAP fitting, and linear piecewise MAP fitting, with matching batch prediction exports.
 
 Run each phase independently with:
 
@@ -207,11 +207,11 @@ const forecast = await Effect.runPromise(predict(model, ["2024-01-16T00:00:00.00
 // This 14-day subdaily history enables weekly and daily, but not yearly.
 ```
 
-`{ mode: "on" }` bypasses history and cadence checks. Forcing yearly seasonality with less than 730 days can be under-identified and can make trend/seasonality decomposition unstable. More generally, only force components when the observed windows support meaningful extrapolation. Automatic selection matches Prophet's feature rule, but fitting here remains additive ridge or reduced flat MAP—not full Prophet MAP.
+`{ mode: "on" }` bypasses history and cadence checks. Forcing yearly seasonality with less than 730 days can be under-identified and can make trend/seasonality decomposition unstable. More generally, only force components when the observed windows support meaningful extrapolation. Automatic selection matches Prophet's feature rule, and additive linear fitting uses the reduced Prophet-compatible piecewise MAP path—not full Prophet API parity.
 
 ## Explicit additive seasonalities
 
-For a non-empty seasonality list, `prophetFittingBackendLayer` jointly fits the linear trend and every configured Fourier component using the documented `normalized-ridge-v1` objective. Featureless linear options select the ordinary linear-trend model instead.
+For a non-empty seasonality list, `prophetFittingBackendLayer` jointly fits the linear trend and every configured Fourier component using the piecewise MAP objective. Featureless linear options select the ordinary linear-trend OLS model instead; omitted `map` uses automatic `{ count: 25, range: 0.8 }` changepoints.
 
 ```ts
 import { Effect } from "effect";
@@ -238,12 +238,11 @@ const forecasts = await Effect.runPromise(predict(model, predictionTimestamps));
 // Each row includes trend, additive, value, and the named weekly-custom contribution.
 ```
 
-Names and component order are retained in the fitted model and portable JSON. The ridge objective is intentionally distinct from Prophet MAP fitting; see [the additive ridge contract](docs/modeling/additive-ridge.md).
+Names and component order are retained in the fitted model and portable JSON. Explicit `map: {}` remains an empty-changepoint MAP request, while omitted `map` selects the documented automatic changepoint defaults.
 
 ## Linear piecewise MAP forecast
 
-Supplying `map` explicitly opts into the Rust linear piecewise MAP objective. Omitting `map`
-continues to select the existing OLS or additive ridge model. Explicit changepoints must be
+Supplying `map` explicitly controls the Rust linear piecewise MAP objective. Additive linear requests that omit `map` use automatic changepoints; featureless linear requests still use OLS. Explicit changepoints must be
 canonical, strictly increasing UTC timestamps inside the inclusive training range. Automatic
 candidates use Prophet 1.4.0's row-index policy and are resolved in Rust from training timestamps.
 Resolved timestamps and every aligned delta are retained in the model and portable JSON.
@@ -334,17 +333,13 @@ const program = Effect.gen(function* () {
 
 ## Experimental model serialization
 
-`encodeFittedModel` converts a fitted linear, linear-additive, or flat MAP model into a JSON-compatible payload. `decodeFittedModel` validates an untrusted payload and reconstructs the runtime model without selecting a fitting backend. Featureful payloads retain all prediction coefficients, ordered definitions, and fit diagnostics; layout offsets are reconstructed during decoding. Flat MAP payloads additionally retain observation noise. Backend identifiers, services, and WASM resources are not serialized.
+`encodeFittedModel` converts a fitted linear, linear piecewise MAP, or flat MAP model into a JSON-compatible payload. `decodeFittedModel` validates an untrusted payload and reconstructs the runtime model without selecting a fitting backend. Featureful payloads retain all prediction coefficients, ordered definitions, and fit diagnostics; layout offsets are reconstructed during decoding. Flat MAP payloads additionally retain observation noise. Backend identifiers, services, and WASM resources are not serialized.
 
 ```ts
 import { Effect } from "effect";
 import { decodeFittedModel, encodeFittedModel } from "effect-prophet";
 
-if (
-  model.model === "linear-trend" ||
-  model.model === "linear-additive-ridge" ||
-  model.model === "flat-map"
-) {
+if (model.model === "linear-trend" || model.model === "flat-map") {
   const encoded = await Effect.runPromise(encodeFittedModel(model));
   const json = JSON.stringify(encoded);
   const decoded = await Effect.runPromise(decodeFittedModel(JSON.parse(json)));

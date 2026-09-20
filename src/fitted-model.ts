@@ -11,14 +11,12 @@ const PositiveFinite = Schema.Finite.check(Schema.isGreaterThan(0));
 
 const LinearModel = Schema.Literal("linear-trend");
 
-const LinearAdditiveModel = Schema.Literal("linear-additive-ridge");
-
 const FlatMapModel = Schema.Literal("flat-map");
 
 const PiecewiseMapModel = Schema.Literal("linear-piecewise-map");
 
 const ModelDiscriminantSchema = Schema.Struct({
-  model: Schema.Union([LinearModel, LinearAdditiveModel, FlatMapModel, PiecewiseMapModel]),
+  model: Schema.Union([LinearModel, FlatMapModel, PiecewiseMapModel]),
 });
 
 const LinearParametersSchema = Schema.Struct({
@@ -28,66 +26,6 @@ const LinearParametersSchema = Schema.Struct({
   timeOrigin: Schema.Finite,
   timeScale: PositiveFinite,
 });
-
-const LinearAdditiveFitSummarySchema = Schema.Struct({
-  method: Schema.Literal("normalized-ridge-v1"),
-  valueScale: PositiveFinite,
-  observationCount: Schema.Int.check(Schema.isGreaterThanOrEqualTo(2)),
-  numericalRank: Schema.Natural,
-  normalizedResidualSumSquares: Schema.Finite.check(Schema.isGreaterThanOrEqualTo(0)),
-  penalizedObjective: Schema.Finite.check(Schema.isGreaterThanOrEqualTo(0)),
-});
-
-const LinearAdditiveParametersFieldsSchema = Schema.Struct({
-  model: LinearAdditiveModel,
-  intercept: Schema.Finite,
-  slope: Schema.Finite,
-  timeOrigin: Schema.Finite,
-  timeScale: PositiveFinite,
-  seasonalities: SeasonalityLayoutSchema,
-  coefficients: Schema.Array(Schema.Finite),
-  fitSummary: LinearAdditiveFitSummarySchema,
-});
-
-type LinearAdditiveParametersFields = typeof LinearAdditiveParametersFieldsSchema.Type;
-
-const consistentLinearAdditiveParameters = Schema.makeFilter<LinearAdditiveParametersFields>(
-  (parameters) => {
-    const issues: Array<{ readonly path: ReadonlyArray<PropertyKey>; readonly issue: string }> = [];
-    const coefficientCount = parameters.seasonalities.coefficientCount;
-
-    if (parameters.coefficients.length !== coefficientCount) {
-      issues.push({
-        path: ["coefficients"],
-        issue: `Expected exactly ${coefficientCount} seasonal coefficients`,
-      });
-    }
-
-    if (coefficientCount > Number.MAX_SAFE_INTEGER - 2) {
-      issues.push({
-        path: ["seasonalities", "coefficientCount"],
-        issue: "Fitted design column count exceeds safe integer arithmetic",
-      });
-
-      return issues;
-    }
-
-    const designColumnCount = coefficientCount + 2;
-
-    if (parameters.fitSummary.numericalRank !== designColumnCount) {
-      issues.push({
-        path: ["fitSummary", "numericalRank"],
-        issue: `Expected full fitted design rank ${designColumnCount}`,
-      });
-    }
-
-    return issues;
-  },
-);
-
-const LinearAdditiveParametersSchema = LinearAdditiveParametersFieldsSchema.check(
-  consistentLinearAdditiveParameters,
-);
 
 const FlatMapFitSummarySchema = Schema.Struct({
   method: Schema.Literal("flat-map-coordinate-v1"),
@@ -246,17 +184,12 @@ const PiecewiseMapParametersSchema = PiecewiseMapParametersFieldsSchema.check(
 
 const ParametersSchema = Schema.Union([
   LinearParametersSchema,
-  LinearAdditiveParametersSchema,
   FlatMapParametersSchema,
   PiecewiseMapParametersSchema,
 ]);
 
 const FittedLinearProphetSchema = LinearParametersSchema.pipe(
   Schema.brand("effect-prophet/FittedLinearProphet"),
-);
-
-const FittedLinearAdditiveProphetSchema = LinearAdditiveParametersSchema.pipe(
-  Schema.brand("effect-prophet/FittedLinearAdditiveProphet"),
 );
 
 const FittedFlatMapProphetSchema = FlatMapParametersSchema.pipe(
@@ -269,7 +202,6 @@ const FittedPiecewiseMapProphetSchema = PiecewiseMapParametersSchema.pipe(
 
 const FittedProphetSchema = Schema.Union([
   FittedLinearProphetSchema,
-  FittedLinearAdditiveProphetSchema,
   FittedFlatMapProphetSchema,
   FittedPiecewiseMapProphetSchema,
 ]);
@@ -280,9 +212,6 @@ export type LinearParameters = typeof LinearParametersSchema.Type;
 /** Untrusted fitted parameters returned by a fitting backend. */
 export type Parameters = typeof ParametersSchema.Type;
 
-/** Complete, untrusted fitted state for a linear-plus-additive-seasonal ridge model. */
-export type LinearAdditiveParameters = typeof LinearAdditiveParametersSchema.Type;
-
 /** Complete, untrusted fitted state for a reduced flat MAP model. */
 export type FlatMapParameters = typeof FlatMapParametersSchema.Type;
 
@@ -291,9 +220,6 @@ export type PiecewiseMapParameters = typeof PiecewiseMapParametersSchema.Type;
 
 /** A parsed ordinary least-squares linear-trend model. */
 export type FittedLinearProphet = typeof FittedLinearProphetSchema.Type;
-
-/** A trusted, deeply immutable linear-plus-additive-seasonal ridge model. */
-export type FittedLinearAdditiveProphet = typeof FittedLinearAdditiveProphetSchema.Type;
 
 /** A trusted, deeply immutable reduced flat MAP model. */
 export type FittedFlatMapProphet = typeof FittedFlatMapProphetSchema.Type;
@@ -327,10 +253,6 @@ const decodeLinearModel = Schema.decodeUnknownEffect(FittedLinearProphetSchema, 
   errors: "all",
 });
 
-const decodeLinearAdditiveModel = Schema.decodeUnknownEffect(FittedLinearAdditiveProphetSchema, {
-  errors: "all",
-});
-
 const decodeFlatMapModel = Schema.decodeUnknownEffect(FittedFlatMapProphetSchema, {
   errors: "all",
 });
@@ -345,9 +267,7 @@ const decodeFittedModel = Schema.decodeUnknownEffect(FittedProphetSchema, {
 
 const freezeLinearModel = (model: FittedLinearProphet): FittedLinearProphet => Object.freeze(model);
 
-const freezeFeatureModel = <
-  Model extends FittedLinearAdditiveProphet | FittedFlatMapProphet | FittedPiecewiseMapProphet,
->(
+const freezeFeatureModel = <Model extends FittedFlatMapProphet | FittedPiecewiseMapProphet>(
   model: Model,
 ): Model => {
   for (const component of model.seasonalities.components) {
@@ -370,11 +290,7 @@ const freezeFeatureModel = <
 };
 
 const freezeFittedModel = (model: FittedProphet): FittedProphet => {
-  if (
-    model.model === "linear-additive-ridge" ||
-    model.model === "flat-map" ||
-    model.model === "linear-piecewise-map"
-  ) {
+  if (model.model === "flat-map" || model.model === "linear-piecewise-map") {
     return freezeFeatureModel(model);
   }
 
@@ -399,20 +315,6 @@ export const parseLinearModel = (
 ): Effect.Effect<FittedLinearProphet, InvalidFittedModel> =>
   decodeLinearModel(input).pipe(
     Effect.map(freezeLinearModel),
-    Effect.mapError((error) => invalidFittedModelFromIssue(error.issue)),
-  );
-
-/**
- * Parse complete additive ridge state into a fresh, deeply frozen fitted model.
- *
- * @param input - Values at a fitting or future serialization trust boundary.
- * @returns A trusted additive model or structured fitted-model issues.
- */
-export const parseLinearAdditiveModel = (
-  input: FirstArgument<typeof decodeLinearAdditiveModel>,
-): Effect.Effect<FittedLinearAdditiveProphet, InvalidFittedModel> =>
-  decodeLinearAdditiveModel(input).pipe(
-    Effect.map(freezeFeatureModel),
     Effect.mapError((error) => invalidFittedModelFromIssue(error.issue)),
   );
 

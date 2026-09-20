@@ -222,7 +222,7 @@ export const packSeasonalitiesForFit = (seasonalities: SeasonalityLayout) => {
   return { periods, orders, priors };
 };
 
-type WasmModelType = "flat-map" | "linear-additive-ridge" | "linear-piecewise-map" | "linear-trend";
+type WasmModelType = "flat-map" | "linear-piecewise-map" | "linear-trend";
 
 type SeasonalPredictionMessages = {
   readonly arithmeticOverflow: string;

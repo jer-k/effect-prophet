@@ -114,7 +114,7 @@ No TypeScript trend evaluator, objective evaluator, or optimizer is part of this
 The accepted [`piecewise-map-coordinate-v1` decision](../decisions/map-optimizer.md) extends the
 fixed trend with Prophet's normal trend/feature priors, exact Laplace changepoint prior, positive
 observation noise, and normal likelihood. Rust uses deterministic proximal coordinate updates and
-the exact conditional noise update; there is no OLS/ridge fallback or smoothed absolute value.
+the exact conditional noise update; there is no fallback to another fitting objective or smoothed absolute value.
 
 The implementation uses a true empty changepoint design rather than Prophet's private dummy-delta
 fit parameterization. No-point fixed evaluation remains identical, but no-point fitted objective
@@ -147,6 +147,7 @@ Prediction accepts complete stored model state and returns exact width `1 + N*(3
 request row. Public empty prediction requests return before loading WASM; direct binding calls
 still validate supplied model metadata.
 
-The public `map` option is an explicit opt-in. Omitting it preserves the existing OLS or additive
-ridge path. Explicit points and automatic `{count, range}` requests produce the same persisted
-`linear-piecewise-map` model kind, and decode/prediction never rerun candidate selection.
+Featureless linear requests without `map` retain OLS. When linear additive features are present,
+omitting `map` selects automatic changepoints `{ count: 25, range: 0.8 }`; explicit `map` controls
+remain available, and `map: {}` means an explicit empty changepoint set. All requests produce the
+persisted `linear-piecewise-map` model kind, and decode/prediction never rerun candidate selection.
