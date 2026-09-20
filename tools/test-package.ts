@@ -3,7 +3,7 @@ import { readFile, readdir } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 
 import { Effect, Schema } from "effect";
-import { fit, predict, prophetFittingBackendLayer } from "effect-prophet";
+import { fit, getRegressorCoefficients, predict, prophetFittingBackendLayer } from "effect-prophet";
 
 const projectRoot = new URL("../", import.meta.url);
 
@@ -51,7 +51,9 @@ const expectedDeclarationFiles = [
   "dist/model-serialization.d.ts",
   "dist/observation.d.ts",
   "dist/options.d.ts",
+  "dist/prediction-row.d.ts",
   "dist/prophet.d.ts",
+  "dist/regressor.d.ts",
   "dist/seasonality.d.ts",
 ];
 
@@ -156,5 +158,46 @@ assert.equal(forecasts.length, 1);
 assert.equal(forecasts[0]?.value, 11);
 
 assert.equal(forecasts[0]?.trend, 11);
+
+const regressorModel = await Effect.runPromise(
+  fit(
+    [
+      {
+        timestamp: "2024-01-01T00:00:00.000Z",
+        value: 2,
+        regressors: { promotion: 0 },
+      },
+      {
+        timestamp: "2024-01-01T00:00:01.000Z",
+        value: 6,
+        regressors: { promotion: 1 },
+      },
+      {
+        timestamp: "2024-01-01T00:00:02.000Z",
+        value: 4,
+        regressors: { promotion: 0 },
+      },
+      {
+        timestamp: "2024-01-01T00:00:03.000Z",
+        value: 8,
+        regressors: { promotion: 1 },
+      },
+    ],
+    { regressors: [{ name: "promotion", priorScale: 100 }] },
+  ).pipe(Effect.provide(prophetFittingBackendLayer)),
+);
+
+const [regressorForecast] = await Effect.runPromise(
+  predict(regressorModel, [
+    {
+      timestamp: "2024-01-01T00:00:04.000Z",
+      regressors: { promotion: 1 },
+    },
+  ]),
+);
+
+assert.equal(regressorForecast?.regressors[0]?.name, "promotion");
+
+assert.equal(getRegressorCoefficients(regressorModel)[0]?.name, "promotion");
 
 console.log(`Package artifact smoke test passed (${packedFiles.length} files)`);

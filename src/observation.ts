@@ -7,6 +7,7 @@ import { TimestampSchema } from "./internal/timestamp";
 export interface EncodedObservation {
   readonly timestamp: string;
   readonly value: number;
+  readonly regressors?: Readonly<Record<string, number>>;
 }
 
 /**
@@ -19,6 +20,7 @@ export interface EncodedObservation {
 export interface Observation {
   readonly timestamp: number;
   readonly value: number;
+  readonly regressors?: Readonly<Record<string, number>>;
 }
 
 /** A non-empty encoded observation collection. */
@@ -30,6 +32,7 @@ export type Observations = readonly [Observation, ...Array<Observation>];
 const ObservationSchema: Schema.Codec<Observation, EncodedObservation> = Schema.Struct({
   timestamp: TimestampSchema,
   value: Schema.Finite,
+  regressors: Schema.optionalKey(Schema.Record(Schema.String, Schema.Finite)),
 });
 
 const observationsAreStrictlyOrdered = Schema.makeFilter<Observations>((observations) => {
@@ -64,6 +67,7 @@ const ObservationsSchema: Schema.Codec<Observations, EncodedObservations> = Sche
 
 const decodeObservationsSchema = Schema.decodeUnknownEffect(ObservationsSchema, {
   errors: "all",
+  onExcessProperty: "error",
 });
 
 /** Decode untrusted input into validated observations without throwing expected failures. */

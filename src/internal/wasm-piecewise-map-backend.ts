@@ -8,6 +8,7 @@ import {
   type PiecewiseMapParameters,
 } from "../fitted-model";
 import type { ChangepointSetting, MapOptimizerControls } from "../options";
+import type { ResolvedRegressor } from "../regressor";
 import type { SeasonalityLayout } from "../seasonality";
 import type { TrainingInput } from "./fitting-backend";
 import type { KnownAdditiveFeatures, SeasonalityMaskMatrix } from "./additional-features";
@@ -59,6 +60,7 @@ export interface WasmPiecewiseMapAdapter {
     masks: SeasonalityMaskMatrix,
     features: KnownAdditiveFeatures,
     events: EventCalendar,
+    regressors: ReadonlyArray<ResolvedRegressor>,
   ) => Effect.Effect<PiecewiseMapParameters, FittingError>;
 
   /** Predict from complete trusted linear MAP state. */
@@ -115,6 +117,7 @@ const decodeFittedParameters = (
   seasonalities: SeasonalityLayout,
   changepointPriorScale: number,
   events: EventCalendar = emptyEventCalendar,
+  regressors: ReadonlyArray<ResolvedRegressor> = [],
 ): Effect.Effect<PiecewiseMapParameters, FittingError> => {
   const status = readWasmStatus(packed);
 
@@ -134,10 +137,18 @@ const decodeFittedParameters = (
     }
 
     const parameterCount =
-      2 + changepointCount + seasonalities.coefficientCount + events.layout.coefficientCount;
+      2 +
+      changepointCount +
+      seasonalities.coefficientCount +
+      events.layout.coefficientCount +
+      regressors.length;
 
     const expectedLength =
-      13 + changepointCount * 2 + seasonalities.coefficientCount + events.layout.coefficientCount;
+      13 +
+      changepointCount * 2 +
+      seasonalities.coefficientCount +
+      events.layout.coefficientCount +
+      regressors.length;
 
     if (!Number.isSafeInteger(expectedLength) || packed.length !== expectedLength) {
       return protocolFailure(observationCount, parameterCount);
@@ -163,6 +174,13 @@ const decodeFittedParameters = (
     const coefficientStart = deltaStart + changepointCount;
     const eventCoefficientStart = coefficientStart + seasonalities.coefficientCount;
 
+    const regressorCoefficientStart = eventCoefficientStart + events.layout.coefficientCount;
+
+    const fittedRegressors = regressors.map((regressor, index) => ({
+      ...regressor,
+      coefficient: packed[regressorCoefficientStart + index] ?? Number.NaN,
+    }));
+
     return parsePiecewiseMapModel({
       model: "linear-piecewise-map",
       intercept: packed[2],
@@ -174,7 +192,8 @@ const decodeFittedParameters = (
       seasonalities,
       coefficients: Array.from(packed.slice(coefficientStart, eventCoefficientStart)),
       events,
-      eventCoefficients: Array.from(packed.slice(eventCoefficientStart)),
+      eventCoefficients: Array.from(packed.slice(eventCoefficientStart, regressorCoefficientStart)),
+      regressors: fittedRegressors,
       noiseScale: packed[7],
       fitSummary: {
         method: "piecewise-map-coordinate-v1",
@@ -347,6 +366,7 @@ export const makeWasmPiecewiseMapAdapter = (
     masks,
     features,
     events,
+    regressors,
   ) => {
     const observationCount = input.values.length;
     const explicit = changepoints.mode === "explicit";
@@ -419,6 +439,7 @@ export const makeWasmPiecewiseMapAdapter = (
         seasonalities,
         changepointPriorScale,
         events,
+        regressors,
       );
     }).pipe(
       Effect.withSpan(
@@ -495,7 +516,9 @@ export const makeWasmPiecewiseMapAdapter = (
     const firstTimestamp = timestamps[0];
 
     const componentCount =
-      model.seasonalities.components.length + model.events.layout.components.length;
+      model.seasonalities.components.length +
+      model.events.layout.components.length +
+      model.regressors.length;
 
     if (firstTimestamp === undefined) {
       return Effect.succeed({ rowCount: 0, componentCount, values: new Float64Array() });
@@ -523,6 +546,11 @@ export const makeWasmPiecewiseMapAdapter = (
       const { periods, orders } = packSeasonalitiesForPrediction(model.seasonalities);
       const { packedMasks, values, offsets, counts } = packKnownAdditiveFeatures(masks, features);
 
+      const additionalCoefficients = new Float64Array([
+        ...model.eventCoefficients,
+        ...model.regressors.map((regressor) => regressor.coefficient),
+      ]);
+
       const packed = yield* attemptWasmPrediction(
         () =>
           predictFeatures(
@@ -540,7 +568,7 @@ export const makeWasmPiecewiseMapAdapter = (
             packedMasks,
             features.matrix.columnCount,
             values,
-            new Float64Array(model.eventCoefficients),
+            additionalCoefficients,
             offsets,
             counts,
           ),

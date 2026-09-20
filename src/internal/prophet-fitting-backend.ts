@@ -20,6 +20,7 @@ export const prophetFittingBackendLayer: Layer.Layer<FittingBackend> = Layer.suc
           seasonalityMasks,
           additionalFeatures,
           events,
+          regressors,
         }) =>
           fitPiecewiseMapFeaturesWithWasm(
             input,
@@ -30,6 +31,7 @@ export const prophetFittingBackendLayer: Layer.Layer<FittingBackend> = Layer.suc
             seasonalityMasks,
             additionalFeatures,
             events,
+            regressors,
           ),
         FlatMap: ({ seasonalities }) => fitFlatMapWithWasm(input, seasonalities),
         FlatAdditiveMap: ({ seasonalities }) => fitFlatMapWithWasm(input, seasonalities),
