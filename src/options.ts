@@ -177,6 +177,17 @@ const defaultBuiltInSeasonalities: BuiltInSeasonalities = Object.freeze({
   yearly: "off",
 });
 
+/** Default automatic changepoint controls for additive linear requests. */
+export const defaultAutomaticMapOptions: MapOptions = Object.freeze({
+  changepoints: Object.freeze({ mode: "auto", count: 25, range: 0.8 }),
+  changepointPriorScale: 0.05,
+  optimizer: Object.freeze({
+    maxIterations: 10_000,
+    relativeTolerance: 1e-10,
+    absoluteTolerance: 1e-12,
+  }),
+});
+
 /**
  * Central defaults for public fitting configuration.
  *

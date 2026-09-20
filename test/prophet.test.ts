@@ -490,34 +490,34 @@ describe("flat MAP Prophet integration", () => {
   });
 });
 
-describe("linear-additive Prophet integration", () => {
+describe("linear MAP Prophet integration", () => {
   it("resolves automatic built-ins from training history before real WASM fitting", async () => {
     const automaticObservations = Array.from({ length: 57 }, (_, index) => {
       const timestamp = syntheticStart + index * (DAY / 4);
 
       return {
         timestamp: new Date(timestamp).toISOString(),
-        value: syntheticValue(timestamp),
+        value: 10 + Math.sin((2 * Math.PI * index) / 4) + 0.2 * Math.sin((2 * Math.PI * index) / 7),
       };
     });
 
     const model = await Effect.runPromise(
       fit(automaticObservations, {
         seasonalities: [{ name: "custom-cycle", periodDays: 2.5, fourierOrder: 1 }],
-        builtInSeasonalities: { daily: "auto", weekly: "auto", yearly: "auto" },
+        builtInSeasonalities: { weekly: "auto" },
       }).pipe(Effect.provide(prophetFittingBackendLayer)),
     );
 
-    expect(model.model).toBe("linear-additive-ridge");
+    expect(model.model).toBe("linear-piecewise-map");
 
-    if (model.model !== "linear-additive-ridge") {
-      throw new Error("Expected a linear-additive-ridge model");
+    if (model.model !== "linear-piecewise-map") {
+      throw new Error("Expected a linear-piecewise-map model");
     }
 
+    expect(model.changepointTimestamps).toHaveLength(25);
     expect(model.seasonalities.components.map((component) => component.definition)).toEqual([
       { name: "custom-cycle", periodDays: 2.5, fourierOrder: 1, priorScale: 10 },
       { name: "weekly", periodDays: 7, fourierOrder: 3, priorScale: 10 },
-      { name: "daily", periodDays: 1, fourierOrder: 4, priorScale: 10 },
     ]);
 
     const originalNames = model.seasonalities.components.map(
@@ -541,28 +541,30 @@ describe("linear-additive Prophet integration", () => {
       expect(forecast.seasonalities.map((component) => component.name)).toEqual([
         "custom-cycle",
         "weekly",
-        "daily",
       ]);
     }
   });
 
   it("fits multiple components and forecasts held-out timestamps through real WASM", async () => {
     const model = await Effect.runPromise(
-      fit(syntheticObservations, additiveOptions).pipe(Effect.provide(prophetFittingBackendLayer)),
+      fit(syntheticObservations, {
+        ...additiveOptions,
+        map: { changepoints: { mode: "explicit", timestamps: [] } },
+      }).pipe(Effect.provide(prophetFittingBackendLayer)),
     );
 
-    expect(model.model).toBe("linear-additive-ridge");
+    expect(model.model).toBe("linear-piecewise-map");
 
-    if (model.model !== "linear-additive-ridge") {
-      throw new Error("Expected a linear-additive-ridge model");
+    if (model.model !== "linear-piecewise-map") {
+      throw new Error("Expected a linear-piecewise-map model");
     }
 
     expect(model.seasonalities.components.map((component) => component.definition.name)).toEqual([
       "daily-custom",
       "weekly-custom",
     ]);
-    expect(model.fitSummary.method).toBe("normalized-ridge-v1");
-    expect(Number.isFinite(model.fitSummary.penalizedObjective)).toBe(true);
+    expect(model.fitSummary.method).toBe("piecewise-map-coordinate-v1");
+    expect(Number.isFinite(model.fitSummary.objective)).toBe(true);
 
     const heldOutTimestamps = [
       syntheticStart + 56 * (DAY / 4),

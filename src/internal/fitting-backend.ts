@@ -11,7 +11,6 @@ import type {
 
 export type {
   FlatMapParameters,
-  LinearAdditiveParameters,
   LinearParameters,
   Parameters,
   PiecewiseMapParameters,
@@ -29,14 +28,6 @@ export interface TrainingInput {
 /** Request for ordinary linear-trend fitting without seasonal components. */
 export interface LinearTrendFitPlan {
   readonly _tag: "LinearTrend";
-}
-
-/** Request for joint linear-trend and additive-seasonality fitting. */
-export interface LinearAdditiveFitPlan {
-  readonly _tag: "LinearAdditive";
-
-  /** Non-empty ordered seasonality coefficient layout established by public parsing. */
-  readonly seasonalities: NonEmptySeasonalityLayout;
 }
 
 /** Request for joint linear piecewise MAP fitting and additive-seasonality fitting. */
@@ -75,7 +66,6 @@ export interface FlatAdditiveMapFitPlan {
 /** Exhaustive set of configurations supported by the public fitting backend. */
 export type FitPlan =
   | LinearTrendFitPlan
-  | LinearAdditiveFitPlan
   | LinearPiecewiseMapFitPlan
   | FlatMapFitPlan
   | FlatAdditiveMapFitPlan;

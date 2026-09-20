@@ -9,7 +9,6 @@ import {
 import {
   parseFittedModel,
   type FittedFlatMapProphet,
-  type FittedLinearAdditiveProphet,
   type FittedLinearProphet,
   type FittedPiecewiseMapProphet,
   type FittedProphet,
@@ -17,13 +16,13 @@ import {
 import { FitPlan, FittingBackend, type TrainingInput } from "./internal/fitting-backend";
 import { resolveSeasonalities } from "./internal/seasonality-resolution";
 import { TimestampSchema } from "./internal/timestamp";
-import { predictAdditiveWithWasm } from "./internal/wasm-additive-backend";
 import { predictFlatMapWithWasm } from "./internal/wasm-flat-map-backend";
 import { predictLinearTrendWithWasm } from "./internal/wasm-linear-trend-backend";
 import { predictPiecewiseMapWithWasm } from "./internal/wasm-piecewise-map-backend";
 import { decodeObservations, type Observations } from "./observation";
 import {
   decodeOptions,
+  defaultAutomaticMapOptions,
   optionsValidationErrorFromSeasonality,
   type EncodedProphetOptions,
   type ProphetOptions,
@@ -182,9 +181,18 @@ const makeFitPlan = (options: ProphetOptions, layout: SeasonalityLayout): FitPla
 
   const seasonalities = nonEmptyLayoutFromResolved(layout, firstComponent);
 
-  return options.growth === "linear"
-    ? FitPlan.LinearAdditive({ seasonalities })
-    : FitPlan.FlatAdditiveMap({ seasonalities });
+  if (options.growth === "linear") {
+    const map = options.map ?? defaultAutomaticMapOptions;
+
+    return FitPlan.LinearPiecewiseMap({
+      seasonalities,
+      changepoints: map.changepoints,
+      changepointPriorScale: map.changepointPriorScale,
+      optimizer: map.optimizer,
+    });
+  }
+
+  return FitPlan.FlatAdditiveMap({ seasonalities });
 };
 
 /**
@@ -275,10 +283,7 @@ const predictLinearForecasts = (
     return forecasts;
   });
 
-type FittedSeasonalProphet =
-  | FittedLinearAdditiveProphet
-  | FittedFlatMapProphet
-  | FittedPiecewiseMapProphet;
+type FittedSeasonalProphet = FittedFlatMapProphet | FittedPiecewiseMapProphet;
 
 type SeasonalPredictionBatch = {
   readonly values: Float64Array;
@@ -337,14 +342,6 @@ const forecastsFromSeasonalBatch = (
     return forecasts;
   });
 
-const predictLinearAdditiveForecasts = (
-  model: FittedLinearAdditiveProphet,
-  timestamps: PredictionTimestamps,
-): Effect.Effect<Forecasts, PredictionError> =>
-  predictAdditiveWithWasm(model, timestamps).pipe(
-    Effect.flatMap((batch) => forecastsFromSeasonalBatch(model, timestamps, batch, "additive")),
-  );
-
 const predictFlatMapForecasts = (
   model: FittedFlatMapProphet,
   timestamps: PredictionTimestamps,
@@ -368,8 +365,6 @@ const predictFittedModel = (
   Match.value(model).pipe(
     Match.discriminatorsExhaustive("model")({
       "linear-trend": (linearModel) => predictLinearForecasts(linearModel, timestamps),
-      "linear-additive-ridge": (additiveModel) =>
-        predictLinearAdditiveForecasts(additiveModel, timestamps),
       "flat-map": (flatModel) => predictFlatMapForecasts(flatModel, timestamps),
       "linear-piecewise-map": (piecewiseModel) =>
         predictPiecewiseMapForecasts(piecewiseModel, timestamps),

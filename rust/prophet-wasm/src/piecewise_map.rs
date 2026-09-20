@@ -1,10 +1,10 @@
-use crate::additive_ridge::SeasonalitySpec;
 use crate::fourier::{
   FourierError, FourierSeasonality, checked_element_count, coefficient_count,
   evaluate_seasonal_components, make_fourier_features,
 };
 use crate::map_objective::{MapObjectiveError, evaluate_map_objective};
 use crate::piecewise_linear::{PiecewiseTrend, PiecewiseTrendError};
+use crate::seasonality::SeasonalitySpec;
 
 const TREND_PRIOR_SCALE: f64 = 5.0;
 const NOISE_PRIOR_SCALE: f64 = 0.5;
@@ -651,7 +651,7 @@ mod tests {
     MapControls, MapTermination, fit_piecewise_map, predict_piecewise_map,
     resolve_automatic_changepoints,
   };
-  use crate::additive_ridge::SeasonalitySpec;
+  use crate::seasonality::SeasonalitySpec;
 
   const CONTROLS: MapControls = MapControls {
     max_iterations: 2_000,

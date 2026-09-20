@@ -1,12 +1,12 @@
 use wasm_bindgen::prelude::wasm_bindgen;
 
-use crate::additive_ridge::SeasonalitySpec;
 use crate::piecewise_linear::PiecewiseTrend;
 use crate::piecewise_map::{
   MapControls, MapTermination, PiecewiseMapError, PiecewiseMapPredictionError,
   fit_piecewise_map as fit_kernel, predict_piecewise_map as predict_kernel,
   resolve_automatic_changepoints,
 };
+use crate::seasonality::SeasonalitySpec;
 
 const MAX_WIRE_INTEGER: f64 = u32::MAX as f64;
 

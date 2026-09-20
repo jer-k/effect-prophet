@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   InputValidationError,
   decodeOptions,
+  defaultAutomaticMapOptions,
   defaultProphetOptions,
   type EncodedProphetOptions,
 } from "../src/index";
@@ -99,6 +100,19 @@ describe("decodeOptions", () => {
       builtInSeasonalities: { daily: "off", weekly: "off", yearly: "off" },
     });
     expect(Object.isFrozen(options.seasonalities)).toBe(true);
+  });
+
+  it("defines automatic additive MAP defaults separately from explicit map decoding", () => {
+    expect(defaultAutomaticMapOptions).toEqual({
+      changepoints: { mode: "auto", count: 25, range: 0.8 },
+      changepointPriorScale: 0.05,
+      optimizer: {
+        maxIterations: 10_000,
+        relativeTolerance: 1e-10,
+        absoluteTolerance: 1e-12,
+      },
+    });
+    expect(Object.isFrozen(defaultAutomaticMapOptions)).toBe(true);
   });
 
   it("parses explicit and automatic linear MAP controls", async () => {

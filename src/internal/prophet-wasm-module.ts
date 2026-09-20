@@ -17,30 +17,6 @@ export interface LinearTrendWasmBindings {
   ) => Float64Array;
 }
 
-/** Rust/WASM bindings for the packed additive ridge protocol. */
-export interface AdditiveRidgeWasmBindings {
-  /** Fit one complete additive ridge model and return its packed protocol frame. */
-  readonly fit_additive_ridge: (
-    timestamps: Float64Array,
-    values: Float64Array,
-    periodsDays: Float64Array,
-    fourierOrders: Float64Array,
-    priorScales: Float64Array,
-  ) => Float64Array;
-
-  /** Evaluate one complete additive prediction batch and return its packed protocol frame. */
-  readonly predict_additive_ridge: (
-    timestamps: Float64Array,
-    intercept: number,
-    slope: number,
-    timeOrigin: number,
-    timeScale: number,
-    periodsDays: Float64Array,
-    fourierOrders: Float64Array,
-    coefficients: Float64Array,
-  ) => Float64Array;
-}
-
 /** Rust/WASM bindings for the packed reduced flat MAP protocol. */
 export interface FlatMapWasmBindings {
   /** Fit one complete flat MAP model and return its packed protocol frame. */
@@ -100,7 +76,6 @@ export interface PiecewiseMapWasmBindings {
 
 /** Complete generated Rust/WASM module contract required by this package version. */
 export type ProphetWasmModule = LinearTrendWasmBindings &
-  AdditiveRidgeWasmBindings &
   FlatMapWasmBindings &
   PiecewiseMapWasmBindings;
 
@@ -112,8 +87,6 @@ const require = createRequire(import.meta.url);
 const requiredFunctionExports = [
   "fit_linear_trend",
   "predict_linear_trend",
-  "fit_additive_ridge",
-  "predict_additive_ridge",
   "fit_flat_map",
   "predict_flat_map",
   "fit_piecewise_map",

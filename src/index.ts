@@ -26,7 +26,6 @@ export {
   encodeFittedModel,
   type EncodedFittedModel,
   type EncodedFlatMapModel,
-  type EncodedLinearAdditiveModel,
   type EncodedLinearModel,
   type EncodedPiecewiseMapModel,
   type SerializableFittedModel,
@@ -34,6 +33,7 @@ export {
 
 export {
   decodeOptions,
+  defaultAutomaticMapOptions,
   defaultProphetOptions,
   type BuiltInSeasonalities,
   type BuiltInSeasonalitySetting,
@@ -59,12 +59,10 @@ export {
 
 export {
   type FittedFlatMapProphet,
-  type FittedLinearAdditiveProphet,
   type FittedLinearProphet,
   type FittedPiecewiseMapProphet,
   type FittedProphet,
   type FlatMapParameters,
-  type LinearAdditiveParameters,
   type PiecewiseMapParameters,
 } from "./fitted-model";
 

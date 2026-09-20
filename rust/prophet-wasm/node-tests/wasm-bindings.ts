@@ -2,28 +2,6 @@ import { createRequire } from "node:module";
 
 import { Predicate } from "effect";
 
-interface AdditiveFitStatuses {
-  readonly Success: number;
-  readonly InsufficientObservations: number;
-  readonly LengthMismatch: number;
-  readonly InvalidObservation: number;
-  readonly InvalidConfiguration: number;
-  readonly ZeroTimeRange: number;
-  readonly RankDeficient: number;
-  readonly SizeOverflow: number;
-  readonly NonFiniteResult: number;
-}
-
-interface AdditivePredictionStatuses {
-  readonly Success: number;
-  readonly InvalidTimestamp: number;
-  readonly InvalidModel: number;
-  readonly InvalidConfiguration: number;
-  readonly LengthMismatch: number;
-  readonly SizeOverflow: number;
-  readonly NonFiniteResult: number;
-}
-
 interface FlatMapFitStatuses {
   readonly Success: number;
   readonly InsufficientObservations: number;
@@ -80,30 +58,11 @@ interface LinearTrendFitStatuses {
 
 /** Generated Rust/WASM exports exercised directly by the Node boundary tests. */
 export interface ProphetWasmNodeBindings {
-  readonly AdditiveFitStatus: AdditiveFitStatuses;
-  readonly AdditivePredictionStatus: AdditivePredictionStatuses;
   readonly FlatMapFitStatus: FlatMapFitStatuses;
   readonly FlatMapPredictionStatus: FlatMapPredictionStatuses;
   readonly LinearTrendFitStatus: LinearTrendFitStatuses;
   readonly PiecewiseMapFitStatus: PiecewiseMapFitStatuses;
   readonly PiecewiseMapPredictionStatus: PiecewiseMapPredictionStatuses;
-  readonly fit_additive_ridge: (
-    timestamps: Float64Array,
-    values: Float64Array,
-    periodsDays: Float64Array,
-    fourierOrders: Float64Array,
-    priorScales: Float64Array,
-  ) => Float64Array;
-  readonly predict_additive_ridge: (
-    timestamps: Float64Array,
-    intercept: number,
-    slope: number,
-    timeOrigin: number,
-    timeScale: number,
-    periodsDays: Float64Array,
-    fourierOrders: Float64Array,
-    coefficients: Float64Array,
-  ) => Float64Array;
   readonly fit_flat_map: (
     timestamps: Float64Array,
     values: Float64Array,
@@ -160,8 +119,6 @@ export interface ProphetWasmNodeBindings {
 const require = createRequire(import.meta.url);
 
 const requiredFunctionExports = [
-  "fit_additive_ridge",
-  "predict_additive_ridge",
   "fit_flat_map",
   "predict_flat_map",
   "fit_piecewise_map",
@@ -171,26 +128,6 @@ const requiredFunctionExports = [
 ] as const;
 
 const requiredStatusMembers = {
-  AdditiveFitStatus: [
-    "Success",
-    "InsufficientObservations",
-    "LengthMismatch",
-    "InvalidObservation",
-    "InvalidConfiguration",
-    "ZeroTimeRange",
-    "RankDeficient",
-    "SizeOverflow",
-    "NonFiniteResult",
-  ],
-  AdditivePredictionStatus: [
-    "Success",
-    "InvalidTimestamp",
-    "InvalidModel",
-    "InvalidConfiguration",
-    "LengthMismatch",
-    "SizeOverflow",
-    "NonFiniteResult",
-  ],
   FlatMapFitStatus: [
     "Success",
     "InsufficientObservations",

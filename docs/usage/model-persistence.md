@@ -7,10 +7,13 @@ WASM, selecting a fitting Layer, or refitting observations.
 The current portable model kinds are:
 
 - `linear-trend` — intercept, slope, and time scaling;
-- `linear-additive-ridge` — trend state, ordered seasonality definitions and coefficients, and
-  ridge diagnostics;
+- `linear-piecewise-map` — trend, changepoints, deltas, ordered seasonality definitions and
+  coefficients, positive observation noise, and MAP diagnostics;
 - `flat-map` — constant level, ordered seasonality definitions and coefficients, positive
   observation noise, and flat MAP diagnostics.
+
+Payloads from the removed pre-release additive ridge model are rejected as typed decode errors;
+models are never silently refit or migrated.
 
 ## Flat MAP payload
 

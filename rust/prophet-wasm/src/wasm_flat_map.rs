@@ -1,10 +1,10 @@
 use wasm_bindgen::prelude::wasm_bindgen;
 
-use crate::additive_ridge::SeasonalitySpec;
 use crate::flat_map::{
   FlatMapError, FlatMapPredictionError, FlatMapTermination, fit_flat_map as fit_flat_map_kernel,
   predict_flat_map as predict_flat_map_kernel,
 };
+use crate::seasonality::SeasonalitySpec;
 
 const MAX_WIRE_FOURIER_ORDER: f64 = u32::MAX as f64;
 
