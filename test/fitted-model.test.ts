@@ -1,6 +1,7 @@
 import { Effect } from "effect";
 import { describe, expect, it } from "vitest";
 
+import { emptyEventCalendar } from "../src/event";
 import {
   InvalidFittedModel,
   parseFittedModel,
@@ -60,6 +61,8 @@ const validPiecewiseMapParameters = async (): Promise<PiecewiseMapParameters> =>
     deltas: [-1],
     seasonalities,
     coefficients: [],
+    events: emptyEventCalendar,
+    eventCoefficients: [],
     noiseScale: 0.1,
     fitSummary: {
       method: "piecewise-map-coordinate-v1",

@@ -178,6 +178,43 @@ pub fn make_fourier_features(
   })
 }
 
+/// Apply one binary value per row and seasonal component to all of its harmonics.
+pub fn apply_seasonality_masks(
+  features: &mut FourierFeatureMatrix,
+  seasonalities: &[FourierSeasonality],
+  masks: &[u8],
+) -> Result<(), FourierError> {
+  let expected_masks = features
+    .row_count
+    .checked_mul(seasonalities.len())
+    .ok_or(FourierError::SizeOverflow)?;
+
+  if masks.len() != expected_masks || masks.iter().any(|value| *value != 0 && *value != 1) {
+    return Err(FourierError::InvalidCoefficients);
+  }
+
+  for row in 0..features.row_count {
+    let mut coefficient_offset = 0_usize;
+
+    for (component, seasonality) in seasonalities.iter().enumerate() {
+      let component_columns = seasonality
+        .fourier_order
+        .checked_mul(2)
+        .ok_or(FourierError::SizeOverflow)?;
+      let mask = f64::from(masks[row * seasonalities.len() + component]);
+      let row_offset = row * features.column_count;
+
+      for column in coefficient_offset..(coefficient_offset + component_columns) {
+        features.values[row_offset + column] *= mask;
+      }
+
+      coefficient_offset += component_columns;
+    }
+  }
+
+  Ok(())
+}
+
 /// Evaluate each seasonal component from aligned Fourier coefficients.
 pub fn evaluate_seasonal_components(
   features: &FourierFeatureMatrix,

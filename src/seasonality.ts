@@ -5,22 +5,10 @@ import {
   validationIssuesFromIssue,
   validationMessageFromIssue,
 } from "./errors";
+import { featureNameDelimiter, isReservedFeatureName } from "./feature-name";
 
 /** The Stage B default ridge penalty control for a seasonal component. */
 export const defaultSeasonalityPriorScale = 10;
-
-// Exact, case-sensitive names reserved for built-ins and package output/component labels.
-// Names are never normalized: `daily` is reserved while `Daily` is a distinct custom name.
-const reservedSeasonalityNames: ReadonlySet<string> = new Set([
-  "daily",
-  "weekly",
-  "yearly",
-  "trend",
-  "value",
-  "timestamp",
-  "additive",
-  "seasonalities",
-]);
 
 const PositiveFinite = Schema.Finite.check(Schema.isGreaterThan(0));
 
@@ -34,7 +22,9 @@ const PositiveFourierOrder = Schema.Int.check(
 const builtInSeasonalityNames: ReadonlySet<string> = new Set(["daily", "weekly", "yearly"]);
 
 const validDefinitionName = Schema.makeFilter(
-  (name: string) => !reservedSeasonalityNames.has(name) || builtInSeasonalityNames.has(name),
+  (name: string) =>
+    (!isReservedFeatureName(name) || builtInSeasonalityNames.has(name)) &&
+    !name.includes(featureNameDelimiter),
   { message: "Seasonality name is reserved" },
 );
 
@@ -84,8 +74,11 @@ const SeasonalityDefinitionSchema = ResolvedSeasonalityDefinitionFieldsSchema.pi
 
 const CustomSeasonalityDefinitionSchema = Schema.Struct({
   name: Schema.NonEmptyString.check(
-    Schema.makeFilter((name) => !reservedSeasonalityNames.has(name), {
+    Schema.makeFilter((name) => !isReservedFeatureName(name), {
       message: "Seasonality name is reserved",
+    }),
+    Schema.makeFilter((name) => !name.includes(featureNameDelimiter), {
+      message: `Seasonality names cannot contain '${featureNameDelimiter}'`,
     }),
   ),
   periodDays: PositiveFinite,

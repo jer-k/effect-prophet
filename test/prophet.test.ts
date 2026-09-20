@@ -5,6 +5,7 @@ import {
   FittingError,
   InputValidationError,
   PredictionError,
+  UnsupportedConfigurationError,
   fit,
   predict,
   prophetFittingBackendLayer,
@@ -28,7 +29,11 @@ const linearForecastPrecisionDigits = 12;
 describe("linear-trend Prophet integration", () => {
   it("exposes validation and numerical failures precisely", () => {
     expectTypeOf(fit(observations)).toEqualTypeOf<
-      Effect.Effect<FittedProphet, InputValidationError | FittingError, FittingBackend>
+      Effect.Effect<
+        FittedProphet,
+        InputValidationError | UnsupportedConfigurationError | FittingError,
+        FittingBackend
+      >
     >();
   });
 
@@ -79,6 +84,7 @@ describe("linear-trend Prophet integration", () => {
       trend: 14,
       additive: 0,
       seasonalities: [],
+      events: [],
     });
     expect(testBackend.invocations).toEqual([
       {
@@ -113,6 +119,7 @@ describe("linear-trend Prophet integration", () => {
       trend: model.level,
       additive: 0,
       seasonalities: [],
+      events: [],
     });
   });
 

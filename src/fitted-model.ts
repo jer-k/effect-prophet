@@ -5,6 +5,7 @@ import {
   validationIssuesFromIssue,
   validationMessageFromIssue,
 } from "./errors";
+import { EventCalendarSchema, emptyEventCalendar } from "./event";
 import { SeasonalityLayoutSchema } from "./seasonality";
 
 const PositiveFinite = Schema.Finite.check(Schema.isGreaterThan(0));
@@ -94,6 +95,12 @@ const PiecewiseMapParametersFieldsSchema = Schema.Struct({
   deltas: Schema.Array(Schema.Finite),
   seasonalities: SeasonalityLayoutSchema,
   coefficients: Schema.Array(Schema.Finite),
+  events: EventCalendarSchema.pipe(
+    Schema.withDecodingDefaultKey(Effect.succeed(emptyEventCalendar)),
+  ),
+  eventCoefficients: Schema.Array(Schema.Finite).pipe(
+    Schema.withDecodingDefaultKey(Effect.succeed([])),
+  ),
   noiseScale: PositiveFinite,
   fitSummary: PiecewiseMapFitSummarySchema,
 });
@@ -115,6 +122,13 @@ const consistentPiecewiseMapParameters = Schema.makeFilter<PiecewiseMapParameter
       issues.push({
         path: ["coefficients"],
         issue: `Expected exactly ${parameters.seasonalities.coefficientCount} seasonal coefficients`,
+      });
+    }
+
+    if (parameters.eventCoefficients.length !== parameters.events.layout.coefficientCount) {
+      issues.push({
+        path: ["eventCoefficients"],
+        issue: `Expected exactly ${parameters.events.layout.coefficientCount} event coefficients`,
       });
     }
 
@@ -158,7 +172,8 @@ const consistentPiecewiseMapParameters = Schema.makeFilter<PiecewiseMapParameter
       if (
         parameters.slope !== 0 ||
         parameters.deltas.some((delta) => delta !== 0) ||
-        parameters.coefficients.some((coefficient) => coefficient !== 0)
+        parameters.coefficients.some((coefficient) => coefficient !== 0) ||
+        parameters.eventCoefficients.some((coefficient) => coefficient !== 0)
       ) {
         issues.push({
           path: ["fitSummary", "termination"],
@@ -278,6 +293,28 @@ const freezeFeatureModel = <Model extends FittedFlatMapProphet | FittedPiecewise
   Object.freeze(model.seasonalities.components);
   Object.freeze(model.seasonalities);
   Object.freeze(model.coefficients);
+
+  if (model.model === "linear-piecewise-map") {
+    for (const occurrence of model.events.occurrences) {
+      Object.freeze(occurrence);
+    }
+
+    for (const column of model.events.columns) {
+      Object.freeze(column);
+    }
+
+    for (const component of model.events.layout.components) {
+      Object.freeze(component);
+    }
+
+    Object.freeze(model.events.occurrences);
+    Object.freeze(model.events.columns);
+    Object.freeze(model.events.layout.components);
+    Object.freeze(model.events.layout.priorScales);
+    Object.freeze(model.events.layout);
+    Object.freeze(model.events);
+    Object.freeze(model.eventCoefficients);
+  }
 
   if (model.model === "linear-piecewise-map") {
     Object.freeze(model.changepointTimestamps);

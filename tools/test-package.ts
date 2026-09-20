@@ -41,8 +41,11 @@ const expectedJavaScriptFiles = sourceFiles.flatMap((sourceFile) => {
 
 const expectedDeclarationFiles = [
   "dist/errors.d.ts",
+  "dist/event.d.ts",
+  "dist/feature-name.d.ts",
   "dist/fitted-model.d.ts",
   "dist/index.d.ts",
+  "dist/internal/additional-features.d.ts",
   "dist/internal/fitting-backend.d.ts",
   "dist/internal/prophet-fitting-backend.d.ts",
   "dist/model-serialization.d.ts",

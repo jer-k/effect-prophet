@@ -1,4 +1,4 @@
-import { Cause, Effect, Exit, Option, Predicate, Tracer } from "effect";
+import { Effect, Exit, Option, Predicate, Tracer } from "effect";
 import { describe, expect, it } from "vitest";
 
 import { FittingError } from "../../src/errors";
@@ -282,7 +282,7 @@ describe("Rust/WASM flat MAP tracing", () => {
     }
   });
 
-  it("marks a flat numerical boundary failure without replacing its typed error", async () => {
+  it("short-circuits insufficient flat history before the numerical boundary", async () => {
     const spans: Array<Tracer.Span> = [];
 
     const tracer = Tracer.make({
@@ -304,20 +304,7 @@ describe("Rust/WASM flat MAP tracing", () => {
 
     expect(error).toBeInstanceOf(FittingError);
     expect(publicFit).toBeDefined();
-    expect(wasmFit).toBeDefined();
-
-    if (publicFit === undefined || wasmFit === undefined) {
-      return;
-    }
-
-    const status = requireEnded(wasmFit);
-
-    expect(wasmFit.parent.pipe(Option.getOrUndefined)?.spanId).toBe(publicFit.spanId);
-    expect(Exit.isFailure(status.exit)).toBe(true);
-
-    if (Exit.isFailure(status.exit)) {
-      expect(Option.getOrUndefined(Cause.findErrorOption(status.exit.cause))).toBe(error);
-    }
+    expect(wasmFit).toBeUndefined();
   });
 
   it("does not enter a flat WASM boundary on option validation", async () => {

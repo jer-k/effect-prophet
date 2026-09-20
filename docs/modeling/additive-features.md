@@ -1,0 +1,29 @@
+# Known additive features
+
+Custom events are represented as known additive feature columns and are fitted jointly with trend, changepoints, and seasonal Fourier terms. The numerical implementation is Rust-only; TypeScript parses calendar semantics, constructs checked matrices, and frames coarse WASM calls.
+
+## Column and coefficient order
+
+The complete Gaussian-prior feature order is:
+
+1. seasonal Fourier coefficients in resolved seasonality order;
+2. event columns in Python/Prophet lexical key order;
+3. future additional-regressor columns.
+
+An event key is `name_delim_<signedOffset>`, including `+0`. Ordering compares Unicode code points to match Python rather than JavaScript UTF-16 ordering. Event offsets belonging to one name form one grouped forecast component. Seasonal masks have one binary value per row and seasonal component and gate all harmonics before fitting or prediction.
+
+The piecewise MAP design is `[1, scaledTime, changepointHinges, seasonal, additional]`. Additional columns use their configured positive Gaussian prior scales and are optimized in the same objective; no residual-after-fit shortcut is used.
+
+## Event calendar behavior
+
+Event dates are exact `YYYY-MM-DD` Gregorian dates. Prediction and training timestamps map to calendar days in UTC using mathematical floor division, including dates before the Unix epoch. Every subdaily row on a matching UTC day receives the same indicator.
+
+A lower window must be at most zero and an upper window at least zero. Every `(name, offset)` pair creates one binary column. Duplicate occurrences are idempotent, overlapping occurrences remain binary, and all occurrences of one name must use one prior scale. Names are case-sensitive, are not whitespace-normalized, cannot contain `_delim_`, and cannot collide with package labels or configured seasonalities.
+
+Occurrences supplied during fitting are retained in the fitted model and portable payload. Future declared occurrences therefore affect prediction; undeclared one-off dates do not recur automatically. A future-only column is representable but has no training signal beyond its zero-centered prior.
+
+## Memory and WASM protocol
+
+Feature and mask matrices are row-major and copied at the TypeScript and generated WASM boundaries. Rust validates exact lengths, finite values, binary masks, positive priors, and contiguous component ranges before numerical loops. Fitted models retain semantic calendar metadata and owned coefficient arrays, never matrix buffers or typed-array aliases.
+
+Featureful fit and prediction each cross WASM once. Existing feature-free exports remain callable. Successful prediction rows are `[trend, additive, value, ...seasonalComponents, ...eventComponents]`; successful fit frames append seasonal coefficients followed by event coefficients.

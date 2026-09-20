@@ -1,6 +1,13 @@
 import { Effect, Schema } from "effect";
 
 import { InputValidationError, inputValidationErrorFromIssue } from "./errors";
+import {
+  emptyEventCalendar,
+  parseEventCalendar,
+  type EncodedEventOccurrence,
+  type EventCalendar,
+  type InvalidEventCalendar,
+} from "./event";
 import { TimestampSchema } from "./internal/timestamp";
 import {
   parseSeasonalities,
@@ -48,6 +55,7 @@ export interface BuiltInSeasonalities {
 
 interface EncodedBuiltInOptions {
   readonly builtInSeasonalities?: EncodedBuiltInSeasonalities;
+  readonly events?: ReadonlyArray<EncodedEventOccurrence>;
 }
 
 /** Public explicit or automatic changepoint configuration for linear MAP fitting. */
@@ -134,6 +142,7 @@ export type EncodedProphetOptions =
 
 interface ParsedBuiltInOptions {
   readonly builtInSeasonalities: BuiltInSeasonalities;
+  readonly events: EventCalendar;
 }
 
 /** Parsed linear-growth options without configured custom seasonalities. */
@@ -198,6 +207,7 @@ export const defaultProphetOptions: LinearTrendOptions = Object.freeze({
   growth: "linear",
   seasonalities: emptySeasonalities,
   builtInSeasonalities: defaultBuiltInSeasonalities,
+  events: emptyEventCalendar,
 });
 
 const GrowthSchema = Schema.Literals(["flat", "linear"]);
@@ -295,6 +305,7 @@ const ProphetOptionsSyntaxSchema = Schema.Struct({
   builtInSeasonalities: BuiltInSeasonalitiesSchema.pipe(
     Schema.withDecodingDefaultKey(Effect.succeed(defaultBuiltInSeasonalities)),
   ),
+  events: Schema.Array(Schema.Unknown).pipe(Schema.withDecodingDefaultKey(Effect.succeed([]))),
   map: Schema.optionalKey(MapOptionsSchema),
 });
 
@@ -349,6 +360,16 @@ export const optionsValidationErrorFromSeasonality = (
     message: error.message,
   });
 
+const optionsValidationErrorFromEvents = (error: InvalidEventCalendar): InputValidationError =>
+  new InputValidationError({
+    input: "options",
+    issues: error.issues.map((issue) => ({
+      message: issue.message,
+      path: ["events", ...(issue.path ?? [])],
+    })),
+    message: error.message,
+  });
+
 /** Decode optional, untrusted fitting options and apply the documented defaults. */
 export const decodeOptions = Effect.fn("decodeOptions")(function* (
   input?: Parameters<typeof decodeProphetOptionsSyntax>[0],
@@ -362,6 +383,29 @@ export const decodeOptions = Effect.fn("decodeOptions")(function* (
   const seasonalities = yield* parseSeasonalities(syntax.seasonalities).pipe(
     Effect.mapError(optionsValidationErrorFromSeasonality),
   );
+
+  const events = yield* parseEventCalendar(syntax.events).pipe(
+    Effect.mapError(optionsValidationErrorFromEvents),
+  );
+
+  const seasonalityNames = new Set(seasonalities.map((seasonality) => seasonality.name));
+
+  for (const [index, occurrence] of events.occurrences.entries()) {
+    if (seasonalityNames.has(occurrence.name)) {
+      return yield* Effect.fail(
+        new InputValidationError({
+          input: "options",
+          issues: [
+            {
+              path: ["events", index, "name"],
+              message: `Feature name '${occurrence.name}' collides with a seasonality`,
+            },
+          ],
+          message: "Event and seasonality names must be distinct",
+        }),
+      );
+    }
+  }
 
   if (syntax.growth === "flat" && syntax.map !== undefined) {
     return yield* Effect.fail(
@@ -379,12 +423,12 @@ export const decodeOptions = Effect.fn("decodeOptions")(function* (
 
   if (firstSeasonality === undefined) {
     if (syntax.growth === "flat") {
-      return { growth: "flat", seasonalities: emptySeasonalities, builtInSeasonalities };
+      return { growth: "flat", seasonalities: emptySeasonalities, builtInSeasonalities, events };
     }
 
     return map === undefined
-      ? { growth: "linear", seasonalities: emptySeasonalities, builtInSeasonalities }
-      : { growth: "linear", seasonalities: emptySeasonalities, builtInSeasonalities, map };
+      ? { growth: "linear", seasonalities: emptySeasonalities, builtInSeasonalities, events }
+      : { growth: "linear", seasonalities: emptySeasonalities, builtInSeasonalities, events, map };
   }
 
   const nonEmptySeasonalities: readonly [
@@ -393,10 +437,10 @@ export const decodeOptions = Effect.fn("decodeOptions")(function* (
   ] = Object.freeze([firstSeasonality, ...seasonalities.slice(1)]);
 
   if (syntax.growth === "flat") {
-    return { growth: "flat", seasonalities: nonEmptySeasonalities, builtInSeasonalities };
+    return { growth: "flat", seasonalities: nonEmptySeasonalities, builtInSeasonalities, events };
   }
 
   return map === undefined
-    ? { growth: "linear", seasonalities: nonEmptySeasonalities, builtInSeasonalities }
-    : { growth: "linear", seasonalities: nonEmptySeasonalities, builtInSeasonalities, map };
+    ? { growth: "linear", seasonalities: nonEmptySeasonalities, builtInSeasonalities, events }
+    : { growth: "linear", seasonalities: nonEmptySeasonalities, builtInSeasonalities, events, map };
 });

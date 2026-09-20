@@ -1,6 +1,7 @@
 import { Effect } from "effect";
 
 import { FittingError, PredictionError } from "../errors";
+import { emptyEventCalendar, type EventCalendar } from "../event";
 import {
   parsePiecewiseMapModel,
   type FittedPiecewiseMapProphet,
@@ -9,12 +10,18 @@ import {
 import type { ChangepointSetting, MapOptimizerControls } from "../options";
 import type { SeasonalityLayout } from "../seasonality";
 import type { TrainingInput } from "./fitting-backend";
-import { loadProphetWasmModule, type PiecewiseMapWasmBindings } from "./prophet-wasm-module";
+import type { KnownAdditiveFeatures, SeasonalityMaskMatrix } from "./additional-features";
+import {
+  loadProphetWasmModule,
+  type AdditiveFeatureWasmBindings,
+  type PiecewiseMapWasmBindings,
+} from "./prophet-wasm-module";
 import {
   attemptWasmFitting,
   attemptWasmPrediction,
   decodeSeasonalPredictions,
   failWasmFitting,
+  packKnownAdditiveFeatures,
   packSeasonalitiesForFit,
   packSeasonalitiesForPrediction,
   readWasmStatus,
@@ -25,7 +32,8 @@ import {
 } from "./wasm-backend";
 
 /** Lazy loader for checked linear piecewise MAP bindings. */
-export type WasmPiecewiseMapLoader = () => PiecewiseMapWasmBindings;
+export type WasmPiecewiseMapLoader = () => PiecewiseMapWasmBindings &
+  Partial<AdditiveFeatureWasmBindings>;
 
 /** One checked row-major linear piecewise MAP prediction batch. */
 export type PiecewiseMapPredictionBatch = WasmSeasonalPredictionBatch;
@@ -41,10 +49,30 @@ export interface WasmPiecewiseMapAdapter {
     optimizer: MapOptimizerControls,
   ) => Effect.Effect<PiecewiseMapParameters, FittingError>;
 
+  /** Fit masked seasonalities and known additive columns. */
+  readonly fitWithFeatures: (
+    input: TrainingInput,
+    seasonalities: SeasonalityLayout,
+    changepoints: ChangepointSetting,
+    changepointPriorScale: number,
+    optimizer: MapOptimizerControls,
+    masks: SeasonalityMaskMatrix,
+    features: KnownAdditiveFeatures,
+    events: EventCalendar,
+  ) => Effect.Effect<PiecewiseMapParameters, FittingError>;
+
   /** Predict from complete trusted linear MAP state. */
   readonly predict: (
     model: FittedPiecewiseMapProphet,
     timestamps: ReadonlyArray<number>,
+  ) => Effect.Effect<PiecewiseMapPredictionBatch, PredictionError>;
+
+  /** Predict masked seasonal and known additional rows. */
+  readonly predictWithFeatures: (
+    model: FittedPiecewiseMapProphet,
+    timestamps: ReadonlyArray<number>,
+    masks: SeasonalityMaskMatrix,
+    features: KnownAdditiveFeatures,
   ) => Effect.Effect<PiecewiseMapPredictionBatch, PredictionError>;
 }
 
@@ -86,6 +114,7 @@ const decodeFittedParameters = (
   observationCount: number,
   seasonalities: SeasonalityLayout,
   changepointPriorScale: number,
+  events: EventCalendar = emptyEventCalendar,
 ): Effect.Effect<PiecewiseMapParameters, FittingError> => {
   const status = readWasmStatus(packed);
 
@@ -104,8 +133,11 @@ const decodeFittedParameters = (
       return protocolFailure(observationCount);
     }
 
-    const parameterCount = 2 + changepointCount + seasonalities.coefficientCount;
-    const expectedLength = 13 + changepointCount * 2 + seasonalities.coefficientCount;
+    const parameterCount =
+      2 + changepointCount + seasonalities.coefficientCount + events.layout.coefficientCount;
+
+    const expectedLength =
+      13 + changepointCount * 2 + seasonalities.coefficientCount + events.layout.coefficientCount;
 
     if (!Number.isSafeInteger(expectedLength) || packed.length !== expectedLength) {
       return protocolFailure(observationCount, parameterCount);
@@ -129,6 +161,7 @@ const decodeFittedParameters = (
     const changepointStart = 13;
     const deltaStart = changepointStart + changepointCount;
     const coefficientStart = deltaStart + changepointCount;
+    const eventCoefficientStart = coefficientStart + seasonalities.coefficientCount;
 
     return parsePiecewiseMapModel({
       model: "linear-piecewise-map",
@@ -139,7 +172,9 @@ const decodeFittedParameters = (
       changepointTimestamps: Array.from(packed.slice(changepointStart, deltaStart)),
       deltas: Array.from(packed.slice(deltaStart, coefficientStart)),
       seasonalities,
-      coefficients: Array.from(packed.slice(coefficientStart)),
+      coefficients: Array.from(packed.slice(coefficientStart, eventCoefficientStart)),
+      events,
+      eventCoefficients: Array.from(packed.slice(eventCoefficientStart)),
       noiseScale: packed[7],
       fitSummary: {
         method: "piecewise-map-coordinate-v1",
@@ -211,6 +246,15 @@ const decodeFittedParameters = (
       return protocolFailure(observationCount);
   }
 };
+
+const predictionStatuses = {
+  success: 0,
+  invalidTimestamp: 1,
+  invalidModel: 2,
+  invalidConfiguration: 3,
+  sizeOverflow: 4,
+  nonFiniteResult: 5,
+} as const;
 
 const predictionMessages = {
   arithmeticOverflow: "Linear MAP prediction dimensions exceed safe integer arithmetic",
@@ -294,6 +338,100 @@ export const makeWasmPiecewiseMapAdapter = (
     );
   };
 
+  const fitWithFeatures: WasmPiecewiseMapAdapter["fitWithFeatures"] = (
+    input,
+    seasonalities,
+    changepoints,
+    changepointPriorScale,
+    optimizer,
+    masks,
+    features,
+    events,
+  ) => {
+    const observationCount = input.values.length;
+    const explicit = changepoints.mode === "explicit";
+
+    const explicitTimestamps = explicit
+      ? new Float64Array(changepoints.timestamps)
+      : new Float64Array();
+
+    const automaticCount = explicit ? 0 : changepoints.count;
+    const automaticRange = explicit ? 0 : changepoints.range;
+    const componentCount = seasonalities.components.length + features.layout.components.length;
+    const coefficientCount = seasonalities.coefficientCount + features.layout.coefficientCount;
+
+    return Effect.gen(function* () {
+      const module = yield* attemptWasmFitting(loadModule, observationCount, {
+        phase: "load",
+        message: "Failed to load the WASM linear MAP feature fitting backend",
+      });
+
+      const fitFeatures = module.fit_piecewise_map_with_features;
+
+      if (fitFeatures === undefined) {
+        return yield* failWasmFitting(observationCount, {
+          reason: "backend-failure",
+          backendPhase: "load",
+          message: "WASM linear MAP feature fitting export is unavailable",
+        });
+      }
+
+      const { periods, orders, priors: seasonalPriors } = packSeasonalitiesForFit(seasonalities);
+
+      const { packedMasks, values, priors, offsets, counts } = packKnownAdditiveFeatures(
+        masks,
+        features,
+      );
+
+      const packed = yield* attemptWasmFitting(
+        () =>
+          fitFeatures(
+            input.timestamps,
+            input.values,
+            explicit ? 0 : 1,
+            explicitTimestamps,
+            automaticCount,
+            automaticRange,
+            periods,
+            orders,
+            seasonalPriors,
+            packedMasks,
+            features.matrix.columnCount,
+            values,
+            priors,
+            offsets,
+            counts,
+            changepointPriorScale,
+            optimizer.maxIterations,
+            optimizer.relativeTolerance,
+            optimizer.absoluteTolerance,
+          ),
+        observationCount,
+        {
+          phase: "execute",
+          message: "Failed to execute the WASM linear MAP feature fitting backend",
+        },
+      );
+
+      return yield* decodeFittedParameters(
+        packed,
+        observationCount,
+        seasonalities,
+        changepointPriorScale,
+        events,
+      );
+    }).pipe(
+      Effect.withSpan(
+        "effect-prophet.wasm.fit",
+        wasmFitSpanOptions({ type: "linear-piecewise-map", growth: "linear" }, observationCount, {
+          components: componentCount,
+          coefficients: coefficientCount,
+        }),
+        { captureStackTrace: false },
+      ),
+    );
+  };
+
   const predict: WasmPiecewiseMapAdapter["predict"] = (model, timestamps) => {
     const firstTimestamp = timestamps[0];
     const componentCount = model.seasonalities.components.length;
@@ -337,6 +475,7 @@ export const makeWasmPiecewiseMapAdapter = (
         timestamps,
         componentCount,
         predictionMessages,
+        predictionStatuses,
       );
     }).pipe(
       Effect.withSpan(
@@ -347,7 +486,88 @@ export const makeWasmPiecewiseMapAdapter = (
     );
   };
 
-  return { fit, predict };
+  const predictWithFeatures: WasmPiecewiseMapAdapter["predictWithFeatures"] = (
+    model,
+    timestamps,
+    masks,
+    features,
+  ) => {
+    const firstTimestamp = timestamps[0];
+
+    const componentCount =
+      model.seasonalities.components.length + model.events.layout.components.length;
+
+    if (firstTimestamp === undefined) {
+      return Effect.succeed({ rowCount: 0, componentCount, values: new Float64Array() });
+    }
+
+    return Effect.gen(function* () {
+      const module = yield* attemptWasmPrediction(loadModule, firstTimestamp, {
+        phase: "load",
+        message: "Failed to load the WASM linear MAP feature prediction backend",
+      });
+
+      const predictFeatures = module.predict_piecewise_map_with_features;
+
+      if (predictFeatures === undefined) {
+        return yield* Effect.fail(
+          new PredictionError({
+            reason: "backend-failure",
+            timestamp: firstTimestamp,
+            backendPhase: "load",
+            message: "WASM linear MAP feature prediction export is unavailable",
+          }),
+        );
+      }
+
+      const { periods, orders } = packSeasonalitiesForPrediction(model.seasonalities);
+      const { packedMasks, values, offsets, counts } = packKnownAdditiveFeatures(masks, features);
+
+      const packed = yield* attemptWasmPrediction(
+        () =>
+          predictFeatures(
+            new Float64Array(timestamps),
+            model.intercept,
+            model.slope,
+            model.timeOrigin,
+            model.timeScale,
+            new Float64Array(model.changepointTimestamps),
+            new Float64Array(model.deltas),
+            model.noiseScale,
+            periods,
+            orders,
+            new Float64Array(model.coefficients),
+            packedMasks,
+            features.matrix.columnCount,
+            values,
+            new Float64Array(model.eventCoefficients),
+            offsets,
+            counts,
+          ),
+        firstTimestamp,
+        {
+          phase: "execute",
+          message: "Failed to execute the WASM linear MAP feature prediction backend",
+        },
+      );
+
+      return yield* decodeSeasonalPredictions(
+        packed,
+        timestamps,
+        componentCount,
+        predictionMessages,
+        predictionStatuses,
+      );
+    }).pipe(
+      Effect.withSpan(
+        "effect-prophet.wasm.predict",
+        wasmPredictSpanOptions("linear-piecewise-map", timestamps.length, componentCount),
+        { captureStackTrace: false },
+      ),
+    );
+  };
+
+  return { fit, fitWithFeatures, predict, predictWithFeatures };
 };
 
 const defaultAdapter = makeWasmPiecewiseMapAdapter(loadProphetWasmModule);
@@ -355,5 +575,11 @@ const defaultAdapter = makeWasmPiecewiseMapAdapter(loadProphetWasmModule);
 /** Fit a linear piecewise MAP model through the default Rust/WASM operation. */
 export const fitPiecewiseMapWithWasm = defaultAdapter.fit;
 
+/** Fit masked seasonalities and known additive columns through Rust/WASM MAP. */
+export const fitPiecewiseMapFeaturesWithWasm = defaultAdapter.fitWithFeatures;
+
 /** Evaluate a linear piecewise MAP model through the default Rust/WASM operation. */
 export const predictPiecewiseMapWithWasm = defaultAdapter.predict;
+
+/** Evaluate masked seasonalities and known additive rows through Rust/WASM MAP. */
+export const predictPiecewiseMapFeaturesWithWasm = defaultAdapter.predictWithFeatures;

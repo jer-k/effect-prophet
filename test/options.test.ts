@@ -1,6 +1,7 @@
 import { Effect } from "effect";
 import { describe, expect, it } from "vitest";
 
+import { emptyEventCalendar } from "../src/event";
 import {
   InputValidationError,
   decodeOptions,
@@ -28,6 +29,7 @@ describe("decodeOptions", () => {
       growth: "linear",
       seasonalities: [],
       builtInSeasonalities: { daily: "off", weekly: "off", yearly: "off" },
+      events: emptyEventCalendar,
     });
   });
 
@@ -46,6 +48,7 @@ describe("decodeOptions", () => {
         growth,
         seasonalities: [],
         builtInSeasonalities: { daily: "off", weekly: "off", yearly: "off" },
+        events: emptyEventCalendar,
       });
     },
   );
@@ -78,6 +81,7 @@ describe("decodeOptions", () => {
       growth: "flat",
       seasonalities: [{ name: "work-week", periodDays: 7, fourierOrder: 3, priorScale: 10 }],
       builtInSeasonalities: { daily: "off", weekly: "off", yearly: "off" },
+      events: emptyEventCalendar,
     });
   });
 
@@ -98,6 +102,7 @@ describe("decodeOptions", () => {
         { name: "quarter", periodDays: 91.25, fourierOrder: 2, priorScale: 4 },
       ],
       builtInSeasonalities: { daily: "off", weekly: "off", yearly: "off" },
+      events: emptyEventCalendar,
     });
     expect(Object.isFrozen(options.seasonalities)).toBe(true);
   });

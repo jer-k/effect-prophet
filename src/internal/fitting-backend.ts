@@ -1,6 +1,7 @@
 import { Context, Data, type Effect } from "effect";
 
 import type { FittingError } from "../errors";
+import type { EventCalendar } from "../event";
 import type { Parameters } from "../fitted-model";
 import type { ChangepointSetting, MapOptimizerControls } from "../options";
 import type {
@@ -8,6 +9,7 @@ import type {
   NonEmptySeasonalityLayout,
   SeasonalityLayout,
 } from "../seasonality";
+import type { KnownAdditiveFeatures, SeasonalityMaskMatrix } from "./additional-features";
 
 export type {
   FlatMapParameters,
@@ -45,6 +47,15 @@ export interface LinearPiecewiseMapFitPlan {
 
   /** Deterministic optimizer controls. */
   readonly optimizer: MapOptimizerControls;
+
+  /** Unconditional or condition-resolved masks aligned to training rows. */
+  readonly seasonalityMasks: SeasonalityMaskMatrix;
+
+  /** Checked known additive columns aligned to training rows. */
+  readonly additionalFeatures: KnownAdditiveFeatures;
+
+  /** Semantic event state retained in the fitted model. */
+  readonly events: EventCalendar;
 }
 
 /** Request for featureless reduced flat MAP fitting. */
