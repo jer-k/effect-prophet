@@ -18,7 +18,7 @@
     },
     {
       "path": "linear-map-fit.json",
-      "sha256": "eade8e2f1a9348a4fbb065000e83f78be5a22ad4e7789825d511d757d55b3f26"
+      "sha256": "4929f2b0ea584709305a6ca153c2828965c549183755a5c393fc4f48bd403755"
     },
     {
       "path": "seasonality-resolution.json",
@@ -30,7 +30,7 @@
     },
     {
       "path": "conditional-map-fit.json",
-      "sha256": "2aefaf63c5e6819cee451e77eed023ec64a1566440f7ce03289d900d41d0bc28"
+      "sha256": "5f1c835582790c2b13a2195c6359003537b4bb2f1e44fe748fdebec271ed91f6"
     }
   ],
   "backendArtifacts": [
@@ -46,7 +46,7 @@
     "platform": "linux/amd64",
     "uvVersion": "0.8.15"
   },
-  "generatorRevision": "0c90f1af8940480672a36d636053448fd705db11c7054b9686174aabfd0631ac",
+  "generatorRevision": "412a2ce495bdbf1f701762407b9b4d2e9545dd379e79d568acdc4c628eb52026",
   "numericalEnvironment": [
     {
       "name": "cmdstanpy",

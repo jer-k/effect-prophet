@@ -39,6 +39,17 @@ assert that pre-boundary validation and short-circuit paths do not create bounda
 spans. Do not use sleeps, duration thresholds, network collectors, or exporter-specific
 test infrastructure.
 
+## Prophet compatibility fixtures
+
+Keep generated Prophet fixtures deterministic across supported CPU implementations. Never write
+raw fitted optimizer values into fixture JSON: canonicalize them to at most 12 significant digits
+with the shared generator helper. Keep CPU-sensitive Fourier values at 12 decimal places. Do not
+increase either precision beyond 12 digits, even when the local environment produces additional
+stable-looking digits.
+
+Regenerate fixtures with `npm run fixtures:generate` rather than editing generated JSON by hand,
+then run `npm run fixtures:check` to verify fixture bytes, manifest hashes, and compatibility tests.
+
 ## Testing
 
 Files in `test/` should be at the same level as the file they're testing in `src/`. Example

@@ -27,6 +27,7 @@ from prophet import Prophet
 EXPECTED_PROPHET_VERSION = "1.4.0"
 EXPECTED_CONTAINER_PLATFORM = "linux/amd64"
 FOURIER_DECIMAL_PLACES = 12
+FITTED_SIGNIFICANT_DIGITS = 12
 LINEAR_TREND_FILENAME = "linear-trend.json"
 FOURIER_FILENAME = "fourier.json"
 PIECEWISE_LINEAR_FILENAME = "piecewise-linear.json"
@@ -481,6 +482,14 @@ def canonical_fourier_float(value: np.floating[Any]) -> float:
     """Round CPU-sensitive trigonometric output into the fixture precision contract."""
 
     rounded = round(float(value), FOURIER_DECIMAL_PLACES)
+
+    return 0.0 if rounded == 0.0 else rounded
+
+
+def canonical_fitted_float(value: Any) -> float:
+    """Round optimizer output to stable significant digits across amd64 CPU implementations."""
+
+    rounded = float(format(float(value), f".{FITTED_SIGNIFICANT_DIGITS}g"))
 
     return 0.0 if rounded == 0.0 else rounded
 
@@ -1155,11 +1164,16 @@ def make_linear_map_fit_fixture() -> dict[str, Any]:
     return {
         "changepointTimestamps": [changepoint_timestamp],
         "expected": {
-            "deltas": [float(value * model.y_scale) for value in model.params["delta"][0]],
-            "intercept": float(model.params["m"][0][0] * model.y_scale),
-            "noiseScale": float(model.params["sigma_obs"][0][0] * model.y_scale),
-            "slope": float(model.params["k"][0][0] * model.y_scale),
-            "trend": [float(value) for value in prediction["trend"]],
+            "deltas": [
+                canonical_fitted_float(value * model.y_scale)
+                for value in model.params["delta"][0]
+            ],
+            "intercept": canonical_fitted_float(model.params["m"][0][0] * model.y_scale),
+            "noiseScale": canonical_fitted_float(
+                model.params["sigma_obs"][0][0] * model.y_scale
+            ),
+            "slope": canonical_fitted_float(model.params["k"][0][0] * model.y_scale),
+            "trend": [canonical_fitted_float(value) for value in prediction["trend"]],
         },
         "id": "one-explicit-break-no-seasonality",
         "kind": "fitted-linear-map",
@@ -1373,23 +1387,32 @@ def make_conditional_map_fit_fixture() -> dict[str, Any]:
                 "events": events,
                 "expected": {
                     "additive": [
-                        float(value)
+                        canonical_fitted_float(value)
                         for value in prediction[component_names].sum(axis=1)
                     ],
                     "componentNames": component_names,
-                    "componentsRowMajor": [float(value) for value in components.ravel()],
+                    "componentsRowMajor": [
+                        canonical_fitted_float(value) for value in components.ravel()
+                    ],
                     "featureColumnNames": list(features.columns),
                     "featurePriorScales": [float(value) for value in prior_scales],
                     "featuresRowMajor": [
                         canonical_fourier_float(value)
                         for value in features.to_numpy(dtype=np.float64).ravel()
                     ],
-                    "noiseScale": float(model.params["sigma_obs"][0][0] * model.y_scale),
+                    "noiseScale": canonical_fitted_float(
+                        model.params["sigma_obs"][0][0] * model.y_scale
+                    ),
                     "observationUnitCoefficients": [
-                        float(value * model.y_scale) for value in model.params["beta"][0]
+                        canonical_fitted_float(value * model.y_scale)
+                        for value in model.params["beta"][0]
                     ],
-                    "trend": [float(value) for value in prediction["trend"]],
-                    "value": [float(value) for value in prediction["yhat"]],
+                    "trend": [
+                        canonical_fitted_float(value) for value in prediction["trend"]
+                    ],
+                    "value": [
+                        canonical_fitted_float(value) for value in prediction["yhat"]
+                    ],
                 },
                 "id": identifier,
                 "kind": "conditional-map-fit",
