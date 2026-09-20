@@ -203,6 +203,107 @@ const FourierReferenceFileSchema = Schema.Struct({
   }),
 );
 
+const ConditionalSeasonalityDefinitionSchema = Schema.Struct({
+  name: Schema.NonEmptyString,
+  periodDays: PositiveFinite,
+  fourierOrder: Schema.Int.check(Schema.isGreaterThan(0)),
+  priorScale: PositiveFinite,
+  conditionName: Schema.optionalKey(Schema.NonEmptyString),
+});
+
+const BooleanRecordSchema = Schema.Record(Schema.String, Schema.Boolean);
+
+const ConditionalSeasonalityReferenceCaseSchema = Schema.Struct({
+  kind: Schema.Literal("conditional-seasonality-features"),
+  id: Schema.NonEmptyString,
+  timestamps: Schema.Array(CanonicalTimestamp),
+  seasonalities: Schema.Array(ConditionalSeasonalityDefinitionSchema),
+  conditionRows: Schema.Array(BooleanRecordSchema),
+  coefficients: Schema.Array(Schema.Finite),
+  expected: Schema.Struct({
+    rowCount: Schema.Natural,
+    columnCount: Schema.Natural,
+    ungatedFeaturesRowMajor: Schema.Array(Schema.Finite),
+    gatedFeaturesRowMajor: Schema.Array(Schema.Finite),
+    componentsRowMajor: Schema.Array(Schema.Finite),
+  }),
+  tolerance: NumericToleranceSchema,
+  note: Schema.NonEmptyString,
+}).check(
+  Schema.makeFilter((referenceCase) => {
+    const issues: Array<{ readonly path: ReadonlyArray<PropertyKey>; readonly issue: string }> = [];
+
+    const rowCount = referenceCase.timestamps.length;
+
+    const columnCount = referenceCase.seasonalities.reduce(
+      (count, seasonality) => count + seasonality.fourierOrder * 2,
+      0,
+    );
+
+    const conditionNames = new Set(
+      referenceCase.seasonalities.flatMap((seasonality) =>
+        seasonality.conditionName === undefined ? [] : [seasonality.conditionName],
+      ),
+    );
+
+    if (
+      referenceCase.expected.rowCount !== rowCount ||
+      referenceCase.conditionRows.length !== rowCount
+    ) {
+      issues.push({ path: ["expected", "rowCount"], issue: "Conditional rows must align" });
+    }
+
+    if (
+      referenceCase.expected.columnCount !== columnCount ||
+      referenceCase.coefficients.length !== columnCount
+    ) {
+      issues.push({
+        path: ["expected", "columnCount"],
+        issue: "Conditional Fourier columns and coefficients must align",
+      });
+    }
+
+    for (const field of ["ungatedFeaturesRowMajor", "gatedFeaturesRowMajor"] as const) {
+      if (referenceCase.expected[field].length !== rowCount * columnCount) {
+        issues.push({
+          path: ["expected", field],
+          issue: "Conditional feature matrix is misaligned",
+        });
+      }
+    }
+
+    if (
+      referenceCase.expected.componentsRowMajor.length !==
+      rowCount * referenceCase.seasonalities.length
+    ) {
+      issues.push({
+        path: ["expected", "componentsRowMajor"],
+        issue: "Conditional components are misaligned",
+      });
+    }
+
+    for (const [row, conditions] of referenceCase.conditionRows.entries()) {
+      const provided = new Set(Object.keys(conditions));
+
+      if (
+        provided.size !== conditionNames.size ||
+        Array.from(conditionNames).some((name) => !provided.has(name))
+      ) {
+        issues.push({
+          path: ["conditionRows", row],
+          issue: "Condition rows must contain exactly the configured condition names",
+        });
+      }
+    }
+
+    return issues;
+  }),
+);
+
+const ConditionalSeasonalityReferenceFileSchema = Schema.Struct({
+  cases: Schema.NonEmptyArray(ConditionalSeasonalityReferenceCaseSchema),
+});
+
 const PiecewiseLinearReferenceCaseSchema = Schema.Struct({
   id: Schema.NonEmptyString,
   kind: Schema.Literal("fixed-piecewise-linear"),
@@ -447,6 +548,107 @@ const LinearMapFitReferenceFileSchema = Schema.Struct({
   cases: Schema.NonEmptyArray(LinearMapFitReferenceCaseSchema),
 });
 
+const ConditionalMapObservationSchema = Schema.Struct({
+  timestamp: CanonicalTimestamp,
+  value: Schema.Finite,
+  conditions: BooleanRecordSchema,
+  regressors: Schema.optionalKey(Schema.Record(Schema.String, Schema.Finite)),
+});
+
+const ConditionalMapPredictionRowSchema = Schema.Struct({
+  timestamp: CanonicalTimestamp,
+  conditions: BooleanRecordSchema,
+  regressors: Schema.optionalKey(Schema.Record(Schema.String, Schema.Finite)),
+});
+
+const ConditionalMapFitReferenceCaseSchema = Schema.Struct({
+  id: Schema.NonEmptyString,
+  kind: Schema.Literal("conditional-map-fit"),
+  observations: Schema.NonEmptyArray(ConditionalMapObservationSchema),
+  predictionRows: Schema.NonEmptyArray(ConditionalMapPredictionRowSchema),
+  seasonalities: Schema.NonEmptyArray(ConditionalSeasonalityDefinitionSchema),
+  events: Schema.Array(
+    Schema.Struct({
+      name: Schema.NonEmptyString,
+      date: Schema.String.check(
+        Schema.makeFilter((value) => /^\d{4}-\d{2}-\d{2}$/.test(value), {
+          expected: "a canonical calendar date",
+        }),
+      ),
+      priorScale: PositiveFinite,
+    }),
+  ),
+  regressors: Schema.Array(
+    Schema.Struct({
+      name: Schema.NonEmptyString,
+      priorScale: PositiveFinite,
+      standardization: Schema.Literals(["auto", "always", "never"]),
+    }),
+  ),
+  settings: Schema.Struct({
+    algorithm: Schema.NonEmptyString,
+    changepointPriorScale: PositiveFinite,
+    changepointTimestamps: Schema.Array(CanonicalTimestamp),
+    densityConvention: Schema.NonEmptyString,
+  }),
+  expected: Schema.Struct({
+    additive: Schema.Array(Schema.Finite),
+    componentNames: Schema.Array(Schema.NonEmptyString),
+    componentsRowMajor: Schema.Array(Schema.Finite),
+    featureColumnNames: Schema.Array(Schema.NonEmptyString),
+    featurePriorScales: Schema.Array(PositiveFinite),
+    featuresRowMajor: Schema.Array(Schema.Finite),
+    noiseScale: PositiveFinite,
+    observationUnitCoefficients: Schema.Array(Schema.Finite),
+    trend: Schema.Array(Schema.Finite),
+    value: Schema.Array(Schema.Finite),
+  }),
+  tolerance: Schema.Struct({
+    componentAbsolute: NonNegativeFinite,
+    featureAbsolute: NonNegativeFinite,
+    forecastAbsolute: NonNegativeFinite,
+  }),
+}).check(
+  Schema.makeFilter((referenceCase) => {
+    const issues: Array<{ readonly path: ReadonlyArray<PropertyKey>; readonly issue: string }> = [];
+    const rowCount = referenceCase.predictionRows.length;
+    const componentCount = referenceCase.expected.componentNames.length;
+    const featureCount = referenceCase.expected.featureColumnNames.length;
+
+    if (
+      referenceCase.expected.additive.length !== rowCount ||
+      referenceCase.expected.trend.length !== rowCount ||
+      referenceCase.expected.value.length !== rowCount
+    ) {
+      issues.push({ path: ["expected"], issue: "Conditional MAP forecasts must align to rows" });
+    }
+
+    if (referenceCase.expected.componentsRowMajor.length !== rowCount * componentCount) {
+      issues.push({
+        path: ["expected", "componentsRowMajor"],
+        issue: "Conditional MAP components must align to rows and names",
+      });
+    }
+
+    if (
+      referenceCase.expected.featuresRowMajor.length !== rowCount * featureCount ||
+      referenceCase.expected.featurePriorScales.length !== featureCount ||
+      referenceCase.expected.observationUnitCoefficients.length !== featureCount
+    ) {
+      issues.push({
+        path: ["expected", "featuresRowMajor"],
+        issue: "Conditional MAP feature metadata must align",
+      });
+    }
+
+    return issues;
+  }),
+);
+
+const ConditionalMapFitReferenceFileSchema = Schema.Struct({
+  cases: Schema.NonEmptyArray(ConditionalMapFitReferenceCaseSchema),
+});
+
 const EncodedBuiltInSettingSchema = Schema.Union([
   Schema.Literals(["off", "auto"]),
   Schema.Struct({
@@ -590,6 +792,8 @@ const FixtureManifestSchema = Schema.Struct({
       "changepoint-resolution.json",
       "linear-map-fit.json",
       "seasonality-resolution.json",
+      "conditional-seasonality.json",
+      "conditional-map-fit.json",
     ]) {
       if (!paths.has(requiredPath)) {
         return {
@@ -610,6 +814,11 @@ const decodeFourierReferenceSchema = Schema.decodeUnknownEffect(FourierReference
   errors: "all",
 });
 
+const decodeConditionalSeasonalityReferenceSchema = Schema.decodeUnknownEffect(
+  ConditionalSeasonalityReferenceFileSchema,
+  { errors: "all" },
+);
+
 const decodePiecewiseLinearReferenceSchema = Schema.decodeUnknownEffect(
   PiecewiseLinearReferenceFileSchema,
   { errors: "all" },
@@ -627,6 +836,11 @@ const decodeLinearMapFitReferenceSchema = Schema.decodeUnknownEffect(
 
 const decodeSeasonalityResolutionReferenceSchema = Schema.decodeUnknownEffect(
   SeasonalityResolutionReferenceFileSchema,
+  { errors: "all" },
+);
+
+const decodeConditionalMapFitReferenceSchema = Schema.decodeUnknownEffect(
+  ConditionalMapFitReferenceFileSchema,
   { errors: "all" },
 );
 
@@ -651,6 +865,14 @@ export type FourierReferenceCase = typeof FourierReferenceCaseSchema.Type;
 /** A parsed collection of Prophet Fourier reference cases. */
 export type FourierReferenceFile = typeof FourierReferenceFileSchema.Type;
 
+/** A parsed fixed-parameter conditional-seasonality feature case. */
+export type ConditionalSeasonalityReferenceCase =
+  typeof ConditionalSeasonalityReferenceCaseSchema.Type;
+
+/** A parsed collection of conditional-seasonality feature cases. */
+export type ConditionalSeasonalityReferenceFile =
+  typeof ConditionalSeasonalityReferenceFileSchema.Type;
+
 /** A parsed fixed-parameter piecewise-linear and Fourier composition case. */
 export type PiecewiseLinearReferenceCase = typeof PiecewiseLinearReferenceCaseSchema.Type;
 
@@ -670,6 +892,12 @@ export type LinearMapFitReferenceCase = typeof LinearMapFitReferenceCaseSchema.T
 
 /** A parsed collection of fitted linear MAP reference cases. */
 export type LinearMapFitReferenceFile = typeof LinearMapFitReferenceFileSchema.Type;
+
+/** A parsed fitted conditional MAP reference case. */
+export type ConditionalMapFitReferenceCase = typeof ConditionalMapFitReferenceCaseSchema.Type;
+
+/** A parsed collection of fitted conditional MAP cases. */
+export type ConditionalMapFitReferenceFile = typeof ConditionalMapFitReferenceFileSchema.Type;
 
 /** A parsed Prophet built-in seasonality-resolution reference case. */
 export type SeasonalityResolutionReferenceCase =
@@ -751,6 +979,26 @@ export const decodeFourierReference = Effect.fn("ProphetFixture.decodeFourierRef
   );
 });
 
+/** Parse untrusted conditional-seasonality fixtures with all alignment checks. */
+export const decodeConditionalSeasonalityReference = Effect.fn(
+  "ProphetFixture.decodeConditionalSeasonalityReference",
+)(function* (
+  input: Parameters<typeof decodeConditionalSeasonalityReferenceSchema>[0],
+  path = "<memory>",
+): Effect.fn.Return<ConditionalSeasonalityReferenceFile, FixtureLoadError> {
+  return yield* decodeConditionalSeasonalityReferenceSchema(input).pipe(
+    Effect.mapError(
+      (cause) =>
+        new FixtureLoadError({
+          operation: "schema",
+          fixturePath: path,
+          message: formatSchemaIssue(cause.issue),
+          cause,
+        }),
+    ),
+  );
+});
+
 /** Parse untrusted piecewise-linear fixtures with all alignment checks. */
 export const decodePiecewiseLinearReference = Effect.fn(
   "ProphetFixture.decodePiecewiseLinearReference",
@@ -810,6 +1058,26 @@ export const decodeLinearMapFitReference = Effect.fn("ProphetFixture.decodeLinea
     );
   },
 );
+
+/** Parse untrusted fitted conditional MAP fixture evidence. */
+export const decodeConditionalMapFitReference = Effect.fn(
+  "ProphetFixture.decodeConditionalMapFitReference",
+)(function* (
+  input: Parameters<typeof decodeConditionalMapFitReferenceSchema>[0],
+  path = "<memory>",
+): Effect.fn.Return<ConditionalMapFitReferenceFile, FixtureLoadError> {
+  return yield* decodeConditionalMapFitReferenceSchema(input).pipe(
+    Effect.mapError(
+      (cause) =>
+        new FixtureLoadError({
+          operation: "schema",
+          fixturePath: path,
+          message: formatSchemaIssue(cause.issue),
+          cause,
+        }),
+    ),
+  );
+});
 
 /** Parse untrusted seasonality-resolution fixture evidence and configuration mappings. */
 export const decodeSeasonalityResolutionReference = Effect.fn(
@@ -924,6 +1192,19 @@ export const loadProphetFixtureBundle = Effect.fn("ProphetFixture.loadBundle")(f
   });
 
   const fourier = yield* decodeFourierReference(fourierInput, fourierPath);
+  const conditionalSeasonalityPath = nodePath.join(root, "conditional-seasonality.json");
+  const conditionalSeasonalityContents = yield* readFixtureText(conditionalSeasonalityPath);
+
+  const conditionalSeasonalityInput: unknown = yield* Effect.try({
+    try: () => JSON.parse(conditionalSeasonalityContents),
+    catch: (cause) => invalidJson(conditionalSeasonalityPath, cause),
+  });
+
+  const conditionalSeasonality = yield* decodeConditionalSeasonalityReference(
+    conditionalSeasonalityInput,
+    conditionalSeasonalityPath,
+  );
+
   const piecewiseLinearPath = nodePath.join(root, "piecewise-linear.json");
   const piecewiseLinearContents = yield* readFixtureText(piecewiseLinearPath);
 
@@ -959,6 +1240,18 @@ export const loadProphetFixtureBundle = Effect.fn("ProphetFixture.loadBundle")(f
   });
 
   const linearMapFit = yield* decodeLinearMapFitReference(linearMapFitInput, linearMapFitPath);
+  const conditionalMapFitPath = nodePath.join(root, "conditional-map-fit.json");
+  const conditionalMapFitContents = yield* readFixtureText(conditionalMapFitPath);
+
+  const conditionalMapFitInput: unknown = yield* Effect.try({
+    try: () => JSON.parse(conditionalMapFitContents),
+    catch: (cause) => invalidJson(conditionalMapFitPath, cause),
+  });
+
+  const conditionalMapFit = yield* decodeConditionalMapFitReference(
+    conditionalMapFitInput,
+    conditionalMapFitPath,
+  );
 
   const seasonalityResolutionPath = nodePath.join(root, "seasonality-resolution.json");
   const seasonalityResolutionContents = yield* readFixtureText(seasonalityResolutionPath);
@@ -975,6 +1268,8 @@ export const loadProphetFixtureBundle = Effect.fn("ProphetFixture.loadBundle")(f
 
   return {
     changepointResolution,
+    conditionalMapFit,
+    conditionalSeasonality,
     fourier,
     linearMapFit,
     linearTrend,

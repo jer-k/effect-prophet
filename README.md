@@ -113,10 +113,11 @@ Encoded observations use this shape:
   timestamp: "2024-01-01T00:00:00.000Z",
   value: 1.5,
   regressors: { price: 2 }, // required when `price` is configured
+  conditions: { onSeason: true }, // required by conditional seasonalities
 }
 ```
 
-Timestamps must use the canonical UTC ISO representation emitted by Effect's `DateTime.formatIso`. Decoded timestamps are integer epoch milliseconds, keeping mutable JavaScript `Date` objects out of the numerical core. Values and regressor covariates must be finite numbers. When regressors are configured, every training row must contain exactly those regressor names; missing and extra names are rejected rather than imputed or ignored.
+Timestamps must use the canonical UTC ISO representation emitted by Effect's `DateTime.formatIso`. Decoded timestamps are integer epoch milliseconds, keeping mutable JavaScript `Date` objects out of the numerical core. Values and regressor covariates must be finite numbers. Seasonality conditions must be actual booleans; numeric `0`/`1`, strings, null, and missing values are rejected. Every training row must contain exactly the configured regressor and condition name sets; missing and extra names are rejected rather than imputed or ignored.
 
 Collections must be non-empty and arrive in strictly ascending timestamp order. The decoder does not sort input, and duplicate timestamps are rejected.
 
@@ -135,7 +136,7 @@ const observations = await Effect.runPromise(program);
 
 Public options are a union of supported configurations rather than independent fields. Linear and flat growth each accept either no custom seasonalities or a non-empty ordered list. Public `growth: "flat"` selects the reduced `"flat-map"` model.
 
-Each configured custom seasonality requires a unique name, positive period in fixed 24-hour days, and positive integer Fourier order; `priorScale` is positive and defaults to `10`. The names `yearly`, `weekly`, and `daily` are reserved for built-ins. Different named components may share a period, although overlapping Fourier bases can make component interpretation difficult.
+Each configured custom seasonality requires a unique name, positive period in fixed 24-hour days, and positive integer Fourier order; `priorScale` is positive and defaults to `10`. An optional `conditionName` gates all of that component's Fourier columns using required boolean row values. Multiple custom seasonalities may share a condition. The names `yearly`, `weekly`, and `daily` are reserved for built-ins, which remain unconditional. Seasonality, event, regressor, and condition names cannot collide. Different named components may share a period, although overlapping Fourier bases can make component interpretation difficult.
 
 Built-ins deliberately default to `"off"`, unlike Python Prophet. Set an individual control to `"auto"` for Prophet 1.4.0's training-history rule, or use `{ mode: "on" }` to force its default order. Forced controls also accept positive `fourierOrder` and `priorScale` overrides. `prophetFittingBackendLayer` is total over every configuration accepted by `fit` and dispatches to the corresponding narrow numerical adapter.
 
@@ -231,7 +232,47 @@ const coefficients = getRegressorCoefficients(model);
 // coefficients are descriptive model parameters in original regressor units, not causal effects.
 ```
 
-Complete prediction rows preserve input order and duplicates. Equal timestamps may produce different forecasts when their regressor values differ. Every forecast includes ordered `regressors` components, and `additive` is the sum of seasonal, event, and regressor contributions.
+Complete prediction rows preserve input order and duplicates. Equal timestamps may produce different forecasts when their regressor or condition values differ. Every forecast includes ordered `regressors` components, and `additive` is the sum of seasonal, event, and regressor contributions.
+
+## Conditional seasonalities
+
+A custom seasonality can name a boolean condition supplied on every training and nonempty prediction row. A false value gates every Fourier harmonic in that component to exact zero without removing or reordering its coefficients. Condition values are not inferred, persisted, or forecast; callers provide future regimes explicitly.
+
+```ts
+import { Effect } from "effect";
+import { fit, predict, prophetFittingBackendLayer } from "effect-prophet";
+
+const model = await Effect.runPromise(
+  fit(
+    observations.map((row) => ({
+      ...row,
+      conditions: { onSeason: isOnSeason(row.timestamp) },
+    })),
+    {
+      seasonalities: [
+        {
+          name: "weekly-on-season",
+          periodDays: 7,
+          fourierOrder: 3,
+          conditionName: "onSeason",
+        },
+      ],
+    },
+  ).pipe(Effect.provide(prophetFittingBackendLayer)),
+);
+
+const forecasts = await Effect.runPromise(
+  predict(model, [
+    {
+      timestamp: "2025-04-01T00:00:00.000Z",
+      conditions: { onSeason: false },
+    },
+  ]),
+);
+// forecasts[0].seasonalities[0].value === 0
+```
+
+Timestamp strings remain valid for models without conditions. Conditional models require object rows containing exactly all fitted condition names. Equal timestamps with different conditions remain distinct before and after model serialization. Linear piecewise MAP supports conditions; flat MAP rejects them explicitly.
 
 See [known additive features](docs/modeling/additive-features.md) for ordering, normalization, UTC event-window semantics, memory ownership, and the WASM protocol.
 
@@ -374,7 +415,7 @@ Each WASM span covers the complete synchronous adapter operation: lazy Node modu
 
 The spans measure the coarse host/WASM boundary. They cannot break Rust execution into optimizer or numerical phases because the library does not install Rust callbacks or propagate trace context into WASM.
 
-The `Prophet.fit` span records bounded custom/enabled-built-in counts and one resolution reason for each canonical built-in. It never records observations, timestamps, coefficients, or option payloads.
+The `Prophet.fit` span records bounded custom/enabled-built-in counts, a configured condition-name count, and one resolution reason for each canonical built-in. It never records condition names or values, observations, timestamps, coefficients, or option payloads.
 
 Applications own tracer configuration, sampling, and export. The library uses Effect's built-in tracing API and does not install an OpenTelemetry SDK or exporter. An application can place the operations under its own parent span and provide its compatible tracer when running the program:
 
@@ -388,7 +429,7 @@ const program = Effect.gen(function* () {
 
 ## Experimental model serialization
 
-`encodeFittedModel` converts a fitted linear, linear piecewise MAP, or flat MAP model into a JSON-compatible payload. `decodeFittedModel` validates an untrusted payload and reconstructs the runtime model without selecting a fitting backend. Featureful payloads retain all prediction coefficients, ordered definitions, and fit diagnostics; layout offsets are reconstructed during decoding. Flat MAP payloads additionally retain observation noise. Backend identifiers, services, and WASM resources are not serialized.
+`encodeFittedModel` converts a fitted linear, linear piecewise MAP, or flat MAP model into a JSON-compatible payload. `decodeFittedModel` validates an untrusted payload and reconstructs the runtime model without selecting a fitting backend. Featureful payloads retain all prediction coefficients, ordered definitions (including optional condition names), and fit diagnostics; layout offsets are reconstructed during decoding. Condition row values and training masks are never serialized, so every nonempty conditional prediction requires fresh values. Payloads written before condition support decode missing `conditionName` fields as unconditional definitions. Flat MAP payloads additionally retain observation noise. Backend identifiers, services, and WASM resources are not serialized.
 
 ```ts
 import { Effect } from "effect";

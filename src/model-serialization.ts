@@ -78,6 +78,7 @@ export interface EncodedFlatMapModel {
     readonly periodDays: number;
     readonly fourierOrder: number;
     readonly priorScale: number;
+    readonly conditionName?: string;
   }>;
 
   /** Positive fitted observation noise in observation units. */
@@ -110,6 +111,7 @@ export interface EncodedPiecewiseMapModel {
     readonly periodDays: number;
     readonly fourierOrder: number;
     readonly priorScale: number;
+    readonly conditionName?: string;
   }>;
   readonly noiseScale: number;
   readonly fitSummary: PiecewiseMapParameters["fitSummary"];
@@ -178,6 +180,7 @@ const EncodedFlatMapModelSchema = Schema.Struct({
       periodDays: Schema.Number,
       fourierOrder: Schema.Number,
       priorScale: Schema.Number,
+      conditionName: Schema.optionalKey(Schema.String),
     }),
   ),
   noiseScale: Schema.Number,
@@ -217,6 +220,7 @@ const EncodedPiecewiseMapModelSchema = Schema.Struct({
       periodDays: Schema.Number,
       fourierOrder: Schema.Number,
       priorScale: Schema.Number,
+      conditionName: Schema.optionalKey(Schema.String),
     }),
   ),
   noiseScale: Schema.Number,
@@ -393,18 +397,30 @@ const encodeFittedRegressors = (
     transform: { ...regressor.transform },
   }));
 
+const encodeSeasonalityDefinition = (
+  component: FittedPiecewiseMapProphet["seasonalities"]["components"][number],
+): EncodedPiecewiseMapModel["seasonalities"][number] => {
+  const definition = {
+    name: component.definition.name,
+    periodDays: component.definition.periodDays,
+    fourierOrder: component.definition.fourierOrder,
+    priorScale: component.definition.priorScale,
+  };
+
+  if (component.definition.conditionName === undefined) {
+    return definition;
+  }
+
+  return { ...definition, conditionName: component.definition.conditionName };
+};
+
 const encodeFlatMapModel = (model: FittedFlatMapProphet): EncodedFlatMapModel => ({
   modelKind: "flat-map",
   coefficients: {
     level: model.level,
     seasonal: Array.from(model.coefficients),
   },
-  seasonalities: model.seasonalities.components.map((component) => ({
-    name: component.definition.name,
-    periodDays: component.definition.periodDays,
-    fourierOrder: component.definition.fourierOrder,
-    priorScale: component.definition.priorScale,
-  })),
+  seasonalities: model.seasonalities.components.map(encodeSeasonalityDefinition),
   noiseScale: model.noiseScale,
   fitSummary: {
     method: model.fitSummary.method,
@@ -437,12 +453,7 @@ const encodePiecewiseMapModel = (model: FittedPiecewiseMapProphet): EncodedPiece
   })),
   timeScaling: { origin: model.timeOrigin, scale: model.timeScale },
   changepointTimestamps: Array.from(model.changepointTimestamps),
-  seasonalities: model.seasonalities.components.map((component) => ({
-    name: component.definition.name,
-    periodDays: component.definition.periodDays,
-    fourierOrder: component.definition.fourierOrder,
-    priorScale: component.definition.priorScale,
-  })),
+  seasonalities: model.seasonalities.components.map(encodeSeasonalityDefinition),
   noiseScale: model.noiseScale,
   fitSummary: { ...model.fitSummary },
 });

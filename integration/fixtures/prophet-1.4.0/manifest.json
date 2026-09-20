@@ -23,6 +23,14 @@
     {
       "path": "seasonality-resolution.json",
       "sha256": "3e96a6c6514344472141f749a4319b4d7c509714ca9acb53f138d0153b773896"
+    },
+    {
+      "path": "conditional-seasonality.json",
+      "sha256": "8659dbda0950702376eda0ab0ab0559ddecec0b27b94079fada4953b1660cd2e"
+    },
+    {
+      "path": "conditional-map-fit.json",
+      "sha256": "2aefaf63c5e6819cee451e77eed023ec64a1566440f7ce03289d900d41d0bc28"
     }
   ],
   "backendArtifacts": [
@@ -38,7 +46,7 @@
     "platform": "linux/amd64",
     "uvVersion": "0.8.15"
   },
-  "generatorRevision": "6627f1bf9c51d39a5d974eedd6d814516db1a1091f71c10831afa8b4eff61ac1",
+  "generatorRevision": "0c90f1af8940480672a36d636053448fd705db11c7054b9686174aabfd0631ac",
   "numericalEnvironment": [
     {
       "name": "cmdstanpy",

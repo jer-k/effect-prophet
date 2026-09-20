@@ -415,19 +415,51 @@ export const decodeOptions = Effect.fn("decodeOptions")(function* (
   );
 
   const seasonalityNames = new Set(seasonalities.map((seasonality) => seasonality.name));
+  const conditionNames = new Set<string>();
+
+  for (const [index, seasonality] of seasonalities.entries()) {
+    const conditionName = seasonality.conditionName;
+
+    if (conditionName === undefined) {
+      continue;
+    }
+
+    if (seasonalityNames.has(conditionName)) {
+      return yield* Effect.fail(
+        new InputValidationError({
+          input: "options",
+          issues: [
+            {
+              path: ["seasonalities", index, "conditionName"],
+              message: `Condition name '${conditionName}' collides with a seasonality`,
+            },
+          ],
+          message: "Condition and seasonality names must be distinct",
+        }),
+      );
+    }
+
+    conditionNames.add(conditionName);
+  }
 
   for (const [index, occurrence] of events.occurrences.entries()) {
-    if (seasonalityNames.has(occurrence.name)) {
+    const collision = seasonalityNames.has(occurrence.name)
+      ? "a seasonality"
+      : conditionNames.has(occurrence.name)
+        ? "a condition"
+        : undefined;
+
+    if (collision !== undefined) {
       return yield* Effect.fail(
         new InputValidationError({
           input: "options",
           issues: [
             {
               path: ["events", index, "name"],
-              message: `Feature name '${occurrence.name}' collides with a seasonality`,
+              message: `Feature name '${occurrence.name}' collides with ${collision}`,
             },
           ],
-          message: "Event and seasonality names must be distinct",
+          message: "Event names must be globally distinct",
         }),
       );
     }
@@ -440,7 +472,9 @@ export const decodeOptions = Effect.fn("decodeOptions")(function* (
       ? "a seasonality"
       : eventNames.has(regressor.name)
         ? "an event"
-        : undefined;
+        : conditionNames.has(regressor.name)
+          ? "a condition"
+          : undefined;
 
     if (collision !== undefined) {
       return yield* Effect.fail(

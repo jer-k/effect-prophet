@@ -61,6 +61,33 @@ describe("decodeObservations", () => {
     expect(observations[0]?.regressors).toEqual({ price: 2, promotion: 0 });
   });
 
+  it("parses strict boolean condition records", async () => {
+    const observations = await Effect.runPromise(
+      decodeObservations([
+        {
+          timestamp: "2024-01-01T00:00:00.000Z",
+          value: 1,
+          conditions: { onSeason: true, promotion: false },
+        },
+      ]),
+    );
+
+    expect(observations[0]?.conditions).toEqual({ onSeason: true, promotion: false });
+
+    for (const value of [1, "true", null]) {
+      await expectValidationFailure(
+        [
+          {
+            timestamp: "2024-01-01T00:00:00.000Z",
+            value: 1,
+            conditions: { onSeason: value },
+          },
+        ],
+        "boolean",
+      );
+    }
+  });
+
   it("rejects non-finite regressor values and unknown row fields", async () => {
     await expectValidationFailure(
       [

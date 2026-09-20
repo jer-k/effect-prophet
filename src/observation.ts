@@ -8,6 +8,7 @@ export interface EncodedObservation {
   readonly timestamp: string;
   readonly value: number;
   readonly regressors?: Readonly<Record<string, number>>;
+  readonly conditions?: Readonly<Record<string, boolean>>;
 }
 
 /**
@@ -21,6 +22,7 @@ export interface Observation {
   readonly timestamp: number;
   readonly value: number;
   readonly regressors?: Readonly<Record<string, number>>;
+  readonly conditions?: Readonly<Record<string, boolean>>;
 }
 
 /** A non-empty encoded observation collection. */
@@ -33,6 +35,7 @@ const ObservationSchema: Schema.Codec<Observation, EncodedObservation> = Schema.
   timestamp: TimestampSchema,
   value: Schema.Finite,
   regressors: Schema.optionalKey(Schema.Record(Schema.String, Schema.Finite)),
+  conditions: Schema.optionalKey(Schema.Record(Schema.String, Schema.Boolean)),
 });
 
 const observationsAreStrictlyOrdered = Schema.makeFilter<Observations>((observations) => {

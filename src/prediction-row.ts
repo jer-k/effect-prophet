@@ -9,6 +9,7 @@ export type EncodedPredictionRow =
   | {
       readonly timestamp: string;
       readonly regressors?: Readonly<Record<string, number>>;
+      readonly conditions?: Readonly<Record<string, boolean>>;
     };
 
 /** Ordered encoded prediction rows. */
@@ -21,6 +22,7 @@ export type EncodedPredictionTimestamps = ReadonlyArray<string>;
 export interface PredictionRow {
   readonly timestamp: number;
   readonly regressors?: Readonly<Record<string, number>>;
+  readonly conditions?: Readonly<Record<string, boolean>>;
 }
 
 /** Ordered structurally parsed prediction rows. */
@@ -29,6 +31,7 @@ export type PredictionRows = ReadonlyArray<PredictionRow>;
 const PredictionObjectSchema = Schema.Struct({
   timestamp: TimestampSchema,
   regressors: Schema.optionalKey(Schema.Record(Schema.String, Schema.Finite)),
+  conditions: Schema.optionalKey(Schema.Record(Schema.String, Schema.Boolean)),
 });
 
 const PredictionRowsSchema = Schema.Array(Schema.Union([TimestampSchema, PredictionObjectSchema]));
@@ -58,13 +61,28 @@ export const decodePredictionRows = Effect.fn("decodePredictionRows")(function* 
         return Object.freeze({ timestamp: row });
       }
 
-      if (row.regressors === undefined) {
+      if (row.regressors === undefined && row.conditions === undefined) {
         return Object.freeze({ timestamp: row.timestamp });
+      }
+
+      if (row.regressors === undefined) {
+        return Object.freeze({
+          timestamp: row.timestamp,
+          conditions: Object.freeze({ ...row.conditions }),
+        });
+      }
+
+      if (row.conditions === undefined) {
+        return Object.freeze({
+          timestamp: row.timestamp,
+          regressors: Object.freeze({ ...row.regressors }),
+        });
       }
 
       return Object.freeze({
         timestamp: row.timestamp,
         regressors: Object.freeze({ ...row.regressors }),
+        conditions: Object.freeze({ ...row.conditions }),
       });
     }),
   );
