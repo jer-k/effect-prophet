@@ -204,6 +204,68 @@ export const createUnconditionalSeasonalityMask = (
   return createSeasonalityMaskMatrix(rowCount, componentCount, values);
 };
 
+/** Concatenate checked additional-feature blocks while preserving row and component order. */
+export const concatenateKnownAdditiveFeatures = (
+  blocks: ReadonlyArray<KnownAdditiveFeatures>,
+): Effect.Effect<KnownAdditiveFeatures, InvalidAdditionalFeatures> =>
+  Effect.gen(function* () {
+    const rowCount = blocks[0]?.matrix.rowCount ?? 0;
+    let columnCount = 0;
+
+    for (const [index, block] of blocks.entries()) {
+      if (block.matrix.rowCount !== rowCount) {
+        return yield* fail(
+          [index, "matrix", "rowCount"],
+          "Additional feature blocks must have identical row counts",
+        );
+      }
+
+      if (columnCount > Number.MAX_SAFE_INTEGER - block.matrix.columnCount) {
+        return yield* fail([], "Combined additional feature dimensions exceed safe arithmetic");
+      }
+
+      columnCount += block.matrix.columnCount;
+    }
+
+    const elementCount = checkedElementCount(rowCount, columnCount);
+
+    if (elementCount === undefined) {
+      return yield* fail([], "Combined additional feature dimensions exceed safe arithmetic");
+    }
+
+    const values = new Float64Array(elementCount);
+    const components: Array<AdditionalFeatureComponent> = [];
+    const priorScales: Array<number> = [];
+    let columnOffset = 0;
+
+    for (const block of blocks) {
+      for (let row = 0; row < rowCount; row += 1) {
+        const sourceOffset = row * block.matrix.columnCount;
+        const targetOffset = row * columnCount + columnOffset;
+
+        values.set(
+          block.matrix.values.subarray(sourceOffset, sourceOffset + block.matrix.columnCount),
+          targetOffset,
+        );
+      }
+
+      for (const component of block.layout.components) {
+        components.push({
+          ...component,
+          coefficientOffset: component.coefficientOffset + columnOffset,
+        });
+      }
+
+      priorScales.push(...block.layout.priorScales);
+      columnOffset += block.matrix.columnCount;
+    }
+
+    const layout = yield* createAdditionalFeatureLayout(components, priorScales);
+    const matrix = yield* createAdditionalFeatureMatrix(rowCount, columnCount, values);
+
+    return Object.freeze({ matrix, layout });
+  });
+
 /** Construct the canonical empty additional-feature values for a row count. */
 export const createEmptyKnownAdditiveFeatures = (
   rowCount: number,

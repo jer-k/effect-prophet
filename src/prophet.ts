@@ -1,11 +1,12 @@
-import { Effect, Match, Schema } from "effect";
+import { Effect, Match, Predicate } from "effect";
 
 import {
   FittingError,
   InputValidationError,
   PredictionError,
   UnsupportedConfigurationError,
-  inputValidationErrorFromIssue,
+  type ValidationInput,
+  type ValidationIssue,
 } from "./errors";
 import type { EventCalendar } from "./event";
 import {
@@ -16,14 +17,19 @@ import {
   type FittedProphet,
 } from "./fitted-model";
 import {
+  concatenateKnownAdditiveFeatures,
   createUnconditionalSeasonalityMask,
   type KnownAdditiveFeatures,
   type SeasonalityMaskMatrix,
 } from "./internal/additional-features";
 import { createEventFeatures } from "./internal/event-features";
 import { FitPlan, FittingBackend, type TrainingInput } from "./internal/fitting-backend";
+import {
+  createRegressorFeatures,
+  resolveRegressorFeatures,
+  type RegressorFeatureError,
+} from "./internal/regressor-features";
 import { resolveSeasonalities } from "./internal/seasonality-resolution";
-import { TimestampSchema } from "./internal/timestamp";
 import { predictFlatMapWithWasm } from "./internal/wasm-flat-map-backend";
 import { predictLinearTrendWithWasm } from "./internal/wasm-linear-trend-backend";
 import {
@@ -38,14 +44,27 @@ import {
   type EncodedProphetOptions,
   type ProphetOptions,
 } from "./options";
+import { decodePredictionRows } from "./prediction-row";
+import {
+  projectRegressorCoefficient,
+  type FittedRegressor,
+  type RegressorCoefficient,
+  type RegressorDefinition,
+  type ResolvedRegressor,
+} from "./regressor";
 import type {
   EmptySeasonalityLayout,
   NonEmptySeasonalityLayout,
   SeasonalityLayout,
 } from "./seasonality";
 
-/** Canonical UTC timestamps accepted by the public prediction boundary. */
-export type EncodedPredictionTimestamps = ReadonlyArray<string>;
+export type {
+  EncodedPredictionRow,
+  EncodedPredictionRows,
+  EncodedPredictionTimestamps,
+  PredictionRow,
+  PredictionRows,
+} from "./prediction-row";
 
 /** Validated prediction timestamps represented as integer epoch milliseconds. */
 export type PredictionTimestamps = ReadonlyArray<number>;
@@ -68,6 +87,15 @@ export interface EventForecastComponent {
   readonly value: number;
 }
 
+/** One named additive regressor contribution in observation units. */
+export interface RegressorForecastComponent {
+  /** Exact configured regressor name. */
+  readonly name: string;
+
+  /** This row's contribution from the transformed regressor. */
+  readonly value: number;
+}
+
 /** One point forecast and its decomposed trend and additive components. */
 export interface Forecast {
   /** Prediction timestamp represented as integer epoch milliseconds. */
@@ -79,7 +107,7 @@ export interface Forecast {
   /** Trend contribution to `value`. */
   readonly trend: number;
 
-  /** Total additive seasonal contribution to `value`. */
+  /** Total additive seasonal, event, and regressor contribution to `value`. */
   readonly additive: number;
 
   /** Ordered named seasonal contributions. */
@@ -87,25 +115,13 @@ export interface Forecast {
 
   /** Ordered named custom-event contributions. */
   readonly events: ReadonlyArray<EventForecastComponent>;
+
+  /** Ordered named additive-regressor contributions. */
+  readonly regressors: ReadonlyArray<RegressorForecastComponent>;
 }
 
-/** Forecasts in the same order as the supplied prediction timestamps. */
+/** Forecasts in the same order as the supplied prediction rows. */
 export type Forecasts = ReadonlyArray<Forecast>;
-
-const PredictionTimestampsSchema: Schema.Codec<PredictionTimestamps, EncodedPredictionTimestamps> =
-  Schema.Array(TimestampSchema);
-
-const decodePredictionTimestampsSchema = Schema.decodeUnknownEffect(PredictionTimestampsSchema, {
-  errors: "all",
-});
-
-const decodePredictionTimestamps = Effect.fn("decodePredictionTimestamps")(function* (
-  input: Parameters<typeof decodePredictionTimestampsSchema>[0],
-): Effect.fn.Return<PredictionTimestamps, InputValidationError> {
-  return yield* decodePredictionTimestampsSchema(input).pipe(
-    Effect.mapError((error) => inputValidationErrorFromIssue("prediction-timestamps", error.issue)),
-  );
-});
 
 const packTrainingInput = (observations: Observations): TrainingInput => {
   const timestamps = new Float64Array(observations.length);
@@ -189,6 +205,7 @@ const makeFitPlan = (
   layout: SeasonalityLayout,
   masks: SeasonalityMaskMatrix,
   additionalFeatures: KnownAdditiveFeatures,
+  regressors: ReadonlyArray<ResolvedRegressor>,
 ): FitPlan => {
   if (options.growth === "linear" && options.map !== undefined) {
     return FitPlan.LinearPiecewiseMap({
@@ -199,12 +216,13 @@ const makeFitPlan = (
       seasonalityMasks: masks,
       additionalFeatures,
       events: options.events,
+      regressors,
     });
   }
 
   const firstComponent = layout.components[0];
 
-  if (firstComponent === undefined && options.events.layout.coefficientCount === 0) {
+  if (firstComponent === undefined && additionalFeatures.layout.coefficientCount === 0) {
     return options.growth === "linear"
       ? FitPlan.LinearTrend()
       : FitPlan.FlatMap({ seasonalities: emptyLayoutFromResolved(layout) });
@@ -221,6 +239,7 @@ const makeFitPlan = (
       seasonalityMasks: masks,
       additionalFeatures,
       events: options.events,
+      regressors,
     });
   }
 
@@ -240,6 +259,124 @@ const featureConstructionError = (observationCount: number, message: string): Fi
     message,
   });
 
+const fittedRegressorsMatch = (
+  expected: ReadonlyArray<ResolvedRegressor>,
+  actual: ReadonlyArray<FittedRegressor>,
+): boolean =>
+  expected.length === actual.length &&
+  expected.every((regressor, index) => {
+    const fitted = actual[index];
+
+    if (fitted === undefined) {
+      return false;
+    }
+
+    const definitionsMatch =
+      fitted.definition.name === regressor.definition.name &&
+      fitted.definition.priorScale === regressor.definition.priorScale &&
+      fitted.definition.standardization === regressor.definition.standardization;
+
+    if (!definitionsMatch || fitted.transform.mode !== regressor.transform.mode) {
+      return false;
+    }
+
+    return fitted.transform.mode === "identity" && regressor.transform.mode === "identity"
+      ? fitted.transform.reason === regressor.transform.reason
+      : fitted.transform.mode === "standardized" && regressor.transform.mode === "standardized"
+        ? fitted.transform.mean === regressor.transform.mean &&
+          fitted.transform.sampleStandardDeviation === regressor.transform.sampleStandardDeviation
+        : false;
+  });
+
+type RegressorValueRow = {
+  readonly regressors?: Readonly<Record<string, number>>;
+};
+
+const alignRegressorValues = (
+  rows: ReadonlyArray<RegressorValueRow>,
+  definitions: ReadonlyArray<RegressorDefinition>,
+  input: Extract<ValidationInput, "observations" | "prediction-rows">,
+): Effect.Effect<ReadonlyArray<ReadonlyArray<number>>, InputValidationError> => {
+  const expectedNames = new Set<string>(definitions.map((definition) => definition.name));
+  const aligned: Array<ReadonlyArray<number>> = [];
+  const issues: Array<ValidationIssue> = [];
+
+  for (const [rowIndex, row] of rows.entries()) {
+    const provided = row.regressors;
+    const values: Array<number> = [];
+
+    for (const definition of definitions) {
+      if (provided === undefined || !Object.hasOwn(provided, definition.name)) {
+        issues.push({
+          path: [rowIndex, "regressors", definition.name],
+          message: `Missing required regressor '${definition.name}'`,
+        });
+
+        continue;
+      }
+
+      const value = provided[definition.name];
+
+      if (value === undefined) {
+        issues.push({
+          path: [rowIndex, "regressors", definition.name],
+          message: `Missing required regressor '${definition.name}'`,
+        });
+      } else {
+        values.push(value);
+      }
+    }
+
+    if (provided !== undefined) {
+      for (const name of Object.keys(provided)) {
+        if (!expectedNames.has(name)) {
+          issues.push({
+            path: [rowIndex, "regressors", name],
+            message: `Unexpected regressor '${name}'`,
+          });
+        }
+      }
+    }
+
+    aligned.push(Object.freeze(values));
+  }
+
+  if (issues.length > 0) {
+    return Effect.fail(
+      new InputValidationError({
+        input,
+        issues,
+        message: "Regressor values must exactly match the fitted regressor definitions",
+      }),
+    );
+  }
+
+  return Effect.succeed(Object.freeze(aligned));
+};
+
+const regressorFeatureValidationError = (
+  input: Extract<ValidationInput, "observations" | "prediction-rows">,
+  definitions: ReadonlyArray<RegressorDefinition>,
+  error: RegressorFeatureError,
+): InputValidationError => {
+  const [first, second] = error.path;
+  let path: ReadonlyArray<PropertyKey>;
+
+  if (Predicate.isNumber(first) && Predicate.isNumber(second)) {
+    path = [first, "regressors", definitions[second]?.name ?? second];
+  } else if (Predicate.isNumber(first)) {
+    path = ["regressors", definitions[first]?.name ?? first];
+  } else {
+    path = ["regressors", first ?? ""];
+  }
+
+  return new InputValidationError({
+    input,
+    issues: [{ path, message: error.message }],
+    message: error.message,
+  });
+};
+
 /**
  * Validate observations and options, then fit through the provided backend Layer.
  *
@@ -256,14 +393,11 @@ export const fit = Effect.fn("Prophet.fit")(function* (
   FittingBackend
 > {
   const observations = yield* decodeObservations(observationsInput);
-
   const options = yield* decodeOptions(optionsInput);
 
   const resolved = yield* resolveSeasonalities(observations, options).pipe(
     Effect.mapError(optionsValidationErrorFromSeasonality),
   );
-
-  yield* checkExplicitChangepointBounds(observations, options);
 
   if (options.growth === "flat" && options.events.layout.coefficientCount > 0) {
     return yield* Effect.fail(
@@ -271,6 +405,16 @@ export const fit = Effect.fn("Prophet.fit")(function* (
         option: "events",
         model: "flat-map",
         message: "Custom events require linear piecewise MAP fitting",
+      }),
+    );
+  }
+
+  if (options.growth === "flat" && options.regressors.length > 0) {
+    return yield* Effect.fail(
+      new UnsupportedConfigurationError({
+        option: "regressors",
+        model: "flat-map",
+        message: "Additional regressors require linear piecewise MAP fitting",
       }),
     );
   }
@@ -285,23 +429,51 @@ export const fit = Effect.fn("Prophet.fit")(function* (
     );
   }
 
+  yield* checkExplicitChangepointBounds(observations, options);
+
+  const alignedRegressorValues = yield* alignRegressorValues(
+    observations,
+    options.regressors,
+    "observations",
+  );
+
+  const regressorFeatures = yield* resolveRegressorFeatures(
+    options.regressors,
+    alignedRegressorValues,
+  ).pipe(
+    Effect.mapError((error) =>
+      regressorFeatureValidationError("observations", options.regressors, error),
+    ),
+  );
+
   const timestamps = observations.map((observation) => observation.timestamp);
 
-  const matrix = yield* createEventFeatures(timestamps, options.events).pipe(
+  const eventMatrix = yield* createEventFeatures(timestamps, options.events).pipe(
     Effect.mapError((error) => featureConstructionError(observations.length, error.message)),
   );
 
-  const additionalFeatures: KnownAdditiveFeatures = Object.freeze({
-    matrix,
+  const eventFeatures: KnownAdditiveFeatures = Object.freeze({
+    matrix: eventMatrix,
     layout: options.events.layout,
   });
+
+  const additionalFeatures = yield* concatenateKnownAdditiveFeatures([
+    eventFeatures,
+    regressorFeatures.features,
+  ]).pipe(Effect.mapError((error) => featureConstructionError(observations.length, error.message)));
 
   const masks = yield* createUnconditionalSeasonalityMask(
     observations.length,
     resolved.layout.components.length,
   ).pipe(Effect.mapError((error) => featureConstructionError(observations.length, error.message)));
 
-  const fitPlan = makeFitPlan(options, resolved.layout, masks, additionalFeatures);
+  const fitPlan = makeFitPlan(
+    options,
+    resolved.layout,
+    masks,
+    additionalFeatures,
+    regressorFeatures.regressors,
+  );
 
   const enabledBuiltInCount = resolved.decisions.reduce(
     (count, decision) => count + (decision.enabled ? 1 : 0),
@@ -319,11 +491,17 @@ export const fit = Effect.fn("Prophet.fit")(function* (
     ),
   });
 
+  if (options.regressors.length > 0) {
+    yield* Effect.annotateCurrentSpan({
+      "effect_prophet.regressor.count": options.regressors.length,
+    });
+  }
+
   const input = packTrainingInput(observations);
   const backend = yield* FittingBackend;
   const parameters = yield* backend.fit(input, fitPlan);
 
-  return yield* parseFittedModel(parameters).pipe(
+  const fittedModel = yield* parseFittedModel(parameters).pipe(
     Effect.mapError(
       () =>
         new FittingError({
@@ -333,6 +511,21 @@ export const fit = Effect.fn("Prophet.fit")(function* (
         }),
     ),
   );
+
+  const returnedRegressors =
+    fittedModel.model === "linear-piecewise-map" ? fittedModel.regressors : [];
+
+  if (!fittedRegressorsMatch(regressorFeatures.regressors, returnedRegressors)) {
+    return yield* Effect.fail(
+      new FittingError({
+        reason: "backend-failure",
+        observationCount: observations.length,
+        message: "Fitting backend returned misaligned regressor metadata",
+      }),
+    );
+  }
+
+  return fittedModel;
 });
 
 const predictLinearForecasts = (
@@ -363,6 +556,7 @@ const predictLinearForecasts = (
         additive: 0,
         seasonalities: [],
         events: [],
+        regressors: [],
       });
     }
 
@@ -386,16 +580,22 @@ const forecastsFromSeasonalBatch = (
   Effect.gen(function* () {
     const seasonalComponentCount = model.seasonalities.components.length;
 
-    const eventLayout = model.model === "linear-piecewise-map" ? model.events.layout : undefined;
+    const events = model.model === "linear-piecewise-map" ? model.events : undefined;
 
-    const eventComponentCount = eventLayout?.components.length ?? 0;
-    const rowWidth = seasonalComponentCount + eventComponentCount + 3;
+    const fittedRegressors = model.model === "linear-piecewise-map" ? model.regressors : [];
+
+    const eventComponentCount = events?.layout.components.length ?? 0;
+
+    const rowWidth = seasonalComponentCount + eventComponentCount + fittedRegressors.length + 3;
+
     const forecasts: Array<Forecast> = [];
 
     for (const [row, timestamp] of timestamps.entries()) {
       const rowOffset = row * rowWidth;
       const trend = batch.values[rowOffset];
+
       const additive = batch.values[rowOffset + 1];
+
       const value = batch.values[rowOffset + 2];
 
       if (trend === undefined || additive === undefined || value === undefined) {
@@ -426,10 +626,10 @@ const forecastsFromSeasonalBatch = (
         seasonalities.push({ name: component.definition.name, value: componentValue });
       }
 
-      const events: Array<EventForecastComponent> = [];
+      const eventComponents: Array<EventForecastComponent> = [];
 
-      if (eventLayout !== undefined) {
-        for (const [componentIndex, component] of eventLayout.components.entries()) {
+      if (events !== undefined) {
+        for (const [componentIndex, component] of events.layout.components.entries()) {
           const componentValue =
             batch.values[rowOffset + 3 + seasonalComponentCount + componentIndex];
 
@@ -443,11 +643,40 @@ const forecastsFromSeasonalBatch = (
             );
           }
 
-          events.push({ name: component.name, value: componentValue });
+          eventComponents.push({ name: component.name, value: componentValue });
         }
       }
 
-      forecasts.push({ timestamp, trend, additive, value, seasonalities, events });
+      const regressors: Array<RegressorForecastComponent> = [];
+
+      for (const [componentIndex, regressor] of fittedRegressors.entries()) {
+        const componentValue =
+          batch.values[
+            rowOffset + 3 + seasonalComponentCount + eventComponentCount + componentIndex
+          ];
+
+        if (componentValue === undefined) {
+          return yield* Effect.fail(
+            new PredictionError({
+              reason: "backend-failure",
+              timestamp,
+              message: `WASM ${backend} prediction backend omitted a regressor component`,
+            }),
+          );
+        }
+
+        regressors.push({ name: regressor.definition.name, value: componentValue });
+      }
+
+      forecasts.push({
+        timestamp,
+        trend,
+        additive,
+        value,
+        seasonalities,
+        events: eventComponents,
+        regressors,
+      });
     }
 
     return forecasts;
@@ -455,11 +684,13 @@ const forecastsFromSeasonalBatch = (
 
 const makePredictionFeatures = Effect.fn("makePredictionFeatures")(function* (
   timestamps: PredictionTimestamps,
+  alignedRegressorValues: ReadonlyArray<ReadonlyArray<number>>,
   seasonalComponentCount: number,
   events: EventCalendar,
+  regressors: ReadonlyArray<FittedRegressor>,
 ): Effect.fn.Return<
   { readonly masks: SeasonalityMaskMatrix; readonly features: KnownAdditiveFeatures },
-  PredictionError
+  PredictionError | InputValidationError
 > {
   const firstTimestamp = timestamps[0] ?? 0;
 
@@ -477,7 +708,7 @@ const makePredictionFeatures = Effect.fn("makePredictionFeatures")(function* (
     ),
   );
 
-  const matrix = yield* createEventFeatures(timestamps, events).pipe(
+  const eventMatrix = yield* createEventFeatures(timestamps, events).pipe(
     Effect.mapError(
       (error) =>
         new PredictionError({
@@ -488,10 +719,33 @@ const makePredictionFeatures = Effect.fn("makePredictionFeatures")(function* (
     ),
   );
 
-  return {
-    masks,
-    features: Object.freeze({ matrix, layout: events.layout }),
-  };
+  const eventFeatures: KnownAdditiveFeatures = Object.freeze({
+    matrix: eventMatrix,
+    layout: events.layout,
+  });
+
+  const regressorFeatures = yield* createRegressorFeatures(regressors, alignedRegressorValues).pipe(
+    Effect.mapError((error) =>
+      regressorFeatureValidationError(
+        "prediction-rows",
+        regressors.map((regressor) => regressor.definition),
+        error,
+      ),
+    ),
+  );
+
+  const features = yield* concatenateKnownAdditiveFeatures([eventFeatures, regressorFeatures]).pipe(
+    Effect.mapError(
+      (error) =>
+        new PredictionError({
+          reason: "backend-failure",
+          timestamp: firstTimestamp,
+          message: error.message,
+        }),
+    ),
+  );
+
+  return { masks, features };
 });
 
 const predictFlatMapForecasts = (
@@ -505,8 +759,9 @@ const predictFlatMapForecasts = (
 const predictPiecewiseMapForecasts = (
   model: FittedPiecewiseMapProphet,
   timestamps: PredictionTimestamps,
-): Effect.Effect<Forecasts, PredictionError> =>
-  model.events.layout.coefficientCount === 0
+  alignedRegressorValues: ReadonlyArray<ReadonlyArray<number>>,
+): Effect.Effect<Forecasts, PredictionError | InputValidationError> =>
+  model.events.layout.coefficientCount === 0 && model.regressors.length === 0
     ? predictPiecewiseMapWithWasm(model, timestamps).pipe(
         Effect.flatMap((batch) =>
           forecastsFromSeasonalBatch(model, timestamps, batch, "linear MAP"),
@@ -515,8 +770,10 @@ const predictPiecewiseMapForecasts = (
     : Effect.gen(function* () {
         const { masks, features } = yield* makePredictionFeatures(
           timestamps,
+          alignedRegressorValues,
           model.seasonalities.components.length,
           model.events,
+          model.regressors,
         );
 
         const batch = yield* predictPiecewiseMapFeaturesWithWasm(
@@ -532,34 +789,44 @@ const predictPiecewiseMapForecasts = (
 const predictFittedModel = (
   model: FittedProphet,
   timestamps: PredictionTimestamps,
-): Effect.Effect<Forecasts, PredictionError> =>
+  alignedRegressorValues: ReadonlyArray<ReadonlyArray<number>>,
+): Effect.Effect<Forecasts, PredictionError | InputValidationError> =>
   Match.value(model).pipe(
     Match.discriminatorsExhaustive("model")({
       "linear-trend": (linearModel) => predictLinearForecasts(linearModel, timestamps),
       "flat-map": (flatModel) => predictFlatMapForecasts(flatModel, timestamps),
       "linear-piecewise-map": (piecewiseModel) =>
-        predictPiecewiseMapForecasts(piecewiseModel, timestamps),
+        predictPiecewiseMapForecasts(piecewiseModel, timestamps, alignedRegressorValues),
     }),
   );
 
+const fittedRegressors = (model: FittedProphet): ReadonlyArray<FittedRegressor> =>
+  model.model === "linear-piecewise-map" ? model.regressors : [];
+
+/** Return fitted regressor coefficients in original input units. */
+export const getRegressorCoefficients = (
+  model: FittedProphet,
+): ReadonlyArray<RegressorCoefficient> =>
+  Object.freeze(fittedRegressors(model).map(projectRegressorCoefficient));
+
 /**
- * Predict point forecasts and decomposed components at validated timestamps.
+ * Predict point forecasts and decomposed components at validated rows.
  *
  * Every model reuses fitting-time state without deriving scales or selected
- * features from prediction timestamps.
+ * features from prediction rows.
  *
  * @param model - A fitted model returned by `fit` or model decoding.
- * @param timestampsInput - Untrusted canonical UTC timestamps.
+ * @param rowsInput - Untrusted timestamp strings or row-shaped future covariates.
  * @returns Ordered point forecasts or a typed validation or prediction failure.
  */
 export const predict = Effect.fn("Prophet.predict")(function* (
   model: FittedProphet,
-  timestampsInput: Parameters<typeof decodePredictionTimestampsSchema>[0],
+  rowsInput: Parameters<typeof decodePredictionRows>[0],
 ): Effect.fn.Return<Forecasts, InputValidationError | PredictionError> {
-  const timestamps = yield* decodePredictionTimestamps(timestampsInput);
-  const firstTimestamp = timestamps[0];
+  const rows = yield* decodePredictionRows(rowsInput);
+  const firstRow = rows[0];
 
-  if (firstTimestamp === undefined) {
+  if (firstRow === undefined) {
     return [];
   }
 
@@ -568,11 +835,21 @@ export const predict = Effect.fn("Prophet.predict")(function* (
       () =>
         new PredictionError({
           reason: "invalid-model",
-          timestamp: firstTimestamp,
+          timestamp: firstRow.timestamp,
           message: "Fitted model is invalid",
         }),
     ),
   );
 
-  return yield* predictFittedModel(parsedModel, timestamps);
+  const regressors = fittedRegressors(parsedModel);
+
+  const alignedRegressorValues = yield* alignRegressorValues(
+    rows,
+    regressors.map((regressor) => regressor.definition),
+    "prediction-rows",
+  );
+
+  const timestamps = rows.map((row) => row.timestamp);
+
+  return yield* predictFittedModel(parsedModel, timestamps, alignedRegressorValues);
 });

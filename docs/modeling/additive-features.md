@@ -1,6 +1,6 @@
 # Known additive features
 
-Custom events are represented as known additive feature columns and are fitted jointly with trend, changepoints, and seasonal Fourier terms. The numerical implementation is Rust-only; TypeScript parses calendar semantics, constructs checked matrices, and frames coarse WASM calls.
+Custom events and additional regressors are represented as known additive feature columns and are fitted jointly with trend, changepoints, and seasonal Fourier terms. The numerical implementation is Rust-only; TypeScript parses feature semantics, resolves train-only regressor transforms, constructs checked matrices, and frames coarse WASM calls.
 
 ## Column and coefficient order
 
@@ -22,8 +22,38 @@ A lower window must be at most zero and an upper window at least zero. Every `(n
 
 Occurrences supplied during fitting are retained in the fitted model and portable payload. Future declared occurrences therefore affect prediction; undeclared one-off dates do not recur automatically. A future-only column is representable but has no training signal beyond its zero-centered prior.
 
+## Regressor normalization and rows
+
+Regressor definitions preserve caller order, use globally unique feature names, and have positive finite prior scales. Only additive regressors are currently accepted. Every training and prediction row must provide exactly the configured names with finite numeric values. Missing and extra names are indexed validation failures; values are never imputed, defaulted to zero, carried forward, or forecast by a nested model.
+
+Transforms are resolved from training rows before prediction values are observed:
+
+- `"never"` keeps the original value;
+- `"auto"` keeps a constant column or a column whose unique set is exactly `{0, 1}`, and standardizes every other column;
+- `"always"` standardizes a nonconstant column but keeps a constant column to avoid division by zero.
+
+Standardization uses the arithmetic training mean and sample standard deviation with denominator `N - 1`:
+
+```text
+z = (x - mean) / sampleStandardDeviation
+```
+
+The implementation computes variance with Welford's online update to avoid subtracting large squared sums. Non-finite statistics or transformed values are rejected. Prediction reuses the stored transform, including for values outside the training range. A constant nonzero identity column is legal and regularized, but it is confounded with the intercept and should not be interpreted independently.
+
+Fitted transformed-unit coefficients are projected for inspection as:
+
+```text
+originalCoefficient = fittedCoefficient / sampleStandardDeviation
+center = mean
+contribution = originalCoefficient * (x - center)
+```
+
+Identity transforms retain the fitted coefficient and use center zero. These point-estimate summaries are associational model parameters, not causal estimates or uncertainty intervals.
+
+Complete prediction rows, rather than timestamps alone, define identity and ordering. Duplicate timestamps are retained, and rows at the same timestamp can produce different forecasts when their regressors differ. Timestamp strings remain supported for models that require no row covariates.
+
 ## Memory and WASM protocol
 
-Feature and mask matrices are row-major and copied at the TypeScript and generated WASM boundaries. Rust validates exact lengths, finite values, binary masks, positive priors, and contiguous component ranges before numerical loops. Fitted models retain semantic calendar metadata and owned coefficient arrays, never matrix buffers or typed-array aliases.
+Feature and mask matrices are row-major and copied at the TypeScript and generated WASM boundaries. Rust validates exact lengths, finite values, binary masks, positive priors, and contiguous component ranges before numerical loops. Fitted models retain semantic event and regressor metadata plus owned coefficient arrays, never matrix buffers or typed-array aliases.
 
-Featureful fit and prediction each cross WASM once. Existing feature-free exports remain callable. Successful prediction rows are `[trend, additive, value, ...seasonalComponents, ...eventComponents]`; successful fit frames append seasonal coefficients followed by event coefficients.
+Featureful fit and prediction each cross WASM once. Existing feature-free exports remain callable. Successful prediction rows are `[trend, additive, value, ...seasonalComponents, ...eventComponents, ...regressorComponents]`; successful fit frames append seasonal coefficients followed by event and regressor coefficients.

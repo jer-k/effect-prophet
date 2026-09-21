@@ -4,6 +4,7 @@ import type { FittingError } from "../errors";
 import type { EventCalendar } from "../event";
 import type { Parameters } from "../fitted-model";
 import type { ChangepointSetting, MapOptimizerControls } from "../options";
+import type { ResolvedRegressor } from "../regressor";
 import type {
   EmptySeasonalityLayout,
   NonEmptySeasonalityLayout,
@@ -56,6 +57,9 @@ export interface LinearPiecewiseMapFitPlan {
 
   /** Semantic event state retained in the fitted model. */
   readonly events: EventCalendar;
+
+  /** Training-derived regressor metadata retained in the fitted model. */
+  readonly regressors: ReadonlyArray<ResolvedRegressor>;
 }
 
 /** Request for featureless reduced flat MAP fitting. */

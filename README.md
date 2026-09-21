@@ -112,10 +112,11 @@ Encoded observations use this shape:
 {
   timestamp: "2024-01-01T00:00:00.000Z",
   value: 1.5,
+  regressors: { price: 2 }, // required when `price` is configured
 }
 ```
 
-Timestamps must use the canonical UTC ISO representation emitted by Effect's `DateTime.formatIso`. Decoded timestamps are integer epoch milliseconds, keeping mutable JavaScript `Date` objects out of the numerical core. Values must be finite numbers.
+Timestamps must use the canonical UTC ISO representation emitted by Effect's `DateTime.formatIso`. Decoded timestamps are integer epoch milliseconds, keeping mutable JavaScript `Date` objects out of the numerical core. Values and regressor covariates must be finite numbers. When regressors are configured, every training row must contain exactly those regressor names; missing and extra names are rejected rather than imputed or ignored.
 
 Collections must be non-empty and arrive in strictly ascending timestamp order. The decoder does not sort input, and duplicate timestamps are rejected.
 
@@ -202,7 +203,37 @@ const forecasts = await Effect.runPromise(predict(model, futureTimestamps));
 // forecasts[i].events contains the grouped `launch` contribution.
 ```
 
-See [known additive features](docs/modeling/additive-features.md) for ordering, UTC window semantics, memory ownership, and the WASM protocol.
+## Additional regressors
+
+Known additive regressors are fitted jointly with the trend, seasonalities, and custom events. Definitions are ordered and accept a positive `priorScale` plus `standardization: "auto" | "always" | "never"`. Automatic standardization leaves exact binary and constant training columns unchanged and otherwise uses the training sample mean and sample standard deviation. Stored transforms are reused for prediction and after serialization.
+
+Prediction remains timestamp-only for models without regressors. A regressor model requires row-shaped input containing exactly every fitted regressor; the package never forecasts, fills, or carries future covariates forward.
+
+```ts
+import { Effect } from "effect";
+import { fit, getRegressorCoefficients, predict, prophetFittingBackendLayer } from "effect-prophet";
+
+const model = await Effect.runPromise(
+  fit(
+    [
+      { timestamp: "2025-01-01T00:00:00.000Z", value: 10, regressors: { price: 2 } },
+      { timestamp: "2025-01-02T00:00:00.000Z", value: 12, regressors: { price: 3 } },
+    ],
+    { regressors: [{ name: "price", standardization: "auto", priorScale: 5 }] },
+  ).pipe(Effect.provide(prophetFittingBackendLayer)),
+);
+
+const forecasts = await Effect.runPromise(
+  predict(model, [{ timestamp: "2025-01-03T00:00:00.000Z", regressors: { price: 4 } }]),
+);
+
+const coefficients = getRegressorCoefficients(model);
+// coefficients are descriptive model parameters in original regressor units, not causal effects.
+```
+
+Complete prediction rows preserve input order and duplicates. Equal timestamps may produce different forecasts when their regressor values differ. Every forecast includes ordered `regressors` components, and `additive` is the sum of seasonal, event, and regressor contributions.
+
+See [known additive features](docs/modeling/additive-features.md) for ordering, normalization, UTC event-window semantics, memory ownership, and the WASM protocol.
 
 ## Automatic built-in seasonalities
 

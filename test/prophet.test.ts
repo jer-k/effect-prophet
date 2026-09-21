@@ -85,6 +85,7 @@ describe("linear-trend Prophet integration", () => {
       additive: 0,
       seasonalities: [],
       events: [],
+      regressors: [],
     });
     expect(testBackend.invocations).toEqual([
       {
@@ -120,6 +121,7 @@ describe("linear-trend Prophet integration", () => {
       additive: 0,
       seasonalities: [],
       events: [],
+      regressors: [],
     });
   });
 

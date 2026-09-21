@@ -10,6 +10,12 @@ import {
 } from "./event";
 import { TimestampSchema } from "./internal/timestamp";
 import {
+  parseRegressorDefinitions,
+  type EncodedRegressorDefinition,
+  type InvalidRegressors,
+  type RegressorDefinition,
+} from "./regressor";
+import {
   parseSeasonalities,
   type EncodedSeasonality,
   type InvalidSeasonality,
@@ -56,6 +62,7 @@ export interface BuiltInSeasonalities {
 interface EncodedBuiltInOptions {
   readonly builtInSeasonalities?: EncodedBuiltInSeasonalities;
   readonly events?: ReadonlyArray<EncodedEventOccurrence>;
+  readonly regressors?: ReadonlyArray<EncodedRegressorDefinition>;
 }
 
 /** Public explicit or automatic changepoint configuration for linear MAP fitting. */
@@ -143,6 +150,7 @@ export type EncodedProphetOptions =
 interface ParsedBuiltInOptions {
   readonly builtInSeasonalities: BuiltInSeasonalities;
   readonly events: EventCalendar;
+  readonly regressors: ReadonlyArray<RegressorDefinition>;
 }
 
 /** Parsed linear-growth options without configured custom seasonalities. */
@@ -180,6 +188,8 @@ export type ProphetOptions =
 
 const emptySeasonalities: readonly [] = Object.freeze([]);
 
+const emptyRegressors: readonly [] = Object.freeze([]);
+
 const defaultBuiltInSeasonalities: BuiltInSeasonalities = Object.freeze({
   daily: "off",
   weekly: "off",
@@ -208,6 +218,7 @@ export const defaultProphetOptions: LinearTrendOptions = Object.freeze({
   seasonalities: emptySeasonalities,
   builtInSeasonalities: defaultBuiltInSeasonalities,
   events: emptyEventCalendar,
+  regressors: emptyRegressors,
 });
 
 const GrowthSchema = Schema.Literals(["flat", "linear"]);
@@ -306,6 +317,7 @@ const ProphetOptionsSyntaxSchema = Schema.Struct({
     Schema.withDecodingDefaultKey(Effect.succeed(defaultBuiltInSeasonalities)),
   ),
   events: Schema.Array(Schema.Unknown).pipe(Schema.withDecodingDefaultKey(Effect.succeed([]))),
+  regressors: Schema.Array(Schema.Unknown).pipe(Schema.withDecodingDefaultKey(Effect.succeed([]))),
   map: Schema.optionalKey(MapOptionsSchema),
 });
 
@@ -370,6 +382,16 @@ const optionsValidationErrorFromEvents = (error: InvalidEventCalendar): InputVal
     message: error.message,
   });
 
+const optionsValidationErrorFromRegressors = (error: InvalidRegressors): InputValidationError =>
+  new InputValidationError({
+    input: "options",
+    issues: error.issues.map((issue) => ({
+      message: issue.message,
+      path: ["regressors", ...(issue.path ?? [])],
+    })),
+    message: error.message,
+  });
+
 /** Decode optional, untrusted fitting options and apply the documented defaults. */
 export const decodeOptions = Effect.fn("decodeOptions")(function* (
   input?: Parameters<typeof decodeProphetOptionsSyntax>[0],
@@ -386,6 +408,10 @@ export const decodeOptions = Effect.fn("decodeOptions")(function* (
 
   const events = yield* parseEventCalendar(syntax.events).pipe(
     Effect.mapError(optionsValidationErrorFromEvents),
+  );
+
+  const regressors = yield* parseRegressorDefinitions(syntax.regressors).pipe(
+    Effect.mapError(optionsValidationErrorFromRegressors),
   );
 
   const seasonalityNames = new Set(seasonalities.map((seasonality) => seasonality.name));
@@ -407,6 +433,31 @@ export const decodeOptions = Effect.fn("decodeOptions")(function* (
     }
   }
 
+  const eventNames = new Set(events.occurrences.map((occurrence) => occurrence.name));
+
+  for (const [index, regressor] of regressors.entries()) {
+    const collision = seasonalityNames.has(regressor.name)
+      ? "a seasonality"
+      : eventNames.has(regressor.name)
+        ? "an event"
+        : undefined;
+
+    if (collision !== undefined) {
+      return yield* Effect.fail(
+        new InputValidationError({
+          input: "options",
+          issues: [
+            {
+              path: ["regressors", index, "name"],
+              message: `Feature name '${regressor.name}' collides with ${collision}`,
+            },
+          ],
+          message: "Regressor names must be globally distinct",
+        }),
+      );
+    }
+  }
+
   if (syntax.growth === "flat" && syntax.map !== undefined) {
     return yield* Effect.fail(
       new InputValidationError({
@@ -423,12 +474,31 @@ export const decodeOptions = Effect.fn("decodeOptions")(function* (
 
   if (firstSeasonality === undefined) {
     if (syntax.growth === "flat") {
-      return { growth: "flat", seasonalities: emptySeasonalities, builtInSeasonalities, events };
+      return {
+        growth: "flat",
+        seasonalities: emptySeasonalities,
+        builtInSeasonalities,
+        events,
+        regressors,
+      };
     }
 
     return map === undefined
-      ? { growth: "linear", seasonalities: emptySeasonalities, builtInSeasonalities, events }
-      : { growth: "linear", seasonalities: emptySeasonalities, builtInSeasonalities, events, map };
+      ? {
+          growth: "linear",
+          seasonalities: emptySeasonalities,
+          builtInSeasonalities,
+          events,
+          regressors,
+        }
+      : {
+          growth: "linear",
+          seasonalities: emptySeasonalities,
+          builtInSeasonalities,
+          events,
+          regressors,
+          map,
+        };
   }
 
   const nonEmptySeasonalities: readonly [
@@ -437,10 +507,29 @@ export const decodeOptions = Effect.fn("decodeOptions")(function* (
   ] = Object.freeze([firstSeasonality, ...seasonalities.slice(1)]);
 
   if (syntax.growth === "flat") {
-    return { growth: "flat", seasonalities: nonEmptySeasonalities, builtInSeasonalities, events };
+    return {
+      growth: "flat",
+      seasonalities: nonEmptySeasonalities,
+      builtInSeasonalities,
+      events,
+      regressors,
+    };
   }
 
   return map === undefined
-    ? { growth: "linear", seasonalities: nonEmptySeasonalities, builtInSeasonalities, events }
-    : { growth: "linear", seasonalities: nonEmptySeasonalities, builtInSeasonalities, events, map };
+    ? {
+        growth: "linear",
+        seasonalities: nonEmptySeasonalities,
+        builtInSeasonalities,
+        events,
+        regressors,
+      }
+    : {
+        growth: "linear",
+        seasonalities: nonEmptySeasonalities,
+        builtInSeasonalities,
+        events,
+        regressors,
+        map,
+      };
 });

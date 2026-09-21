@@ -63,6 +63,7 @@ const validPiecewiseMapParameters = async (): Promise<PiecewiseMapParameters> =>
     coefficients: [],
     events: emptyEventCalendar,
     eventCoefficients: [],
+    regressors: [],
     noiseScale: 0.1,
     fitSummary: {
       method: "piecewise-map-coordinate-v1",

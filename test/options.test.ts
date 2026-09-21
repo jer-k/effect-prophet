@@ -30,6 +30,7 @@ describe("decodeOptions", () => {
       seasonalities: [],
       builtInSeasonalities: { daily: "off", weekly: "off", yearly: "off" },
       events: emptyEventCalendar,
+      regressors: [],
     });
   });
 
@@ -49,6 +50,7 @@ describe("decodeOptions", () => {
         seasonalities: [],
         builtInSeasonalities: { daily: "off", weekly: "off", yearly: "off" },
         events: emptyEventCalendar,
+        regressors: [],
       });
     },
   );
@@ -82,6 +84,7 @@ describe("decodeOptions", () => {
       seasonalities: [{ name: "work-week", periodDays: 7, fourierOrder: 3, priorScale: 10 }],
       builtInSeasonalities: { daily: "off", weekly: "off", yearly: "off" },
       events: emptyEventCalendar,
+      regressors: [],
     });
   });
 
@@ -103,6 +106,7 @@ describe("decodeOptions", () => {
       ],
       builtInSeasonalities: { daily: "off", weekly: "off", yearly: "off" },
       events: emptyEventCalendar,
+      regressors: [],
     });
     expect(Object.isFrozen(options.seasonalities)).toBe(true);
   });
@@ -118,6 +122,33 @@ describe("decodeOptions", () => {
       },
     });
     expect(Object.isFrozen(defaultAutomaticMapOptions)).toBe(true);
+  });
+
+  it("parses ordered regressors and enforces global feature names", async () => {
+    const options = await Effect.runPromise(
+      decodeOptions({
+        regressors: [
+          { name: "price" },
+          { name: "promotion", priorScale: 3, standardization: "never" },
+        ],
+      }),
+    );
+
+    expect(options.regressors).toEqual([
+      { name: "price", priorScale: 10, standardization: "auto" },
+      { name: "promotion", priorScale: 3, standardization: "never" },
+    ]);
+    expect(Object.isFrozen(options.regressors)).toBe(true);
+
+    const error = await expectOptionsFailure({
+      seasonalities: [{ name: "price", periodDays: 7, fourierOrder: 1 }],
+      regressors: [{ name: "price" }],
+    });
+
+    expect(error.issues).toContainEqual({
+      path: ["regressors", 0, "name"],
+      message: "Feature name 'price' collides with a seasonality",
+    });
   });
 
   it("parses explicit and automatic linear MAP controls", async () => {

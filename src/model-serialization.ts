@@ -22,6 +22,11 @@ import {
   type LinearParameters,
   type PiecewiseMapParameters,
 } from "./fitted-model";
+import type {
+  EncodedRegressorStandardization,
+  FittedRegressor,
+  RegressorTransform,
+} from "./regressor";
 import * as Seasonality from "./seasonality";
 
 /** The legacy portable representation of a fitted ordinary linear model. */
@@ -46,6 +51,14 @@ export interface EncodedLinearModel {
     /** Positive timestamp interval mapped to one scaled time unit. */
     readonly scale: number;
   };
+}
+
+/** Portable training-derived metadata for one fitted additive regressor. */
+export interface EncodedFittedRegressor {
+  readonly name: string;
+  readonly priorScale: number;
+  readonly standardization: EncodedRegressorStandardization;
+  readonly transform: RegressorTransform;
 }
 
 /** Portable representation of a reduced flat MAP model. */
@@ -83,8 +96,10 @@ export interface EncodedPiecewiseMapModel {
     readonly deltas: ReadonlyArray<number>;
     readonly seasonal: ReadonlyArray<number>;
     readonly events: ReadonlyArray<number>;
+    readonly regressors?: ReadonlyArray<number>;
   };
   readonly events: ReadonlyArray<EncodedEventOccurrence>;
+  readonly regressors?: ReadonlyArray<EncodedFittedRegressor>;
   readonly timeScaling: {
     readonly origin: number;
     readonly scale: number;
@@ -134,6 +149,23 @@ const EncodedEventOccurrencesSchema = Schema.Array(
   }),
 );
 
+const EncodedFittedRegressorSchema = Schema.Struct({
+  name: Schema.String,
+  priorScale: Schema.Number,
+  standardization: Schema.Literals(["auto", "always", "never"]),
+  transform: Schema.Union([
+    Schema.Struct({
+      mode: Schema.Literal("identity"),
+      reason: Schema.Literals(["disabled", "binary", "constant"]),
+    }),
+    Schema.Struct({
+      mode: Schema.Literal("standardized"),
+      mean: Schema.Number,
+      sampleStandardDeviation: Schema.Number,
+    }),
+  ]),
+});
+
 const EncodedFlatMapModelSchema = Schema.Struct({
   modelKind: Schema.Literal("flat-map"),
   coefficients: Schema.Struct({
@@ -168,7 +200,11 @@ const EncodedPiecewiseMapModelSchema = Schema.Struct({
     deltas: Schema.Array(Schema.Number),
     seasonal: Schema.Array(Schema.Number),
     events: Schema.Array(Schema.Number).pipe(Schema.withDecodingDefaultKey(Effect.succeed([]))),
+    regressors: Schema.Array(Schema.Number).pipe(Schema.withDecodingDefaultKey(Effect.succeed([]))),
   }),
+  regressors: Schema.Array(EncodedFittedRegressorSchema).pipe(
+    Schema.withDecodingDefaultKey(Effect.succeed([])),
+  ),
   events: EncodedEventOccurrencesSchema.pipe(Schema.withDecodingDefaultKey(Effect.succeed([]))),
   timeScaling: Schema.Struct({
     origin: Schema.Number,
@@ -258,6 +294,20 @@ const portablePathFromModelPath = (
       return ["seasonalities"];
     }
 
+    case "regressors": {
+      const [regressorIndex, regressorField, ...regressorRest] = rest;
+
+      if (regressorField === "definition") {
+        return ["regressors", regressorIndex ?? 0, ...regressorRest];
+      }
+
+      if (regressorField === "coefficient") {
+        return ["coefficients", "regressors", regressorIndex ?? 0];
+      }
+
+      return ["regressors", regressorIndex ?? 0, regressorField ?? "transform", ...regressorRest];
+    }
+
     default:
       return path;
   }
@@ -333,6 +383,16 @@ const encodeLinearModel = (model: FittedLinearProphet): EncodedLinearModel => ({
   },
 });
 
+const encodeFittedRegressors = (
+  regressors: ReadonlyArray<FittedRegressor>,
+): ReadonlyArray<EncodedFittedRegressor> =>
+  regressors.map((regressor) => ({
+    name: regressor.definition.name,
+    priorScale: regressor.definition.priorScale,
+    standardization: regressor.definition.standardization,
+    transform: { ...regressor.transform },
+  }));
+
 const encodeFlatMapModel = (model: FittedFlatMapProphet): EncodedFlatMapModel => ({
   modelKind: "flat-map",
   coefficients: {
@@ -365,7 +425,9 @@ const encodePiecewiseMapModel = (model: FittedPiecewiseMapProphet): EncodedPiece
     deltas: Array.from(model.deltas),
     seasonal: Array.from(model.coefficients),
     events: Array.from(model.eventCoefficients),
+    regressors: model.regressors.map((regressor) => regressor.coefficient),
   },
+  regressors: encodeFittedRegressors(model.regressors),
   events: model.events.occurrences.map((occurrence) => ({
     name: occurrence.name,
     date: occurrence.date,
@@ -384,6 +446,52 @@ const encodePiecewiseMapModel = (model: FittedPiecewiseMapProphet): EncodedPiece
   noiseScale: model.noiseScale,
   fitSummary: { ...model.fitSummary },
 });
+
+const fittedRegressorsFromEncoded = (
+  metadata: ReadonlyArray<EncodedFittedRegressor> | undefined,
+  coefficients: ReadonlyArray<number> | undefined,
+): Effect.Effect<
+  ReadonlyArray<{
+    readonly definition: {
+      readonly name: string;
+      readonly priorScale: number;
+      readonly standardization: EncodedRegressorStandardization;
+    };
+    readonly transform: RegressorTransform;
+    readonly coefficient: number;
+  }>,
+  ModelSerializationError
+> => {
+  const resolvedMetadata = metadata ?? [];
+  const resolvedCoefficients = coefficients ?? [];
+
+  if (resolvedMetadata.length !== resolvedCoefficients.length) {
+    return Effect.fail(
+      new ModelSerializationError({
+        operation: "decode",
+        issues: [
+          {
+            path: ["coefficients", "regressors"],
+            message: `Expected exactly ${resolvedMetadata.length} regressor coefficients`,
+          },
+        ],
+        message: "Persisted regressor metadata and coefficients must align",
+      }),
+    );
+  }
+
+  return Effect.succeed(
+    resolvedMetadata.map((regressor, index) => ({
+      definition: {
+        name: regressor.name,
+        priorScale: regressor.priorScale,
+        standardization: regressor.standardization,
+      },
+      transform: regressor.transform,
+      coefficient: resolvedCoefficients[index] ?? Number.NaN,
+    })),
+  );
+};
 
 const decodeFlatMapModel = Effect.fn("decodeFlatMapModel")(function* (
   encoded: EncodedFlatMapModel,
@@ -423,6 +531,11 @@ const decodePiecewiseMapModel = Effect.fn("decodePiecewiseMapModel")(function* (
     Effect.mapError(serializationErrorFromInvalidEvent),
   );
 
+  const regressors = yield* fittedRegressorsFromEncoded(
+    encoded.regressors,
+    encoded.coefficients.regressors,
+  );
+
   return yield* parsePiecewiseMapModel({
     model: "linear-piecewise-map",
     intercept: encoded.coefficients.intercept,
@@ -435,6 +548,7 @@ const decodePiecewiseMapModel = Effect.fn("decodePiecewiseMapModel")(function* (
     coefficients: encoded.coefficients.seasonal,
     events,
     eventCoefficients: encoded.coefficients.events,
+    regressors,
     noiseScale: encoded.noiseScale,
     fitSummary: encoded.fitSummary,
   }).pipe(

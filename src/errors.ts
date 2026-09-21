@@ -6,7 +6,12 @@ export const ValidationIssueSchema = Schema.Struct({
   path: Schema.optionalKey(Schema.Array(Schema.PropertyKey)),
 });
 
-const ValidationInputSchema = Schema.Literals(["observations", "options", "prediction-timestamps"]);
+const ValidationInputSchema = Schema.Literals([
+  "observations",
+  "options",
+  "prediction-timestamps",
+  "prediction-rows",
+]);
 
 const FittingFailureReasonSchema = Schema.Literals([
   "insufficient-observations",
@@ -34,7 +39,11 @@ const UnsupportedOptionSchema = Schema.Literals([
 
 const WasmFailurePhaseSchema = Schema.Literals(["load", "execute", "protocol"]);
 
-export type ValidationInput = "observations" | "options" | "prediction-timestamps";
+export type ValidationInput =
+  | "observations"
+  | "options"
+  | "prediction-timestamps"
+  | "prediction-rows";
 
 export type FittingFailureReason =
   | "insufficient-observations"

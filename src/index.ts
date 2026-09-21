@@ -34,6 +34,7 @@ export {
   decodeFittedModel,
   encodeFittedModel,
   type EncodedFittedModel,
+  type EncodedFittedRegressor,
   type EncodedFlatMapModel,
   type EncodedLinearModel,
   type EncodedPiecewiseMapModel,
@@ -83,11 +84,28 @@ export {
 
 export {
   fit,
+  getRegressorCoefficients,
   predict,
+  type EncodedPredictionRow,
+  type EncodedPredictionRows,
   type EncodedPredictionTimestamps,
   type EventForecastComponent,
   type Forecast,
   type Forecasts,
+  type PredictionRow,
+  type PredictionRows,
   type PredictionTimestamps,
+  type RegressorForecastComponent,
   type SeasonalForecastComponent,
 } from "./prophet";
+
+export {
+  parseRegressorDefinitions,
+  type EncodedRegressorDefinition,
+  type EncodedRegressorStandardization,
+  type FittedRegressor,
+  type RegressorCoefficient,
+  type RegressorDefinition,
+  type RegressorTransform,
+  type ResolvedRegressor,
+} from "./regressor";

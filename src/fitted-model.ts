@@ -6,6 +6,7 @@ import {
   validationMessageFromIssue,
 } from "./errors";
 import { EventCalendarSchema, emptyEventCalendar } from "./event";
+import { FittedRegressorSchema } from "./regressor";
 import { SeasonalityLayoutSchema } from "./seasonality";
 
 const PositiveFinite = Schema.Finite.check(Schema.isGreaterThan(0));
@@ -101,6 +102,9 @@ const PiecewiseMapParametersFieldsSchema = Schema.Struct({
   eventCoefficients: Schema.Array(Schema.Finite).pipe(
     Schema.withDecodingDefaultKey(Effect.succeed([])),
   ),
+  regressors: Schema.Array(FittedRegressorSchema).pipe(
+    Schema.withDecodingDefaultKey(Effect.succeed([])),
+  ),
   noiseScale: PositiveFinite,
   fitSummary: PiecewiseMapFitSummarySchema,
 });
@@ -130,6 +134,32 @@ const consistentPiecewiseMapParameters = Schema.makeFilter<PiecewiseMapParameter
         path: ["eventCoefficients"],
         issue: `Expected exactly ${parameters.events.layout.coefficientCount} event coefficients`,
       });
+    }
+
+    const featureNames = new Set(
+      parameters.seasonalities.components.map((component) => component.definition.name),
+    );
+
+    for (const [index, component] of parameters.events.layout.components.entries()) {
+      if (featureNames.has(component.name)) {
+        issues.push({
+          path: ["events", "layout", "components", index, "name"],
+          issue: "Fitted event names must be distinct from seasonality names",
+        });
+      }
+
+      featureNames.add(component.name);
+    }
+
+    for (const [index, regressor] of parameters.regressors.entries()) {
+      if (featureNames.has(regressor.definition.name)) {
+        issues.push({
+          path: ["regressors", index, "definition", "name"],
+          issue: "Fitted regressor names must be globally distinct",
+        });
+      }
+
+      featureNames.add(regressor.definition.name);
     }
 
     const end = parameters.timeOrigin + parameters.timeScale;
@@ -173,7 +203,8 @@ const consistentPiecewiseMapParameters = Schema.makeFilter<PiecewiseMapParameter
         parameters.slope !== 0 ||
         parameters.deltas.some((delta) => delta !== 0) ||
         parameters.coefficients.some((coefficient) => coefficient !== 0) ||
-        parameters.eventCoefficients.some((coefficient) => coefficient !== 0)
+        parameters.eventCoefficients.some((coefficient) => coefficient !== 0) ||
+        parameters.regressors.some((regressor) => regressor.coefficient !== 0)
       ) {
         issues.push({
           path: ["fitSummary", "termination"],
@@ -197,12 +228,6 @@ const PiecewiseMapParametersSchema = PiecewiseMapParametersFieldsSchema.check(
   consistentPiecewiseMapParameters,
 );
 
-const ParametersSchema = Schema.Union([
-  LinearParametersSchema,
-  FlatMapParametersSchema,
-  PiecewiseMapParametersSchema,
-]);
-
 const FittedLinearProphetSchema = LinearParametersSchema.pipe(
   Schema.brand("effect-prophet/FittedLinearProphet"),
 );
@@ -221,17 +246,21 @@ const FittedProphetSchema = Schema.Union([
   FittedPiecewiseMapProphetSchema,
 ]);
 
+type ParsedPiecewiseMapParameters = typeof PiecewiseMapParametersSchema.Type;
+
 /** Untrusted parameters returned by a linear-trend fitting backend. */
 export type LinearParameters = typeof LinearParametersSchema.Type;
-
-/** Untrusted fitted parameters returned by a fitting backend. */
-export type Parameters = typeof ParametersSchema.Type;
 
 /** Complete, untrusted fitted state for a reduced flat MAP model. */
 export type FlatMapParameters = typeof FlatMapParametersSchema.Type;
 
 /** Complete, untrusted fitted state for a linear piecewise MAP model. */
-export type PiecewiseMapParameters = typeof PiecewiseMapParametersSchema.Type;
+export type PiecewiseMapParameters = Omit<ParsedPiecewiseMapParameters, "regressors"> & {
+  readonly regressors?: ParsedPiecewiseMapParameters["regressors"];
+};
+
+/** Untrusted fitted parameters returned by a fitting backend. */
+export type Parameters = LinearParameters | FlatMapParameters | PiecewiseMapParameters;
 
 /** A parsed ordinary least-squares linear-trend model. */
 export type FittedLinearProphet = typeof FittedLinearProphetSchema.Type;
@@ -314,6 +343,14 @@ const freezeFeatureModel = <Model extends FittedFlatMapProphet | FittedPiecewise
     Object.freeze(model.events.layout);
     Object.freeze(model.events);
     Object.freeze(model.eventCoefficients);
+
+    for (const regressor of model.regressors) {
+      Object.freeze(regressor.definition);
+      Object.freeze(regressor.transform);
+      Object.freeze(regressor);
+    }
+
+    Object.freeze(model.regressors);
   }
 
   if (model.model === "linear-piecewise-map") {

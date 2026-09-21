@@ -47,6 +47,38 @@ describe("decodeObservations", () => {
     );
   });
 
+  it("parses finite regressor records", async () => {
+    const observations = await Effect.runPromise(
+      decodeObservations([
+        {
+          timestamp: "2024-01-01T00:00:00.000Z",
+          value: 1,
+          regressors: { price: 2, promotion: 0 },
+        },
+      ]),
+    );
+
+    expect(observations[0]?.regressors).toEqual({ price: 2, promotion: 0 });
+  });
+
+  it("rejects non-finite regressor values and unknown row fields", async () => {
+    await expectValidationFailure(
+      [
+        {
+          timestamp: "2024-01-01T00:00:00.000Z",
+          value: 1,
+          regressors: { price: Number.NaN },
+        },
+      ],
+      "finite number",
+    );
+
+    await expectValidationFailure(
+      [{ timestamp: "2024-01-01T00:00:00.000Z", value: 1, typo: true }],
+      "excess property",
+    );
+  });
+
   it("rejects NaN values", async () => {
     await expectValidationFailure(
       [{ timestamp: "2024-01-01T00:00:00.000Z", value: Number.NaN }],
