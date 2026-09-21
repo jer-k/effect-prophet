@@ -124,6 +124,76 @@ describe("decodeOptions", () => {
     expect(Object.isFrozen(defaultAutomaticMapOptions)).toBe(true);
   });
 
+  it("parses conditional seasonalities and enforces condition-name collisions", async () => {
+    const options = await Effect.runPromise(
+      decodeOptions({
+        seasonalities: [
+          {
+            name: "weekly-on-season",
+            periodDays: 7,
+            fourierOrder: 2,
+            conditionName: "onSeason",
+          },
+          {
+            name: "daily-on-season",
+            periodDays: 1,
+            fourierOrder: 1,
+            conditionName: "onSeason",
+          },
+        ],
+      }),
+    );
+
+    expect(options.seasonalities.map((seasonality) => seasonality.conditionName)).toEqual([
+      "onSeason",
+      "onSeason",
+    ]);
+
+    for (const invalid of [
+      {
+        seasonalities: [
+          {
+            name: "onSeason",
+            periodDays: 3,
+            fourierOrder: 1,
+          },
+          {
+            name: "weekly-on-season",
+            periodDays: 7,
+            fourierOrder: 1,
+            conditionName: "onSeason",
+          },
+        ],
+      },
+      {
+        seasonalities: [
+          {
+            name: "weekly-on-season",
+            periodDays: 7,
+            fourierOrder: 1,
+            conditionName: "onSeason",
+          },
+        ],
+        events: [{ name: "onSeason", date: "2025-01-01" }],
+      },
+      {
+        seasonalities: [
+          {
+            name: "weekly-on-season",
+            periodDays: 7,
+            fourierOrder: 1,
+            conditionName: "onSeason",
+          },
+        ],
+        regressors: [{ name: "onSeason" }],
+      },
+    ]) {
+      const error = await expectOptionsFailure(invalid);
+
+      expect(error.issues.some((issue) => issue.message.includes("collides"))).toBe(true);
+    }
+  });
+
   it("parses ordered regressors and enforces global feature names", async () => {
     const options = await Effect.runPromise(
       decodeOptions({

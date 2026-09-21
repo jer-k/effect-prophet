@@ -60,6 +60,15 @@ const consistentFlatMapParameters = Schema.makeFilter<FlatMapParametersFields>((
     });
   }
 
+  for (const [index, component] of parameters.seasonalities.components.entries()) {
+    if (component.definition.conditionName !== undefined) {
+      issues.push({
+        path: ["seasonalities", "components", index, "definition", "conditionName"],
+        issue: "Flat MAP does not support conditional seasonalities",
+      });
+    }
+  }
+
   if (
     parameters.fitSummary.termination === "constant-target-shortcut" &&
     parameters.fitSummary.iterations !== 0
@@ -160,6 +169,17 @@ const consistentPiecewiseMapParameters = Schema.makeFilter<PiecewiseMapParameter
       }
 
       featureNames.add(regressor.definition.name);
+    }
+
+    for (const [index, component] of parameters.seasonalities.components.entries()) {
+      const conditionName = component.definition.conditionName;
+
+      if (conditionName !== undefined && featureNames.has(conditionName)) {
+        issues.push({
+          path: ["seasonalities", "components", index, "definition", "conditionName"],
+          issue: "Fitted condition names must be distinct from component names",
+        });
+      }
     }
 
     const end = parameters.timeOrigin + parameters.timeScale;

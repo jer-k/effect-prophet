@@ -18,11 +18,19 @@
     },
     {
       "path": "linear-map-fit.json",
-      "sha256": "eade8e2f1a9348a4fbb065000e83f78be5a22ad4e7789825d511d757d55b3f26"
+      "sha256": "4929f2b0ea584709305a6ca153c2828965c549183755a5c393fc4f48bd403755"
     },
     {
       "path": "seasonality-resolution.json",
       "sha256": "3e96a6c6514344472141f749a4319b4d7c509714ca9acb53f138d0153b773896"
+    },
+    {
+      "path": "conditional-seasonality.json",
+      "sha256": "8659dbda0950702376eda0ab0ab0559ddecec0b27b94079fada4953b1660cd2e"
+    },
+    {
+      "path": "conditional-map-fit.json",
+      "sha256": "5f1c835582790c2b13a2195c6359003537b4bb2f1e44fe748fdebec271ed91f6"
     }
   ],
   "backendArtifacts": [
@@ -38,7 +46,7 @@
     "platform": "linux/amd64",
     "uvVersion": "0.8.15"
   },
-  "generatorRevision": "6627f1bf9c51d39a5d974eedd6d814516db1a1091f71c10831afa8b4eff61ac1",
+  "generatorRevision": "412a2ce495bdbf1f701762407b9b4d2e9545dd379e79d568acdc4c628eb52026",
   "numericalEnvironment": [
     {
       "name": "cmdstanpy",

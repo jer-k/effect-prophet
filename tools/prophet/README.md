@@ -72,9 +72,13 @@ The suite is intentionally excluded from ordinary `npm test`.
 7. evaluates explicit fixed changepoints, output-unit slope adjustments, and composed Fourier
    components for interior, endpoint, and no-changepoint cases;
 8. invokes release `set_changepoints` for exact automatic row-index candidate fixtures;
-9. fits one noisy nonempty explicit-changepoint case through the bundled CmdStan Newton optimizer;
-10. rounds CPU-sensitive Fourier and component values to 12 decimal places, well inside the
-    fixture tolerances, and writes stable JSON with non-finite values rejected.
+9. evaluates strict boolean conditional seasonalities through the release's unmodified
+   `make_all_seasonality_features`, retaining ungated and gated matrices plus fixed components;
+10. fits one baseline and four conditional/mixed-feature explicit-changepoint cases through the
+    bundled CmdStan Newton optimizer;
+11. rounds CPU-sensitive Fourier values to 12 decimal places and fitted optimizer outputs to 12
+    significant digits, well inside the fixture tolerances, then writes stable JSON with non-finite
+    values rejected.
 
 The fixed-parameter fixture families explicitly populate `changepoints_t`, `params.k`, `params.m`,
 and `params.delta` without fitting. With the default zero floor, Prophet evaluates:
@@ -97,11 +101,15 @@ package-option mapping. Automatic changepoint fixtures record logical selected d
 release's private dummy fitting column. These fixed and policy fixture families do not invoke an
 optimizer, so their parity must not be described as fitted MAP parity.
 
-`linear-map-fit.json` is separately labeled fitted evidence. It invokes the bundled release model
-with one explicit changepoint, no seasonal columns, `changepoint_prior_scale=0.2`, and the Newton
-algorithm, then records fitted output-unit trend/noise parameters and predictions. Its looser,
-quantity-specific tolerance reflects cross-optimizer agreement rather than bitwise algorithm
-identity.
+`linear-map-fit.json` and `conditional-map-fit.json` are separately labeled fitted evidence. The
+conditional cases cover mixed conditional/unconditional components, a shared condition, an
+all-false regularized training block, and a condition/event/regressor combination. They use an
+explicit changepoint, `changepoint_prior_scale=0.2`, and the Newton algorithm, then record the
+complete design order, output-unit coefficients/noise, grouped components, and predictions. Their
+looser quantity-specific tolerances reflect cross-optimizer agreement rather than bitwise
+algorithm identity. Fitted values are canonicalized to 12 significant digits so host CPU math
+implementation differences cannot cause irrelevant last-bit fixture drift. Ridge remains a distinct
+objective and makes no fitted-Prophet parity claim.
 
 ## Shared comparison substrate
 

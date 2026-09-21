@@ -1,0 +1,1240 @@
+{
+  "cases": [
+    {
+      "events": [],
+      "expected": {
+        "additive": [
+          1.1296682202,
+          1.13263844315,
+          1.88583261583
+        ],
+        "componentNames": [
+          "weekly-on",
+          "three-day"
+        ],
+        "componentsRowMajor": [
+          1.38274846592,
+          -0.253080245714,
+          0.629554293233,
+          0.503084149915,
+          1.38274846591,
+          0.503084149915
+        ],
+        "featureColumnNames": [
+          "weekly-on_delim_1",
+          "weekly-on_delim_2",
+          "three-day_delim_1",
+          "three-day_delim_2"
+        ],
+        "featurePriorScales": [
+          10.0,
+          10.0,
+          5.0,
+          5.0
+        ],
+        "featuresRowMajor": [
+          0.781831482466,
+          0.623489801862,
+          -8e-12,
+          1.0,
+          0.974927912182,
+          -0.222520933955,
+          0.866025403788,
+          -0.499999999994,
+          0.781831482466,
+          0.623489801861,
+          0.866025403787,
+          -0.499999999995
+        ],
+        "noiseScale": 0.0303523291821,
+        "observationUnitCoefficients": [
+          0.895603691217,
+          1.09470484083,
+          0.434795590769,
+          -0.25308024571
+        ],
+        "trend": [
+          10.7691671239,
+          10.8899111801,
+          11.6143755172
+        ],
+        "value": [
+          11.8988353441,
+          12.0225496232,
+          13.5002081331
+        ]
+      },
+      "id": "mixed-conditional-and-unconditional",
+      "kind": "conditional-map-fit",
+      "observations": [
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "timestamp": "2020-01-01T00:00:00.000Z",
+          "value": 8.455
+        },
+        {
+          "conditions": {
+            "onSeason": false
+          },
+          "timestamp": "2020-01-02T00:00:00.000Z",
+          "value": 7.8549999999999995
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "timestamp": "2020-01-03T00:00:00.000Z",
+          "value": 9.369899077054553
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "timestamp": "2020-01-04T00:00:00.000Z",
+          "value": 9.512437234764581
+        },
+        {
+          "conditions": {
+            "onSeason": false
+          },
+          "timestamp": "2020-01-05T00:00:00.000Z",
+          "value": 8.185
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "timestamp": "2020-01-06T00:00:00.000Z",
+          "value": 6.970100922945447
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "timestamp": "2020-01-07T00:00:00.000Z",
+          "value": 8.140435924544759
+        },
+        {
+          "conditions": {
+            "onSeason": false
+          },
+          "timestamp": "2020-01-08T00:00:00.000Z",
+          "value": 8.635
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "timestamp": "2020-01-09T00:00:00.000Z",
+          "value": 9.759564075455243
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "timestamp": "2020-01-10T00:00:00.000Z",
+          "value": 10.929899077054552
+        },
+        {
+          "conditions": {
+            "onSeason": false
+          },
+          "timestamp": "2020-01-11T00:00:00.000Z",
+          "value": 8.965
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "timestamp": "2020-01-12T00:00:00.000Z",
+          "value": 8.507562765235422
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "timestamp": "2020-01-13T00:00:00.000Z",
+          "value": 8.530100922945447
+        },
+        {
+          "conditions": {
+            "onSeason": false
+          },
+          "timestamp": "2020-01-14T00:00:00.000Z",
+          "value": 9.295
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "timestamp": "2020-01-15T00:00:00.000Z",
+          "value": 9.444999999999999
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "timestamp": "2020-01-16T00:00:00.000Z",
+          "value": 11.439564075455241
+        },
+        {
+          "conditions": {
+            "onSeason": false
+          },
+          "timestamp": "2020-01-17T00:00:00.000Z",
+          "value": 9.625000000000002
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "timestamp": "2020-01-18T00:00:00.000Z",
+          "value": 10.382437234764579
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "timestamp": "2020-01-19T00:00:00.000Z",
+          "value": 10.06756276523542
+        },
+        {
+          "conditions": {
+            "onSeason": false
+          },
+          "timestamp": "2020-01-20T00:00:00.000Z",
+          "value": 10.075000000000001
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "timestamp": "2020-01-21T00:00:00.000Z",
+          "value": 9.010435924544758
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "timestamp": "2020-01-22T00:00:00.000Z",
+          "value": 11.004999999999997
+        },
+        {
+          "conditions": {
+            "onSeason": false
+          },
+          "timestamp": "2020-01-23T00:00:00.000Z",
+          "value": 10.405000000000003
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "timestamp": "2020-01-24T00:00:00.000Z",
+          "value": 11.91989907705455
+        }
+      ],
+      "predictionRows": [
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "timestamp": "2020-01-24T00:00:00.000Z"
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "timestamp": "2020-01-25T00:00:00.000Z"
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "timestamp": "2020-01-31T00:00:00.000Z"
+        }
+      ],
+      "regressors": [],
+      "seasonalities": [
+        {
+          "conditionName": "onSeason",
+          "fourierOrder": 1,
+          "name": "weekly-on",
+          "periodDays": 7.0,
+          "priorScale": 10.0
+        },
+        {
+          "fourierOrder": 1,
+          "name": "three-day",
+          "periodDays": 3.0,
+          "priorScale": 5.0
+        }
+      ],
+      "settings": {
+        "algorithm": "Newton",
+        "changepointPriorScale": 0.2,
+        "changepointTimestamps": [
+          "2020-01-11T00:00:00.000Z"
+        ],
+        "densityConvention": "Prophet 1.4.0 constrained-parameter MAP"
+      },
+      "tolerance": {
+        "componentAbsolute": 0.05,
+        "featureAbsolute": 1e-11,
+        "forecastAbsolute": 0.05
+      }
+    },
+    {
+      "events": [],
+      "expected": {
+        "additive": [
+          0.0,
+          0.436548737933,
+          1.04488777381
+        ],
+        "componentNames": [
+          "weekly-on",
+          "daily-on"
+        ],
+        "componentsRowMajor": [
+          0.0,
+          0.0,
+          0.460018467345,
+          -0.0234697294114,
+          1.06835750322,
+          -0.0234697294114
+        ],
+        "featureColumnNames": [
+          "weekly-on_delim_1",
+          "weekly-on_delim_2",
+          "daily-on_delim_1",
+          "daily-on_delim_2"
+        ],
+        "featurePriorScales": [
+          10.0,
+          10.0,
+          4.0,
+          4.0
+        ],
+        "featuresRowMajor": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.974927912182,
+          -0.222520933955,
+          -6e-12,
+          1.0,
+          0.781831482466,
+          0.623489801861,
+          -1e-11,
+          1.0
+        ],
+        "noiseScale": 0.320936055482,
+        "observationUnitCoefficients": [
+          0.670923011205,
+          0.872201548654,
+          3.36137478728e-08,
+          -0.0234697294114
+        ],
+        "trend": [
+          10.7177392692,
+          10.8325356526,
+          11.5213139531
+        ],
+        "value": [
+          10.7177392692,
+          11.2690843906,
+          12.566201727
+        ]
+      },
+      "id": "shared-condition-components",
+      "kind": "conditional-map-fit",
+      "observations": [
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "timestamp": "2020-01-01T00:00:00.000Z",
+          "value": 8.455
+        },
+        {
+          "conditions": {
+            "onSeason": false
+          },
+          "timestamp": "2020-01-02T00:00:00.000Z",
+          "value": 7.8549999999999995
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "timestamp": "2020-01-03T00:00:00.000Z",
+          "value": 9.369899077054553
+        },
+        {
+          "conditions": {
+            "onSeason": false
+          },
+          "timestamp": "2020-01-04T00:00:00.000Z",
+          "value": 8.905
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "timestamp": "2020-01-05T00:00:00.000Z",
+          "value": 7.577562765235419
+        },
+        {
+          "conditions": {
+            "onSeason": false
+          },
+          "timestamp": "2020-01-06T00:00:00.000Z",
+          "value": 8.334999999999999
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "timestamp": "2020-01-07T00:00:00.000Z",
+          "value": 8.140435924544759
+        },
+        {
+          "conditions": {
+            "onSeason": false
+          },
+          "timestamp": "2020-01-08T00:00:00.000Z",
+          "value": 8.635
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "timestamp": "2020-01-09T00:00:00.000Z",
+          "value": 9.759564075455243
+        },
+        {
+          "conditions": {
+            "onSeason": false
+          },
+          "timestamp": "2020-01-10T00:00:00.000Z",
+          "value": 9.565
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "timestamp": "2020-01-11T00:00:00.000Z",
+          "value": 9.572437234764582
+        },
+        {
+          "conditions": {
+            "onSeason": false
+          },
+          "timestamp": "2020-01-12T00:00:00.000Z",
+          "value": 9.115
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "timestamp": "2020-01-13T00:00:00.000Z",
+          "value": 8.530100922945447
+        },
+        {
+          "conditions": {
+            "onSeason": false
+          },
+          "timestamp": "2020-01-14T00:00:00.000Z",
+          "value": 9.295
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "timestamp": "2020-01-15T00:00:00.000Z",
+          "value": 9.444999999999999
+        },
+        {
+          "conditions": {
+            "onSeason": false
+          },
+          "timestamp": "2020-01-16T00:00:00.000Z",
+          "value": 10.345
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "timestamp": "2020-01-17T00:00:00.000Z",
+          "value": 10.989899077054554
+        },
+        {
+          "conditions": {
+            "onSeason": false
+          },
+          "timestamp": "2020-01-18T00:00:00.000Z",
+          "value": 9.774999999999999
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "timestamp": "2020-01-19T00:00:00.000Z",
+          "value": 10.06756276523542
+        },
+        {
+          "conditions": {
+            "onSeason": false
+          },
+          "timestamp": "2020-01-20T00:00:00.000Z",
+          "value": 10.075000000000001
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "timestamp": "2020-01-21T00:00:00.000Z",
+          "value": 9.010435924544758
+        },
+        {
+          "conditions": {
+            "onSeason": false
+          },
+          "timestamp": "2020-01-22T00:00:00.000Z",
+          "value": 11.004999999999999
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "timestamp": "2020-01-23T00:00:00.000Z",
+          "value": 11.499564075455242
+        },
+        {
+          "conditions": {
+            "onSeason": false
+          },
+          "timestamp": "2020-01-24T00:00:00.000Z",
+          "value": 10.554999999999996
+        }
+      ],
+      "predictionRows": [
+        {
+          "conditions": {
+            "onSeason": false
+          },
+          "timestamp": "2020-01-24T00:00:00.000Z"
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "timestamp": "2020-01-25T00:00:00.000Z"
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "timestamp": "2020-01-31T00:00:00.000Z"
+        }
+      ],
+      "regressors": [],
+      "seasonalities": [
+        {
+          "conditionName": "onSeason",
+          "fourierOrder": 1,
+          "name": "weekly-on",
+          "periodDays": 7.0,
+          "priorScale": 10.0
+        },
+        {
+          "conditionName": "onSeason",
+          "fourierOrder": 1,
+          "name": "daily-on",
+          "periodDays": 1.0,
+          "priorScale": 4.0
+        }
+      ],
+      "settings": {
+        "algorithm": "Newton",
+        "changepointPriorScale": 0.2,
+        "changepointTimestamps": [
+          "2020-01-11T00:00:00.000Z"
+        ],
+        "densityConvention": "Prophet 1.4.0 constrained-parameter MAP"
+      },
+      "tolerance": {
+        "componentAbsolute": 0.05,
+        "featureAbsolute": 1e-11,
+        "forecastAbsolute": 0.05
+      }
+    },
+    {
+      "events": [],
+      "expected": {
+        "additive": [
+          0.0,
+          -6.72272467743e-13,
+          -1.25564865176e-12
+        ],
+        "componentNames": [
+          "weekly-off"
+        ],
+        "componentsRowMajor": [
+          0.0,
+          -6.72272467743e-13,
+          -1.25564865176e-12
+        ],
+        "featureColumnNames": [
+          "weekly-off_delim_1",
+          "weekly-off_delim_2"
+        ],
+        "featurePriorScales": [
+          10.0,
+          10.0
+        ],
+        "featuresRowMajor": [
+          0.0,
+          0.0,
+          0.974927912182,
+          -0.222520933955,
+          0.781831482466,
+          0.623489801861
+        ],
+        "noiseScale": 0.0330888376175,
+        "observationUnitCoefficients": [
+          -8.9349579044e-13,
+          -8.9349579044e-13
+        ],
+        "trend": [
+          10.7680520437,
+          10.8886727762,
+          11.612397171
+        ],
+        "value": [
+          10.7680520437,
+          10.8886727762,
+          11.612397171
+        ]
+      },
+      "id": "all-false-regularized-component",
+      "kind": "conditional-map-fit",
+      "observations": [
+        {
+          "conditions": {
+            "offSeason": false
+          },
+          "timestamp": "2020-01-01T00:00:00.000Z",
+          "value": 7.955
+        },
+        {
+          "conditions": {
+            "offSeason": false
+          },
+          "timestamp": "2020-01-02T00:00:00.000Z",
+          "value": 8.104999999999999
+        },
+        {
+          "conditions": {
+            "offSeason": false
+          },
+          "timestamp": "2020-01-03T00:00:00.000Z",
+          "value": 8.255
+        },
+        {
+          "conditions": {
+            "offSeason": false
+          },
+          "timestamp": "2020-01-04T00:00:00.000Z",
+          "value": 8.405
+        },
+        {
+          "conditions": {
+            "offSeason": false
+          },
+          "timestamp": "2020-01-05T00:00:00.000Z",
+          "value": 8.435
+        },
+        {
+          "conditions": {
+            "offSeason": false
+          },
+          "timestamp": "2020-01-06T00:00:00.000Z",
+          "value": 8.584999999999999
+        },
+        {
+          "conditions": {
+            "offSeason": false
+          },
+          "timestamp": "2020-01-07T00:00:00.000Z",
+          "value": 8.735000000000001
+        },
+        {
+          "conditions": {
+            "offSeason": false
+          },
+          "timestamp": "2020-01-08T00:00:00.000Z",
+          "value": 8.885
+        },
+        {
+          "conditions": {
+            "offSeason": false
+          },
+          "timestamp": "2020-01-09T00:00:00.000Z",
+          "value": 8.915000000000001
+        },
+        {
+          "conditions": {
+            "offSeason": false
+          },
+          "timestamp": "2020-01-10T00:00:00.000Z",
+          "value": 9.065
+        },
+        {
+          "conditions": {
+            "offSeason": false
+          },
+          "timestamp": "2020-01-11T00:00:00.000Z",
+          "value": 9.215
+        },
+        {
+          "conditions": {
+            "offSeason": false
+          },
+          "timestamp": "2020-01-12T00:00:00.000Z",
+          "value": 9.365
+        },
+        {
+          "conditions": {
+            "offSeason": false
+          },
+          "timestamp": "2020-01-13T00:00:00.000Z",
+          "value": 9.395
+        },
+        {
+          "conditions": {
+            "offSeason": false
+          },
+          "timestamp": "2020-01-14T00:00:00.000Z",
+          "value": 9.545
+        },
+        {
+          "conditions": {
+            "offSeason": false
+          },
+          "timestamp": "2020-01-15T00:00:00.000Z",
+          "value": 9.695
+        },
+        {
+          "conditions": {
+            "offSeason": false
+          },
+          "timestamp": "2020-01-16T00:00:00.000Z",
+          "value": 9.845
+        },
+        {
+          "conditions": {
+            "offSeason": false
+          },
+          "timestamp": "2020-01-17T00:00:00.000Z",
+          "value": 9.875
+        },
+        {
+          "conditions": {
+            "offSeason": false
+          },
+          "timestamp": "2020-01-18T00:00:00.000Z",
+          "value": 10.024999999999999
+        },
+        {
+          "conditions": {
+            "offSeason": false
+          },
+          "timestamp": "2020-01-19T00:00:00.000Z",
+          "value": 10.175
+        },
+        {
+          "conditions": {
+            "offSeason": false
+          },
+          "timestamp": "2020-01-20T00:00:00.000Z",
+          "value": 10.325
+        },
+        {
+          "conditions": {
+            "offSeason": false
+          },
+          "timestamp": "2020-01-21T00:00:00.000Z",
+          "value": 10.355
+        },
+        {
+          "conditions": {
+            "offSeason": false
+          },
+          "timestamp": "2020-01-22T00:00:00.000Z",
+          "value": 10.504999999999999
+        },
+        {
+          "conditions": {
+            "offSeason": false
+          },
+          "timestamp": "2020-01-23T00:00:00.000Z",
+          "value": 10.655000000000001
+        },
+        {
+          "conditions": {
+            "offSeason": false
+          },
+          "timestamp": "2020-01-24T00:00:00.000Z",
+          "value": 10.805
+        }
+      ],
+      "predictionRows": [
+        {
+          "conditions": {
+            "offSeason": false
+          },
+          "timestamp": "2020-01-24T00:00:00.000Z"
+        },
+        {
+          "conditions": {
+            "offSeason": true
+          },
+          "timestamp": "2020-01-25T00:00:00.000Z"
+        },
+        {
+          "conditions": {
+            "offSeason": true
+          },
+          "timestamp": "2020-01-31T00:00:00.000Z"
+        }
+      ],
+      "regressors": [],
+      "seasonalities": [
+        {
+          "conditionName": "offSeason",
+          "fourierOrder": 1,
+          "name": "weekly-off",
+          "periodDays": 7.0,
+          "priorScale": 10.0
+        }
+      ],
+      "settings": {
+        "algorithm": "Newton",
+        "changepointPriorScale": 0.2,
+        "changepointTimestamps": [
+          "2020-01-11T00:00:00.000Z"
+        ],
+        "densityConvention": "Prophet 1.4.0 constrained-parameter MAP"
+      },
+      "tolerance": {
+        "componentAbsolute": 0.05,
+        "featureAbsolute": 1e-11,
+        "forecastAbsolute": 0.05
+      }
+    },
+    {
+      "events": [
+        {
+          "date": "2020-01-08",
+          "name": "launch",
+          "priorScale": 10.0
+        }
+      ],
+      "expected": {
+        "additive": [
+          1.59489777116,
+          1.12838735021,
+          1.88250369539
+        ],
+        "componentNames": [
+          "weekly-on",
+          "three-day",
+          "launch",
+          "promotion"
+        ],
+        "componentsRowMajor": [
+          1.378000324,
+          -0.250635419161,
+          0.0,
+          0.467532866325,
+          0.623883978811,
+          0.504503371394,
+          0.0,
+          0.0,
+          1.378000324,
+          0.504503371394,
+          0.0,
+          0.0
+        ],
+        "featureColumnNames": [
+          "weekly-on_delim_1",
+          "weekly-on_delim_2",
+          "three-day_delim_1",
+          "three-day_delim_2",
+          "launch_delim_+0",
+          "promotion"
+        ],
+        "featurePriorScales": [
+          10.0,
+          10.0,
+          5.0,
+          5.0,
+          10.0,
+          10.0
+        ],
+        "featuresRowMajor": [
+          0.781831482466,
+          0.623489801862,
+          -8e-12,
+          1.0,
+          0.0,
+          1.0,
+          0.974927912182,
+          -0.222520933955,
+          0.866025403788,
+          -0.499999999994,
+          0.0,
+          0.0,
+          0.781831482466,
+          0.623489801861,
+          0.866025403787,
+          -0.499999999995,
+          0.0,
+          0.0
+        ],
+        "noiseScale": 0.0272912172487,
+        "observationUnitCoefficients": [
+          0.88973037415,
+          1.09445431913,
+          0.437845887844,
+          -0.250635419158,
+          1.29645003339,
+          0.467532866325
+        ],
+        "trend": [
+          10.7604944061,
+          10.8815096001,
+          11.607600764
+        ],
+        "value": [
+          12.3553921773,
+          12.0098969503,
+          13.4901044594
+        ]
+      },
+      "id": "conditional-event-regressor-combination",
+      "kind": "conditional-map-fit",
+      "observations": [
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "regressors": {
+            "promotion": 0
+          },
+          "timestamp": "2020-01-01T00:00:00.000Z",
+          "value": 8.455
+        },
+        {
+          "conditions": {
+            "onSeason": false
+          },
+          "regressors": {
+            "promotion": 1
+          },
+          "timestamp": "2020-01-02T00:00:00.000Z",
+          "value": 8.304999999999998
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "regressors": {
+            "promotion": 0
+          },
+          "timestamp": "2020-01-03T00:00:00.000Z",
+          "value": 9.369899077054553
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "regressors": {
+            "promotion": 1
+          },
+          "timestamp": "2020-01-04T00:00:00.000Z",
+          "value": 9.96243723476458
+        },
+        {
+          "conditions": {
+            "onSeason": false
+          },
+          "regressors": {
+            "promotion": 0
+          },
+          "timestamp": "2020-01-05T00:00:00.000Z",
+          "value": 8.185
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "regressors": {
+            "promotion": 1
+          },
+          "timestamp": "2020-01-06T00:00:00.000Z",
+          "value": 7.420100922945447
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "regressors": {
+            "promotion": 0
+          },
+          "timestamp": "2020-01-07T00:00:00.000Z",
+          "value": 8.140435924544759
+        },
+        {
+          "conditions": {
+            "onSeason": false
+          },
+          "regressors": {
+            "promotion": 1
+          },
+          "timestamp": "2020-01-08T00:00:00.000Z",
+          "value": 10.334999999999999
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "regressors": {
+            "promotion": 0
+          },
+          "timestamp": "2020-01-09T00:00:00.000Z",
+          "value": 9.759564075455243
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "regressors": {
+            "promotion": 1
+          },
+          "timestamp": "2020-01-10T00:00:00.000Z",
+          "value": 11.379899077054551
+        },
+        {
+          "conditions": {
+            "onSeason": false
+          },
+          "regressors": {
+            "promotion": 0
+          },
+          "timestamp": "2020-01-11T00:00:00.000Z",
+          "value": 8.965
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "regressors": {
+            "promotion": 1
+          },
+          "timestamp": "2020-01-12T00:00:00.000Z",
+          "value": 8.957562765235421
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "regressors": {
+            "promotion": 0
+          },
+          "timestamp": "2020-01-13T00:00:00.000Z",
+          "value": 8.530100922945447
+        },
+        {
+          "conditions": {
+            "onSeason": false
+          },
+          "regressors": {
+            "promotion": 1
+          },
+          "timestamp": "2020-01-14T00:00:00.000Z",
+          "value": 9.745
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "regressors": {
+            "promotion": 0
+          },
+          "timestamp": "2020-01-15T00:00:00.000Z",
+          "value": 9.444999999999999
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "regressors": {
+            "promotion": 1
+          },
+          "timestamp": "2020-01-16T00:00:00.000Z",
+          "value": 11.88956407545524
+        },
+        {
+          "conditions": {
+            "onSeason": false
+          },
+          "regressors": {
+            "promotion": 0
+          },
+          "timestamp": "2020-01-17T00:00:00.000Z",
+          "value": 9.625000000000002
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "regressors": {
+            "promotion": 1
+          },
+          "timestamp": "2020-01-18T00:00:00.000Z",
+          "value": 10.832437234764578
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "regressors": {
+            "promotion": 0
+          },
+          "timestamp": "2020-01-19T00:00:00.000Z",
+          "value": 10.06756276523542
+        },
+        {
+          "conditions": {
+            "onSeason": false
+          },
+          "regressors": {
+            "promotion": 1
+          },
+          "timestamp": "2020-01-20T00:00:00.000Z",
+          "value": 10.525
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "regressors": {
+            "promotion": 0
+          },
+          "timestamp": "2020-01-21T00:00:00.000Z",
+          "value": 9.010435924544758
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "regressors": {
+            "promotion": 1
+          },
+          "timestamp": "2020-01-22T00:00:00.000Z",
+          "value": 11.454999999999997
+        },
+        {
+          "conditions": {
+            "onSeason": false
+          },
+          "regressors": {
+            "promotion": 0
+          },
+          "timestamp": "2020-01-23T00:00:00.000Z",
+          "value": 10.405000000000003
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "regressors": {
+            "promotion": 1
+          },
+          "timestamp": "2020-01-24T00:00:00.000Z",
+          "value": 12.36989907705455
+        }
+      ],
+      "predictionRows": [
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "regressors": {
+            "promotion": 1
+          },
+          "timestamp": "2020-01-24T00:00:00.000Z"
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "regressors": {
+            "promotion": 0
+          },
+          "timestamp": "2020-01-25T00:00:00.000Z"
+        },
+        {
+          "conditions": {
+            "onSeason": true
+          },
+          "regressors": {
+            "promotion": 0
+          },
+          "timestamp": "2020-01-31T00:00:00.000Z"
+        }
+      ],
+      "regressors": [
+        {
+          "name": "promotion",
+          "priorScale": 10.0,
+          "standardization": "never"
+        }
+      ],
+      "seasonalities": [
+        {
+          "conditionName": "onSeason",
+          "fourierOrder": 1,
+          "name": "weekly-on",
+          "periodDays": 7.0,
+          "priorScale": 10.0
+        },
+        {
+          "fourierOrder": 1,
+          "name": "three-day",
+          "periodDays": 3.0,
+          "priorScale": 5.0
+        }
+      ],
+      "settings": {
+        "algorithm": "Newton",
+        "changepointPriorScale": 0.2,
+        "changepointTimestamps": [
+          "2020-01-11T00:00:00.000Z"
+        ],
+        "densityConvention": "Prophet 1.4.0 constrained-parameter MAP"
+      },
+      "tolerance": {
+        "componentAbsolute": 0.05,
+        "featureAbsolute": 1e-11,
+        "forecastAbsolute": 0.05
+      }
+    }
+  ]
+}

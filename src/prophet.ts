@@ -1,6 +1,11 @@
 import { Effect, Match, Predicate } from "effect";
 
 import {
+  alignConditionValues,
+  conditionNamesFromLayout,
+  type InvalidConditionValues,
+} from "./condition";
+import {
   FittingError,
   InputValidationError,
   PredictionError,
@@ -18,7 +23,6 @@ import {
 } from "./fitted-model";
 import {
   concatenateKnownAdditiveFeatures,
-  createUnconditionalSeasonalityMask,
   type KnownAdditiveFeatures,
   type SeasonalityMaskMatrix,
 } from "./internal/additional-features";
@@ -30,6 +34,7 @@ import {
   type RegressorFeatureError,
 } from "./internal/regressor-features";
 import { resolveSeasonalities } from "./internal/seasonality-resolution";
+import { createSeasonalityMasks } from "./internal/seasonality-masks";
 import { predictFlatMapWithWasm } from "./internal/wasm-flat-map-backend";
 import { predictLinearTrendWithWasm } from "./internal/wasm-linear-trend-backend";
 import {
@@ -354,6 +359,16 @@ const alignRegressorValues = (
   return Effect.succeed(Object.freeze(aligned));
 };
 
+const conditionValidationError = (
+  input: Extract<ValidationInput, "observations" | "prediction-rows">,
+  error: InvalidConditionValues,
+): InputValidationError =>
+  new InputValidationError({
+    input,
+    issues: error.issues,
+    message: error.message,
+  });
+
 const regressorFeatureValidationError = (
   input: Extract<ValidationInput, "observations" | "prediction-rows">,
   definitions: ReadonlyArray<RegressorDefinition>,
@@ -399,6 +414,18 @@ export const fit = Effect.fn("Prophet.fit")(function* (
     Effect.mapError(optionsValidationErrorFromSeasonality),
   );
 
+  const conditionNames = conditionNamesFromLayout(resolved.layout);
+
+  if (options.growth === "flat" && conditionNames.length > 0) {
+    return yield* Effect.fail(
+      new UnsupportedConfigurationError({
+        option: "conditional-seasonalities",
+        model: "flat-map",
+        message: "Conditional seasonalities require linear piecewise MAP fitting",
+      }),
+    );
+  }
+
   if (options.growth === "flat" && options.events.layout.coefficientCount > 0) {
     return yield* Effect.fail(
       new UnsupportedConfigurationError({
@@ -431,6 +458,16 @@ export const fit = Effect.fn("Prophet.fit")(function* (
 
   yield* checkExplicitChangepointBounds(observations, options);
 
+  const alignedConditionValues = yield* alignConditionValues(
+    observations,
+    conditionNames,
+    "observations",
+  ).pipe(Effect.mapError((error) => conditionValidationError("observations", error)));
+
+  const masks = yield* createSeasonalityMasks(resolved.layout, alignedConditionValues).pipe(
+    Effect.mapError((error) => conditionValidationError("observations", error)),
+  );
+
   const alignedRegressorValues = yield* alignRegressorValues(
     observations,
     options.regressors,
@@ -462,11 +499,6 @@ export const fit = Effect.fn("Prophet.fit")(function* (
     regressorFeatures.features,
   ]).pipe(Effect.mapError((error) => featureConstructionError(observations.length, error.message)));
 
-  const masks = yield* createUnconditionalSeasonalityMask(
-    observations.length,
-    resolved.layout.components.length,
-  ).pipe(Effect.mapError((error) => featureConstructionError(observations.length, error.message)));
-
   const fitPlan = makeFitPlan(
     options,
     resolved.layout,
@@ -494,6 +526,12 @@ export const fit = Effect.fn("Prophet.fit")(function* (
   if (options.regressors.length > 0) {
     yield* Effect.annotateCurrentSpan({
       "effect_prophet.regressor.count": options.regressors.length,
+    });
+  }
+
+  if (conditionNames.length > 0) {
+    yield* Effect.annotateCurrentSpan({
+      "effect_prophet.seasonality.condition.count": conditionNames.length,
     });
   }
 
@@ -685,7 +723,7 @@ const forecastsFromSeasonalBatch = (
 const makePredictionFeatures = Effect.fn("makePredictionFeatures")(function* (
   timestamps: PredictionTimestamps,
   alignedRegressorValues: ReadonlyArray<ReadonlyArray<number>>,
-  seasonalComponentCount: number,
+  masks: SeasonalityMaskMatrix,
   events: EventCalendar,
   regressors: ReadonlyArray<FittedRegressor>,
 ): Effect.fn.Return<
@@ -693,20 +731,6 @@ const makePredictionFeatures = Effect.fn("makePredictionFeatures")(function* (
   PredictionError | InputValidationError
 > {
   const firstTimestamp = timestamps[0] ?? 0;
-
-  const masks = yield* createUnconditionalSeasonalityMask(
-    timestamps.length,
-    seasonalComponentCount,
-  ).pipe(
-    Effect.mapError(
-      (error) =>
-        new PredictionError({
-          reason: "backend-failure",
-          timestamp: firstTimestamp,
-          message: error.message,
-        }),
-    ),
-  );
 
   const eventMatrix = yield* createEventFeatures(timestamps, events).pipe(
     Effect.mapError(
@@ -760,18 +784,21 @@ const predictPiecewiseMapForecasts = (
   model: FittedPiecewiseMapProphet,
   timestamps: PredictionTimestamps,
   alignedRegressorValues: ReadonlyArray<ReadonlyArray<number>>,
+  masks: SeasonalityMaskMatrix,
 ): Effect.Effect<Forecasts, PredictionError | InputValidationError> =>
-  model.events.layout.coefficientCount === 0 && model.regressors.length === 0
+  model.events.layout.coefficientCount === 0 &&
+  model.regressors.length === 0 &&
+  conditionNamesFromLayout(model.seasonalities).length === 0
     ? predictPiecewiseMapWithWasm(model, timestamps).pipe(
         Effect.flatMap((batch) =>
           forecastsFromSeasonalBatch(model, timestamps, batch, "linear MAP"),
         ),
       )
     : Effect.gen(function* () {
-        const { masks, features } = yield* makePredictionFeatures(
+        const { features } = yield* makePredictionFeatures(
           timestamps,
           alignedRegressorValues,
-          model.seasonalities.components.length,
+          masks,
           model.events,
           model.regressors,
         );
@@ -786,17 +813,17 @@ const predictPiecewiseMapForecasts = (
         return yield* forecastsFromSeasonalBatch(model, timestamps, batch, "linear MAP");
       });
 
-const predictFittedModel = (
-  model: FittedProphet,
+const predictFittedSeasonalModel = (
+  model: FittedSeasonalProphet,
   timestamps: PredictionTimestamps,
   alignedRegressorValues: ReadonlyArray<ReadonlyArray<number>>,
+  masks: SeasonalityMaskMatrix,
 ): Effect.Effect<Forecasts, PredictionError | InputValidationError> =>
   Match.value(model).pipe(
     Match.discriminatorsExhaustive("model")({
-      "linear-trend": (linearModel) => predictLinearForecasts(linearModel, timestamps),
       "flat-map": (flatModel) => predictFlatMapForecasts(flatModel, timestamps),
       "linear-piecewise-map": (piecewiseModel) =>
-        predictPiecewiseMapForecasts(piecewiseModel, timestamps, alignedRegressorValues),
+        predictPiecewiseMapForecasts(piecewiseModel, timestamps, alignedRegressorValues, masks),
     }),
   );
 
@@ -841,6 +868,15 @@ export const predict = Effect.fn("Prophet.predict")(function* (
     ),
   );
 
+  const conditionNames =
+    parsedModel.model === "linear-trend" ? [] : conditionNamesFromLayout(parsedModel.seasonalities);
+
+  const alignedConditionValues = yield* alignConditionValues(
+    rows,
+    conditionNames,
+    "prediction-rows",
+  ).pipe(Effect.mapError((error) => conditionValidationError("prediction-rows", error)));
+
   const regressors = fittedRegressors(parsedModel);
 
   const alignedRegressorValues = yield* alignRegressorValues(
@@ -851,5 +887,14 @@ export const predict = Effect.fn("Prophet.predict")(function* (
 
   const timestamps = rows.map((row) => row.timestamp);
 
-  return yield* predictFittedModel(parsedModel, timestamps, alignedRegressorValues);
+  if (parsedModel.model === "linear-trend") {
+    return yield* predictLinearForecasts(parsedModel, timestamps);
+  }
+
+  const masks = yield* createSeasonalityMasks(
+    parsedModel.seasonalities,
+    alignedConditionValues,
+  ).pipe(Effect.mapError((error) => conditionValidationError("prediction-rows", error)));
+
+  return yield* predictFittedSeasonalModel(parsedModel, timestamps, alignedRegressorValues, masks);
 });

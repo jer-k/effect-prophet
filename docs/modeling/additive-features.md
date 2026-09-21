@@ -1,6 +1,6 @@
 # Known additive features
 
-Custom events and additional regressors are represented as known additive feature columns and are fitted jointly with trend, changepoints, and seasonal Fourier terms. The numerical implementation is Rust-only; TypeScript parses feature semantics, resolves train-only regressor transforms, constructs checked matrices, and frames coarse WASM calls.
+Custom events and additional regressors are represented as known additive feature columns and are fitted jointly with trend, changepoints, and seasonal Fourier terms. Conditional seasonalities reuse the same seasonal coefficient block while applying one binary mask per row and component. The numerical implementation is Rust-only; TypeScript parses feature semantics, resolves train-only regressor transforms, aligns strict conditions, constructs checked matrices, and frames coarse WASM calls.
 
 ## Column and coefficient order
 
@@ -10,7 +10,7 @@ The complete Gaussian-prior feature order is:
 2. event columns in Python/Prophet lexical key order;
 3. future additional-regressor columns.
 
-An event key is `name_delim_<signedOffset>`, including `+0`. Ordering compares Unicode code points to match Python rather than JavaScript UTF-16 ordering. Event offsets belonging to one name form one grouped forecast component. Seasonal masks have one binary value per row and seasonal component and gate all harmonics before fitting or prediction.
+An event key is `name_delim_<signedOffset>`, including `+0`. Ordering compares Unicode code points to match Python rather than JavaScript UTF-16 ordering. Event offsets belonging to one name form one grouped forecast component. Seasonal masks have one binary value per row and seasonal component and gate all harmonics before fitting or prediction. An unconditional component receives an all-one mask. A conditional component resolves its named boolean column; false gates every sine/cosine value to zero without changing phase, order, prior, coefficient offset, or component identity. Multiple components may share a condition.
 
 The piecewise MAP design is `[1, scaledTime, changepointHinges, seasonal, additional]`. Additional columns use their configured positive Gaussian prior scales and are optimized in the same objective; no residual-after-fit shortcut is used.
 
@@ -50,7 +50,13 @@ contribution = originalCoefficient * (x - center)
 
 Identity transforms retain the fitted coefficient and use center zero. These point-estimate summaries are associational model parameters, not causal estimates or uncertainty intervals.
 
-Complete prediction rows, rather than timestamps alone, define identity and ordering. Duplicate timestamps are retained, and rows at the same timestamp can produce different forecasts when their regressors differ. Timestamp strings remain supported for models that require no row covariates.
+Complete prediction rows, rather than timestamps alone, define identity and ordering. Duplicate timestamps are retained, and rows at the same timestamp can produce different forecasts when their regressors or conditions differ. Timestamp strings remain supported for models that require no row covariates.
+
+## Conditional row policy
+
+A `conditionName` is a case-sensitive shared feature name and cannot collide with any seasonality, event, regressor, built-in, or output/group label. Built-in seasonalities remain unconditional. Every training and nonempty prediction row must provide exactly the distinct condition-name set retained by the fitted model. Values must be actual booleans; numbers, strings, null, missing keys, and extra keys are rejected without truthiness coercion.
+
+Condition values affect only their component masks. They do not affect automatic built-in resolution, target or regressor normalization, changepoint placement, coefficient order, or priors. An all-false training condition remains a legal regularized design, and a future condition regime need not have appeared during training. Models persist condition names with resolved seasonal definitions, never row values or masks.
 
 ## Memory and WASM protocol
 

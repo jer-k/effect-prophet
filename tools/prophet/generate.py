@@ -27,12 +27,15 @@ from prophet import Prophet
 EXPECTED_PROPHET_VERSION = "1.4.0"
 EXPECTED_CONTAINER_PLATFORM = "linux/amd64"
 FOURIER_DECIMAL_PLACES = 12
+FITTED_SIGNIFICANT_DIGITS = 12
 LINEAR_TREND_FILENAME = "linear-trend.json"
 FOURIER_FILENAME = "fourier.json"
 PIECEWISE_LINEAR_FILENAME = "piecewise-linear.json"
 CHANGEPOINT_RESOLUTION_FILENAME = "changepoint-resolution.json"
 LINEAR_MAP_FIT_FILENAME = "linear-map-fit.json"
 SEASONALITY_RESOLUTION_FILENAME = "seasonality-resolution.json"
+CONDITIONAL_SEASONALITY_FILENAME = "conditional-seasonality.json"
+CONDITIONAL_MAP_FIT_FILENAME = "conditional-map-fit.json"
 MANIFEST_FILENAME = "manifest.json"
 ROOT = Path(__file__).resolve().parents[2]
 REFERENCE_PATH = ROOT / "tools" / "prophet" / "reference.json"
@@ -167,6 +170,104 @@ FOURIER_CASES = (
             FourierSeasonalitySpec("one-day", 1.0, 2, 10.0),
         ),
         coefficients=(2.0, 3.0, -1.0, 0.5),
+    ),
+)
+
+
+@dataclass(frozen=True)
+class ConditionalSeasonalitySpec:
+    """One seasonality and optional strict boolean condition in a reference case."""
+
+    name: str
+    period_days: float
+    fourier_order: int
+    prior_scale: float
+    condition_name: str | None = None
+
+
+@dataclass(frozen=True)
+class ConditionalFeatureCaseSpec:
+    """Authored conditional rows and fixed coefficients for preprocessing parity."""
+
+    identifier: str
+    timestamps: tuple[str, ...]
+    seasonalities: tuple[ConditionalSeasonalitySpec, ...]
+    condition_rows: tuple[dict[str, bool], ...]
+    coefficients: tuple[float, ...]
+    note: str
+
+
+CONDITIONAL_TIMESTAMPS = (
+    "2024-01-01T00:00:00.000Z",
+    "2024-01-01T06:30:00.000Z",
+    "2024-01-02T18:00:00.000Z",
+    "2024-01-05T03:15:00.000Z",
+    "2024-01-11T12:00:00.000Z",
+    "2024-02-03T00:00:00.000Z",
+)
+
+
+CONDITIONAL_FEATURE_CASES = (
+    ConditionalFeatureCaseSpec(
+        identifier="all-true-agrees-with-unconditional",
+        timestamps=CONDITIONAL_TIMESTAMPS,
+        seasonalities=(
+            ConditionalSeasonalitySpec("weekly-on", 7.0, 2, 10.0, "onSeason"),
+        ),
+        condition_rows=tuple({"onSeason": True} for _ in CONDITIONAL_TIMESTAMPS),
+        coefficients=(0.25, -0.5, 1.25, 0.75),
+        note="An all-true conditional block is identical to its ungated Fourier block.",
+    ),
+    ConditionalFeatureCaseSpec(
+        identifier="all-false-zero-component",
+        timestamps=CONDITIONAL_TIMESTAMPS,
+        seasonalities=(
+            ConditionalSeasonalitySpec("weekly-off", 7.0, 2, 10.0, "onSeason"),
+        ),
+        condition_rows=tuple({"onSeason": False} for _ in CONDITIONAL_TIMESTAMPS),
+        coefficients=(0.25, -0.5, 1.25, 0.75),
+        note="A condition may be constant false; every gated feature and component is exact zero.",
+    ),
+    ConditionalFeatureCaseSpec(
+        identifier="alternating-shared-condition",
+        timestamps=CONDITIONAL_TIMESTAMPS,
+        seasonalities=(
+            ConditionalSeasonalitySpec("weekly-on", 7.0, 1, 10.0, "onSeason"),
+            ConditionalSeasonalitySpec("half-day-on", 0.5, 1, 3.0, "onSeason"),
+        ),
+        condition_rows=tuple(
+            {"onSeason": index % 2 == 0} for index, _ in enumerate(CONDITIONAL_TIMESTAMPS)
+        ),
+        coefficients=(0.5, -0.25, 1.5, 0.125),
+        note="Two components deliberately share one alternating condition.",
+    ),
+    ConditionalFeatureCaseSpec(
+        identifier="independent-conditions-with-unconditional",
+        timestamps=CONDITIONAL_TIMESTAMPS,
+        seasonalities=(
+            ConditionalSeasonalitySpec("three-day", 3.0, 1, 4.0),
+            ConditionalSeasonalitySpec("weekly-on", 7.0, 1, 10.0, "onSeason"),
+            ConditionalSeasonalitySpec("daily-promotion", 1.0, 1, 5.0, "promotion"),
+        ),
+        condition_rows=tuple(
+            {"onSeason": index in {0, 1, 4}, "promotion": index in {1, 2, 5}}
+            for index, _ in enumerate(CONDITIONAL_TIMESTAMPS)
+        ),
+        coefficients=(0.2, 0.4, -0.5, 0.75, 1.0, -0.25),
+        note="Independent conditions and one unconditional component preserve source order.",
+    ),
+    ConditionalFeatureCaseSpec(
+        identifier="prediction-regime-absent-from-training",
+        timestamps=CONDITIONAL_TIMESTAMPS,
+        seasonalities=(
+            ConditionalSeasonalitySpec("weekly-future", 7.0, 1, 10.0, "futureRegime"),
+        ),
+        condition_rows=tuple(
+            {"futureRegime": index == len(CONDITIONAL_TIMESTAMPS) - 1}
+            for index, _ in enumerate(CONDITIONAL_TIMESTAMPS)
+        ),
+        coefficients=(0.75, -0.5),
+        note="The final prediction-style row enables a regime that is absent in preceding rows.",
     ),
 )
 
@@ -381,6 +482,14 @@ def canonical_fourier_float(value: np.floating[Any]) -> float:
     """Round CPU-sensitive trigonometric output into the fixture precision contract."""
 
     rounded = round(float(value), FOURIER_DECIMAL_PLACES)
+
+    return 0.0 if rounded == 0.0 else rounded
+
+
+def canonical_fitted_float(value: Any) -> float:
+    """Round optimizer output to stable significant digits across amd64 CPU implementations."""
+
+    rounded = float(format(float(value), f".{FITTED_SIGNIFICANT_DIGITS}g"))
 
     return 0.0 if rounded == 0.0 else rounded
 
@@ -607,6 +716,128 @@ def make_fourier_case(spec: FourierCaseSpec) -> dict[str, Any]:
             "absolute": spec.absolute_tolerance,
             "relative": spec.relative_tolerance,
         },
+    }
+
+
+def make_conditional_feature_case(spec: ConditionalFeatureCaseSpec) -> dict[str, Any]:
+    """Generate gated Fourier columns through unmodified Prophet condition behavior."""
+
+    if len(spec.timestamps) != len(spec.condition_rows):
+        fail(f"Misaligned condition rows for case {spec.identifier}")
+
+    coefficient_count = sum(
+        seasonality.fourier_order * 2 for seasonality in spec.seasonalities
+    )
+
+    if coefficient_count != len(spec.coefficients):
+        fail(f"Misaligned conditional coefficients for case {spec.identifier}")
+
+    model = Prophet(
+        yearly_seasonality=False,
+        weekly_seasonality=False,
+        daily_seasonality=False,
+        uncertainty_samples=0,
+    )
+
+    for seasonality in spec.seasonalities:
+        model.add_seasonality(
+            name=seasonality.name,
+            period=seasonality.period_days,
+            fourier_order=seasonality.fourier_order,
+            prior_scale=seasonality.prior_scale,
+            condition_name=seasonality.condition_name,
+        )
+
+    frame_values: dict[str, Any] = {
+        "ds": pd.to_datetime(
+            [prophet_timestamp(timestamp) for timestamp in spec.timestamps], format="mixed"
+        )
+    }
+
+    condition_names = sorted(
+        {
+            seasonality.condition_name
+            for seasonality in spec.seasonalities
+            if seasonality.condition_name is not None
+        }
+    )
+
+    for condition_name in condition_names:
+        frame_values[condition_name] = [
+            row[condition_name] for row in spec.condition_rows
+        ]
+
+    frame = pd.DataFrame(frame_values)
+    gated_features, _, _, _ = model.make_all_seasonality_features(frame)
+    ungated_blocks: list[np.ndarray] = []
+    manually_gated_blocks: list[np.ndarray] = []
+    component_blocks: list[np.ndarray] = []
+    coefficient_offset = 0
+
+    for seasonality in spec.seasonalities:
+        block = Prophet.fourier_series(
+            frame["ds"], seasonality.period_days, seasonality.fourier_order
+        )
+        count = seasonality.fourier_order * 2
+        coefficients = np.asarray(
+            spec.coefficients[coefficient_offset : coefficient_offset + count],
+            dtype=np.float64,
+        )
+        mask = (
+            np.ones(len(frame), dtype=np.float64)
+            if seasonality.condition_name is None
+            else frame[seasonality.condition_name].to_numpy(dtype=np.float64)
+        )
+        gated_block = block * mask[:, np.newaxis]
+
+        ungated_blocks.append(block)
+        manually_gated_blocks.append(gated_block)
+        component_blocks.append(gated_block @ coefficients)
+        coefficient_offset += count
+
+    ungated = np.concatenate(ungated_blocks, axis=1)
+    manually_gated = np.concatenate(manually_gated_blocks, axis=1)
+    gated = gated_features.to_numpy(dtype=np.float64)
+    components = np.column_stack(component_blocks)
+
+    if not np.array_equal(gated, manually_gated):
+        fail(f"Unexpected Prophet condition gating for case {spec.identifier}")
+
+    return {
+        "coefficients": list(spec.coefficients),
+        "conditionRows": list(spec.condition_rows),
+        "expected": {
+            "columnCount": int(gated.shape[1]),
+            "componentsRowMajor": [
+                canonical_fourier_float(value) for value in components.ravel()
+            ],
+            "gatedFeaturesRowMajor": [
+                canonical_fourier_float(value) for value in gated.ravel()
+            ],
+            "rowCount": len(spec.timestamps),
+            "ungatedFeaturesRowMajor": [
+                canonical_fourier_float(value) for value in ungated.ravel()
+            ],
+        },
+        "id": spec.identifier,
+        "kind": "conditional-seasonality-features",
+        "note": spec.note,
+        "seasonalities": [
+            {
+                "fourierOrder": seasonality.fourier_order,
+                "name": seasonality.name,
+                "periodDays": seasonality.period_days,
+                "priorScale": seasonality.prior_scale,
+                **(
+                    {}
+                    if seasonality.condition_name is None
+                    else {"conditionName": seasonality.condition_name}
+                ),
+            }
+            for seasonality in spec.seasonalities
+        ],
+        "timestamps": list(spec.timestamps),
+        "tolerance": {"absolute": 1e-11, "relative": 1e-11},
     }
 
 
@@ -933,11 +1164,16 @@ def make_linear_map_fit_fixture() -> dict[str, Any]:
     return {
         "changepointTimestamps": [changepoint_timestamp],
         "expected": {
-            "deltas": [float(value * model.y_scale) for value in model.params["delta"][0]],
-            "intercept": float(model.params["m"][0][0] * model.y_scale),
-            "noiseScale": float(model.params["sigma_obs"][0][0] * model.y_scale),
-            "slope": float(model.params["k"][0][0] * model.y_scale),
-            "trend": [float(value) for value in prediction["trend"]],
+            "deltas": [
+                canonical_fitted_float(value * model.y_scale)
+                for value in model.params["delta"][0]
+            ],
+            "intercept": canonical_fitted_float(model.params["m"][0][0] * model.y_scale),
+            "noiseScale": canonical_fitted_float(
+                model.params["sigma_obs"][0][0] * model.y_scale
+            ),
+            "slope": canonical_fitted_float(model.params["k"][0][0] * model.y_scale),
+            "trend": [canonical_fitted_float(value) for value in prediction["trend"]],
         },
         "id": "one-explicit-break-no-seasonality",
         "kind": "fitted-linear-map",
@@ -960,6 +1196,268 @@ def make_linear_map_fit_fixture() -> dict[str, Any]:
             "noiseAbsolute": 2e-3,
         },
     }
+
+
+def make_conditional_map_fit_fixture() -> dict[str, Any]:
+    """Fit approved conditional and mixed-feature MAP evidence through pinned CmdStan."""
+
+    case_specs = (
+        {
+            "id": "mixed-conditional-and-unconditional",
+            "seasonalities": (
+                ConditionalSeasonalitySpec("weekly-on", 7.0, 1, 10.0, "onSeason"),
+                ConditionalSeasonalitySpec("three-day", 3.0, 1, 5.0),
+            ),
+            "condition": lambda index, name: index % 3 != 1,
+            "combined": False,
+        },
+        {
+            "id": "shared-condition-components",
+            "seasonalities": (
+                ConditionalSeasonalitySpec("weekly-on", 7.0, 1, 10.0, "onSeason"),
+                ConditionalSeasonalitySpec("daily-on", 1.0, 1, 4.0, "onSeason"),
+            ),
+            "condition": lambda index, name: index % 2 == 0,
+            "combined": False,
+        },
+        {
+            "id": "all-false-regularized-component",
+            "seasonalities": (
+                ConditionalSeasonalitySpec("weekly-off", 7.0, 1, 10.0, "offSeason"),
+            ),
+            "condition": lambda index, name: index >= 24,
+            "combined": False,
+        },
+        {
+            "id": "conditional-event-regressor-combination",
+            "seasonalities": (
+                ConditionalSeasonalitySpec("weekly-on", 7.0, 1, 10.0, "onSeason"),
+                ConditionalSeasonalitySpec("three-day", 3.0, 1, 5.0),
+            ),
+            "condition": lambda index, name: index % 3 != 1,
+            "combined": True,
+        },
+    )
+    cases: list[dict[str, Any]] = []
+
+    for spec in case_specs:
+        identifier = spec["id"]
+        seasonalities = spec["seasonalities"]
+        condition_value = spec["condition"]
+        combined = spec["combined"]
+        timestamps = [timestamp_from_offset(index * DAY_MILLISECONDS) for index in range(24)]
+        condition_names = sorted(
+            {
+                seasonality.condition_name
+                for seasonality in seasonalities
+                if seasonality.condition_name is not None
+            }
+        )
+        condition_rows = [
+            {name: bool(condition_value(index, name)) for name in condition_names}
+            for index in range(len(timestamps))
+        ]
+        promotion = [index % 2 for index in range(len(timestamps))]
+        values = []
+
+        for index, row in enumerate(condition_rows):
+            weekly = np.sin(2.0 * np.pi * index / 7.0)
+            three_day = np.cos(2.0 * np.pi * index / 3.0)
+            active = next(iter(row.values()), True)
+            event_effect = 1.25 if combined and index == 7 else 0.0
+            regressor_effect = 0.45 * promotion[index] if combined else 0.0
+            values.append(
+                8.0
+                + 0.12 * index
+                + (1.4 * weekly if active else 0.0)
+                + (0.5 * three_day if len(seasonalities) > 1 else 0.0)
+                + event_effect
+                + regressor_effect
+                + 0.03 * ((index % 4) - 1.5)
+            )
+
+        events = (
+            [{"name": "launch", "date": "2020-01-08", "priorScale": 10.0}]
+            if combined
+            else []
+        )
+        holidays = (
+            pd.DataFrame({"holiday": ["launch"], "ds": ["2020-01-08"], "prior_scale": [10.0]})
+            if combined
+            else None
+        )
+        changepoint_timestamp = timestamps[10]
+        model = Prophet(
+            growth="linear",
+            changepoints=[prophet_timestamp(changepoint_timestamp)],
+            changepoint_prior_scale=0.2,
+            yearly_seasonality=False,
+            weekly_seasonality=False,
+            daily_seasonality=False,
+            holidays=holidays,
+            uncertainty_samples=0,
+        )
+
+        for seasonality in seasonalities:
+            model.add_seasonality(
+                name=seasonality.name,
+                period=seasonality.period_days,
+                fourier_order=seasonality.fourier_order,
+                prior_scale=seasonality.prior_scale,
+                condition_name=seasonality.condition_name,
+            )
+
+        if combined:
+            model.add_regressor("promotion", prior_scale=10.0, standardize=False)
+
+        training_values: dict[str, Any] = {
+            "ds": [prophet_timestamp(timestamp) for timestamp in timestamps],
+            "y": values,
+        }
+
+        for condition_name in condition_names:
+            training_values[condition_name] = [
+                row[condition_name] for row in condition_rows
+            ]
+
+        if combined:
+            training_values["promotion"] = promotion
+
+        training = pd.DataFrame(training_values)
+        model.fit(training, algorithm="Newton")
+        prediction_indexes = (23, 24, 30)
+        prediction_timestamps = [
+            timestamp_from_offset(index * DAY_MILLISECONDS) for index in prediction_indexes
+        ]
+        prediction_condition_rows = [
+            {name: bool(condition_value(index, name)) for name in condition_names}
+            for index in prediction_indexes
+        ]
+        prediction_values: dict[str, Any] = {
+            "ds": [prophet_timestamp(timestamp) for timestamp in prediction_timestamps]
+        }
+
+        for condition_name in condition_names:
+            prediction_values[condition_name] = [
+                row[condition_name] for row in prediction_condition_rows
+            ]
+
+        if combined:
+            prediction_values["promotion"] = [index % 2 for index in prediction_indexes]
+
+        prediction_frame = pd.DataFrame(prediction_values)
+        prediction = model.predict(prediction_frame)
+        prepared_prediction = model.setup_dataframe(prediction_frame.copy())
+        features, prior_scales, _, _ = model.make_all_seasonality_features(prepared_prediction)
+        component_names = [seasonality.name for seasonality in seasonalities]
+
+        if combined:
+            component_names.extend(["launch", "promotion"])
+
+        components = prediction[component_names].to_numpy(dtype=np.float64)
+        observations = []
+
+        for index, (timestamp, value) in enumerate(zip(timestamps, values, strict=True)):
+            observation: dict[str, Any] = {
+                "conditions": condition_rows[index],
+                "timestamp": timestamp,
+                "value": value,
+            }
+
+            if combined:
+                observation["regressors"] = {"promotion": promotion[index]}
+
+            observations.append(observation)
+
+        prediction_rows = []
+
+        for index, timestamp in enumerate(prediction_timestamps):
+            row: dict[str, Any] = {
+                "conditions": prediction_condition_rows[index],
+                "timestamp": timestamp,
+            }
+
+            if combined:
+                row["regressors"] = {"promotion": prediction_indexes[index] % 2}
+
+            prediction_rows.append(row)
+
+        cases.append(
+            {
+                "events": events,
+                "expected": {
+                    "additive": [
+                        canonical_fitted_float(value)
+                        for value in prediction[component_names].sum(axis=1)
+                    ],
+                    "componentNames": component_names,
+                    "componentsRowMajor": [
+                        canonical_fitted_float(value) for value in components.ravel()
+                    ],
+                    "featureColumnNames": list(features.columns),
+                    "featurePriorScales": [float(value) for value in prior_scales],
+                    "featuresRowMajor": [
+                        canonical_fourier_float(value)
+                        for value in features.to_numpy(dtype=np.float64).ravel()
+                    ],
+                    "noiseScale": canonical_fitted_float(
+                        model.params["sigma_obs"][0][0] * model.y_scale
+                    ),
+                    "observationUnitCoefficients": [
+                        canonical_fitted_float(value * model.y_scale)
+                        for value in model.params["beta"][0]
+                    ],
+                    "trend": [
+                        canonical_fitted_float(value) for value in prediction["trend"]
+                    ],
+                    "value": [
+                        canonical_fitted_float(value) for value in prediction["yhat"]
+                    ],
+                },
+                "id": identifier,
+                "kind": "conditional-map-fit",
+                "observations": observations,
+                "predictionRows": prediction_rows,
+                "regressors": (
+                    [
+                        {
+                            "name": "promotion",
+                            "priorScale": 10.0,
+                            "standardization": "never",
+                        }
+                    ]
+                    if combined
+                    else []
+                ),
+                "seasonalities": [
+                    {
+                        "fourierOrder": seasonality.fourier_order,
+                        "name": seasonality.name,
+                        "periodDays": seasonality.period_days,
+                        "priorScale": seasonality.prior_scale,
+                        **(
+                            {}
+                            if seasonality.condition_name is None
+                            else {"conditionName": seasonality.condition_name}
+                        ),
+                    }
+                    for seasonality in seasonalities
+                ],
+                "settings": {
+                    "algorithm": "Newton",
+                    "changepointPriorScale": 0.2,
+                    "changepointTimestamps": [changepoint_timestamp],
+                    "densityConvention": "Prophet 1.4.0 constrained-parameter MAP",
+                },
+                "tolerance": {
+                    "componentAbsolute": 5e-2,
+                    "featureAbsolute": 1e-11,
+                    "forecastAbsolute": 5e-2,
+                },
+            }
+        )
+
+    return {"cases": cases}
 
 
 def find_prophet_model() -> Path:
@@ -1022,6 +1520,19 @@ def write_outputs(output: Path, execution: dict[str, str], reference: dict[str, 
             }
         )
     )
+    conditional_seasonality_path = output / CONDITIONAL_SEASONALITY_FILENAME
+    conditional_seasonality_path.write_bytes(
+        stable_json(
+            {
+                "cases": [
+                    make_conditional_feature_case(spec)
+                    for spec in CONDITIONAL_FEATURE_CASES
+                ]
+            }
+        )
+    )
+    conditional_map_fit_path = output / CONDITIONAL_MAP_FIT_FILENAME
+    conditional_map_fit_path.write_bytes(stable_json(make_conditional_map_fit_fixture()))
 
     model_path = find_prophet_model()
     manifest = {
@@ -1049,6 +1560,14 @@ def write_outputs(output: Path, execution: dict[str, str], reference: dict[str, 
             {
                 "path": SEASONALITY_RESOLUTION_FILENAME,
                 "sha256": sha256_file(seasonality_resolution_path),
+            },
+            {
+                "path": CONDITIONAL_SEASONALITY_FILENAME,
+                "sha256": sha256_file(conditional_seasonality_path),
+            },
+            {
+                "path": CONDITIONAL_MAP_FIT_FILENAME,
+                "sha256": sha256_file(conditional_map_fit_path),
             },
         ],
         "backendArtifacts": [
@@ -1082,6 +1601,8 @@ def compare_outputs(generated: Path, committed: Path) -> None:
         CHANGEPOINT_RESOLUTION_FILENAME,
         LINEAR_MAP_FIT_FILENAME,
         SEASONALITY_RESOLUTION_FILENAME,
+        CONDITIONAL_SEASONALITY_FILENAME,
+        CONDITIONAL_MAP_FIT_FILENAME,
         MANIFEST_FILENAME,
     ):
         generated_path = generated / filename

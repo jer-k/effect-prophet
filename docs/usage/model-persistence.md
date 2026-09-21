@@ -7,10 +7,8 @@ WASM, selecting a fitting Layer, or refitting observations.
 The current portable model kinds are:
 
 - `linear-trend` — intercept, slope, and time scaling;
-- `linear-piecewise-map` — trend, changepoints, deltas, ordered seasonality definitions and
-  coefficients, positive observation noise, and MAP diagnostics;
-- `flat-map` — constant level, ordered seasonality definitions and coefficients, positive
-  observation noise, and flat MAP diagnostics.
+- `linear-piecewise-map` — scaled piecewise trend and changepoints, ordered seasonality definitions and coefficients, condition names, events, fitted regressors, positive observation noise, and MAP diagnostics;
+- `flat-map` — constant level, unconditional ordered seasonality definitions and coefficients, positive observation noise, and flat MAP diagnostics.
 
 Payloads from the removed pre-release additive ridge model are rejected as typed decode errors;
 models are never silently refit or migrated.
@@ -50,11 +48,16 @@ A flat payload stores all state required to rebuild Fourier features and predict
 Decoding reconstructs deterministic coefficient offsets from the ordered definitions. Automatic
 built-in controls are resolved before fitting, so payloads store concrete canonical definitions
 (`yearly`, `weekly`, and `daily`) rather than `"auto"`. Reload never reruns history/cadence rules and
-prediction timestamps cannot change the saved layout.
+prediction timestamps cannot change the saved layout. Conditional custom definitions retain their
+optional `conditionName`; older definitions without that field decode explicitly as unconditional.
+Condition values and training masks are not prediction state and are never persisted. A reloaded
+conditional model therefore requires fresh exact boolean condition maps for every nonempty
+prediction row.
 
 Decoding rejects non-finite levels/coefficients/diagnostics, non-positive noise and value scales,
 coefficient-count misalignment, duplicated or invalid definitions, non-canonical built-in periods,
-and inconsistent shortcut summaries. It never infers metadata from prediction rows or current
+conditional flat definitions, condition/component name collisions, and inconsistent shortcut
+summaries. It never infers metadata from prediction rows or current
 defaults.
 
 The payload has no independent format version and is interpreted by the installed package's

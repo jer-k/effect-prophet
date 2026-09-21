@@ -5,7 +5,12 @@ import {
   validationIssuesFromIssue,
   validationMessageFromIssue,
 } from "./errors";
-import { featureNameDelimiter, isReservedFeatureName } from "./feature-name";
+import {
+  FeatureNameSchema,
+  featureNameDelimiter,
+  isReservedFeatureName,
+  type FeatureName,
+} from "./feature-name";
 
 /** The Stage B default ridge penalty control for a seasonal component. */
 export const defaultSeasonalityPriorScale = 10;
@@ -37,6 +42,7 @@ const SeasonalityDefinitionFieldsSchema = Schema.Struct({
   periodDays: PositiveFinite,
   fourierOrder: PositiveFourierOrder,
   priorScale: priorScaleSchema,
+  conditionName: Schema.optionalKey(FeatureNameSchema),
 });
 
 const expectedBuiltInPeriod = (name: string): number | undefined => {
@@ -62,6 +68,13 @@ const canonicalBuiltInPeriod = Schema.makeFilter<typeof SeasonalityDefinitionFie
         issue: `Expected canonical ${definition.name} period ${expectedPeriod}`,
       };
     }
+
+    if (expectedPeriod !== undefined && definition.conditionName !== undefined) {
+      return {
+        path: ["conditionName"],
+        issue: "Built-in seasonalities cannot be conditional",
+      };
+    }
   },
 );
 
@@ -84,6 +97,7 @@ const CustomSeasonalityDefinitionSchema = Schema.Struct({
   periodDays: PositiveFinite,
   fourierOrder: PositiveFourierOrder,
   priorScale: priorScaleSchema,
+  conditionName: Schema.optionalKey(FeatureNameSchema),
 }).pipe(Schema.brand("effect-prophet/SeasonalityDefinition"));
 
 const BuiltInSeasonalityDefinitionSchema = Schema.Struct({
@@ -99,7 +113,10 @@ const BuiltInSeasonalityDefinitionSchema = Schema.Struct({
 export type EncodedSeasonality = typeof CustomSeasonalityDefinitionSchema.Encoded;
 
 /** A parsed additive Fourier seasonality definition. */
-export type SeasonalityDefinition = typeof SeasonalityDefinitionSchema.Type;
+export type SeasonalityDefinition = typeof SeasonalityDefinitionSchema.Type & {
+  /** Optional condition whose boolean row value gates every harmonic in this component. */
+  readonly conditionName?: FeatureName;
+};
 
 const seasonalitiesHaveUniqueNames = Schema.makeFilter<ReadonlyArray<SeasonalityDefinition>>(
   (definitions) => {

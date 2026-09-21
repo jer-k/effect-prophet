@@ -1,0 +1,628 @@
+{
+  "cases": [
+    {
+      "coefficients": [
+        0.25,
+        -0.5,
+        1.25,
+        0.75
+      ],
+      "conditionRows": [
+        {
+          "onSeason": true
+        },
+        {
+          "onSeason": true
+        },
+        {
+          "onSeason": true
+        },
+        {
+          "onSeason": true
+        },
+        {
+          "onSeason": true
+        },
+        {
+          "onSeason": true
+        }
+      ],
+      "expected": {
+        "columnCount": 4,
+        "componentsRowMajor": [
+          1.786920203651,
+          1.593159876057,
+          -1.887090791013,
+          0.728750888929,
+          1.102893205305,
+          -0.8630888798
+        ],
+        "gatedFeaturesRowMajor": [
+          -0.433883739116,
+          -0.900968867903,
+          0.781831482466,
+          0.623489801862,
+          -0.63800015393,
+          -0.770036235242,
+          0.982566473232,
+          0.185911607171,
+          -0.900968867903,
+          0.433883739117,
+          -0.781831482467,
+          -0.62348980186,
+          0.8516616041,
+          0.524092083609,
+          0.892698209245,
+          -0.450654975797,
+          0.433883739115,
+          0.900968867904,
+          0.781831482465,
+          0.623489801863,
+          0.974927912182,
+          -0.222520933956,
+          -0.433883739117,
+          -0.900968867903
+        ],
+        "rowCount": 6,
+        "ungatedFeaturesRowMajor": [
+          -0.433883739116,
+          -0.900968867903,
+          0.781831482466,
+          0.623489801862,
+          -0.63800015393,
+          -0.770036235242,
+          0.982566473232,
+          0.185911607171,
+          -0.900968867903,
+          0.433883739117,
+          -0.781831482467,
+          -0.62348980186,
+          0.8516616041,
+          0.524092083609,
+          0.892698209245,
+          -0.450654975797,
+          0.433883739115,
+          0.900968867904,
+          0.781831482465,
+          0.623489801863,
+          0.974927912182,
+          -0.222520933956,
+          -0.433883739117,
+          -0.900968867903
+        ]
+      },
+      "id": "all-true-agrees-with-unconditional",
+      "kind": "conditional-seasonality-features",
+      "note": "An all-true conditional block is identical to its ungated Fourier block.",
+      "seasonalities": [
+        {
+          "conditionName": "onSeason",
+          "fourierOrder": 2,
+          "name": "weekly-on",
+          "periodDays": 7.0,
+          "priorScale": 10.0
+        }
+      ],
+      "timestamps": [
+        "2024-01-01T00:00:00.000Z",
+        "2024-01-01T06:30:00.000Z",
+        "2024-01-02T18:00:00.000Z",
+        "2024-01-05T03:15:00.000Z",
+        "2024-01-11T12:00:00.000Z",
+        "2024-02-03T00:00:00.000Z"
+      ],
+      "tolerance": {
+        "absolute": 1e-11,
+        "relative": 1e-11
+      }
+    },
+    {
+      "coefficients": [
+        0.25,
+        -0.5,
+        1.25,
+        0.75
+      ],
+      "conditionRows": [
+        {
+          "onSeason": false
+        },
+        {
+          "onSeason": false
+        },
+        {
+          "onSeason": false
+        },
+        {
+          "onSeason": false
+        },
+        {
+          "onSeason": false
+        },
+        {
+          "onSeason": false
+        }
+      ],
+      "expected": {
+        "columnCount": 4,
+        "componentsRowMajor": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "gatedFeaturesRowMajor": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rowCount": 6,
+        "ungatedFeaturesRowMajor": [
+          -0.433883739116,
+          -0.900968867903,
+          0.781831482466,
+          0.623489801862,
+          -0.63800015393,
+          -0.770036235242,
+          0.982566473232,
+          0.185911607171,
+          -0.900968867903,
+          0.433883739117,
+          -0.781831482467,
+          -0.62348980186,
+          0.8516616041,
+          0.524092083609,
+          0.892698209245,
+          -0.450654975797,
+          0.433883739115,
+          0.900968867904,
+          0.781831482465,
+          0.623489801863,
+          0.974927912182,
+          -0.222520933956,
+          -0.433883739117,
+          -0.900968867903
+        ]
+      },
+      "id": "all-false-zero-component",
+      "kind": "conditional-seasonality-features",
+      "note": "A condition may be constant false; every gated feature and component is exact zero.",
+      "seasonalities": [
+        {
+          "conditionName": "onSeason",
+          "fourierOrder": 2,
+          "name": "weekly-off",
+          "periodDays": 7.0,
+          "priorScale": 10.0
+        }
+      ],
+      "timestamps": [
+        "2024-01-01T00:00:00.000Z",
+        "2024-01-01T06:30:00.000Z",
+        "2024-01-02T18:00:00.000Z",
+        "2024-01-05T03:15:00.000Z",
+        "2024-01-11T12:00:00.000Z",
+        "2024-02-03T00:00:00.000Z"
+      ],
+      "tolerance": {
+        "absolute": 1e-11,
+        "relative": 1e-11
+      }
+    },
+    {
+      "coefficients": [
+        0.5,
+        -0.25,
+        1.5,
+        0.125
+      ],
+      "conditionRows": [
+        {
+          "onSeason": true
+        },
+        {
+          "onSeason": false
+        },
+        {
+          "onSeason": true
+        },
+        {
+          "onSeason": false
+        },
+        {
+          "onSeason": true
+        },
+        {
+          "onSeason": false
+        }
+      ],
+      "expected": {
+        "columnCount": 4,
+        "componentsRowMajor": [
+          0.008300347418,
+          0.125000000002,
+          0.0,
+          0.0,
+          -0.558955368731,
+          -0.124999999992,
+          0.0,
+          0.0,
+          -0.008300347418,
+          0.124999999984,
+          0.0,
+          0.0
+        ],
+        "gatedFeaturesRowMajor": [
+          -0.433883739116,
+          -0.900968867903,
+          1e-12,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -0.900968867903,
+          0.433883739117,
+          6e-12,
+          -1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.433883739115,
+          0.900968867904,
+          -1e-11,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rowCount": 6,
+        "ungatedFeaturesRowMajor": [
+          -0.433883739116,
+          -0.900968867903,
+          1e-12,
+          1.0,
+          -0.63800015393,
+          -0.770036235242,
+          -0.25881904508,
+          -0.965925826295,
+          -0.900968867903,
+          0.433883739117,
+          6e-12,
+          -1.0,
+          0.8516616041,
+          0.524092083609,
+          0.991444861373,
+          -0.130526192229,
+          0.433883739115,
+          0.900968867904,
+          -1e-11,
+          1.0,
+          0.974927912182,
+          -0.222520933956,
+          -6e-12,
+          1.0
+        ]
+      },
+      "id": "alternating-shared-condition",
+      "kind": "conditional-seasonality-features",
+      "note": "Two components deliberately share one alternating condition.",
+      "seasonalities": [
+        {
+          "conditionName": "onSeason",
+          "fourierOrder": 1,
+          "name": "weekly-on",
+          "periodDays": 7.0,
+          "priorScale": 10.0
+        },
+        {
+          "conditionName": "onSeason",
+          "fourierOrder": 1,
+          "name": "half-day-on",
+          "periodDays": 0.5,
+          "priorScale": 3.0
+        }
+      ],
+      "timestamps": [
+        "2024-01-01T00:00:00.000Z",
+        "2024-01-01T06:30:00.000Z",
+        "2024-01-02T18:00:00.000Z",
+        "2024-01-05T03:15:00.000Z",
+        "2024-01-11T12:00:00.000Z",
+        "2024-02-03T00:00:00.000Z"
+      ],
+      "tolerance": {
+        "absolute": 1e-11,
+        "relative": 1e-11
+      }
+    },
+    {
+      "coefficients": [
+        0.2,
+        0.4,
+        -0.5,
+        0.75,
+        1.0,
+        -0.25
+      ],
+      "conditionRows": [
+        {
+          "onSeason": true,
+          "promotion": false
+        },
+        {
+          "onSeason": true,
+          "promotion": true
+        },
+        {
+          "onSeason": false,
+          "promotion": true
+        },
+        {
+          "onSeason": false,
+          "promotion": false
+        },
+        {
+          "onSeason": true,
+          "promotion": false
+        },
+        {
+          "onSeason": false,
+          "promotion": true
+        }
+      ],
+      "expected": {
+        "columnCount": 6,
+        "componentsRowMajor": [
+          -0.026794919243,
+          -0.45878478137,
+          0.0,
+          -0.262454610622,
+          -0.258527099467,
+          1.024076409427,
+          0.246410161513,
+          0.0,
+          -0.999999999999,
+          -0.289342770893,
+          0.0,
+          0.0,
+          0.02679491924,
+          0.45878478137,
+          0.0,
+          -0.026794919242,
+          0.0,
+          -0.250000000003
+        ],
+        "gatedFeaturesRowMajor": [
+          0.866025403784,
+          -0.5,
+          -0.433883739116,
+          -0.900968867903,
+          0.0,
+          0.0,
+          0.461748613241,
+          -0.887010833175,
+          -0.63800015393,
+          -0.770036235242,
+          0.991444861375,
+          -0.130526192208,
+          -0.500000000001,
+          0.866025403784,
+          0.0,
+          0.0,
+          -1.0,
+          -3e-12,
+          -0.971342069813,
+          -0.237685892327,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -0.866025403788,
+          0.499999999994,
+          0.433883739115,
+          0.900968867904,
+          0.0,
+          0.0,
+          0.866025403786,
+          -0.499999999997,
+          0.0,
+          0.0,
+          -3e-12,
+          1.0
+        ],
+        "rowCount": 6,
+        "ungatedFeaturesRowMajor": [
+          0.866025403784,
+          -0.5,
+          -0.433883739116,
+          -0.900968867903,
+          1e-12,
+          1.0,
+          0.461748613241,
+          -0.887010833175,
+          -0.63800015393,
+          -0.770036235242,
+          0.991444861375,
+          -0.130526192208,
+          -0.500000000001,
+          0.866025403784,
+          -0.900968867903,
+          0.433883739117,
+          -1.0,
+          -3e-12,
+          -0.971342069813,
+          -0.237685892327,
+          0.8516616041,
+          0.524092083609,
+          0.751839807482,
+          0.659345815097,
+          -0.866025403788,
+          0.499999999994,
+          0.433883739115,
+          0.900968867904,
+          5e-12,
+          -1.0,
+          0.866025403786,
+          -0.499999999997,
+          0.974927912182,
+          -0.222520933956,
+          -3e-12,
+          1.0
+        ]
+      },
+      "id": "independent-conditions-with-unconditional",
+      "kind": "conditional-seasonality-features",
+      "note": "Independent conditions and one unconditional component preserve source order.",
+      "seasonalities": [
+        {
+          "fourierOrder": 1,
+          "name": "three-day",
+          "periodDays": 3.0,
+          "priorScale": 4.0
+        },
+        {
+          "conditionName": "onSeason",
+          "fourierOrder": 1,
+          "name": "weekly-on",
+          "periodDays": 7.0,
+          "priorScale": 10.0
+        },
+        {
+          "conditionName": "promotion",
+          "fourierOrder": 1,
+          "name": "daily-promotion",
+          "periodDays": 1.0,
+          "priorScale": 5.0
+        }
+      ],
+      "timestamps": [
+        "2024-01-01T00:00:00.000Z",
+        "2024-01-01T06:30:00.000Z",
+        "2024-01-02T18:00:00.000Z",
+        "2024-01-05T03:15:00.000Z",
+        "2024-01-11T12:00:00.000Z",
+        "2024-02-03T00:00:00.000Z"
+      ],
+      "tolerance": {
+        "absolute": 1e-11,
+        "relative": 1e-11
+      }
+    },
+    {
+      "coefficients": [
+        0.75,
+        -0.5
+      ],
+      "conditionRows": [
+        {
+          "futureRegime": false
+        },
+        {
+          "futureRegime": false
+        },
+        {
+          "futureRegime": false
+        },
+        {
+          "futureRegime": false
+        },
+        {
+          "futureRegime": false
+        },
+        {
+          "futureRegime": true
+        }
+      ],
+      "expected": {
+        "columnCount": 2,
+        "componentsRowMajor": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.842456401114
+        ],
+        "gatedFeaturesRowMajor": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.974927912182,
+          -0.222520933956
+        ],
+        "rowCount": 6,
+        "ungatedFeaturesRowMajor": [
+          -0.433883739116,
+          -0.900968867903,
+          -0.63800015393,
+          -0.770036235242,
+          -0.900968867903,
+          0.433883739117,
+          0.8516616041,
+          0.524092083609,
+          0.433883739115,
+          0.900968867904,
+          0.974927912182,
+          -0.222520933956
+        ]
+      },
+      "id": "prediction-regime-absent-from-training",
+      "kind": "conditional-seasonality-features",
+      "note": "The final prediction-style row enables a regime that is absent in preceding rows.",
+      "seasonalities": [
+        {
+          "conditionName": "futureRegime",
+          "fourierOrder": 1,
+          "name": "weekly-future",
+          "periodDays": 7.0,
+          "priorScale": 10.0
+        }
+      ],
+      "timestamps": [
+        "2024-01-01T00:00:00.000Z",
+        "2024-01-01T06:30:00.000Z",
+        "2024-01-02T18:00:00.000Z",
+        "2024-01-05T03:15:00.000Z",
+        "2024-01-11T12:00:00.000Z",
+        "2024-02-03T00:00:00.000Z"
+      ],
+      "tolerance": {
+        "absolute": 1e-11,
+        "relative": 1e-11
+      }
+    }
+  ]
+}

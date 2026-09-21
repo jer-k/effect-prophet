@@ -12,16 +12,22 @@ describe("decodePredictionRows", () => {
         {
           timestamp: "2025-01-01T00:00:00.000Z",
           regressors: { price: 3 },
+          conditions: { onSeason: false },
         },
       ]),
     );
 
     expect(rows).toEqual([
       { timestamp: 1_735_689_600_000 },
-      { timestamp: 1_735_689_600_000, regressors: { price: 3 } },
+      {
+        timestamp: 1_735_689_600_000,
+        regressors: { price: 3 },
+        conditions: { onSeason: false },
+      },
     ]);
     expect(Object.isFrozen(rows)).toBe(true);
     expect(Object.isFrozen(rows[1]?.regressors)).toBe(true);
+    expect(Object.isFrozen(rows[1]?.conditions)).toBe(true);
   });
 
   it("retains legacy diagnostics for object-free invalid inputs", async () => {
@@ -36,6 +42,7 @@ describe("decodePredictionRows", () => {
       ["invalid", { timestamp: "also-invalid" }],
       [{ timestamp: "2025-01-01T00:00:00.000Z", typo: true }],
       [{ timestamp: "2025-01-01T00:00:00.000Z", regressors: { price: true } }],
+      [{ timestamp: "2025-01-01T00:00:00.000Z", conditions: { onSeason: 1 } }],
     ]) {
       const error = await Effect.runPromise(Effect.flip(decodePredictionRows(input)));
 

@@ -73,6 +73,37 @@ describe("seasonality domain", () => {
     expect(definitions.map((definition) => definition.name)).toEqual(["Daily", "daily-custom"]);
   });
 
+  it("parses optional condition names without changing coefficient identity", async () => {
+    const definitions = await Effect.runPromise(
+      parseSeasonalities([
+        {
+          name: "weekly-on-season",
+          periodDays: 7,
+          fourierOrder: 2,
+          conditionName: "onSeason",
+        },
+      ]),
+    );
+
+    const layout = await Effect.runPromise(makeSeasonalityLayout(definitions));
+
+    expect(definitions[0]?.conditionName).toBe("onSeason");
+    expect(layout.coefficientCount).toBe(4);
+    expect(layout.components[0]?.coefficientOffset).toBe(0);
+
+    await expectInvalidSeasonality(
+      parseSeasonalities([
+        {
+          name: "weekly-on-season",
+          periodDays: 7,
+          fourierOrder: 2,
+          conditionName: "conditions",
+        },
+      ]),
+      "conditionName",
+    );
+  });
+
   it("constructs contiguous coefficients in definition order", async () => {
     const definitions = await Effect.runPromise(parseSeasonalities(encodedSeasonalities));
     const layout = await Effect.runPromise(makeSeasonalityLayout(definitions));
