@@ -6,6 +6,9 @@ use crate::map_least_squares::{
   RidgeLeastSquaresInput, RidgeSolveError, solve_ridge_least_squares,
 };
 use crate::seasonality::SeasonalitySpec;
+use crate::target_scaling::{
+  ScalingMode, TargetScaling, TargetScalingError, resolve_target_scaling,
+};
 
 const TREND_PRIOR_SCALE: f64 = 5.0;
 const NOISE_PRIOR_SCALE: f64 = 0.5;
@@ -27,7 +30,7 @@ pub enum FlatMapTermination {
 /// Finite diagnostics for reduced flat MAP fitting.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct FlatMapFitSummary {
-  /// Positive absmax target scale.
+  /// Positive train-derived target scale.
   pub value_scale: f64,
 
   /// Number of fitted observations.
@@ -49,7 +52,10 @@ pub struct FlatMapFitSummary {
 /// Complete output-unit state of a reduced flat MAP model.
 #[derive(Clone, Debug, PartialEq)]
 pub struct FlatMapModel {
-  /// Constant trend level in observation units.
+  /// Train-derived target scaling used by the fitted objective.
+  pub target_scaling: TargetScaling,
+
+  /// Constant trend level in observation units relative to the target offset.
   pub level: f64,
 
   /// Ordered seasonal definitions.
@@ -100,6 +106,9 @@ pub enum FlatMapError {
   /// Finite input did not produce a finite numerical result.
   NonFiniteResult,
 
+  /// Finite targets produced an unrepresentable scaling domain.
+  NonRepresentableScaling,
+
   /// The posterior has no reliable finite interior noise optimum.
   NoiseCollapse,
 
@@ -138,6 +147,16 @@ pub fn fit_flat_map(
   values: &[f64],
   seasonalities: &[SeasonalitySpec],
 ) -> Result<FlatMapModel, FlatMapError> {
+  fit_flat_map_with_scaling(timestamps, values, seasonalities, ScalingMode::AbsMax)
+}
+
+/// Fit a constant level and additive components with explicit target scaling.
+pub fn fit_flat_map_with_scaling(
+  timestamps: &[f64],
+  values: &[f64],
+  seasonalities: &[SeasonalitySpec],
+  scaling_mode: ScalingMode,
+) -> Result<FlatMapModel, FlatMapError> {
   if timestamps.len() != values.len() {
     return Err(FlatMapError::LengthMismatch);
   }
@@ -159,29 +178,24 @@ pub fn fit_flat_map(
     .checked_add(1)
     .ok_or(FlatMapError::SizeOverflow)?;
 
-  let mut value_scale = values
-    .iter()
-    .fold(0.0_f64, |maximum, value| maximum.max(value.abs()));
-
-  if value_scale == 0.0 {
-    value_scale = 1.0;
-  }
-
-  if !value_scale.is_finite() {
-    return Err(FlatMapError::NonFiniteResult);
-  }
+  let target_scaling =
+    resolve_target_scaling(values, scaling_mode).map_err(map_target_scaling_error)?;
+  let value_scale = target_scaling.scale;
 
   let first_value = values[0];
 
   if values.iter().all(|value| *value == first_value) {
-    let scaled_level = first_value / value_scale;
+    let scaled_level = target_scaling
+      .scale_value(first_value)
+      .map_err(map_target_scaling_error)?;
     let objective = values.len() as f64 * CONSTANT_TARGET_NOISE_SCALE.ln()
       + scaled_level * scaled_level / (2.0 * TREND_PRIOR_SCALE * TREND_PRIOR_SCALE)
       + CONSTANT_TARGET_NOISE_SCALE * CONSTANT_TARGET_NOISE_SCALE
         / (2.0 * NOISE_PRIOR_SCALE * NOISE_PRIOR_SCALE);
 
     return Ok(FlatMapModel {
-      level: first_value,
+      target_scaling,
+      level: scaled_level * value_scale,
       seasonalities: seasonalities.to_vec(),
       coefficients: vec![0.0; seasonal_coefficient_count],
       noise_scale: value_scale * CONSTANT_TARGET_NOISE_SCALE,
@@ -211,7 +225,9 @@ pub fn fit_flat_map(
     design[(row_offset + 1)..(row_offset + column_count)].copy_from_slice(
       &features.values()[feature_offset..(feature_offset + seasonal_coefficient_count)],
     );
-    target[row] = values[row] / value_scale;
+    target[row] = target_scaling
+      .scale_value(values[row])
+      .map_err(map_target_scaling_error)?;
   }
 
   if target.iter().any(|value| !value.is_finite()) {
@@ -313,7 +329,12 @@ pub fn fit_flat_map(
         return Err(FlatMapError::NonFiniteResult);
       }
 
+      target_scaling
+        .restore_trend(level)
+        .map_err(map_target_scaling_error)?;
+
       return Ok(FlatMapModel {
+        target_scaling,
         level,
         seasonalities: seasonalities.to_vec(),
         coefficients: output_coefficients,
@@ -494,6 +515,16 @@ fn map_fourier_fit_error(error: FourierError) -> FlatMapError {
   }
 }
 
+fn map_target_scaling_error(error: TargetScalingError) -> FlatMapError {
+  match error {
+    TargetScalingError::EmptyValues => FlatMapError::InsufficientObservations,
+    TargetScalingError::NonFiniteValue | TargetScalingError::InvalidScaling => {
+      FlatMapError::InvalidObservation
+    }
+    TargetScalingError::NonRepresentable => FlatMapError::NonRepresentableScaling,
+  }
+}
+
 fn map_solve_error(error: RidgeSolveError) -> FlatMapError {
   match error {
     RidgeSolveError::SizeOverflow => FlatMapError::SizeOverflow,
@@ -526,8 +557,11 @@ fn map_fourier_prediction_error(error: FourierError) -> FlatMapPredictionError {
 
 #[cfg(test)]
 mod tests {
-  use super::{FlatMapError, FlatMapTermination, fit_flat_map, predict_flat_map};
+  use super::{
+    FlatMapError, FlatMapTermination, fit_flat_map, fit_flat_map_with_scaling, predict_flat_map,
+  };
   use crate::seasonality::SeasonalitySpec;
+  use crate::target_scaling::ScalingMode;
 
   fn assert_close(actual: f64, expected: f64, tolerance: f64) {
     assert!(
@@ -558,6 +592,22 @@ mod tests {
       model.summary.termination,
       FlatMapTermination::ConstantTargetShortcut
     );
+  }
+
+  #[test]
+  fn fits_minmax_state_relative_to_a_nonzero_offset() {
+    let model = fit_flat_map_with_scaling(
+      &[0.0, 1.0, 2.0, 3.0],
+      &[10.0, 12.0, 11.0, 13.0],
+      &[],
+      ScalingMode::MinMax,
+    )
+    .expect("nonconstant minmax targets should fit");
+
+    assert_eq!(model.target_scaling.mode, ScalingMode::MinMax);
+    assert_eq!(model.target_scaling.offset, 10.0);
+    assert_eq!(model.target_scaling.scale, 3.0);
+    assert!(model.level > 0.0 && model.level < 3.0);
   }
 
   #[test]

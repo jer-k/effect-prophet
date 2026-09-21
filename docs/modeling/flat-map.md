@@ -7,13 +7,13 @@ coefficients, and observation noise are estimated under Prophet's priors.
 
 The current public slice supports:
 
-- absmax target scaling;
+- train-only absmax or minmax target scaling;
 - a featureless flat level or a non-empty resolved list of additive custom and built-in seasonalities;
 - exact constant-target histories through an explicit shortcut;
 - fit, prediction, named component inspection, and JSON round trips.
 
-Minmax scaling, events, regressors, conditional masks, multiplicative components,
-changepoints, and uncertainty remain deferred to their own roadmap tickets. A flat fit
+Events, regressors, conditional masks, multiplicative components, changepoints, and
+uncertainty remain deferred to their own roadmap tickets. A flat fit
 requires at least two observations.
 
 The fixed upstream reference is Prophet 1.4.0 commit
@@ -26,8 +26,8 @@ optimization with `sigma_obs=1e-9`.
 
 ## Objective and units
 
-For training values `y`, let `v=max(abs(y))`, using `v=1` when every value is zero, and
-`z=y/v`. For the ordered Fourier matrix `X`, the reduced objective is
+Resolve target `offset` and `scale` using the [target-scaling contract](target-scaling.md),
+then let `z=(y-offset)/scale`. For the ordered Fourier matrix `X`, the reduced objective is
 
 ```text
 mu = m + X*beta
@@ -46,11 +46,11 @@ MAP modes rather than represented in portable state.
 The fitted model restores output units:
 
 ```text
-level = v*m
-seasonal coefficients = v*beta
-noiseScale = v*sigma
-trend = level
-additive = X*(v*beta)
+level = scale*m
+seasonal coefficients = scale*beta
+noiseScale = scale*sigma
+trend = offset + level
+additive = X*(scale*beta)
 value = trend + additive
 ```
 
@@ -82,11 +82,15 @@ labeled an interior optimizer convergence.
 The narrow adapter accepts only resolved flat input and an already parsed seasonality
 layout. Growth selection and option compatibility belong to the public planner.
 
-Fit success has exact width `9 + K`:
+The preserved legacy absmax export has width `9 + K`. The production scaled export has
+exact width `12 + K`:
 
 ```text
 [
   0,
+  mode,
+  offset,
+  scale,
   level,
   noiseScale,
   valueScale,
@@ -112,6 +116,7 @@ are one-entry frames:
 |      6 | non-finite numerical result    |
 |      7 | noise collapse                 |
 |      8 | non-convergence                |
+|      9 | unrepresentable target scaling |
 
 Prediction success has exact width `1 + N*(3+S)` and rows
 `[trend, additive, value, ...SComponents]`. Metadata failures contain one status; indexed

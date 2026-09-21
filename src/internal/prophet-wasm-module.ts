@@ -41,8 +41,54 @@ export interface AdditiveFeatureWasmBindings {
     absoluteTolerance: number,
   ) => Float64Array;
 
+  readonly fit_piecewise_map_with_features_and_scaling: (
+    timestamps: Float64Array,
+    values: Float64Array,
+    scalingMode: number,
+    changepointMode: number,
+    explicitChangepoints: Float64Array,
+    automaticCount: number,
+    automaticRange: number,
+    periodsDays: Float64Array,
+    fourierOrders: Float64Array,
+    seasonalPriorScales: Float64Array,
+    seasonalityMasks: Float64Array,
+    additionalColumnCount: number,
+    additionalValues: Float64Array,
+    additionalPriorScales: Float64Array,
+    additionalComponentOffsets: Float64Array,
+    additionalComponentCounts: Float64Array,
+    changepointPriorScale: number,
+    maxIterations: number,
+    relativeTolerance: number,
+    absoluteTolerance: number,
+  ) => Float64Array;
+
   readonly predict_piecewise_map_with_features: (
     timestamps: Float64Array,
+    intercept: number,
+    slope: number,
+    timeOrigin: number,
+    timeScale: number,
+    changepointTimestamps: Float64Array,
+    deltas: Float64Array,
+    noiseScale: number,
+    periodsDays: Float64Array,
+    fourierOrders: Float64Array,
+    seasonalCoefficients: Float64Array,
+    seasonalityMasks: Float64Array,
+    additionalColumnCount: number,
+    additionalValues: Float64Array,
+    additionalCoefficients: Float64Array,
+    additionalComponentOffsets: Float64Array,
+    additionalComponentCounts: Float64Array,
+  ) => Float64Array;
+
+  readonly predict_piecewise_map_with_features_and_scaling: (
+    timestamps: Float64Array,
+    scalingMode: number,
+    targetOffset: number,
+    targetScale: number,
     intercept: number,
     slope: number,
     timeOrigin: number,
@@ -73,9 +119,32 @@ export interface FlatMapWasmBindings {
     priorScales: Float64Array,
   ) => Float64Array;
 
+  /** Fit one complete scaled flat MAP model and return its packed protocol frame. */
+  readonly fit_flat_map_with_scaling: (
+    timestamps: Float64Array,
+    values: Float64Array,
+    scalingMode: number,
+    periodsDays: Float64Array,
+    fourierOrders: Float64Array,
+    priorScales: Float64Array,
+  ) => Float64Array;
+
   /** Evaluate one complete flat MAP prediction batch. */
   readonly predict_flat_map: (
     timestamps: Float64Array,
+    level: number,
+    noiseScale: number,
+    periodsDays: Float64Array,
+    fourierOrders: Float64Array,
+    coefficients: Float64Array,
+  ) => Float64Array;
+
+  /** Evaluate one complete scaled flat MAP prediction batch. */
+  readonly predict_flat_map_with_scaling: (
+    timestamps: Float64Array,
+    scalingMode: number,
+    targetOffset: number,
+    targetScale: number,
     level: number,
     noiseScale: number,
     periodsDays: Float64Array,
@@ -103,9 +172,45 @@ export interface PiecewiseMapWasmBindings {
     absoluteTolerance: number,
   ) => Float64Array;
 
+  /** Fit one scaled explicit or automatic linear piecewise MAP model. */
+  readonly fit_piecewise_map_with_scaling: (
+    timestamps: Float64Array,
+    values: Float64Array,
+    scalingMode: number,
+    changepointMode: number,
+    explicitChangepoints: Float64Array,
+    automaticCount: number,
+    automaticRange: number,
+    periodsDays: Float64Array,
+    fourierOrders: Float64Array,
+    priorScales: Float64Array,
+    changepointPriorScale: number,
+    maxIterations: number,
+    relativeTolerance: number,
+    absoluteTolerance: number,
+  ) => Float64Array;
+
   /** Evaluate one complete linear piecewise MAP prediction batch. */
   readonly predict_piecewise_map: (
     timestamps: Float64Array,
+    intercept: number,
+    slope: number,
+    timeOrigin: number,
+    timeScale: number,
+    changepointTimestamps: Float64Array,
+    deltas: Float64Array,
+    noiseScale: number,
+    periodsDays: Float64Array,
+    fourierOrders: Float64Array,
+    coefficients: Float64Array,
+  ) => Float64Array;
+
+  /** Evaluate one complete scaled linear piecewise MAP prediction batch. */
+  readonly predict_piecewise_map_with_scaling: (
+    timestamps: Float64Array,
+    scalingMode: number,
+    targetOffset: number,
+    targetScale: number,
     intercept: number,
     slope: number,
     timeOrigin: number,
@@ -134,11 +239,17 @@ const requiredFunctionExports = [
   "fit_linear_trend",
   "predict_linear_trend",
   "fit_piecewise_map_with_features",
+  "fit_piecewise_map_with_features_and_scaling",
   "predict_piecewise_map_with_features",
+  "predict_piecewise_map_with_features_and_scaling",
   "fit_flat_map",
+  "fit_flat_map_with_scaling",
   "predict_flat_map",
+  "predict_flat_map_with_scaling",
   "fit_piecewise_map",
+  "fit_piecewise_map_with_scaling",
   "predict_piecewise_map",
+  "predict_piecewise_map_with_scaling",
 ] as const;
 
 /**

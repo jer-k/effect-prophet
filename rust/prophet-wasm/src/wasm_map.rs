@@ -3,10 +3,11 @@ use wasm_bindgen::prelude::wasm_bindgen;
 use crate::piecewise_linear::PiecewiseTrend;
 use crate::piecewise_map::{
   MapControls, MapTermination, PiecewiseMapError, PiecewiseMapPredictionError,
-  fit_piecewise_map as fit_kernel, predict_piecewise_map as predict_kernel,
-  resolve_automatic_changepoints,
+  fit_piecewise_map_with_scaling as fit_kernel_with_scaling,
+  predict_piecewise_map as predict_kernel, resolve_automatic_changepoints,
 };
 use crate::seasonality::SeasonalitySpec;
+use crate::target_scaling::{ScalingMode, TargetScaling};
 use crate::wasm_protocol::{parse_nonnegative_integer, parse_positive_integer};
 
 /// Status at index zero of a packed linear piecewise MAP fit result.
@@ -34,6 +35,8 @@ pub enum PiecewiseMapFitStatus {
   NoiseCollapse = 8,
   /// The deterministic optimizer budget was exhausted.
   NonConvergence = 9,
+  /// Finite targets produced an unrepresentable scaling domain.
+  NonRepresentableScaling = 10,
 }
 
 /// Status at index zero of a packed linear piecewise prediction result.
@@ -79,6 +82,88 @@ pub fn fit_piecewise_map(
   relative_tolerance: f64,
   absolute_tolerance: f64,
 ) -> Vec<f64> {
+  fit_piecewise_map_protocol(
+    timestamps,
+    values,
+    changepoint_mode,
+    explicit_changepoints,
+    automatic_count,
+    automatic_range,
+    periods_days,
+    fourier_orders,
+    prior_scales,
+    changepoint_prior_scale,
+    max_iterations,
+    relative_tolerance,
+    absolute_tolerance,
+    ScalingMode::AbsMax,
+    false,
+  )
+}
+
+/// Fit a linear piecewise MAP model with explicit Prophet target scaling.
+///
+/// Success prepends `[mode, offset, scale]` to the legacy success payload.
+#[must_use]
+#[wasm_bindgen]
+#[allow(clippy::too_many_arguments)]
+pub fn fit_piecewise_map_with_scaling(
+  timestamps: &[f64],
+  values: &[f64],
+  scaling_mode: f64,
+  changepoint_mode: f64,
+  explicit_changepoints: &[f64],
+  automatic_count: f64,
+  automatic_range: f64,
+  periods_days: &[f64],
+  fourier_orders: &[f64],
+  prior_scales: &[f64],
+  changepoint_prior_scale: f64,
+  max_iterations: f64,
+  relative_tolerance: f64,
+  absolute_tolerance: f64,
+) -> Vec<f64> {
+  let Some(scaling_mode) = ScalingMode::from_code(scaling_mode) else {
+    return fit_status_frame(PiecewiseMapFitStatus::InvalidConfiguration);
+  };
+
+  fit_piecewise_map_protocol(
+    timestamps,
+    values,
+    changepoint_mode,
+    explicit_changepoints,
+    automatic_count,
+    automatic_range,
+    periods_days,
+    fourier_orders,
+    prior_scales,
+    changepoint_prior_scale,
+    max_iterations,
+    relative_tolerance,
+    absolute_tolerance,
+    scaling_mode,
+    true,
+  )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn fit_piecewise_map_protocol(
+  timestamps: &[f64],
+  values: &[f64],
+  changepoint_mode: f64,
+  explicit_changepoints: &[f64],
+  automatic_count: f64,
+  automatic_range: f64,
+  periods_days: &[f64],
+  fourier_orders: &[f64],
+  prior_scales: &[f64],
+  changepoint_prior_scale: f64,
+  max_iterations: f64,
+  relative_tolerance: f64,
+  absolute_tolerance: f64,
+  scaling_mode: ScalingMode,
+  include_scaling: bool,
+) -> Vec<f64> {
   let seasonalities = match parse_seasonalities(periods_days, fourier_orders, prior_scales) {
     Ok(value) => value,
     Err(status) => return fit_status_frame(status),
@@ -111,20 +196,22 @@ pub fn fit_piecewise_map(
     return fit_status_frame(PiecewiseMapFitStatus::InvalidConfiguration);
   };
 
-  match fit_kernel(
+  match fit_kernel_with_scaling(
     timestamps,
     values,
     &changepoints,
     &seasonalities,
     changepoint_prior_scale,
     controls,
+    scaling_mode,
   ) {
     Ok(model) => {
       let changepoint_count = model.trend.changepoint_timestamps.len();
+      let metadata_width = if include_scaling { 3 } else { 0 };
       let Some(capacity) = changepoint_count
         .checked_mul(2)
         .and_then(|count| count.checked_add(model.coefficients.len()))
-        .and_then(|count| count.checked_add(13))
+        .and_then(|count| count.checked_add(13 + metadata_width))
       else {
         return fit_status_frame(PiecewiseMapFitStatus::SizeOverflow);
       };
@@ -134,8 +221,17 @@ pub fn fit_piecewise_map(
       };
       let mut packed = Vec::with_capacity(capacity);
 
+      packed.push(f64::from(PiecewiseMapFitStatus::Success as u32));
+
+      if include_scaling {
+        packed.extend_from_slice(&[
+          model.target_scaling.mode.code(),
+          model.target_scaling.offset,
+          model.target_scaling.scale,
+        ]);
+      }
+
       packed.extend_from_slice(&[
-        f64::from(PiecewiseMapFitStatus::Success as u32),
         changepoint_count as f64,
         model.trend.intercept,
         model.trend.slope,
@@ -209,6 +305,50 @@ pub fn predict_piecewise_map(
     }
     Err(error) => prediction_error_frame(error),
   }
+}
+
+/// Evaluate relative output-unit MAP state with stored target scaling.
+#[must_use]
+#[wasm_bindgen]
+#[allow(clippy::too_many_arguments)]
+pub fn predict_piecewise_map_with_scaling(
+  timestamps: &[f64],
+  scaling_mode: f64,
+  target_offset: f64,
+  target_scale: f64,
+  intercept: f64,
+  slope: f64,
+  time_origin: f64,
+  time_scale: f64,
+  changepoint_timestamps: &[f64],
+  deltas: &[f64],
+  noise_scale: f64,
+  periods_days: &[f64],
+  fourier_orders: &[f64],
+  coefficients: &[f64],
+) -> Vec<f64> {
+  let scaling = match TargetScaling::parse(scaling_mode, target_offset, target_scale) {
+    Ok(value) => value,
+    Err(_) => return prediction_status_frame(PiecewiseMapPredictionStatus::InvalidModel),
+  };
+  let intercept = match scaling.restore_trend(intercept) {
+    Ok(value) => value,
+    Err(_) => return prediction_status_frame(PiecewiseMapPredictionStatus::InvalidModel),
+  };
+
+  predict_piecewise_map(
+    timestamps,
+    intercept,
+    slope,
+    time_origin,
+    time_scale,
+    changepoint_timestamps,
+    deltas,
+    noise_scale,
+    periods_days,
+    fourier_orders,
+    coefficients,
+  )
 }
 
 fn parse_controls(
@@ -305,6 +445,7 @@ pub(crate) fn status_for_fit_error(error: PiecewiseMapError) -> PiecewiseMapFitS
     PiecewiseMapError::ZeroTimeRange => PiecewiseMapFitStatus::ZeroTimeRange,
     PiecewiseMapError::SizeOverflow => PiecewiseMapFitStatus::SizeOverflow,
     PiecewiseMapError::NonFiniteResult => PiecewiseMapFitStatus::NonFiniteResult,
+    PiecewiseMapError::NonRepresentableScaling => PiecewiseMapFitStatus::NonRepresentableScaling,
     PiecewiseMapError::NoiseCollapse => PiecewiseMapFitStatus::NoiseCollapse,
     PiecewiseMapError::NonConvergence => PiecewiseMapFitStatus::NonConvergence,
   }

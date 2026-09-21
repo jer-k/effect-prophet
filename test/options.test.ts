@@ -323,6 +323,20 @@ describe("decodeOptions", () => {
     });
   });
 
+  it.each(["absmax", "minmax"] as const)("parses %s target scaling", async (scaling) => {
+    const linear = await Effect.runPromise(decodeOptions({ scaling }));
+    const flat = await Effect.runPromise(decodeOptions({ growth: "flat", scaling }));
+
+    expect(linear.scaling).toBe(scaling);
+    expect(flat.scaling).toBe(scaling);
+  });
+
+  it("rejects unknown target scaling before fitting", async () => {
+    const error = await expectOptionsFailure({ scaling: "standardize" });
+
+    expect(error.issues.some((issue) => issue.path?.includes("scaling"))).toBe(true);
+  });
+
   it("rejects invalid growth values at the options boundary", async () => {
     const error = await expectOptionsFailure({ growth: "logistic" });
 

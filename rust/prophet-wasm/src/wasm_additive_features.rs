@@ -5,10 +5,11 @@ use crate::additional_features::{
 };
 use crate::piecewise_linear::PiecewiseTrend;
 use crate::piecewise_map::{
-  MapControls, fit_piecewise_map_with_features as fit_map_kernel,
+  MapControls, fit_piecewise_map_with_features_and_scaling as fit_map_kernel,
   predict_piecewise_map_with_features as predict_map_kernel, resolve_automatic_changepoints,
 };
 use crate::seasonality::SeasonalitySpec;
+use crate::target_scaling::{ScalingMode, TargetScaling};
 use crate::wasm_map::{
   PiecewiseMapFitStatus, PiecewiseMapPredictionStatus, prediction_error_frame, status_for_fit_error,
 };
@@ -45,6 +46,112 @@ pub fn fit_piecewise_map_with_features(
   max_iterations: f64,
   relative_tolerance: f64,
   absolute_tolerance: f64,
+) -> Vec<f64> {
+  fit_piecewise_map_with_features_protocol(
+    timestamps,
+    values,
+    changepoint_mode,
+    explicit_changepoints,
+    automatic_count,
+    automatic_range,
+    periods_days,
+    fourier_orders,
+    seasonal_prior_scales,
+    seasonality_masks,
+    additional_column_count,
+    additional_values,
+    additional_prior_scales,
+    additional_component_offsets,
+    additional_component_counts,
+    changepoint_prior_scale,
+    max_iterations,
+    relative_tolerance,
+    absolute_tolerance,
+    ScalingMode::AbsMax,
+    false,
+  )
+}
+
+/// Fit grouped additive MAP state with explicit Prophet target scaling.
+#[must_use]
+#[wasm_bindgen]
+#[allow(clippy::too_many_arguments)]
+pub fn fit_piecewise_map_with_features_and_scaling(
+  timestamps: &[f64],
+  values: &[f64],
+  scaling_mode: f64,
+  changepoint_mode: f64,
+  explicit_changepoints: &[f64],
+  automatic_count: f64,
+  automatic_range: f64,
+  periods_days: &[f64],
+  fourier_orders: &[f64],
+  seasonal_prior_scales: &[f64],
+  seasonality_masks: &[f64],
+  additional_column_count: f64,
+  additional_values: &[f64],
+  additional_prior_scales: &[f64],
+  additional_component_offsets: &[f64],
+  additional_component_counts: &[f64],
+  changepoint_prior_scale: f64,
+  max_iterations: f64,
+  relative_tolerance: f64,
+  absolute_tolerance: f64,
+) -> Vec<f64> {
+  let Some(scaling_mode) = ScalingMode::from_code(scaling_mode) else {
+    return vec![f64::from(
+      PiecewiseMapFitStatus::InvalidConfiguration as u32,
+    )];
+  };
+
+  fit_piecewise_map_with_features_protocol(
+    timestamps,
+    values,
+    changepoint_mode,
+    explicit_changepoints,
+    automatic_count,
+    automatic_range,
+    periods_days,
+    fourier_orders,
+    seasonal_prior_scales,
+    seasonality_masks,
+    additional_column_count,
+    additional_values,
+    additional_prior_scales,
+    additional_component_offsets,
+    additional_component_counts,
+    changepoint_prior_scale,
+    max_iterations,
+    relative_tolerance,
+    absolute_tolerance,
+    scaling_mode,
+    true,
+  )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn fit_piecewise_map_with_features_protocol(
+  timestamps: &[f64],
+  values: &[f64],
+  changepoint_mode: f64,
+  explicit_changepoints: &[f64],
+  automatic_count: f64,
+  automatic_range: f64,
+  periods_days: &[f64],
+  fourier_orders: &[f64],
+  seasonal_prior_scales: &[f64],
+  seasonality_masks: &[f64],
+  additional_column_count: f64,
+  additional_values: &[f64],
+  additional_prior_scales: &[f64],
+  additional_component_offsets: &[f64],
+  additional_component_counts: &[f64],
+  changepoint_prior_scale: f64,
+  max_iterations: f64,
+  relative_tolerance: f64,
+  absolute_tolerance: f64,
+  scaling_mode: ScalingMode,
+  include_scaling: bool,
 ) -> Vec<f64> {
   let seasonalities =
     match parse_seasonalities(periods_days, fourier_orders, Some(seasonal_prior_scales)) {
@@ -109,14 +216,16 @@ pub fn fit_piecewise_map_with_features(
     layout_view(additional_prior_scales, &metadata.offsets, &metadata.counts),
     changepoint_prior_scale,
     controls,
+    scaling_mode,
   ) {
     Ok(model) => {
       let changepoint_count = model.trend.changepoint_timestamps.len();
+      let metadata_width = if include_scaling { 3 } else { 0 };
       let Some(capacity) = changepoint_count
         .checked_mul(2)
         .and_then(|count| count.checked_add(model.coefficients.len()))
         .and_then(|count| count.checked_add(model.additional_coefficients.len()))
-        .and_then(|count| count.checked_add(13))
+        .and_then(|count| count.checked_add(13 + metadata_width))
       else {
         return vec![f64::from(PiecewiseMapFitStatus::SizeOverflow as u32)];
       };
@@ -126,8 +235,17 @@ pub fn fit_piecewise_map_with_features(
       };
       let mut packed = Vec::with_capacity(capacity);
 
+      packed.push(f64::from(PiecewiseMapFitStatus::Success as u32));
+
+      if include_scaling {
+        packed.extend_from_slice(&[
+          model.target_scaling.mode.code(),
+          model.target_scaling.offset,
+          model.target_scaling.scale,
+        ]);
+      }
+
       packed.extend_from_slice(&[
-        f64::from(PiecewiseMapFitStatus::Success as u32),
         changepoint_count as f64,
         model.trend.intercept,
         model.trend.slope,
@@ -232,6 +350,66 @@ pub fn predict_piecewise_map_with_features(
     Ok(prediction) => success_frame(prediction.values()),
     Err(error) => prediction_error_frame(error),
   }
+}
+
+/// Predict grouped additive MAP components with stored target scaling.
+#[must_use]
+#[wasm_bindgen]
+#[allow(clippy::too_many_arguments)]
+pub fn predict_piecewise_map_with_features_and_scaling(
+  timestamps: &[f64],
+  scaling_mode: f64,
+  target_offset: f64,
+  target_scale: f64,
+  intercept: f64,
+  slope: f64,
+  time_origin: f64,
+  time_scale: f64,
+  changepoint_timestamps: &[f64],
+  deltas: &[f64],
+  noise_scale: f64,
+  periods_days: &[f64],
+  fourier_orders: &[f64],
+  seasonal_coefficients: &[f64],
+  seasonality_masks: &[f64],
+  additional_column_count: f64,
+  additional_values: &[f64],
+  additional_coefficients: &[f64],
+  additional_component_offsets: &[f64],
+  additional_component_counts: &[f64],
+) -> Vec<f64> {
+  let scaling = match TargetScaling::parse(scaling_mode, target_offset, target_scale) {
+    Ok(value) => value,
+    Err(_) => {
+      return vec![f64::from(PiecewiseMapPredictionStatus::InvalidModel as u32)];
+    }
+  };
+  let intercept = match scaling.restore_trend(intercept) {
+    Ok(value) => value,
+    Err(_) => {
+      return vec![f64::from(PiecewiseMapPredictionStatus::InvalidModel as u32)];
+    }
+  };
+
+  predict_piecewise_map_with_features(
+    timestamps,
+    intercept,
+    slope,
+    time_origin,
+    time_scale,
+    changepoint_timestamps,
+    deltas,
+    noise_scale,
+    periods_days,
+    fourier_orders,
+    seasonal_coefficients,
+    seasonality_masks,
+    additional_column_count,
+    additional_values,
+    additional_coefficients,
+    additional_component_offsets,
+    additional_component_counts,
+  )
 }
 
 #[allow(clippy::too_many_arguments)]

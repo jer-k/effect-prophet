@@ -7,11 +7,13 @@ import {
   type FlatMapParameters,
 } from "../fitted-model";
 import type { SeasonalityLayout } from "../seasonality";
+import { targetScalingModeCode, type TargetScalingMode } from "../target-scaling";
 import type { TrainingInput } from "./fitting-backend";
 import { loadProphetWasmModule, type FlatMapWasmBindings } from "./prophet-wasm-module";
 import {
   attemptWasmFitting,
   attemptWasmPrediction,
+  checkedAdd,
   decodeSeasonalPredictions,
   failWasmFitting as fittingFailure,
   packSeasonalitiesForFit,
@@ -35,6 +37,7 @@ export interface WasmFlatMapAdapter {
   /** Fit only a reduced flat MAP configuration. */
   readonly fit: (
     input: TrainingInput,
+    scaling: TargetScalingMode,
     seasonalities: SeasonalityLayout,
   ) => Effect.Effect<FlatMapParameters, FittingError>;
 
@@ -55,6 +58,7 @@ const fitStatus = {
   nonFiniteResult: 6,
   noiseCollapse: 7,
   nonConvergence: 8,
+  nonRepresentableScaling: 9,
 } as const;
 
 const fittingProtocolFailure = (
@@ -71,6 +75,7 @@ const fittingProtocolFailure = (
 const decodeFittedParameters = (
   packed: Float64Array,
   observationCount: number,
+  scaling: TargetScalingMode,
   seasonalities: SeasonalityLayout,
 ): Effect.Effect<FlatMapParameters, FittingError> => {
   const dimensions = seasonalFitDimensions(seasonalities.coefficientCount);
@@ -82,7 +87,13 @@ const decodeFittedParameters = (
     });
   }
 
-  const { packedLength, parameterCount } = dimensions;
+  const { packedLength: legacyPackedLength, parameterCount } = dimensions;
+  const packedLength = checkedAdd(legacyPackedLength, 3);
+
+  if (packedLength === undefined) {
+    return fittingProtocolFailure(observationCount, parameterCount);
+  }
+
   const status = readWasmStatus(packed);
 
   if (status === undefined) {
@@ -94,7 +105,7 @@ const decodeFittedParameters = (
       return fittingProtocolFailure(observationCount, parameterCount);
     }
 
-    const terminationCode = packed[8];
+    const terminationCode = packed[11];
     let termination: "converged" | "constant-target-shortcut" | undefined;
 
     if (terminationCode === 0) {
@@ -105,24 +116,33 @@ const decodeFittedParameters = (
       termination = "constant-target-shortcut";
     }
 
-    if (termination === undefined || packed[4] !== observationCount) {
+    if (
+      termination === undefined ||
+      packed[1] !== targetScalingModeCode(scaling) ||
+      packed[7] !== observationCount
+    ) {
       return fittingProtocolFailure(observationCount, parameterCount);
     }
 
     return parseFlatMapModel({
       model: "flat-map",
-      level: packed[1],
-      noiseScale: packed[2],
+      targetScaling: {
+        mode: scaling,
+        offset: packed[2],
+        scale: packed[3],
+      },
+      level: packed[4],
+      noiseScale: packed[5],
       seasonalities,
-      coefficients: Array.from(packed.slice(9)),
+      coefficients: Array.from(packed.slice(12)),
       fitSummary: {
         method: "flat-map-coordinate-v1",
         termination,
-        valueScale: packed[3],
-        observationCount: packed[4],
-        iterations: packed[5],
-        objective: packed[6],
-        stationarityResidual: packed[7],
+        valueScale: packed[6],
+        observationCount: packed[7],
+        iterations: packed[8],
+        objective: packed[9],
+        stationarityResidual: packed[10],
       },
     }).pipe(
       Effect.mapError(() =>
@@ -163,6 +183,7 @@ const decodeFittedParameters = (
       });
 
     case fitStatus.nonFiniteResult:
+    case fitStatus.nonRepresentableScaling:
       return fittingFailure(observationCount, {
         reason: "non-finite-result",
         parameterCount,
@@ -218,7 +239,7 @@ const predictionMessages = {
  * @returns Flat MAP fitting and prediction operations using the supplied boundary.
  */
 export const makeWasmFlatMapAdapter = (loadModule: WasmFlatMapLoader): WasmFlatMapAdapter => {
-  const fit: WasmFlatMapAdapter["fit"] = (input, seasonalities) => {
+  const fit: WasmFlatMapAdapter["fit"] = (input, scaling, seasonalities) => {
     const observationCount = input.values.length;
     const componentCount = seasonalities.components.length;
     const coefficientCount = seasonalities.coefficientCount;
@@ -243,7 +264,15 @@ export const makeWasmFlatMapAdapter = (loadModule: WasmFlatMapLoader): WasmFlatM
       const { periods, orders, priors } = packSeasonalitiesForFit(seasonalities);
 
       const packed = yield* attemptWasmFitting(
-        () => module.fit_flat_map(input.timestamps, input.values, periods, orders, priors),
+        () =>
+          module.fit_flat_map_with_scaling(
+            input.timestamps,
+            input.values,
+            targetScalingModeCode(scaling),
+            periods,
+            orders,
+            priors,
+          ),
         observationCount,
         {
           phase: "execute",
@@ -252,14 +281,19 @@ export const makeWasmFlatMapAdapter = (loadModule: WasmFlatMapLoader): WasmFlatM
         },
       );
 
-      return yield* decodeFittedParameters(packed, observationCount, seasonalities);
+      return yield* decodeFittedParameters(packed, observationCount, scaling, seasonalities);
     }).pipe(
       Effect.withSpan(
         "effect-prophet.wasm.fit",
-        wasmFitSpanOptions({ type: "flat-map", growth: "flat" }, observationCount, {
-          components: componentCount,
-          coefficients: coefficientCount,
-        }),
+        wasmFitSpanOptions(
+          { type: "flat-map", growth: "flat" },
+          observationCount,
+          {
+            components: componentCount,
+            coefficients: coefficientCount,
+          },
+          scaling,
+        ),
         { captureStackTrace: false },
       ),
     );
@@ -283,8 +317,11 @@ export const makeWasmFlatMapAdapter = (loadModule: WasmFlatMapLoader): WasmFlatM
 
       const packed = yield* attemptWasmPrediction(
         () =>
-          module.predict_flat_map(
+          module.predict_flat_map_with_scaling(
             new Float64Array(timestamps),
+            targetScalingModeCode(model.targetScaling.mode),
+            model.targetScaling.offset,
+            model.targetScaling.scale,
             model.level,
             model.noiseScale,
             periods,
@@ -307,7 +344,12 @@ export const makeWasmFlatMapAdapter = (loadModule: WasmFlatMapLoader): WasmFlatM
     }).pipe(
       Effect.withSpan(
         "effect-prophet.wasm.predict",
-        wasmPredictSpanOptions("flat-map", timestamps.length, componentCount),
+        wasmPredictSpanOptions(
+          "flat-map",
+          timestamps.length,
+          componentCount,
+          model.targetScaling.mode,
+        ),
         { captureStackTrace: false },
       ),
     );

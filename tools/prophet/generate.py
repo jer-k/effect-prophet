@@ -36,6 +36,7 @@ LINEAR_MAP_FIT_FILENAME = "linear-map-fit.json"
 SEASONALITY_RESOLUTION_FILENAME = "seasonality-resolution.json"
 CONDITIONAL_SEASONALITY_FILENAME = "conditional-seasonality.json"
 CONDITIONAL_MAP_FIT_FILENAME = "conditional-map-fit.json"
+TARGET_SCALING_FILENAME = "target-scaling.json"
 MANIFEST_FILENAME = "manifest.json"
 ROOT = Path(__file__).resolve().parents[2]
 REFERENCE_PATH = ROOT / "tools" / "prophet" / "reference.json"
@@ -1460,6 +1461,218 @@ def make_conditional_map_fit_fixture() -> dict[str, Any]:
     return {"cases": cases}
 
 
+def make_target_scaling_fixture() -> dict[str, Any]:
+    """Freeze Prophet target preprocessing and fitted nonlogistic scaling evidence."""
+
+    preprocessing_specs = (
+        ("positive", (2.0, 4.0, 3.0)),
+        ("negative", (-4.0, -2.0, -3.0)),
+        ("mixed", (-2.0, 3.0, 1.0)),
+        ("zero", (0.0, 0.0, 0.0)),
+        ("positive-constant", (4.0, 4.0, 4.0)),
+        ("negative-constant", (-4.0, -4.0, -4.0)),
+        ("tiny-range", (1.0, 1.0 + 1e-12, 1.0 + 5e-13)),
+    )
+    preprocessing_cases: list[dict[str, Any]] = []
+
+    for identifier, values in preprocessing_specs:
+        timestamps = [timestamp_from_offset(index * DAY_MILLISECONDS) for index in range(len(values))]
+
+        for mode in ("absmax", "minmax"):
+            model = Prophet(
+                scaling=mode,
+                yearly_seasonality=False,
+                weekly_seasonality=False,
+                daily_seasonality=False,
+                uncertainty_samples=0,
+            )
+            prepared = model.setup_dataframe(
+                pd.DataFrame(
+                    {
+                        "ds": [prophet_timestamp(timestamp) for timestamp in timestamps],
+                        "y": values,
+                    }
+                ),
+                initialize_scales=True,
+            )
+
+            if model.y_min is None or model.y_scale is None:
+                fail("Prophet did not retain target scaling for preprocessing evidence")
+
+            preprocessing_cases.append(
+                {
+                    "expected": {
+                        "offset": float(model.y_min),
+                        "scale": float(model.y_scale),
+                        "scaledValues": [float(value) for value in prepared["y_scaled"]],
+                    },
+                    "id": f"{identifier}-{mode}",
+                    "kind": "target-scaling-preprocessing",
+                    "mode": mode,
+                    "values": list(values),
+                    "tolerance": {"absolute": 1e-12, "relative": 1e-12},
+                }
+            )
+
+    timestamps = [timestamp_from_offset(index * DAY_MILLISECONDS) for index in range(24)]
+    promotion = [index % 2 for index in range(len(timestamps))]
+    values = [
+        canonical_fourier_float(
+            np.float64(
+                30.0
+                + 0.15 * index
+                + 1.2 * np.sin(2.0 * np.pi * index / 7.0)
+                + 0.4 * promotion[index]
+                + (1.5 if index == 8 else 0.0)
+                + 0.04 * ((index % 3) - 1)
+            )
+        )
+        for index in range(len(timestamps))
+    ]
+    changepoint_timestamp = timestamps[10]
+    events = [{"name": "launch", "date": "2020-01-09", "priorScale": 10.0}]
+    model = Prophet(
+        growth="linear",
+        scaling="minmax",
+        changepoints=[prophet_timestamp(changepoint_timestamp)],
+        changepoint_prior_scale=0.2,
+        yearly_seasonality=False,
+        weekly_seasonality=False,
+        daily_seasonality=False,
+        holidays=pd.DataFrame(
+            {"holiday": ["launch"], "ds": ["2020-01-09"], "prior_scale": [10.0]}
+        ),
+        uncertainty_samples=0,
+    )
+    model.add_seasonality("weekly-custom", period=7.0, fourier_order=1, prior_scale=10.0)
+    model.add_regressor("promotion", prior_scale=10.0, standardize=False)
+    training = pd.DataFrame(
+        {
+            "ds": [prophet_timestamp(timestamp) for timestamp in timestamps],
+            "promotion": promotion,
+            "y": values,
+        }
+    )
+    model.fit(training, algorithm="Newton")
+    prediction_indexes = (23, 24, 30)
+    prediction_timestamps = [
+        timestamp_from_offset(index * DAY_MILLISECONDS) for index in prediction_indexes
+    ]
+    prediction = model.predict(
+        pd.DataFrame(
+            {
+                "ds": [prophet_timestamp(timestamp) for timestamp in prediction_timestamps],
+                "promotion": [index % 2 for index in prediction_indexes],
+            }
+        )
+    )
+
+    if model.y_min is None or model.y_scale is None:
+        fail("Prophet did not retain target scaling for fitted linear evidence")
+
+    linear_case = {
+        "changepointTimestamps": [changepoint_timestamp],
+        "events": events,
+        "expected": {
+            "additive": [
+                canonical_fitted_float(value)
+                for value in prediction[["weekly-custom", "launch", "promotion"]].sum(axis=1)
+            ],
+            "offset": float(model.y_min),
+            "scale": float(model.y_scale),
+            "trend": [canonical_fitted_float(value) for value in prediction["trend"]],
+            "value": [canonical_fitted_float(value) for value in prediction["yhat"]],
+        },
+        "growth": "linear",
+        "id": "minmax-linear-seasonality-event-regressor",
+        "kind": "target-scaling-fitted-map",
+        "mode": "minmax",
+        "observations": [
+            {
+                "regressors": {"promotion": promotion[index]},
+                "timestamp": timestamp,
+                "value": value,
+            }
+            for index, (timestamp, value) in enumerate(zip(timestamps, values, strict=True))
+        ],
+        "predictionRows": [
+            {"regressors": {"promotion": index % 2}, "timestamp": timestamp}
+            for index, timestamp in zip(prediction_indexes, prediction_timestamps, strict=True)
+        ],
+        "regressors": [
+            {"name": "promotion", "priorScale": 10.0, "standardization": "never"}
+        ],
+        "seasonalities": [
+            {
+                "fourierOrder": 1,
+                "name": "weekly-custom",
+                "periodDays": 7.0,
+                "priorScale": 10.0,
+            }
+        ],
+        "settings": {"changepointPriorScale": 0.2},
+        "tolerance": {"absolute": 7e-2, "relative": 1e-3},
+    }
+
+    flat_values = (10.0, 12.0, 11.0, 13.0, 12.5, 11.5, 13.5, 12.25)
+    flat_timestamps = [
+        timestamp_from_offset(index * DAY_MILLISECONDS) for index in range(len(flat_values))
+    ]
+    flat_model = Prophet(
+        growth="flat",
+        scaling="minmax",
+        yearly_seasonality=False,
+        weekly_seasonality=False,
+        daily_seasonality=False,
+        uncertainty_samples=0,
+    )
+    flat_model.fit(
+        pd.DataFrame(
+            {
+                "ds": [prophet_timestamp(timestamp) for timestamp in flat_timestamps],
+                "y": flat_values,
+            }
+        ),
+        algorithm="Newton",
+    )
+    flat_prediction_timestamps = [timestamp_from_offset(9 * DAY_MILLISECONDS)]
+    flat_prediction = flat_model.predict(
+        pd.DataFrame(
+            {"ds": [prophet_timestamp(timestamp) for timestamp in flat_prediction_timestamps]}
+        )
+    )
+
+    if flat_model.y_min is None or flat_model.y_scale is None:
+        fail("Prophet did not retain target scaling for fitted flat evidence")
+
+    flat_case = {
+        "changepointTimestamps": [],
+        "events": [],
+        "expected": {
+            "additive": [0.0],
+            "offset": float(flat_model.y_min),
+            "scale": float(flat_model.y_scale),
+            "trend": [canonical_fitted_float(value) for value in flat_prediction["trend"]],
+            "value": [canonical_fitted_float(value) for value in flat_prediction["yhat"]],
+        },
+        "growth": "flat",
+        "id": "minmax-flat-no-features",
+        "kind": "target-scaling-fitted-map",
+        "mode": "minmax",
+        "observations": [
+            {"timestamp": timestamp, "value": value}
+            for timestamp, value in zip(flat_timestamps, flat_values, strict=True)
+        ],
+        "predictionRows": [{"timestamp": flat_prediction_timestamps[0]}],
+        "regressors": [],
+        "seasonalities": [],
+        "settings": {"changepointPriorScale": 0.05},
+        "tolerance": {"absolute": 7e-2, "relative": 1e-3},
+    }
+
+    return {"fittedCases": [linear_case, flat_case], "preprocessingCases": preprocessing_cases}
+
+
 def find_prophet_model() -> Path:
     """Locate the model binary bundled in the installed Prophet distribution."""
 
@@ -1533,6 +1746,8 @@ def write_outputs(output: Path, execution: dict[str, str], reference: dict[str, 
     )
     conditional_map_fit_path = output / CONDITIONAL_MAP_FIT_FILENAME
     conditional_map_fit_path.write_bytes(stable_json(make_conditional_map_fit_fixture()))
+    target_scaling_path = output / TARGET_SCALING_FILENAME
+    target_scaling_path.write_bytes(stable_json(make_target_scaling_fixture()))
 
     model_path = find_prophet_model()
     manifest = {
@@ -1569,6 +1784,10 @@ def write_outputs(output: Path, execution: dict[str, str], reference: dict[str, 
                 "path": CONDITIONAL_MAP_FIT_FILENAME,
                 "sha256": sha256_file(conditional_map_fit_path),
             },
+            {
+                "path": TARGET_SCALING_FILENAME,
+                "sha256": sha256_file(target_scaling_path),
+            },
         ],
         "backendArtifacts": [
             {
@@ -1603,6 +1822,7 @@ def compare_outputs(generated: Path, committed: Path) -> None:
         SEASONALITY_RESOLUTION_FILENAME,
         CONDITIONAL_SEASONALITY_FILENAME,
         CONDITIONAL_MAP_FIT_FILENAME,
+        TARGET_SCALING_FILENAME,
         MANIFEST_FILENAME,
     ):
         generated_path = generated / filename

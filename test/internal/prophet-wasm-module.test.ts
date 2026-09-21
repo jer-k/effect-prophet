@@ -9,11 +9,17 @@ const validModule: ProphetWasmModule = {
   fit_linear_trend: () => new Float64Array([0, 2, 6, 100, 200]),
   predict_linear_trend: () => new Float64Array([0, 11]),
   fit_piecewise_map_with_features: () => new Float64Array([0]),
+  fit_piecewise_map_with_features_and_scaling: () => new Float64Array([0]),
   predict_piecewise_map_with_features: () => new Float64Array([0]),
+  predict_piecewise_map_with_features_and_scaling: () => new Float64Array([0]),
   fit_flat_map: () => new Float64Array([0, 2, 0.5, 2, 4, 3, 1, 0, 0]),
+  fit_flat_map_with_scaling: () => new Float64Array([0]),
   predict_flat_map: () => new Float64Array([0, 2, 0, 2]),
+  predict_flat_map_with_scaling: () => new Float64Array([0]),
   fit_piecewise_map: () => new Float64Array([0, 0, 1, 1, 0, 1, 2, 0.5, 4, 3, 1, 0, 0]),
+  fit_piecewise_map_with_scaling: () => new Float64Array([0]),
   predict_piecewise_map: () => new Float64Array([0, 2, 0, 2]),
+  predict_piecewise_map_with_scaling: () => new Float64Array([0]),
 };
 
 describe("Prophet WASM module boundary", () => {

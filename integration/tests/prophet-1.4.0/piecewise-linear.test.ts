@@ -30,6 +30,7 @@ describe("Prophet 1.4.0 fixed piecewise-linear compatibility", () => {
       const model = await Effect.runPromise(
         parsePiecewiseMapModel({
           model: "linear-piecewise-map",
+          targetScaling: { mode: "absmax", offset: 0, scale: 1 },
           intercept: referenceCase.parameters.intercept,
           slope: referenceCase.parameters.slope,
           timeOrigin: referenceCase.parameters.timeOrigin,

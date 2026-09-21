@@ -72,6 +72,58 @@ describe("fitted model serialization", () => {
     expect(await Effect.runPromise(predict(decoded, timestamps))).toEqual(
       await Effect.runPromise(predict(model, timestamps)),
     );
+
+    if (encoded.modelKind !== "linear-piecewise-map") {
+      throw new Error("Expected an encoded linear MAP model");
+    }
+
+    const { targetScaling: _omitted, ...legacy } = encoded;
+    const restoredLegacy = await Effect.runPromise(decodeFittedModel(legacy));
+
+    if (restoredLegacy.model !== "linear-piecewise-map") {
+      throw new Error("Expected restored linear MAP state");
+    }
+
+    expect(restoredLegacy.targetScaling).toEqual({
+      mode: "absmax",
+      offset: 0,
+      scale: restoredLegacy.fitSummary.valueScale,
+    });
+    expect(await Effect.runPromise(predict(restoredLegacy, timestamps))).toEqual(
+      await Effect.runPromise(predict(model, timestamps)),
+    );
+  });
+
+  it("decodes legacy MAP payloads with their historical absmax scale", async () => {
+    const model = await Effect.runPromise(
+      fit(
+        [
+          { timestamp: "1970-01-01T00:00:00.000Z", value: 1 },
+          { timestamp: "1970-01-02T00:00:00.000Z", value: 2 },
+          { timestamp: "1970-01-03T00:00:00.000Z", value: 1.5 },
+        ],
+        { growth: "flat" },
+      ).pipe(Effect.provide(prophetFittingBackendLayer)),
+    );
+
+    const encoded = await Effect.runPromise(encodeFittedModel(model));
+
+    if (encoded.modelKind !== "flat-map") {
+      throw new Error("Expected an encoded flat MAP model");
+    }
+
+    const { targetScaling: _omitted, ...legacy } = encoded;
+    const restored = await Effect.runPromise(decodeFittedModel(legacy));
+
+    if (restored.model !== "flat-map") {
+      throw new Error("Expected a restored flat MAP model");
+    }
+
+    expect(restored.targetScaling).toEqual({
+      mode: "absmax",
+      offset: 0,
+      scale: restored.fitSummary.valueScale,
+    });
   });
 
   it("rejects former additive ridge payloads without fitting", async () => {

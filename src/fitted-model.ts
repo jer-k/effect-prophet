@@ -9,6 +9,7 @@ import { EventCalendarSchema, emptyEventCalendar } from "./event";
 import { FittedRegressorSchema } from "./regressor";
 import { SeasonalityLayoutSchema } from "./seasonality";
 import { PositiveFinite } from "./internal/numeric-schemas";
+import { TargetScalingSchema } from "./target-scaling";
 
 const LinearModel = Schema.Literal("linear-trend");
 
@@ -40,6 +41,7 @@ const FlatMapFitSummarySchema = Schema.Struct({
 
 const FlatMapParametersFieldsSchema = Schema.Struct({
   model: FlatMapModel,
+  targetScaling: TargetScalingSchema,
   level: Schema.Finite,
   seasonalities: SeasonalityLayoutSchema,
   coefficients: Schema.Array(Schema.Finite),
@@ -51,6 +53,20 @@ type FlatMapParametersFields = typeof FlatMapParametersFieldsSchema.Type;
 
 const consistentFlatMapParameters = Schema.makeFilter<FlatMapParametersFields>((parameters) => {
   const issues: Array<{ readonly path: ReadonlyArray<PropertyKey>; readonly issue: string }> = [];
+
+  if (parameters.targetScaling.scale !== parameters.fitSummary.valueScale) {
+    issues.push({
+      path: ["targetScaling", "scale"],
+      issue: "Target scale must match the fitted objective value scale",
+    });
+  }
+
+  if (!Number.isFinite(parameters.targetScaling.offset + parameters.level)) {
+    issues.push({
+      path: ["level"],
+      issue: "Target offset and relative level must produce a finite trend",
+    });
+  }
 
   if (parameters.coefficients.length !== parameters.seasonalities.coefficientCount) {
     issues.push({
@@ -96,6 +112,7 @@ const PiecewiseMapFitSummarySchema = Schema.Struct({
 
 const PiecewiseMapParametersFieldsSchema = Schema.Struct({
   model: PiecewiseMapModel,
+  targetScaling: TargetScalingSchema,
   intercept: Schema.Finite,
   slope: Schema.Finite,
   timeOrigin: Schema.Int,
@@ -122,6 +139,20 @@ type PiecewiseMapParametersFields = typeof PiecewiseMapParametersFieldsSchema.Ty
 const consistentPiecewiseMapParameters = Schema.makeFilter<PiecewiseMapParametersFields>(
   (parameters) => {
     const issues: Array<{ readonly path: ReadonlyArray<PropertyKey>; readonly issue: string }> = [];
+
+    if (parameters.targetScaling.scale !== parameters.fitSummary.valueScale) {
+      issues.push({
+        path: ["targetScaling", "scale"],
+        issue: "Target scale must match the fitted objective value scale",
+      });
+    }
+
+    if (!Number.isFinite(parameters.targetScaling.offset + parameters.intercept)) {
+      issues.push({
+        path: ["intercept"],
+        issue: "Target offset and relative intercept must produce a finite trend",
+      });
+    }
 
     if (parameters.changepointTimestamps.length !== parameters.deltas.length) {
       issues.push({
@@ -377,6 +408,7 @@ const freezeFeatureModel = <Model extends FittedFlatMapProphet | FittedPiecewise
     Object.freeze(model.deltas);
   }
 
+  Object.freeze(model.targetScaling);
   Object.freeze(model.fitSummary);
 
   return Object.freeze(model);

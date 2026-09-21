@@ -9,6 +9,9 @@ use crate::fourier::{
 use crate::map_objective::{MapObjectiveError, evaluate_map_objective};
 use crate::piecewise_linear::{PiecewiseTrend, PiecewiseTrendError};
 use crate::seasonality::SeasonalitySpec;
+use crate::target_scaling::{
+  ScalingMode, TargetScaling, TargetScalingError, resolve_target_scaling,
+};
 
 const TREND_PRIOR_SCALE: f64 = 5.0;
 const NOISE_PRIOR_SCALE: f64 = 0.5;
@@ -41,7 +44,7 @@ pub enum MapTermination {
 /// Finite diagnostics for a successful linear piecewise MAP fit.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct MapFitSummary {
-  /// Positive absmax target scale.
+  /// Positive train-derived target scale.
   pub value_scale: f64,
 
   /// Number of fitted rows.
@@ -63,7 +66,10 @@ pub struct MapFitSummary {
 /// Complete output-unit state of a fitted linear piecewise MAP model.
 #[derive(Clone, Debug, PartialEq)]
 pub struct PiecewiseMapModel {
-  /// Continuous output-unit trend state.
+  /// Train-derived target scaling used by the fitted objective.
+  pub target_scaling: TargetScaling,
+
+  /// Continuous output-unit trend state relative to the stored target offset.
   pub trend: PiecewiseTrend,
 
   /// Ordered additive seasonal definitions.
@@ -113,6 +119,8 @@ pub enum PiecewiseMapError {
   SizeOverflow,
   /// Finite input produced a non-finite numerical result.
   NonFiniteResult,
+  /// Finite targets produced an unrepresentable scaling domain.
+  NonRepresentableScaling,
   /// The posterior has no reliable finite interior noise optimum.
   NoiseCollapse,
   /// The deterministic optimizer budget was exhausted.
@@ -180,10 +188,32 @@ pub fn fit_piecewise_map(
   changepoint_prior_scale: f64,
   controls: MapControls,
 ) -> Result<PiecewiseMapModel, PiecewiseMapError> {
+  fit_piecewise_map_with_scaling(
+    timestamps,
+    values,
+    changepoint_timestamps,
+    seasonalities,
+    changepoint_prior_scale,
+    controls,
+    ScalingMode::AbsMax,
+  )
+}
+
+/// Fit an unconditional seasonal piecewise MAP model with explicit target scaling.
+#[allow(clippy::too_many_arguments)]
+pub fn fit_piecewise_map_with_scaling(
+  timestamps: &[f64],
+  values: &[f64],
+  changepoint_timestamps: &[f64],
+  seasonalities: &[SeasonalitySpec],
+  changepoint_prior_scale: f64,
+  controls: MapControls,
+  scaling_mode: ScalingMode,
+) -> Result<PiecewiseMapModel, PiecewiseMapError> {
   let masks =
     unconditional_masks(timestamps.len(), seasonalities.len()).map_err(map_additional_fit_error)?;
 
-  fit_piecewise_map_with_features(
+  fit_piecewise_map_with_features_and_scaling(
     timestamps,
     values,
     changepoint_timestamps,
@@ -205,6 +235,7 @@ pub fn fit_piecewise_map(
     },
     changepoint_prior_scale,
     controls,
+    scaling_mode,
   )
 }
 
@@ -220,6 +251,34 @@ pub fn fit_piecewise_map_with_features(
   additional_layout: AdditionalFeatureLayoutView<'_>,
   changepoint_prior_scale: f64,
   controls: MapControls,
+) -> Result<PiecewiseMapModel, PiecewiseMapError> {
+  fit_piecewise_map_with_features_and_scaling(
+    timestamps,
+    values,
+    changepoint_timestamps,
+    seasonalities,
+    seasonality_masks,
+    additional_features,
+    additional_layout,
+    changepoint_prior_scale,
+    controls,
+    ScalingMode::AbsMax,
+  )
+}
+
+/// Fit grouped additive piecewise MAP state with explicit target scaling.
+#[allow(clippy::too_many_arguments)]
+pub fn fit_piecewise_map_with_features_and_scaling(
+  timestamps: &[f64],
+  values: &[f64],
+  changepoint_timestamps: &[f64],
+  seasonalities: &[SeasonalitySpec],
+  seasonality_masks: SeasonalityMaskView<'_>,
+  additional_features: FeatureMatrixView<'_>,
+  additional_layout: AdditionalFeatureLayoutView<'_>,
+  changepoint_prior_scale: f64,
+  controls: MapControls,
+  scaling_mode: ScalingMode,
 ) -> Result<PiecewiseMapModel, PiecewiseMapError> {
   if timestamps.len() != values.len() {
     return Err(PiecewiseMapError::LengthMismatch);
@@ -287,13 +346,9 @@ pub fn fit_piecewise_map_with_features(
   .map_err(map_fourier_fit_error)?;
   let mut design = vec![0.0; design_count];
   let mut target = vec![0.0; values.len()];
-  let mut value_scale = values
-    .iter()
-    .fold(0.0_f64, |maximum, value| maximum.max(value.abs()));
-
-  if value_scale == 0.0 {
-    value_scale = 1.0;
-  }
+  let target_scaling =
+    resolve_target_scaling(values, scaling_mode).map_err(map_target_scaling_error)?;
+  let value_scale = target_scaling.scale;
 
   for row in 0..values.len() {
     let scaled_time = (timestamps[row] - time_origin) / time_scale;
@@ -320,7 +375,9 @@ pub fn fit_piecewise_map_with_features(
         &additional_features.values
           [additional_offset..(additional_offset + additional_features.column_count)],
       );
-    target[row] = values[row] / value_scale;
+    target[row] = target_scaling
+      .scale_value(values[row])
+      .map_err(map_target_scaling_error)?;
   }
 
   if design.iter().chain(&target).any(|value| !value.is_finite()) {
@@ -332,15 +389,18 @@ pub fn fit_piecewise_map_with_features(
   let first_value = values[0];
 
   if values.iter().all(|value| *value == first_value) {
-    let scaled_intercept = first_value / value_scale;
+    let scaled_intercept = target_scaling
+      .scale_value(first_value)
+      .map_err(map_target_scaling_error)?;
     let objective = values.len() as f64 * CONSTANT_TARGET_NOISE_SCALE.ln()
       + scaled_intercept * scaled_intercept / (2.0 * TREND_PRIOR_SCALE * TREND_PRIOR_SCALE)
       + CONSTANT_TARGET_NOISE_SCALE * CONSTANT_TARGET_NOISE_SCALE
         / (2.0 * NOISE_PRIOR_SCALE * NOISE_PRIOR_SCALE);
 
     return Ok(PiecewiseMapModel {
+      target_scaling,
       trend: PiecewiseTrend {
-        intercept: first_value,
+        intercept: scaled_intercept * value_scale,
         slope: 0.0,
         time_origin,
         time_scale,
@@ -471,7 +531,12 @@ pub fn fit_piecewise_map_with_features(
         return Err(PiecewiseMapError::NonFiniteResult);
       }
 
+      target_scaling
+        .restore_trend(output_coefficients[0])
+        .map_err(map_target_scaling_error)?;
+
       return Ok(PiecewiseMapModel {
+        target_scaling,
         trend: PiecewiseTrend {
           intercept: output_coefficients[0],
           slope: output_coefficients[1],
@@ -782,6 +847,16 @@ fn map_fourier_fit_error(error: FourierError) -> PiecewiseMapError {
   }
 }
 
+fn map_target_scaling_error(error: TargetScalingError) -> PiecewiseMapError {
+  match error {
+    TargetScalingError::EmptyValues => PiecewiseMapError::InsufficientObservations,
+    TargetScalingError::NonFiniteValue | TargetScalingError::InvalidScaling => {
+      PiecewiseMapError::InvalidObservation
+    }
+    TargetScalingError::NonRepresentable => PiecewiseMapError::NonRepresentableScaling,
+  }
+}
+
 fn map_objective_error(error: MapObjectiveError) -> PiecewiseMapError {
   match error {
     MapObjectiveError::InvalidDimensions | MapObjectiveError::InvalidInput => {
@@ -829,12 +904,13 @@ fn map_fourier_prediction_error(error: FourierError) -> PiecewiseMapPredictionEr
 mod tests {
   use super::{
     MapControls, MapTermination, fit_piecewise_map, fit_piecewise_map_with_features,
-    predict_piecewise_map, resolve_automatic_changepoints,
+    fit_piecewise_map_with_scaling, predict_piecewise_map, resolve_automatic_changepoints,
   };
   use crate::additional_features::{
     AdditionalFeatureLayoutView, FeatureMatrixView, SeasonalityMaskView,
   };
   use crate::seasonality::SeasonalitySpec;
+  use crate::target_scaling::ScalingMode;
 
   const CONTROLS: MapControls = MapControls {
     max_iterations: 2_000,
@@ -951,6 +1027,25 @@ mod tests {
 
     assert!(model.additional_coefficients[0] > 2.0);
     assert!(model.coefficients.is_empty());
+  }
+
+  #[test]
+  fn fits_minmax_trend_state_relative_to_a_nonzero_offset() {
+    let model = fit_piecewise_map_with_scaling(
+      &[0.0, 1.0, 2.0, 3.0, 4.0, 5.0],
+      &[20.0, 21.5, 23.0, 23.2, 24.0, 25.0],
+      &[2.0],
+      &[],
+      0.2,
+      CONTROLS,
+      ScalingMode::MinMax,
+    )
+    .expect("minmax targets should have an interior optimum");
+
+    assert_eq!(model.target_scaling.mode, ScalingMode::MinMax);
+    assert_eq!(model.target_scaling.offset, 20.0);
+    assert_eq!(model.target_scaling.scale, 5.0);
+    assert!(model.trend.intercept.abs() < 5.0);
   }
 
   #[test]

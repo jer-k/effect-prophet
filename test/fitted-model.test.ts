@@ -31,6 +31,7 @@ const validFlatMapParameters = async (): Promise<FlatMapParameters> => {
 
   return {
     model: "flat-map",
+    targetScaling: { mode: "absmax", offset: 0, scale: 3 },
     level: 2,
     seasonalities,
     coefficients: [1, 0],
@@ -53,6 +54,7 @@ const validPiecewiseMapParameters = async (): Promise<PiecewiseMapParameters> =>
 
   return {
     model: "linear-piecewise-map",
+    targetScaling: { mode: "absmax", offset: 0, scale: 3 },
     intercept: 1,
     slope: 2,
     timeOrigin: 1_704_067_200_000,
@@ -108,6 +110,7 @@ describe("fitted model domain", () => {
     expect(Object.isFrozen(model)).toBe(true);
     expect(Object.isFrozen(model.changepointTimestamps)).toBe(true);
     expect(Object.isFrozen(model.deltas)).toBe(true);
+    expect(Object.isFrozen(model.targetScaling)).toBe(true);
   });
 
   it("rejects inconsistent piecewise MAP state", async () => {
@@ -120,6 +123,13 @@ describe("fitted model domain", () => {
         changepointTimestamps: [parameters.timeOrigin - 1],
       }),
       "changepointTimestamps",
+    );
+    await expectInvalidModel(
+      parsePiecewiseMapModel({
+        ...parameters,
+        targetScaling: { ...parameters.targetScaling, scale: 2 },
+      }),
+      "targetScaling",
     );
   });
 
@@ -146,5 +156,17 @@ describe("fitted model domain", () => {
     );
 
     expect(error).toBeInstanceOf(InvalidFittedModel);
+
+    await expectInvalidModel(
+      parseFlatMapModel({
+        ...parameters,
+        level: Number.MAX_VALUE,
+        targetScaling: {
+          ...parameters.targetScaling,
+          offset: Number.MAX_VALUE,
+        },
+      }),
+      "level",
+    );
   });
 });
