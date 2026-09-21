@@ -3,6 +3,7 @@ import type {
   BenchmarkImplementation,
   BenchmarkMeasurement,
   CorrectnessProjection,
+  ForecastProjection,
   ImplementationResult,
   RunManifest,
 } from "./result.ts";
@@ -19,13 +20,21 @@ export interface TimingSummary {
   readonly maximumNanoseconds: number;
 }
 
+/** Maximum cross-language differences by correctness quantity. */
+export interface QuantityDifferences {
+  readonly trend: number;
+  readonly component: number;
+  readonly additive: number;
+  readonly forecast: number;
+  readonly noiseScale: number;
+}
+
 /** Correctness eligibility for one cross-language benchmark case. */
 export interface CaseCorrectnessSummary {
   readonly caseId: string;
   readonly status: "passed" | "failed";
-  readonly comparison: "different-objective" | "equivalent-equation" | "equivalent-objective";
-  readonly maximumAbsoluteDifference?: number;
-  readonly maximumRelativeDifference?: number;
+  readonly comparison: "equivalent-equation" | "equivalent-objective";
+  readonly maximumDifferences?: QuantityDifferences;
   readonly note: string;
 }
 
@@ -104,64 +113,160 @@ const summarizeMeasurements = (
   );
 };
 
-const relativeDifference = (left: number, right: number): number => {
-  const scale = Math.max(Math.abs(left), Math.abs(right), Number.MIN_VALUE);
-
-  return Math.abs(left - right) / scale;
-};
-
-interface DifferenceAccumulator {
-  absolute: number;
-  relative: number;
-}
+const emptyDifferences = () => ({
+  trend: 0,
+  component: 0,
+  additive: 0,
+  forecast: 0,
+  noiseScale: 0,
+});
 
 const includeDifference = (
-  accumulator: DifferenceAccumulator,
+  differences: ReturnType<typeof emptyDifferences>,
+  quantity: keyof QuantityDifferences,
   left: number,
   right: number,
 ): void => {
-  accumulator.absolute = Math.max(accumulator.absolute, Math.abs(left - right));
-  accumulator.relative = Math.max(accumulator.relative, relativeDifference(left, right));
+  const difference = Math.abs(left - right);
+
+  differences[quantity] = Math.max(differences[quantity], difference);
 };
+
+const sameNames = (
+  left: ReadonlyArray<{ readonly name: string }>,
+  right: ReadonlyArray<{ readonly name: string }>,
+): boolean =>
+  left.length === right.length && left.every((value, index) => value.name === right[index]?.name);
+
+const compareForecast = (
+  effectForecast: ForecastProjection,
+  pythonForecast: ForecastProjection,
+  differences: ReturnType<typeof emptyDifferences>,
+): boolean => {
+  if (
+    effectForecast.timestamp !== pythonForecast.timestamp ||
+    !sameNames(effectForecast.seasonalities, pythonForecast.seasonalities) ||
+    !sameNames(effectForecast.events, pythonForecast.events) ||
+    !sameNames(effectForecast.regressors, pythonForecast.regressors)
+  ) {
+    return false;
+  }
+
+  includeDifference(differences, "forecast", effectForecast.value, pythonForecast.value);
+  includeDifference(differences, "trend", effectForecast.trend, pythonForecast.trend);
+  includeDifference(differences, "additive", effectForecast.additive, pythonForecast.additive);
+
+  const effectComponents = [
+    ...effectForecast.seasonalities,
+    ...effectForecast.events,
+    ...effectForecast.regressors,
+  ];
+
+  const pythonComponents = [
+    ...pythonForecast.seasonalities,
+    ...pythonForecast.events,
+    ...pythonForecast.regressors,
+  ];
+
+  for (const [index, effectComponent] of effectComponents.entries()) {
+    const pythonComponent = pythonComponents[index];
+
+    if (pythonComponent === undefined) {
+      return false;
+    }
+
+    includeDifference(differences, "component", effectComponent.value, pythonComponent.value);
+  }
+
+  return true;
+};
+
+const stableMetadata = (projection: CorrectnessProjection) => ({
+  modelKind: projection.modelKind,
+  changepointTimestamps: projection.changepointTimestamps,
+  seasonalities: projection.seasonalities,
+  events: projection.events,
+  regressors: projection.regressors.map((regressor) => ({
+    name: regressor.name,
+    priorScale: regressor.priorScale,
+    standardization: regressor.standardization,
+    transform:
+      regressor.transform.mode === "identity"
+        ? { mode: regressor.transform.mode, reason: regressor.transform.reason }
+        : { mode: regressor.transform.mode },
+  })),
+});
 
 const compareProjection = (
   effectProjection: CorrectnessProjection,
   pythonProjection: CorrectnessProjection,
-): DifferenceAccumulator | undefined => {
-  if (effectProjection.forecasts.length !== pythonProjection.forecasts.length) {
+): QuantityDifferences | undefined => {
+  if (
+    effectProjection.forecasts.length !== pythonProjection.forecasts.length ||
+    JSON.stringify(stableMetadata(effectProjection)) !==
+      JSON.stringify(stableMetadata(pythonProjection))
+  ) {
     return undefined;
   }
 
-  const differences: DifferenceAccumulator = { absolute: 0, relative: 0 };
+  const differences = emptyDifferences();
+
+  for (const [index, effectRegressor] of effectProjection.regressors.entries()) {
+    const pythonRegressor = pythonProjection.regressors[index];
+
+    if (pythonRegressor === undefined) {
+      return undefined;
+    }
+
+    includeDifference(
+      differences,
+      "component",
+      effectRegressor.coefficient,
+      pythonRegressor.coefficient,
+    );
+    includeDifference(differences, "component", effectRegressor.center, pythonRegressor.center);
+
+    if (
+      effectRegressor.transform.mode === "standardized" &&
+      pythonRegressor.transform.mode === "standardized"
+    ) {
+      includeDifference(
+        differences,
+        "component",
+        effectRegressor.transform.mean,
+        pythonRegressor.transform.mean,
+      );
+      includeDifference(
+        differences,
+        "component",
+        effectRegressor.transform.sampleStandardDeviation,
+        pythonRegressor.transform.sampleStandardDeviation,
+      );
+    }
+  }
 
   for (const [index, effectForecast] of effectProjection.forecasts.entries()) {
     const pythonForecast = pythonProjection.forecasts[index];
 
-    if (pythonForecast === undefined || effectForecast.timestamp !== pythonForecast.timestamp) {
+    if (
+      pythonForecast === undefined ||
+      !compareForecast(effectForecast, pythonForecast, differences)
+    ) {
       return undefined;
-    }
-
-    includeDifference(differences, effectForecast.value, pythonForecast.value);
-    includeDifference(differences, effectForecast.trend, pythonForecast.trend);
-    includeDifference(differences, effectForecast.additive, pythonForecast.additive);
-
-    if (effectForecast.seasonalities.length !== pythonForecast.seasonalities.length) {
-      return undefined;
-    }
-
-    for (const [componentIndex, effectComponent] of effectForecast.seasonalities.entries()) {
-      const pythonComponent = pythonForecast.seasonalities[componentIndex];
-
-      if (pythonComponent === undefined || effectComponent.name !== pythonComponent.name) {
-        return undefined;
-      }
-
-      includeDifference(differences, effectComponent.value, pythonComponent.value);
     }
   }
 
-  if (effectProjection.noiseScale !== undefined && pythonProjection.noiseScale !== undefined) {
-    includeDifference(differences, effectProjection.noiseScale, pythonProjection.noiseScale);
+  if (effectProjection.noiseScale !== undefined || pythonProjection.noiseScale !== undefined) {
+    if (effectProjection.noiseScale === undefined || pythonProjection.noiseScale === undefined) {
+      return undefined;
+    }
+
+    includeDifference(
+      differences,
+      "noiseScale",
+      effectProjection.noiseScale,
+      pythonProjection.noiseScale,
+    );
   }
 
   return differences;
@@ -175,21 +280,55 @@ const projectionsForCase = (
     .filter((projection) => projection.caseId === caseId)
     .sort((left, right) => left.run - right.run);
 
+const quantityPasses = (
+  difference: number,
+  quantity: keyof QuantityDifferences,
+  benchmarkCase: BenchmarkCase,
+  effectProjections: ReadonlyArray<CorrectnessProjection>,
+  pythonProjections: ReadonlyArray<CorrectnessProjection>,
+): boolean => {
+  const tolerance = benchmarkCase.correctnessTolerances[quantity];
+  let scale = 0;
+
+  for (const projection of [...effectProjections, ...pythonProjections]) {
+    if (quantity === "noiseScale") {
+      scale = Math.max(scale, Math.abs(projection.noiseScale ?? 0));
+      continue;
+    }
+
+    for (const forecast of projection.forecasts) {
+      if (quantity === "forecast") {
+        scale = Math.max(scale, Math.abs(forecast.value));
+      } else if (quantity === "trend") {
+        scale = Math.max(scale, Math.abs(forecast.trend));
+      } else if (quantity === "additive") {
+        scale = Math.max(scale, Math.abs(forecast.additive));
+      } else {
+        for (const component of [
+          ...forecast.seasonalities,
+          ...forecast.events,
+          ...forecast.regressors,
+        ]) {
+          scale = Math.max(scale, Math.abs(component.value));
+        }
+      }
+    }
+  }
+
+  return difference <= tolerance.absolute + tolerance.relative * scale;
+};
+
 const correctnessForCase = (
   benchmarkCase: BenchmarkCase,
   effectResult: ImplementationResult,
   pythonResult: ImplementationResult,
   evidenceIds: ReadonlySet<string>,
 ): CaseCorrectnessSummary => {
-  const effectFailures = effectResult.failures.filter(
+  const failures = [...effectResult.failures, ...pythonResult.failures].filter(
     (failure) => failure.caseId === benchmarkCase.id,
   );
 
-  const pythonFailures = pythonResult.failures.filter(
-    (failure) => failure.caseId === benchmarkCase.id,
-  );
-
-  if (effectFailures.length > 0 || pythonFailures.length > 0) {
+  if (failures.length > 0) {
     return {
       caseId: benchmarkCase.id,
       status: "failed",
@@ -213,43 +352,33 @@ const correctnessForCase = (
     };
   }
 
-  const allProjections = [...effectProjections, ...pythonProjections];
+  const persistenceFailed = [...effectProjections, ...pythonProjections].some((projection) => {
+    const error = projection.persistenceMaximumAbsoluteError;
+    const tolerance = benchmarkCase.correctnessTolerances.persistence;
 
-  const persistenceFailed = allProjections.some(
-    (projection) =>
-      projection.persistenceMaximumAbsoluteError === undefined ||
-      projection.persistenceMaximumAbsoluteError > benchmarkCase.correctnessTolerance.absolute,
-  );
+    return error === undefined || error > tolerance.absolute;
+  });
 
   if (persistenceFailed) {
     return {
       caseId: benchmarkCase.id,
       status: "failed",
       comparison: benchmarkCase.workload.comparison.kind,
-      note: "At least one public persistence round trip exceeded the correctness tolerance.",
+      note: "At least one public persistence round trip exceeded its tolerance.",
     };
   }
 
   if (
     benchmarkCase.workload.comparison.kind === "equivalent-objective" &&
-    allProjections.some(
+    [...effectProjections, ...pythonProjections].some(
       (projection) => projection.fitQuality === undefined || projection.fitQuality.length === 0,
     )
   ) {
     return {
       caseId: benchmarkCase.id,
       status: "failed",
-      comparison: "equivalent-objective",
-      note: "Equivalent-objective timing requires finite optimizer quality evidence from both implementations.",
-    };
-  }
-
-  if (benchmarkCase.workload.comparison.kind === "different-objective") {
-    return {
-      caseId: benchmarkCase.id,
-      status: "passed",
-      comparison: "different-objective",
-      note: "Both implementations passed local checks; cross-language forecast equality is not applicable.",
+      comparison: benchmarkCase.workload.comparison.kind,
+      note: "Equivalent-objective timing requires finite optimizer evidence.",
     };
   }
 
@@ -264,7 +393,7 @@ const correctnessForCase = (
     };
   }
 
-  const maximum: DifferenceAccumulator = { absolute: 0, relative: 0 };
+  const maximum = emptyDifferences();
 
   for (const [index, effectProjection] of effectProjections.entries()) {
     const pythonProjection = pythonProjections[index];
@@ -278,48 +407,63 @@ const correctnessForCase = (
       };
     }
 
-    const difference = compareProjection(effectProjection, pythonProjection);
+    const differences = compareProjection(effectProjection, pythonProjection);
 
-    if (difference === undefined) {
+    if (differences === undefined) {
       return {
         caseId: benchmarkCase.id,
         status: "failed",
         comparison: benchmarkCase.workload.comparison.kind,
-        note: "Forecast rows or named component layouts differ.",
+        note: "Fitted metadata, forecast rows, or named component layouts differ.",
       };
     }
 
-    maximum.absolute = Math.max(maximum.absolute, difference.absolute);
-    maximum.relative = Math.max(maximum.relative, difference.relative);
+    for (const quantity of Object.keys(maximum)) {
+      const key: keyof QuantityDifferences =
+        quantity === "trend" ||
+        quantity === "component" ||
+        quantity === "additive" ||
+        quantity === "forecast"
+          ? quantity
+          : "noiseScale";
+
+      maximum[key] = Math.max(maximum[key], differences[key]);
+    }
   }
 
-  const tolerance = benchmarkCase.correctnessTolerance;
-  const passed = maximum.absolute <= tolerance.absolute || maximum.relative <= tolerance.relative;
+  const quantities: ReadonlyArray<keyof QuantityDifferences> = [
+    "trend",
+    "component",
+    "additive",
+    "forecast",
+    "noiseScale",
+  ];
+
+  const failedQuantities = quantities.filter(
+    (quantity) =>
+      !quantityPasses(
+        maximum[quantity],
+        quantity,
+        benchmarkCase,
+        effectProjections,
+        pythonProjections,
+      ),
+  );
+
+  const passed = failedQuantities.length === 0;
 
   return {
     caseId: benchmarkCase.id,
     status: passed ? "passed" : "failed",
     comparison: benchmarkCase.workload.comparison.kind,
-    maximumAbsoluteDifference: maximum.absolute,
-    maximumRelativeDifference: maximum.relative,
+    maximumDifferences: maximum,
     note: passed
       ? `Cross-language projections passed evidence ${evidenceId}.`
-      : `Cross-language projections exceeded the configured absolute-plus-relative tolerance for evidence ${evidenceId}.`,
+      : `Cross-language quantities exceeded tolerance: ${failedQuantities.join(", ")}.`,
   };
 };
 
-/**
- * Build a neutral correctness and absolute-timing report from raw implementation artifacts.
- *
- * No relative speedup, ranking, winner, or performance gate is calculated.
- *
- * @param manifest - Host and source provenance for the Compose run.
- * @param cases - Parsed selected case declarations.
- * @param effectResult - Raw Effect Prophet result artifact.
- * @param pythonResult - Raw Python Prophet result artifact.
- * @param evidenceIds - Reviewed evidence identifiers available to authorize comparisons.
- * @returns A complete machine-readable report.
- */
+/** Build a neutral correctness and absolute-timing report from raw artifacts. */
 export const buildBenchmarkReport = (
   manifest: RunManifest,
   cases: ReadonlyArray<BenchmarkCase>,
@@ -364,12 +508,7 @@ const milliseconds = (nanoseconds: number): string => (nanoseconds / 1_000_000).
 const escapeTableCell = (value: string): string =>
   value.replaceAll("|", "\\|").replaceAll("\r\n", "<br>").replaceAll("\n", "<br>");
 
-/**
- * Render a machine-readable benchmark report as reviewable Markdown.
- *
- * @param report - Report produced from retained raw records.
- * @returns A Markdown document with correctness, absolute timings, failures, and provenance.
- */
+/** Render a machine-readable benchmark report as reviewable Markdown. */
 export const renderBenchmarkMarkdown = (report: BenchmarkReport): string => {
   const lines: Array<string> = [
     `# Effect Prophet benchmark — ${report.run.runId}`,
@@ -378,13 +517,15 @@ export const renderBenchmarkMarkdown = (report: BenchmarkReport): string => {
     "",
     "## Correctness",
     "",
-    "| Case | Classification | Status | Max absolute difference | Max relative difference | Note |",
-    "| --- | --- | --- | ---: | ---: | --- |",
+    "| Case | Classification | Status | Trend | Component | Additive | Forecast | Noise scale | Note |",
+    "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | --- |",
   ];
 
   for (const summary of report.correctness) {
+    const differences = summary.maximumDifferences;
+
     lines.push(
-      `| ${escapeTableCell(summary.caseId)} | ${summary.comparison} | ${summary.status} | ${summary.maximumAbsoluteDifference?.toExponential(3) ?? "n/a"} | ${summary.maximumRelativeDifference?.toExponential(3) ?? "n/a"} | ${escapeTableCell(summary.note)} |`,
+      `| ${escapeTableCell(summary.caseId)} | ${summary.comparison} | ${summary.status} | ${differences?.trend.toExponential(3) ?? "n/a"} | ${differences?.component.toExponential(3) ?? "n/a"} | ${differences?.additive.toExponential(3) ?? "n/a"} | ${differences?.forecast.toExponential(3) ?? "n/a"} | ${differences?.noiseScale.toExponential(3) ?? "n/a"} | ${escapeTableCell(summary.note)} |`,
     );
   }
 
@@ -426,10 +567,12 @@ export const renderBenchmarkMarkdown = (report: BenchmarkReport): string => {
     "## Provenance",
     "",
     `- Git revision: \`${report.run.gitRevision}\`${report.run.gitDirty ? " (dirty)" : ""}`,
-    `- Host: \`${report.run.hostPlatform}/${report.run.hostArchitecture}\``,
+    `- Host: \`${report.run.hostPlatform} ${report.run.hostRelease}/${report.run.hostArchitecture}\` (\`${report.run.hostProcessor}\`)`,
     `- Container platform: \`${report.run.containerPlatform}\``,
     `- Execution mode: ${report.run.emulated ? "architecture-emulated diagnostic run" : "native architecture"}`,
     `- Selected cases: ${report.run.selectedCases.map((value) => `\`${value}\``).join(", ")}`,
+    "- Commands:",
+    ...report.run.commands.map((command) => `  - \`${command}\``),
     "- Container images:",
     ...report.run.containerImages.map((image) => `  - \`${image.name}\`: \`${image.value}\``),
     "",
@@ -442,6 +585,8 @@ export const renderBenchmarkMarkdown = (report: BenchmarkReport): string => {
       `- Runtime: \`${entry.environment.runtime} ${entry.environment.runtimeVersion}\``,
       `- Container: \`${entry.environment.operatingSystem}/${entry.environment.architecture}\``,
       `- Processor: \`${entry.environment.processor}\``,
+      `- Versions: ${entry.environment.versions.map((version) => `\`${version.name}=${version.value}\``).join(", ")}`,
+      `- Numerical threads: ${entry.environment.numericalThreads.map((control) => `\`${control.name}=${control.value}\``).join(", ")}`,
       `- Resources: ${entry.environment.resources.map((resource) => `\`${resource.name}=${resource.value}\``).join(", ")}`,
       `- Memory: ${entry.environment.memoryMeasurement}`,
       "",

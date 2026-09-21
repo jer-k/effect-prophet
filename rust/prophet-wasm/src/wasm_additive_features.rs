@@ -5,14 +5,14 @@ use crate::additional_features::{
 };
 use crate::piecewise_linear::PiecewiseTrend;
 use crate::piecewise_map::{
-  MapControls, PiecewiseMapError, PiecewiseMapPredictionError,
-  fit_piecewise_map_with_features as fit_map_kernel,
+  MapControls, fit_piecewise_map_with_features as fit_map_kernel,
   predict_piecewise_map_with_features as predict_map_kernel, resolve_automatic_changepoints,
 };
 use crate::seasonality::SeasonalitySpec;
-use crate::wasm_map::{PiecewiseMapFitStatus, PiecewiseMapPredictionStatus};
-
-const MAX_WIRE_INTEGER: f64 = u32::MAX as f64;
+use crate::wasm_map::{
+  PiecewiseMapFitStatus, PiecewiseMapPredictionStatus, prediction_error_frame, status_for_fit_error,
+};
+use crate::wasm_protocol::{parse_nonnegative_integer, parse_positive_integer};
 
 #[derive(Debug)]
 struct ParsedFeatureMetadata {
@@ -148,7 +148,7 @@ pub fn fit_piecewise_map_with_features(
 
       packed
     }
-    Err(error) => vec![f64::from(map_fit_status(error) as u32)],
+    Err(error) => vec![f64::from(status_for_fit_error(error) as u32)],
   }
 }
 
@@ -230,7 +230,7 @@ pub fn predict_piecewise_map_with_features(
     additional_coefficients,
   ) {
     Ok(prediction) => success_frame(prediction.values()),
-    Err(error) => map_prediction_frame(error),
+    Err(error) => prediction_error_frame(error),
   }
 }
 
@@ -374,23 +374,7 @@ fn parse_changepoints(
   let count =
     parse_nonnegative_integer(count).ok_or(PiecewiseMapFitStatus::InvalidConfiguration)?;
 
-  resolve_automatic_changepoints(timestamps, count, range).map_err(map_fit_status)
-}
-
-fn parse_positive_integer(value: f64) -> Option<usize> {
-  if !value.is_finite() || value <= 0.0 || value.fract() != 0.0 || value > MAX_WIRE_INTEGER {
-    return None;
-  }
-
-  Some(value as usize)
-}
-
-fn parse_nonnegative_integer(value: f64) -> Option<usize> {
-  if !value.is_finite() || value < 0.0 || value.fract() != 0.0 || value > MAX_WIRE_INTEGER {
-    return None;
-  }
-
-  Some(value as usize)
+  resolve_automatic_changepoints(timestamps, count, range).map_err(status_for_fit_error)
 }
 
 fn success_frame(values: &[f64]) -> Vec<f64> {
@@ -398,40 +382,4 @@ fn success_frame(values: &[f64]) -> Vec<f64> {
   packed.push(0.0);
   packed.extend_from_slice(values);
   packed
-}
-
-fn map_fit_status(error: PiecewiseMapError) -> PiecewiseMapFitStatus {
-  match error {
-    PiecewiseMapError::InsufficientObservations => PiecewiseMapFitStatus::InsufficientObservations,
-    PiecewiseMapError::LengthMismatch => PiecewiseMapFitStatus::LengthMismatch,
-    PiecewiseMapError::InvalidObservation => PiecewiseMapFitStatus::InvalidObservation,
-    PiecewiseMapError::InvalidConfiguration => PiecewiseMapFitStatus::InvalidConfiguration,
-    PiecewiseMapError::ZeroTimeRange => PiecewiseMapFitStatus::ZeroTimeRange,
-    PiecewiseMapError::SizeOverflow => PiecewiseMapFitStatus::SizeOverflow,
-    PiecewiseMapError::NonFiniteResult => PiecewiseMapFitStatus::NonFiniteResult,
-    PiecewiseMapError::NoiseCollapse => PiecewiseMapFitStatus::NoiseCollapse,
-    PiecewiseMapError::NonConvergence => PiecewiseMapFitStatus::NonConvergence,
-  }
-}
-
-fn map_prediction_frame(error: PiecewiseMapPredictionError) -> Vec<f64> {
-  match error {
-    PiecewiseMapPredictionError::InvalidTimestamp { row } => vec![
-      f64::from(PiecewiseMapPredictionStatus::InvalidTimestamp as u32),
-      row as f64,
-    ],
-    PiecewiseMapPredictionError::NonFiniteResult { row } => vec![
-      f64::from(PiecewiseMapPredictionStatus::NonFiniteResult as u32),
-      row as f64,
-    ],
-    PiecewiseMapPredictionError::InvalidModel => {
-      vec![f64::from(PiecewiseMapPredictionStatus::InvalidModel as u32)]
-    }
-    PiecewiseMapPredictionError::InvalidConfiguration => vec![f64::from(
-      PiecewiseMapPredictionStatus::InvalidConfiguration as u32,
-    )],
-    PiecewiseMapPredictionError::SizeOverflow => {
-      vec![f64::from(PiecewiseMapPredictionStatus::SizeOverflow as u32)]
-    }
-  }
 }

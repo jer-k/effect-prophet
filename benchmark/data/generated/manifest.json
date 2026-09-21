@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "files": [
+    {
+      "file": "linear-small.json",
+      "recipe": "deterministic-piecewise-weekly-v2:n=32:h=16",
+      "sha256": "bd04fc739211e1968ad47cae0a56d6ce776b0e9ea93dd2d38d89047bac60a5c3"
+    },
+    {
+      "file": "linear-medium.json",
+      "recipe": "deterministic-piecewise-weekly-v2:n=256:h=64",
+      "sha256": "5f69f47c9189c3587fe9c4d72a1c885d2b16d5bd72fa693b49c46ca5ad6381fc"
+    },
+    {
+      "file": "map-irregular-medium.json",
+      "recipe": "deterministic-piecewise-weekly-v2:n=192:h=48:irregular=true",
+      "sha256": "62f195edf2bc788b67f26471e00eee77ec55c61670a7c61be3c23230664418a1"
+    },
+    {
+      "file": "map-events-small.json",
+      "recipe": "map-events-v1:piecewise+release[-1,2]+campaign[-1,0]+bounded-noise:n=96:h=28",
+      "sha256": "124c5aa9e78f09a3c2bb549106cf57f4a4b30793e52f044b2dd384b9eaded665"
+    },
+    {
+      "file": "map-regressors-medium.json",
+      "recipe": "map-regressors-v1:piecewise+binary-auto+numeric-auto+numeric-always+numeric-never+bounded-noise:n=256:h=64",
+      "sha256": "804afd5985e47268a8ddae3301fffcdaaf9a2afca3f3cdbdab8e3d028286f525"
+    },
+    {
+      "file": "map-conditional-seasonalities-medium.json",
+      "recipe": "map-conditional-seasonalities-v1:piecewise+weekly-dense-order3+weekly-sparse-order3+bounded-noise:n=256:h=64",
+      "sha256": "301d2619b93f949d41e43a8ea36bbd74007f10d3151944668dc92b8235fbf968"
+    },
+    {
+      "file": "map-mixed-features-explicit-small.json",
+      "recipe": "conditional-map-fit-control-v1:piecewise+weekly-on+three-day+launch+promotion+bounded-noise:n=24:h=3",
+      "sha256": "c02bbf7954cf0b048e5413f5d00a2f23a664882225bb8c18a4996d68921a63ed"
+    },
+    {
+      "file": "map-mixed-features-automatic-large.json",
+      "recipe": "map-mixed-features-automatic-v1:piecewise-small-breaks+weekly-order2+monthly-dense-order3+events6+regressors4+bounded-noise-x30:n=768:h=128",
+      "sha256": "7a24d6ad1f87032a320eed898a00a41bc90a4b0c7febb7c42801715c86c664b5"
+    }
+  ]
+}

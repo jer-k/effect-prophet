@@ -8,6 +8,10 @@ Avoid both dense blocks and unnecessary blank lines.
 
 Prefer formatting that makes operations, early returns, and side effects easy to scan.
 
+## Reuse and duplicate audit
+
+Before adding a helper, validator, schema, arithmetic check, formatter, or shared constant, search the entire repository for equivalent behavior—not only the exact proposed name. Inspect nearby domain and internal modules for an existing owner, and reuse or extend that implementation when it is cohesive. If the behavior serves multiple callers, move it to a precise shared module rather than copying local versions. After a refactor, repeat the search and review any remaining near-duplicates to confirm that their different error types or domain semantics are intentional.
+
 ## Tracing
 
 Treat tracing as part of every new feature's design and acceptance criteria. Add stable,

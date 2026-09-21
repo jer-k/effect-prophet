@@ -1,7 +1,7 @@
 name: effect-prophet-public-benchmark
 
 x-runtime: &runtime
-  platform: linux/amd64
+  platform: ${BENCHMARK_CONTAINER_PLATFORM:?BENCHMARK_CONTAINER_PLATFORM is required}
   network_mode: none
   read_only: true
   tmpfs:
@@ -10,7 +10,10 @@ x-runtime: &runtime
     BENCHMARK_CASE_IDS: ${BENCHMARK_CASE_IDS:-}
     BENCHMARK_CASES_PATH: /workspace/benchmark/cases/public-api.json
     BENCHMARK_DATA_ROOT: /workspace/benchmark/data
-    BENCHMARK_CONTAINER_PLATFORM: ${BENCHMARK_CONTAINER_PLATFORM:-linux/amd64}
+    BENCHMARK_CONTAINER_PLATFORM: ${BENCHMARK_CONTAINER_PLATFORM:?BENCHMARK_CONTAINER_PLATFORM is required}
+    BENCHMARK_ELIGIBILITY_PATH: /results/eligible-cases.json
+    BENCHMARK_REPORT_MODE: ${BENCHMARK_REPORT_MODE:-final}
+    BENCHMARK_STAGE: ${BENCHMARK_STAGE:-all}
     OMP_NUM_THREADS: "1"
     OPENBLAS_NUM_THREADS: "1"
     MKL_NUM_THREADS: "1"

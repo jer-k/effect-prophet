@@ -40,22 +40,58 @@ export const BenchmarkEnvironmentSchema = Schema.Struct({
 /** Implementation-specific execution provenance. */
 export type BenchmarkEnvironment = typeof BenchmarkEnvironmentSchema.Type;
 
+const NamedComponentSchema = Schema.Struct({
+  name: NonEmptyString,
+  value: Schema.Finite,
+});
+
 /** Runtime schema for one public forecast projected into the shared correctness surface. */
 export const ForecastProjectionSchema = Schema.Struct({
   timestamp: Schema.Int,
   value: Schema.Finite,
   trend: Schema.Finite,
   additive: Schema.Finite,
-  seasonalities: Schema.Array(
-    Schema.Struct({
-      name: NonEmptyString,
-      value: Schema.Finite,
-    }),
-  ),
+  seasonalities: Schema.Array(NamedComponentSchema),
+  events: Schema.Array(NamedComponentSchema),
+  regressors: Schema.Array(NamedComponentSchema),
 });
 
 /** One public forecast projected into the shared correctness surface. */
 export type ForecastProjection = typeof ForecastProjectionSchema.Type;
+
+const SeasonalityMetadataSchema = Schema.Struct({
+  name: NonEmptyString,
+  conditionName: Schema.optionalKey(NonEmptyString),
+});
+
+const EventMetadataSchema = Schema.Struct({
+  name: NonEmptyString,
+  dates: Schema.Array(NonEmptyString),
+  lowerWindowDays: Schema.Int,
+  upperWindowDays: Schema.Int,
+  priorScale: Schema.Finite.check(Schema.isGreaterThan(0)),
+});
+
+const RegressorTransformSchema = Schema.Union([
+  Schema.Struct({
+    mode: Schema.Literal("identity"),
+    reason: Schema.Literals(["disabled", "binary", "constant"]),
+  }),
+  Schema.Struct({
+    mode: Schema.Literal("standardized"),
+    mean: Schema.Finite,
+    sampleStandardDeviation: Schema.Finite.check(Schema.isGreaterThan(0)),
+  }),
+]);
+
+const RegressorMetadataSchema = Schema.Struct({
+  name: NonEmptyString,
+  priorScale: Schema.Finite.check(Schema.isGreaterThan(0)),
+  standardization: Schema.Literals(["auto", "always", "never"]),
+  transform: RegressorTransformSchema,
+  coefficient: Schema.Finite,
+  center: Schema.Finite,
+});
 
 /** Runtime schema for untimed correctness evidence emitted by one independent run. */
 export const CorrectnessProjectionSchema = Schema.Struct({
@@ -63,6 +99,10 @@ export const CorrectnessProjectionSchema = Schema.Struct({
   run: NonNegativeInteger,
   status: Schema.Literal("locally-passed"),
   modelKind: NonEmptyString,
+  changepointTimestamps: Schema.Array(Schema.Int),
+  seasonalities: Schema.Array(SeasonalityMetadataSchema),
+  events: Schema.Array(EventMetadataSchema),
+  regressors: Schema.Array(RegressorMetadataSchema),
   forecasts: Schema.Array(ForecastProjectionSchema),
   noiseScale: Schema.optionalKey(Schema.Finite),
   fitQuality: Schema.optionalKey(
@@ -79,12 +119,8 @@ export const BenchmarkMeasurementSchema = Schema.Struct({
   caseId: NonEmptyString,
   implementation: BenchmarkImplementationSchema,
   phase: BenchmarkPhaseSchema,
-  comparison: Schema.Literals([
-    "different-objective",
-    "equivalent-equation",
-    "equivalent-objective",
-  ]),
-  evidenceId: Schema.optionalKey(NonEmptyString),
+  comparison: Schema.Literals(["equivalent-equation", "equivalent-objective"]),
+  evidenceId: NonEmptyString,
   run: NonNegativeInteger,
   samplesNanoseconds: Schema.Array(PositiveInteger).check(Schema.isMinLength(1)),
   correctness: Schema.Literal("locally-passed"),
@@ -127,7 +163,9 @@ export const RunManifestSchema = Schema.Struct({
   gitRevision: NonEmptyString,
   gitDirty: Schema.Boolean,
   hostPlatform: NonEmptyString,
+  hostRelease: NonEmptyString,
   hostArchitecture: NonEmptyString,
+  hostProcessor: NonEmptyString,
   containerPlatform: NonEmptyString,
   emulated: Schema.Boolean,
   selectedCases: Schema.Array(NonEmptyString),
@@ -147,16 +185,15 @@ export class BenchmarkResultError extends Schema.TaggedError<BenchmarkResultErro
 
 const decodeImplementationResult = Schema.decodeUnknownEffect(ImplementationResultSchema, {
   errors: "all",
+  onExcessProperty: "error",
 });
 
-const decodeRunManifest = Schema.decodeUnknownEffect(RunManifestSchema, { errors: "all" });
+const decodeRunManifest = Schema.decodeUnknownEffect(RunManifestSchema, {
+  errors: "all",
+  onExcessProperty: "error",
+});
 
-/**
- * Parse an untrusted implementation result artifact.
- *
- * @param input - Untrusted JSON-compatible result data.
- * @returns A parsed implementation result or a typed result failure.
- */
+/** Parse an untrusted implementation result artifact. */
 export const parseImplementationResult = (
   input: Parameters<typeof decodeImplementationResult>[0],
 ): Effect.Effect<ImplementationResult, BenchmarkResultError> =>
@@ -167,12 +204,7 @@ export const parseImplementationResult = (
     ),
   );
 
-/**
- * Parse an untrusted run manifest.
- *
- * @param input - Untrusted JSON-compatible manifest data.
- * @returns A parsed manifest or a typed result failure.
- */
+/** Parse an untrusted run manifest. */
 export const parseRunManifest = (
   input: Parameters<typeof decodeRunManifest>[0],
 ): Effect.Effect<RunManifest, BenchmarkResultError> =>

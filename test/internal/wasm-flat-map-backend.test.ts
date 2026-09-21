@@ -1,10 +1,11 @@
-import { Effect, Exit, Option, Predicate, Tracer } from "effect";
+import { Effect, Exit, Option, Tracer } from "effect";
 import { describe, expect, it } from "vitest";
 
 import { FittingError } from "../../src/errors";
 import { parseFlatMapModel } from "../../src/fitted-model";
 import type { FlatMapWasmBindings } from "../../src/internal/prophet-wasm-module";
 import { prophetFittingBackendLayer } from "../../src/internal/prophet-fitting-backend";
+import { requireEndedSpan as requireEnded } from "./tracing-test-helpers";
 import {
   makeWasmFlatMapAdapter,
   predictFlatMapWithWasm,
@@ -186,18 +187,6 @@ describe("Rust/WASM flat MAP adapter boundary", () => {
     });
   });
 });
-
-type EndedSpanStatus = Extract<Tracer.SpanStatus, { readonly _tag: "Ended" }>;
-
-const requireEnded = (span: Tracer.Span): EndedSpanStatus => {
-  const isEnded = Predicate.isTagged("Ended");
-
-  if (!isEnded(span.status)) {
-    throw new Error(`Expected ${span.name} to have ended`);
-  }
-
-  return span.status;
-};
 
 describe("Rust/WASM flat MAP tracing", () => {
   it("records complete flat fit and prediction boundaries under public spans", async () => {

@@ -20,6 +20,7 @@ import pandas as pd
 import prophet
 from prophet import Prophet
 from prophet.serialize import model_from_json, model_to_json
+from prophet.utilities import regressor_coefficients
 
 PROTOCOL_PREFIX = "EFFECT_PROPHET_BENCHMARK_RESULT="
 ADAPTER_PATH = Path(__file__).resolve()
@@ -71,61 +72,92 @@ def select_cases(cases: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return [case for case in cases if case.get("id") in selected]
 
 
-def prepare_input(dataset: dict[str, Any]) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Convert common records into Prophet's public DataFrame inputs."""
+def records_frame(rows: list[dict[str, Any]], include_value: bool) -> pd.DataFrame:
+    """Convert complete shared rows into one naive-calendar Prophet DataFrame."""
 
-    observations = dataset["observations"]
-    prediction_timestamps = dataset["predictionTimestamps"]
-    training = pd.DataFrame(
+    data: dict[str, Any] = {
+        "ds": pd.to_datetime(
+            [row["timestamp"] for row in rows], utc=True
+        ).tz_localize(None),
+    }
+    if include_value:
+        data["y"] = [row["value"] for row in rows]
+    regressor_names = list(rows[0].get("regressors", {}).keys()) if rows else []
+    condition_names = list(rows[0].get("conditions", {}).keys()) if rows else []
+    for name in regressor_names:
+        data[name] = [row.get("regressors", {}).get(name) for row in rows]
+    for name in condition_names:
+        data[name] = [row.get("conditions", {}).get(name) for row in rows]
+    return pd.DataFrame(data)
+
+
+def prepare_input(dataset: dict[str, Any]) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Convert shared JSON records into Prophet's public DataFrame inputs."""
+
+    return (
+        records_frame(dataset["observations"], include_value=True),
+        records_frame(dataset["predictionRows"], include_value=False),
+    )
+
+
+def holidays_frame(events: list[dict[str, Any]]) -> pd.DataFrame | None:
+    """Translate UTC event occurrences into Prophet's holidays protocol."""
+
+    if not events:
+        return None
+    ordered = sorted(events, key=lambda event: (event["name"], event["date"]))
+    return pd.DataFrame(
         {
-            "ds": pd.to_datetime([row["timestamp"] for row in observations], utc=True).tz_localize(None),
-            "y": [row["value"] for row in observations],
+            "holiday": [event["name"] for event in ordered],
+            "ds": pd.to_datetime([event["date"] for event in ordered]),
+            "lower_window": [event["lowerWindowDays"] for event in ordered],
+            "upper_window": [event["upperWindowDays"] for event in ordered],
+            "prior_scale": [event["priorScale"] for event in ordered],
         }
     )
-    prediction = pd.DataFrame(
-        {
-            "ds": pd.to_datetime(prediction_timestamps, utc=True).tz_localize(None),
-        }
-    )
-    return training, prediction
 
 
 def configure_model(benchmark_case: dict[str, Any]) -> Prophet:
-    """Construct a fresh public Prophet model for one fit sample."""
+    """Construct a fresh public Prophet model with the shared configuration."""
 
     workload = benchmark_case["workload"]
-    kind = workload["kind"]
-    if kind == "linear-fit":
-        return Prophet(
-            growth="linear",
-            changepoints=[],
-            yearly_seasonality=False,
-            weekly_seasonality=False,
-            daily_seasonality=False,
-            uncertainty_samples=0,
-        )
-    if kind != "explicit-linear-map":
+    if workload["kind"] != "linear-map":
         raise ValueError(f"Case {benchmark_case['id']} is not a fitting workload")
-
     configuration = workload["configuration"]
-    model = Prophet(
-        growth="linear",
-        changepoints=[
+    changepoints = configuration["changepoints"]
+    common: dict[str, Any] = {
+        "growth": "linear",
+        "changepoint_prior_scale": configuration["changepointPriorScale"],
+        "yearly_seasonality": False,
+        "weekly_seasonality": False,
+        "daily_seasonality": False,
+        "uncertainty_samples": 0,
+        "holidays": holidays_frame(configuration["events"]),
+    }
+    if changepoints["mode"] == "explicit":
+        common["changepoints"] = [
             pd.to_datetime(value, utc=True).tz_localize(None)
-            for value in configuration["changepointTimestamps"]
-        ],
-        changepoint_prior_scale=configuration["changepointPriorScale"],
-        yearly_seasonality=False,
-        weekly_seasonality=False,
-        daily_seasonality=False,
-        uncertainty_samples=0,
-    )
+            for value in changepoints["timestamps"]
+        ]
+    else:
+        common["n_changepoints"] = changepoints["count"]
+        common["changepoint_range"] = changepoints["range"]
+    model = Prophet(**common)
     for seasonality in configuration["seasonalities"]:
         model.add_seasonality(
             name=seasonality["name"],
             period=seasonality["periodDays"],
             fourier_order=seasonality["fourierOrder"],
             prior_scale=seasonality["priorScale"],
+            mode="additive",
+            condition_name=seasonality.get("conditionName"),
+        )
+    standardization = {"never": False, "auto": "auto", "always": True}
+    for regressor in configuration["regressors"]:
+        model.add_regressor(
+            name=regressor["name"],
+            prior_scale=regressor["priorScale"],
+            standardize=standardization[regressor["standardization"]],
             mode="additive",
         )
     model.stan_backend.set_options(
@@ -135,29 +167,26 @@ def configure_model(benchmark_case: dict[str, Any]) -> Prophet:
 
 
 def fit_model(training: pd.DataFrame, benchmark_case: dict[str, Any]) -> Prophet:
-    """Construct and fit a fresh Prophet model through its public fit operation."""
+    """Construct and fit a fresh model through Prophet's public fit operation."""
 
     workload = benchmark_case["workload"]
     model = configure_model(benchmark_case)
-    if workload["kind"] == "explicit-linear-map":
-        optimizer = workload["pythonOptimizer"]
-        return model.fit(
-            training,
-            algorithm=optimizer["algorithm"],
-            iter=optimizer["maxIterations"],
-        )
-    return model.fit(training)
+    optimizer = workload["pythonOptimizer"]
+    return model.fit(
+        training,
+        algorithm=optimizer["algorithm"],
+        iter=optimizer["maxIterations"],
+    )
 
 
 def fixed_prediction_model(
     training: pd.DataFrame, benchmark_case: dict[str, Any]
 ) -> Prophet:
-    """Prepare and publicly restore a model with the authored fixed linear equation."""
+    """Prepare and publicly restore a model with the authored fixed equation."""
 
     workload = benchmark_case["workload"]
     if workload["kind"] != "fixed-linear-prediction":
         raise ValueError("Expected a fixed-linear-prediction workload")
-
     model = Prophet(
         growth="linear",
         changepoints=[],
@@ -169,23 +198,18 @@ def fixed_prediction_model(
     parameters = workload["parameters"]
     if model.start is None or model.t_scale is None or model.y_scale is None:
         raise ValueError("Prophet did not retain fixed-model scaling state")
-
     actual_origin = int(model.start.value // 1_000_000)
     actual_scale = int(model.t_scale.total_seconds() * 1_000)
     if actual_origin != parameters["timeOrigin"] or actual_scale != parameters["timeScale"]:
         raise ValueError("Fixed prediction parameters do not match Prophet training scales")
-
     model.params["m"] = np.array([[parameters["intercept"] / model.y_scale]])
     model.params["k"] = np.array([[parameters["slope"] / model.y_scale]])
     model.params["delta"] = np.zeros_like(model.params["delta"])
     model.params["beta"] = np.zeros_like(model.params["beta"])
-
     return model_from_json(model_to_json(model))
 
 
-def setup_model(
-    training: pd.DataFrame, benchmark_case: dict[str, Any]
-) -> Prophet:
+def setup_model(training: pd.DataFrame, benchmark_case: dict[str, Any]) -> Prophet:
     """Prepare an untimed fitted model for prediction and persistence phases."""
 
     if benchmark_case["workload"]["kind"] == "fixed-linear-prediction":
@@ -193,56 +217,301 @@ def setup_model(
     return fit_model(training, benchmark_case)
 
 
+def event_names(model: Prophet) -> list[str]:
+    """Return fitted grouped event names in Prophet feature order."""
+
+    names = model.train_holiday_names
+    return [] if names is None else [str(value) for value in names.tolist()]
+
+
 def forecast_projection(
     model: Prophet, prediction_frame: pd.DataFrame
 ) -> tuple[pd.DataFrame, list[dict[str, Any]]]:
-    """Run public prediction and project its richer DataFrame into shared fields."""
+    """Run public prediction and project all named additive components."""
 
     predicted = model.predict(prediction_frame)
     seasonality_names = list(model.seasonalities.keys())
+    grouped_events = event_names(model)
+    regressors = list(model.extra_regressors.keys())
     projected: list[dict[str, Any]] = []
-    for index, row in predicted.iterrows():
-        timestamp = int(pd.Timestamp(row["ds"]).value // 1_000_000)
-        seasonalities = [
-            {"name": name, "value": float(row[name])} for name in seasonality_names
-        ]
+    for _, row in predicted.iterrows():
         projected.append(
             {
-                "timestamp": timestamp,
+                "timestamp": int(pd.Timestamp(row["ds"]).value // 1_000_000),
                 "value": float(row["yhat"]),
                 "trend": float(row["trend"]),
                 "additive": float(row.get("additive_terms", 0.0)),
-                "seasonalities": seasonalities,
+                "seasonalities": [
+                    {"name": name, "value": float(row[name])}
+                    for name in seasonality_names
+                ],
+                "events": [
+                    {"name": name, "value": float(row[name])}
+                    for name in grouped_events
+                ],
+                "regressors": [
+                    {"name": name, "value": float(row[name])}
+                    for name in regressors
+                ],
             }
         )
     return predicted, projected
 
 
-def assert_correctness(
-    benchmark_case: dict[str, Any], projections: list[dict[str, Any]], expected_count: int
-) -> None:
-    """Check local shape, finite-value, decomposition, and fixed-equation invariants."""
+def component_sum(forecast: dict[str, Any]) -> float:
+    """Sum every projected named additive component."""
 
-    if len(projections) != expected_count:
+    groups = (
+        forecast["seasonalities"],
+        forecast["events"],
+        forecast["regressors"],
+    )
+    return sum(component["value"] for group in groups for component in group)
+
+
+def assert_forecasts(
+    benchmark_case: dict[str, Any],
+    dataset: dict[str, Any],
+    projections: list[dict[str, Any]],
+) -> None:
+    """Check row identity, decomposition, masks, and event activation."""
+
+    rows = dataset["predictionRows"]
+    if len(projections) != len(rows):
         raise ValueError("Prophet prediction omitted requested rows")
-    tolerance = benchmark_case["correctnessTolerance"]
     workload = benchmark_case["workload"]
-    for forecast in projections:
+    configuration = workload.get("configuration", {})
+    seasonalities = {
+        item["name"]: item for item in configuration.get("seasonalities", [])
+    }
+    events = configuration.get("events", [])
+    for index, forecast in enumerate(projections):
+        row = rows[index]
+        expected_timestamp = int(pd.Timestamp(row["timestamp"]).value // 1_000_000)
+        if forecast["timestamp"] != expected_timestamp:
+            raise ValueError("Prophet prediction changed row order")
         values = (forecast["value"], forecast["trend"], forecast["additive"])
         if not all(math.isfinite(value) for value in values):
             raise ValueError("Prophet prediction returned a non-finite value")
-        allowed = tolerance["absolute"] + tolerance["relative"] * abs(forecast["value"])
-        if abs(forecast["value"] - forecast["trend"] - forecast["additive"]) > allowed:
-            raise ValueError("Prophet prediction failed additive reconstruction")
-        if workload["kind"] == "fixed-linear-prediction":
-            parameters = workload["parameters"]
-            expected = parameters["intercept"] + parameters["slope"] * (
-                (forecast["timestamp"] - parameters["timeOrigin"])
-                / parameters["timeScale"]
+        if abs(forecast["value"] - forecast["trend"] - forecast["additive"]) > 1e-8:
+            raise ValueError("Prophet prediction failed total reconstruction")
+        if abs(forecast["additive"] - component_sum(forecast)) > 1e-8:
+            raise ValueError("Prophet prediction failed named component reconstruction")
+        for component in forecast["seasonalities"]:
+            definition = seasonalities.get(component["name"], {})
+            condition_name = definition.get("conditionName")
+            if condition_name and row.get("conditions", {}).get(condition_name) is False:
+                if component["value"] != 0:
+                    raise ValueError("Prophet did not zero a condition-false component")
+        day = pd.to_datetime(row["timestamp"], utc=True).tz_localize(None).normalize()
+        for component in forecast["events"]:
+            occurrences = [event for event in events if event["name"] == component["name"]]
+            active = any(
+                pd.Timestamp(event["date"]) + pd.Timedelta(days=event["lowerWindowDays"])
+                <= day
+                <= pd.Timestamp(event["date"]) + pd.Timedelta(days=event["upperWindowDays"])
+                for event in occurrences
             )
-            fixed_allowed = tolerance["absolute"] + tolerance["relative"] * abs(expected)
-            if abs(forecast["value"] - expected) > fixed_allowed:
-                raise ValueError("Prophet prediction failed the fixed linear equation")
+            if not active and component["value"] != 0:
+                raise ValueError("Prophet activated an event outside its window")
+
+
+def assert_fixed_equation(
+    benchmark_case: dict[str, Any], projections: list[dict[str, Any]]
+) -> None:
+    """Check the authored fixed control equation."""
+
+    workload = benchmark_case["workload"]
+    if workload["kind"] != "fixed-linear-prediction":
+        return
+    parameters = workload["parameters"]
+    tolerance = benchmark_case["correctnessTolerances"]["forecast"]
+    for forecast in projections:
+        expected = parameters["intercept"] + parameters["slope"] * (
+            (forecast["timestamp"] - parameters["timeOrigin"])
+            / parameters["timeScale"]
+        )
+        allowed = tolerance["absolute"] + tolerance["relative"] * abs(expected)
+        if abs(forecast["value"] - expected) > allowed:
+            raise ValueError("Prophet prediction failed the fixed linear equation")
+
+
+def event_metadata(model: Prophet) -> list[dict[str, Any]]:
+    """Project persisted holidays metadata in grouped feature order."""
+
+    if model.holidays is None:
+        return []
+    result: list[dict[str, Any]] = []
+    for name in event_names(model):
+        rows = model.holidays[model.holidays["holiday"] == name]
+        first = rows.iloc[0]
+        result.append(
+            {
+                "name": name,
+                "dates": [pd.Timestamp(value).strftime("%Y-%m-%d") for value in rows["ds"]],
+                "lowerWindowDays": int(first["lower_window"]),
+                "upperWindowDays": int(first["upper_window"]),
+                "priorScale": float(first["prior_scale"]),
+            }
+        )
+    return result
+
+
+def regressor_metadata(
+    model: Prophet, benchmark_case: dict[str, Any]
+) -> list[dict[str, Any]]:
+    """Project fitted transforms and public original-unit coefficient metadata."""
+
+    configuration = benchmark_case["workload"].get("configuration", {})
+    configured = {
+        item["name"]: item for item in configuration.get("regressors", [])
+    }
+    if not model.extra_regressors:
+        return []
+    coefficients = regressor_coefficients(model)
+    by_name = {row["regressor"]: row for _, row in coefficients.iterrows()}
+    result: list[dict[str, Any]] = []
+    for name, state in model.extra_regressors.items():
+        declaration = configured[name]
+        coefficient = by_name[name]
+        standardized = declaration["standardization"] == "always" or (
+            declaration["standardization"] == "auto"
+            and (float(state["mu"]) != 0.0 or float(state["std"]) != 1.0)
+        )
+        transform: dict[str, Any]
+        if standardized:
+            transform = {
+                "mode": "standardized",
+                "mean": float(state["mu"]),
+                "sampleStandardDeviation": float(state["std"]),
+            }
+        else:
+            reason = (
+                "disabled"
+                if declaration["standardization"] == "never"
+                else "binary"
+            )
+            transform = {"mode": "identity", "reason": reason}
+        result.append(
+            {
+                "name": name,
+                "priorScale": float(state["prior_scale"]),
+                "standardization": declaration["standardization"],
+                "transform": transform,
+                "coefficient": float(coefficient["coef"]),
+                "center": float(coefficient["center"]),
+            }
+        )
+    return result
+
+
+def metadata_projection(model: Prophet, benchmark_case: dict[str, Any]) -> dict[str, Any]:
+    """Project fitted configuration and resolved state."""
+
+    if benchmark_case["workload"]["kind"] == "fixed-linear-prediction":
+        return {
+            "modelKind": "linear-trend",
+            "changepointTimestamps": [],
+            "seasonalities": [],
+            "events": [],
+            "regressors": [],
+        }
+    seasonalities = []
+    for name, state in model.seasonalities.items():
+        item = {"name": name}
+        if state.get("condition_name") is not None:
+            item["conditionName"] = state["condition_name"]
+        seasonalities.append(item)
+    return {
+        "modelKind": "linear-piecewise-map",
+        "changepointTimestamps": [
+            int(pd.Timestamp(value).value // 1_000_000) for value in model.changepoints
+        ],
+        "seasonalities": seasonalities,
+        "events": event_metadata(model),
+        "regressors": regressor_metadata(model, benchmark_case),
+    }
+
+
+def assert_metadata(benchmark_case: dict[str, Any], metadata: dict[str, Any]) -> None:
+    """Verify public Prophet retained the declared benchmark configuration."""
+
+    workload = benchmark_case["workload"]
+    if workload["kind"] != "linear-map":
+        return
+    configuration = workload["configuration"]
+    expected_seasonalities = [
+        {
+            "name": item["name"],
+            **(
+                {"conditionName": item["conditionName"]}
+                if "conditionName" in item
+                else {}
+            ),
+        }
+        for item in configuration["seasonalities"]
+    ]
+    if metadata["modelKind"] != "linear-piecewise-map":
+        raise ValueError("Prophet did not fit the expected model kind")
+    if metadata["seasonalities"] != expected_seasonalities:
+        raise ValueError("Prophet changed seasonality metadata")
+    expected_regressors = [item["name"] for item in configuration["regressors"]]
+    if [item["name"] for item in metadata["regressors"]] != expected_regressors:
+        raise ValueError("Prophet changed regressor order")
+    for regressor in metadata["regressors"]:
+        if not math.isfinite(regressor["coefficient"]):
+            raise ValueError("Prophet returned a non-finite regressor coefficient")
+        expected_mode = (
+            "identity"
+            if regressor["standardization"] == "never"
+            or regressor["name"] == "binary-auto"
+            else "standardized"
+        )
+        if regressor["transform"]["mode"] != expected_mode:
+            raise ValueError("Prophet resolved an unexpected regressor transform")
+    changepoints = configuration["changepoints"]
+    if changepoints["mode"] == "explicit":
+        expected = [int(pd.Timestamp(value).value // 1_000_000) for value in changepoints["timestamps"]]
+        if metadata["changepointTimestamps"] != expected:
+            raise ValueError("Prophet changed explicit changepoints")
+    elif len(metadata["changepointTimestamps"]) != changepoints["count"]:
+        raise ValueError("Prophet resolved the wrong automatic changepoint count")
+
+
+def maximum_projection_difference(
+    left: list[dict[str, Any]], right: list[dict[str, Any]]
+) -> float:
+    """Return the largest prediction difference across totals and all components."""
+
+    if len(left) != len(right):
+        raise ValueError("Persistence round trip omitted forecasts")
+    maximum = 0.0
+    for left_forecast, right_forecast in zip(left, right, strict=True):
+        if left_forecast["timestamp"] != right_forecast["timestamp"]:
+            raise ValueError("Persistence round trip changed forecast rows")
+        left_values = [
+            left_forecast["value"],
+            left_forecast["trend"],
+            left_forecast["additive"],
+            *[item["value"] for item in left_forecast["seasonalities"]],
+            *[item["value"] for item in left_forecast["events"]],
+            *[item["value"] for item in left_forecast["regressors"]],
+        ]
+        right_values = [
+            right_forecast["value"],
+            right_forecast["trend"],
+            right_forecast["additive"],
+            *[item["value"] for item in right_forecast["seasonalities"]],
+            *[item["value"] for item in right_forecast["events"]],
+            *[item["value"] for item in right_forecast["regressors"]],
+        ]
+        if len(left_values) != len(right_values):
+            raise ValueError("Persistence round trip changed component layout")
+        maximum = max(
+            maximum,
+            *(abs(a - b) for a, b in zip(left_values, right_values, strict=True)),
+        )
+    return maximum
 
 
 def persistence_maximum_error(
@@ -250,19 +519,11 @@ def persistence_maximum_error(
     prediction_frame: pd.DataFrame,
     original: list[dict[str, Any]],
 ) -> float:
-    """Check the public JSON persistence round trip outside measured regions."""
+    """Check public JSON persistence over the complete prediction projection."""
 
     restored = model_from_json(model_to_json(model))
     _, restored_projection = forecast_projection(restored, prediction_frame)
-    if len(restored_projection) != len(original):
-        raise ValueError("Prophet persistence round trip omitted forecasts")
-    return max(
-        (
-            abs(left["value"] - right["value"])
-            for left, right in zip(original, restored_projection, strict=True)
-        ),
-        default=0.0,
-    )
+    return maximum_projection_difference(original, restored_projection)
 
 
 def correctness_projection(
@@ -273,28 +534,31 @@ def correctness_projection(
     training, prediction_frame = prepare_input(dataset)
     model = setup_model(training, benchmark_case)
     _, projections = forecast_projection(model, prediction_frame)
-    assert_correctness(benchmark_case, projections, len(prediction_frame))
-    persistence_error = persistence_maximum_error(model, prediction_frame, projections)
+    metadata = metadata_projection(model, benchmark_case)
+    assert_forecasts(benchmark_case, dataset, projections)
+    assert_fixed_equation(benchmark_case, projections)
+    assert_metadata(benchmark_case, metadata)
     result: dict[str, Any] = {
         "caseId": benchmark_case["id"],
         "run": run,
         "status": "locally-passed",
-        "modelKind": "prophet-linear-map",
+        **metadata,
         "forecasts": projections,
-        "persistenceMaximumAbsoluteError": persistence_error,
+        "persistenceMaximumAbsoluteError": persistence_maximum_error(
+            model, prediction_frame, projections
+        ),
     }
     sigma = model.params.get("sigma_obs")
-    if sigma is not None and model.y_scale is not None:
+    if benchmark_case["workload"]["kind"] == "linear-map":
+        if sigma is None or model.y_scale is None:
+            raise ValueError("Prophet MAP fit omitted its noise scale")
         result["noiseScale"] = float(sigma[0][0] * model.y_scale)
-    if benchmark_case["workload"]["kind"] == "explicit-linear-map":
         stan_fit = model.stan_fit
         optimized = None if stan_fit is None else stan_fit.optimized_params_dict
         objective = None if optimized is None else optimized.get("lp__")
         if objective is None or not math.isfinite(float(objective)):
             raise ValueError("Prophet MAP fit did not retain a finite optimizer objective")
-        result["fitQuality"] = [
-            {"name": "cmdstan-lp", "value": float(objective)},
-        ]
+        result["fitQuality"] = [{"name": "cmdstan-lp", "value": float(objective)}]
     return result
 
 
@@ -316,14 +580,17 @@ def measure(
     return samples
 
 
-def cold_samples(benchmark_case: dict[str, Any]) -> list[int]:
-    """Measure fresh interpreter startup through one complete public forecast."""
+def process_samples(
+    benchmark_case: dict[str, Any], mode: str, serialized_model: str | None = None
+) -> list[int]:
+    """Measure fresh Python startup through cold or restored prediction output."""
 
     samples: list[int] = []
     for _ in range(benchmark_case["measuredIterations"]):
         started = time.perf_counter_ns()
         child = subprocess.run(
-            [sys.executable, str(ADAPTER_PATH), "--cold", benchmark_case["id"]],
+            [sys.executable, str(ADAPTER_PATH), mode, benchmark_case["id"]],
+            input=serialized_model,
             capture_output=True,
             text=True,
             timeout=benchmark_case["timeoutSeconds"],
@@ -332,7 +599,7 @@ def cold_samples(benchmark_case: dict[str, Any]) -> list[int]:
         )
         ended = time.perf_counter_ns()
         if child.returncode != 0 or PROTOCOL_PREFIX not in child.stdout:
-            raise RuntimeError(child.stderr or child.stdout or "Cold Prophet worker failed")
+            raise RuntimeError(child.stderr or child.stdout or f"Prophet {mode} worker failed")
         samples.append(ended - started)
     return samples
 
@@ -343,12 +610,12 @@ def measurement_for_phase(
     run: int,
     phase: str,
 ) -> dict[str, Any]:
-    """Collect one phase's samples after untimed setup."""
+    """Collect one phase's raw samples after untimed correctness."""
 
     training, prediction_frame = prepare_input(dataset)
     model = setup_model(training, benchmark_case)
     serialized = model_to_json(model)
-    if phase == "input-preparation":
+    if phase == "adapter-input-conversion":
         samples = measure(benchmark_case, lambda: prepare_input(dataset))
     elif phase == "warm-fit":
         samples = measure(benchmark_case, lambda: fit_model(training, benchmark_case))
@@ -366,27 +633,26 @@ def measurement_for_phase(
             return fitted.predict(converted_prediction)
         samples = measure(benchmark_case, convert_fit_predict)
     elif phase == "cold-first-forecast":
-        samples = cold_samples(benchmark_case)
+        samples = process_samples(benchmark_case, "--cold")
     elif phase == "model-json-encode":
         samples = measure(benchmark_case, lambda: model_to_json(model))
     elif phase == "model-json-decode":
         samples = measure(benchmark_case, lambda: model_from_json(serialized))
+    elif phase == "fresh-process-restored-predict":
+        samples = process_samples(benchmark_case, "--restored", serialized)
     else:
         raise ValueError(f"Unsupported benchmark phase: {phase}")
-
     comparison = benchmark_case["workload"]["comparison"]
-    result: dict[str, Any] = {
+    return {
         "caseId": benchmark_case["id"],
         "implementation": "python-prophet",
         "phase": phase,
         "comparison": comparison["kind"],
+        "evidenceId": comparison["evidenceId"],
         "run": run,
         "samplesNanoseconds": samples,
         "correctness": "locally-passed",
     }
-    if comparison["kind"] != "different-objective":
-        result["evidenceId"] = comparison["evidenceId"]
-    return result
 
 
 def find_case(case_id: str) -> dict[str, Any]:
@@ -398,29 +664,45 @@ def find_case(case_id: str) -> dict[str, Any]:
     raise ValueError(f"Unknown benchmark case: {case_id}")
 
 
-def run_worker(case_id: str, run: int) -> dict[str, Any]:
-    """Run one independent process worth of setup, correctness, and warm phases."""
+def run_worker(case_id: str, run: int, stage: str = "all") -> dict[str, Any]:
+    """Run correctness, timing, or both in one independent process."""
 
     benchmark_case = find_case(case_id)
     dataset = load_dataset(benchmark_case)
-    correctness = correctness_projection(benchmark_case, dataset, run)
-    measurements = [
-        measurement_for_phase(benchmark_case, dataset, run, phase)
-        for phase in benchmark_case["phases"]
-    ]
-    return {"measurements": measurements, "correctness": correctness}
+    result: dict[str, Any] = {"measurements": []}
+    if stage != "timing":
+        result["correctness"] = correctness_projection(benchmark_case, dataset, run)
+    if stage != "correctness":
+        result["measurements"] = [
+            measurement_for_phase(benchmark_case, dataset, run, phase)
+            for phase in benchmark_case["phases"]
+        ]
+    return result
 
 
 def run_cold_worker(case_id: str) -> None:
-    """Execute one cold conversion, fit, predict, and output materialization."""
+    """Execute cold conversion, fit, prediction, and protocol output."""
 
     benchmark_case = find_case(case_id)
     dataset = load_dataset(benchmark_case)
     training, prediction_frame = prepare_input(dataset)
-    model = fit_model(training, benchmark_case)
-    predicted = model.predict(prediction_frame)
+    predicted = fit_model(training, benchmark_case).predict(prediction_frame)
     if len(predicted) != len(prediction_frame):
         raise ValueError("Cold Prophet forecast omitted rows")
+    print(f'{PROTOCOL_PREFIX}{{"status":"passed"}}')
+
+
+def run_restored_worker(case_id: str) -> None:
+    """Decode a persisted model and predict in a fresh process without fitting."""
+
+    benchmark_case = find_case(case_id)
+    dataset = load_dataset(benchmark_case)
+    serialized = sys.stdin.read()
+    model = model_from_json(serialized)
+    _, prediction_frame = prepare_input(dataset)
+    predicted = model.predict(prediction_frame)
+    if len(predicted) != len(prediction_frame):
+        raise ValueError("Restored Prophet forecast omitted rows")
     print(f'{PROTOCOL_PREFIX}{{"status":"passed"}}')
 
 
@@ -435,7 +717,7 @@ def sha256_file(path: Path) -> str:
 
 
 def read_resource(path: Path) -> str:
-    """Read one container resource value when the platform exposes it."""
+    """Read one container resource value when available."""
 
     try:
         return path.read_text(encoding="utf-8").strip()
@@ -444,13 +726,14 @@ def read_resource(path: Path) -> str:
 
 
 def collect_environment() -> dict[str, Any]:
-    """Collect Python, Prophet, container, and lock provenance."""
+    """Collect Python, Prophet, backend, container, and lock provenance."""
 
     model_binary = Path(prophet.__file__).resolve().parent / "stan_model" / "prophet_model.bin"
     lock_path = BENCHMARK_ROOT / "python" / "uv.lock"
-    versions = []
-    for name in ("cmdstanpy", "numpy", "pandas", "prophet"):
-        versions.append({"name": name, "value": importlib.metadata.version(name)})
+    versions = [
+        {"name": name, "value": importlib.metadata.version(name)}
+        for name in ("cmdstanpy", "holidays", "numpy", "pandas", "prophet")
+    ]
     return {
         "runtime": "python",
         "runtimeVersion": platform.python_version(),
@@ -473,10 +756,7 @@ def collect_environment() -> dict[str, Any]:
                 "name": "runtime-total-memory-bytes",
                 "value": str(os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES")),
             },
-            {
-                "name": "cgroup-memory-max",
-                "value": read_resource(Path("/sys/fs/cgroup/memory.max")),
-            },
+            {"name": "cgroup-memory-max", "value": read_resource(Path("/sys/fs/cgroup/memory.max"))},
             {"name": "collection-method", "value": "python-os and cgroup-v2"},
         ],
         "memoryMeasurement": (
@@ -499,17 +779,46 @@ def parse_worker_output(stdout: str) -> dict[str, Any]:
 
 
 def run_coordinator() -> None:
-    """Run selected cases in fresh independent Python processes and save raw output."""
+    """Run the selected correctness or timing stage and save raw output."""
 
-    cases = select_cases(load_cases())
+    stage = os.environ.get("BENCHMARK_STAGE", "all")
+    if stage not in ("all", "correctness", "timing"):
+        raise ValueError(f"Unsupported benchmark stage: {stage}")
+    output_path = Path(os.environ.get("BENCHMARK_OUTPUT_PATH", DEFAULT_OUTPUT_PATH))
+    previous: dict[str, Any] | None = None
+    eligible_ids: set[str] | None = None
+    if stage == "timing":
+        previous = read_json(output_path)
+        eligibility_path = os.environ.get("BENCHMARK_ELIGIBILITY_PATH")
+        if eligibility_path is None:
+            raise ValueError("BENCHMARK_ELIGIBILITY_PATH is required for timing")
+        eligibility = read_json(Path(eligibility_path))
+        eligible_ids = set(eligibility["caseIds"])
+    selected = select_cases(load_cases())
+    cases = (
+        selected
+        if eligible_ids is None
+        else [case for case in selected if case["id"] in eligible_ids]
+    )
     measurements: list[dict[str, Any]] = []
-    correctness: list[dict[str, Any]] = []
-    failures: list[dict[str, Any]] = []
+    correctness: list[dict[str, Any]] = (
+        [] if previous is None else list(previous["correctness"])
+    )
+    failures: list[dict[str, Any]] = (
+        [] if previous is None else list(previous["failures"])
+    )
     for benchmark_case in cases:
         for run in range(benchmark_case["independentRuns"]):
             try:
                 worker = subprocess.run(
-                    [sys.executable, str(ADAPTER_PATH), "--worker", benchmark_case["id"], str(run)],
+                    [
+                        sys.executable,
+                        str(ADAPTER_PATH),
+                        "--worker",
+                        benchmark_case["id"],
+                        str(run),
+                        stage,
+                    ],
                     capture_output=True,
                     text=True,
                     timeout=benchmark_case["timeoutSeconds"],
@@ -541,7 +850,8 @@ def run_coordinator() -> None:
             try:
                 output = parse_worker_output(worker.stdout)
                 measurements.extend(output["measurements"])
-                correctness.append(output["correctness"])
+                if "correctness" in output:
+                    correctness.append(output["correctness"])
             except (KeyError, TypeError, ValueError) as error:
                 failures.append(
                     {
@@ -561,7 +871,6 @@ def run_coordinator() -> None:
         "failures": failures,
         "correctness": correctness,
     }
-    output_path = Path(os.environ.get("BENCHMARK_OUTPUT_PATH", DEFAULT_OUTPUT_PATH))
     output_path.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
 
 
@@ -570,13 +879,23 @@ def main() -> None:
 
     mode = sys.argv[1] if len(sys.argv) > 1 else "--coordinator"
     if mode == "--worker":
-        if len(sys.argv) != 4:
-            raise ValueError("Worker requires case id and run index")
-        print(f"{PROTOCOL_PREFIX}{json.dumps(run_worker(sys.argv[2], int(sys.argv[3])))}")
+        if len(sys.argv) not in (4, 5):
+            raise ValueError("Worker requires case id, run index, and optional stage")
+        stage = sys.argv[4] if len(sys.argv) == 5 else "all"
+        if stage not in ("all", "correctness", "timing"):
+            raise ValueError(f"Unsupported benchmark stage: {stage}")
+        print(
+            f"{PROTOCOL_PREFIX}"
+            f"{json.dumps(run_worker(sys.argv[2], int(sys.argv[3]), stage))}"
+        )
     elif mode == "--cold":
         if len(sys.argv) != 3:
             raise ValueError("Cold worker requires case id")
         run_cold_worker(sys.argv[2])
+    elif mode == "--restored":
+        if len(sys.argv) != 3:
+            raise ValueError("Restored worker requires case id")
+        run_restored_worker(sys.argv[2])
     else:
         run_coordinator()
 

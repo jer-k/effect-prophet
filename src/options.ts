@@ -8,6 +8,7 @@ import {
   type EventCalendar,
   type InvalidEventCalendar,
 } from "./event";
+import { PositiveFinite, PositiveFourierOrder } from "./internal/numeric-schemas";
 import { TimestampSchema } from "./internal/timestamp";
 import {
   parseRegressorDefinitions,
@@ -222,15 +223,6 @@ export const defaultProphetOptions: LinearTrendOptions = Object.freeze({
 });
 
 const GrowthSchema = Schema.Literals(["flat", "linear"]);
-
-const PositiveFinite = Schema.Finite.check(Schema.isGreaterThan(0));
-
-const maximumFourierOrder = Math.floor(Number.MAX_SAFE_INTEGER / 2);
-
-const PositiveFourierOrder = Schema.Int.check(
-  Schema.isGreaterThan(0),
-  Schema.isLessThanOrEqualTo(maximumFourierOrder),
-);
 
 const BuiltInPriorScale = PositiveFinite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(10)));
 

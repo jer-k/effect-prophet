@@ -17,8 +17,8 @@ import {
   type AdditionalFeatureLayout,
   type InvalidAdditionalFeatures,
 } from "./internal/additional-features";
-
-const millisecondsPerDay = 86_400_000;
+import { PositiveFinite } from "./internal/numeric-schemas";
+import { millisecondsPerDay } from "./internal/time";
 
 const maximumExpandedColumns = 10_000;
 
@@ -78,8 +78,6 @@ const WindowInteger = Schema.Int.check(
   Schema.isGreaterThanOrEqualTo(-Number.MAX_SAFE_INTEGER),
   Schema.isLessThanOrEqualTo(Number.MAX_SAFE_INTEGER),
 );
-
-const PositiveFinite = Schema.Finite.check(Schema.isGreaterThan(0));
 
 const EncodedEventOccurrenceSchema = Schema.Struct({
   name: Schema.String,

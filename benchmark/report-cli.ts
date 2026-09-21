@@ -88,11 +88,22 @@ for (const result of [effectResult, pythonResult]) {
   }
 }
 
-await Promise.all([
-  writeFile(resolve(runDirectory, "report.json"), `${JSON.stringify(report, null, 2)}\n`),
-  writeFile(resolve(runDirectory, "report.md"), renderBenchmarkMarkdown(report)),
-  writeFile(
-    resolve(runDirectory, "records.jsonl"),
-    `${records.map((record) => JSON.stringify(record)).join("\n")}\n`,
-  ),
-]);
+if (process.env.BENCHMARK_REPORT_MODE === "eligibility") {
+  const caseIds = report.correctness
+    .filter((summary) => summary.status === "passed")
+    .map((summary) => summary.caseId);
+
+  await writeFile(
+    resolve(runDirectory, "eligible-cases.json"),
+    `${JSON.stringify({ schemaVersion: 1, caseIds }, null, 2)}\n`,
+  );
+} else {
+  await Promise.all([
+    writeFile(resolve(runDirectory, "report.json"), `${JSON.stringify(report, null, 2)}\n`),
+    writeFile(resolve(runDirectory, "report.md"), renderBenchmarkMarkdown(report)),
+    writeFile(
+      resolve(runDirectory, "records.jsonl"),
+      `${records.map((record) => JSON.stringify(record)).join("\n")}\n`,
+    ),
+  ]);
+}

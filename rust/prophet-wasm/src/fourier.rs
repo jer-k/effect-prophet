@@ -1,5 +1,7 @@
 use std::f64::consts::TAU;
 
+use crate::compensated_sum::CompensatedSum;
+
 const MILLISECONDS_PER_DAY: f64 = 86_400_000.0;
 
 /// Maximum number of `f64` entries owned by one dense numerical buffer.
@@ -279,30 +281,6 @@ pub(crate) fn checked_element_count(rows: usize, columns: usize) -> Result<usize
   }
 
   Ok(count)
-}
-
-#[derive(Default)]
-struct CompensatedSum {
-  sum: f64,
-  correction: f64,
-}
-
-impl CompensatedSum {
-  fn add(&mut self, value: f64) {
-    let next = self.sum + value;
-
-    if self.sum.abs() >= value.abs() {
-      self.correction += (self.sum - next) + value;
-    } else {
-      self.correction += (value - next) + self.sum;
-    }
-
-    self.sum = next;
-  }
-
-  fn total(self) -> f64 {
-    self.sum + self.correction
-  }
 }
 
 #[cfg(test)]

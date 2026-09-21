@@ -1,0 +1,1643 @@
+{
+  "schemaVersion": 1,
+  "run": {
+    "schemaVersion": 1,
+    "runId": "2026-09-20T224643-979Z-ff2c99b0",
+    "createdAt": "2026-09-20T22:47:04.752Z",
+    "gitRevision": "ff2c99b0929094e8ac0ce712e276c39d5fed6ebc",
+    "gitDirty": true,
+    "hostPlatform": "darwin",
+    "hostRelease": "25.5.0",
+    "hostArchitecture": "arm64",
+    "hostProcessor": "Apple M4 Pro",
+    "containerPlatform": "linux/arm64",
+    "emulated": false,
+    "selectedCases": [
+      "fixed-linear-prediction-medium",
+      "map-explicit-break-small",
+      "map-seasonal-breaks-irregular-medium",
+      "map-events-small",
+      "map-regressors-medium",
+      "map-conditional-seasonalities-medium",
+      "map-mixed-features-explicit-small",
+      "map-mixed-features-automatic-large"
+    ],
+    "commands": [
+      "BENCHMARK_STAGE=correctness BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/compose.yaml run --rm effect-prophet-benchmark",
+      "BENCHMARK_STAGE=correctness BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/compose.yaml run --rm python-prophet-benchmark",
+      "BENCHMARK_REPORT_MODE=eligibility BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/compose.yaml run --rm benchmark-report",
+      "BENCHMARK_STAGE=timing BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/compose.yaml run --rm effect-prophet-benchmark",
+      "BENCHMARK_STAGE=timing BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/compose.yaml run --rm python-prophet-benchmark",
+      "BENCHMARK_REPORT_MODE=final BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/compose.yaml run --rm benchmark-report"
+    ],
+    "inputHashes": [
+      {
+        "name": "benchmark/cases/public-api.json",
+        "value": "a88e1eec32763e9a310799af5ec6bd8821eb1ce655a383e4952a90e0a25f3cc0"
+      },
+      {
+        "name": "benchmark/evidence/comparisons.json",
+        "value": "548eccfde0ebb3d74cda5973d94633e335378a4c875acbf98f5857a4a6d84f05"
+      },
+      {
+        "name": "benchmark/python/uv.lock",
+        "value": "c90f2464e1d50dbe489bdcdaf8350f04c162f6c617559cfb75d6977b0f430ab1"
+      },
+      {
+        "name": "benchmark/data/generated/manifest.json",
+        "value": "0f30d8d056acf9bc944f62f21bd5c9d9f2ceecd977a2220b51a11c6988cbd6ab"
+      },
+      {
+        "name": "package-lock.json",
+        "value": "99bda82607c5764a965fc84c4f1c3aeb518b7a1604975e958b3ad63e4887d936"
+      },
+      {
+        "name": "benchmark/data/generated/linear-medium.json",
+        "value": "5f69f47c9189c3587fe9c4d72a1c885d2b16d5bd72fa693b49c46ca5ad6381fc"
+      },
+      {
+        "name": "benchmark/data/generated/linear-small.json",
+        "value": "bd04fc739211e1968ad47cae0a56d6ce776b0e9ea93dd2d38d89047bac60a5c3"
+      },
+      {
+        "name": "benchmark/data/generated/map-irregular-medium.json",
+        "value": "62f195edf2bc788b67f26471e00eee77ec55c61670a7c61be3c23230664418a1"
+      },
+      {
+        "name": "benchmark/data/generated/map-events-small.json",
+        "value": "124c5aa9e78f09a3c2bb549106cf57f4a4b30793e52f044b2dd384b9eaded665"
+      },
+      {
+        "name": "benchmark/data/generated/map-regressors-medium.json",
+        "value": "804afd5985e47268a8ddae3301fffcdaaf9a2afca3f3cdbdab8e3d028286f525"
+      },
+      {
+        "name": "benchmark/data/generated/map-conditional-seasonalities-medium.json",
+        "value": "301d2619b93f949d41e43a8ea36bbd74007f10d3151944668dc92b8235fbf968"
+      },
+      {
+        "name": "benchmark/data/generated/map-mixed-features-explicit-small.json",
+        "value": "c02bbf7954cf0b048e5413f5d00a2f23a664882225bb8c18a4996d68921a63ed"
+      },
+      {
+        "name": "benchmark/data/generated/map-mixed-features-automatic-large.json",
+        "value": "7a24d6ad1f87032a320eed898a00a41bc90a4b0c7febb7c42801715c86c664b5"
+      }
+    ],
+    "containerImages": [
+      {
+        "name": "effect-prophet/benchmark-effect:local",
+        "value": "sha256:a6ad3ddda8365f00a5cfcbe1fb6bc151d3f235a72dae6518a903c97e688c25ef"
+      },
+      {
+        "name": "effect-prophet/benchmark-python:1.4.0",
+        "value": "sha256:a9400a08fcc8bd5e9a3d18632bc1382e8d2b5850191a52c81df1f7e9be7f72b7"
+      }
+    ]
+  },
+  "generatedAt": "2026-09-20T22:50:36.991Z",
+  "purpose": "Descriptive public API timing and correctness evidence; this report presents absolute measurements without ranking implementations.",
+  "correctness": [
+    {
+      "caseId": "fixed-linear-prediction-medium",
+      "status": "passed",
+      "comparison": "equivalent-equation",
+      "maximumDifferences": {
+        "trend": 1.4210854715202004e-14,
+        "component": 0,
+        "additive": 0,
+        "forecast": 1.4210854715202004e-14,
+        "noiseScale": 0
+      },
+      "note": "Cross-language projections passed evidence fixed-linear-equation-v1."
+    },
+    {
+      "caseId": "map-explicit-break-small",
+      "status": "passed",
+      "comparison": "equivalent-objective",
+      "maximumDifferences": {
+        "trend": 0.00007106909349019475,
+        "component": 0,
+        "additive": 0,
+        "forecast": 0.00007106909349019475,
+        "noiseScale": 0.00002560933561790435
+      },
+      "note": "Cross-language projections passed evidence explicit-linear-map-objective-v1."
+    },
+    {
+      "caseId": "map-seasonal-breaks-irregular-medium",
+      "status": "passed",
+      "comparison": "equivalent-objective",
+      "maximumDifferences": {
+        "trend": 0.0010766577565561875,
+        "component": 0.00010878767470700115,
+        "additive": 0.00010878767470700115,
+        "forecast": 0.001123644315342176,
+        "noiseScale": 0.00033399658500699037
+      },
+      "note": "Cross-language projections passed evidence explicit-linear-map-seasonal-objective-v1."
+    },
+    {
+      "caseId": "map-events-small",
+      "status": "passed",
+      "comparison": "equivalent-objective",
+      "maximumDifferences": {
+        "trend": 0.000009933879944412638,
+        "component": 0.000010663040808100988,
+        "additive": 0.000010663040808100988,
+        "forecast": 0.000017984606593302033,
+        "noiseScale": 0.000025350708377613884
+      },
+      "note": "Cross-language projections passed evidence events-map-v1."
+    },
+    {
+      "caseId": "map-regressors-medium",
+      "status": "passed",
+      "comparison": "equivalent-objective",
+      "maximumDifferences": {
+        "trend": 0.0002847924619118203,
+        "component": 0.00007313341352471747,
+        "additive": 0.00008094184397355875,
+        "forecast": 0.00035134763950850356,
+        "noiseScale": 0.0002826296841274001
+      },
+      "note": "Cross-language projections passed evidence regressors-map-v1."
+    },
+    {
+      "caseId": "map-conditional-seasonalities-medium",
+      "status": "passed",
+      "comparison": "equivalent-objective",
+      "maximumDifferences": {
+        "trend": 0.0011840585585218832,
+        "component": 0.000738595790794272,
+        "additive": 0.0007218210069486197,
+        "forecast": 0.0012085221846973582,
+        "noiseScale": 0.00005617993560025347
+      },
+      "note": "Cross-language projections passed evidence conditional-seasonalities-map-v1."
+    },
+    {
+      "caseId": "map-mixed-features-explicit-small",
+      "status": "passed",
+      "comparison": "equivalent-objective",
+      "maximumDifferences": {
+        "trend": 6.113656780826204e-8,
+        "component": 9.22966738592379e-8,
+        "additive": 9.98960606457544e-8,
+        "forecast": 4.086534133307396e-8,
+        "noiseScale": 0.000001740140924300082
+      },
+      "note": "Cross-language projections passed evidence mixed-features-explicit-map-v1."
+    },
+    {
+      "caseId": "map-mixed-features-automatic-large",
+      "status": "passed",
+      "comparison": "equivalent-objective",
+      "maximumDifferences": {
+        "trend": 0.0017992127608366104,
+        "component": 0.12129678887489881,
+        "additive": 0.11649952629735161,
+        "forecast": 0.11483824841209156,
+        "noiseScale": 0.0068165981457539715
+      },
+      "note": "Cross-language projections passed evidence mixed-features-automatic-map-v1."
+    }
+  ],
+  "timings": [
+    {
+      "caseId": "fixed-linear-prediction-medium",
+      "phase": "adapter-input-conversion",
+      "implementation": "effect-prophet",
+      "sampleCount": 30,
+      "medianNanoseconds": 18167,
+      "p90Nanoseconds": 28334,
+      "minimumNanoseconds": 8250,
+      "maximumNanoseconds": 30375
+    },
+    {
+      "caseId": "fixed-linear-prediction-medium",
+      "phase": "adapter-input-conversion",
+      "implementation": "python-prophet",
+      "sampleCount": 30,
+      "medianNanoseconds": 601375,
+      "p90Nanoseconds": 727125,
+      "minimumNanoseconds": 565083,
+      "maximumNanoseconds": 1050458
+    },
+    {
+      "caseId": "fixed-linear-prediction-medium",
+      "phase": "warm-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 30,
+      "medianNanoseconds": 460666,
+      "p90Nanoseconds": 620042,
+      "minimumNanoseconds": 302375,
+      "maximumNanoseconds": 1610958
+    },
+    {
+      "caseId": "fixed-linear-prediction-medium",
+      "phase": "warm-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 30,
+      "medianNanoseconds": 3035833,
+      "p90Nanoseconds": 3330625,
+      "minimumNanoseconds": 2786000,
+      "maximumNanoseconds": 4342000
+    },
+    {
+      "caseId": "map-conditional-seasonalities-medium",
+      "phase": "adapter-input-conversion",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 91708,
+      "p90Nanoseconds": 128500,
+      "minimumNanoseconds": 83833,
+      "maximumNanoseconds": 128500
+    },
+    {
+      "caseId": "map-conditional-seasonalities-medium",
+      "phase": "adapter-input-conversion",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 704459,
+      "p90Nanoseconds": 894833,
+      "minimumNanoseconds": 680291,
+      "maximumNanoseconds": 894833
+    },
+    {
+      "caseId": "map-conditional-seasonalities-medium",
+      "phase": "cold-first-forecast",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 211180666,
+      "p90Nanoseconds": 328185750,
+      "minimumNanoseconds": 194399667,
+      "maximumNanoseconds": 328185750
+    },
+    {
+      "caseId": "map-conditional-seasonalities-medium",
+      "phase": "cold-first-forecast",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 1622883293,
+      "p90Nanoseconds": 1899525834,
+      "minimumNanoseconds": 1544113709,
+      "maximumNanoseconds": 1899525834
+    },
+    {
+      "caseId": "map-conditional-seasonalities-medium",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 160061917,
+      "p90Nanoseconds": 191805458,
+      "minimumNanoseconds": 153357333,
+      "maximumNanoseconds": 191805458
+    },
+    {
+      "caseId": "map-conditional-seasonalities-medium",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 1557722959,
+      "p90Nanoseconds": 1632527334,
+      "minimumNanoseconds": 1549827167,
+      "maximumNanoseconds": 1632527334
+    },
+    {
+      "caseId": "map-conditional-seasonalities-medium",
+      "phase": "model-json-decode",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 120000,
+      "p90Nanoseconds": 228167,
+      "minimumNanoseconds": 91416,
+      "maximumNanoseconds": 228167
+    },
+    {
+      "caseId": "map-conditional-seasonalities-medium",
+      "phase": "model-json-decode",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 3130333,
+      "p90Nanoseconds": 4326792,
+      "minimumNanoseconds": 3012750,
+      "maximumNanoseconds": 4326792
+    },
+    {
+      "caseId": "map-conditional-seasonalities-medium",
+      "phase": "model-json-encode",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 57250,
+      "p90Nanoseconds": 95083,
+      "minimumNanoseconds": 44542,
+      "maximumNanoseconds": 95083
+    },
+    {
+      "caseId": "map-conditional-seasonalities-medium",
+      "phase": "model-json-encode",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 690333,
+      "p90Nanoseconds": 784834,
+      "minimumNanoseconds": 682667,
+      "maximumNanoseconds": 784834
+    },
+    {
+      "caseId": "map-conditional-seasonalities-medium",
+      "phase": "warm-fit-predict-with-conversion",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 7428625,
+      "p90Nanoseconds": 7570625,
+      "minimumNanoseconds": 7316458,
+      "maximumNanoseconds": 7570625
+    },
+    {
+      "caseId": "map-conditional-seasonalities-medium",
+      "phase": "warm-fit-predict-with-conversion",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 19957208,
+      "p90Nanoseconds": 22709750,
+      "minimumNanoseconds": 18555875,
+      "maximumNanoseconds": 22709750
+    },
+    {
+      "caseId": "map-conditional-seasonalities-medium",
+      "phase": "warm-fit-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 7579334,
+      "p90Nanoseconds": 8949584,
+      "minimumNanoseconds": 7252833,
+      "maximumNanoseconds": 8949584
+    },
+    {
+      "caseId": "map-conditional-seasonalities-medium",
+      "phase": "warm-fit-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 18650167,
+      "p90Nanoseconds": 20055000,
+      "minimumNanoseconds": 18085250,
+      "maximumNanoseconds": 20055000
+    },
+    {
+      "caseId": "map-conditional-seasonalities-medium",
+      "phase": "warm-fit",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 8693417,
+      "p90Nanoseconds": 69212375,
+      "minimumNanoseconds": 8166667,
+      "maximumNanoseconds": 69212375
+    },
+    {
+      "caseId": "map-conditional-seasonalities-medium",
+      "phase": "warm-fit",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 14265666,
+      "p90Nanoseconds": 14984125,
+      "minimumNanoseconds": 13960084,
+      "maximumNanoseconds": 14984125
+    },
+    {
+      "caseId": "map-conditional-seasonalities-medium",
+      "phase": "warm-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 446834,
+      "p90Nanoseconds": 940417,
+      "minimumNanoseconds": 430292,
+      "maximumNanoseconds": 940417
+    },
+    {
+      "caseId": "map-conditional-seasonalities-medium",
+      "phase": "warm-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 4243084,
+      "p90Nanoseconds": 5010333,
+      "minimumNanoseconds": 4105709,
+      "maximumNanoseconds": 5010333
+    },
+    {
+      "caseId": "map-events-small",
+      "phase": "adapter-input-conversion",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 7459,
+      "p90Nanoseconds": 9542,
+      "minimumNanoseconds": 6667,
+      "maximumNanoseconds": 9542
+    },
+    {
+      "caseId": "map-events-small",
+      "phase": "adapter-input-conversion",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 540209,
+      "p90Nanoseconds": 845375,
+      "minimumNanoseconds": 511083,
+      "maximumNanoseconds": 845375
+    },
+    {
+      "caseId": "map-events-small",
+      "phase": "cold-first-forecast",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 163293375,
+      "p90Nanoseconds": 187933750,
+      "minimumNanoseconds": 161252542,
+      "maximumNanoseconds": 187933750
+    },
+    {
+      "caseId": "map-events-small",
+      "phase": "cold-first-forecast",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 1606793250,
+      "p90Nanoseconds": 1699941875,
+      "minimumNanoseconds": 1572307751,
+      "maximumNanoseconds": 1699941875
+    },
+    {
+      "caseId": "map-events-small",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 152600000,
+      "p90Nanoseconds": 171316459,
+      "minimumNanoseconds": 150410125,
+      "maximumNanoseconds": 171316459
+    },
+    {
+      "caseId": "map-events-small",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 1584069126,
+      "p90Nanoseconds": 1646353043,
+      "minimumNanoseconds": 1571881001,
+      "maximumNanoseconds": 1646353043
+    },
+    {
+      "caseId": "map-events-small",
+      "phase": "model-json-decode",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 278292,
+      "p90Nanoseconds": 437417,
+      "minimumNanoseconds": 189542,
+      "maximumNanoseconds": 437417
+    },
+    {
+      "caseId": "map-events-small",
+      "phase": "model-json-decode",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 3695583,
+      "p90Nanoseconds": 4278625,
+      "minimumNanoseconds": 3472750,
+      "maximumNanoseconds": 4278625
+    },
+    {
+      "caseId": "map-events-small",
+      "phase": "model-json-encode",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 79459,
+      "p90Nanoseconds": 83791,
+      "minimumNanoseconds": 75583,
+      "maximumNanoseconds": 83791
+    },
+    {
+      "caseId": "map-events-small",
+      "phase": "model-json-encode",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 682959,
+      "p90Nanoseconds": 713542,
+      "minimumNanoseconds": 665292,
+      "maximumNanoseconds": 713542
+    },
+    {
+      "caseId": "map-events-small",
+      "phase": "warm-fit-predict-with-conversion",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 1343416,
+      "p90Nanoseconds": 2428542,
+      "minimumNanoseconds": 1274833,
+      "maximumNanoseconds": 2428542
+    },
+    {
+      "caseId": "map-events-small",
+      "phase": "warm-fit-predict-with-conversion",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 39693917,
+      "p90Nanoseconds": 40556250,
+      "minimumNanoseconds": 38555125,
+      "maximumNanoseconds": 40556250
+    },
+    {
+      "caseId": "map-events-small",
+      "phase": "warm-fit-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 1392458,
+      "p90Nanoseconds": 1530500,
+      "minimumNanoseconds": 1369833,
+      "maximumNanoseconds": 1530500
+    },
+    {
+      "caseId": "map-events-small",
+      "phase": "warm-fit-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 38234959,
+      "p90Nanoseconds": 40463667,
+      "minimumNanoseconds": 37282625,
+      "maximumNanoseconds": 40463667
+    },
+    {
+      "caseId": "map-events-small",
+      "phase": "warm-fit",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 1590750,
+      "p90Nanoseconds": 3302875,
+      "minimumNanoseconds": 1395292,
+      "maximumNanoseconds": 3302875
+    },
+    {
+      "caseId": "map-events-small",
+      "phase": "warm-fit",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 33292916,
+      "p90Nanoseconds": 34001750,
+      "minimumNanoseconds": 32099750,
+      "maximumNanoseconds": 34001750
+    },
+    {
+      "caseId": "map-events-small",
+      "phase": "warm-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 548458,
+      "p90Nanoseconds": 858125,
+      "minimumNanoseconds": 506625,
+      "maximumNanoseconds": 858125
+    },
+    {
+      "caseId": "map-events-small",
+      "phase": "warm-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 4883625,
+      "p90Nanoseconds": 5647291,
+      "minimumNanoseconds": 4687958,
+      "maximumNanoseconds": 5647291
+    },
+    {
+      "caseId": "map-explicit-break-small",
+      "phase": "adapter-input-conversion",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 2375,
+      "p90Nanoseconds": 3000,
+      "minimumNanoseconds": 2209,
+      "maximumNanoseconds": 3000
+    },
+    {
+      "caseId": "map-explicit-break-small",
+      "phase": "adapter-input-conversion",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 521542,
+      "p90Nanoseconds": 556333,
+      "minimumNanoseconds": 504292,
+      "maximumNanoseconds": 556333
+    },
+    {
+      "caseId": "map-explicit-break-small",
+      "phase": "cold-first-forecast",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 162416250,
+      "p90Nanoseconds": 171224042,
+      "minimumNanoseconds": 157321084,
+      "maximumNanoseconds": 171224042
+    },
+    {
+      "caseId": "map-explicit-break-small",
+      "phase": "cold-first-forecast",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 1585970084,
+      "p90Nanoseconds": 1690981917,
+      "minimumNanoseconds": 1565186917,
+      "maximumNanoseconds": 1690981917
+    },
+    {
+      "caseId": "map-explicit-break-small",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 154316958,
+      "p90Nanoseconds": 159435042,
+      "minimumNanoseconds": 149621458,
+      "maximumNanoseconds": 159435042
+    },
+    {
+      "caseId": "map-explicit-break-small",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 1554083251,
+      "p90Nanoseconds": 1607290375,
+      "minimumNanoseconds": 1549287292,
+      "maximumNanoseconds": 1607290375
+    },
+    {
+      "caseId": "map-explicit-break-small",
+      "phase": "model-json-decode",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 128917,
+      "p90Nanoseconds": 147000,
+      "minimumNanoseconds": 87750,
+      "maximumNanoseconds": 147000
+    },
+    {
+      "caseId": "map-explicit-break-small",
+      "phase": "model-json-decode",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 2350833,
+      "p90Nanoseconds": 3157875,
+      "minimumNanoseconds": 2166333,
+      "maximumNanoseconds": 3157875
+    },
+    {
+      "caseId": "map-explicit-break-small",
+      "phase": "model-json-encode",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 50875,
+      "p90Nanoseconds": 66125,
+      "minimumNanoseconds": 43709,
+      "maximumNanoseconds": 66125
+    },
+    {
+      "caseId": "map-explicit-break-small",
+      "phase": "model-json-encode",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 491750,
+      "p90Nanoseconds": 737417,
+      "minimumNanoseconds": 400708,
+      "maximumNanoseconds": 737417
+    },
+    {
+      "caseId": "map-explicit-break-small",
+      "phase": "warm-fit-predict-with-conversion",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 753625,
+      "p90Nanoseconds": 950750,
+      "minimumNanoseconds": 545209,
+      "maximumNanoseconds": 950750
+    },
+    {
+      "caseId": "map-explicit-break-small",
+      "phase": "warm-fit-predict-with-conversion",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 16162708,
+      "p90Nanoseconds": 17516459,
+      "minimumNanoseconds": 15943916,
+      "maximumNanoseconds": 17516459
+    },
+    {
+      "caseId": "map-explicit-break-small",
+      "phase": "warm-fit-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 1038833,
+      "p90Nanoseconds": 2184250,
+      "minimumNanoseconds": 917375,
+      "maximumNanoseconds": 2184250
+    },
+    {
+      "caseId": "map-explicit-break-small",
+      "phase": "warm-fit-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 15667792,
+      "p90Nanoseconds": 16354583,
+      "minimumNanoseconds": 15268458,
+      "maximumNanoseconds": 16354583
+    },
+    {
+      "caseId": "map-explicit-break-small",
+      "phase": "warm-fit",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 1046875,
+      "p90Nanoseconds": 1522916,
+      "minimumNanoseconds": 950250,
+      "maximumNanoseconds": 1522916
+    },
+    {
+      "caseId": "map-explicit-break-small",
+      "phase": "warm-fit",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 12799625,
+      "p90Nanoseconds": 13184542,
+      "minimumNanoseconds": 12089750,
+      "maximumNanoseconds": 13184542
+    },
+    {
+      "caseId": "map-explicit-break-small",
+      "phase": "warm-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 267084,
+      "p90Nanoseconds": 319250,
+      "minimumNanoseconds": 245833,
+      "maximumNanoseconds": 319250
+    },
+    {
+      "caseId": "map-explicit-break-small",
+      "phase": "warm-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 2979208,
+      "p90Nanoseconds": 4108583,
+      "minimumNanoseconds": 2826291,
+      "maximumNanoseconds": 4108583
+    },
+    {
+      "caseId": "map-mixed-features-automatic-large",
+      "phase": "adapter-input-conversion",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 194708,
+      "p90Nanoseconds": 361958,
+      "minimumNanoseconds": 179000,
+      "maximumNanoseconds": 361958
+    },
+    {
+      "caseId": "map-mixed-features-automatic-large",
+      "phase": "adapter-input-conversion",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 1329458,
+      "p90Nanoseconds": 1395583,
+      "minimumNanoseconds": 1300000,
+      "maximumNanoseconds": 1395583
+    },
+    {
+      "caseId": "map-mixed-features-automatic-large",
+      "phase": "cold-first-forecast",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 245615292,
+      "p90Nanoseconds": 296691042,
+      "minimumNanoseconds": 245368167,
+      "maximumNanoseconds": 296691042
+    },
+    {
+      "caseId": "map-mixed-features-automatic-large",
+      "phase": "cold-first-forecast",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 1597461668,
+      "p90Nanoseconds": 1632433376,
+      "minimumNanoseconds": 1586200209,
+      "maximumNanoseconds": 1632433376
+    },
+    {
+      "caseId": "map-mixed-features-automatic-large",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 168375708,
+      "p90Nanoseconds": 176612292,
+      "minimumNanoseconds": 161269167,
+      "maximumNanoseconds": 176612292
+    },
+    {
+      "caseId": "map-mixed-features-automatic-large",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 1580270209,
+      "p90Nanoseconds": 1822032668,
+      "minimumNanoseconds": 1550776793,
+      "maximumNanoseconds": 1822032668
+    },
+    {
+      "caseId": "map-mixed-features-automatic-large",
+      "phase": "model-json-decode",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 254667,
+      "p90Nanoseconds": 356167,
+      "minimumNanoseconds": 228250,
+      "maximumNanoseconds": 356167
+    },
+    {
+      "caseId": "map-mixed-features-automatic-large",
+      "phase": "model-json-decode",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 6072209,
+      "p90Nanoseconds": 6676667,
+      "minimumNanoseconds": 5951792,
+      "maximumNanoseconds": 6676667
+    },
+    {
+      "caseId": "map-mixed-features-automatic-large",
+      "phase": "model-json-encode",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 137000,
+      "p90Nanoseconds": 175084,
+      "minimumNanoseconds": 120000,
+      "maximumNanoseconds": 175084
+    },
+    {
+      "caseId": "map-mixed-features-automatic-large",
+      "phase": "model-json-encode",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 1803250,
+      "p90Nanoseconds": 1914208,
+      "minimumNanoseconds": 1776792,
+      "maximumNanoseconds": 1914208
+    },
+    {
+      "caseId": "map-mixed-features-automatic-large",
+      "phase": "warm-fit-predict-with-conversion",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 15567125,
+      "p90Nanoseconds": 19844833,
+      "minimumNanoseconds": 14971750,
+      "maximumNanoseconds": 19844833
+    },
+    {
+      "caseId": "map-mixed-features-automatic-large",
+      "phase": "warm-fit-predict-with-conversion",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 49335292,
+      "p90Nanoseconds": 55529292,
+      "minimumNanoseconds": 49078375,
+      "maximumNanoseconds": 55529292
+    },
+    {
+      "caseId": "map-mixed-features-automatic-large",
+      "phase": "warm-fit-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 16464708,
+      "p90Nanoseconds": 17917875,
+      "minimumNanoseconds": 16294666,
+      "maximumNanoseconds": 17917875
+    },
+    {
+      "caseId": "map-mixed-features-automatic-large",
+      "phase": "warm-fit-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 47305875,
+      "p90Nanoseconds": 48583667,
+      "minimumNanoseconds": 47121000,
+      "maximumNanoseconds": 48583667
+    },
+    {
+      "caseId": "map-mixed-features-automatic-large",
+      "phase": "warm-fit",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 15432416,
+      "p90Nanoseconds": 15955833,
+      "minimumNanoseconds": 15149542,
+      "maximumNanoseconds": 15955833
+    },
+    {
+      "caseId": "map-mixed-features-automatic-large",
+      "phase": "warm-fit",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 40823625,
+      "p90Nanoseconds": 41281042,
+      "minimumNanoseconds": 40763708,
+      "maximumNanoseconds": 41281042
+    },
+    {
+      "caseId": "map-mixed-features-automatic-large",
+      "phase": "warm-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 956417,
+      "p90Nanoseconds": 1500875,
+      "minimumNanoseconds": 922125,
+      "maximumNanoseconds": 1500875
+    },
+    {
+      "caseId": "map-mixed-features-automatic-large",
+      "phase": "warm-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 6707250,
+      "p90Nanoseconds": 7344750,
+      "minimumNanoseconds": 6627958,
+      "maximumNanoseconds": 7344750
+    },
+    {
+      "caseId": "map-mixed-features-explicit-small",
+      "phase": "adapter-input-conversion",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 12958,
+      "p90Nanoseconds": 14583,
+      "minimumNanoseconds": 10167,
+      "maximumNanoseconds": 14583
+    },
+    {
+      "caseId": "map-mixed-features-explicit-small",
+      "phase": "adapter-input-conversion",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 535916,
+      "p90Nanoseconds": 568833,
+      "minimumNanoseconds": 509875,
+      "maximumNanoseconds": 568833
+    },
+    {
+      "caseId": "map-mixed-features-explicit-small",
+      "phase": "cold-first-forecast",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 163864250,
+      "p90Nanoseconds": 172258583,
+      "minimumNanoseconds": 158439750,
+      "maximumNanoseconds": 172258583
+    },
+    {
+      "caseId": "map-mixed-features-explicit-small",
+      "phase": "cold-first-forecast",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 1598966751,
+      "p90Nanoseconds": 1643855043,
+      "minimumNanoseconds": 1564098459,
+      "maximumNanoseconds": 1643855043
+    },
+    {
+      "caseId": "map-mixed-features-explicit-small",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 153443750,
+      "p90Nanoseconds": 157014708,
+      "minimumNanoseconds": 150142041,
+      "maximumNanoseconds": 157014708
+    },
+    {
+      "caseId": "map-mixed-features-explicit-small",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 1546938710,
+      "p90Nanoseconds": 1562536000,
+      "minimumNanoseconds": 1541162418,
+      "maximumNanoseconds": 1562536000
+    },
+    {
+      "caseId": "map-mixed-features-explicit-small",
+      "phase": "model-json-decode",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 195833,
+      "p90Nanoseconds": 241292,
+      "minimumNanoseconds": 161250,
+      "maximumNanoseconds": 241292
+    },
+    {
+      "caseId": "map-mixed-features-explicit-small",
+      "phase": "model-json-decode",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 4046042,
+      "p90Nanoseconds": 4813000,
+      "minimumNanoseconds": 3965083,
+      "maximumNanoseconds": 4813000
+    },
+    {
+      "caseId": "map-mixed-features-explicit-small",
+      "phase": "model-json-encode",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 88708,
+      "p90Nanoseconds": 119541,
+      "minimumNanoseconds": 79583,
+      "maximumNanoseconds": 119541
+    },
+    {
+      "caseId": "map-mixed-features-explicit-small",
+      "phase": "model-json-encode",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 690542,
+      "p90Nanoseconds": 1068125,
+      "minimumNanoseconds": 627791,
+      "maximumNanoseconds": 1068125
+    },
+    {
+      "caseId": "map-mixed-features-explicit-small",
+      "phase": "warm-fit-predict-with-conversion",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 1076000,
+      "p90Nanoseconds": 1282458,
+      "minimumNanoseconds": 877958,
+      "maximumNanoseconds": 1282458
+    },
+    {
+      "caseId": "map-mixed-features-explicit-small",
+      "phase": "warm-fit-predict-with-conversion",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 19032125,
+      "p90Nanoseconds": 19752250,
+      "minimumNanoseconds": 18842459,
+      "maximumNanoseconds": 19752250
+    },
+    {
+      "caseId": "map-mixed-features-explicit-small",
+      "phase": "warm-fit-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 914792,
+      "p90Nanoseconds": 1614667,
+      "minimumNanoseconds": 731833,
+      "maximumNanoseconds": 1614667
+    },
+    {
+      "caseId": "map-mixed-features-explicit-small",
+      "phase": "warm-fit-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 18868458,
+      "p90Nanoseconds": 19702333,
+      "minimumNanoseconds": 18217125,
+      "maximumNanoseconds": 19702333
+    },
+    {
+      "caseId": "map-mixed-features-explicit-small",
+      "phase": "warm-fit",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 1199459,
+      "p90Nanoseconds": 2158083,
+      "minimumNanoseconds": 1094083,
+      "maximumNanoseconds": 2158083
+    },
+    {
+      "caseId": "map-mixed-features-explicit-small",
+      "phase": "warm-fit",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 13293167,
+      "p90Nanoseconds": 14357667,
+      "minimumNanoseconds": 13002583,
+      "maximumNanoseconds": 14357667
+    },
+    {
+      "caseId": "map-mixed-features-explicit-small",
+      "phase": "warm-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 308667,
+      "p90Nanoseconds": 367291,
+      "minimumNanoseconds": 284542,
+      "maximumNanoseconds": 367291
+    },
+    {
+      "caseId": "map-mixed-features-explicit-small",
+      "phase": "warm-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 5484166,
+      "p90Nanoseconds": 6251834,
+      "minimumNanoseconds": 5329167,
+      "maximumNanoseconds": 6251834
+    },
+    {
+      "caseId": "map-regressors-medium",
+      "phase": "adapter-input-conversion",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 144791,
+      "p90Nanoseconds": 180000,
+      "minimumNanoseconds": 128459,
+      "maximumNanoseconds": 180000
+    },
+    {
+      "caseId": "map-regressors-medium",
+      "phase": "adapter-input-conversion",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 813917,
+      "p90Nanoseconds": 848084,
+      "minimumNanoseconds": 801750,
+      "maximumNanoseconds": 848084
+    },
+    {
+      "caseId": "map-regressors-medium",
+      "phase": "cold-first-forecast",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 201579125,
+      "p90Nanoseconds": 265196792,
+      "minimumNanoseconds": 190333875,
+      "maximumNanoseconds": 265196792
+    },
+    {
+      "caseId": "map-regressors-medium",
+      "phase": "cold-first-forecast",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 1593979709,
+      "p90Nanoseconds": 1640127501,
+      "minimumNanoseconds": 1568506251,
+      "maximumNanoseconds": 1640127501
+    },
+    {
+      "caseId": "map-regressors-medium",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 175262584,
+      "p90Nanoseconds": 432882208,
+      "minimumNanoseconds": 159448542,
+      "maximumNanoseconds": 432882208
+    },
+    {
+      "caseId": "map-regressors-medium",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 1643616042,
+      "p90Nanoseconds": 2256134918,
+      "minimumNanoseconds": 1558929085,
+      "maximumNanoseconds": 2256134918
+    },
+    {
+      "caseId": "map-regressors-medium",
+      "phase": "model-json-decode",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 145209,
+      "p90Nanoseconds": 212584,
+      "minimumNanoseconds": 122875,
+      "maximumNanoseconds": 212584
+    },
+    {
+      "caseId": "map-regressors-medium",
+      "phase": "model-json-decode",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 3522917,
+      "p90Nanoseconds": 4129208,
+      "minimumNanoseconds": 3253208,
+      "maximumNanoseconds": 4129208
+    },
+    {
+      "caseId": "map-regressors-medium",
+      "phase": "model-json-encode",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 113542,
+      "p90Nanoseconds": 198417,
+      "minimumNanoseconds": 78333,
+      "maximumNanoseconds": 198417
+    },
+    {
+      "caseId": "map-regressors-medium",
+      "phase": "model-json-encode",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 797875,
+      "p90Nanoseconds": 861792,
+      "minimumNanoseconds": 752750,
+      "maximumNanoseconds": 861792
+    },
+    {
+      "caseId": "map-regressors-medium",
+      "phase": "warm-fit-predict-with-conversion",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 5044125,
+      "p90Nanoseconds": 5654458,
+      "minimumNanoseconds": 4646709,
+      "maximumNanoseconds": 5654458
+    },
+    {
+      "caseId": "map-regressors-medium",
+      "phase": "warm-fit-predict-with-conversion",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 17308708,
+      "p90Nanoseconds": 18286208,
+      "minimumNanoseconds": 16445584,
+      "maximumNanoseconds": 18286208
+    },
+    {
+      "caseId": "map-regressors-medium",
+      "phase": "warm-fit-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 4917250,
+      "p90Nanoseconds": 5585000,
+      "minimumNanoseconds": 4736958,
+      "maximumNanoseconds": 5585000
+    },
+    {
+      "caseId": "map-regressors-medium",
+      "phase": "warm-fit-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 15819084,
+      "p90Nanoseconds": 16436875,
+      "minimumNanoseconds": 15562541,
+      "maximumNanoseconds": 16436875
+    },
+    {
+      "caseId": "map-regressors-medium",
+      "phase": "warm-fit",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 5697000,
+      "p90Nanoseconds": 7833750,
+      "minimumNanoseconds": 4722625,
+      "maximumNanoseconds": 7833750
+    },
+    {
+      "caseId": "map-regressors-medium",
+      "phase": "warm-fit",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 11809250,
+      "p90Nanoseconds": 12551625,
+      "minimumNanoseconds": 11621875,
+      "maximumNanoseconds": 12551625
+    },
+    {
+      "caseId": "map-regressors-medium",
+      "phase": "warm-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 659625,
+      "p90Nanoseconds": 1544292,
+      "minimumNanoseconds": 591666,
+      "maximumNanoseconds": 1544292
+    },
+    {
+      "caseId": "map-regressors-medium",
+      "phase": "warm-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 3983875,
+      "p90Nanoseconds": 4938791,
+      "minimumNanoseconds": 3876333,
+      "maximumNanoseconds": 4938791
+    },
+    {
+      "caseId": "map-seasonal-breaks-irregular-medium",
+      "phase": "adapter-input-conversion",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 23083,
+      "p90Nanoseconds": 27625,
+      "minimumNanoseconds": 12666,
+      "maximumNanoseconds": 27625
+    },
+    {
+      "caseId": "map-seasonal-breaks-irregular-medium",
+      "phase": "adapter-input-conversion",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 575625,
+      "p90Nanoseconds": 595666,
+      "minimumNanoseconds": 544834,
+      "maximumNanoseconds": 595666
+    },
+    {
+      "caseId": "map-seasonal-breaks-irregular-medium",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 159872625,
+      "p90Nanoseconds": 165315500,
+      "minimumNanoseconds": 158536875,
+      "maximumNanoseconds": 165315500
+    },
+    {
+      "caseId": "map-seasonal-breaks-irregular-medium",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 1576944334,
+      "p90Nanoseconds": 1651562501,
+      "minimumNanoseconds": 1561970584,
+      "maximumNanoseconds": 1651562501
+    },
+    {
+      "caseId": "map-seasonal-breaks-irregular-medium",
+      "phase": "model-json-decode",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 106125,
+      "p90Nanoseconds": 111208,
+      "minimumNanoseconds": 72375,
+      "maximumNanoseconds": 111208
+    },
+    {
+      "caseId": "map-seasonal-breaks-irregular-medium",
+      "phase": "model-json-decode",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 2568167,
+      "p90Nanoseconds": 3229166,
+      "minimumNanoseconds": 2385042,
+      "maximumNanoseconds": 3229166
+    },
+    {
+      "caseId": "map-seasonal-breaks-irregular-medium",
+      "phase": "model-json-encode",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 40708,
+      "p90Nanoseconds": 44208,
+      "minimumNanoseconds": 32167,
+      "maximumNanoseconds": 44208
+    },
+    {
+      "caseId": "map-seasonal-breaks-irregular-medium",
+      "phase": "model-json-encode",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 539375,
+      "p90Nanoseconds": 588750,
+      "minimumNanoseconds": 527917,
+      "maximumNanoseconds": 588750
+    },
+    {
+      "caseId": "map-seasonal-breaks-irregular-medium",
+      "phase": "warm-fit-predict-with-conversion",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 3117625,
+      "p90Nanoseconds": 3920750,
+      "minimumNanoseconds": 2994334,
+      "maximumNanoseconds": 3920750
+    },
+    {
+      "caseId": "map-seasonal-breaks-irregular-medium",
+      "phase": "warm-fit-predict-with-conversion",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 13497041,
+      "p90Nanoseconds": 14777542,
+      "minimumNanoseconds": 13197458,
+      "maximumNanoseconds": 14777542
+    },
+    {
+      "caseId": "map-seasonal-breaks-irregular-medium",
+      "phase": "warm-fit-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 3055459,
+      "p90Nanoseconds": 4390250,
+      "minimumNanoseconds": 3001875,
+      "maximumNanoseconds": 4390250
+    },
+    {
+      "caseId": "map-seasonal-breaks-irregular-medium",
+      "phase": "warm-fit-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 12871625,
+      "p90Nanoseconds": 13452834,
+      "minimumNanoseconds": 12277125,
+      "maximumNanoseconds": 13452834
+    },
+    {
+      "caseId": "map-seasonal-breaks-irregular-medium",
+      "phase": "warm-fit",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 3264666,
+      "p90Nanoseconds": 6439042,
+      "minimumNanoseconds": 2936334,
+      "maximumNanoseconds": 6439042
+    },
+    {
+      "caseId": "map-seasonal-breaks-irregular-medium",
+      "phase": "warm-fit",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 9429708,
+      "p90Nanoseconds": 10507250,
+      "minimumNanoseconds": 9371875,
+      "maximumNanoseconds": 10507250
+    },
+    {
+      "caseId": "map-seasonal-breaks-irregular-medium",
+      "phase": "warm-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 426292,
+      "p90Nanoseconds": 573750,
+      "minimumNanoseconds": 394250,
+      "maximumNanoseconds": 573750
+    },
+    {
+      "caseId": "map-seasonal-breaks-irregular-medium",
+      "phase": "warm-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 3323541,
+      "p90Nanoseconds": 3993833,
+      "minimumNanoseconds": 3291708,
+      "maximumNanoseconds": 3993833
+    }
+  ],
+  "failures": [],
+  "environments": [
+    {
+      "implementation": "effect-prophet",
+      "environment": {
+        "runtime": "node",
+        "runtimeVersion": "v26.7.0",
+        "operatingSystem": "linux 7.0.12-linuxkit",
+        "architecture": "arm64",
+        "processor": "unknown",
+        "containerPlatform": "linux/arm64",
+        "versions": [
+          {
+            "name": "effect-prophet",
+            "value": "0.0.0"
+          },
+          {
+            "name": "effect",
+            "value": "4.0.0-beta.107"
+          },
+          {
+            "name": "rustc",
+            "value": "rustc 1.98.1 (48a229cea 2026-09-01)"
+          },
+          {
+            "name": "wasm-pack",
+            "value": "wasm-pack 0.15.0"
+          },
+          {
+            "name": "wasm-build-profile",
+            "value": "release"
+          }
+        ],
+        "artifactHashes": [
+          {
+            "name": "wasm/prophet_wasm_bg.wasm",
+            "value": "678690a8babb3b1961e2fa92b81188d64e61038950736f01c9c3149a8d35dd12"
+          },
+          {
+            "name": "package-lock.json",
+            "value": "99bda82607c5764a965fc84c4f1c3aeb518b7a1604975e958b3ad63e4887d936"
+          }
+        ],
+        "numericalThreads": [
+          {
+            "name": "OMP_NUM_THREADS",
+            "value": "1"
+          },
+          {
+            "name": "OPENBLAS_NUM_THREADS",
+            "value": "1"
+          },
+          {
+            "name": "MKL_NUM_THREADS",
+            "value": "1"
+          }
+        ],
+        "resources": [
+          {
+            "name": "logical-cpu-count",
+            "value": "4"
+          },
+          {
+            "name": "runtime-total-memory-bytes",
+            "value": "8320299008"
+          },
+          {
+            "name": "cgroup-memory-max",
+            "value": "max"
+          },
+          {
+            "name": "collection-method",
+            "value": "node:os and cgroup-v2"
+          }
+        ],
+        "memoryMeasurement": "unsupported; timings do not report a process-tree peak RSS"
+      }
+    },
+    {
+      "implementation": "python-prophet",
+      "environment": {
+        "runtime": "python",
+        "runtimeVersion": "3.12.11",
+        "operatingSystem": "Linux 7.0.12-linuxkit",
+        "architecture": "aarch64",
+        "processor": "unavailable",
+        "containerPlatform": "linux/arm64",
+        "versions": [
+          {
+            "name": "cmdstanpy",
+            "value": "1.3.0"
+          },
+          {
+            "name": "holidays",
+            "value": "0.104"
+          },
+          {
+            "name": "numpy",
+            "value": "2.5.3"
+          },
+          {
+            "name": "pandas",
+            "value": "3.0.5"
+          },
+          {
+            "name": "prophet",
+            "value": "1.4.0"
+          }
+        ],
+        "artifactHashes": [
+          {
+            "name": "benchmark/python/uv.lock",
+            "value": "c90f2464e1d50dbe489bdcdaf8350f04c162f6c617559cfb75d6977b0f430ab1"
+          },
+          {
+            "name": "prophet/stan_model/prophet_model.bin",
+            "value": "faff590e554b6dd4e8c232d2a51c63fe734ae018dd529ee7433a5cdcd86fc54e"
+          }
+        ],
+        "numericalThreads": [
+          {
+            "name": "OMP_NUM_THREADS",
+            "value": "1"
+          },
+          {
+            "name": "OPENBLAS_NUM_THREADS",
+            "value": "1"
+          },
+          {
+            "name": "MKL_NUM_THREADS",
+            "value": "1"
+          }
+        ],
+        "resources": [
+          {
+            "name": "logical-cpu-count",
+            "value": "4"
+          },
+          {
+            "name": "runtime-total-memory-bytes",
+            "value": "8320299008"
+          },
+          {
+            "name": "cgroup-memory-max",
+            "value": "max"
+          },
+          {
+            "name": "collection-method",
+            "value": "python-os and cgroup-v2"
+          }
+        ],
+        "memoryMeasurement": "unsupported; Prophet fitting may use a backend child process and timings do not report a process-tree peak RSS"
+      }
+    }
+  ]
+}

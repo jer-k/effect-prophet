@@ -6,6 +6,7 @@ import {
   validationMessageFromIssue,
 } from "./errors";
 import { FeatureNameSchema, type FeatureName } from "./feature-name";
+import { PositiveFinite } from "./internal/numeric-schemas";
 
 /** Public control for fitting-time regressor standardization. */
 export type EncodedRegressorStandardization = "auto" | "always" | "never";
@@ -62,8 +63,6 @@ export class InvalidRegressors extends Schema.TaggedError<InvalidRegressors>()(
     message: Schema.String,
   },
 ) {}
-
-const PositiveFinite = Schema.Finite.check(Schema.isGreaterThan(0));
 
 const RegressorStandardizationSchema = Schema.Literals(["auto", "always", "never"]);
 

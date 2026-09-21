@@ -7,8 +7,7 @@ use crate::piecewise_map::{
   resolve_automatic_changepoints,
 };
 use crate::seasonality::SeasonalitySpec;
-
-const MAX_WIRE_INTEGER: f64 = u32::MAX as f64;
+use crate::wasm_protocol::{parse_nonnegative_integer, parse_positive_integer};
 
 /// Status at index zero of a packed linear piecewise MAP fit result.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -297,23 +296,7 @@ fn parse_seasonalities_without_priors(
     .collect()
 }
 
-fn parse_positive_integer(value: f64) -> Option<usize> {
-  if !value.is_finite() || value <= 0.0 || value.fract() != 0.0 || value > MAX_WIRE_INTEGER {
-    return None;
-  }
-
-  Some(value as usize)
-}
-
-fn parse_nonnegative_integer(value: f64) -> Option<usize> {
-  if !value.is_finite() || value < 0.0 || value.fract() != 0.0 || value > MAX_WIRE_INTEGER {
-    return None;
-  }
-
-  Some(value as usize)
-}
-
-fn status_for_fit_error(error: PiecewiseMapError) -> PiecewiseMapFitStatus {
+pub(crate) fn status_for_fit_error(error: PiecewiseMapError) -> PiecewiseMapFitStatus {
   match error {
     PiecewiseMapError::InsufficientObservations => PiecewiseMapFitStatus::InsufficientObservations,
     PiecewiseMapError::LengthMismatch => PiecewiseMapFitStatus::LengthMismatch,
@@ -327,7 +310,7 @@ fn status_for_fit_error(error: PiecewiseMapError) -> PiecewiseMapFitStatus {
   }
 }
 
-fn prediction_error_frame(error: PiecewiseMapPredictionError) -> Vec<f64> {
+pub(crate) fn prediction_error_frame(error: PiecewiseMapPredictionError) -> Vec<f64> {
   match error {
     PiecewiseMapPredictionError::InvalidTimestamp { row } => vec![
       f64::from(PiecewiseMapPredictionStatus::InvalidTimestamp as u32),

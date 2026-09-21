@@ -1,6 +1,7 @@
 use wasm_bindgen::prelude::wasm_bindgen;
 
 pub mod additional_features;
+mod compensated_sum;
 pub mod flat_map;
 pub mod fourier;
 pub mod linear_trend;
@@ -12,6 +13,7 @@ pub mod seasonality;
 mod wasm_additive_features;
 mod wasm_flat_map;
 mod wasm_map;
+mod wasm_protocol;
 
 use linear_trend::{LinearTrend, LinearTrendError, fit_linear_trend as fit_linear_trend_kernel};
 

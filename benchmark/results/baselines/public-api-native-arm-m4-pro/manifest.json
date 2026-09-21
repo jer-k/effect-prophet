@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "runId": "2026-09-20T224643-979Z-ff2c99b0",
+  "createdAt": "2026-09-20T22:47:04.752Z",
+  "gitRevision": "ff2c99b0929094e8ac0ce712e276c39d5fed6ebc",
+  "gitDirty": true,
+  "hostPlatform": "darwin",
+  "hostRelease": "25.5.0",
+  "hostArchitecture": "arm64",
+  "hostProcessor": "Apple M4 Pro",
+  "containerPlatform": "linux/arm64",
+  "emulated": false,
+  "selectedCases": [
+    "fixed-linear-prediction-medium",
+    "map-explicit-break-small",
+    "map-seasonal-breaks-irregular-medium",
+    "map-events-small",
+    "map-regressors-medium",
+    "map-conditional-seasonalities-medium",
+    "map-mixed-features-explicit-small",
+    "map-mixed-features-automatic-large"
+  ],
+  "commands": [
+    "BENCHMARK_STAGE=correctness BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/compose.yaml run --rm effect-prophet-benchmark",
+    "BENCHMARK_STAGE=correctness BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/compose.yaml run --rm python-prophet-benchmark",
+    "BENCHMARK_REPORT_MODE=eligibility BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/compose.yaml run --rm benchmark-report",
+    "BENCHMARK_STAGE=timing BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/compose.yaml run --rm effect-prophet-benchmark",
+    "BENCHMARK_STAGE=timing BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/compose.yaml run --rm python-prophet-benchmark",
+    "BENCHMARK_REPORT_MODE=final BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/compose.yaml run --rm benchmark-report"
+  ],
+  "inputHashes": [
+    {
+      "name": "benchmark/cases/public-api.json",
+      "value": "a88e1eec32763e9a310799af5ec6bd8821eb1ce655a383e4952a90e0a25f3cc0"
+    },
+    {
+      "name": "benchmark/evidence/comparisons.json",
+      "value": "548eccfde0ebb3d74cda5973d94633e335378a4c875acbf98f5857a4a6d84f05"
+    },
+    {
+      "name": "benchmark/python/uv.lock",
+      "value": "c90f2464e1d50dbe489bdcdaf8350f04c162f6c617559cfb75d6977b0f430ab1"
+    },
+    {
+      "name": "benchmark/data/generated/manifest.json",
+      "value": "0f30d8d056acf9bc944f62f21bd5c9d9f2ceecd977a2220b51a11c6988cbd6ab"
+    },
+    {
+      "name": "package-lock.json",
+      "value": "99bda82607c5764a965fc84c4f1c3aeb518b7a1604975e958b3ad63e4887d936"
+    },
+    {
+      "name": "benchmark/data/generated/linear-medium.json",
+      "value": "5f69f47c9189c3587fe9c4d72a1c885d2b16d5bd72fa693b49c46ca5ad6381fc"
+    },
+    {
+      "name": "benchmark/data/generated/linear-small.json",
+      "value": "bd04fc739211e1968ad47cae0a56d6ce776b0e9ea93dd2d38d89047bac60a5c3"
+    },
+    {
+      "name": "benchmark/data/generated/map-irregular-medium.json",
+      "value": "62f195edf2bc788b67f26471e00eee77ec55c61670a7c61be3c23230664418a1"
+    },
+    {
+      "name": "benchmark/data/generated/map-events-small.json",
+      "value": "124c5aa9e78f09a3c2bb549106cf57f4a4b30793e52f044b2dd384b9eaded665"
+    },
+    {
+      "name": "benchmark/data/generated/map-regressors-medium.json",
+      "value": "804afd5985e47268a8ddae3301fffcdaaf9a2afca3f3cdbdab8e3d028286f525"
+    },
+    {
+      "name": "benchmark/data/generated/map-conditional-seasonalities-medium.json",
+      "value": "301d2619b93f949d41e43a8ea36bbd74007f10d3151944668dc92b8235fbf968"
+    },
+    {
+      "name": "benchmark/data/generated/map-mixed-features-explicit-small.json",
+      "value": "c02bbf7954cf0b048e5413f5d00a2f23a664882225bb8c18a4996d68921a63ed"
+    },
+    {
+      "name": "benchmark/data/generated/map-mixed-features-automatic-large.json",
+      "value": "7a24d6ad1f87032a320eed898a00a41bc90a4b0c7febb7c42801715c86c664b5"
+    }
+  ],
+  "containerImages": [
+    {
+      "name": "effect-prophet/benchmark-effect:local",
+      "value": "sha256:a6ad3ddda8365f00a5cfcbe1fb6bc151d3f235a72dae6518a903c97e688c25ef"
+    },
+    {
+      "name": "effect-prophet/benchmark-python:1.4.0",
+      "value": "sha256:a9400a08fcc8bd5e9a3d18632bc1382e8d2b5850191a52c81df1f7e9be7f72b7"
+    }
+  ]
+}

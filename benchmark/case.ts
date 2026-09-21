@@ -22,7 +22,7 @@ const CanonicalTimestamp = Schema.String.check(
 
 /** A phase measured by the public benchmark adapters. */
 export const BenchmarkPhaseSchema = Schema.Literals([
-  "input-preparation",
+  "adapter-input-conversion",
   "warm-fit",
   "warm-predict",
   "warm-fit-predict",
@@ -30,17 +30,11 @@ export const BenchmarkPhaseSchema = Schema.Literals([
   "cold-first-forecast",
   "model-json-encode",
   "model-json-decode",
+  "fresh-process-restored-predict",
 ]);
 
 /** A phase measured by the public benchmark adapters. */
 export type BenchmarkPhase = typeof BenchmarkPhaseSchema.Type;
-
-const DifferentObjectiveComparisonSchema = Schema.Struct({
-  kind: Schema.Literal("different-objective"),
-  effectObjective: NonEmptyString,
-  pythonObjective: NonEmptyString,
-  explanation: NonEmptyString,
-});
 
 const EquivalentEquationComparisonSchema = Schema.Struct({
   kind: Schema.Literal("equivalent-equation"),
@@ -54,7 +48,6 @@ const EquivalentObjectiveComparisonSchema = Schema.Struct({
 
 /** Why two measurements may be viewed together and which correctness evidence is required. */
 export const BenchmarkComparisonSchema = Schema.Union([
-  DifferentObjectiveComparisonSchema,
   EquivalentEquationComparisonSchema,
   EquivalentObjectiveComparisonSchema,
 ]);
@@ -73,28 +66,54 @@ const FixedLinearPredictionWorkloadSchema = Schema.Struct({
   }),
 });
 
-const LinearFitWorkloadSchema = Schema.Struct({
-  kind: Schema.Literal("linear-fit"),
-  comparison: DifferentObjectiveComparisonSchema,
-});
-
 const BenchmarkSeasonalitySchema = Schema.Struct({
   name: NonEmptyString,
   periodDays: PositiveFinite,
   fourierOrder: PositiveInteger,
   priorScale: PositiveFinite,
+  conditionName: Schema.optionalKey(NonEmptyString),
 });
 
-const ExplicitLinearMapWorkloadSchema = Schema.Struct({
-  kind: Schema.Literal("explicit-linear-map"),
-  comparison: Schema.Union([
-    DifferentObjectiveComparisonSchema,
-    EquivalentObjectiveComparisonSchema,
-  ]),
+const BenchmarkEventSchema = Schema.Struct({
+  name: NonEmptyString,
+  date: Schema.String.check(
+    Schema.makeFilter((value) => /^\d{4}-\d{2}-\d{2}$/.test(value), {
+      message: "Expected a UTC calendar date",
+    }),
+  ),
+  lowerWindowDays: Schema.Int,
+  upperWindowDays: Schema.Int,
+  priorScale: PositiveFinite,
+});
+
+const BenchmarkRegressorSchema = Schema.Struct({
+  name: NonEmptyString,
+  priorScale: PositiveFinite,
+  standardization: Schema.Literals(["auto", "always", "never"]),
+});
+
+const BenchmarkChangepointsSchema = Schema.Union([
+  Schema.Struct({
+    mode: Schema.Literal("explicit"),
+    timestamps: Schema.Array(CanonicalTimestamp),
+  }),
+  Schema.Struct({
+    mode: Schema.Literal("auto"),
+    count: NonNegativeInteger,
+    range: Schema.Finite.check(Schema.isGreaterThan(0), Schema.isLessThanOrEqualTo(1)),
+  }),
+]);
+
+const LinearMapWorkloadSchema = Schema.Struct({
+  kind: Schema.Literal("linear-map"),
+  comparison: EquivalentObjectiveComparisonSchema,
   configuration: Schema.Struct({
-    changepointTimestamps: Schema.Array(CanonicalTimestamp),
+    effectMap: Schema.Literals(["explicit", "omitted"]),
+    changepoints: BenchmarkChangepointsSchema,
     changepointPriorScale: PositiveFinite,
     seasonalities: Schema.Array(BenchmarkSeasonalitySchema),
+    events: Schema.Array(BenchmarkEventSchema),
+    regressors: Schema.Array(BenchmarkRegressorSchema),
   }),
   effectOptimizer: Schema.Struct({
     maxIterations: PositiveInteger,
@@ -110,13 +129,28 @@ const ExplicitLinearMapWorkloadSchema = Schema.Struct({
 
 /** A public forecasting workload understood by both language adapters. */
 export const BenchmarkWorkloadSchema = Schema.Union([
-  LinearFitWorkloadSchema,
   FixedLinearPredictionWorkloadSchema,
-  ExplicitLinearMapWorkloadSchema,
+  LinearMapWorkloadSchema,
 ]);
 
 /** A public forecasting workload understood by both language adapters. */
 export type BenchmarkWorkload = typeof BenchmarkWorkloadSchema.Type;
+
+/** Runtime schema for one absolute-plus-relative numerical tolerance. */
+export const CorrectnessToleranceSchema = Schema.Struct({
+  absolute: NonNegativeFinite,
+  relative: NonNegativeFinite,
+});
+
+/** Quantity-specific cross-language correctness tolerances. */
+export const CorrectnessTolerancesSchema = Schema.Struct({
+  trend: CorrectnessToleranceSchema,
+  component: CorrectnessToleranceSchema,
+  additive: CorrectnessToleranceSchema,
+  forecast: CorrectnessToleranceSchema,
+  noiseScale: CorrectnessToleranceSchema,
+  persistence: CorrectnessToleranceSchema,
+});
 
 /** Runtime schema for one benchmark case declaration. */
 export const BenchmarkCaseSchema = Schema.Struct({
@@ -128,10 +162,7 @@ export const BenchmarkCaseSchema = Schema.Struct({
   measuredIterations: PositiveInteger,
   independentRuns: PositiveInteger,
   timeoutSeconds: PositiveInteger,
-  correctnessTolerance: Schema.Struct({
-    absolute: NonNegativeFinite,
-    relative: NonNegativeFinite,
-  }),
+  correctnessTolerances: CorrectnessTolerancesSchema,
 });
 
 /** One parsed benchmark case declaration. */
@@ -141,6 +172,15 @@ export type BenchmarkCase = typeof BenchmarkCaseSchema.Type;
 export const BenchmarkObservationSchema = Schema.Struct({
   timestamp: CanonicalTimestamp,
   value: Schema.Finite,
+  regressors: Schema.optionalKey(Schema.Record(Schema.String, Schema.Finite)),
+  conditions: Schema.optionalKey(Schema.Record(Schema.String, Schema.Boolean)),
+});
+
+/** Runtime schema for one complete shared prediction row. */
+export const BenchmarkPredictionRowSchema = Schema.Struct({
+  timestamp: CanonicalTimestamp,
+  regressors: Schema.optionalKey(Schema.Record(Schema.String, Schema.Finite)),
+  conditions: Schema.optionalKey(Schema.Record(Schema.String, Schema.Boolean)),
 });
 
 /** Runtime schema for a shared dataset consumed by both language adapters. */
@@ -148,7 +188,7 @@ export const BenchmarkDatasetSchema = Schema.Struct({
   id: NonEmptyString,
   recipe: NonEmptyString,
   observations: Schema.Array(BenchmarkObservationSchema),
-  predictionTimestamps: Schema.Array(CanonicalTimestamp),
+  predictionRows: Schema.Array(BenchmarkPredictionRowSchema),
 });
 
 /** A parsed shared dataset consumed by both language adapters. */
@@ -165,9 +205,13 @@ export class BenchmarkInputError extends Schema.TaggedError<BenchmarkInputError>
 
 const decodeCases = Schema.decodeUnknownEffect(Schema.Array(BenchmarkCaseSchema), {
   errors: "all",
+  onExcessProperty: "error",
 });
 
-const decodeDataset = Schema.decodeUnknownEffect(BenchmarkDatasetSchema, { errors: "all" });
+const decodeDataset = Schema.decodeUnknownEffect(BenchmarkDatasetSchema, {
+  errors: "all",
+  onExcessProperty: "error",
+});
 
 const hasSafeDatasetPath = (value: string): boolean => {
   if (value.startsWith("/") || value.includes("\\")) {
@@ -217,40 +261,41 @@ const validateCaseRelationships = (
     if (
       benchmarkCase.workload.kind === "fixed-linear-prediction" &&
       benchmarkCase.phases.some(
-        (phase) => phase !== "input-preparation" && phase !== "warm-predict",
+        (phase) => phase !== "adapter-input-conversion" && phase !== "warm-predict",
       )
     ) {
       return Effect.fail(
         new BenchmarkInputError({
           input: "cases",
-          message: `Fixed prediction case ${benchmarkCase.id} may only prepare input or predict`,
+          message: `Fixed prediction case ${benchmarkCase.id} may only convert input or predict`,
         }),
       );
     }
 
-    if (
-      benchmarkCase.workload.kind === "explicit-linear-map" &&
-      benchmarkCase.workload.configuration.changepointTimestamps.length === 0 &&
-      benchmarkCase.workload.comparison.kind !== "different-objective"
-    ) {
-      return Effect.fail(
-        new BenchmarkInputError({
-          input: "cases",
-          message: `No-changepoint MAP case ${benchmarkCase.id} must be different-objective`,
-        }),
-      );
+    if (benchmarkCase.workload.kind === "linear-map") {
+      const configuration = benchmarkCase.workload.configuration;
+
+      if (
+        configuration.effectMap === "omitted" &&
+        (configuration.changepoints.mode !== "auto" ||
+          configuration.changepoints.count !== 25 ||
+          configuration.changepoints.range !== 0.8 ||
+          configuration.changepointPriorScale !== 0.05)
+      ) {
+        return Effect.fail(
+          new BenchmarkInputError({
+            input: "cases",
+            message: `Omitted-map case ${benchmarkCase.id} must declare Effect's automatic defaults`,
+          }),
+        );
+      }
     }
   }
 
   return Effect.succeed(cases);
 };
 
-/**
- * Parse untrusted benchmark case declarations and enforce cross-field invariants.
- *
- * @param input - Untrusted JSON-compatible case declarations.
- * @returns Parsed cases or a typed benchmark input failure.
- */
+/** Parse untrusted benchmark case declarations and enforce cross-field invariants. */
 export const parseBenchmarkCases = (
   input: Parameters<typeof decodeCases>[0],
 ): Effect.Effect<ReadonlyArray<BenchmarkCase>, BenchmarkInputError> =>
@@ -291,12 +336,7 @@ const validateDatasetRelationships = (
   return Effect.succeed(dataset);
 };
 
-/**
- * Parse an untrusted shared benchmark dataset.
- *
- * @param input - Untrusted JSON-compatible dataset.
- * @returns A parsed dataset or a typed benchmark input failure.
- */
+/** Parse an untrusted shared benchmark dataset. */
 export const parseBenchmarkDataset = (
   input: Parameters<typeof decodeDataset>[0],
 ): Effect.Effect<BenchmarkDataset, BenchmarkInputError> =>
