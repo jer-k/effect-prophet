@@ -17,6 +17,51 @@ export interface LinearTrendWasmBindings {
   ) => Float64Array;
 }
 
+/** Rust/WASM bindings for masked seasonalities and known additive MAP columns. */
+export interface AdditiveFeatureWasmBindings {
+  readonly fit_piecewise_map_with_features: (
+    timestamps: Float64Array,
+    values: Float64Array,
+    changepointMode: number,
+    explicitChangepoints: Float64Array,
+    automaticCount: number,
+    automaticRange: number,
+    periodsDays: Float64Array,
+    fourierOrders: Float64Array,
+    seasonalPriorScales: Float64Array,
+    seasonalityMasks: Float64Array,
+    additionalColumnCount: number,
+    additionalValues: Float64Array,
+    additionalPriorScales: Float64Array,
+    additionalComponentOffsets: Float64Array,
+    additionalComponentCounts: Float64Array,
+    changepointPriorScale: number,
+    maxIterations: number,
+    relativeTolerance: number,
+    absoluteTolerance: number,
+  ) => Float64Array;
+
+  readonly predict_piecewise_map_with_features: (
+    timestamps: Float64Array,
+    intercept: number,
+    slope: number,
+    timeOrigin: number,
+    timeScale: number,
+    changepointTimestamps: Float64Array,
+    deltas: Float64Array,
+    noiseScale: number,
+    periodsDays: Float64Array,
+    fourierOrders: Float64Array,
+    seasonalCoefficients: Float64Array,
+    seasonalityMasks: Float64Array,
+    additionalColumnCount: number,
+    additionalValues: Float64Array,
+    additionalCoefficients: Float64Array,
+    additionalComponentOffsets: Float64Array,
+    additionalComponentCounts: Float64Array,
+  ) => Float64Array;
+}
+
 /** Rust/WASM bindings for the packed reduced flat MAP protocol. */
 export interface FlatMapWasmBindings {
   /** Fit one complete flat MAP model and return its packed protocol frame. */
@@ -76,6 +121,7 @@ export interface PiecewiseMapWasmBindings {
 
 /** Complete generated Rust/WASM module contract required by this package version. */
 export type ProphetWasmModule = LinearTrendWasmBindings &
+  AdditiveFeatureWasmBindings &
   FlatMapWasmBindings &
   PiecewiseMapWasmBindings;
 
@@ -87,6 +133,8 @@ const require = createRequire(import.meta.url);
 const requiredFunctionExports = [
   "fit_linear_trend",
   "predict_linear_trend",
+  "fit_piecewise_map_with_features",
+  "predict_piecewise_map_with_features",
   "fit_flat_map",
   "predict_flat_map",
   "fit_piecewise_map",

@@ -106,6 +106,8 @@ export interface ProphetWasmNodeBindings {
     fourierOrders: Float64Array,
     coefficients: Float64Array,
   ) => Float64Array;
+  readonly fit_piecewise_map_with_features: (...args: ReadonlyArray<unknown>) => Float64Array;
+  readonly predict_piecewise_map_with_features: (...args: ReadonlyArray<unknown>) => Float64Array;
   readonly fit_linear_trend: (timestamps: Float64Array, values: Float64Array) => Float64Array;
   readonly predict_linear_trend: (
     timestamps: Float64Array,
@@ -119,6 +121,8 @@ export interface ProphetWasmNodeBindings {
 const require = createRequire(import.meta.url);
 
 const requiredFunctionExports = [
+  "fit_piecewise_map_with_features",
+  "predict_piecewise_map_with_features",
   "fit_flat_map",
   "predict_flat_map",
   "fit_piecewise_map",

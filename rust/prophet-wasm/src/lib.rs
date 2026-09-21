@@ -1,5 +1,6 @@
 use wasm_bindgen::prelude::wasm_bindgen;
 
+pub mod additional_features;
 pub mod flat_map;
 pub mod fourier;
 pub mod linear_trend;
@@ -8,6 +9,7 @@ pub mod map_objective;
 pub mod piecewise_linear;
 pub mod piecewise_map;
 pub mod seasonality;
+mod wasm_additive_features;
 mod wasm_flat_map;
 mod wasm_map;
 

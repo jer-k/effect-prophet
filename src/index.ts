@@ -3,6 +3,7 @@ export {
   InputValidationError,
   ModelSerializationError,
   PredictionError,
+  UnsupportedConfigurationError,
   type FittingFailureReason,
   type ModelSerializationOperation,
   type PredictionFailureReason,
@@ -10,6 +11,14 @@ export {
   type ValidationIssue,
   type WasmFailurePhase,
 } from "./errors";
+
+export {
+  parseEventCalendar,
+  type EncodedEventOccurrence,
+  type EventCalendar,
+  type EventFeatureColumn,
+  type EventOccurrence,
+} from "./event";
 
 export {
   decodeObservations,
@@ -76,6 +85,7 @@ export {
   fit,
   predict,
   type EncodedPredictionTimestamps,
+  type EventForecastComponent,
   type Forecast,
   type Forecasts,
   type PredictionTimestamps,

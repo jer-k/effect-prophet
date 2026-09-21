@@ -1,6 +1,10 @@
+use crate::additional_features::{
+  AdditionalFeatureError, AdditionalFeatureLayoutView, FeatureMatrixView, SeasonalityMaskView,
+  evaluate_additional_components, unconditional_masks,
+};
 use crate::fourier::{
-  FourierError, FourierSeasonality, checked_element_count, coefficient_count,
-  evaluate_seasonal_components, make_fourier_features,
+  FourierError, FourierSeasonality, apply_seasonality_masks, checked_element_count,
+  coefficient_count, evaluate_seasonal_components, make_fourier_features,
 };
 use crate::map_objective::{MapObjectiveError, evaluate_map_objective};
 use crate::piecewise_linear::{PiecewiseTrend, PiecewiseTrendError};
@@ -67,6 +71,9 @@ pub struct PiecewiseMapModel {
 
   /// Ordered output-unit Fourier coefficients.
   pub coefficients: Vec<f64>,
+
+  /// Ordered output-unit additional-feature coefficients.
+  pub additional_coefficients: Vec<f64>,
 
   /// Positive fitted observation noise in output units.
   pub noise_scale: f64,
@@ -163,13 +170,54 @@ pub fn resolve_automatic_changepoints(
   Ok(selected)
 }
 
-/// Fit linear trend, changepoint adjustments, additive Fourier coefficients, and noise jointly.
+/// Fit the legacy unconditional seasonal piecewise MAP objective.
 #[allow(clippy::too_many_arguments)]
 pub fn fit_piecewise_map(
   timestamps: &[f64],
   values: &[f64],
   changepoint_timestamps: &[f64],
   seasonalities: &[SeasonalitySpec],
+  changepoint_prior_scale: f64,
+  controls: MapControls,
+) -> Result<PiecewiseMapModel, PiecewiseMapError> {
+  let masks =
+    unconditional_masks(timestamps.len(), seasonalities.len()).map_err(map_additional_fit_error)?;
+
+  fit_piecewise_map_with_features(
+    timestamps,
+    values,
+    changepoint_timestamps,
+    seasonalities,
+    SeasonalityMaskView {
+      row_count: timestamps.len(),
+      component_count: seasonalities.len(),
+      values: &masks,
+    },
+    FeatureMatrixView {
+      row_count: timestamps.len(),
+      column_count: 0,
+      values: &[],
+    },
+    AdditionalFeatureLayoutView {
+      prior_scales: &[],
+      component_offsets: &[],
+      component_counts: &[],
+    },
+    changepoint_prior_scale,
+    controls,
+  )
+}
+
+/// Fit trend, changepoints, masked seasonalities, known features, and noise jointly.
+#[allow(clippy::too_many_arguments)]
+pub fn fit_piecewise_map_with_features(
+  timestamps: &[f64],
+  values: &[f64],
+  changepoint_timestamps: &[f64],
+  seasonalities: &[SeasonalitySpec],
+  seasonality_masks: SeasonalityMaskView<'_>,
+  additional_features: FeatureMatrixView<'_>,
+  additional_layout: AdditionalFeatureLayoutView<'_>,
   changepoint_prior_scale: f64,
   controls: MapControls,
 ) -> Result<PiecewiseMapModel, PiecewiseMapError> {
@@ -208,16 +256,35 @@ pub fn fit_piecewise_map(
 
   validate_changepoints(changepoint_timestamps, time_origin, time_end)?;
 
+  seasonality_masks
+    .validate(timestamps.len(), seasonalities.len())
+    .map_err(map_additional_fit_error)?;
+  additional_features
+    .validate(timestamps.len())
+    .map_err(map_additional_fit_error)?;
+  additional_layout
+    .validate(additional_features.column_count)
+    .map_err(map_additional_fit_error)?;
+
   let fourier_seasonalities = parse_seasonalities(seasonalities)?;
   let seasonal_count = coefficient_count(&fourier_seasonalities).map_err(map_fourier_fit_error)?;
+  let feature_count = seasonal_count
+    .checked_add(additional_features.column_count)
+    .ok_or(PiecewiseMapError::SizeOverflow)?;
   let column_count = 2_usize
     .checked_add(changepoint_timestamps.len())
-    .and_then(|count| count.checked_add(seasonal_count))
+    .and_then(|count| count.checked_add(feature_count))
     .ok_or(PiecewiseMapError::SizeOverflow)?;
   let design_count =
     checked_element_count(values.len(), column_count).map_err(map_fourier_fit_error)?;
-  let features =
+  let mut features =
     make_fourier_features(timestamps, &fourier_seasonalities).map_err(map_fourier_fit_error)?;
+  apply_seasonality_masks(
+    &mut features,
+    &fourier_seasonalities,
+    seasonality_masks.values,
+  )
+  .map_err(map_fourier_fit_error)?;
   let mut design = vec![0.0; design_count];
   let mut target = vec![0.0; values.len()];
   let mut value_scale = values
@@ -245,6 +312,14 @@ pub fn fit_piecewise_map(
 
     design[seasonal_offset..(seasonal_offset + seasonal_count)]
       .copy_from_slice(&features.values()[feature_offset..(feature_offset + seasonal_count)]);
+
+    let additional_offset = row * additional_features.column_count;
+    let additional_start = seasonal_offset + seasonal_count;
+    design[additional_start..(additional_start + additional_features.column_count)]
+      .copy_from_slice(
+        &additional_features.values
+          [additional_offset..(additional_offset + additional_features.column_count)],
+      );
     target[row] = values[row] / value_scale;
   }
 
@@ -252,7 +327,8 @@ pub fn fit_piecewise_map(
     return Err(PiecewiseMapError::NonFiniteResult);
   }
 
-  let seasonal_prior_scales = expand_seasonal_priors(seasonalities, seasonal_count)?;
+  let mut feature_prior_scales = expand_seasonal_priors(seasonalities, seasonal_count)?;
+  feature_prior_scales.extend_from_slice(additional_layout.prior_scales);
   let first_value = values[0];
 
   if values.iter().all(|value| *value == first_value) {
@@ -273,6 +349,7 @@ pub fn fit_piecewise_map(
       },
       seasonalities: seasonalities.to_vec(),
       coefficients: vec![0.0; seasonal_count],
+      additional_coefficients: vec![0.0; additional_features.column_count],
       noise_scale: value_scale * CONSTANT_TARGET_NOISE_SCALE,
       summary: MapFitSummary {
         value_scale,
@@ -316,8 +393,8 @@ pub fn fit_piecewise_map(
           soft_threshold(partial_dot, noise_variance / changepoint_prior_scale) / squared_norm
         }
       } else {
-        let seasonal = column - 2 - changepoint_timestamps.len();
-        let prior = seasonal_prior_scales[seasonal];
+        let feature = column - 2 - changepoint_timestamps.len();
+        let prior = feature_prior_scales[feature];
 
         partial_dot / (squared_norm + noise_variance / (prior * prior))
       };
@@ -373,7 +450,7 @@ pub fn fit_piecewise_map(
         &design,
         &target,
         &coefficients,
-        &seasonal_prior_scales,
+        &feature_prior_scales,
         changepoint_prior_scale,
         noise_scale,
       )
@@ -384,6 +461,7 @@ pub fn fit_piecewise_map(
         .collect();
       let delta_start = 2;
       let seasonal_start = delta_start + changepoint_timestamps.len();
+      let additional_start = seasonal_start + seasonal_count;
       let output_noise_scale = noise_scale * value_scale;
 
       if output_coefficients.iter().any(|value| !value.is_finite())
@@ -403,7 +481,8 @@ pub fn fit_piecewise_map(
           deltas: output_coefficients[delta_start..seasonal_start].to_vec(),
         },
         seasonalities: seasonalities.to_vec(),
-        coefficients: output_coefficients[seasonal_start..].to_vec(),
+        coefficients: output_coefficients[seasonal_start..additional_start].to_vec(),
+        additional_coefficients: output_coefficients[additional_start..].to_vec(),
         noise_scale: output_noise_scale,
         summary: MapFitSummary {
           value_scale,
@@ -420,13 +499,54 @@ pub fn fit_piecewise_map(
   Err(PiecewiseMapError::NonConvergence)
 }
 
-/// Evaluate trend and ordered additive seasonal components for one timestamp batch.
+/// Evaluate the legacy unconditional seasonal piecewise MAP model.
 pub fn predict_piecewise_map(
   timestamps: &[f64],
   trend: &PiecewiseTrend,
   noise_scale: f64,
   seasonalities: &[SeasonalitySpec],
   coefficients: &[f64],
+) -> Result<PiecewiseMapPredictionBatch, PiecewiseMapPredictionError> {
+  let masks = unconditional_masks(timestamps.len(), seasonalities.len())
+    .map_err(map_additional_prediction_error)?;
+
+  predict_piecewise_map_with_features(
+    timestamps,
+    trend,
+    noise_scale,
+    seasonalities,
+    coefficients,
+    SeasonalityMaskView {
+      row_count: timestamps.len(),
+      component_count: seasonalities.len(),
+      values: &masks,
+    },
+    FeatureMatrixView {
+      row_count: timestamps.len(),
+      column_count: 0,
+      values: &[],
+    },
+    AdditionalFeatureLayoutView {
+      prior_scales: &[],
+      component_offsets: &[],
+      component_counts: &[],
+    },
+    &[],
+  )
+}
+
+/// Evaluate grouped masked-seasonal and additional components for piecewise MAP.
+#[allow(clippy::too_many_arguments)]
+pub fn predict_piecewise_map_with_features(
+  timestamps: &[f64],
+  trend: &PiecewiseTrend,
+  noise_scale: f64,
+  seasonalities: &[SeasonalitySpec],
+  seasonal_coefficients: &[f64],
+  seasonality_masks: SeasonalityMaskView<'_>,
+  additional_features: FeatureMatrixView<'_>,
+  additional_layout: AdditionalFeatureLayoutView<'_>,
+  additional_coefficients: &[f64],
 ) -> Result<PiecewiseMapPredictionBatch, PiecewiseMapPredictionError> {
   trend.validate().map_err(map_trend_prediction_error)?;
 
@@ -439,30 +559,70 @@ pub fn predict_piecewise_map(
   let expected_count =
     coefficient_count(&fourier_seasonalities).map_err(map_fourier_prediction_error)?;
 
-  if coefficients.len() != expected_count || coefficients.iter().any(|value| !value.is_finite()) {
+  if seasonal_coefficients.len() != expected_count
+    || seasonal_coefficients.iter().any(|value| !value.is_finite())
+  {
     return Err(PiecewiseMapPredictionError::InvalidModel);
   }
 
-  let row_width = seasonalities
+  seasonality_masks
+    .validate(timestamps.len(), seasonalities.len())
+    .map_err(map_additional_prediction_error)?;
+  additional_features
+    .validate(timestamps.len())
+    .map_err(map_additional_prediction_error)?;
+  additional_layout
+    .validate(additional_features.column_count)
+    .map_err(map_additional_prediction_error)?;
+
+  if additional_coefficients.len() != additional_features.column_count
+    || additional_coefficients
+      .iter()
+      .any(|value| !value.is_finite())
+  {
+    return Err(PiecewiseMapPredictionError::InvalidModel);
+  }
+
+  let component_count = seasonalities
     .len()
+    .checked_add(additional_layout.component_offsets.len())
+    .ok_or(PiecewiseMapPredictionError::SizeOverflow)?;
+  let row_width = component_count
     .checked_add(3)
     .ok_or(PiecewiseMapPredictionError::SizeOverflow)?;
   let output_count =
     checked_element_count(timestamps.len(), row_width).map_err(map_fourier_prediction_error)?;
-  let features = make_fourier_features(timestamps, &fourier_seasonalities)
+  let mut features = make_fourier_features(timestamps, &fourier_seasonalities)
     .map_err(map_fourier_prediction_error)?;
-  let components = evaluate_seasonal_components(&features, &fourier_seasonalities, coefficients)
-    .map_err(map_fourier_prediction_error)?;
+  apply_seasonality_masks(
+    &mut features,
+    &fourier_seasonalities,
+    seasonality_masks.values,
+  )
+  .map_err(map_fourier_prediction_error)?;
+  let components =
+    evaluate_seasonal_components(&features, &fourier_seasonalities, seasonal_coefficients)
+      .map_err(map_fourier_prediction_error)?;
+  let additional_components = evaluate_additional_components(
+    additional_features,
+    additional_layout,
+    additional_coefficients,
+  )
+  .map_err(map_additional_prediction_error)?;
   let mut values = vec![0.0; output_count];
 
   for (row, &timestamp) in timestamps.iter().enumerate() {
     let trend_value = trend
       .evaluate(timestamp, row)
       .map_err(map_trend_prediction_error)?;
-    let component_offset = row * seasonalities.len();
-    let component_values =
-      &components.values()[component_offset..(component_offset + seasonalities.len())];
-    let additive = component_values.iter().sum::<f64>();
+    let seasonal_offset = row * seasonalities.len();
+    let seasonal_values =
+      &components.values()[seasonal_offset..(seasonal_offset + seasonalities.len())];
+    let additional_count = additional_layout.component_offsets.len();
+    let additional_offset = row * additional_count;
+    let additional_values =
+      &additional_components[additional_offset..(additional_offset + additional_count)];
+    let additive = seasonal_values.iter().chain(additional_values).sum::<f64>();
     let value = trend_value + additive;
 
     if !additive.is_finite() || !value.is_finite() {
@@ -473,7 +633,9 @@ pub fn predict_piecewise_map(
     values[output_offset] = trend_value;
     values[output_offset + 1] = additive;
     values[output_offset + 2] = value;
-    values[(output_offset + 3)..(output_offset + row_width)].copy_from_slice(component_values);
+    let seasonal_output_end = output_offset + 3 + seasonalities.len();
+    values[(output_offset + 3)..seasonal_output_end].copy_from_slice(seasonal_values);
+    values[seasonal_output_end..(output_offset + row_width)].copy_from_slice(additional_values);
   }
 
   Ok(PiecewiseMapPredictionBatch { values })
@@ -591,6 +753,24 @@ fn soft_threshold(value: f64, threshold: f64) -> f64 {
   value.signum() * (value.abs() - threshold).max(0.0)
 }
 
+fn map_additional_fit_error(error: AdditionalFeatureError) -> PiecewiseMapError {
+  match error {
+    AdditionalFeatureError::SizeOverflow => PiecewiseMapError::SizeOverflow,
+    AdditionalFeatureError::InvalidDimensions
+    | AdditionalFeatureError::InvalidValue
+    | AdditionalFeatureError::InvalidLayout => PiecewiseMapError::InvalidConfiguration,
+  }
+}
+
+fn map_additional_prediction_error(error: AdditionalFeatureError) -> PiecewiseMapPredictionError {
+  match error {
+    AdditionalFeatureError::SizeOverflow => PiecewiseMapPredictionError::SizeOverflow,
+    AdditionalFeatureError::InvalidDimensions
+    | AdditionalFeatureError::InvalidValue
+    | AdditionalFeatureError::InvalidLayout => PiecewiseMapPredictionError::InvalidModel,
+  }
+}
+
 fn map_fourier_fit_error(error: FourierError) -> PiecewiseMapError {
   match error {
     FourierError::InvalidTimestamp { .. } => PiecewiseMapError::InvalidObservation,
@@ -648,8 +828,11 @@ fn map_fourier_prediction_error(error: FourierError) -> PiecewiseMapPredictionEr
 #[cfg(test)]
 mod tests {
   use super::{
-    MapControls, MapTermination, fit_piecewise_map, predict_piecewise_map,
-    resolve_automatic_changepoints,
+    MapControls, MapTermination, fit_piecewise_map, fit_piecewise_map_with_features,
+    predict_piecewise_map, resolve_automatic_changepoints,
+  };
+  use crate::additional_features::{
+    AdditionalFeatureLayoutView, FeatureMatrixView, SeasonalityMaskView,
   };
   use crate::seasonality::SeasonalitySpec;
 
@@ -734,6 +917,40 @@ mod tests {
       resolve_automatic_changepoints(&timestamps, 25, 0.8).unwrap(),
       vec![1.0, 2.0, 3.0]
     );
+  }
+
+  #[test]
+  fn fits_known_additive_columns_in_the_map_objective() {
+    let timestamps = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0];
+    let values = [1.0, 1.1, 4.0, 1.2, 1.3, 1.4];
+    let additional = [0.0, 0.0, 1.0, 0.0, 0.0, 0.0];
+    let model = fit_piecewise_map_with_features(
+      &timestamps,
+      &values,
+      &[],
+      &[],
+      SeasonalityMaskView {
+        row_count: timestamps.len(),
+        component_count: 0,
+        values: &[],
+      },
+      FeatureMatrixView {
+        row_count: timestamps.len(),
+        column_count: 1,
+        values: &additional,
+      },
+      AdditionalFeatureLayoutView {
+        prior_scales: &[10.0],
+        component_offsets: &[0],
+        component_counts: &[1],
+      },
+      0.05,
+      CONTROLS,
+    )
+    .expect("noisy event history should have an interior MAP optimum");
+
+    assert!(model.additional_coefficients[0] > 2.0);
+    assert!(model.coefficients.is_empty());
   }
 
   #[test]

@@ -26,6 +26,12 @@ const PredictionFailureReasonSchema = Schema.Literals([
 
 const ModelSerializationOperationSchema = Schema.Literals(["encode", "decode"]);
 
+const UnsupportedOptionSchema = Schema.Literals([
+  "events",
+  "regressors",
+  "conditional-seasonalities",
+]);
+
 const WasmFailurePhaseSchema = Schema.Literals(["load", "execute", "protocol"]);
 
 export type ValidationInput = "observations" | "options" | "prediction-timestamps";
@@ -79,6 +85,16 @@ const defineRuntimeCause = (target: Error, options: RuntimeCauseOptions | undefi
     enumerable: false,
   });
 };
+
+/** A valid configuration that the selected model family cannot execute. */
+export class UnsupportedConfigurationError extends Schema.TaggedError<UnsupportedConfigurationError>()(
+  "UnsupportedConfigurationError",
+  {
+    option: UnsupportedOptionSchema,
+    model: Schema.String,
+    message: Schema.String,
+  },
+) {}
 
 /** An expected failure while fitting a model. */
 export class FittingError extends Schema.TaggedError<FittingError>()("FittingError", {

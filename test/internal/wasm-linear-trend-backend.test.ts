@@ -383,7 +383,7 @@ describe("Rust/WASM boundary tracing", () => {
     expectContainedInterval(wasmPredictSpan, predictSpan);
   });
 
-  it("marks a numerical fitting failure span failed without replacing its typed error", async () => {
+  it("short-circuits insufficient history before the numerical boundary", async () => {
     const recording = makeRecordingTracer();
 
     const program = fit([{ timestamp: observations[0].timestamp, value: 2 }]).pipe(
@@ -401,17 +401,8 @@ describe("Rust/WASM boundary tracing", () => {
       expect(error.observationCount).toBe(1);
     }
 
-    const fitSpan = requireSpan(recording.spans, "Prophet.fit");
-    const wasmFitSpan = requireSpan(recording.spans, "effect-prophet.wasm.fit");
-    const wasmStatus = requireEndedStatus(wasmFitSpan);
-
-    expect(requireParent(wasmFitSpan).spanId).toBe(fitSpan.spanId);
-    expect(Exit.isFailure(wasmStatus.exit)).toBe(true);
-    expectContainedInterval(wasmFitSpan, fitSpan);
-
-    if (Exit.isFailure(wasmStatus.exit)) {
-      expect(Option.getOrUndefined(Cause.findErrorOption(wasmStatus.exit.cause))).toBe(error);
-    }
+    requireSpan(recording.spans, "Prophet.fit");
+    expect(recording.spans.some((span) => span.name === "effect-prophet.wasm.fit")).toBe(false);
   });
 
   it("does not record a fit boundary span for validation failures", async () => {

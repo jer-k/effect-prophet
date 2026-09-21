@@ -6,6 +6,11 @@ import {
   type ValidationIssue,
 } from "./errors";
 import {
+  parseEventCalendar,
+  type EncodedEventOccurrence,
+  type InvalidEventCalendar,
+} from "./event";
+import {
   parseFlatMapModel,
   parseLinearModel,
   parsePiecewiseMapModel,
@@ -77,7 +82,9 @@ export interface EncodedPiecewiseMapModel {
     readonly slope: number;
     readonly deltas: ReadonlyArray<number>;
     readonly seasonal: ReadonlyArray<number>;
+    readonly events: ReadonlyArray<number>;
   };
+  readonly events: ReadonlyArray<EncodedEventOccurrence>;
   readonly timeScaling: {
     readonly origin: number;
     readonly scale: number;
@@ -117,6 +124,16 @@ const EncodedLinearModelSchema = Schema.Struct({
   }),
 });
 
+const EncodedEventOccurrencesSchema = Schema.Array(
+  Schema.Struct({
+    name: Schema.String,
+    date: Schema.String,
+    lowerWindowDays: Schema.optionalKey(Schema.Number),
+    upperWindowDays: Schema.optionalKey(Schema.Number),
+    priorScale: Schema.optionalKey(Schema.Number),
+  }),
+);
+
 const EncodedFlatMapModelSchema = Schema.Struct({
   modelKind: Schema.Literal("flat-map"),
   coefficients: Schema.Struct({
@@ -150,7 +167,9 @@ const EncodedPiecewiseMapModelSchema = Schema.Struct({
     slope: Schema.Number,
     deltas: Schema.Array(Schema.Number),
     seasonal: Schema.Array(Schema.Number),
+    events: Schema.Array(Schema.Number).pipe(Schema.withDecodingDefaultKey(Effect.succeed([]))),
   }),
+  events: EncodedEventOccurrencesSchema.pipe(Schema.withDecodingDefaultKey(Effect.succeed([]))),
   timeScaling: Schema.Struct({
     origin: Schema.Number,
     scale: Schema.Number,
@@ -272,6 +291,16 @@ const serializationErrorFromInvalidModel = (
     message: error.message,
   });
 
+const serializationErrorFromInvalidEvent = (error: InvalidEventCalendar): ModelSerializationError =>
+  new ModelSerializationError({
+    operation: "decode",
+    issues: error.issues.map((issue) => ({
+      message: issue.message,
+      path: ["events", ...(issue.path ?? [])],
+    })),
+    message: error.message,
+  });
+
 const serializationErrorFromInvalidSeasonality = (
   error: Seasonality.InvalidSeasonality,
 ): ModelSerializationError =>
@@ -335,7 +364,15 @@ const encodePiecewiseMapModel = (model: FittedPiecewiseMapProphet): EncodedPiece
     slope: model.slope,
     deltas: Array.from(model.deltas),
     seasonal: Array.from(model.coefficients),
+    events: Array.from(model.eventCoefficients),
   },
+  events: model.events.occurrences.map((occurrence) => ({
+    name: occurrence.name,
+    date: occurrence.date,
+    lowerWindowDays: occurrence.lowerWindowDays,
+    upperWindowDays: occurrence.upperWindowDays,
+    priorScale: occurrence.priorScale,
+  })),
   timeScaling: { origin: model.timeOrigin, scale: model.timeScale },
   changepointTimestamps: Array.from(model.changepointTimestamps),
   seasonalities: model.seasonalities.components.map((component) => ({
@@ -382,6 +419,10 @@ const decodePiecewiseMapModel = Effect.fn("decodePiecewiseMapModel")(function* (
     Effect.mapError(serializationErrorFromInvalidSeasonality),
   );
 
+  const events = yield* parseEventCalendar(encoded.events).pipe(
+    Effect.mapError(serializationErrorFromInvalidEvent),
+  );
+
   return yield* parsePiecewiseMapModel({
     model: "linear-piecewise-map",
     intercept: encoded.coefficients.intercept,
@@ -392,6 +433,8 @@ const decodePiecewiseMapModel = Effect.fn("decodePiecewiseMapModel")(function* (
     deltas: encoded.coefficients.deltas,
     seasonalities,
     coefficients: encoded.coefficients.seasonal,
+    events,
+    eventCoefficients: encoded.coefficients.events,
     noiseScale: encoded.noiseScale,
     fitSummary: encoded.fitSummary,
   }).pipe(
@@ -404,7 +447,7 @@ const decodePiecewiseMapModel = Effect.fn("decodePiecewiseMapModel")(function* (
 /**
  * Encode a supported fitted model into the current JSON-compatible portable format.
  *
- * @param model - A fitted linear or linear-additive model.
+ * @param model - A supported fitted model.
  * @returns The portable payload or a typed serialization failure.
  */
 export const encodeFittedModel = Effect.fn("Prophet.encodeFittedModel")(function* (

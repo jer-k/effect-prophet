@@ -138,14 +138,14 @@ Each configured custom seasonality requires a unique name, positive period in fi
 
 Built-ins deliberately default to `"off"`, unlike Python Prophet. Set an individual control to `"auto"` for Prophet 1.4.0's training-history rule, or use `{ mode: "on" }` to force its default order. Forced controls also accept positive `fourierOrder` and `priorScale` overrides. `prophetFittingBackendLayer` is total over every configuration accepted by `fit` and dispatches to the corresponding narrow numerical adapter.
 
-The MAP slices currently use absmax scaling and additive seasonalities. Logistic growth, minmax scaling, holidays, multiplicative components, and uncertainty remain out of scope. See the [linear piecewise MAP contract](docs/modeling/piecewise-map.md) and [reduced flat MAP contract](docs/modeling/flat-map.md).
+The MAP slices currently use absmax scaling, additive seasonalities, and caller-supplied custom events. Logistic growth, minmax scaling, country holiday catalogs, multiplicative components, and uncertainty remain out of scope. See the [linear piecewise MAP contract](docs/modeling/piecewise-map.md) and [reduced flat MAP contract](docs/modeling/flat-map.md).
 
 ```ts
 import { Effect } from "effect";
 import { decodeOptions } from "effect-prophet";
 
 const defaults = await Effect.runPromise(decodeOptions());
-// { growth: "linear", seasonalities: [], builtInSeasonalities: { daily: "off", weekly: "off", yearly: "off" } }
+// Includes linear growth, no seasonalities/events, and all built-ins off.
 
 const flat = await Effect.runPromise(decodeOptions({ growth: "flat" }));
 
@@ -179,6 +179,30 @@ const forecasts = await Effect.runPromise(
 );
 // Forecast values and trend components are 11 and 14; additive is zero.
 ```
+
+## Custom events
+
+Custom events use exact UTC calendar dates and optional inclusive day windows. Known future occurrences must be supplied while fitting; one-off events do not recur automatically. Linear piecewise MAP fits event coefficients jointly in Rust. Flat growth rejects configured events.
+
+```ts
+import { Effect } from "effect";
+import { fit, predict, prophetFittingBackendLayer } from "effect-prophet";
+
+const model = await Effect.runPromise(
+  fit(observations, {
+    events: [
+      { name: "launch", date: "2025-03-10", lowerWindowDays: -1, upperWindowDays: 2 },
+      { name: "launch", date: "2026-03-09", lowerWindowDays: -1, upperWindowDays: 2 },
+    ],
+    map: { changepoints: { mode: "auto" } },
+  }).pipe(Effect.provide(prophetFittingBackendLayer)),
+);
+
+const forecasts = await Effect.runPromise(predict(model, futureTimestamps));
+// forecasts[i].events contains the grouped `launch` contribution.
+```
+
+See [known additive features](docs/modeling/additive-features.md) for ordering, UTC window semantics, memory ownership, and the WASM protocol.
 
 ## Automatic built-in seasonalities
 

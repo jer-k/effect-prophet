@@ -8,6 +8,7 @@ import {
   type WasmFailurePhase,
 } from "../errors";
 import type { SeasonalityLayout } from "../seasonality";
+import type { KnownAdditiveFeatures, SeasonalityMaskMatrix } from "./additional-features";
 
 /** One checked row-major prediction batch with seasonal component values. */
 export interface WasmSeasonalPredictionBatch {
@@ -222,7 +223,36 @@ export const packSeasonalitiesForFit = (seasonalities: SeasonalityLayout) => {
   return { periods, orders, priors };
 };
 
+/** Pack checked masks, feature values, priors, and component ranges for the numeric ABI. */
+export const packKnownAdditiveFeatures = (
+  masks: SeasonalityMaskMatrix,
+  features: KnownAdditiveFeatures,
+) => {
+  const packedMasks = new Float64Array(masks.values);
+  const values = new Float64Array(features.matrix.values);
+  const priors = new Float64Array(features.layout.priorScales);
+  const offsets = new Float64Array(features.layout.components.length);
+  const counts = new Float64Array(features.layout.components.length);
+
+  for (const [index, component] of features.layout.components.entries()) {
+    offsets[index] = component.coefficientOffset;
+    counts[index] = component.coefficientCount;
+  }
+
+  return { packedMasks, values, priors, offsets, counts };
+};
+
 type WasmModelType = "flat-map" | "linear-piecewise-map" | "linear-trend";
+
+type SeasonalPredictionStatuses = {
+  readonly success: number;
+  readonly invalidTimestamp: number;
+  readonly invalidModel: number;
+  readonly invalidConfiguration: number;
+  readonly lengthMismatch?: number;
+  readonly sizeOverflow: number;
+  readonly nonFiniteResult: number;
+};
 
 type SeasonalPredictionMessages = {
   readonly arithmeticOverflow: string;
@@ -239,6 +269,7 @@ export const decodeSeasonalPredictions = (
   timestamps: ReadonlyArray<number>,
   componentCount: number,
   messages: SeasonalPredictionMessages,
+  statuses: SeasonalPredictionStatuses = seasonalPredictionStatus,
 ): Effect.Effect<WasmSeasonalPredictionBatch, PredictionError> => {
   const firstTimestamp = timestamps[0];
 
@@ -273,7 +304,7 @@ export const decodeSeasonalPredictions = (
     return protocolFailure();
   }
 
-  if (status === seasonalPredictionStatus.success) {
+  if (status === statuses.success) {
     if (packed.length !== expectedLength) {
       return protocolFailure();
     }
@@ -288,9 +319,9 @@ export const decodeSeasonalPredictions = (
   }
 
   if (
-    status === seasonalPredictionStatus.invalidModel ||
-    status === seasonalPredictionStatus.invalidConfiguration ||
-    status === seasonalPredictionStatus.lengthMismatch
+    status === statuses.invalidModel ||
+    status === statuses.invalidConfiguration ||
+    status === statuses.lengthMismatch
   ) {
     return packed.length === 1
       ? failWasmPrediction(firstTimestamp, {
@@ -300,7 +331,7 @@ export const decodeSeasonalPredictions = (
       : protocolFailure();
   }
 
-  if (status === seasonalPredictionStatus.sizeOverflow) {
+  if (status === statuses.sizeOverflow) {
     return packed.length === 1
       ? failWasmPrediction(firstTimestamp, {
           reason: "backend-failure",
@@ -315,14 +346,14 @@ export const decodeSeasonalPredictions = (
     return protocolFailure();
   }
 
-  if (status === seasonalPredictionStatus.invalidTimestamp) {
+  if (status === statuses.invalidTimestamp) {
     return failWasmPrediction(failedTimestamp, {
       reason: "backend-failure",
       message: messages.invalidTimestamp,
     });
   }
 
-  if (status === seasonalPredictionStatus.nonFiniteResult) {
+  if (status === statuses.nonFiniteResult) {
     return failWasmPrediction(failedTimestamp, {
       reason: "non-finite-forecast",
       message: messages.nonFiniteResult,
