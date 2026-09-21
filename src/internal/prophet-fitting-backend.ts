@@ -13,6 +13,7 @@ export const prophetFittingBackendLayer: Layer.Layer<FittingBackend> = Layer.suc
       FitPlan.$match(plan, {
         LinearTrend: () => fitLinearTrendWithWasm(input),
         LinearPiecewiseMap: ({
+          scaling,
           seasonalities,
           changepoints,
           changepointPriorScale,
@@ -24,6 +25,7 @@ export const prophetFittingBackendLayer: Layer.Layer<FittingBackend> = Layer.suc
         }) =>
           fitPiecewiseMapFeaturesWithWasm(
             input,
+            scaling,
             seasonalities,
             changepoints,
             changepointPriorScale,
@@ -33,8 +35,9 @@ export const prophetFittingBackendLayer: Layer.Layer<FittingBackend> = Layer.suc
             events,
             regressors,
           ),
-        FlatMap: ({ seasonalities }) => fitFlatMapWithWasm(input, seasonalities),
-        FlatAdditiveMap: ({ seasonalities }) => fitFlatMapWithWasm(input, seasonalities),
+        FlatMap: ({ scaling, seasonalities }) => fitFlatMapWithWasm(input, scaling, seasonalities),
+        FlatAdditiveMap: ({ scaling, seasonalities }) =>
+          fitFlatMapWithWasm(input, scaling, seasonalities),
       }),
   },
 );

@@ -727,6 +727,97 @@ const SeasonalityResolutionReferenceFileSchema = Schema.Struct({
   }),
 );
 
+const TargetScalingModeSchema = Schema.Literals(["absmax", "minmax"]);
+
+const NumericRecordSchema = Schema.Record(Schema.String, Schema.Finite);
+
+const TargetScalingPreprocessingCaseSchema = Schema.Struct({
+  id: Schema.NonEmptyString,
+  kind: Schema.Literal("target-scaling-preprocessing"),
+  mode: TargetScalingModeSchema,
+  values: Schema.NonEmptyArray(Schema.Finite),
+  expected: Schema.Struct({
+    offset: Schema.Finite,
+    scale: PositiveFinite,
+    scaledValues: Schema.NonEmptyArray(Schema.Finite),
+  }),
+  tolerance: NumericToleranceSchema,
+}).check(
+  Schema.makeFilter((referenceCase) => {
+    if (referenceCase.values.length !== referenceCase.expected.scaledValues.length) {
+      return {
+        path: ["expected", "scaledValues"],
+        issue: "Scaled target values must align with source values",
+      };
+    }
+  }),
+);
+
+const TargetScalingFittedCaseSchema = Schema.Struct({
+  id: Schema.NonEmptyString,
+  kind: Schema.Literal("target-scaling-fitted-map"),
+  growth: Schema.Literals(["flat", "linear"]),
+  mode: TargetScalingModeSchema,
+  observations: Schema.NonEmptyArray(
+    Schema.Struct({
+      timestamp: CanonicalTimestamp,
+      value: Schema.Finite,
+      regressors: Schema.optionalKey(NumericRecordSchema),
+    }),
+  ),
+  predictionRows: Schema.NonEmptyArray(
+    Schema.Struct({
+      timestamp: CanonicalTimestamp,
+      regressors: Schema.optionalKey(NumericRecordSchema),
+    }),
+  ),
+  changepointTimestamps: Schema.Array(CanonicalTimestamp),
+  seasonalities: Schema.Array(ConditionalSeasonalityDefinitionSchema),
+  events: Schema.Array(
+    Schema.Struct({
+      name: Schema.NonEmptyString,
+      date: Schema.NonEmptyString,
+      priorScale: PositiveFinite,
+    }),
+  ),
+  regressors: Schema.Array(
+    Schema.Struct({
+      name: Schema.NonEmptyString,
+      priorScale: PositiveFinite,
+      standardization: Schema.Literals(["auto", "always", "never"]),
+    }),
+  ),
+  settings: Schema.Struct({ changepointPriorScale: PositiveFinite }),
+  expected: Schema.Struct({
+    offset: Schema.Finite,
+    scale: PositiveFinite,
+    trend: Schema.NonEmptyArray(Schema.Finite),
+    additive: Schema.NonEmptyArray(Schema.Finite),
+    value: Schema.NonEmptyArray(Schema.Finite),
+  }),
+  tolerance: NumericToleranceSchema,
+}).check(
+  Schema.makeFilter((referenceCase) => {
+    const predictionCount = referenceCase.predictionRows.length;
+
+    if (
+      referenceCase.expected.trend.length !== predictionCount ||
+      referenceCase.expected.additive.length !== predictionCount ||
+      referenceCase.expected.value.length !== predictionCount
+    ) {
+      return {
+        path: ["expected"],
+        issue: "Fitted scaling predictions must align with prediction rows",
+      };
+    }
+  }),
+);
+
+const TargetScalingReferenceFileSchema = Schema.Struct({
+  preprocessingCases: Schema.NonEmptyArray(TargetScalingPreprocessingCaseSchema),
+  fittedCases: Schema.NonEmptyArray(TargetScalingFittedCaseSchema),
+});
+
 const ArtifactPath = Schema.String.check(
   Schema.makeFilter(
     (value) =>
@@ -794,6 +885,7 @@ const FixtureManifestSchema = Schema.Struct({
       "seasonality-resolution.json",
       "conditional-seasonality.json",
       "conditional-map-fit.json",
+      "target-scaling.json",
     ]) {
       if (!paths.has(requiredPath)) {
         return {
@@ -841,6 +933,11 @@ const decodeSeasonalityResolutionReferenceSchema = Schema.decodeUnknownEffect(
 
 const decodeConditionalMapFitReferenceSchema = Schema.decodeUnknownEffect(
   ConditionalMapFitReferenceFileSchema,
+  { errors: "all" },
+);
+
+const decodeTargetScalingReferenceSchema = Schema.decodeUnknownEffect(
+  TargetScalingReferenceFileSchema,
   { errors: "all" },
 );
 
@@ -906,6 +1003,9 @@ export type SeasonalityResolutionReferenceCase =
 /** A parsed collection of Prophet seasonality-resolution reference cases. */
 export type SeasonalityResolutionReferenceFile =
   typeof SeasonalityResolutionReferenceFileSchema.Type;
+
+/** Parsed Prophet target-scaling preprocessing and fitted MAP evidence. */
+export type TargetScalingReferenceFile = typeof TargetScalingReferenceFileSchema.Type;
 
 /** Parsed provenance and artifact integrity metadata for the fixture folder. */
 export type FixtureManifest = typeof FixtureManifestSchema.Type;
@@ -1099,6 +1199,26 @@ export const decodeSeasonalityResolutionReference = Effect.fn(
   );
 });
 
+/** Parse untrusted target-scaling preprocessing and fitted MAP evidence. */
+export const decodeTargetScalingReference = Effect.fn(
+  "ProphetFixture.decodeTargetScalingReference",
+)(function* (
+  input: Parameters<typeof decodeTargetScalingReferenceSchema>[0],
+  path = "<memory>",
+): Effect.fn.Return<TargetScalingReferenceFile, FixtureLoadError> {
+  return yield* decodeTargetScalingReferenceSchema(input).pipe(
+    Effect.mapError(
+      (cause) =>
+        new FixtureLoadError({
+          operation: "schema",
+          fixturePath: path,
+          message: formatSchemaIssue(cause.issue),
+          cause,
+        }),
+    ),
+  );
+});
+
 /** Parse an untrusted fixture manifest, including safe relative artifact paths. */
 export const decodeFixtureManifest = Effect.fn("ProphetFixture.decodeFixtureManifest")(function* (
   input: Parameters<typeof decodeFixtureManifestSchema>[0],
@@ -1253,6 +1373,16 @@ export const loadProphetFixtureBundle = Effect.fn("ProphetFixture.loadBundle")(f
     conditionalMapFitPath,
   );
 
+  const targetScalingPath = nodePath.join(root, "target-scaling.json");
+  const targetScalingContents = yield* readFixtureText(targetScalingPath);
+
+  const targetScalingInput: unknown = yield* Effect.try({
+    try: () => JSON.parse(targetScalingContents),
+    catch: (cause) => invalidJson(targetScalingPath, cause),
+  });
+
+  const targetScaling = yield* decodeTargetScalingReference(targetScalingInput, targetScalingPath);
+
   const seasonalityResolutionPath = nodePath.join(root, "seasonality-resolution.json");
   const seasonalityResolutionContents = yield* readFixtureText(seasonalityResolutionPath);
 
@@ -1276,5 +1406,6 @@ export const loadProphetFixtureBundle = Effect.fn("ProphetFixture.loadBundle")(f
     manifest,
     piecewiseLinear,
     seasonalityResolution,
+    targetScaling,
   };
 });

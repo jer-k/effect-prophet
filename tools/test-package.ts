@@ -55,6 +55,7 @@ const expectedDeclarationFiles = [
   "dist/prophet.d.ts",
   "dist/regressor.d.ts",
   "dist/seasonality.d.ts",
+  "dist/target-scaling.d.ts",
 ];
 
 const expectedWasmFiles = [

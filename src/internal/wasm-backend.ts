@@ -8,6 +8,7 @@ import {
   type WasmFailurePhase,
 } from "../errors";
 import type { SeasonalityLayout } from "../seasonality";
+import type { TargetScalingMode } from "../target-scaling";
 import type { KnownAdditiveFeatures, SeasonalityMaskMatrix } from "./additional-features";
 import { checkedAdd, checkedMultiply } from "./safe-arithmetic";
 
@@ -349,6 +350,7 @@ export const wasmFitSpanOptions = (
   model: { readonly type: WasmModelType; readonly growth: "flat" | "linear" },
   observationCount: number,
   seasonalCounts?: { readonly components: number; readonly coefficients: number },
+  scaling?: TargetScalingMode,
 ) => {
   const attributes = {
     "effect_prophet.backend.type": "rust-wasm",
@@ -359,16 +361,25 @@ export const wasmFitSpanOptions = (
   };
 
   if (seasonalCounts === undefined) {
-    return { attributes };
+    return scaling === undefined
+      ? { attributes }
+      : { attributes: { ...attributes, "effect_prophet.scaling.mode": scaling } };
   }
 
-  return {
-    attributes: {
-      ...attributes,
-      "effect_prophet.seasonality.count": seasonalCounts.components,
-      "effect_prophet.coefficient.count": seasonalCounts.coefficients,
-    },
+  const seasonalAttributes = {
+    ...attributes,
+    "effect_prophet.seasonality.count": seasonalCounts.components,
+    "effect_prophet.coefficient.count": seasonalCounts.coefficients,
   };
+
+  return scaling === undefined
+    ? { attributes: seasonalAttributes }
+    : {
+        attributes: {
+          ...seasonalAttributes,
+          "effect_prophet.scaling.mode": scaling,
+        },
+      };
 };
 
 /** Build stable span options for a WASM prediction boundary. */
@@ -376,6 +387,7 @@ export const wasmPredictSpanOptions = (
   modelType: WasmModelType,
   predictionCount: number,
   componentCount?: number,
+  scaling?: TargetScalingMode,
 ) => {
   const attributes = {
     "effect_prophet.backend.type": "rust-wasm",
@@ -385,13 +397,22 @@ export const wasmPredictSpanOptions = (
   };
 
   if (componentCount === undefined) {
-    return { attributes };
+    return scaling === undefined
+      ? { attributes }
+      : { attributes: { ...attributes, "effect_prophet.scaling.mode": scaling } };
   }
 
-  return {
-    attributes: {
-      ...attributes,
-      "effect_prophet.seasonality.count": componentCount,
-    },
+  const seasonalAttributes = {
+    ...attributes,
+    "effect_prophet.seasonality.count": componentCount,
   };
+
+  return scaling === undefined
+    ? { attributes: seasonalAttributes }
+    : {
+        attributes: {
+          ...seasonalAttributes,
+          "effect_prophet.scaling.mode": scaling,
+        },
+      };
 };

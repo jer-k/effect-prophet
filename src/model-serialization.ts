@@ -28,6 +28,7 @@ import type {
   RegressorTransform,
 } from "./regressor";
 import * as Seasonality from "./seasonality";
+import { TargetScalingSchema, type TargetScaling } from "./target-scaling";
 
 /** The legacy portable representation of a fitted ordinary linear model. */
 export interface EncodedLinearModel {
@@ -66,6 +67,9 @@ export interface EncodedFlatMapModel {
   /** Identifies the reduced flat MAP prediction equation. */
   readonly modelKind: "flat-map";
 
+  /** Complete train-derived target scaling; absent only in legacy payloads. */
+  readonly targetScaling?: TargetScaling;
+
   /** Constant trend level and ordered seasonal coefficients in observation units. */
   readonly coefficients: {
     readonly level: number;
@@ -91,6 +95,7 @@ export interface EncodedFlatMapModel {
 /** Portable representation of a linear piecewise MAP model. */
 export interface EncodedPiecewiseMapModel {
   readonly modelKind: "linear-piecewise-map";
+  readonly targetScaling?: TargetScaling;
   readonly coefficients: {
     readonly intercept: number;
     readonly slope: number;
@@ -170,6 +175,7 @@ const EncodedFittedRegressorSchema = Schema.Struct({
 
 const EncodedFlatMapModelSchema = Schema.Struct({
   modelKind: Schema.Literal("flat-map"),
+  targetScaling: Schema.optionalKey(TargetScalingSchema),
   coefficients: Schema.Struct({
     level: Schema.Number,
     seasonal: Schema.Array(Schema.Number),
@@ -197,6 +203,7 @@ const EncodedFlatMapModelSchema = Schema.Struct({
 
 const EncodedPiecewiseMapModelSchema = Schema.Struct({
   modelKind: Schema.Literal("linear-piecewise-map"),
+  targetScaling: Schema.optionalKey(TargetScalingSchema),
   coefficients: Schema.Struct({
     intercept: Schema.Number,
     slope: Schema.Number,
@@ -416,6 +423,7 @@ const encodeSeasonalityDefinition = (
 
 const encodeFlatMapModel = (model: FittedFlatMapProphet): EncodedFlatMapModel => ({
   modelKind: "flat-map",
+  targetScaling: { ...model.targetScaling },
   coefficients: {
     level: model.level,
     seasonal: Array.from(model.coefficients),
@@ -435,6 +443,7 @@ const encodeFlatMapModel = (model: FittedFlatMapProphet): EncodedFlatMapModel =>
 
 const encodePiecewiseMapModel = (model: FittedPiecewiseMapProphet): EncodedPiecewiseMapModel => ({
   modelKind: "linear-piecewise-map",
+  targetScaling: { ...model.targetScaling },
   coefficients: {
     intercept: model.intercept,
     slope: model.slope,
@@ -515,8 +524,15 @@ const decodeFlatMapModel = Effect.fn("decodeFlatMapModel")(function* (
     Effect.mapError(serializationErrorFromInvalidSeasonality),
   );
 
+  const targetScaling = encoded.targetScaling ?? {
+    mode: "absmax" as const,
+    offset: 0,
+    scale: encoded.fitSummary.valueScale,
+  };
+
   return yield* parseFlatMapModel({
     model: "flat-map",
+    targetScaling,
     level: encoded.coefficients.level,
     seasonalities,
     coefficients: encoded.coefficients.seasonal,
@@ -547,8 +563,15 @@ const decodePiecewiseMapModel = Effect.fn("decodePiecewiseMapModel")(function* (
     encoded.coefficients.regressors,
   );
 
+  const targetScaling = encoded.targetScaling ?? {
+    mode: "absmax" as const,
+    offset: 0,
+    scale: encoded.fitSummary.valueScale,
+  };
+
   return yield* parsePiecewiseMapModel({
     model: "linear-piecewise-map",
+    targetScaling,
     intercept: encoded.coefficients.intercept,
     slope: encoded.coefficients.slope,
     timeOrigin: encoded.timeScaling.origin,

@@ -128,11 +128,13 @@ The coarse fit export accepts training timestamps/values, explicit or automatic 
 controls, ordered seasonality metadata, the changepoint prior, and deterministic optimizer
 controls. Rust resolves automatic candidates and returns their timestamps with fitted deltas.
 
-Fit success has exact width `13 + 2*C + K`:
+The preserved legacy absmax fit success has exact width `13 + 2*C + K`. Production uses
+the explicit scaled export with width `16 + 2*C + K`:
 
 ```text
 [
-  0, C, intercept, slope, timeOrigin, timeScale, valueScale, noiseScale,
+  0, mode, targetOffset, targetScale,
+  C, intercept, slope, timeOrigin, timeScale, valueScale, noiseScale,
   observationCount, iterations, objective, stationarityResidual, termination,
   ...C changepointTimestamps, ...C deltas, ...K seasonalCoefficients
 ]
@@ -140,7 +142,8 @@ Fit success has exact width `13 + 2*C + K`:
 
 Termination is zero for convergence and one for the constant-target shortcut. Fit status codes
 preserve insufficient history, malformed alignment/observations/configuration, zero time range,
-size overflow, non-finite results, noise collapse, and non-convergence.
+size overflow, non-finite results, noise collapse, non-convergence, and unrepresentable target
+scaling. See the [target-scaling contract](target-scaling.md) for mode codes and projection rules.
 
 Prediction accepts complete stored model state and returns exact width `1 + N*(3+S)` with rows
 `[trend, additive, value, ...SComponents]`. Indexed timestamp and non-finite failures identify the

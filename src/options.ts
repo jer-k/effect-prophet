@@ -22,6 +22,7 @@ import {
   type InvalidSeasonality,
   type SeasonalityDefinition,
 } from "./seasonality";
+import { TargetScalingModeSchema, type TargetScalingMode } from "./target-scaling";
 
 /** Valid trend forms represented by the current public fitting configuration. */
 export type Growth = "flat" | "linear";
@@ -64,6 +65,7 @@ interface EncodedBuiltInOptions {
   readonly builtInSeasonalities?: EncodedBuiltInSeasonalities;
   readonly events?: ReadonlyArray<EncodedEventOccurrence>;
   readonly regressors?: ReadonlyArray<EncodedRegressorDefinition>;
+  readonly scaling?: TargetScalingMode;
 }
 
 /** Public explicit or automatic changepoint configuration for linear MAP fitting. */
@@ -152,6 +154,7 @@ interface ParsedBuiltInOptions {
   readonly builtInSeasonalities: BuiltInSeasonalities;
   readonly events: EventCalendar;
   readonly regressors: ReadonlyArray<RegressorDefinition>;
+  readonly scaling?: TargetScalingMode;
 }
 
 /** Parsed linear-growth options without configured custom seasonalities. */
@@ -310,6 +313,7 @@ const ProphetOptionsSyntaxSchema = Schema.Struct({
   ),
   events: Schema.Array(Schema.Unknown).pipe(Schema.withDecodingDefaultKey(Effect.succeed([]))),
   regressors: Schema.Array(Schema.Unknown).pipe(Schema.withDecodingDefaultKey(Effect.succeed([]))),
+  scaling: Schema.optionalKey(TargetScalingModeSchema),
   map: Schema.optionalKey(MapOptionsSchema),
 });
 
@@ -496,6 +500,7 @@ export const decodeOptions = Effect.fn("decodeOptions")(function* (
 
   const builtInSeasonalities = freezeBuiltInSeasonalities(syntax.builtInSeasonalities);
   const map = syntax.map === undefined ? undefined : freezeMapOptions(syntax.map);
+  const scaling = syntax.scaling === undefined ? {} : { scaling: syntax.scaling };
   const firstSeasonality = seasonalities[0];
 
   if (firstSeasonality === undefined) {
@@ -506,6 +511,7 @@ export const decodeOptions = Effect.fn("decodeOptions")(function* (
         builtInSeasonalities,
         events,
         regressors,
+        ...scaling,
       };
     }
 
@@ -516,6 +522,7 @@ export const decodeOptions = Effect.fn("decodeOptions")(function* (
           builtInSeasonalities,
           events,
           regressors,
+          ...scaling,
         }
       : {
           growth: "linear",
@@ -524,6 +531,7 @@ export const decodeOptions = Effect.fn("decodeOptions")(function* (
           events,
           regressors,
           map,
+          ...scaling,
         };
   }
 
@@ -539,6 +547,7 @@ export const decodeOptions = Effect.fn("decodeOptions")(function* (
       builtInSeasonalities,
       events,
       regressors,
+      ...scaling,
     };
   }
 
@@ -549,6 +558,7 @@ export const decodeOptions = Effect.fn("decodeOptions")(function* (
         builtInSeasonalities,
         events,
         regressors,
+        ...scaling,
       }
     : {
         growth: "linear",
@@ -557,5 +567,6 @@ export const decodeOptions = Effect.fn("decodeOptions")(function* (
         events,
         regressors,
         map,
+        ...scaling,
       };
 });

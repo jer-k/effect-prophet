@@ -1,10 +1,11 @@
 use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::flat_map::{
-  FlatMapError, FlatMapPredictionError, FlatMapTermination, fit_flat_map as fit_flat_map_kernel,
-  predict_flat_map as predict_flat_map_kernel,
+  FlatMapError, FlatMapPredictionError, FlatMapTermination,
+  fit_flat_map_with_scaling as fit_flat_map_kernel, predict_flat_map as predict_flat_map_kernel,
 };
 use crate::seasonality::SeasonalitySpec;
+use crate::target_scaling::{ScalingMode, TargetScaling};
 use crate::wasm_protocol::parse_positive_integer;
 
 /// Status at index zero of a packed flat MAP fit result.
@@ -38,6 +39,9 @@ pub enum FlatMapFitStatus {
 
   /// The deterministic optimizer budget was exhausted.
   NonConvergence = 8,
+
+  /// Finite targets produced an unrepresentable scaling domain.
+  NonRepresentableScaling = 9,
 }
 
 /// Status at index zero of a packed flat MAP prediction result.
@@ -80,6 +84,55 @@ pub fn fit_flat_map(
   fourier_orders: &[f64],
   prior_scales: &[f64],
 ) -> Vec<f64> {
+  fit_flat_map_protocol(
+    timestamps,
+    values,
+    periods_days,
+    fourier_orders,
+    prior_scales,
+    ScalingMode::AbsMax,
+    false,
+  )
+}
+
+/// Fit a reduced flat MAP model with explicit Prophet target scaling.
+///
+/// Success prepends `[mode, offset, scale]` to the legacy success payload.
+#[must_use]
+#[wasm_bindgen]
+pub fn fit_flat_map_with_scaling(
+  timestamps: &[f64],
+  values: &[f64],
+  scaling_mode: f64,
+  periods_days: &[f64],
+  fourier_orders: &[f64],
+  prior_scales: &[f64],
+) -> Vec<f64> {
+  let Some(scaling_mode) = ScalingMode::from_code(scaling_mode) else {
+    return fit_status_frame(FlatMapFitStatus::InvalidConfiguration);
+  };
+
+  fit_flat_map_protocol(
+    timestamps,
+    values,
+    periods_days,
+    fourier_orders,
+    prior_scales,
+    scaling_mode,
+    true,
+  )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn fit_flat_map_protocol(
+  timestamps: &[f64],
+  values: &[f64],
+  periods_days: &[f64],
+  fourier_orders: &[f64],
+  prior_scales: &[f64],
+  scaling_mode: ScalingMode,
+  include_scaling: bool,
+) -> Vec<f64> {
   let seasonalities = match parse_seasonalities(periods_days, fourier_orders, Some(prior_scales)) {
     Ok(seasonalities) => seasonalities,
     Err(ProtocolConfigurationError::LengthMismatch) => {
@@ -90,9 +143,10 @@ pub fn fit_flat_map(
     }
   };
 
-  match fit_flat_map_kernel(timestamps, values, &seasonalities) {
+  match fit_flat_map_kernel(timestamps, values, &seasonalities, scaling_mode) {
     Ok(model) => {
-      let Some(capacity) = model.coefficients.len().checked_add(9) else {
+      let metadata_width = if include_scaling { 3 } else { 0 };
+      let Some(capacity) = model.coefficients.len().checked_add(9 + metadata_width) else {
         return fit_status_frame(FlatMapFitStatus::SizeOverflow);
       };
       let termination = match model.summary.termination {
@@ -101,8 +155,17 @@ pub fn fit_flat_map(
       };
       let mut packed = Vec::with_capacity(capacity);
 
+      packed.push(f64::from(FlatMapFitStatus::Success as u32));
+
+      if include_scaling {
+        packed.extend_from_slice(&[
+          model.target_scaling.mode.code(),
+          model.target_scaling.offset,
+          model.target_scaling.scale,
+        ]);
+      }
+
       packed.extend_from_slice(&[
-        f64::from(FlatMapFitStatus::Success as u32),
         model.level,
         model.noise_scale,
         model.summary.value_scale,
@@ -161,6 +224,40 @@ pub fn predict_flat_map(
   }
 }
 
+/// Evaluate relative output-unit flat MAP state with stored target scaling.
+#[must_use]
+#[wasm_bindgen]
+#[allow(clippy::too_many_arguments)]
+pub fn predict_flat_map_with_scaling(
+  timestamps: &[f64],
+  scaling_mode: f64,
+  target_offset: f64,
+  target_scale: f64,
+  level: f64,
+  noise_scale: f64,
+  periods_days: &[f64],
+  fourier_orders: &[f64],
+  coefficients: &[f64],
+) -> Vec<f64> {
+  let scaling = match TargetScaling::parse(scaling_mode, target_offset, target_scale) {
+    Ok(value) => value,
+    Err(_) => return prediction_status_frame(FlatMapPredictionStatus::InvalidModel),
+  };
+  let level = match scaling.restore_trend(level) {
+    Ok(value) => value,
+    Err(_) => return prediction_status_frame(FlatMapPredictionStatus::InvalidModel),
+  };
+
+  predict_flat_map(
+    timestamps,
+    level,
+    noise_scale,
+    periods_days,
+    fourier_orders,
+    coefficients,
+  )
+}
+
 fn parse_seasonalities(
   periods_days: &[f64],
   fourier_orders: &[f64],
@@ -203,6 +300,7 @@ fn status_for_fit_error(error: FlatMapError) -> FlatMapFitStatus {
     FlatMapError::InvalidConfiguration => FlatMapFitStatus::InvalidConfiguration,
     FlatMapError::SizeOverflow => FlatMapFitStatus::SizeOverflow,
     FlatMapError::NonFiniteResult => FlatMapFitStatus::NonFiniteResult,
+    FlatMapError::NonRepresentableScaling => FlatMapFitStatus::NonRepresentableScaling,
     FlatMapError::NoiseCollapse => FlatMapFitStatus::NoiseCollapse,
     FlatMapError::NonConvergence => FlatMapFitStatus::NonConvergence,
   }

@@ -83,6 +83,12 @@ export {
 } from "./seasonality";
 
 export {
+  defaultTargetScalingMode,
+  type TargetScaling,
+  type TargetScalingMode,
+} from "./target-scaling";
+
+export {
   fit,
   getRegressorCoefficients,
   predict,

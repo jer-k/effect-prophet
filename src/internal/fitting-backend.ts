@@ -5,6 +5,7 @@ import type { EventCalendar } from "../event";
 import type { Parameters } from "../fitted-model";
 import type { ChangepointSetting, MapOptimizerControls } from "../options";
 import type { ResolvedRegressor } from "../regressor";
+import type { TargetScalingMode } from "../target-scaling";
 import type {
   EmptySeasonalityLayout,
   NonEmptySeasonalityLayout,
@@ -37,6 +38,9 @@ export interface LinearTrendFitPlan {
 export interface LinearPiecewiseMapFitPlan {
   readonly _tag: "LinearPiecewiseMap";
 
+  /** Train-only target-scaling policy used by the MAP objective. */
+  readonly scaling: TargetScalingMode;
+
   /** Ordered resolved seasonality layout, possibly empty. */
   readonly seasonalities: SeasonalityLayout;
 
@@ -66,6 +70,9 @@ export interface LinearPiecewiseMapFitPlan {
 export interface FlatMapFitPlan {
   readonly _tag: "FlatMap";
 
+  /** Train-only target-scaling policy used by the MAP objective. */
+  readonly scaling: TargetScalingMode;
+
   /** Canonical empty feature layout established by public parsing. */
   readonly seasonalities: EmptySeasonalityLayout;
 }
@@ -73,6 +80,9 @@ export interface FlatMapFitPlan {
 /** Request for reduced flat MAP fitting with a non-empty additive layout. */
 export interface FlatAdditiveMapFitPlan {
   readonly _tag: "FlatAdditiveMap";
+
+  /** Train-only target-scaling policy used by the MAP objective. */
+  readonly scaling: TargetScalingMode;
 
   /** Non-empty ordered seasonality coefficient layout established by public parsing. */
   readonly seasonalities: NonEmptySeasonalityLayout;

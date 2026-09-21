@@ -12,6 +12,7 @@ interface FlatMapFitStatuses {
   readonly NonFiniteResult: number;
   readonly NoiseCollapse: number;
   readonly NonConvergence: number;
+  readonly NonRepresentableScaling: number;
 }
 
 interface FlatMapPredictionStatuses {
@@ -35,6 +36,7 @@ interface PiecewiseMapFitStatuses {
   readonly NonFiniteResult: number;
   readonly NoiseCollapse: number;
   readonly NonConvergence: number;
+  readonly NonRepresentableScaling: number;
 }
 
 interface PiecewiseMapPredictionStatuses {
@@ -70,8 +72,27 @@ export interface ProphetWasmNodeBindings {
     fourierOrders: Float64Array,
     priorScales: Float64Array,
   ) => Float64Array;
+  readonly fit_flat_map_with_scaling: (
+    timestamps: Float64Array,
+    values: Float64Array,
+    scalingMode: number,
+    periodsDays: Float64Array,
+    fourierOrders: Float64Array,
+    priorScales: Float64Array,
+  ) => Float64Array;
   readonly predict_flat_map: (
     timestamps: Float64Array,
+    level: number,
+    noiseScale: number,
+    periodsDays: Float64Array,
+    fourierOrders: Float64Array,
+    coefficients: Float64Array,
+  ) => Float64Array;
+  readonly predict_flat_map_with_scaling: (
+    timestamps: Float64Array,
+    scalingMode: number,
+    targetOffset: number,
+    targetScale: number,
     level: number,
     noiseScale: number,
     periodsDays: Float64Array,
@@ -93,6 +114,7 @@ export interface ProphetWasmNodeBindings {
     relativeTolerance: number,
     absoluteTolerance: number,
   ) => Float64Array;
+  readonly fit_piecewise_map_with_scaling: (...args: ReadonlyArray<unknown>) => Float64Array;
   readonly predict_piecewise_map: (
     timestamps: Float64Array,
     intercept: number,
@@ -106,8 +128,15 @@ export interface ProphetWasmNodeBindings {
     fourierOrders: Float64Array,
     coefficients: Float64Array,
   ) => Float64Array;
+  readonly predict_piecewise_map_with_scaling: (...args: ReadonlyArray<unknown>) => Float64Array;
   readonly fit_piecewise_map_with_features: (...args: ReadonlyArray<unknown>) => Float64Array;
+  readonly fit_piecewise_map_with_features_and_scaling: (
+    ...args: ReadonlyArray<unknown>
+  ) => Float64Array;
   readonly predict_piecewise_map_with_features: (...args: ReadonlyArray<unknown>) => Float64Array;
+  readonly predict_piecewise_map_with_features_and_scaling: (
+    ...args: ReadonlyArray<unknown>
+  ) => Float64Array;
   readonly fit_linear_trend: (timestamps: Float64Array, values: Float64Array) => Float64Array;
   readonly predict_linear_trend: (
     timestamps: Float64Array,
@@ -122,11 +151,17 @@ const require = createRequire(import.meta.url);
 
 const requiredFunctionExports = [
   "fit_piecewise_map_with_features",
+  "fit_piecewise_map_with_features_and_scaling",
   "predict_piecewise_map_with_features",
+  "predict_piecewise_map_with_features_and_scaling",
   "fit_flat_map",
+  "fit_flat_map_with_scaling",
   "predict_flat_map",
+  "predict_flat_map_with_scaling",
   "fit_piecewise_map",
+  "fit_piecewise_map_with_scaling",
   "predict_piecewise_map",
+  "predict_piecewise_map_with_scaling",
   "fit_linear_trend",
   "predict_linear_trend",
 ] as const;
@@ -142,6 +177,7 @@ const requiredStatusMembers = {
     "NonFiniteResult",
     "NoiseCollapse",
     "NonConvergence",
+    "NonRepresentableScaling",
   ],
   FlatMapPredictionStatus: [
     "Success",
@@ -163,6 +199,7 @@ const requiredStatusMembers = {
     "NonFiniteResult",
     "NoiseCollapse",
     "NonConvergence",
+    "NonRepresentableScaling",
   ],
   PiecewiseMapPredictionStatus: [
     "Success",

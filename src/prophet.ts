@@ -62,6 +62,7 @@ import type {
   NonEmptySeasonalityLayout,
   SeasonalityLayout,
 } from "./seasonality";
+import { defaultTargetScalingMode } from "./target-scaling";
 
 export type {
   EncodedPredictionRow,
@@ -212,12 +213,15 @@ const makeFitPlan = (
   additionalFeatures: KnownAdditiveFeatures,
   regressors: ReadonlyArray<ResolvedRegressor>,
 ): FitPlan => {
-  if (options.growth === "linear" && options.map !== undefined) {
+  if (options.growth === "linear" && (options.map !== undefined || options.scaling !== undefined)) {
+    const map = options.map ?? defaultAutomaticMapOptions;
+
     return FitPlan.LinearPiecewiseMap({
+      scaling: options.scaling ?? defaultTargetScalingMode,
       seasonalities: layout,
-      changepoints: options.map.changepoints,
-      changepointPriorScale: options.map.changepointPriorScale,
-      optimizer: options.map.optimizer,
+      changepoints: map.changepoints,
+      changepointPriorScale: map.changepointPriorScale,
+      optimizer: map.optimizer,
       seasonalityMasks: masks,
       additionalFeatures,
       events: options.events,
@@ -230,13 +234,17 @@ const makeFitPlan = (
   if (firstComponent === undefined && additionalFeatures.layout.coefficientCount === 0) {
     return options.growth === "linear"
       ? FitPlan.LinearTrend()
-      : FitPlan.FlatMap({ seasonalities: emptyLayoutFromResolved(layout) });
+      : FitPlan.FlatMap({
+          scaling: options.scaling ?? defaultTargetScalingMode,
+          seasonalities: emptyLayoutFromResolved(layout),
+        });
   }
 
   if (options.growth === "linear") {
     const map = defaultAutomaticMapOptions;
 
     return FitPlan.LinearPiecewiseMap({
+      scaling: options.scaling ?? defaultTargetScalingMode,
       seasonalities: layout,
       changepoints: map.changepoints,
       changepointPriorScale: map.changepointPriorScale,
@@ -249,10 +257,14 @@ const makeFitPlan = (
   }
 
   if (firstComponent === undefined) {
-    return FitPlan.FlatMap({ seasonalities: emptyLayoutFromResolved(layout) });
+    return FitPlan.FlatMap({
+      scaling: options.scaling ?? defaultTargetScalingMode,
+      seasonalities: emptyLayoutFromResolved(layout),
+    });
   }
 
   return FitPlan.FlatAdditiveMap({
+    scaling: options.scaling ?? defaultTargetScalingMode,
     seasonalities: nonEmptyLayoutFromResolved(layout, firstComponent),
   });
 };

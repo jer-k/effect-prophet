@@ -140,7 +140,7 @@ Each configured custom seasonality requires a unique name, positive period in fi
 
 Built-ins deliberately default to `"off"`, unlike Python Prophet. Set an individual control to `"auto"` for Prophet 1.4.0's training-history rule, or use `{ mode: "on" }` to force its default order. Forced controls also accept positive `fourierOrder` and `priorScale` overrides. `prophetFittingBackendLayer` is total over every configuration accepted by `fit` and dispatches to the corresponding narrow numerical adapter.
 
-The MAP slices currently use absmax scaling, additive seasonalities, and caller-supplied custom events. Logistic growth, minmax scaling, country holiday catalogs, multiplicative components, and uncertainty remain out of scope. See the [linear piecewise MAP contract](docs/modeling/piecewise-map.md) and [reduced flat MAP contract](docs/modeling/flat-map.md).
+Linear and flat MAP support Python Prophet's train-only `"absmax"` and `"minmax"` target scaling; absmax is the default. An explicit `scaling` option on featureless linear input selects MAP so centering and priors retain their Python meaning. The selected mode, offset, and scale are persisted and reused during prediction. Logistic growth, country holiday catalogs, multiplicative components, and uncertainty remain out of scope. See the [target-scaling contract](docs/modeling/target-scaling.md), [linear piecewise MAP contract](docs/modeling/piecewise-map.md), and [reduced flat MAP contract](docs/modeling/flat-map.md).
 
 ```ts
 import { Effect } from "effect";
@@ -149,7 +149,9 @@ import { decodeOptions } from "effect-prophet";
 const defaults = await Effect.runPromise(decodeOptions());
 // Includes linear growth, no seasonalities/events, and all built-ins off.
 
-const flat = await Effect.runPromise(decodeOptions({ growth: "flat" }));
+const flat = await Effect.runPromise(decodeOptions({ growth: "flat", scaling: "minmax" }));
+
+const scaledLinearMap = await Effect.runPromise(decodeOptions({ scaling: "minmax" }));
 
 const seasonal = await Effect.runPromise(
   decodeOptions({

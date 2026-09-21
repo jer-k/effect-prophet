@@ -31,6 +31,7 @@ const input = {
 const validModel = Effect.runSync(
   parseFlatMapModel({
     model: "flat-map",
+    targetScaling: { mode: "absmax", offset: 0, scale: 3 },
     level: 1,
     seasonalities,
     coefficients: [2, 0],
@@ -52,7 +53,9 @@ const moduleReturning = (
   predictionResult: Float64Array,
 ): FlatMapWasmBindings => ({
   fit_flat_map: () => fitResult,
+  fit_flat_map_with_scaling: () => fitResult,
   predict_flat_map: () => predictionResult,
+  predict_flat_map_with_scaling: () => predictionResult,
 });
 
 describe("Rust/WASM flat MAP adapter boundary", () => {
@@ -101,12 +104,20 @@ describe("Rust/WASM flat MAP adapter boundary", () => {
       fit_flat_map: () => {
         throw executeCause;
       },
+      fit_flat_map_with_scaling: () => {
+        throw executeCause;
+      },
       predict_flat_map: () => {
+        throw executeCause;
+      },
+      predict_flat_map_with_scaling: () => {
         throw executeCause;
       },
     }));
 
-    const loadError = await Effect.runPromise(Effect.flip(loadAdapter.fit(input, seasonalities)));
+    const loadError = await Effect.runPromise(
+      Effect.flip(loadAdapter.fit(input, "absmax", seasonalities)),
+    );
 
     const executeError = await Effect.runPromise(
       Effect.flip(executeAdapter.predict(validModel, [0])),
@@ -131,7 +142,7 @@ describe("Rust/WASM flat MAP adapter boundary", () => {
       moduleReturning(new Float64Array(frame), new Float64Array([0])),
     );
 
-    const error = await Effect.runPromise(Effect.flip(adapter.fit(input, seasonalities)));
+    const error = await Effect.runPromise(Effect.flip(adapter.fit(input, "absmax", seasonalities)));
 
     expect(error).toBeInstanceOf(FittingError);
     expect(error.reason).toBe("backend-failure");
@@ -147,7 +158,7 @@ describe("Rust/WASM flat MAP adapter boundary", () => {
       moduleReturning(new Float64Array([status]), new Float64Array([0])),
     );
 
-    const error = await Effect.runPromise(Effect.flip(adapter.fit(input, seasonalities)));
+    const error = await Effect.runPromise(Effect.flip(adapter.fit(input, "absmax", seasonalities)));
 
     expect(error.reason).toBe(reason);
     expect(error.backendPhase).toBeUndefined();
@@ -244,7 +255,12 @@ describe("Rust/WASM flat MAP tracing", () => {
       expect(span.traceId).toBe(root.traceId);
       expect(Option.isSome(span.parent)).toBe(true);
       expect(Exit.isSuccess(requireEnded(span).exit)).toBe(true);
-      expect(Object.fromEntries(span.attributes)["effect_prophet.model.type"]).toBe("flat-map");
+      const attributes = Object.fromEntries(span.attributes);
+
+      expect(attributes["effect_prophet.model.type"]).toBe("flat-map");
+      expect(attributes["effect_prophet.scaling.mode"]).toBe("absmax");
+      expect(attributes).not.toHaveProperty("effect_prophet.scaling.offset");
+      expect(attributes).not.toHaveProperty("effect_prophet.scaling.scale");
     }
 
     const wasmFit = wasmSpans.find((span) => span.name === "effect-prophet.wasm.fit");

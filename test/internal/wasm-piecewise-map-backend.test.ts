@@ -26,7 +26,9 @@ const optimizer = {
 
 const moduleReturning = (fitResult: ReadonlyArray<number>): PiecewiseMapWasmBindings => ({
   fit_piecewise_map: () => new Float64Array(fitResult),
+  fit_piecewise_map_with_scaling: () => new Float64Array(fitResult),
   predict_piecewise_map: () => new Float64Array([0]),
+  predict_piecewise_map_with_scaling: () => new Float64Array([0]),
 });
 
 describe("Rust/WASM linear piecewise MAP adapter", () => {
@@ -68,7 +70,14 @@ describe("Rust/WASM linear piecewise MAP adapter", () => {
 
     const error = await Effect.runPromise(
       Effect.flip(
-        adapter.fit(input, seasonalities, { mode: "explicit", timestamps: [2] }, 0.5, optimizer),
+        adapter.fit(
+          input,
+          "absmax",
+          seasonalities,
+          { mode: "explicit", timestamps: [2] },
+          0.5,
+          optimizer,
+        ),
       ),
     );
 
@@ -123,9 +132,12 @@ describe("linear piecewise MAP tracing", () => {
     for (const span of wasmSpans) {
       expect(span.traceId).toBe(root.traceId);
       expect(Exit.isSuccess(requireEnded(span).exit)).toBe(true);
-      expect(Object.fromEntries(span.attributes)["effect_prophet.model.type"]).toBe(
-        "linear-piecewise-map",
-      );
+      const attributes = Object.fromEntries(span.attributes);
+
+      expect(attributes["effect_prophet.model.type"]).toBe("linear-piecewise-map");
+      expect(attributes["effect_prophet.scaling.mode"]).toBe("absmax");
+      expect(attributes).not.toHaveProperty("effect_prophet.scaling.offset");
+      expect(attributes).not.toHaveProperty("effect_prophet.scaling.scale");
     }
 
     expect(wasmSpans[0]?.parent.pipe(Option.getOrUndefined)?.spanId).toBe(publicFit.spanId);
