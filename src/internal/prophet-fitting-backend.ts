@@ -3,6 +3,7 @@ import { Layer } from "effect";
 import { FitPlan, FittingBackend } from "./fitting-backend";
 import { fitFlatMapWithWasm } from "./wasm-flat-map-backend";
 import { fitLinearTrendWithWasm } from "./wasm-linear-trend-backend";
+import { fitLogisticMapWithWasm } from "./wasm-logistic-map-backend";
 import { fitMixedFlatMapWithWasm, fitMixedLinearMapWithWasm } from "./wasm-mixed-map-backend";
 import { fitPiecewiseMapFeaturesWithWasm } from "./wasm-piecewise-map-backend";
 
@@ -59,6 +60,31 @@ export const prophetFittingBackendLayer: Layer.Layer<FittingBackend> = Layer.suc
         FlatMap: ({ scaling, seasonalities }) => fitFlatMapWithWasm(input, scaling, seasonalities),
         FlatAdditiveMap: ({ scaling, seasonalities }) =>
           fitFlatMapWithWasm(input, scaling, seasonalities),
+        LogisticPiecewiseMap: ({
+          scaling,
+          bounds,
+          seasonalities,
+          changepoints,
+          changepointPriorScale,
+          optimizer,
+          seasonalityMasks,
+          additionalFeatures,
+          events,
+          regressors,
+        }) =>
+          fitLogisticMapWithWasm(
+            input,
+            bounds,
+            scaling,
+            seasonalities,
+            changepoints,
+            changepointPriorScale,
+            optimizer,
+            seasonalityMasks,
+            additionalFeatures,
+            events,
+            regressors,
+          ),
         FlatMixedMap: ({
           scaling,
           seasonalities,

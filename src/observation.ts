@@ -7,6 +7,8 @@ import { TimestampSchema } from "./internal/timestamp";
 export interface EncodedObservation {
   readonly timestamp: string;
   readonly value: number;
+  readonly capacity?: number;
+  readonly floor?: number;
   readonly regressors?: Readonly<Record<string, number>>;
   readonly conditions?: Readonly<Record<string, boolean>>;
 }
@@ -21,6 +23,8 @@ export interface EncodedObservation {
 export interface Observation {
   readonly timestamp: number;
   readonly value: number;
+  readonly capacity?: number;
+  readonly floor?: number;
   readonly regressors?: Readonly<Record<string, number>>;
   readonly conditions?: Readonly<Record<string, boolean>>;
 }
@@ -34,6 +38,8 @@ export type Observations = readonly [Observation, ...Array<Observation>];
 const ObservationSchema: Schema.Codec<Observation, EncodedObservation> = Schema.Struct({
   timestamp: TimestampSchema,
   value: Schema.Finite,
+  capacity: Schema.optionalKey(Schema.Finite),
+  floor: Schema.optionalKey(Schema.Finite),
   regressors: Schema.optionalKey(Schema.Record(Schema.String, Schema.Finite)),
   conditions: Schema.optionalKey(Schema.Record(Schema.String, Schema.Boolean)),
 });

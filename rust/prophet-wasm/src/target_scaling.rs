@@ -104,6 +104,183 @@ impl TargetScaling {
   }
 }
 
+/// Whether logistic rows use a persisted implicit floor or row-specific explicit floors.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum LogisticFloorPolicy {
+  /// Every row uses the persisted output-unit floor.
+  Implicit(f64),
+
+  /// Every row supplies its own output-unit floor.
+  Explicit,
+}
+
+/// Train-derived scaling state for logistic growth.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct LogisticScaling {
+  /// Scaling policy used during fitting.
+  pub mode: ScalingMode,
+
+  /// Positive output-unit divisor used by the likelihood.
+  pub scale: f64,
+
+  /// Resolved floor policy reused for prediction.
+  pub floor_policy: LogisticFloorPolicy,
+}
+
+impl LogisticScaling {
+  /// Parse checked logistic scaling metadata received from a protocol boundary.
+  pub fn parse(
+    mode: f64,
+    scale: f64,
+    floor_policy: f64,
+    implicit_floor: f64,
+  ) -> Result<Self, TargetScalingError> {
+    let mode = ScalingMode::from_code(mode).ok_or(TargetScalingError::InvalidScaling)?;
+
+    if !scale.is_finite() || scale <= 0.0 || !implicit_floor.is_finite() {
+      return Err(TargetScalingError::InvalidScaling);
+    }
+
+    let floor_policy = match floor_policy {
+      0.0 => LogisticFloorPolicy::Implicit(implicit_floor),
+      1.0 if implicit_floor == 0.0 => LogisticFloorPolicy::Explicit,
+      _ => return Err(TargetScalingError::InvalidScaling),
+    };
+
+    Ok(Self {
+      mode,
+      scale,
+      floor_policy,
+    })
+  }
+
+  /// Return the effective floor for one row, checking the persisted floor policy.
+  pub fn row_floor(
+    self,
+    explicit_floors: Option<&[f64]>,
+    row: usize,
+  ) -> Result<f64, TargetScalingError> {
+    let floor = match (self.floor_policy, explicit_floors) {
+      (LogisticFloorPolicy::Implicit(floor), None) => floor,
+      (LogisticFloorPolicy::Explicit, Some(floors)) => {
+        *floors.get(row).ok_or(TargetScalingError::InvalidScaling)?
+      }
+      _ => return Err(TargetScalingError::InvalidScaling),
+    };
+
+    if !floor.is_finite() {
+      return Err(TargetScalingError::NonFiniteValue);
+    }
+
+    Ok(floor)
+  }
+}
+
+/// Resolve Prophet's floor-aware, train-only logistic target scaling.
+pub fn resolve_logistic_scaling(
+  values: &[f64],
+  capacities: &[f64],
+  explicit_floors: Option<&[f64]>,
+  mode: ScalingMode,
+) -> Result<LogisticScaling, TargetScalingError> {
+  let Some(&first_value) = values.first() else {
+    return Err(TargetScalingError::EmptyValues);
+  };
+
+  if capacities.len() != values.len()
+    || explicit_floors.is_some_and(|floors| floors.len() != values.len())
+  {
+    return Err(TargetScalingError::InvalidScaling);
+  }
+
+  if values
+    .iter()
+    .chain(capacities)
+    .any(|value| !value.is_finite())
+    || explicit_floors.is_some_and(|floors| floors.iter().any(|value| !value.is_finite()))
+  {
+    return Err(TargetScalingError::NonFiniteValue);
+  }
+
+  let (floor_policy, mut scale) = if let Some(floors) = explicit_floors {
+    for (&capacity, &floor) in capacities.iter().zip(floors) {
+      if capacity <= floor {
+        return Err(TargetScalingError::InvalidScaling);
+      }
+    }
+
+    match mode {
+      ScalingMode::AbsMax => {
+        let mut maximum = 0.0_f64;
+
+        for (&value, &floor) in values.iter().zip(floors) {
+          let difference = value - floor;
+
+          if !difference.is_finite() {
+            return Err(TargetScalingError::NonRepresentable);
+          }
+
+          maximum = maximum.max(difference.abs());
+        }
+
+        (LogisticFloorPolicy::Explicit, maximum)
+      }
+      ScalingMode::MinMax => {
+        let minimum_floor = floors.iter().copied().fold(f64::INFINITY, f64::min);
+        let maximum_capacity = capacities.iter().copied().fold(f64::NEG_INFINITY, f64::max);
+        let range = maximum_capacity - minimum_floor;
+
+        if !range.is_finite() {
+          return Err(TargetScalingError::NonRepresentable);
+        }
+
+        (LogisticFloorPolicy::Explicit, range)
+      }
+    }
+  } else {
+    let implicit_floor = match mode {
+      ScalingMode::AbsMax => 0.0,
+      ScalingMode::MinMax => values.iter().copied().fold(first_value, f64::min),
+    };
+
+    for &capacity in capacities {
+      if capacity <= implicit_floor {
+        return Err(TargetScalingError::InvalidScaling);
+      }
+    }
+
+    let scale = match mode {
+      ScalingMode::AbsMax => values.iter().map(|value| value.abs()).fold(0.0, f64::max),
+      ScalingMode::MinMax => {
+        let maximum = values.iter().copied().fold(first_value, f64::max);
+        let range = maximum - implicit_floor;
+
+        if !range.is_finite() {
+          return Err(TargetScalingError::NonRepresentable);
+        }
+
+        range
+      }
+    };
+
+    (LogisticFloorPolicy::Implicit(implicit_floor), scale)
+  };
+
+  if scale == 0.0 {
+    scale = 1.0;
+  }
+
+  if !scale.is_finite() || scale <= 0.0 {
+    return Err(TargetScalingError::NonRepresentable);
+  }
+
+  Ok(LogisticScaling {
+    mode,
+    scale,
+    floor_policy,
+  })
+}
+
 /// Resolve Prophet's train-only nonlogistic target scaling.
 pub fn resolve_target_scaling(
   values: &[f64],

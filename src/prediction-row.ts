@@ -8,6 +8,8 @@ export type EncodedPredictionRow =
   | string
   | {
       readonly timestamp: string;
+      readonly capacity?: number;
+      readonly floor?: number;
       readonly regressors?: Readonly<Record<string, number>>;
       readonly conditions?: Readonly<Record<string, boolean>>;
     };
@@ -21,6 +23,8 @@ export type EncodedPredictionTimestamps = ReadonlyArray<string>;
 /** One structurally parsed prediction row. */
 export interface PredictionRow {
   readonly timestamp: number;
+  readonly capacity?: number;
+  readonly floor?: number;
   readonly regressors?: Readonly<Record<string, number>>;
   readonly conditions?: Readonly<Record<string, boolean>>;
 }
@@ -28,8 +32,14 @@ export interface PredictionRow {
 /** Ordered structurally parsed prediction rows. */
 export type PredictionRows = ReadonlyArray<PredictionRow>;
 
+type PredictionBounds = {
+  -readonly [Key in "capacity" | "floor"]?: PredictionRow[Key];
+};
+
 const PredictionObjectSchema = Schema.Struct({
   timestamp: TimestampSchema,
+  capacity: Schema.optionalKey(Schema.Finite),
+  floor: Schema.optionalKey(Schema.Finite),
   regressors: Schema.optionalKey(Schema.Record(Schema.String, Schema.Finite)),
   conditions: Schema.optionalKey(Schema.Record(Schema.String, Schema.Boolean)),
 });
@@ -61,13 +71,24 @@ export const decodePredictionRows = Effect.fn("decodePredictionRows")(function* 
         return Object.freeze({ timestamp: row });
       }
 
+      const bounds: PredictionBounds = {};
+
+      if (row.capacity !== undefined) {
+        bounds.capacity = row.capacity;
+      }
+
+      if (row.floor !== undefined) {
+        bounds.floor = row.floor;
+      }
+
       if (row.regressors === undefined && row.conditions === undefined) {
-        return Object.freeze({ timestamp: row.timestamp });
+        return Object.freeze({ timestamp: row.timestamp, ...bounds });
       }
 
       if (row.regressors === undefined) {
         return Object.freeze({
           timestamp: row.timestamp,
+          ...bounds,
           conditions: Object.freeze({ ...row.conditions }),
         });
       }
@@ -75,12 +96,14 @@ export const decodePredictionRows = Effect.fn("decodePredictionRows")(function* 
       if (row.conditions === undefined) {
         return Object.freeze({
           timestamp: row.timestamp,
+          ...bounds,
           regressors: Object.freeze({ ...row.regressors }),
         });
       }
 
       return Object.freeze({
         timestamp: row.timestamp,
+        ...bounds,
         regressors: Object.freeze({ ...row.regressors }),
         conditions: Object.freeze({ ...row.conditions }),
       });

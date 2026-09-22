@@ -1,4 +1,4 @@
-import { Effect, Schema } from "effect";
+import { Effect, Predicate, Schema } from "effect";
 
 import { ComponentModeSchema, type ComponentMode } from "./component-mode";
 import { InputValidationError, inputValidationErrorFromIssue } from "./errors";
@@ -26,7 +26,7 @@ import {
 import { TargetScalingModeSchema, type TargetScalingMode } from "./target-scaling";
 
 /** Valid trend forms represented by the current public fitting configuration. */
-export type Growth = "flat" | "linear";
+export type Growth = "flat" | "linear" | "logistic";
 
 /** A public control for one built-in daily, weekly, or yearly seasonality. */
 export type EncodedBuiltInSeasonalitySetting =
@@ -146,12 +146,20 @@ export interface EncodedFlatAdditiveOptions extends EncodedBuiltInOptions {
   readonly seasonalities: readonly [EncodedSeasonality, ...ReadonlyArray<EncodedSeasonality>];
 }
 
+/** Public logistic-growth MAP options. */
+export interface EncodedLogisticOptions extends EncodedBuiltInOptions {
+  readonly growth: "logistic";
+  readonly seasonalities?: ReadonlyArray<EncodedSeasonality>;
+  readonly map?: EncodedMapOptions;
+}
+
 /** Supported configurations accepted by the public fitting operation. */
 export type EncodedProphetOptions =
   | EncodedLinearTrendOptions
   | EncodedLinearAdditiveOptions
   | EncodedFlatTrendOptions
-  | EncodedFlatAdditiveOptions;
+  | EncodedFlatAdditiveOptions
+  | EncodedLogisticOptions;
 
 interface ParsedBuiltInOptions {
   readonly seasonalityMode: ComponentMode;
@@ -188,12 +196,20 @@ export interface FlatAdditiveOptions extends ParsedBuiltInOptions {
   readonly seasonalities: readonly [SeasonalityDefinition, ...ReadonlyArray<SeasonalityDefinition>];
 }
 
+/** Parsed logistic-growth MAP configuration. */
+export interface LogisticOptions extends ParsedBuiltInOptions {
+  readonly growth: "logistic";
+  readonly seasonalities: ReadonlyArray<SeasonalityDefinition>;
+  readonly map: MapOptions;
+}
+
 /** Validated and defaulted public fitting configuration awaiting fit-time resolution. */
 export type ProphetOptions =
   | LinearTrendOptions
   | LinearAdditiveOptions
   | FlatTrendOptions
-  | FlatAdditiveOptions;
+  | FlatAdditiveOptions
+  | LogisticOptions;
 
 const emptySeasonalities: readonly [] = Object.freeze([]);
 
@@ -216,6 +232,12 @@ export const defaultAutomaticMapOptions: MapOptions = Object.freeze({
   }),
 });
 
+const defaultLogisticOptimizerControls: MapOptimizerControls = Object.freeze({
+  maxIterations: 10_000,
+  relativeTolerance: 1e-7,
+  absoluteTolerance: 1e-9,
+});
+
 /**
  * Central defaults for public fitting configuration.
  *
@@ -232,7 +254,7 @@ export const defaultProphetOptions: LinearTrendOptions = Object.freeze({
   regressors: emptyRegressors,
 });
 
-const GrowthSchema = Schema.Literals(["flat", "linear"]);
+const GrowthSchema = Schema.Literals(["flat", "linear", "logistic"]);
 
 const BuiltInPriorScale = PositiveFinite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(10)));
 
@@ -361,6 +383,34 @@ const freezeMapOptions = (options: MapOptions): MapOptions => {
   });
 };
 
+interface OptimizerControlPresence {
+  readonly maxIterations: boolean;
+  readonly relativeTolerance: boolean;
+  readonly absoluteTolerance: boolean;
+}
+
+const logisticMapOptions = (
+  options: MapOptions | undefined,
+  supplied: OptimizerControlPresence,
+): MapOptions => {
+  const resolved = options ?? defaultAutomaticMapOptions;
+
+  return Object.freeze({
+    ...resolved,
+    optimizer: Object.freeze({
+      maxIterations: supplied.maxIterations
+        ? resolved.optimizer.maxIterations
+        : defaultLogisticOptimizerControls.maxIterations,
+      relativeTolerance: supplied.relativeTolerance
+        ? resolved.optimizer.relativeTolerance
+        : defaultLogisticOptimizerControls.relativeTolerance,
+      absoluteTolerance: supplied.absoluteTolerance
+        ? resolved.optimizer.absoluteTolerance
+        : defaultLogisticOptimizerControls.absoluteTolerance,
+    }),
+  });
+};
+
 /**
  * Translate seasonality-domain issues at the public options boundary.
  *
@@ -408,6 +458,28 @@ export const decodeOptions = Effect.fn("decodeOptions")(function* (
   const syntax = yield* decodeProphetOptionsSyntax(encoded).pipe(
     Effect.mapError((error) => inputValidationErrorFromIssue("options", error.issue)),
   );
+
+  const encodedMap =
+    Predicate.isObjectKeyword(encoded) && Predicate.hasProperty(encoded, "map")
+      ? encoded.map
+      : undefined;
+
+  const encodedOptimizer =
+    Predicate.isObjectKeyword(encodedMap) && Predicate.hasProperty(encodedMap, "optimizer")
+      ? encodedMap.optimizer
+      : undefined;
+
+  const optimizerControlPresence: OptimizerControlPresence = {
+    maxIterations:
+      Predicate.isObjectKeyword(encodedOptimizer) &&
+      Predicate.hasProperty(encodedOptimizer, "maxIterations"),
+    relativeTolerance:
+      Predicate.isObjectKeyword(encodedOptimizer) &&
+      Predicate.hasProperty(encodedOptimizer, "relativeTolerance"),
+    absoluteTolerance:
+      Predicate.isObjectKeyword(encodedOptimizer) &&
+      Predicate.hasProperty(encodedOptimizer, "absoluteTolerance"),
+  };
 
   const seasonalities = yield* parseSeasonalities(
     syntax.seasonalities,
@@ -523,6 +595,19 @@ export const decodeOptions = Effect.fn("decodeOptions")(function* (
   } as const;
 
   const firstSeasonality = seasonalities[0];
+
+  if (syntax.growth === "logistic") {
+    return {
+      growth: "logistic",
+      ...resolvedModes,
+      seasonalities: Object.freeze(Array.from(seasonalities)),
+      builtInSeasonalities,
+      events,
+      regressors,
+      map: logisticMapOptions(map, optimizerControlPresence),
+      ...scaling,
+    };
+  }
 
   if (firstSeasonality === undefined) {
     if (syntax.growth === "flat") {

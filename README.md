@@ -2,7 +2,7 @@
 
 An Effect-based TypeScript package for time-series forecasting.
 
-The Rust/WASM backends fit ordinary least-squares linear trends plus flat and linear-piecewise MAP models with additive and multiplicative components. Forecasts expose trend, additive and multiplicative totals, final value, and ordered named components. TypeScript owns validation, Effect service composition, persistence, and WASM protocol translation; numerical fitting, changepoint resolution, and evaluation run in Rust. The package does not yet implement uncertainty intervals or logistic growth.
+The Rust/WASM backends fit ordinary least-squares linear trends plus flat, linear-piecewise, and floor-aware logistic MAP models with additive and multiplicative components. Forecasts expose trend, additive and multiplicative totals, final value, and ordered named components. TypeScript owns validation, Effect service composition, persistence, and WASM protocol translation; numerical fitting, changepoint resolution, and evaluation run in Rust. The package does not yet implement uncertainty intervals.
 
 ## Compatibility target
 
@@ -76,7 +76,7 @@ The Docker Compose [public API benchmark suite](benchmark/README.md) records cor
 
 ## Rust/WASM numerical backend
 
-`rust/prophet-wasm` provides the numerical implementations behind the public fitting Layer. It exports coarse operations for ordinary least-squares linear fitting, reduced flat MAP fitting, and linear piecewise MAP fitting, with matching batch prediction exports.
+`rust/prophet-wasm` provides the numerical implementations behind the public fitting Layer. It exports coarse operations for ordinary least-squares linear fitting and reduced flat, linear-piecewise, and logistic MAP fitting, with matching batch prediction exports.
 
 Run each phase independently with:
 
@@ -140,7 +140,7 @@ Each configured custom seasonality requires a unique name, positive period in fi
 
 Built-ins deliberately default to `"off"`, unlike Python Prophet. Set an individual control to `"auto"` for Prophet 1.4.0's training-history rule, or use `{ mode: "on" }` to force its default order. Forced controls also accept positive `fourierOrder` and `priorScale` overrides. `prophetFittingBackendLayer` is total over every configuration accepted by `fit` and dispatches to the corresponding narrow numerical adapter.
 
-Linear and flat MAP support Python Prophet's train-only `"absmax"` and `"minmax"` target scaling; absmax is the default. An explicit `scaling` option on featureless linear input selects MAP so centering and priors retain their Python meaning. The selected mode, offset, and scale are persisted and reused during prediction. Logistic growth, country holiday catalogs, multiplicative components, and uncertainty remain out of scope. See the [target-scaling contract](docs/modeling/target-scaling.md), [linear piecewise MAP contract](docs/modeling/piecewise-map.md), and [reduced flat MAP contract](docs/modeling/flat-map.md).
+Linear, flat, and logistic MAP support Python Prophet's train-only `"absmax"` and `"minmax"` target scaling; absmax is the default. An explicit `scaling` option on featureless linear input selects MAP so centering and priors retain their Python meaning. The selected scaling state is persisted and reused during prediction; logistic state also records whether its floor was explicit or inferred. Country holiday catalogs and uncertainty remain out of scope. See the [target-scaling contract](docs/modeling/target-scaling.md), [linear piecewise MAP contract](docs/modeling/piecewise-map.md), [reduced flat MAP contract](docs/modeling/flat-map.md), and [logistic MAP contract](docs/modeling/logistic-map.md).
 
 ```ts
 import { Effect } from "effect";
@@ -403,6 +403,39 @@ const flat = await Effect.runPromise(
 Fitted model types are branded domain values. Callers obtain trusted models through `fit` or `decodeFittedModel`; plain object literals are intentionally not assignable to these types. `predict` and serialization still parse defensively at runtime to protect JavaScript callers and forged values. While the package API remains WIP, this is a deliberate type-level tightening without a change to the model fields or public operation shapes.
 
 Expected input, fitting, and prediction failures remain in their respective typed Effect error channels. Unsupported option combinations are absent from the public TypeScript union and fail as input validation at untyped JavaScript boundaries.
+
+## Logistic MAP forecast
+
+Logistic growth requires a finite `capacity` on every training and prediction row. Training rows
+may all include `floor`, or all omit it and use the fitted implicit floor policy:
+
+```ts
+import { Effect } from "effect";
+import { fit, predict, prophetFittingBackendLayer } from "effect-prophet";
+
+const model = await Effect.runPromise(
+  fit(
+    [
+      { timestamp: "2024-01-01T00:00:00.000Z", value: 10, capacity: 100 },
+      { timestamp: "2024-01-02T00:00:00.000Z", value: 20, capacity: 100 },
+      { timestamp: "2024-01-03T00:00:00.000Z", value: 35, capacity: 100 },
+    ],
+    { growth: "logistic", scaling: "minmax" },
+  ).pipe(Effect.provide(prophetFittingBackendLayer)),
+);
+
+const forecasts = await Effect.runPromise(
+  predict(model, [
+    { timestamp: "2024-01-04T00:00:00.000Z", capacity: 100 },
+    { timestamp: "2024-01-05T00:00:00.000Z", capacity: 120 },
+  ]),
+);
+```
+
+Explicit-floor models require a floor on every prediction row. Targets outside their bounds are
+accepted as noisy observations and are not clipped. Capacity and floor bound the trend only; an
+additive or multiplicative component can move the final forecast outside those bounds. See the
+[logistic model contract](docs/modeling/logistic-map.md).
 
 ## Tracing WASM operations
 

@@ -108,8 +108,11 @@ explicit changepoint, `changepoint_prior_scale=0.2`, and the Newton algorithm, t
 complete design order, output-unit coefficients/noise, grouped components, and predictions. Their
 looser quantity-specific tolerances reflect cross-optimizer agreement rather than bitwise
 algorithm identity. Fitted values are canonicalized to 12 significant digits so host CPU math
-implementation differences cannot cause irrelevant last-bit fixture drift. Ridge remains a distinct
-objective and makes no fitted-Prophet parity claim.
+implementation differences cannot cause irrelevant last-bit fixture drift. `logistic-map.json`
+adds fixed explicit-floor/minmax and implicit-floor/absmax changing-capacity trends plus a fitted
+explicit-floor, one-changepoint Newton case. Its fitted parameters, noise, and forecasts use the
+same 12-significant-digit canonicalization and cross-optimizer tolerance policy. Ridge remains a
+distinct objective and makes no fitted-Prophet parity claim.
 
 ## Shared comparison substrate
 

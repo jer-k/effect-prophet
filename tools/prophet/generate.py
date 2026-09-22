@@ -38,6 +38,7 @@ CONDITIONAL_SEASONALITY_FILENAME = "conditional-seasonality.json"
 CONDITIONAL_MAP_FIT_FILENAME = "conditional-map-fit.json"
 TARGET_SCALING_FILENAME = "target-scaling.json"
 MIXED_MAP_FILENAME = "mixed-map.json"
+LOGISTIC_MAP_FILENAME = "logistic-map.json"
 MANIFEST_FILENAME = "manifest.json"
 ROOT = Path(__file__).resolve().parents[2]
 REFERENCE_PATH = ROOT / "tools" / "prophet" / "reference.json"
@@ -1966,6 +1967,238 @@ def make_mixed_map_fixture() -> dict[str, Any]:
     }
 
 
+def make_logistic_map_fixture() -> dict[str, Any]:
+    """Freeze floor-aware fixed and fitted logistic evidence from Prophet 1.4.0."""
+
+    timestamps = [timestamp_from_offset(index * DAY_MILLISECONDS) for index in range(20)]
+    capacities = [80.0 + 0.5 * index for index in range(20)]
+    floors = [-5.0 + 0.05 * index for index in range(20)]
+    values = []
+
+    for index, (capacity, floor) in enumerate(zip(capacities, floors, strict=True)):
+        time = index / 19.0
+        eta = 5.0 * (time - 0.45) + 1.2 * max(0.0, time - 10.0 / 19.0)
+        trend = floor + (capacity - floor) / (1.0 + np.exp(-eta))
+        values.append(canonical_fourier_float(np.float64(trend + 0.15 * ((index % 3) - 1))))
+
+    training = pd.DataFrame(
+        {
+            "ds": [prophet_timestamp(timestamp) for timestamp in timestamps],
+            "y": values,
+            "cap": capacities,
+            "floor": floors,
+        }
+    )
+    fixed_model = Prophet(
+        growth="logistic",
+        scaling="minmax",
+        yearly_seasonality=False,
+        weekly_seasonality=False,
+        daily_seasonality=False,
+        uncertainty_samples=0,
+    )
+    history = fixed_model.setup_dataframe(training.copy(), initialize_scales=True)
+    fixed_rate = 4.2
+    fixed_offset = 0.4
+    fixed_deltas = np.asarray([-1.1, 0.7], dtype=np.float64)
+    fixed_points = np.asarray([0.3, 0.65], dtype=np.float64)
+    prediction_indexes = (0, 7, 19, 24)
+    prediction_timestamps = [
+        timestamp_from_offset(index * DAY_MILLISECONDS) for index in prediction_indexes
+    ]
+    prediction_capacities = [82.0, 88.0, 95.0, 110.0]
+    prediction_floors = [-4.0, -3.0, -2.0, -1.0]
+    prediction_frame = pd.DataFrame(
+        {
+            "ds": [prophet_timestamp(timestamp) for timestamp in prediction_timestamps],
+            "cap": prediction_capacities,
+            "floor": prediction_floors,
+        }
+    )
+    prepared = fixed_model.setup_dataframe(prediction_frame.copy())
+    fixed_scaled = fixed_model.piecewise_logistic(
+        np.asarray(prepared["t"], dtype=np.float64),
+        np.asarray(prepared["cap_scaled"], dtype=np.float64),
+        fixed_deltas,
+        fixed_rate,
+        fixed_offset,
+        fixed_points,
+    )
+    fixed_trend = fixed_scaled * float(fixed_model.y_scale) + np.asarray(
+        prepared["floor"], dtype=np.float64
+    )
+
+    implicit_model = Prophet(
+        growth="logistic",
+        scaling="absmax",
+        yearly_seasonality=False,
+        weekly_seasonality=False,
+        daily_seasonality=False,
+        uncertainty_samples=0,
+    )
+    implicit_training = training.drop(columns=["floor"])
+    implicit_model.setup_dataframe(implicit_training.copy(), initialize_scales=True)
+    implicit_prediction_frame = prediction_frame.drop(columns=["floor"])
+    implicit_prepared = implicit_model.setup_dataframe(implicit_prediction_frame.copy())
+    implicit_scaled = implicit_model.piecewise_logistic(
+        np.asarray(implicit_prepared["t"], dtype=np.float64),
+        np.asarray(implicit_prepared["cap_scaled"], dtype=np.float64),
+        fixed_deltas,
+        fixed_rate,
+        fixed_offset,
+        fixed_points,
+    )
+    implicit_trend = implicit_scaled * float(implicit_model.y_scale)
+
+    fitted = Prophet(
+        growth="logistic",
+        scaling="minmax",
+        changepoints=[prophet_timestamp(timestamps[10])],
+        changepoint_prior_scale=0.2,
+        yearly_seasonality=False,
+        weekly_seasonality=False,
+        daily_seasonality=False,
+        uncertainty_samples=0,
+    )
+    fitted.fit(training, algorithm="Newton")
+    fitted_prediction = fitted.predict(prediction_frame)
+
+    if (
+        fixed_model.y_scale is None
+        or implicit_model.y_scale is None
+        or fitted.y_scale is None
+    ):
+        fail("Prophet did not retain logistic target scaling")
+
+    return {
+        "fixedCases": [
+            {
+                "id": "explicit-floor-changing-capacity",
+                "scaling": "minmax",
+                "training": [
+                    {
+                        "timestamp": timestamp,
+                        "value": value,
+                        "capacity": capacity,
+                        "floor": floor,
+                    }
+                    for timestamp, value, capacity, floor in zip(
+                        timestamps, values, capacities, floors, strict=True
+                    )
+                ],
+                "predictionRows": [
+                    {"timestamp": timestamp, "capacity": capacity, "floor": floor}
+                    for timestamp, capacity, floor in zip(
+                        prediction_timestamps,
+                        prediction_capacities,
+                        prediction_floors,
+                        strict=True,
+                    )
+                ],
+                "parameters": {
+                    "rate": fixed_rate,
+                    "offset": fixed_offset,
+                    "changepoints": fixed_points.tolist(),
+                    "deltas": fixed_deltas.tolist(),
+                },
+                "expected": {
+                    "scale": float(fixed_model.y_scale),
+                    "scaledTime": [float(value) for value in prepared["t"]],
+                    "scaledCapacity": [float(value) for value in prepared["cap_scaled"]],
+                    "trend": [canonical_fitted_float(value) for value in fixed_trend],
+                },
+                "tolerance": {"absolute": 1e-10, "relative": 1e-10},
+            },
+            {
+                "id": "implicit-floor-absmax-changing-capacity",
+                "scaling": "absmax",
+                "training": [
+                    {
+                        "timestamp": timestamp,
+                        "value": value,
+                        "capacity": capacity,
+                    }
+                    for timestamp, value, capacity in zip(
+                        timestamps, values, capacities, strict=True
+                    )
+                ],
+                "predictionRows": [
+                    {"timestamp": timestamp, "capacity": capacity}
+                    for timestamp, capacity in zip(
+                        prediction_timestamps,
+                        prediction_capacities,
+                        strict=True,
+                    )
+                ],
+                "parameters": {
+                    "rate": fixed_rate,
+                    "offset": fixed_offset,
+                    "changepoints": fixed_points.tolist(),
+                    "deltas": fixed_deltas.tolist(),
+                },
+                "expected": {
+                    "scale": float(implicit_model.y_scale),
+                    "scaledTime": [float(value) for value in implicit_prepared["t"]],
+                    "scaledCapacity": [
+                        float(value) for value in implicit_prepared["cap_scaled"]
+                    ],
+                    "trend": [canonical_fitted_float(value) for value in implicit_trend],
+                },
+                "tolerance": {"absolute": 1e-10, "relative": 1e-10},
+            },
+        ],
+        "fittedCases": [
+            {
+                "id": "explicit-floor-one-changepoint",
+                "scaling": "minmax",
+                "observations": [
+                    {
+                        "timestamp": timestamp,
+                        "value": value,
+                        "capacity": capacity,
+                        "floor": floor,
+                    }
+                    for timestamp, value, capacity, floor in zip(
+                        timestamps, values, capacities, floors, strict=True
+                    )
+                ],
+                "predictionRows": [
+                    {"timestamp": timestamp, "capacity": capacity, "floor": floor}
+                    for timestamp, capacity, floor in zip(
+                        prediction_timestamps,
+                        prediction_capacities,
+                        prediction_floors,
+                        strict=True,
+                    )
+                ],
+                "settings": {
+                    "algorithm": "Newton",
+                    "changepointPriorScale": 0.2,
+                    "changepointTimestamp": timestamps[10],
+                    "scale": float(fitted.y_scale),
+                },
+                "expected": {
+                    "rate": canonical_fitted_float(fitted.params["k"][0][0]),
+                    "offset": canonical_fitted_float(fitted.params["m"][0][0]),
+                    "deltas": [
+                        canonical_fitted_float(value) for value in fitted.params["delta"][0]
+                    ],
+                    "noiseScale": canonical_fitted_float(
+                        fitted.params["sigma_obs"][0][0] * fitted.y_scale
+                    ),
+                    "trend": [
+                        canonical_fitted_float(value) for value in fitted_prediction["trend"]
+                    ],
+                    "value": [
+                        canonical_fitted_float(value) for value in fitted_prediction["yhat"]
+                    ],
+                },
+                "tolerance": {"forecastAbsolute": 0.5, "parameterAbsolute": 0.5},
+            }
+        ],
+    }
+
+
 def find_prophet_model() -> Path:
     """Locate the model binary bundled in the installed Prophet distribution."""
 
@@ -2043,6 +2276,8 @@ def write_outputs(output: Path, execution: dict[str, str], reference: dict[str, 
     target_scaling_path.write_bytes(stable_json(make_target_scaling_fixture()))
     mixed_map_path = output / MIXED_MAP_FILENAME
     mixed_map_path.write_bytes(stable_json(make_mixed_map_fixture()))
+    logistic_map_path = output / LOGISTIC_MAP_FILENAME
+    logistic_map_path.write_bytes(stable_json(make_logistic_map_fixture()))
 
     model_path = find_prophet_model()
     manifest = {
@@ -2086,6 +2321,10 @@ def write_outputs(output: Path, execution: dict[str, str], reference: dict[str, 
             {
                 "path": MIXED_MAP_FILENAME,
                 "sha256": sha256_file(mixed_map_path),
+            },
+            {
+                "path": LOGISTIC_MAP_FILENAME,
+                "sha256": sha256_file(logistic_map_path),
             },
         ],
         "backendArtifacts": [

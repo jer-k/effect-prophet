@@ -338,6 +338,34 @@ describe("decodeOptions", () => {
     expect(error.issues.some((issue) => issue.path?.includes("changepoints"))).toBe(true);
   });
 
+  it("uses convergence controls suitable for nonlinear logistic MAP fits", async () => {
+    const defaults = await Effect.runPromise(decodeOptions({ growth: "logistic" }));
+
+    const partial = await Effect.runPromise(
+      decodeOptions({
+        growth: "logistic",
+        map: {
+          optimizer: { maxIterations: 250 },
+        },
+      }),
+    );
+
+    if (defaults.growth !== "logistic" || partial.growth !== "logistic") {
+      throw new Error("Expected logistic options");
+    }
+
+    expect(defaults.map.optimizer).toEqual({
+      maxIterations: 10_000,
+      relativeTolerance: 1e-7,
+      absoluteTolerance: 1e-9,
+    });
+    expect(partial.map.optimizer).toEqual({
+      maxIterations: 250,
+      relativeTolerance: 1e-7,
+      absoluteTolerance: 1e-9,
+    });
+  });
+
   it("rejects linear MAP options with flat growth", async () => {
     const error = await expectOptionsFailure({ growth: "flat", map: {} });
 
@@ -409,7 +437,7 @@ describe("decodeOptions", () => {
   });
 
   it("rejects invalid growth values at the options boundary", async () => {
-    const error = await expectOptionsFailure({ growth: "logistic" });
+    const error = await expectOptionsFailure({ growth: "constant" });
 
     expect(error.issues).toContainEqual({
       message: expect.stringContaining("flat"),

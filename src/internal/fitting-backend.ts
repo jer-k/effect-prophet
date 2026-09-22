@@ -3,6 +3,7 @@ import { Context, Data, type Effect } from "effect";
 import type { FittingError } from "../errors";
 import type { EventCalendar } from "../event";
 import type { Parameters } from "../fitted-model";
+import type { LogisticTrainingBounds } from "../logistic";
 import type { ChangepointSetting, MapOptimizerControls } from "../options";
 import type { ResolvedRegressor } from "../regressor";
 import type { TargetScalingMode } from "../target-scaling";
@@ -100,13 +101,29 @@ export interface FlatMixedMapFitPlan {
   readonly regressors: ReadonlyArray<ResolvedRegressor>;
 }
 
+/** Request for joint floor-aware logistic MAP fitting. */
+export interface LogisticPiecewiseMapFitPlan {
+  readonly _tag: "LogisticPiecewiseMap";
+  readonly scaling: TargetScalingMode;
+  readonly bounds: LogisticTrainingBounds;
+  readonly seasonalities: SeasonalityLayout;
+  readonly changepoints: ChangepointSetting;
+  readonly changepointPriorScale: number;
+  readonly optimizer: MapOptimizerControls;
+  readonly seasonalityMasks: SeasonalityMaskMatrix;
+  readonly additionalFeatures: KnownAdditiveFeatures;
+  readonly events: EventCalendar;
+  readonly regressors: ReadonlyArray<ResolvedRegressor>;
+}
+
 /** Exhaustive set of configurations supported by the public fitting backend. */
 export type FitPlan =
   | LinearTrendFitPlan
   | LinearPiecewiseMapFitPlan
   | FlatMapFitPlan
   | FlatAdditiveMapFitPlan
-  | FlatMixedMapFitPlan;
+  | FlatMixedMapFitPlan
+  | LogisticPiecewiseMapFitPlan;
 
 /** Constructors and exhaustive matching for supported fitting plans. */
 export const FitPlan = Data.taggedEnum<FitPlan>();

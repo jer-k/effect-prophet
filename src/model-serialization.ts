@@ -14,15 +14,19 @@ import {
 import {
   parseFlatMapModel,
   parseLinearModel,
+  parseLogisticMapModel,
   parsePiecewiseMapModel,
   type FittedFlatMapProphet,
   type FittedLinearProphet,
+  type FittedLogisticMapProphet,
   type FittedPiecewiseMapProphet,
   type FlatMapParameters,
   type InvalidFittedModel,
   type LinearParameters,
+  type LogisticMapParameters,
   type PiecewiseMapParameters,
 } from "./fitted-model";
+import type { LogisticTargetScaling } from "./logistic";
 import type {
   EncodedRegressorStandardization,
   FittedRegressor,
@@ -133,17 +137,43 @@ export interface EncodedPiecewiseMapModel {
   readonly fitSummary: PiecewiseMapParameters["fitSummary"];
 }
 
+/** Portable representation of a floor-aware logistic piecewise MAP model. */
+export interface EncodedLogisticMapModel {
+  readonly modelKind: "logistic-piecewise-map";
+  readonly targetScaling: LogisticTargetScaling;
+  readonly parameters: {
+    readonly rate: number;
+    readonly offset: number;
+    readonly deltas: ReadonlyArray<number>;
+  };
+  readonly coefficients: {
+    readonly seasonal: ReadonlyArray<number>;
+    readonly events: ReadonlyArray<number>;
+    readonly regressors: ReadonlyArray<number>;
+  };
+  readonly events: ReadonlyArray<EncodedEventOccurrence>;
+  readonly holidaysMode: ComponentMode;
+  readonly regressors: ReadonlyArray<EncodedFittedRegressor>;
+  readonly timeScaling: { readonly origin: number; readonly scale: number };
+  readonly changepointTimestamps: ReadonlyArray<number>;
+  readonly seasonalities: EncodedPiecewiseMapModel["seasonalities"];
+  readonly noiseScale: number;
+  readonly fitSummary: LogisticMapParameters["fitSummary"];
+}
+
 /** Every currently supported JSON-compatible fitted-model payload. */
 export type EncodedFittedModel =
   | EncodedLinearModel
   | EncodedFlatMapModel
-  | EncodedPiecewiseMapModel;
+  | EncodedPiecewiseMapModel
+  | EncodedLogisticMapModel;
 
 /** Fitted models with complete portable prediction state. */
 export type SerializableFittedModel =
   | FittedLinearProphet
   | FittedFlatMapProphet
-  | FittedPiecewiseMapProphet;
+  | FittedPiecewiseMapProphet
+  | FittedLogisticMapProphet;
 
 const EncodedLinearModelSchema = Schema.Struct({
   modelKind: Schema.Literal("linear-trend"),
@@ -265,14 +295,68 @@ const EncodedPiecewiseMapModelSchema = Schema.Struct({
   }),
 });
 
+const EncodedLogisticMapModelSchema = Schema.Struct({
+  modelKind: Schema.Literal("logistic-piecewise-map"),
+  targetScaling: Schema.Struct({
+    mode: Schema.Literals(["absmax", "minmax"]),
+    scale: Schema.Number,
+    floorPolicy: Schema.Union([
+      Schema.Struct({ kind: Schema.Literal("implicit"), floor: Schema.Number }),
+      Schema.Struct({ kind: Schema.Literal("explicit") }),
+    ]),
+  }),
+  parameters: Schema.Struct({
+    rate: Schema.Number,
+    offset: Schema.Number,
+    deltas: Schema.Array(Schema.Number),
+  }),
+  coefficients: Schema.Struct({
+    seasonal: Schema.Array(Schema.Number),
+    events: Schema.Array(Schema.Number),
+    regressors: Schema.Array(Schema.Number),
+  }),
+  events: EncodedEventOccurrencesSchema,
+  holidaysMode: ComponentModeSchema,
+  regressors: Schema.Array(EncodedFittedRegressorSchema),
+  timeScaling: Schema.Struct({ origin: Schema.Number, scale: Schema.Number }),
+  changepointTimestamps: Schema.Array(Schema.Number),
+  seasonalities: Schema.Array(
+    Schema.Struct({
+      name: Schema.String,
+      periodDays: Schema.Number,
+      fourierOrder: Schema.Number,
+      priorScale: Schema.Number,
+      conditionName: Schema.optionalKey(Schema.String),
+      mode: ComponentModeSchema,
+    }),
+  ),
+  noiseScale: Schema.Number,
+  fitSummary: Schema.Struct({
+    method: Schema.Literal("logistic-piecewise-map-proximal-v1"),
+    termination: Schema.Literal("converged"),
+    valueScale: Schema.Number,
+    observationCount: Schema.Number,
+    iterations: Schema.Number,
+    objective: Schema.Number,
+    stationarityResidual: Schema.Number,
+    changepointPriorScale: Schema.Number,
+  }),
+});
+
 const EncodedModelDiscriminantSchema = Schema.Struct({
-  modelKind: Schema.Literals(["linear-trend", "flat-map", "linear-piecewise-map"]),
+  modelKind: Schema.Literals([
+    "linear-trend",
+    "flat-map",
+    "linear-piecewise-map",
+    "logistic-piecewise-map",
+  ]),
 });
 
 const EncodedFittedModelSchema = Schema.Union([
   EncodedLinearModelSchema,
   EncodedFlatMapModelSchema,
   EncodedPiecewiseMapModelSchema,
+  EncodedLogisticMapModelSchema,
 ]);
 
 const decodeEncodedModelDiscriminant = Schema.decodeUnknownEffect(EncodedModelDiscriminantSchema, {
@@ -503,6 +587,39 @@ const encodePiecewiseMapModel = (model: FittedPiecewiseMapProphet): EncodedPiece
   fitSummary: { ...model.fitSummary },
 });
 
+const encodeLogisticMapModel = (model: FittedLogisticMapProphet): EncodedLogisticMapModel => ({
+  modelKind: "logistic-piecewise-map",
+  targetScaling: {
+    mode: model.targetScaling.mode,
+    scale: model.targetScaling.scale,
+    floorPolicy: { ...model.targetScaling.floorPolicy },
+  },
+  parameters: {
+    rate: model.rate,
+    offset: model.offset,
+    deltas: Array.from(model.deltas),
+  },
+  coefficients: {
+    seasonal: Array.from(model.coefficients),
+    events: Array.from(model.eventCoefficients),
+    regressors: model.regressors.map((regressor) => regressor.coefficient),
+  },
+  events: model.events.occurrences.map((occurrence) => ({
+    name: occurrence.name,
+    date: occurrence.date,
+    lowerWindowDays: occurrence.lowerWindowDays,
+    upperWindowDays: occurrence.upperWindowDays,
+    priorScale: occurrence.priorScale,
+  })),
+  holidaysMode: model.events.mode,
+  regressors: encodeFittedRegressors(model.regressors),
+  timeScaling: { origin: model.timeOrigin, scale: model.timeScale },
+  changepointTimestamps: Array.from(model.changepointTimestamps),
+  seasonalities: model.seasonalities.components.map(encodeSeasonalityDefinition),
+  noiseScale: model.noiseScale,
+  fitSummary: { ...model.fitSummary },
+});
+
 const fittedRegressorsFromEncoded = (
   metadata: ReadonlyArray<EncodedFittedRegressor> | undefined,
   coefficients: ReadonlyArray<number> | undefined,
@@ -641,6 +758,49 @@ const decodePiecewiseMapModel = Effect.fn("decodePiecewiseMapModel")(function* (
   );
 });
 
+const decodeLogisticMapModel = Effect.fn("decodeLogisticMapModel")(function* (
+  encoded: EncodedLogisticMapModel,
+): Effect.fn.Return<FittedLogisticMapProphet, ModelSerializationError> {
+  const definitions = yield* Seasonality.parseSeasonalityDefinitions(encoded.seasonalities).pipe(
+    Effect.mapError(serializationErrorFromInvalidSeasonality),
+  );
+
+  const seasonalities = yield* Seasonality.makeSeasonalityLayout(definitions).pipe(
+    Effect.mapError(serializationErrorFromInvalidSeasonality),
+  );
+
+  const events = yield* parseEventCalendar(encoded.events, encoded.holidaysMode).pipe(
+    Effect.mapError(serializationErrorFromInvalidEvent),
+  );
+
+  const regressors = yield* fittedRegressorsFromEncoded(
+    encoded.regressors,
+    encoded.coefficients.regressors,
+  );
+
+  return yield* parseLogisticMapModel({
+    model: "logistic-piecewise-map",
+    targetScaling: encoded.targetScaling,
+    rate: encoded.parameters.rate,
+    offset: encoded.parameters.offset,
+    timeOrigin: encoded.timeScaling.origin,
+    timeScale: encoded.timeScaling.scale,
+    changepointTimestamps: encoded.changepointTimestamps,
+    deltas: encoded.parameters.deltas,
+    seasonalities,
+    coefficients: encoded.coefficients.seasonal,
+    events,
+    eventCoefficients: encoded.coefficients.events,
+    regressors,
+    noiseScale: encoded.noiseScale,
+    fitSummary: encoded.fitSummary,
+  }).pipe(
+    Effect.mapError((error) =>
+      serializationErrorFromInvalidModel("decode", "logistic-piecewise-map", error),
+    ),
+  );
+});
+
 /**
  * Encode a supported fitted model into the current JSON-compatible portable format.
  *
@@ -676,6 +836,16 @@ export const encodeFittedModel = Effect.fn("Prophet.encodeFittedModel")(function
     );
 
     return encodePiecewiseMapModel(parsedModel);
+  }
+
+  if (model.model === "logistic-piecewise-map") {
+    const parsedModel = yield* parseLogisticMapModel(model).pipe(
+      Effect.mapError((error) =>
+        serializationErrorFromInvalidModel("encode", "logistic-piecewise-map", error),
+      ),
+    );
+
+    return encodeLogisticMapModel(parsedModel);
   }
 
   return yield* Effect.fail(
@@ -718,5 +888,9 @@ export const decodeFittedModel = Effect.fn("Prophet.decodeFittedModel")(function
     return yield* decodeFlatMapModel(encoded);
   }
 
-  return yield* decodePiecewiseMapModel(encoded);
+  if (encoded.modelKind === "linear-piecewise-map") {
+    return yield* decodePiecewiseMapModel(encoded);
+  }
+
+  return yield* decodeLogisticMapModel(encoded);
 });

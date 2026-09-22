@@ -98,8 +98,8 @@ describe("Prophet 1.4.0 target-scaling compatibility", () => {
         }).pipe(Effect.provide(prophetFittingBackendLayer)),
       );
 
-      if (model.model === "linear-trend") {
-        throw new Error(`${referenceCase.id} unexpectedly selected OLS`);
+      if (model.model === "linear-trend" || model.model === "logistic-piecewise-map") {
+        throw new Error(`${referenceCase.id} unexpectedly selected a different model family`);
       }
 
       expect(model.targetScaling.mode, referenceCase.id).toBe(referenceCase.mode);

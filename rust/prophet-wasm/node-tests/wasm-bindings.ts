@@ -141,6 +141,8 @@ export interface ProphetWasmNodeBindings {
   readonly fit_mixed_flat_map: (...args: ReadonlyArray<unknown>) => Float64Array;
   readonly predict_mixed_linear_map: (...args: ReadonlyArray<unknown>) => Float64Array;
   readonly predict_mixed_flat_map: (...args: ReadonlyArray<unknown>) => Float64Array;
+  readonly fit_logistic_map_with_features: (...args: ReadonlyArray<unknown>) => Float64Array;
+  readonly predict_logistic_map_with_features: (...args: ReadonlyArray<unknown>) => Float64Array;
   readonly fit_linear_trend: (timestamps: Float64Array, values: Float64Array) => Float64Array;
   readonly predict_linear_trend: (
     timestamps: Float64Array,
@@ -162,6 +164,8 @@ const requiredFunctionExports = [
   "fit_mixed_flat_map",
   "predict_mixed_linear_map",
   "predict_mixed_flat_map",
+  "fit_logistic_map_with_features",
+  "predict_logistic_map_with_features",
   "fit_flat_map",
   "fit_flat_map_with_scaling",
   "predict_flat_map",

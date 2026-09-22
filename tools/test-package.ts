@@ -49,6 +49,7 @@ const expectedDeclarationFiles = [
   "dist/internal/additional-features.d.ts",
   "dist/internal/fitting-backend.d.ts",
   "dist/internal/prophet-fitting-backend.d.ts",
+  "dist/logistic.d.ts",
   "dist/model-serialization.d.ts",
   "dist/observation.d.ts",
   "dist/options.d.ts",
@@ -201,5 +202,30 @@ const [regressorForecast] = await Effect.runPromise(
 assert.equal(regressorForecast?.regressors[0]?.name, "promotion");
 
 assert.equal(getRegressorCoefficients(regressorModel)[0]?.name, "promotion");
+
+const logisticModel = await Effect.runPromise(
+  fit(
+    [
+      { timestamp: "2024-01-01T00:00:00.000Z", value: 1.2, capacity: 10 },
+      { timestamp: "2024-01-02T00:00:00.000Z", value: 2.2, capacity: 10 },
+      { timestamp: "2024-01-03T00:00:00.000Z", value: 4.2, capacity: 10 },
+      { timestamp: "2024-01-04T00:00:00.000Z", value: 6.1, capacity: 10 },
+      { timestamp: "2024-01-05T00:00:00.000Z", value: 7.6, capacity: 10 },
+      { timestamp: "2024-01-06T00:00:00.000Z", value: 8.9, capacity: 10 },
+    ],
+    {
+      growth: "logistic",
+      map: { changepoints: { mode: "explicit", timestamps: [] } },
+    },
+  ).pipe(Effect.provide(prophetFittingBackendLayer)),
+);
+
+const [logisticForecast] = await Effect.runPromise(
+  predict(logisticModel, [{ timestamp: "2024-01-07T00:00:00.000Z", capacity: 12 }]),
+);
+
+assert.ok(logisticForecast !== undefined && logisticForecast.trend > 0);
+
+assert.ok(logisticForecast.trend < 12);
 
 console.log(`Package artifact smoke test passed (${packedFiles.length} files)`);
