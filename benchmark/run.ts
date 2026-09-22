@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 import { Effect } from "effect";
 
 import { parseBenchmarkCases } from "./case.ts";
+import { growthScalingAndMixedMapCases } from "./cases/growth-scaling-and-mixed-map.ts";
 import { resolveContainerPlatform } from "./container-platform.ts";
 import { generateBenchmarkData } from "./generate-data.ts";
 import type { RunManifest } from "./result.ts";
@@ -105,7 +106,12 @@ const main = async (): Promise<void> => {
   await generateBenchmarkData(new URL("data/generated/", import.meta.url));
 
   const casesInput: unknown = JSON.parse(await readFile(casesPath, "utf8"));
-  const cases = await Effect.runPromise(parseBenchmarkCases(casesInput));
+  const originalCases = await Effect.runPromise(parseBenchmarkCases(casesInput));
+
+  const cases = await Effect.runPromise(
+    parseBenchmarkCases([...originalCases, ...growthScalingAndMixedMapCases]),
+  );
+
   const knownIds = new Set(cases.map((benchmarkCase) => benchmarkCase.id));
 
   const selectedCases =
@@ -125,10 +131,13 @@ const main = async (): Promise<void> => {
   const runDirectory = resolve(benchmarkRoot, "results/runs", runId);
 
   await mkdir(runDirectory, { recursive: true });
+  await writeFile(resolve(runDirectory, "cases.json"), `${JSON.stringify(cases, null, 2)}\n`);
 
   const inputPaths = Array.from(
     new Set([
       casesPath,
+      resolve(benchmarkRoot, "cases/growth-scaling-and-mixed-map.ts"),
+      resolve(runDirectory, "cases.json"),
       evidencePath,
       resolve(benchmarkRoot, "python/uv.lock"),
       resolve(generatedDataRoot, "manifest.json"),
@@ -169,6 +178,7 @@ const main = async (): Promise<void> => {
   const environment: NodeJS.ProcessEnv = {
     ...process.env,
     BENCHMARK_CASE_IDS: selectedCases.join(","),
+    BENCHMARK_CASES_PATH: "/results/cases.json",
     BENCHMARK_CONTAINER_PLATFORM: containerPlatform,
     BENCHMARK_HOST_RUN_DIRECTORY: runDirectory,
   };

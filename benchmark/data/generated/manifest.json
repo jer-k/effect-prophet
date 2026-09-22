@@ -40,6 +40,41 @@
       "file": "map-mixed-features-automatic-large.json",
       "recipe": "map-mixed-features-automatic-v1:piecewise-small-breaks+weekly-order2+monthly-dense-order3+events6+regressors4+bounded-noise-x30:n=768:h=128",
       "sha256": "7a24d6ad1f87032a320eed898a00a41bc90a4b0c7febb7c42801715c86c664b5"
+    },
+    {
+      "file": "linear-offset-scaling.json",
+      "recipe": "linear-offset-scaling-v1:n=96:h=24:offset=100:weekly:bounded-noise",
+      "sha256": "bfea515181446ef72eeed2acaef46db63d6fcee5cd1d6af177ad886a6c973b5e"
+    },
+    {
+      "file": "flat-mixed-components.json",
+      "recipe": "flat-mixed-components-v1:n=96:h=24:conditional-weekly+event+regressor",
+      "sha256": "4e1e4fd02c0e9a88f9f8369942d9ae9deaa9a3ebe0dcdffbb6d45e8a23c3263f"
+    },
+    {
+      "file": "linear-mixed-components.json",
+      "recipe": "linear-mixed-components-v1:n=96:h=24:conditional-weekly+event+regressor",
+      "sha256": "48c87b33c9ffb95217c18f0dc10baf441141cf937b79d1081d16f29057cd6b1c"
+    },
+    {
+      "file": "flat-mixed-components-large.json",
+      "recipe": "flat-mixed-components-large-v1:n=256:h=64:conditional-weekly+event+regressor",
+      "sha256": "7ee4bb9692dfb115e926da542b37298a311e06037c0e5a638ca067a1fb937b11"
+    },
+    {
+      "file": "logistic-implicit-floor.json",
+      "recipe": "logistic-implicit-floor-v1:n=96:h=24:changing-capacity:weekly",
+      "sha256": "d8cde080f7a8af86acb6e70e2577d0d1d2ee8f813bf4836e5a61702a16dc1558"
+    },
+    {
+      "file": "logistic-explicit-floor.json",
+      "recipe": "logistic-explicit-floor-v1:n=96:h=24:changing-capacity:weekly",
+      "sha256": "c6fa262b4fd7353c7113029e7863b000afba00ec339f72dfaaa26b08a76a0f9b"
+    },
+    {
+      "file": "logistic-implicit-floor-large.json",
+      "recipe": "logistic-implicit-floor-large-v1:n=256:h=64:changing-capacity:weekly",
+      "sha256": "61b169aa9c925333f6dd11301febfdeb82e9ae7f2b95f3cb4c222e6dcfb080d9"
     }
   ]
 }

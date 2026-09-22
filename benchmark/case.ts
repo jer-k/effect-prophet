@@ -72,6 +72,7 @@ const BenchmarkSeasonalitySchema = Schema.Struct({
   fourierOrder: PositiveInteger,
   priorScale: PositiveFinite,
   conditionName: Schema.optionalKey(NonEmptyString),
+  mode: Schema.optionalKey(Schema.Literals(["additive", "multiplicative"])),
 });
 
 const BenchmarkEventSchema = Schema.Struct({
@@ -90,6 +91,7 @@ const BenchmarkRegressorSchema = Schema.Struct({
   name: NonEmptyString,
   priorScale: PositiveFinite,
   standardization: Schema.Literals(["auto", "always", "never"]),
+  mode: Schema.optionalKey(Schema.Literals(["additive", "multiplicative"])),
 });
 
 const BenchmarkChangepointsSchema = Schema.Union([
@@ -127,10 +129,29 @@ const LinearMapWorkloadSchema = Schema.Struct({
   }),
 });
 
+const StageFMapWorkloadSchema = Schema.Struct({
+  kind: Schema.Literal("stage-f-map"),
+  comparison: EquivalentObjectiveComparisonSchema,
+  configuration: Schema.Struct({
+    growth: Schema.Literals(["linear", "flat", "logistic"]),
+    scaling: Schema.Literals(["absmax", "minmax"]),
+    seasonalityMode: Schema.Literals(["additive", "multiplicative"]),
+    holidaysMode: Schema.Literals(["additive", "multiplicative"]),
+    changepoints: BenchmarkChangepointsSchema,
+    changepointPriorScale: PositiveFinite,
+    seasonalities: Schema.Array(BenchmarkSeasonalitySchema),
+    events: Schema.Array(BenchmarkEventSchema),
+    regressors: Schema.Array(BenchmarkRegressorSchema),
+  }),
+  effectOptimizer: Schema.optionalKey(LinearMapWorkloadSchema.fields.effectOptimizer),
+  pythonOptimizer: LinearMapWorkloadSchema.fields.pythonOptimizer,
+});
+
 /** A public forecasting workload understood by both language adapters. */
 export const BenchmarkWorkloadSchema = Schema.Union([
   FixedLinearPredictionWorkloadSchema,
   LinearMapWorkloadSchema,
+  StageFMapWorkloadSchema,
 ]);
 
 /** A public forecasting workload understood by both language adapters. */
@@ -172,6 +193,8 @@ export type BenchmarkCase = typeof BenchmarkCaseSchema.Type;
 export const BenchmarkObservationSchema = Schema.Struct({
   timestamp: CanonicalTimestamp,
   value: Schema.Finite,
+  capacity: Schema.optionalKey(Schema.Finite),
+  floor: Schema.optionalKey(Schema.Finite),
   regressors: Schema.optionalKey(Schema.Record(Schema.String, Schema.Finite)),
   conditions: Schema.optionalKey(Schema.Record(Schema.String, Schema.Boolean)),
 });
@@ -179,6 +202,8 @@ export const BenchmarkObservationSchema = Schema.Struct({
 /** Runtime schema for one complete shared prediction row. */
 export const BenchmarkPredictionRowSchema = Schema.Struct({
   timestamp: CanonicalTimestamp,
+  capacity: Schema.optionalKey(Schema.Finite),
+  floor: Schema.optionalKey(Schema.Finite),
   regressors: Schema.optionalKey(Schema.Record(Schema.String, Schema.Finite)),
   conditions: Schema.optionalKey(Schema.Record(Schema.String, Schema.Boolean)),
 });
@@ -270,6 +295,30 @@ const validateCaseRelationships = (
           message: `Fixed prediction case ${benchmarkCase.id} may only convert input or predict`,
         }),
       );
+    }
+
+    if (benchmarkCase.workload.kind === "stage-f-map") {
+      const configuration = benchmarkCase.workload.configuration;
+      const points = configuration.changepoints;
+      const flat = configuration.growth === "flat";
+
+      const emptyPoints =
+        points.mode === "explicit" ? points.timestamps.length === 0 : points.count === 0;
+
+      if (
+        (flat &&
+          (!emptyPoints ||
+            points.mode !== "explicit" ||
+            benchmarkCase.workload.effectOptimizer !== undefined)) ||
+        (!flat && (emptyPoints || benchmarkCase.workload.effectOptimizer === undefined))
+      ) {
+        return Effect.fail(
+          new BenchmarkInputError({
+            input: "cases",
+            message: `Stage F case ${benchmarkCase.id} must use flat defaults or a nonempty comparable changepoint MAP fit`,
+          }),
+        );
+      }
     }
 
     if (benchmarkCase.workload.kind === "linear-map") {

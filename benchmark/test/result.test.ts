@@ -49,9 +49,9 @@ const correctness = {
       value: 5,
       trend: 3,
       additive: 2,
-      seasonalities: [{ name: "weekly", value: 0 }],
-      events: [{ name: "launch", value: 0 }],
-      regressors: [{ name: "promotion", value: 2 }],
+      seasonalities: [{ name: "weekly", mode: "additive", value: 0 }],
+      events: [{ name: "launch", mode: "additive", value: 0 }],
+      regressors: [{ name: "promotion", mode: "additive", value: 2 }],
     },
   ],
   noiseScale: 0.1,
@@ -86,7 +86,7 @@ describe("benchmark result parsing", () => {
 
     expect(result.measurements[0]?.samplesNanoseconds).toEqual([10, 20, 30]);
     expect(result.correctness[0]?.forecasts[0]?.regressors).toEqual([
-      { name: "promotion", value: 2 },
+      { name: "promotion", mode: "additive", value: 2 },
     ]);
   });
 

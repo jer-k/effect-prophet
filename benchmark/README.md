@@ -22,6 +22,19 @@ regressor, and condition; neither implementation invents future covariates or ca
 | `map-mixed-features-explicit-small`    | `N=24`, `H=3`                      | Fixture-scale conditional/unconditional seasonality, event, regressor, and explicit changepoint control        |
 | `map-mixed-features-automatic-large`   | `N=768`, `H=128`, `Ks=10`, `Ka=10` | Mixed feature model with Effect's omitted-`map` automatic defaults (`25`, `0.8`)                               |
 
+Eleven growth, scaling, and mixed-component MAP cases come from [`cases/growth-scaling-and-mixed-map.ts`](cases/growth-scaling-and-mixed-map.ts): absmax and minmax
+large-offset linear fits (`N=96`), conditional flat mixed fits (`N=96,256`), linear mixed
+(`N=96`), and floor-aware changing-capacity logistic fits (`N=96,256`) with both floor policies,
+both scaling modes, and additive-only or mixed features. Logistic fits use nonempty explicit
+or automatically resolved nonsingular changepoints; true-empty-point and singular-policy comparisons are deliberately not
+part of the equivalent-fit timing set. Flat mixed fits have no changepoints and use Effect's fixed flat optimizer; the case does not
+pretend to configure flat optimizer controls that the public API does not expose. The runner
+serializes these declarations beside the run artifacts into `cases.json`, which both mounted
+adapters and the report read; there is no second runner. Earlier EP-071 run artifacts use
+`stage-f-*` IDs and dataset hashes; the descriptive names change only generated metadata,
+not observation or prediction-row values. Do not merge those historical samples with new runs
+without verifying that their recorded configurations and row values match.
+
 `Ks` is the Fourier-column count and `Ka` is the event-plus-regressor column count. Fixed-equation
 prediction and nonempty explicit-MAP controls remain as calibration cases.
 
@@ -29,13 +42,16 @@ prediction and nonempty explicit-MAP controls remain as calibration cases.
 event, and regressor terms. The mixed automatic case uses smaller slope breaks and a larger but
 bounded deterministic perturbation so the public default 10,000-iteration coordinate optimizer
 converges at `N=768`; this preserves the required size and omitted-`map` path. Every generated
-file's recipe and SHA-256 appears in `data/generated/manifest.json`, and selected data hashes are
+file's versioned recipe and SHA-256 appears in `data/generated/manifest.json`; the recipe is analytic and seedless (no random generator). Selected data hashes are
 also captured in each run manifest.
 
 ## Exact API mapping
 
-Both implementations use linear growth, additive features, disabled built-in seasonalities, and
-zero uncertainty samples. The Python adapter translates:
+The original cases use linear growth and additive features. Stage F also maps public flat and
+logistic growth, absmax/minmax scaling, inherited and overridden additive/multiplicative modes,
+and logistic training/prediction `capacity`/optional `floor` rows to Prophet's `cap`/`floor`
+DataFrame columns. Both adapters disable built-in seasonalities and uncertainty samples. The
+Python adapter translates:
 
 - Effect UTC event calendar days to a naive-date holidays DataFrame with matching names, dates,
   windows, and prior scales;
@@ -49,11 +65,11 @@ Event names are ordered by Prophet's deterministic feature-column ordering in bo
 This calendar/API translation does not change feature activation or the fitted objective.
 
 Before timings are accepted, each independent worker verifies row identity, finite output,
-`value = trend + additive`, complete named-component reconstruction, condition-false exact zeros,
+`value = trend * (1 + multiplicative) + additive`, complete named-component reconstruction (including factor and output-unit contribution), condition-false exact zeros,
 event-window activation, fitted regressor transforms and coefficient metadata, model kind,
 resolved changepoints, optimizer evidence, and encode/stringify/parse/decode prediction
-equivalence. The report then compares both languages using committed per-quantity trend,
-component, additive, forecast, noise, and persistence tolerances. Any local or cross-language
+equivalence, including a separate fresh-process restoration check. The report then compares both languages using committed per-quantity trend,
+component, additive, forecast, noise, and persistence tolerances. Fitted scaling mode/floor policy and train-only scale/offset are checked too. Any local or cross-language
 failure suppresses that case's timing summary.
 
 ## Run
@@ -75,6 +91,7 @@ Select cases or reuse built images:
 ```sh
 npm run benchmark -- --case map-events-small --case map-mixed-features-automatic-large
 npm run benchmark -- --no-build --case map-conditional-seasonalities-medium
+npm run benchmark -- --case flat-mixed-components --case logistic-explicit-floor-minmax
 ```
 
 The host orchestrator maps Apple Silicon to `linux/arm64` and x64 to `linux/amd64`, then passes the
@@ -117,6 +134,7 @@ Local runs are ignored under:
 ```text
 benchmark/results/runs/<run-id>/
   manifest.json
+  cases.json
   effect-prophet.json
   python-prophet.json
   eligible-cases.json
@@ -144,4 +162,5 @@ npm run benchmark:typecheck
 npm run benchmark:test
 ```
 
-Normal package tests do not install Python or execute this suite.
+Normal package tests do not install Python or execute this suite. Memory measurements are not a
+Stage F requirement; the environment records that process-tree peak RSS is unsupported.

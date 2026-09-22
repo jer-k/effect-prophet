@@ -32,6 +32,8 @@ const piecewiseTrend = (index: number, observationCount: number): number => {
 };
 
 type Covariates = {
+  readonly capacity?: number;
+  readonly floor?: number;
   readonly regressors?: Readonly<Record<string, number>>;
   readonly conditions?: Readonly<Record<string, boolean>>;
 };
@@ -241,6 +243,77 @@ const datasets: ReadonlyArray<BenchmarkDataset> = [
         regressorContribution(covariates.regressors ?? {})
       );
     },
+  }),
+  makeDataset({
+    id: "linear-offset-scaling",
+    observationCount: 96,
+    predictionCount: 24,
+    recipe: "linear-offset-scaling-v1:n=96:h=24:offset=100:weekly:bounded-noise",
+    trend: (index) => 100 + index * 0.09 + 0.03 * Math.max(0, index - 40),
+    covariates: noCovariates,
+    additive: (index) => 0.25 * Math.sin((2 * Math.PI * index) / 7),
+  }),
+  ...(["flat", "linear", "flat-large"] as const).map((variant) => {
+    const growth = variant === "flat-large" ? "flat" : variant;
+    const observationCount = variant === "flat-large" ? 256 : 96;
+    const predictionCount = variant === "flat-large" ? 64 : 24;
+
+    const id =
+      variant === "flat-large" ? "flat-mixed-components-large" : `${variant}-mixed-components`;
+
+    return makeDataset({
+      id,
+      observationCount,
+      predictionCount,
+      recipe: `${id}-v1:n=${observationCount}:h=${predictionCount}:conditional-weekly+event+regressor`,
+      trend: (index) => 35 + (growth === "linear" ? index * 0.08 : 0),
+      covariates: (index) => ({
+        conditions: { active: index % 5 !== 0 },
+        regressors: { promotion: index % 6 === 2 ? 1 : 0 },
+      }),
+      additive: (index, covariates) =>
+        (covariates.conditions?.active === true
+          ? 0.4 *
+            (35 + (growth === "linear" ? index * 0.08 : 0)) *
+            Math.sin((2 * Math.PI * index) / 7)
+          : 0) +
+        (eventActive(index, [21], 0, 0) ? 1.5 : 0) +
+        1.2 * (covariates.regressors?.promotion ?? 0),
+    });
+  }),
+  ...(["implicit", "explicit", "large"] as const).map((floorPolicy) => {
+    const observationCount = floorPolicy === "large" ? 256 : 96;
+    const predictionCount = floorPolicy === "large" ? 64 : 24;
+
+    const id =
+      floorPolicy === "large" ? "logistic-implicit-floor-large" : `logistic-${floorPolicy}-floor`;
+
+    return makeDataset({
+      id,
+      observationCount,
+      predictionCount,
+      recipe: `${id}-v1:n=${observationCount}:h=${predictionCount}:changing-capacity:weekly`,
+      trend: (index) => {
+        const floor = floorPolicy === "explicit" ? 12 + 0.01 * index : 0;
+        const capacity = 60 + index * 0.12;
+
+        return floor + (capacity - floor) / (1 + Math.exp(-(-2 + index * 0.045)));
+      },
+      covariates: (index) => {
+        const capacity = canonical(60 + index * 0.12);
+
+        return floorPolicy === "explicit"
+          ? {
+              capacity,
+              floor: canonical(12 + index * 0.01),
+              regressors: { promotion: index % 6 === 2 ? 1 : 0 },
+            }
+          : { capacity };
+      },
+      additive: (index, covariates) =>
+        0.45 * Math.sin((2 * Math.PI * index) / 7) +
+        (floorPolicy === "explicit" ? 0.2 * (covariates.regressors?.promotion ?? 0) : 0),
+    });
   }),
 ];
 

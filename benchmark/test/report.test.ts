@@ -33,6 +33,7 @@ const forecast = {
   value: 3,
   trend: 3,
   additive: 0,
+  multiplicative: 0,
   seasonalities: [],
   events: [],
   regressors: [],
@@ -126,6 +127,9 @@ describe("benchmark reporting", () => {
     const markdown = renderBenchmarkMarkdown(report);
 
     expect(report.correctness[0]?.status).toBe("passed");
+    expect(report.correctness[0]?.note).toContain(
+      "Verified equivalent behavior for this configuration",
+    );
     expect(report.timings).toHaveLength(2);
     expect(markdown).toContain("Absolute timings");
     expect(markdown).toContain("native architecture");
@@ -149,6 +153,36 @@ describe("benchmark reporting", () => {
     }
 
     firstCorrectness.forecasts[0] = { ...forecast, value: 4, trend: 4 };
+    const pythonResult = await Effect.runPromise(parseImplementationResult(mismatched));
+
+    const report = buildBenchmarkReport(
+      manifest,
+      cases,
+      effectResult,
+      pythonResult,
+      new Set(["fixed-v1"]),
+    );
+
+    expect(report.correctness[0]?.status).toBe("failed");
+    expect(report.timings).toEqual([]);
+  });
+
+  it("rejects mismatched multiplicative forecasts before accepting timings", async () => {
+    const [cases, manifest, effectResult] = await Promise.all([
+      Effect.runPromise(parseBenchmarkCases([caseInput])),
+      Effect.runPromise(parseRunManifest(manifestInput)),
+      Effect.runPromise(parseImplementationResult(makeResultInput("effect-prophet", 10))),
+    ]);
+
+    const mismatched = makeResultInput("python-prophet", 100);
+    const projection = mismatched.correctness[0];
+
+    if (projection === undefined) {
+      throw new Error("Expected correctness fixture");
+    }
+
+    projection.forecasts[0] = { ...forecast, multiplicative: 0.1 };
+
     const pythonResult = await Effect.runPromise(parseImplementationResult(mismatched));
 
     const report = buildBenchmarkReport(
