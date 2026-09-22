@@ -17,6 +17,9 @@ const reservedFeatureNames: ReadonlySet<string> = new Set([
   "value",
   "timestamp",
   "additive",
+  "multiplicative",
+  "factor",
+  "contribution",
   "seasonalities",
   "events",
   "regressors",
@@ -35,7 +38,7 @@ const ValidFeatureName = Schema.NonEmptyString.check(
   }),
 );
 
-/** Runtime schema for a case-sensitive, non-reserved additive feature name. */
+/** Runtime schema for a case-sensitive, non-reserved component feature name. */
 export const FeatureNameSchema = ValidFeatureName.pipe(Schema.brand("effect-prophet/FeatureName"));
 
 /** A parsed case-sensitive name shared by events, regressors, and conditions. */
@@ -60,7 +63,7 @@ const invalidFeatureNameFromIssue = (issue: SchemaIssue.Issue): InvalidFeatureNa
     message: validationMessageFromIssue(issue),
   });
 
-/** Parse an untrusted shared additive feature name without normalization. */
+/** Parse an untrusted shared component feature name without normalization. */
 export const parseFeatureName = (
   input: Parameters<typeof decodeFeatureName>[0],
 ): Effect.Effect<FeatureName, InvalidFeatureName> =>

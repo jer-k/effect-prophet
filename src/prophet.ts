@@ -38,6 +38,11 @@ import { createSeasonalityMasks } from "./internal/seasonality-masks";
 import { predictFlatMapWithWasm } from "./internal/wasm-flat-map-backend";
 import { predictLinearTrendWithWasm } from "./internal/wasm-linear-trend-backend";
 import {
+  predictMixedFlatMapWithWasm,
+  predictMixedLinearMapWithWasm,
+  type MixedMapPredictionBatch,
+} from "./internal/wasm-mixed-map-backend";
+import {
   predictPiecewiseMapFeaturesWithWasm,
   predictPiecewiseMapWithWasm,
 } from "./internal/wasm-piecewise-map-backend";
@@ -75,32 +80,28 @@ export type {
 /** Validated prediction timestamps represented as integer epoch milliseconds. */
 export type PredictionTimestamps = ReadonlyArray<number>;
 
-/** One named additive seasonal contribution in observation units. */
-export interface SeasonalForecastComponent {
-  /** Exact configured seasonality name. */
-  readonly name: string;
+/** One named forecast component with mode-correct units. */
+export type ForecastComponent =
+  | {
+      readonly name: string;
+      readonly mode: "additive";
+      readonly value: number;
+    }
+  | {
+      readonly name: string;
+      readonly mode: "multiplicative";
+      readonly factor: number;
+      readonly contribution: number;
+    };
 
-  /** This seasonality's additive contribution in observation units. */
-  readonly value: number;
-}
+/** One named seasonal forecast component. */
+export type SeasonalForecastComponent = ForecastComponent;
 
-/** One named grouped custom-event contribution in observation units. */
-export interface EventForecastComponent {
-  /** Exact configured event name. */
-  readonly name: string;
+/** One named grouped custom-event forecast component. */
+export type EventForecastComponent = ForecastComponent;
 
-  /** Sum of this event's offset-column contributions. */
-  readonly value: number;
-}
-
-/** One named additive regressor contribution in observation units. */
-export interface RegressorForecastComponent {
-  /** Exact configured regressor name. */
-  readonly name: string;
-
-  /** This row's contribution from the transformed regressor. */
-  readonly value: number;
-}
+/** One named regressor forecast component. */
+export type RegressorForecastComponent = ForecastComponent;
 
 /** One point forecast and its decomposed trend and additive components. */
 export interface Forecast {
@@ -115,6 +116,9 @@ export interface Forecast {
 
   /** Total additive seasonal, event, and regressor contribution to `value`. */
   readonly additive: number;
+
+  /** Total dimensionless multiplicative factor applied to the trend. */
+  readonly multiplicative: number;
 
   /** Ordered named seasonal contributions. */
   readonly seasonalities: ReadonlyArray<SeasonalForecastComponent>;
@@ -213,6 +217,10 @@ const makeFitPlan = (
   additionalFeatures: KnownAdditiveFeatures,
   regressors: ReadonlyArray<ResolvedRegressor>,
 ): FitPlan => {
+  const hasMultiplicativeComponent =
+    layout.components.some((component) => component.definition.mode === "multiplicative") ||
+    additionalFeatures.layout.components.some((component) => component.mode === "multiplicative");
+
   if (options.growth === "linear" && (options.map !== undefined || options.scaling !== undefined)) {
     const map = options.map ?? defaultAutomaticMapOptions;
 
@@ -230,6 +238,18 @@ const makeFitPlan = (
   }
 
   const firstComponent = layout.components[0];
+
+  if (options.growth === "flat" && hasMultiplicativeComponent) {
+    return FitPlan.FlatMixedMap({
+      scaling: options.scaling ?? defaultTargetScalingMode,
+      seasonalities: layout,
+      optimizer: defaultAutomaticMapOptions.optimizer,
+      seasonalityMasks: masks,
+      additionalFeatures,
+      events: options.events,
+      regressors,
+    });
+  }
 
   if (firstComponent === undefined && additionalFeatures.layout.coefficientCount === 0) {
     return options.growth === "linear"
@@ -291,7 +311,8 @@ const fittedRegressorsMatch = (
     const definitionsMatch =
       fitted.definition.name === regressor.definition.name &&
       fitted.definition.priorScale === regressor.definition.priorScale &&
-      fitted.definition.standardization === regressor.definition.standardization;
+      fitted.definition.standardization === regressor.definition.standardization &&
+      fitted.definition.mode === regressor.definition.mode;
 
     if (!definitionsMatch || fitted.transform.mode !== regressor.transform.mode) {
       return false;
@@ -428,7 +449,14 @@ export const fit = Effect.fn("Prophet.fit")(function* (
 
   const conditionNames = conditionNamesFromLayout(resolved.layout);
 
-  if (options.growth === "flat" && conditionNames.length > 0) {
+  const hasMultiplicativeRequest =
+    resolved.layout.components.some(
+      (component) => component.definition.mode === "multiplicative",
+    ) ||
+    options.events.layout.components.some((component) => component.mode === "multiplicative") ||
+    options.regressors.some((regressor) => regressor.mode === "multiplicative");
+
+  if (options.growth === "flat" && conditionNames.length > 0 && !hasMultiplicativeRequest) {
     return yield* Effect.fail(
       new UnsupportedConfigurationError({
         option: "conditional-seasonalities",
@@ -438,7 +466,11 @@ export const fit = Effect.fn("Prophet.fit")(function* (
     );
   }
 
-  if (options.growth === "flat" && options.events.layout.coefficientCount > 0) {
+  if (
+    options.growth === "flat" &&
+    options.events.layout.coefficientCount > 0 &&
+    !hasMultiplicativeRequest
+  ) {
     return yield* Effect.fail(
       new UnsupportedConfigurationError({
         option: "events",
@@ -448,7 +480,7 @@ export const fit = Effect.fn("Prophet.fit")(function* (
     );
   }
 
-  if (options.growth === "flat" && options.regressors.length > 0) {
+  if (options.growth === "flat" && options.regressors.length > 0 && !hasMultiplicativeRequest) {
     return yield* Effect.fail(
       new UnsupportedConfigurationError({
         option: "regressors",
@@ -562,8 +594,7 @@ export const fit = Effect.fn("Prophet.fit")(function* (
     ),
   );
 
-  const returnedRegressors =
-    fittedModel.model === "linear-piecewise-map" ? fittedModel.regressors : [];
+  const returnedRegressors = fittedRegressors(fittedModel);
 
   if (!fittedRegressorsMatch(regressorFeatures.regressors, returnedRegressors)) {
     return yield* Effect.fail(
@@ -604,6 +635,7 @@ const predictLinearForecasts = (
         value: prediction,
         trend: prediction,
         additive: 0,
+        multiplicative: 0,
         seasonalities: [],
         events: [],
         regressors: [],
@@ -630,11 +662,9 @@ const forecastsFromSeasonalBatch = (
   Effect.gen(function* () {
     const seasonalComponentCount = model.seasonalities.components.length;
 
-    const events = model.model === "linear-piecewise-map" ? model.events : undefined;
-
-    const fittedRegressors = model.model === "linear-piecewise-map" ? model.regressors : [];
-
-    const eventComponentCount = events?.layout.components.length ?? 0;
+    const events = model.events;
+    const fittedRegressors = model.regressors;
+    const eventComponentCount = events.layout.components.length;
 
     const rowWidth = seasonalComponentCount + eventComponentCount + fittedRegressors.length + 3;
 
@@ -673,28 +703,30 @@ const forecastsFromSeasonalBatch = (
           );
         }
 
-        seasonalities.push({ name: component.definition.name, value: componentValue });
+        seasonalities.push({
+          name: component.definition.name,
+          mode: "additive",
+          value: componentValue,
+        });
       }
 
       const eventComponents: Array<EventForecastComponent> = [];
 
-      if (events !== undefined) {
-        for (const [componentIndex, component] of events.layout.components.entries()) {
-          const componentValue =
-            batch.values[rowOffset + 3 + seasonalComponentCount + componentIndex];
+      for (const [componentIndex, component] of events.layout.components.entries()) {
+        const componentValue =
+          batch.values[rowOffset + 3 + seasonalComponentCount + componentIndex];
 
-          if (componentValue === undefined) {
-            return yield* Effect.fail(
-              new PredictionError({
-                reason: "backend-failure",
-                timestamp,
-                message: `WASM ${backend} prediction backend omitted an event component`,
-              }),
-            );
-          }
-
-          eventComponents.push({ name: component.name, value: componentValue });
+        if (componentValue === undefined) {
+          return yield* Effect.fail(
+            new PredictionError({
+              reason: "backend-failure",
+              timestamp,
+              message: `WASM ${backend} prediction backend omitted an event component`,
+            }),
+          );
         }
+
+        eventComponents.push({ name: component.name, mode: "additive", value: componentValue });
       }
 
       const regressors: Array<RegressorForecastComponent> = [];
@@ -715,16 +747,129 @@ const forecastsFromSeasonalBatch = (
           );
         }
 
-        regressors.push({ name: regressor.definition.name, value: componentValue });
+        regressors.push({
+          name: regressor.definition.name,
+          mode: "additive",
+          value: componentValue,
+        });
       }
 
       forecasts.push({
         timestamp,
         trend,
         additive,
+        multiplicative: 0,
         value,
         seasonalities,
         events: eventComponents,
+        regressors,
+      });
+    }
+
+    return forecasts;
+  });
+
+const forecastsFromMixedBatch = (
+  model: FittedSeasonalProphet,
+  timestamps: PredictionTimestamps,
+  batch: MixedMapPredictionBatch,
+): Effect.Effect<Forecasts, PredictionError> =>
+  Effect.gen(function* () {
+    const seasonalComponentCount = model.seasonalities.components.length;
+    const eventComponentCount = model.events.layout.components.length;
+    const rowWidth = 4 + seasonalComponentCount + eventComponentCount + model.regressors.length;
+    const forecasts: Array<Forecast> = [];
+
+    for (const [row, timestamp] of timestamps.entries()) {
+      const rowOffset = row * rowWidth;
+      const trend = batch.values[rowOffset];
+      const additive = batch.values[rowOffset + 1];
+      const multiplicative = batch.values[rowOffset + 2];
+      const value = batch.values[rowOffset + 3];
+
+      if (
+        trend === undefined ||
+        additive === undefined ||
+        multiplicative === undefined ||
+        value === undefined
+      ) {
+        return yield* Effect.fail(
+          new PredictionError({
+            reason: "backend-failure",
+            timestamp,
+            message: "WASM mixed MAP prediction backend omitted an expected forecast value",
+          }),
+        );
+      }
+
+      const project = (
+        name: string,
+        mode: "additive" | "multiplicative",
+        componentIndex: number,
+      ): Effect.Effect<ForecastComponent, PredictionError> => {
+        const effect = batch.values[rowOffset + 4 + componentIndex];
+
+        if (effect === undefined) {
+          return Effect.fail(
+            new PredictionError({
+              reason: "backend-failure",
+              timestamp,
+              message: "WASM mixed MAP prediction backend omitted a named component",
+            }),
+          );
+        }
+
+        if (mode === "additive") {
+          return Effect.succeed({ name, mode, value: effect });
+        }
+
+        const contribution = batch.contributions[row * batch.componentCount + componentIndex];
+
+        return contribution === undefined
+          ? Effect.fail(
+              new PredictionError({
+                reason: "backend-failure",
+                timestamp,
+                message: "WASM mixed MAP backend omitted a projected component contribution",
+              }),
+            )
+          : Effect.succeed({ name, mode, factor: effect, contribution });
+      };
+
+      const seasonalities: Array<SeasonalForecastComponent> = [];
+
+      for (const [index, component] of model.seasonalities.components.entries()) {
+        seasonalities.push(
+          yield* project(component.definition.name, component.definition.mode, index),
+        );
+      }
+
+      const events: Array<EventForecastComponent> = [];
+
+      for (const [index, component] of model.events.layout.components.entries()) {
+        events.push(yield* project(component.name, component.mode, seasonalComponentCount + index));
+      }
+
+      const regressors: Array<RegressorForecastComponent> = [];
+
+      for (const [index, regressor] of model.regressors.entries()) {
+        regressors.push(
+          yield* project(
+            regressor.definition.name,
+            regressor.definition.mode,
+            seasonalComponentCount + eventComponentCount + index,
+          ),
+        );
+      }
+
+      forecasts.push({
+        timestamp,
+        trend,
+        additive,
+        multiplicative,
+        value,
+        seasonalities,
+        events,
         regressors,
       });
     }
@@ -825,22 +970,51 @@ const predictPiecewiseMapForecasts = (
         return yield* forecastsFromSeasonalBatch(model, timestamps, batch, "linear MAP");
       });
 
+const predictMixedMapForecasts = (
+  model: FittedSeasonalProphet,
+  timestamps: PredictionTimestamps,
+  alignedRegressorValues: ReadonlyArray<ReadonlyArray<number>>,
+  masks: SeasonalityMaskMatrix,
+): Effect.Effect<Forecasts, PredictionError | InputValidationError> =>
+  Effect.gen(function* () {
+    const { features } = yield* makePredictionFeatures(
+      timestamps,
+      alignedRegressorValues,
+      masks,
+      model.events,
+      model.regressors,
+    );
+
+    const batch =
+      model.model === "linear-piecewise-map"
+        ? yield* predictMixedLinearMapWithWasm(model, timestamps, masks, features)
+        : yield* predictMixedFlatMapWithWasm(model, timestamps, masks, features);
+
+    return yield* forecastsFromMixedBatch(model, timestamps, batch);
+  });
+
+const isMixedModel = (model: FittedSeasonalProphet): boolean =>
+  model.fitSummary.method === "mixed-flat-map-coordinate-v1" ||
+  model.fitSummary.method === "mixed-piecewise-map-coordinate-v1";
+
 const predictFittedSeasonalModel = (
   model: FittedSeasonalProphet,
   timestamps: PredictionTimestamps,
   alignedRegressorValues: ReadonlyArray<ReadonlyArray<number>>,
   masks: SeasonalityMaskMatrix,
 ): Effect.Effect<Forecasts, PredictionError | InputValidationError> =>
-  Match.value(model).pipe(
-    Match.discriminatorsExhaustive("model")({
-      "flat-map": (flatModel) => predictFlatMapForecasts(flatModel, timestamps),
-      "linear-piecewise-map": (piecewiseModel) =>
-        predictPiecewiseMapForecasts(piecewiseModel, timestamps, alignedRegressorValues, masks),
-    }),
-  );
+  isMixedModel(model)
+    ? predictMixedMapForecasts(model, timestamps, alignedRegressorValues, masks)
+    : Match.value(model).pipe(
+        Match.discriminatorsExhaustive("model")({
+          "flat-map": (flatModel) => predictFlatMapForecasts(flatModel, timestamps),
+          "linear-piecewise-map": (piecewiseModel) =>
+            predictPiecewiseMapForecasts(piecewiseModel, timestamps, alignedRegressorValues, masks),
+        }),
+      );
 
 const fittedRegressors = (model: FittedProphet): ReadonlyArray<FittedRegressor> =>
-  model.model === "linear-piecewise-map" ? model.regressors : [];
+  model.model === "linear-piecewise-map" || model.model === "flat-map" ? model.regressors : [];
 
 /** Return fitted regressor coefficients in original input units. */
 export const getRegressorCoefficients = (

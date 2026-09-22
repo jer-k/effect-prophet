@@ -96,7 +96,14 @@ describe("public target scaling", () => {
     const [forecast] = await Effect.runPromise(predict(model, ["1970-01-02T12:00:00.000Z"]));
 
     expect(forecast?.seasonalities).toHaveLength(1);
-    expect(forecast?.seasonalities[0]?.value).toBeCloseTo(forecast?.additive ?? 0, 12);
+
+    const seasonality = forecast?.seasonalities[0];
+
+    if (seasonality?.mode !== "additive") {
+      throw new Error("Expected an additive seasonal component");
+    }
+
+    expect(seasonality.value).toBeCloseTo(forecast?.additive ?? 0, 12);
     expect(forecast?.value).toBeCloseTo((forecast?.trend ?? 0) + (forecast?.additive ?? 0), 12);
     expect(Math.abs(forecast?.additive ?? 0)).toBeLessThan(model.targetScaling.offset);
   });

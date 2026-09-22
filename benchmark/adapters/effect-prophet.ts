@@ -14,6 +14,7 @@ import {
   predict,
   prophetFittingBackendLayer,
   type FittedProphet,
+  type ForecastComponent,
   type Forecasts,
 } from "effect-prophet";
 
@@ -191,15 +192,25 @@ const setupModel = (input: PreparedInput, benchmarkCase: BenchmarkCase): FittedP
 const runPredict = (model: FittedProphet, input: PreparedInput): Forecasts =>
   Effect.runSync(predict(model, input.predictionRows));
 
+const additiveComponentProjection = (
+  component: ForecastComponent,
+): ForecastProjection["seasonalities"][number] => {
+  if (component.mode !== "additive") {
+    throw new Error("The current benchmark protocol supports additive components only");
+  }
+
+  return { name: component.name, value: component.value };
+};
+
 const forecastProjection = (forecasts: Forecasts): ReadonlyArray<ForecastProjection> =>
   forecasts.map((forecast) => ({
     timestamp: forecast.timestamp,
     value: forecast.value,
     trend: forecast.trend,
     additive: forecast.additive,
-    seasonalities: forecast.seasonalities.map((component) => ({ ...component })),
-    events: forecast.events.map((component) => ({ ...component })),
-    regressors: forecast.regressors.map((component) => ({ ...component })),
+    seasonalities: forecast.seasonalities.map(additiveComponentProjection),
+    events: forecast.events.map(additiveComponentProjection),
+    regressors: forecast.regressors.map(additiveComponentProjection),
   }));
 
 const sumComponents = (forecast: ForecastProjection): number =>

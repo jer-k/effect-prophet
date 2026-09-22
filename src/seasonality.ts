@@ -1,5 +1,6 @@
 import { Effect, Schema, type SchemaIssue } from "effect";
 
+import { ComponentModeSchema, type ComponentMode } from "./component-mode";
 import {
   ValidationIssueSchema,
   validationIssuesFromIssue,
@@ -34,6 +35,7 @@ const SeasonalityDefinitionFieldsSchema = Schema.Struct({
   periodDays: PositiveFinite,
   fourierOrder: PositiveFourierOrder,
   priorScale: priorScaleSchema,
+  mode: ComponentModeSchema.pipe(Schema.withDecodingDefaultKey(Effect.succeed("additive"))),
   conditionName: Schema.optionalKey(FeatureNameSchema),
 });
 
@@ -89,14 +91,16 @@ const CustomSeasonalityDefinitionSchema = Schema.Struct({
   periodDays: PositiveFinite,
   fourierOrder: PositiveFourierOrder,
   priorScale: priorScaleSchema,
+  mode: Schema.optionalKey(ComponentModeSchema),
   conditionName: Schema.optionalKey(FeatureNameSchema),
-}).pipe(Schema.brand("effect-prophet/SeasonalityDefinition"));
+});
 
 const BuiltInSeasonalityDefinitionSchema = Schema.Struct({
   name: Schema.Literals(["daily", "weekly", "yearly"]),
   periodDays: PositiveFinite,
   fourierOrder: PositiveFourierOrder,
   priorScale: priorScaleSchema,
+  mode: ComponentModeSchema.pipe(Schema.withDecodingDefaultKey(Effect.succeed("additive"))),
 })
   .check(canonicalBuiltInPeriod)
   .pipe(Schema.brand("effect-prophet/SeasonalityDefinition"));
@@ -104,13 +108,13 @@ const BuiltInSeasonalityDefinitionSchema = Schema.Struct({
 /** A custom seasonality representation accepted before parsing and default application. */
 export type EncodedSeasonality = typeof CustomSeasonalityDefinitionSchema.Encoded;
 
-/** A parsed additive Fourier seasonality definition. */
+/** A parsed Fourier seasonality definition with resolved composition mode. */
 export type SeasonalityDefinition = typeof SeasonalityDefinitionSchema.Type & {
   /** Optional condition whose boolean row value gates every harmonic in this component. */
   readonly conditionName?: FeatureName;
 };
 
-const seasonalitiesHaveUniqueNames = Schema.makeFilter<ReadonlyArray<SeasonalityDefinition>>(
+const seasonalitiesHaveUniqueNames = Schema.makeFilter<ReadonlyArray<{ readonly name: string }>>(
   (definitions) => {
     const names = new Set<string>();
     const issues: Array<{ readonly path: ReadonlyArray<PropertyKey>; readonly issue: string }> = [];
@@ -295,8 +299,17 @@ const freezeLayout = (layout: SeasonalityLayout): SeasonalityLayout => {
  */
 export const parseSeasonalities = (
   input: Parameters<typeof decodeSeasonalities>[0],
+  inheritedMode: ComponentMode = "additive",
 ): Effect.Effect<ReadonlyArray<SeasonalityDefinition>, InvalidSeasonality> =>
   decodeSeasonalities(input).pipe(
+    Effect.flatMap((definitions) =>
+      decodeSeasonalityDefinitions(
+        definitions.map((definition) => ({
+          ...definition,
+          mode: definition.mode ?? inheritedMode,
+        })),
+      ),
+    ),
     Effect.map(freezeDefinitions),
     Effect.mapError((error) => invalidSeasonalityFromIssue(error.issue)),
   );

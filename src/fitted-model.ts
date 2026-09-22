@@ -30,7 +30,7 @@ const LinearParametersSchema = Schema.Struct({
 });
 
 const FlatMapFitSummarySchema = Schema.Struct({
-  method: Schema.Literal("flat-map-coordinate-v1"),
+  method: Schema.Literals(["flat-map-coordinate-v1", "mixed-flat-map-coordinate-v1"]),
   termination: Schema.Literals(["converged", "constant-target-shortcut"]),
   valueScale: PositiveFinite,
   observationCount: Schema.Int.check(Schema.isGreaterThanOrEqualTo(2)),
@@ -45,11 +45,78 @@ const FlatMapParametersFieldsSchema = Schema.Struct({
   level: Schema.Finite,
   seasonalities: SeasonalityLayoutSchema,
   coefficients: Schema.Array(Schema.Finite),
+  events: EventCalendarSchema.pipe(
+    Schema.withDecodingDefaultKey(Effect.succeed(emptyEventCalendar)),
+  ),
+  eventCoefficients: Schema.Array(Schema.Finite).pipe(
+    Schema.withDecodingDefaultKey(Effect.succeed([])),
+  ),
+  regressors: Schema.Array(FittedRegressorSchema).pipe(
+    Schema.withDecodingDefaultKey(Effect.succeed([])),
+  ),
   noiseScale: PositiveFinite,
   fitSummary: FlatMapFitSummarySchema,
 });
 
 type FlatMapParametersFields = typeof FlatMapParametersFieldsSchema.Type;
+
+const hasMultiplicativeComponents = (parameters: {
+  readonly seasonalities: typeof SeasonalityLayoutSchema.Type;
+  readonly events: typeof EventCalendarSchema.Type;
+  readonly regressors: ReadonlyArray<typeof FittedRegressorSchema.Type>;
+}): boolean =>
+  parameters.seasonalities.components.some(
+    (component) => component.definition.mode === "multiplicative",
+  ) ||
+  parameters.events.layout.components.some((component) => component.mode === "multiplicative") ||
+  parameters.regressors.some((regressor) => regressor.definition.mode === "multiplicative");
+
+const featureIdentityIssues = (parameters: {
+  readonly seasonalities: typeof SeasonalityLayoutSchema.Type;
+  readonly events: typeof EventCalendarSchema.Type;
+  readonly regressors: ReadonlyArray<typeof FittedRegressorSchema.Type>;
+}): Array<{ readonly path: ReadonlyArray<PropertyKey>; readonly issue: string }> => {
+  const issues: Array<{ readonly path: ReadonlyArray<PropertyKey>; readonly issue: string }> = [];
+
+  const featureNames = new Set(
+    parameters.seasonalities.components.map((component) => component.definition.name),
+  );
+
+  for (const [index, component] of parameters.events.layout.components.entries()) {
+    if (featureNames.has(component.name)) {
+      issues.push({
+        path: ["events", "layout", "components", index, "name"],
+        issue: "Fitted event names must be distinct from seasonality names",
+      });
+    }
+
+    featureNames.add(component.name);
+  }
+
+  for (const [index, regressor] of parameters.regressors.entries()) {
+    if (featureNames.has(regressor.definition.name)) {
+      issues.push({
+        path: ["regressors", index, "definition", "name"],
+        issue: "Fitted regressor names must be globally distinct",
+      });
+    }
+
+    featureNames.add(regressor.definition.name);
+  }
+
+  for (const [index, component] of parameters.seasonalities.components.entries()) {
+    const conditionName = component.definition.conditionName;
+
+    if (conditionName !== undefined && featureNames.has(conditionName)) {
+      issues.push({
+        path: ["seasonalities", "components", index, "definition", "conditionName"],
+        issue: "Fitted condition names must be distinct from component names",
+      });
+    }
+  }
+
+  return issues;
+};
 
 const consistentFlatMapParameters = Schema.makeFilter<FlatMapParametersFields>((parameters) => {
   const issues: Array<{ readonly path: ReadonlyArray<PropertyKey>; readonly issue: string }> = [];
@@ -75,23 +142,49 @@ const consistentFlatMapParameters = Schema.makeFilter<FlatMapParametersFields>((
     });
   }
 
-  for (const [index, component] of parameters.seasonalities.components.entries()) {
-    if (component.definition.conditionName !== undefined) {
-      issues.push({
-        path: ["seasonalities", "components", index, "definition", "conditionName"],
-        issue: "Flat MAP does not support conditional seasonalities",
-      });
-    }
+  if (parameters.eventCoefficients.length !== parameters.events.layout.coefficientCount) {
+    issues.push({
+      path: ["eventCoefficients"],
+      issue: `Expected exactly ${parameters.events.layout.coefficientCount} event coefficients`,
+    });
   }
 
-  if (
-    parameters.fitSummary.termination === "constant-target-shortcut" &&
-    parameters.fitSummary.iterations !== 0
-  ) {
+  issues.push(...featureIdentityIssues(parameters));
+
+  const mixed = hasMultiplicativeComponents(parameters);
+
+  if (mixed !== (parameters.fitSummary.method === "mixed-flat-map-coordinate-v1")) {
     issues.push({
-      path: ["fitSummary", "iterations"],
-      issue: "Expected zero iterations for the constant-target shortcut",
+      path: ["fitSummary", "method"],
+      issue: "Flat MAP method identity must match its resolved component modes",
     });
+  }
+
+  if (parameters.fitSummary.termination === "constant-target-shortcut") {
+    if (parameters.fitSummary.iterations !== 0) {
+      issues.push({
+        path: ["fitSummary", "iterations"],
+        issue: "Expected zero iterations for the constant-target shortcut",
+      });
+    }
+
+    if (
+      parameters.coefficients.some((coefficient) => coefficient !== 0) ||
+      parameters.eventCoefficients.some((coefficient) => coefficient !== 0) ||
+      parameters.regressors.some((regressor) => regressor.coefficient !== 0)
+    ) {
+      issues.push({
+        path: ["fitSummary", "termination"],
+        issue: "Constant-target shortcut state requires zero feature coefficients",
+      });
+    }
+
+    if (parameters.noiseScale !== parameters.fitSummary.valueScale * 1e-9) {
+      issues.push({
+        path: ["noiseScale"],
+        issue: "Constant-target shortcut noise must equal valueScale times 1e-9",
+      });
+    }
   }
 
   return issues;
@@ -100,7 +193,7 @@ const consistentFlatMapParameters = Schema.makeFilter<FlatMapParametersFields>((
 const FlatMapParametersSchema = FlatMapParametersFieldsSchema.check(consistentFlatMapParameters);
 
 const PiecewiseMapFitSummarySchema = Schema.Struct({
-  method: Schema.Literal("piecewise-map-coordinate-v1"),
+  method: Schema.Literals(["piecewise-map-coordinate-v1", "mixed-piecewise-map-coordinate-v1"]),
   termination: Schema.Literals(["converged", "constant-target-shortcut"]),
   valueScale: PositiveFinite,
   observationCount: Schema.Int.check(Schema.isGreaterThanOrEqualTo(2)),
@@ -175,42 +268,7 @@ const consistentPiecewiseMapParameters = Schema.makeFilter<PiecewiseMapParameter
       });
     }
 
-    const featureNames = new Set(
-      parameters.seasonalities.components.map((component) => component.definition.name),
-    );
-
-    for (const [index, component] of parameters.events.layout.components.entries()) {
-      if (featureNames.has(component.name)) {
-        issues.push({
-          path: ["events", "layout", "components", index, "name"],
-          issue: "Fitted event names must be distinct from seasonality names",
-        });
-      }
-
-      featureNames.add(component.name);
-    }
-
-    for (const [index, regressor] of parameters.regressors.entries()) {
-      if (featureNames.has(regressor.definition.name)) {
-        issues.push({
-          path: ["regressors", index, "definition", "name"],
-          issue: "Fitted regressor names must be globally distinct",
-        });
-      }
-
-      featureNames.add(regressor.definition.name);
-    }
-
-    for (const [index, component] of parameters.seasonalities.components.entries()) {
-      const conditionName = component.definition.conditionName;
-
-      if (conditionName !== undefined && featureNames.has(conditionName)) {
-        issues.push({
-          path: ["seasonalities", "components", index, "definition", "conditionName"],
-          issue: "Fitted condition names must be distinct from component names",
-        });
-      }
-    }
+    issues.push(...featureIdentityIssues(parameters));
 
     const end = parameters.timeOrigin + parameters.timeScale;
 
@@ -239,6 +297,15 @@ const consistentPiecewiseMapParameters = Schema.makeFilter<PiecewiseMapParameter
           issue: "Changepoints must be safe, strictly increasing timestamps in training bounds",
         });
       }
+    }
+
+    const mixed = hasMultiplicativeComponents(parameters);
+
+    if (mixed !== (parameters.fitSummary.method === "mixed-piecewise-map-coordinate-v1")) {
+      issues.push({
+        path: ["fitSummary", "method"],
+        issue: "Linear MAP method identity must match its resolved component modes",
+      });
     }
 
     if (parameters.fitSummary.termination === "constant-target-shortcut") {
@@ -301,8 +368,17 @@ type ParsedPiecewiseMapParameters = typeof PiecewiseMapParametersSchema.Type;
 /** Untrusted parameters returned by a linear-trend fitting backend. */
 export type LinearParameters = typeof LinearParametersSchema.Type;
 
+type ParsedFlatMapParameters = typeof FlatMapParametersSchema.Type;
+
 /** Complete, untrusted fitted state for a reduced flat MAP model. */
-export type FlatMapParameters = typeof FlatMapParametersSchema.Type;
+export type FlatMapParameters = Omit<
+  ParsedFlatMapParameters,
+  "events" | "eventCoefficients" | "regressors"
+> & {
+  readonly events?: ParsedFlatMapParameters["events"];
+  readonly eventCoefficients?: ParsedFlatMapParameters["eventCoefficients"];
+  readonly regressors?: ParsedFlatMapParameters["regressors"];
+};
 
 /** Complete, untrusted fitted state for a linear piecewise MAP model. */
 export type PiecewiseMapParameters = Omit<ParsedPiecewiseMapParameters, "regressors"> & {
@@ -373,7 +449,7 @@ const freezeFeatureModel = <Model extends FittedFlatMapProphet | FittedPiecewise
   Object.freeze(model.seasonalities);
   Object.freeze(model.coefficients);
 
-  if (model.model === "linear-piecewise-map") {
+  if (model.model === "flat-map" || model.model === "linear-piecewise-map") {
     for (const occurrence of model.events.occurrences) {
       Object.freeze(occurrence);
     }

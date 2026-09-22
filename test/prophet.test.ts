@@ -83,6 +83,7 @@ describe("linear-trend Prophet integration", () => {
       value: 14,
       trend: 14,
       additive: 0,
+      multiplicative: 0,
       seasonalities: [],
       events: [],
       regressors: [],
@@ -119,6 +120,7 @@ describe("linear-trend Prophet integration", () => {
       value: model.level,
       trend: model.level,
       additive: 0,
+      multiplicative: 0,
       seasonalities: [],
       events: [],
       regressors: [],
@@ -471,7 +473,11 @@ describe("flat MAP Prophet integration", () => {
     for (const forecast of forecasts) {
       expect(forecast.value).toBeCloseTo(forecast.trend + forecast.additive, 10);
       expect(forecast.additive).toBeCloseTo(
-        forecast.seasonalities.reduce((sum, component) => sum + component.value, 0),
+        forecast.seasonalities.reduce(
+          (sum, component) =>
+            sum + (component.mode === "additive" ? component.value : component.contribution),
+          0,
+        ),
         10,
       );
     }
@@ -525,8 +531,20 @@ describe("linear MAP Prophet integration", () => {
 
     expect(model.changepointTimestamps).toHaveLength(25);
     expect(model.seasonalities.components.map((component) => component.definition)).toEqual([
-      { name: "custom-cycle", periodDays: 2.5, fourierOrder: 1, priorScale: 10 },
-      { name: "weekly", periodDays: 7, fourierOrder: 3, priorScale: 10 },
+      {
+        name: "custom-cycle",
+        periodDays: 2.5,
+        fourierOrder: 1,
+        priorScale: 10,
+        mode: "additive",
+      },
+      {
+        name: "weekly",
+        periodDays: 7,
+        fourierOrder: 3,
+        priorScale: 10,
+        mode: "additive",
+      },
     ]);
 
     const originalNames = model.seasonalities.components.map(
@@ -603,7 +621,11 @@ describe("linear MAP Prophet integration", () => {
         "weekly-custom",
       ]);
       expect(forecast.additive).toBeCloseTo(
-        forecast.seasonalities.reduce((sum, component) => sum + component.value, 0),
+        forecast.seasonalities.reduce(
+          (sum, component) =>
+            sum + (component.mode === "additive" ? component.value : component.contribution),
+          0,
+        ),
         10,
       );
       expect(forecast.value).toBeCloseTo(forecast.trend + forecast.additive, 10);

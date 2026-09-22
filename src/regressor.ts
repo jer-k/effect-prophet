@@ -1,5 +1,6 @@
 import { Effect, Schema, type SchemaIssue } from "effect";
 
+import { ComponentModeSchema, type ComponentMode } from "./component-mode";
 import {
   ValidationIssueSchema,
   validationIssuesFromIssue,
@@ -16,6 +17,7 @@ export interface EncodedRegressorDefinition {
   readonly name: string;
   readonly priorScale?: number;
   readonly standardization?: EncodedRegressorStandardization;
+  readonly mode?: ComponentMode;
 }
 
 /** One parsed and fully defaulted additive regressor definition. */
@@ -23,6 +25,7 @@ export interface RegressorDefinition {
   readonly name: FeatureName;
   readonly priorScale: number;
   readonly standardization: EncodedRegressorStandardization;
+  readonly mode: ComponentMode;
 }
 
 /** Training-derived transformation applied to one regressor. */
@@ -49,11 +52,19 @@ export interface FittedRegressor extends ResolvedRegressor {
 }
 
 /** A fitted coefficient expressed in the original regressor's units. */
-export interface RegressorCoefficient {
-  readonly name: string;
-  readonly coefficient: number;
-  readonly center: number;
-}
+export type RegressorCoefficient =
+  | {
+      readonly name: string;
+      readonly mode: "additive";
+      readonly coefficient: number;
+      readonly center: number;
+    }
+  | {
+      readonly name: string;
+      readonly mode: "multiplicative";
+      readonly coefficient: number;
+      readonly center: number;
+    };
 
 /** A structured failure to parse or construct regressor metadata. */
 export class InvalidRegressors extends Schema.TaggedError<InvalidRegressors>()(
@@ -71,6 +82,7 @@ export const RegressorDefinitionSchema = Schema.Struct({
   name: FeatureNameSchema,
   priorScale: PositiveFinite,
   standardization: RegressorStandardizationSchema,
+  mode: ComponentModeSchema.pipe(Schema.withDecodingDefaultKey(Effect.succeed("additive"))),
 });
 
 /** Runtime schema for a training-derived regressor transformation. */
@@ -173,9 +185,10 @@ const EncodedRegressorDefinitionSchema = Schema.Struct({
   standardization: RegressorStandardizationSchema.pipe(
     Schema.withDecodingDefaultKey(Effect.succeed("auto")),
   ),
+  mode: Schema.optionalKey(ComponentModeSchema),
 });
 
-const uniqueRegressorNames = Schema.makeFilter<ReadonlyArray<RegressorDefinition>>(
+const uniqueRegressorNames = Schema.makeFilter<ReadonlyArray<{ readonly name: string }>>(
   (definitions) => {
     const names = new Set<string>();
 
@@ -210,12 +223,17 @@ const invalidFromIssue = (issue: SchemaIssue.Issue): InvalidRegressors =>
 /** Parse ordered additive regressor definitions and apply defaults. */
 export const parseRegressorDefinitions = Effect.fn("parseRegressorDefinitions")(function* (
   input: Parameters<typeof decodeRegressorDefinitions>[0],
+  inheritedMode: ComponentMode = "additive",
 ): Effect.fn.Return<ReadonlyArray<RegressorDefinition>, InvalidRegressors> {
   const definitions = yield* decodeRegressorDefinitions(input).pipe(
     Effect.mapError((error) => invalidFromIssue(error.issue)),
   );
 
-  return Object.freeze(definitions.map((definition) => Object.freeze({ ...definition })));
+  return Object.freeze(
+    definitions.map((definition) =>
+      Object.freeze({ ...definition, mode: definition.mode ?? inheritedMode }),
+    ),
+  );
 });
 
 /** Project a fitted transformed-feature coefficient into original regressor units. */
@@ -223,11 +241,13 @@ export const projectRegressorCoefficient = (regressor: FittedRegressor): Regress
   regressor.transform.mode === "standardized"
     ? Object.freeze({
         name: regressor.definition.name,
+        mode: regressor.definition.mode,
         coefficient: regressor.coefficient / regressor.transform.sampleStandardDeviation,
         center: regressor.transform.mean,
       })
     : Object.freeze({
         name: regressor.definition.name,
+        mode: regressor.definition.mode,
         coefficient: regressor.coefficient,
         center: 0,
       });

@@ -1,5 +1,6 @@
 import { Effect, Schema } from "effect";
 
+import type { ComponentMode } from "../component-mode";
 import type { FeatureName } from "../feature-name";
 import { checkedElementCount } from "./safe-arithmetic";
 
@@ -12,9 +13,10 @@ export interface AdditionalFeatureComponent {
   readonly name: FeatureName;
   readonly coefficientOffset: number;
   readonly coefficientCount: number;
+  readonly mode: ComponentMode;
 }
 
-/** Ordered metadata and priors for additional additive columns. */
+/** Ordered metadata, resolved modes, and priors for additional feature columns. */
 export interface AdditionalFeatureLayout {
   readonly components: ReadonlyArray<AdditionalFeatureComponent>;
   readonly coefficientCount: number;
@@ -35,7 +37,7 @@ export interface SeasonalityMaskMatrix {
   readonly values: Uint8Array;
 }
 
-/** Matrix and layout passed together to numerical backends. */
+/** Matrix and resolved layout passed together to numerical backends. */
 export interface KnownAdditiveFeatures {
   readonly matrix: AdditionalFeatureMatrix;
   readonly layout: AdditionalFeatureLayout;

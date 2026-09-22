@@ -49,8 +49,8 @@ describe("seasonality domain", () => {
     const definitions = await Effect.runPromise(parseSeasonalities(input));
 
     expect(definitions).toEqual([
-      { ...firstInput, priorScale: defaultSeasonalityPriorScale },
-      secondInput,
+      { ...firstInput, priorScale: defaultSeasonalityPriorScale, mode: "additive" },
+      { ...secondInput, mode: "additive" },
     ]);
     expect(definitions).not.toBe(input);
     expect(definitions[0]).not.toBe(firstInput);

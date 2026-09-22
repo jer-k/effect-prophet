@@ -1,3 +1,5 @@
+export { type ComponentMode } from "./component-mode";
+
 export {
   FittingError,
   InputValidationError,
@@ -97,6 +99,7 @@ export {
   type EncodedPredictionTimestamps,
   type EventForecastComponent,
   type Forecast,
+  type ForecastComponent,
   type Forecasts,
   type PredictionRow,
   type PredictionRows,

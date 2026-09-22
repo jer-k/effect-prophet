@@ -7,6 +7,7 @@ pub mod fourier;
 pub mod linear_trend;
 pub mod map_least_squares;
 pub mod map_objective;
+pub mod mixed_map;
 pub mod piecewise_linear;
 pub mod piecewise_map;
 pub mod seasonality;
@@ -14,6 +15,7 @@ pub mod target_scaling;
 mod wasm_additive_features;
 mod wasm_flat_map;
 mod wasm_map;
+mod wasm_mixed_map;
 mod wasm_protocol;
 
 use linear_trend::{LinearTrend, LinearTrendError, fit_linear_trend as fit_linear_trend_kernel};

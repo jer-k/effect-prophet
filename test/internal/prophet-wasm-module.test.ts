@@ -20,6 +20,10 @@ const validModule: ProphetWasmModule = {
   fit_piecewise_map_with_scaling: () => new Float64Array([0]),
   predict_piecewise_map: () => new Float64Array([0, 2, 0, 2]),
   predict_piecewise_map_with_scaling: () => new Float64Array([0]),
+  fit_mixed_linear_map: () => new Float64Array([0]),
+  fit_mixed_flat_map: () => new Float64Array([0]),
+  predict_mixed_linear_map: () => new Float64Array([0]),
+  predict_mixed_flat_map: () => new Float64Array([0]),
 };
 
 describe("Prophet WASM module boundary", () => {

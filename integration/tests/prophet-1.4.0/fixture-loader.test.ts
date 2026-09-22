@@ -107,6 +107,11 @@ describe("Prophet fixture loader", () => {
     ]);
     expect(bundle.changepointResolution.cases).toHaveLength(7);
     expect(bundle.linearMapFit.cases).toHaveLength(1);
+    expect(bundle.mixedMap.independentCases).toHaveLength(1);
+    expect(bundle.mixedMap.fittedCases.map((referenceCase) => referenceCase.growth)).toEqual([
+      "linear",
+      "flat",
+    ]);
     expect(bundle.seasonalityResolution.cases).toHaveLength(22);
     expect(bundle.seasonalityResolution.cases[0]?.kind).toBe("seasonality-resolution");
   });

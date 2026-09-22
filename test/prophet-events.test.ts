@@ -8,7 +8,11 @@ import {
   fit,
   predict,
   prophetFittingBackendLayer,
+  type ForecastComponent,
 } from "../src/index";
+
+const additiveValue = (component: ForecastComponent | undefined): number | undefined =>
+  component?.mode === "additive" ? component.value : undefined;
 
 const history = Array.from({ length: 8 }, (_, index) => {
   const day = index + 1;
@@ -42,9 +46,9 @@ describe("custom event public lifecycle", () => {
     const timestamps = ["2024-01-09T12:00:00.000Z", "2024-01-10T12:00:00.000Z"] as const;
     const before = await Effect.runPromise(predict(model, timestamps));
 
-    expect(before[0]?.events).toEqual([{ name: "launch", value: 0 }]);
-    expect(Math.abs(before[1]?.events[0]?.value ?? 0)).toBeGreaterThan(1);
-    expect(before[1]?.additive).toBeCloseTo(before[1]?.events[0]?.value ?? 0, 12);
+    expect(before[0]?.events).toEqual([{ name: "launch", mode: "additive", value: 0 }]);
+    expect(Math.abs(additiveValue(before[1]?.events[0]) ?? 0)).toBeGreaterThan(1);
+    expect(before[1]?.additive).toBeCloseTo(additiveValue(before[1]?.events[0]) ?? 0, 12);
 
     const encoded = await Effect.runPromise(encodeFittedModel(model));
     const decoded = await Effect.runPromise(decodeFittedModel(JSON.parse(JSON.stringify(encoded))));

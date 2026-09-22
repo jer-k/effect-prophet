@@ -1,5 +1,6 @@
 import { Effect } from "effect";
 
+import type { ComponentMode } from "../component-mode";
 import type { Observations } from "../observation";
 import type { BuiltInSeasonalities, BuiltInSeasonalitySetting } from "../options";
 import * as Seasonality from "../seasonality";
@@ -43,6 +44,7 @@ export interface ResolvedSeasonalities {
 
 /** Parsed seasonality controls consumed by the training-dependent resolver. */
 export interface SeasonalityResolutionInput {
+  readonly seasonalityMode: ComponentMode;
   readonly seasonalities: ReadonlyArray<Seasonality.SeasonalityDefinition>;
   readonly builtInSeasonalities: BuiltInSeasonalities;
 }
@@ -67,6 +69,7 @@ interface SelectedBuiltIn {
     readonly periodDays: number;
     readonly fourierOrder: number;
     readonly priorScale: number;
+    readonly mode: ComponentMode;
   };
 }
 
@@ -126,6 +129,7 @@ const enabledSelection = (
   reason: EnabledSeasonalityResolutionDecision["reason"],
   fourierOrder: number,
   priorScale: number,
+  mode: ComponentMode,
 ): SelectedBuiltIn => ({
   decision: Object.freeze({ name: specification.name, enabled: true, reason }),
   definition: {
@@ -133,6 +137,7 @@ const enabledSelection = (
     periodDays: specification.periodDays,
     fourierOrder,
     priorScale,
+    mode,
   },
 });
 
@@ -140,6 +145,7 @@ const resolveBuiltIn = (
   specification: BuiltInSpecification,
   setting: BuiltInSeasonalitySetting,
   history: HistorySummary,
+  mode: ComponentMode,
 ): SelectedBuiltIn => {
   if (setting === "off") {
     return {
@@ -157,6 +163,7 @@ const resolveBuiltIn = (
       "explicitly-enabled",
       setting.fourierOrder,
       setting.priorScale,
+      mode,
     );
   }
 
@@ -189,6 +196,7 @@ const resolveBuiltIn = (
     "automatic-enabled",
     specification.defaultOrder,
     Seasonality.defaultSeasonalityPriorScale,
+    mode,
   );
 };
 
@@ -230,6 +238,7 @@ export const resolveSeasonalities = (
         specification,
         settingFor(input.builtInSeasonalities, specification.name),
         history,
+        input.seasonalityMode,
       );
 
       decisions.push(selected.decision);

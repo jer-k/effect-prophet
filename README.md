@@ -2,7 +2,7 @@
 
 An Effect-based TypeScript package for time-series forecasting.
 
-The Rust/WASM backends fit ordinary least-squares linear trends, reduced flat MAP models, and linear piecewise MAP models with explicit or automatically selected changepoints. Forecasts expose trend, additive total, final value, and ordered named seasonal components. TypeScript owns validation, Effect service composition, persistence, and WASM protocol translation; numerical fitting, changepoint resolution, and evaluation run in Rust. The package does not yet implement uncertainty intervals or the broader logistic/multiplicative Prophet families.
+The Rust/WASM backends fit ordinary least-squares linear trends plus flat and linear-piecewise MAP models with additive and multiplicative components. Forecasts expose trend, additive and multiplicative totals, final value, and ordered named components. TypeScript owns validation, Effect service composition, persistence, and WASM protocol translation; numerical fitting, changepoint resolution, and evaluation run in Rust. The package does not yet implement uncertainty intervals or logistic growth.
 
 ## Compatibility target
 
@@ -134,7 +134,7 @@ const observations = await Effect.runPromise(program);
 
 `decodeOptions` validates untrusted fitting options and supplies defaults when called with `undefined` or an empty object. Unknown keys are rejected so misspelled configuration cannot silently reach a fitting backend.
 
-Public options are a union of supported configurations rather than independent fields. Linear and flat growth each accept either no custom seasonalities or a non-empty ordered list. Public `growth: "flat"` selects the reduced `"flat-map"` model.
+Public options are a union of supported configurations rather than independent fields. Linear and flat growth each accept either no custom seasonalities or a non-empty ordered list. Public `growth: "flat"` selects the reduced `"flat-map"` model. `seasonalityMode` defaults to `"additive"`; custom seasonalities and regressors inherit it unless they provide `mode`. `holidaysMode` inherits `seasonalityMode` unless explicitly set.
 
 Each configured custom seasonality requires a unique name, positive period in fixed 24-hour days, and positive integer Fourier order; `priorScale` is positive and defaults to `10`. An optional `conditionName` gates all of that component's Fourier columns using required boolean row values. Multiple custom seasonalities may share a condition. The names `yearly`, `weekly`, and `daily` are reserved for built-ins, which remain unconditional. Seasonality, event, regressor, and condition names cannot collide. Different named components may share a period, although overlapping Fourier bases can make component interpretation difficult.
 
@@ -164,7 +164,7 @@ const seasonal = await Effect.runPromise(
 
 `fit` validates public observations and options, constructs an explicit fitting plan, and makes one coarse-grained call to the complete public backend. For featureless linear growth, `prophetFittingBackendLayer` invokes the Rust ordinary-least-squares implementation through generated WASM bindings. Training timestamps and values are packed into aligned `Float64Array` values at the backend boundary.
 
-The fitted model stores the intercept, slope, time origin, and time scale required for prediction. `predict` validates canonical UTC prediction timestamps and sends all timestamps and fitting-time state to one Rust/WASM batch operation. Every ordered forecast exposes `value`, `trend`, `additive`, and `seasonalities`; featureless models return `additive: 0` and an empty component list.
+The fitted model stores the intercept, slope, time origin, and time scale required for prediction. `predict` validates canonical UTC prediction timestamps and sends all timestamps and fitting-time state to one Rust/WASM batch operation. Every ordered forecast exposes `value`, `trend`, `additive`, `multiplicative`, and named component arrays. Featureless models return zero totals and empty component lists.
 
 ```ts
 import { Effect } from "effect";
@@ -208,7 +208,7 @@ const forecasts = await Effect.runPromise(predict(model, futureTimestamps));
 
 ## Additional regressors
 
-Known additive regressors are fitted jointly with the trend, seasonalities, and custom events. Definitions are ordered and accept a positive `priorScale` plus `standardization: "auto" | "always" | "never"`. Automatic standardization leaves exact binary and constant training columns unchanged and otherwise uses the training sample mean and sample standard deviation. Stored transforms are reused for prediction and after serialization.
+Known regressors are fitted jointly with the trend, seasonalities, and custom events. Definitions are ordered and accept a positive `priorScale`, optional additive or multiplicative `mode`, and `standardization: "auto" | "always" | "never"`. Automatic standardization leaves exact binary and constant training columns unchanged and otherwise uses the training sample mean and sample standard deviation. Stored transforms and resolved modes are reused for prediction and after serialization.
 
 Prediction remains timestamp-only for models without regressors. A regressor model requires row-shaped input containing exactly every fitted regressor; the package never forecasts, fills, or carries future covariates forward.
 
@@ -234,7 +234,7 @@ const coefficients = getRegressorCoefficients(model);
 // coefficients are descriptive model parameters in original regressor units, not causal effects.
 ```
 
-Complete prediction rows preserve input order and duplicates. Equal timestamps may produce different forecasts when their regressor or condition values differ. Every forecast includes ordered `regressors` components, and `additive` is the sum of seasonal, event, and regressor contributions.
+Complete prediction rows preserve input order and duplicates. Equal timestamps may produce different forecasts when their regressor or condition values differ. Every forecast includes ordered `regressors` components. Additive components expose output-unit `value`; multiplicative components expose a dimensionless `factor` and output-unit `contribution`. Forecasts reconstruct as `trend * (1 + multiplicative) + additive`.
 
 ## Conditional seasonalities
 
@@ -378,7 +378,7 @@ fitted-objective parity with Prophet's private dummy-delta parameterization. See
 
 ## Flat MAP forecast
 
-Flat growth jointly fits a constant trend level, configured additive Fourier coefficients, and observation noise. Seasonal components may vary while every forecast retains the same trend:
+Flat growth jointly fits a constant trend level, configured additive or multiplicative features, and observation noise. Components may vary while every forecast retains the same trend:
 
 ```ts
 import { Effect } from "effect";

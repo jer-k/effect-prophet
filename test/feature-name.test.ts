@@ -10,9 +10,12 @@ describe("feature names", () => {
     expect(name).toBe(" Launch ");
   });
 
-  it.each(["", "trend", "events", "launch_delim_+0"])("rejects reserved name %j", async (name) => {
-    const error = await Effect.runPromise(Effect.flip(parseFeatureName(name)));
+  it.each(["", "trend", "events", "multiplicative", "factor", "contribution", "launch_delim_+0"])(
+    "rejects reserved name %j",
+    async (name) => {
+      const error = await Effect.runPromise(Effect.flip(parseFeatureName(name)));
 
-    expect(error).toBeInstanceOf(InvalidFeatureName);
-  });
+      expect(error).toBeInstanceOf(InvalidFeatureName);
+    },
+  );
 });

@@ -818,6 +818,188 @@ const TargetScalingReferenceFileSchema = Schema.Struct({
   fittedCases: Schema.NonEmptyArray(TargetScalingFittedCaseSchema),
 });
 
+const ComponentModeSchema = Schema.Literals(["additive", "multiplicative"]);
+
+const MixedMapIndependentCaseSchema = Schema.Struct({
+  id: Schema.NonEmptyString,
+  kind: Schema.Literal("mixed-map-independent"),
+  rowCount: Schema.Int.check(Schema.isGreaterThan(0)),
+  columnCount: Schema.Int.check(Schema.isGreaterThan(0)),
+  designRowMajor: Schema.Array(Schema.Finite),
+  modes: Schema.Array(ComponentModeSchema),
+  beta: Schema.Array(Schema.Finite),
+  priorScales: Schema.Array(PositiveFinite),
+  scaledTrend: Schema.Array(Schema.Finite),
+  scaledTarget: Schema.Array(Schema.Finite),
+  sigma: PositiveFinite,
+  targetScaling: Schema.Struct({
+    mode: TargetScalingModeSchema,
+    offset: Schema.Finite,
+    scale: PositiveFinite,
+  }),
+  expected: Schema.Struct({
+    additiveScaled: Schema.Array(Schema.Finite),
+    betaGradient: Schema.Array(Schema.Finite),
+    factor: Schema.Array(Schema.Finite),
+    likelihoodMean: Schema.Array(Schema.Finite),
+    objective: Schema.Finite,
+    publicAdditive: Schema.Array(Schema.Finite),
+    publicTrend: Schema.Array(Schema.Finite),
+    publicValue: Schema.Array(Schema.Finite),
+  }),
+  tolerance: NumericToleranceSchema,
+}).check(
+  Schema.makeFilter((referenceCase) => {
+    const rowCount = referenceCase.rowCount;
+    const columnCount = referenceCase.columnCount;
+
+    if (
+      referenceCase.designRowMajor.length !== rowCount * columnCount ||
+      referenceCase.modes.length !== columnCount ||
+      referenceCase.beta.length !== columnCount ||
+      referenceCase.priorScales.length !== columnCount ||
+      referenceCase.expected.betaGradient.length !== columnCount
+    ) {
+      return { path: ["designRowMajor"], issue: "Mixed objective columns must align" };
+    }
+
+    for (const field of [
+      "scaledTrend",
+      "scaledTarget",
+      "additiveScaled",
+      "factor",
+      "likelihoodMean",
+      "publicAdditive",
+      "publicTrend",
+      "publicValue",
+    ] as const) {
+      const values =
+        field === "scaledTrend" || field === "scaledTarget"
+          ? referenceCase[field]
+          : referenceCase.expected[field];
+
+      if (values.length !== rowCount) {
+        return { path: [field], issue: "Mixed objective rows must align" };
+      }
+    }
+  }),
+);
+
+const MixedMapFittedCaseSchema = Schema.Struct({
+  id: Schema.NonEmptyString,
+  kind: Schema.Literal("mixed-map-fitted"),
+  growth: Schema.Literals(["flat", "linear"]),
+  scaling: TargetScalingModeSchema,
+  observations: Schema.NonEmptyArray(
+    Schema.Struct({
+      timestamp: CanonicalTimestamp,
+      value: Schema.Finite,
+      conditions: BooleanRecordSchema,
+      regressors: NumericRecordSchema,
+    }),
+  ),
+  predictionRows: Schema.NonEmptyArray(
+    Schema.Struct({
+      timestamp: CanonicalTimestamp,
+      conditions: BooleanRecordSchema,
+      regressors: NumericRecordSchema,
+    }),
+  ),
+  seasonalities: Schema.Array(
+    Schema.Struct({
+      name: Schema.NonEmptyString,
+      periodDays: PositiveFinite,
+      fourierOrder: Schema.Int.check(Schema.isGreaterThan(0)),
+      priorScale: PositiveFinite,
+      conditionName: Schema.optionalKey(Schema.NonEmptyString),
+      mode: ComponentModeSchema,
+    }),
+  ),
+  events: Schema.Array(
+    Schema.Struct({
+      name: Schema.NonEmptyString,
+      date: Schema.NonEmptyString,
+      priorScale: PositiveFinite,
+      mode: ComponentModeSchema,
+    }),
+  ),
+  regressors: Schema.Array(
+    Schema.Struct({
+      name: Schema.NonEmptyString,
+      priorScale: PositiveFinite,
+      standardization: Schema.Literals(["auto", "always", "never"]),
+      mode: ComponentModeSchema,
+    }),
+  ),
+  settings: Schema.Struct({
+    algorithm: Schema.Literal("Newton"),
+    changepointPriorScale: PositiveFinite,
+    densityConvention: Schema.NonEmptyString,
+    offset: Schema.Finite,
+    scale: PositiveFinite,
+  }),
+  expected: Schema.Struct({
+    featureColumnNames: Schema.Array(Schema.NonEmptyString),
+    featureModes: Schema.Array(ComponentModeSchema),
+    featurePriorScales: Schema.Array(PositiveFinite),
+    trainingFeaturesRowMajor: Schema.Array(Schema.Finite),
+    featuresRowMajor: Schema.Array(Schema.Finite),
+    intercept: Schema.Finite,
+    slope: Schema.Finite,
+    deltas: Schema.Array(Schema.Finite),
+    changepointTimestamps: Schema.Array(CanonicalTimestamp),
+    coefficients: Schema.Array(Schema.Finite),
+    noiseScale: PositiveFinite,
+    scaledLikelihoodMean: Schema.Array(Schema.Finite),
+    componentNames: Schema.Array(Schema.NonEmptyString),
+    componentsRowMajor: Schema.Array(Schema.Finite),
+    trend: Schema.Array(Schema.Finite),
+    additive: Schema.Array(Schema.Finite),
+    multiplicative: Schema.Array(Schema.Finite),
+    value: Schema.Array(Schema.Finite),
+  }),
+  tolerance: Schema.Struct({
+    coefficientAbsolute: NonNegativeFinite,
+    componentAbsolute: NonNegativeFinite,
+    forecastAbsolute: NonNegativeFinite,
+  }),
+}).check(
+  Schema.makeFilter((referenceCase) => {
+    const featureCount = referenceCase.expected.featureColumnNames.length;
+    const predictionCount = referenceCase.predictionRows.length;
+    const componentCount = referenceCase.expected.componentNames.length;
+
+    if (
+      referenceCase.expected.featureModes.length !== featureCount ||
+      referenceCase.expected.featurePriorScales.length !== featureCount ||
+      referenceCase.expected.coefficients.length !== featureCount ||
+      referenceCase.expected.trainingFeaturesRowMajor.length !==
+        referenceCase.observations.length * featureCount ||
+      referenceCase.expected.featuresRowMajor.length !== predictionCount * featureCount
+    ) {
+      return { path: ["expected", "featuresRowMajor"], issue: "Mixed feature columns must align" };
+    }
+
+    if (
+      referenceCase.expected.componentsRowMajor.length !== predictionCount * componentCount ||
+      referenceCase.expected.deltas.length !==
+        referenceCase.expected.changepointTimestamps.length ||
+      referenceCase.expected.trend.length !== predictionCount ||
+      referenceCase.expected.additive.length !== predictionCount ||
+      referenceCase.expected.multiplicative.length !== predictionCount ||
+      referenceCase.expected.value.length !== predictionCount ||
+      referenceCase.expected.scaledLikelihoodMean.length !== referenceCase.observations.length
+    ) {
+      return { path: ["expected"], issue: "Mixed fitted rows and components must align" };
+    }
+  }),
+);
+
+const MixedMapReferenceFileSchema = Schema.Struct({
+  independentCases: Schema.NonEmptyArray(MixedMapIndependentCaseSchema),
+  fittedCases: Schema.NonEmptyArray(MixedMapFittedCaseSchema),
+});
+
 const ArtifactPath = Schema.String.check(
   Schema.makeFilter(
     (value) =>
@@ -886,6 +1068,7 @@ const FixtureManifestSchema = Schema.Struct({
       "conditional-seasonality.json",
       "conditional-map-fit.json",
       "target-scaling.json",
+      "mixed-map.json",
     ]) {
       if (!paths.has(requiredPath)) {
         return {
@@ -940,6 +1123,10 @@ const decodeTargetScalingReferenceSchema = Schema.decodeUnknownEffect(
   TargetScalingReferenceFileSchema,
   { errors: "all" },
 );
+
+const decodeMixedMapReferenceSchema = Schema.decodeUnknownEffect(MixedMapReferenceFileSchema, {
+  errors: "all",
+});
 
 const decodeFixtureManifestSchema = Schema.decodeUnknownEffect(FixtureManifestSchema, {
   errors: "all",
@@ -1006,6 +1193,9 @@ export type SeasonalityResolutionReferenceFile =
 
 /** Parsed Prophet target-scaling preprocessing and fitted MAP evidence. */
 export type TargetScalingReferenceFile = typeof TargetScalingReferenceFileSchema.Type;
+
+/** Parsed independent and Prophet-fitted mixed MAP evidence. */
+export type MixedMapReferenceFile = typeof MixedMapReferenceFileSchema.Type;
 
 /** Parsed provenance and artifact integrity metadata for the fixture folder. */
 export type FixtureManifest = typeof FixtureManifestSchema.Type;
@@ -1219,6 +1409,26 @@ export const decodeTargetScalingReference = Effect.fn(
   );
 });
 
+/** Parse untrusted independent and fitted mixed MAP evidence. */
+export const decodeMixedMapReference = Effect.fn("ProphetFixture.decodeMixedMapReference")(
+  function* (
+    input: Parameters<typeof decodeMixedMapReferenceSchema>[0],
+    path = "<memory>",
+  ): Effect.fn.Return<MixedMapReferenceFile, FixtureLoadError> {
+    return yield* decodeMixedMapReferenceSchema(input).pipe(
+      Effect.mapError(
+        (cause) =>
+          new FixtureLoadError({
+            operation: "schema",
+            fixturePath: path,
+            message: formatSchemaIssue(cause.issue),
+            cause,
+          }),
+      ),
+    );
+  },
+);
+
 /** Parse an untrusted fixture manifest, including safe relative artifact paths. */
 export const decodeFixtureManifest = Effect.fn("ProphetFixture.decodeFixtureManifest")(function* (
   input: Parameters<typeof decodeFixtureManifestSchema>[0],
@@ -1383,6 +1593,16 @@ export const loadProphetFixtureBundle = Effect.fn("ProphetFixture.loadBundle")(f
 
   const targetScaling = yield* decodeTargetScalingReference(targetScalingInput, targetScalingPath);
 
+  const mixedMapPath = nodePath.join(root, "mixed-map.json");
+  const mixedMapContents = yield* readFixtureText(mixedMapPath);
+
+  const mixedMapInput: unknown = yield* Effect.try({
+    try: () => JSON.parse(mixedMapContents),
+    catch: (cause) => invalidJson(mixedMapPath, cause),
+  });
+
+  const mixedMap = yield* decodeMixedMapReference(mixedMapInput, mixedMapPath);
+
   const seasonalityResolutionPath = nodePath.join(root, "seasonality-resolution.json");
   const seasonalityResolutionContents = yield* readFixtureText(seasonalityResolutionPath);
 
@@ -1404,6 +1624,7 @@ export const loadProphetFixtureBundle = Effect.fn("ProphetFixture.loadBundle")(f
     linearMapFit,
     linearTrend,
     manifest,
+    mixedMap,
     piecewiseLinear,
     seasonalityResolution,
     targetScaling,

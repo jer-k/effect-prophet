@@ -224,11 +224,27 @@ export interface PiecewiseMapWasmBindings {
   ) => Float64Array;
 }
 
+/** Rust/WASM bindings for explicit mixed linear and flat MAP operations. */
+export interface MixedMapWasmBindings {
+  /** Fit one mixed linear MAP request and return a packed protocol frame. */
+  readonly fit_mixed_linear_map: (...args: ReadonlyArray<unknown>) => Float64Array;
+
+  /** Fit one mixed reduced-flat MAP request and return a packed protocol frame. */
+  readonly fit_mixed_flat_map: (...args: ReadonlyArray<unknown>) => Float64Array;
+
+  /** Predict one mixed linear MAP batch and return a packed protocol frame. */
+  readonly predict_mixed_linear_map: (...args: ReadonlyArray<unknown>) => Float64Array;
+
+  /** Predict one mixed reduced-flat MAP batch and return a packed protocol frame. */
+  readonly predict_mixed_flat_map: (...args: ReadonlyArray<unknown>) => Float64Array;
+}
+
 /** Complete generated Rust/WASM module contract required by this package version. */
 export type ProphetWasmModule = LinearTrendWasmBindings &
   AdditiveFeatureWasmBindings &
   FlatMapWasmBindings &
-  PiecewiseMapWasmBindings;
+  PiecewiseMapWasmBindings &
+  MixedMapWasmBindings;
 
 /** Lazy loader that returns a checked Rust/WASM module. */
 export type ProphetWasmModuleLoader = () => ProphetWasmModule;
@@ -250,6 +266,10 @@ const requiredFunctionExports = [
   "fit_piecewise_map_with_scaling",
   "predict_piecewise_map",
   "predict_piecewise_map_with_scaling",
+  "fit_mixed_linear_map",
+  "fit_mixed_flat_map",
+  "predict_mixed_linear_map",
+  "predict_mixed_flat_map",
 ] as const;
 
 /**

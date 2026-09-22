@@ -16,7 +16,13 @@ describe("event calendar", () => {
       0, 1, 10, 2, 3, 4, 5, 6, 7, 8, 9, -1,
     ]);
     expect(calendar.layout.components).toEqual([
-      { kind: "event", name: "launch", coefficientOffset: 0, coefficientCount: 12 },
+      {
+        kind: "event",
+        name: "launch",
+        coefficientOffset: 0,
+        coefficientCount: 12,
+        mode: "additive",
+      },
     ]);
     expect(calendar.layout.priorScales).toEqual(Array.from({ length: 12 }, () => 10));
     expect(Object.isFrozen(calendar)).toBe(true);
