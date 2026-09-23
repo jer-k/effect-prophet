@@ -1,5 +1,6 @@
 import { Effect, Schema, type SchemaIssue } from "effect";
 
+import { ComponentModeSchema, type ComponentMode } from "./component-mode";
 import {
   ValidationIssueSchema,
   validationIssuesFromIssue,
@@ -60,6 +61,7 @@ export type EventFeatureLayout = AdditionalFeatureLayout & {
 
 /** Parsed event metadata retained by fitted models for future feature generation. */
 export interface EventCalendar {
+  readonly mode: ComponentMode;
   readonly occurrences: ReadonlyArray<EventOccurrence>;
   readonly columns: ReadonlyArray<EventFeatureColumn>;
   readonly layout: EventFeatureLayout;
@@ -109,6 +111,7 @@ const AdditionalFeatureComponentSchema = Schema.Struct({
   name: FeatureNameSchema,
   coefficientOffset: Schema.Natural,
   coefficientCount: Schema.Int.check(Schema.isGreaterThan(0)),
+  mode: ComponentModeSchema.pipe(Schema.withDecodingDefaultKey(Effect.succeed("additive"))),
 });
 
 const AdditionalFeatureLayoutSchema = Schema.Struct({
@@ -118,6 +121,7 @@ const AdditionalFeatureLayoutSchema = Schema.Struct({
 });
 
 const EventCalendarFieldsSchema = Schema.Struct({
+  mode: ComponentModeSchema.pipe(Schema.withDecodingDefaultKey(Effect.succeed("additive"))),
   occurrences: Schema.Array(EventOccurrenceSchema),
   columns: Schema.Array(EventFeatureColumnSchema),
   layout: AdditionalFeatureLayoutSchema,
@@ -227,6 +231,13 @@ const consistentEventCalendar = Schema.makeFilter<typeof EventCalendarFieldsSche
     let expectedOffset = 0;
 
     for (const [index, component] of calendar.layout.components.entries()) {
+      if (component.mode !== calendar.mode) {
+        issues.push({
+          path: ["layout", "components", index, "mode"],
+          issue: "Every event component must use the calendar's resolved mode",
+        });
+      }
+
       if (component.coefficientOffset !== expectedOffset || component.coefficientCount <= 0) {
         issues.push({
           path: ["layout", "components", index],
@@ -295,6 +306,7 @@ const comparePythonStrings = (left: string, right: string): number => {
 
 /** Canonical deeply frozen empty event calendar. */
 export const emptyEventCalendar: EventCalendar = Object.freeze({
+  mode: "additive",
   occurrences: Object.freeze([]),
   columns: Object.freeze([]),
   layout: Object.freeze({
@@ -307,6 +319,7 @@ export const emptyEventCalendar: EventCalendar = Object.freeze({
 /** Parse event occurrences and derive their deterministic Prophet-compatible column layout. */
 export const parseEventCalendar = Effect.fn("parseEventCalendar")(function* (
   input: Parameters<typeof decodeEventCalendarSyntax>[0],
+  mode: ComponentMode = "additive",
 ): Effect.fn.Return<EventCalendar, InvalidEventCalendar> {
   const encoded = yield* decodeEventCalendarSyntax(input).pipe(
     Effect.mapError((error) => invalidFromIssue(error.issue)),
@@ -416,6 +429,7 @@ export const parseEventCalendar = Effect.fn("parseEventCalendar")(function* (
     readonly name: FeatureName;
     readonly coefficientOffset: number;
     readonly coefficientCount: number;
+    readonly mode: ComponentMode;
   }> = [];
 
   for (const [index, column] of columns.entries()) {
@@ -432,6 +446,7 @@ export const parseEventCalendar = Effect.fn("parseEventCalendar")(function* (
         name: column.eventName,
         coefficientOffset: index,
         coefficientCount: 1,
+        mode,
       });
     }
   }
@@ -441,11 +456,12 @@ export const parseEventCalendar = Effect.fn("parseEventCalendar")(function* (
     columns.map((column) => column.priorScale),
   ).pipe(Effect.mapError(invalidFromLayout));
 
-  if (columns.length === 0) {
+  if (columns.length === 0 && mode === "additive") {
     return emptyEventCalendar;
   }
 
   return Object.freeze({
+    mode,
     occurrences: Object.freeze(occurrences),
     columns: Object.freeze(columns),
     layout,

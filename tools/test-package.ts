@@ -40,6 +40,7 @@ const expectedJavaScriptFiles = sourceFiles.flatMap((sourceFile) => {
 });
 
 const expectedDeclarationFiles = [
+  "dist/component-mode.d.ts",
   "dist/errors.d.ts",
   "dist/event.d.ts",
   "dist/feature-name.d.ts",

@@ -184,6 +184,7 @@ const makeFeatures = (
       name: regressor.definition.name,
       coefficientOffset: index,
       coefficientCount: 1,
+      mode: regressor.definition.mode,
     }));
 
     const layout = yield* createAdditionalFeatureLayout(

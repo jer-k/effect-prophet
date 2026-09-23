@@ -7,8 +7,8 @@ WASM, selecting a fitting Layer, or refitting observations.
 The current portable model kinds are:
 
 - `linear-trend` — intercept, slope, and time scaling;
-- `linear-piecewise-map` — target scaling, relative piecewise trend and changepoints, ordered seasonality definitions and coefficients, condition names, events, fitted regressors, positive observation noise, and MAP diagnostics;
-- `flat-map` — target scaling, relative constant level, unconditional ordered seasonality definitions and coefficients, positive observation noise, and flat MAP diagnostics.
+- `linear-piecewise-map` — target scaling, relative piecewise trend and changepoints, ordered mode-resolved seasonality definitions and coefficients, condition names, events, fitted regressors, positive observation noise, and MAP diagnostics;
+- `flat-map` — target scaling, relative constant level, ordered mode-resolved seasonalities, events and regressors, positive observation noise, and flat MAP diagnostics.
 
 Payloads from the removed pre-release additive ridge model are rejected as typed decode errors;
 models are never silently refit or migrated.
@@ -34,7 +34,8 @@ A flat payload stores all state required to rebuild Fourier features and predict
       "name": "daily-custom",
       "periodDays": 1,
       "fourierOrder": 1,
-      "priorScale": 10
+      "priorScale": 10,
+      "mode": "additive"
     }
   ],
   "noiseScale": 0.2,
@@ -54,14 +55,14 @@ Decoding reconstructs deterministic coefficient offsets from the ordered definit
 built-in controls are resolved before fitting, so payloads store concrete canonical definitions
 (`yearly`, `weekly`, and `daily`) rather than `"auto"`. Reload never reruns history/cadence rules and
 prediction timestamps cannot change the saved layout. Conditional custom definitions retain their
-optional `conditionName`; older definitions without that field decode explicitly as unconditional.
+optional `conditionName`. Every seasonality and regressor persists its resolved `mode`, while events persist the resolved holiday mode. Older payloads without mode metadata decode explicitly as additive; reload never reapplies current mode defaults.
 Condition values and training masks are not prediction state and are never persisted. A reloaded
 conditional model therefore requires fresh exact boolean condition maps for every nonempty
 prediction row.
 
 Decoding rejects non-finite levels/coefficients/diagnostics/scaling offsets, non-positive noise and
 target/value scales, coefficient-count misalignment, duplicated or invalid definitions,
-non-canonical built-in periods, conditional flat definitions, condition/component name collisions,
+non-canonical built-in periods, inconsistent objective/mode identities, condition/component name collisions,
 and inconsistent shortcut summaries. Legacy MAP payloads without `targetScaling` decode as absmax
 with offset zero and their stored `fitSummary.valueScale`. Decoding never infers metadata from
 prediction rows or current defaults.

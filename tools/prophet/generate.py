@@ -37,6 +37,7 @@ SEASONALITY_RESOLUTION_FILENAME = "seasonality-resolution.json"
 CONDITIONAL_SEASONALITY_FILENAME = "conditional-seasonality.json"
 CONDITIONAL_MAP_FIT_FILENAME = "conditional-map-fit.json"
 TARGET_SCALING_FILENAME = "target-scaling.json"
+MIXED_MAP_FILENAME = "mixed-map.json"
 MANIFEST_FILENAME = "manifest.json"
 ROOT = Path(__file__).resolve().parents[2]
 REFERENCE_PATH = ROOT / "tools" / "prophet" / "reference.json"
@@ -1673,6 +1674,298 @@ def make_target_scaling_fixture() -> dict[str, Any]:
     return {"fittedCases": [linear_case, flat_case], "preprocessingCases": preprocessing_cases}
 
 
+def make_mixed_map_fixture() -> dict[str, Any]:
+    """Freeze independent mixed equations and fitted Newton evidence."""
+
+    fixed_design = np.asarray(
+        [[1.0, 0.5, -0.25], [0.0, 1.5, 0.75], [-1.0, 2.0, 1.25]],
+        dtype=np.float64,
+    )
+    fixed_modes = np.asarray([0.0, 1.0, 1.0], dtype=np.float64)
+    fixed_beta = np.asarray([0.4, -0.8, 0.3], dtype=np.float64)
+    fixed_trend = np.asarray([0.5, 1.0, -0.25], dtype=np.float64)
+    fixed_target = np.asarray([0.8, -0.4, 0.2], dtype=np.float64)
+    fixed_priors = np.asarray([2.0, 3.0, 4.0], dtype=np.float64)
+    fixed_sigma = 0.4
+    additive_design = fixed_design * (1.0 - fixed_modes)
+    multiplicative_design = fixed_design * fixed_modes
+    fixed_factor = multiplicative_design @ fixed_beta
+    fixed_additive = additive_design @ fixed_beta
+    fixed_mean = fixed_trend * (1.0 + fixed_factor) + fixed_additive
+    fixed_residual = fixed_mean - fixed_target
+    fixed_derivatives = additive_design + fixed_trend[:, None] * multiplicative_design
+    fixed_beta_gradient = (
+        fixed_derivatives.T @ fixed_residual / fixed_sigma**2
+        + fixed_beta / fixed_priors**2
+    )
+    fixed_objective = (
+        len(fixed_target) * np.log(fixed_sigma)
+        + np.dot(fixed_residual, fixed_residual) / (2.0 * fixed_sigma**2)
+        + np.sum(fixed_beta**2 / (2.0 * fixed_priors**2))
+        + fixed_sigma**2 / (2.0 * 0.5**2)
+    )
+    target_offset = 10.0
+    target_scale = 4.0
+    restored_trend = target_offset + target_scale * fixed_trend
+    output_additive = target_scale * fixed_additive
+    public_value = restored_trend * (1.0 + fixed_factor) + output_additive
+
+    independent = {
+        "id": "fixed-trend-mixed-objective",
+        "kind": "mixed-map-independent",
+        "rowCount": len(fixed_target),
+        "columnCount": fixed_design.shape[1],
+        "designRowMajor": fixed_design.ravel().tolist(),
+        "modes": ["additive", "multiplicative", "multiplicative"],
+        "beta": fixed_beta.tolist(),
+        "priorScales": fixed_priors.tolist(),
+        "scaledTrend": fixed_trend.tolist(),
+        "scaledTarget": fixed_target.tolist(),
+        "sigma": fixed_sigma,
+        "targetScaling": {"mode": "minmax", "offset": target_offset, "scale": target_scale},
+        "expected": {
+            "additiveScaled": fixed_additive.tolist(),
+            "betaGradient": fixed_beta_gradient.tolist(),
+            "factor": fixed_factor.tolist(),
+            "likelihoodMean": fixed_mean.tolist(),
+            "objective": float(fixed_objective),
+            "publicAdditive": output_additive.tolist(),
+            "publicTrend": restored_trend.tolist(),
+            "publicValue": public_value.tolist(),
+        },
+        "tolerance": {"absolute": 1e-12, "relative": 1e-12},
+    }
+
+    def fitted_case(growth: str, scaling: str) -> dict[str, Any]:
+        timestamps = [timestamp_from_offset(index * DAY_MILLISECONDS) for index in range(28)]
+        condition = [index % 4 != 1 for index in range(len(timestamps))]
+        promotion = [float((index % 5) - 2) for index in range(len(timestamps))]
+        values: list[float] = []
+
+        for index in range(len(timestamps)):
+            trend = 18.0 + (0.22 * index if growth == "linear" else 0.0)
+            weekly_factor = 0.16 * np.sin(2.0 * np.pi * index / 7.0) if condition[index] else 0.0
+            promotion_factor = -0.035 * promotion[index]
+            additive = 0.55 * np.cos(2.0 * np.pi * index / 3.0)
+            event = 1.4 if index == 8 else 0.0
+            noise = 0.025 * ((index % 3) - 1)
+            values.append(
+                canonical_fourier_float(
+                    np.float64(trend * (1.0 + weekly_factor + promotion_factor) + additive + event + noise)
+                )
+            )
+
+        holidays = pd.DataFrame(
+            {"holiday": ["launch"], "ds": ["2020-01-09"], "prior_scale": [6.0]}
+        )
+        model = Prophet(
+            growth=growth,
+            scaling=scaling,
+            changepoints=(
+                [prophet_timestamp(timestamps[12])] if growth == "linear" else None
+            ),
+            changepoint_prior_scale=0.2,
+            yearly_seasonality=False,
+            weekly_seasonality=False,
+            daily_seasonality=False,
+            holidays=holidays,
+            holidays_mode="additive",
+            uncertainty_samples=0,
+        )
+        model.add_seasonality(
+            "weekly-relative",
+            period=7.0,
+            fourier_order=1,
+            prior_scale=5.0,
+            mode="multiplicative",
+            condition_name="active",
+        )
+        model.add_seasonality(
+            "three-day-additive",
+            period=3.0,
+            fourier_order=1,
+            prior_scale=4.0,
+            mode="additive",
+        )
+        model.add_regressor(
+            "promotion", prior_scale=3.0, standardize=False, mode="multiplicative"
+        )
+        training = pd.DataFrame(
+            {
+                "ds": [prophet_timestamp(timestamp) for timestamp in timestamps],
+                "y": values,
+                "active": condition,
+                "promotion": promotion,
+            }
+        )
+        model.fit(training, algorithm="Newton")
+        prediction_indexes = (27, 28, 34)
+        prediction_timestamps = [
+            timestamp_from_offset(index * DAY_MILLISECONDS) for index in prediction_indexes
+        ]
+        prediction_frame = pd.DataFrame(
+            {
+                "ds": [prophet_timestamp(timestamp) for timestamp in prediction_timestamps],
+                "active": [index % 4 != 1 for index in prediction_indexes],
+                "promotion": [float((index % 5) - 2) for index in prediction_indexes],
+            }
+        )
+        prediction = model.predict(prediction_frame)
+        prepared_prediction = model.setup_dataframe(prediction_frame.copy())
+        prediction_features, prior_scales, component_columns, _ = (
+            model.make_all_seasonality_features(prepared_prediction)
+        )
+        training_features, _, _, _ = model.make_all_seasonality_features(model.history)
+        column_modes = [
+            "multiplicative" if value == 1 else "additive"
+            for value in component_columns["multiplicative_terms"].tolist()
+        ]
+        beta = np.asarray(model.params["beta"][0], dtype=np.float64)
+        additive_mask = np.asarray([mode == "additive" for mode in column_modes], dtype=np.float64)
+        multiplicative_mask = 1.0 - additive_mask
+        training_prediction = model.predict(training.drop(columns=["y"]))
+
+        if model.y_min is None or model.y_scale is None:
+            fail("Prophet did not retain scaling for mixed fitted evidence")
+
+        scaled_trend = (
+            np.asarray(training_prediction["trend"], dtype=np.float64) - model.y_min
+        ) / model.y_scale
+        train_matrix = training_features.to_numpy(dtype=np.float64)
+        likelihood_mean = scaled_trend * (1.0 + train_matrix @ (beta * multiplicative_mask)) + (
+            train_matrix @ (beta * additive_mask)
+        )
+        component_names = [
+            "weekly-relative",
+            "three-day-additive",
+            "launch",
+            "promotion",
+        ]
+        coefficients = [
+            canonical_fitted_float(value if mode == "multiplicative" else value * model.y_scale)
+            for value, mode in zip(beta, column_modes, strict=True)
+        ]
+
+        return {
+            "id": f"{growth}-{scaling}-mixed-components",
+            "kind": "mixed-map-fitted",
+            "growth": growth,
+            "scaling": scaling,
+            "observations": [
+                {
+                    "timestamp": timestamp,
+                    "value": value,
+                    "conditions": {"active": condition[index]},
+                    "regressors": {"promotion": promotion[index]},
+                }
+                for index, (timestamp, value) in enumerate(zip(timestamps, values, strict=True))
+            ],
+            "predictionRows": [
+                {
+                    "timestamp": timestamp,
+                    "conditions": {"active": index % 4 != 1},
+                    "regressors": {"promotion": float((index % 5) - 2)},
+                }
+                for index, timestamp in zip(prediction_indexes, prediction_timestamps, strict=True)
+            ],
+            "seasonalities": [
+                {
+                    "name": "weekly-relative",
+                    "periodDays": 7.0,
+                    "fourierOrder": 1,
+                    "priorScale": 5.0,
+                    "conditionName": "active",
+                    "mode": "multiplicative",
+                },
+                {
+                    "name": "three-day-additive",
+                    "periodDays": 3.0,
+                    "fourierOrder": 1,
+                    "priorScale": 4.0,
+                    "mode": "additive",
+                },
+            ],
+            "events": [
+                {"name": "launch", "date": "2020-01-09", "priorScale": 6.0, "mode": "additive"}
+            ],
+            "regressors": [
+                {
+                    "name": "promotion",
+                    "priorScale": 3.0,
+                    "standardization": "never",
+                    "mode": "multiplicative",
+                }
+            ],
+            "settings": {
+                "algorithm": "Newton",
+                "changepointPriorScale": 0.2,
+                "densityConvention": "Prophet 1.4.0 constrained-parameter MAP",
+                "offset": float(model.y_min),
+                "scale": float(model.y_scale),
+            },
+            "expected": {
+                "featureColumnNames": list(prediction_features.columns),
+                "featureModes": column_modes,
+                "featurePriorScales": [float(value) for value in prior_scales],
+                "trainingFeaturesRowMajor": [
+                    canonical_fourier_float(value)
+                    for value in training_features.to_numpy(dtype=np.float64).ravel()
+                ],
+                "featuresRowMajor": [
+                    canonical_fourier_float(value)
+                    for value in prediction_features.to_numpy(dtype=np.float64).ravel()
+                ],
+                "intercept": canonical_fitted_float(model.params["m"][0][0] * model.y_scale),
+                "slope": (
+                    canonical_fitted_float(model.params["k"][0][0] * model.y_scale)
+                    if growth == "linear"
+                    else 0.0
+                ),
+                "deltas": (
+                    [
+                        canonical_fitted_float(value * model.y_scale)
+                        for value in model.params["delta"][0]
+                    ]
+                    if growth == "linear"
+                    else []
+                ),
+                "changepointTimestamps": (
+                    [timestamps[12]] if growth == "linear" else []
+                ),
+                "coefficients": coefficients,
+                "noiseScale": canonical_fitted_float(
+                    model.params["sigma_obs"][0][0] * model.y_scale
+                ),
+                "scaledLikelihoodMean": [
+                    canonical_fitted_float(value) for value in likelihood_mean
+                ],
+                "componentNames": component_names,
+                "componentsRowMajor": [
+                    canonical_fitted_float(value)
+                    for value in prediction[component_names].to_numpy(dtype=np.float64).ravel()
+                ],
+                "trend": [canonical_fitted_float(value) for value in prediction["trend"]],
+                "additive": [
+                    canonical_fitted_float(value) for value in prediction["additive_terms"]
+                ],
+                "multiplicative": [
+                    canonical_fitted_float(value) for value in prediction["multiplicative_terms"]
+                ],
+                "value": [canonical_fitted_float(value) for value in prediction["yhat"]],
+            },
+            "tolerance": {
+                "coefficientAbsolute": 8e-2,
+                "componentAbsolute": 8e-2,
+                "forecastAbsolute": 8e-2,
+            },
+        }
+
+    return {
+        "independentCases": [independent],
+        "fittedCases": [fitted_case("linear", "minmax"), fitted_case("flat", "absmax")],
+    }
+
+
 def find_prophet_model() -> Path:
     """Locate the model binary bundled in the installed Prophet distribution."""
 
@@ -1748,6 +2041,8 @@ def write_outputs(output: Path, execution: dict[str, str], reference: dict[str, 
     conditional_map_fit_path.write_bytes(stable_json(make_conditional_map_fit_fixture()))
     target_scaling_path = output / TARGET_SCALING_FILENAME
     target_scaling_path.write_bytes(stable_json(make_target_scaling_fixture()))
+    mixed_map_path = output / MIXED_MAP_FILENAME
+    mixed_map_path.write_bytes(stable_json(make_mixed_map_fixture()))
 
     model_path = find_prophet_model()
     manifest = {
@@ -1788,6 +2083,10 @@ def write_outputs(output: Path, execution: dict[str, str], reference: dict[str, 
                 "path": TARGET_SCALING_FILENAME,
                 "sha256": sha256_file(target_scaling_path),
             },
+            {
+                "path": MIXED_MAP_FILENAME,
+                "sha256": sha256_file(mixed_map_path),
+            },
         ],
         "backendArtifacts": [
             {
@@ -1823,6 +2122,7 @@ def compare_outputs(generated: Path, committed: Path) -> None:
         CONDITIONAL_SEASONALITY_FILENAME,
         CONDITIONAL_MAP_FIT_FILENAME,
         TARGET_SCALING_FILENAME,
+        MIXED_MAP_FILENAME,
         MANIFEST_FILENAME,
     ):
         generated_path = generated / filename

@@ -154,8 +154,20 @@ describe("seasonality resolution", () => {
       { name: "daily", enabled: false, reason: "explicitly-disabled" },
     ]);
     expect(resolved.layout.components.map((component) => component.definition)).toEqual([
-      { name: "yearly", periodDays: 365.25, fourierOrder: 6, priorScale: 2 },
-      { name: "weekly", periodDays: 7, fourierOrder: 3, priorScale: 10 },
+      {
+        name: "yearly",
+        periodDays: 365.25,
+        fourierOrder: 6,
+        priorScale: 2,
+        mode: "additive",
+      },
+      {
+        name: "weekly",
+        periodDays: 7,
+        fourierOrder: 3,
+        priorScale: 10,
+        mode: "additive",
+      },
     ]);
   });
 

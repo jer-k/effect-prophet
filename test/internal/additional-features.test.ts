@@ -17,7 +17,15 @@ describe("additional feature contracts", () => {
 
     const layout = await Effect.runPromise(
       createAdditionalFeatureLayout(
-        [{ kind: "event", name: launch, coefficientOffset: 0, coefficientCount: 2 }],
+        [
+          {
+            kind: "event",
+            name: launch,
+            coefficientOffset: 0,
+            coefficientCount: 2,
+            mode: "additive",
+          },
+        ],
         [1, 2],
       ),
     );
@@ -34,11 +42,27 @@ describe("additional feature contracts", () => {
 
     const failures: ReadonlyArray<Effect.Effect<unknown, InvalidAdditionalFeatures>> = [
       createAdditionalFeatureLayout(
-        [{ kind: "event", name: launch, coefficientOffset: 1, coefficientCount: 1 }],
+        [
+          {
+            kind: "event",
+            name: launch,
+            coefficientOffset: 1,
+            coefficientCount: 1,
+            mode: "additive",
+          },
+        ],
         [1],
       ),
       createAdditionalFeatureLayout(
-        [{ kind: "event", name: launch, coefficientOffset: 0, coefficientCount: 1 }],
+        [
+          {
+            kind: "event",
+            name: launch,
+            coefficientOffset: 0,
+            coefficientCount: 1,
+            mode: "additive",
+          },
+        ],
         [0],
       ),
       createAdditionalFeatureMatrix(2, 2, [1, 2, 3]),

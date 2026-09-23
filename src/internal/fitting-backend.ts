@@ -88,12 +88,25 @@ export interface FlatAdditiveMapFitPlan {
   readonly seasonalities: NonEmptySeasonalityLayout;
 }
 
+/** Request for mixed reduced-flat MAP fitting with resolved feature modes. */
+export interface FlatMixedMapFitPlan {
+  readonly _tag: "FlatMixedMap";
+  readonly scaling: TargetScalingMode;
+  readonly seasonalities: SeasonalityLayout;
+  readonly optimizer: MapOptimizerControls;
+  readonly seasonalityMasks: SeasonalityMaskMatrix;
+  readonly additionalFeatures: KnownAdditiveFeatures;
+  readonly events: EventCalendar;
+  readonly regressors: ReadonlyArray<ResolvedRegressor>;
+}
+
 /** Exhaustive set of configurations supported by the public fitting backend. */
 export type FitPlan =
   | LinearTrendFitPlan
   | LinearPiecewiseMapFitPlan
   | FlatMapFitPlan
-  | FlatAdditiveMapFitPlan;
+  | FlatAdditiveMapFitPlan
+  | FlatMixedMapFitPlan;
 
 /** Constructors and exhaustive matching for supported fitting plans. */
 export const FitPlan = Data.taggedEnum<FitPlan>();

@@ -1,5 +1,6 @@
 import { Effect, Schema } from "effect";
 
+import { ComponentModeSchema, type ComponentMode } from "./component-mode";
 import { InputValidationError, inputValidationErrorFromIssue } from "./errors";
 import {
   emptyEventCalendar,
@@ -62,6 +63,8 @@ export interface BuiltInSeasonalities {
 }
 
 interface EncodedBuiltInOptions {
+  readonly seasonalityMode?: ComponentMode;
+  readonly holidaysMode?: ComponentMode;
   readonly builtInSeasonalities?: EncodedBuiltInSeasonalities;
   readonly events?: ReadonlyArray<EncodedEventOccurrence>;
   readonly regressors?: ReadonlyArray<EncodedRegressorDefinition>;
@@ -151,6 +154,8 @@ export type EncodedProphetOptions =
   | EncodedFlatAdditiveOptions;
 
 interface ParsedBuiltInOptions {
+  readonly seasonalityMode: ComponentMode;
+  readonly holidaysMode: ComponentMode;
   readonly builtInSeasonalities: BuiltInSeasonalities;
   readonly events: EventCalendar;
   readonly regressors: ReadonlyArray<RegressorDefinition>;
@@ -219,6 +224,8 @@ export const defaultAutomaticMapOptions: MapOptions = Object.freeze({
  */
 export const defaultProphetOptions: LinearTrendOptions = Object.freeze({
   growth: "linear",
+  seasonalityMode: "additive",
+  holidaysMode: "additive",
   seasonalities: emptySeasonalities,
   builtInSeasonalities: defaultBuiltInSeasonalities,
   events: emptyEventCalendar,
@@ -305,6 +312,10 @@ const ProphetOptionsSyntaxSchema = Schema.Struct({
   growth: GrowthSchema.pipe(
     Schema.withDecodingDefaultKey(Effect.succeed(defaultProphetOptions.growth)),
   ),
+  seasonalityMode: ComponentModeSchema.pipe(
+    Schema.withDecodingDefaultKey(Effect.succeed("additive")),
+  ),
+  holidaysMode: Schema.optionalKey(ComponentModeSchema),
   seasonalities: Schema.Array(Schema.Unknown).pipe(
     Schema.withDecodingDefaultKey(Effect.succeed(defaultProphetOptions.seasonalities)),
   ),
@@ -398,17 +409,21 @@ export const decodeOptions = Effect.fn("decodeOptions")(function* (
     Effect.mapError((error) => inputValidationErrorFromIssue("options", error.issue)),
   );
 
-  const seasonalities = yield* parseSeasonalities(syntax.seasonalities).pipe(
-    Effect.mapError(optionsValidationErrorFromSeasonality),
-  );
+  const seasonalities = yield* parseSeasonalities(
+    syntax.seasonalities,
+    syntax.seasonalityMode,
+  ).pipe(Effect.mapError(optionsValidationErrorFromSeasonality));
 
-  const events = yield* parseEventCalendar(syntax.events).pipe(
+  const holidaysMode = syntax.holidaysMode ?? syntax.seasonalityMode;
+
+  const events = yield* parseEventCalendar(syntax.events, holidaysMode).pipe(
     Effect.mapError(optionsValidationErrorFromEvents),
   );
 
-  const regressors = yield* parseRegressorDefinitions(syntax.regressors).pipe(
-    Effect.mapError(optionsValidationErrorFromRegressors),
-  );
+  const regressors = yield* parseRegressorDefinitions(
+    syntax.regressors,
+    syntax.seasonalityMode,
+  ).pipe(Effect.mapError(optionsValidationErrorFromRegressors));
 
   const seasonalityNames = new Set(seasonalities.map((seasonality) => seasonality.name));
   const conditionNames = new Set<string>();
@@ -501,12 +516,19 @@ export const decodeOptions = Effect.fn("decodeOptions")(function* (
   const builtInSeasonalities = freezeBuiltInSeasonalities(syntax.builtInSeasonalities);
   const map = syntax.map === undefined ? undefined : freezeMapOptions(syntax.map);
   const scaling = syntax.scaling === undefined ? {} : { scaling: syntax.scaling };
+
+  const resolvedModes = {
+    seasonalityMode: syntax.seasonalityMode,
+    holidaysMode,
+  } as const;
+
   const firstSeasonality = seasonalities[0];
 
   if (firstSeasonality === undefined) {
     if (syntax.growth === "flat") {
       return {
         growth: "flat",
+        ...resolvedModes,
         seasonalities: emptySeasonalities,
         builtInSeasonalities,
         events,
@@ -518,6 +540,7 @@ export const decodeOptions = Effect.fn("decodeOptions")(function* (
     return map === undefined
       ? {
           growth: "linear",
+          ...resolvedModes,
           seasonalities: emptySeasonalities,
           builtInSeasonalities,
           events,
@@ -526,6 +549,7 @@ export const decodeOptions = Effect.fn("decodeOptions")(function* (
         }
       : {
           growth: "linear",
+          ...resolvedModes,
           seasonalities: emptySeasonalities,
           builtInSeasonalities,
           events,
@@ -543,6 +567,7 @@ export const decodeOptions = Effect.fn("decodeOptions")(function* (
   if (syntax.growth === "flat") {
     return {
       growth: "flat",
+      ...resolvedModes,
       seasonalities: nonEmptySeasonalities,
       builtInSeasonalities,
       events,
@@ -554,6 +579,7 @@ export const decodeOptions = Effect.fn("decodeOptions")(function* (
   return map === undefined
     ? {
         growth: "linear",
+        ...resolvedModes,
         seasonalities: nonEmptySeasonalities,
         builtInSeasonalities,
         events,
@@ -562,6 +588,7 @@ export const decodeOptions = Effect.fn("decodeOptions")(function* (
       }
     : {
         growth: "linear",
+        ...resolvedModes,
         seasonalities: nonEmptySeasonalities,
         builtInSeasonalities,
         events,

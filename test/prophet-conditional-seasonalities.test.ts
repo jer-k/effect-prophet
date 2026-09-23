@@ -10,7 +10,11 @@ import {
   fit,
   predict,
   prophetFittingBackendLayer,
+  type ForecastComponent,
 } from "../src/index";
+
+const additiveValue = (component: ForecastComponent | undefined): number | undefined =>
+  component?.mode === "additive" ? component.value : undefined;
 
 const history = Array.from({ length: 14 }, (_, index) => {
   const onSeason = index % 3 !== 1;
@@ -72,6 +76,7 @@ describe("conditional seasonality public lifecycle", () => {
         periodDays: 7,
         fourierOrder: 2,
         priorScale: 20,
+        mode: "additive",
         conditionName: "onSeason",
       },
       {
@@ -79,6 +84,7 @@ describe("conditional seasonality public lifecycle", () => {
         periodDays: 3,
         fourierOrder: 1,
         priorScale: 20,
+        mode: "additive",
       },
     ]);
 
@@ -99,14 +105,22 @@ describe("conditional seasonality public lifecycle", () => {
     const falseComponents = before[0]?.seasonalities;
     const trueComponents = before[1]?.seasonalities;
 
-    expect(falseComponents?.[0]).toEqual({ name: "weekly-on-season", value: 0 });
-    expect(falseComponents?.[1]?.value).toBeCloseTo(trueComponents?.[1]?.value ?? Number.NaN, 12);
-    expect(Math.abs(trueComponents?.[0]?.value ?? 0)).toBeGreaterThan(0);
+    expect(falseComponents?.[0]).toEqual({
+      name: "weekly-on-season",
+      mode: "additive",
+      value: 0,
+    });
+    expect(additiveValue(falseComponents?.[1])).toBeCloseTo(
+      additiveValue(trueComponents?.[1]) ?? Number.NaN,
+      12,
+    );
+    expect(Math.abs(additiveValue(trueComponents?.[0]) ?? 0)).toBeGreaterThan(0);
     expect(before[0]?.value).not.toBe(before[1]?.value);
 
     for (const forecast of before) {
       const seasonalTotal = forecast.seasonalities.reduce(
-        (total, component) => total + component.value,
+        (total, component) =>
+          total + (component.mode === "additive" ? component.value : component.contribution),
         0,
       );
 
@@ -193,7 +207,9 @@ describe("conditional seasonality public lifecycle", () => {
 
     const forecasts = await Effect.runPromise(predict(model, predictionRows));
 
-    expect(forecasts.every((forecast) => forecast.seasonalities[0]?.value === 0)).toBe(true);
+    expect(forecasts.every((forecast) => additiveValue(forecast.seasonalities[0]) === 0)).toBe(
+      true,
+    );
   });
 
   it("fits conditional seasonalities with an event and regressor through linear MAP", async () => {
@@ -233,7 +249,7 @@ describe("conditional seasonality public lifecycle", () => {
     const decoded = await Effect.runPromise(decodeFittedModel(JSON.parse(JSON.stringify(encoded))));
     const after = await Effect.runPromise(predict(decoded, rows));
 
-    expect(before[0]?.seasonalities[0]?.value).toBe(0);
+    expect(additiveValue(before[0]?.seasonalities[0])).toBe(0);
     expect(before[0]?.events).toHaveLength(1);
     expect(before[0]?.regressors).toHaveLength(1);
     expect(after).toEqual(before);

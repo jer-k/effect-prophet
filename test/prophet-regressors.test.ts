@@ -80,7 +80,8 @@ describe("additional regressor public lifecycle", () => {
 
     for (const forecast of before) {
       const componentTotal = forecast.regressors.reduce(
-        (total, component) => total + component.value,
+        (total, component) =>
+          total + (component.mode === "additive" ? component.value : component.contribution),
         0,
       );
 
@@ -104,8 +105,12 @@ describe("additional regressor public lifecycle", () => {
         const inputValues: Readonly<Record<string, number>> = row.regressors;
         const inputValue = inputValues[component.name];
 
-        if (coefficient === undefined || inputValue === undefined) {
-          throw new Error("Expected aligned coefficient reconstruction metadata");
+        if (
+          coefficient === undefined ||
+          inputValue === undefined ||
+          component.mode !== "additive"
+        ) {
+          throw new Error("Expected aligned additive coefficient reconstruction metadata");
         }
 
         expect(component.value).toBeCloseTo(

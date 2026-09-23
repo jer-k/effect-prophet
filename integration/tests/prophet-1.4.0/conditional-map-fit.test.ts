@@ -90,9 +90,15 @@ describe("Prophet 1.4.0 fitted conditional MAP evidence", () => {
 
       for (const [row, forecast] of forecasts.entries()) {
         const actualComponents = [
-          ...forecast.seasonalities.map((component) => component.value),
-          ...forecast.events.map((component) => component.value),
-          ...forecast.regressors.map((component) => component.value),
+          ...forecast.seasonalities.map((component) =>
+            component.mode === "additive" ? component.value : component.contribution,
+          ),
+          ...forecast.events.map((component) =>
+            component.mode === "additive" ? component.value : component.contribution,
+          ),
+          ...forecast.regressors.map((component) =>
+            component.mode === "additive" ? component.value : component.contribution,
+          ),
         ];
 
         const expectedComponents = referenceCase.expected.componentsRowMajor.slice(

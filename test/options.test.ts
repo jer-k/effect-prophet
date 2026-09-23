@@ -27,6 +27,8 @@ describe("decodeOptions", () => {
     expect(options).toEqual(defaultProphetOptions);
     expect(options).toEqual({
       growth: "linear",
+      seasonalityMode: "additive",
+      holidaysMode: "additive",
       seasonalities: [],
       builtInSeasonalities: { daily: "off", weekly: "off", yearly: "off" },
       events: emptyEventCalendar,
@@ -47,6 +49,8 @@ describe("decodeOptions", () => {
 
       expect(options).toEqual({
         growth,
+        seasonalityMode: "additive",
+        holidaysMode: "additive",
         seasonalities: [],
         builtInSeasonalities: { daily: "off", weekly: "off", yearly: "off" },
         events: emptyEventCalendar,
@@ -81,7 +85,17 @@ describe("decodeOptions", () => {
 
     expect(options).toEqual({
       growth: "flat",
-      seasonalities: [{ name: "work-week", periodDays: 7, fourierOrder: 3, priorScale: 10 }],
+      seasonalityMode: "additive",
+      holidaysMode: "additive",
+      seasonalities: [
+        {
+          name: "work-week",
+          periodDays: 7,
+          fourierOrder: 3,
+          priorScale: 10,
+          mode: "additive",
+        },
+      ],
       builtInSeasonalities: { daily: "off", weekly: "off", yearly: "off" },
       events: emptyEventCalendar,
       regressors: [],
@@ -100,15 +114,72 @@ describe("decodeOptions", () => {
 
     expect(options).toEqual({
       growth: "linear",
+      seasonalityMode: "additive",
+      holidaysMode: "additive",
       seasonalities: [
-        { name: "work-week", periodDays: 7, fourierOrder: 3, priorScale: 10 },
-        { name: "quarter", periodDays: 91.25, fourierOrder: 2, priorScale: 4 },
+        {
+          name: "work-week",
+          periodDays: 7,
+          fourierOrder: 3,
+          priorScale: 10,
+          mode: "additive",
+        },
+        {
+          name: "quarter",
+          periodDays: 91.25,
+          fourierOrder: 2,
+          priorScale: 4,
+          mode: "additive",
+        },
       ],
       builtInSeasonalities: { daily: "off", weekly: "off", yearly: "off" },
       events: emptyEventCalendar,
       regressors: [],
     });
     expect(Object.isFrozen(options.seasonalities)).toBe(true);
+  });
+
+  it("resolves global modes and per-component overrides", async () => {
+    const options = await Effect.runPromise(
+      decodeOptions({
+        seasonalityMode: "multiplicative",
+        holidaysMode: "additive",
+        seasonalities: [
+          { name: "inherited", periodDays: 7, fourierOrder: 1 },
+          { name: "override", periodDays: 3, fourierOrder: 1, mode: "additive" },
+        ],
+        events: [{ name: "launch", date: "2025-01-01" }],
+        regressors: [
+          { name: "inherited-regressor" },
+          { name: "override-regressor", mode: "additive" },
+        ],
+      }),
+    );
+
+    expect(options.seasonalityMode).toBe("multiplicative");
+    expect(options.holidaysMode).toBe("additive");
+    expect(options.seasonalities.map((seasonality) => seasonality.mode)).toEqual([
+      "multiplicative",
+      "additive",
+    ]);
+    expect(options.events.mode).toBe("additive");
+    expect(options.regressors.map((regressor) => regressor.mode)).toEqual([
+      "multiplicative",
+      "additive",
+    ]);
+  });
+
+  it("lets holidays inherit the global seasonality mode", async () => {
+    const options = await Effect.runPromise(
+      decodeOptions({
+        seasonalityMode: "multiplicative",
+        events: [{ name: "launch", date: "2025-01-01" }],
+      }),
+    );
+
+    expect(options.holidaysMode).toBe("multiplicative");
+    expect(options.events.mode).toBe("multiplicative");
+    expect(options.events.layout.components[0]?.mode).toBe("multiplicative");
   });
 
   it("defines automatic additive MAP defaults separately from explicit map decoding", () => {
@@ -205,8 +276,8 @@ describe("decodeOptions", () => {
     );
 
     expect(options.regressors).toEqual([
-      { name: "price", priorScale: 10, standardization: "auto" },
-      { name: "promotion", priorScale: 3, standardization: "never" },
+      { name: "price", priorScale: 10, standardization: "auto", mode: "additive" },
+      { name: "promotion", priorScale: 3, standardization: "never", mode: "additive" },
     ]);
     expect(Object.isFrozen(options.regressors)).toBe(true);
 

@@ -1,0 +1,1422 @@
+{
+  "fittedCases": [
+    {
+      "events": [
+        {
+          "date": "2020-01-09",
+          "mode": "additive",
+          "name": "launch",
+          "priorScale": 6.0
+        }
+      ],
+      "expected": {
+        "additive": [
+          0.501562526692,
+          -0.403962818541,
+          -0.403962818539
+        ],
+        "changepointTimestamps": [
+          "2020-01-13T00:00:00.000Z"
+        ],
+        "coefficients": [
+          0.37064127,
+          0.46144057,
+          0.522805301829,
+          -0.0975997081497,
+          1.57743867965,
+          -0.14371097
+        ],
+        "componentNames": [
+          "weekly-relative",
+          "three-day-additive",
+          "launch",
+          "promotion"
+        ],
+        "componentsRowMajor": [
+          -0.464028706133,
+          0.501562526692,
+          0.0,
+          0.0,
+          -0.00207552402967,
+          -0.403962818541,
+          0.0,
+          -0.14371097,
+          -0.464028706132,
+          -0.403962818539,
+          0.0,
+          -0.28742194
+        ],
+        "deltas": [
+          0.69875999624
+        ],
+        "featureColumnNames": [
+          "weekly-relative_delim_1",
+          "weekly-relative_delim_2",
+          "three-day-additive_delim_1",
+          "three-day-additive_delim_2",
+          "launch_delim_+0",
+          "promotion"
+        ],
+        "featureModes": [
+          "multiplicative",
+          "multiplicative",
+          "additive",
+          "additive",
+          "additive",
+          "multiplicative"
+        ],
+        "featurePriorScales": [
+          5.0,
+          5.0,
+          4.0,
+          4.0,
+          6.0,
+          3.0
+        ],
+        "featuresRowMajor": [
+          -0.974927912181,
+          -0.22252093396,
+          0.866025403786,
+          -0.499999999998,
+          0.0,
+          0.0,
+          -0.781831482469,
+          0.623489801858,
+          -0.866025403784,
+          -0.500000000001,
+          0.0,
+          1.0,
+          -0.974927912181,
+          -0.222520933959,
+          -0.866025403781,
+          -0.500000000006,
+          0.0,
+          2.0
+        ],
+        "intercept": 2.5055087897,
+        "multiplicative": [
+          -0.464028706133,
+          -0.14578649403,
+          -0.751450646132
+        ],
+        "noiseScale": 0.404465838889,
+        "scaledLikelihoodMean": [
+          0.371912408803,
+          0.266958786061,
+          0.443077209866,
+          0.39063569984,
+          0.107803767221,
+          0.43068883883,
+          0.295116934898,
+          0.337661572949,
+          0.671223481961,
+          0.346203906096,
+          0.630430102162,
+          0.39216954864,
+          0.249374885691,
+          0.380504525719,
+          0.354338139258,
+          0.982921718749,
+          0.913717728877,
+          0.565499077022,
+          0.408641593942,
+          0.0435759424596,
+          0.515623598285,
+          0.803821704287,
+          0.953320824386,
+          0.995138902577,
+          0.751172299941,
+          0.91586307244,
+          0.42337222389,
+          0.470651254316
+        ],
+        "slope": 4.9585796312,
+        "trainingFeaturesRowMajor": [
+          -0.78183148247,
+          0.623489801856,
+          0.866025403787,
+          -0.499999999996,
+          0.0,
+          -2.0,
+          0.0,
+          0.0,
+          -0.866025403783,
+          -0.500000000003,
+          0.0,
+          -1.0,
+          0.781831482467,
+          0.62348980186,
+          -2e-12,
+          1.0,
+          0.0,
+          0.0,
+          0.974927912182,
+          -0.222520933953,
+          0.866025403788,
+          -0.499999999993,
+          0.0,
+          1.0,
+          0.433883739118,
+          -0.900968867902,
+          -0.866025403781,
+          -0.500000000006,
+          0.0,
+          2.0,
+          0.0,
+          0.0,
+          -5e-12,
+          1.0,
+          0.0,
+          -2.0,
+          -0.974927912181,
+          -0.222520933958,
+          0.866025403786,
+          -0.499999999997,
+          0.0,
+          -1.0,
+          -0.78183148247,
+          0.623489801856,
+          -0.866025403783,
+          -0.500000000002,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          -1e-12,
+          1.0,
+          1.0,
+          1.0,
+          0.0,
+          0.0,
+          0.866025403784,
+          -0.500000000001,
+          0.0,
+          2.0,
+          0.974927912182,
+          -0.222520933954,
+          -0.866025403782,
+          -0.500000000005,
+          0.0,
+          -2.0,
+          0.43388373912,
+          -0.900968867901,
+          -4e-12,
+          1.0,
+          0.0,
+          -1.0,
+          -0.433883739117,
+          -0.900968867903,
+          0.866025403786,
+          -0.499999999998,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -0.86602540378,
+          -0.500000000007,
+          0.0,
+          1.0,
+          -0.78183148247,
+          0.623489801857,
+          -7e-12,
+          1.0,
+          0.0,
+          2.0,
+          0.0,
+          1.0,
+          0.866025403787,
+          -0.499999999995,
+          0.0,
+          -2.0,
+          0.781831482465,
+          0.623489801862,
+          -0.866025403782,
+          -0.500000000003,
+          0.0,
+          -1.0,
+          0.0,
+          0.0,
+          -2e-12,
+          1.0,
+          0.0,
+          0.0,
+          0.43388373912,
+          -0.900968867901,
+          0.866025403785,
+          -0.499999999999,
+          0.0,
+          1.0,
+          -0.433883739118,
+          -0.900968867902,
+          -0.866025403785,
+          -0.5,
+          0.0,
+          2.0,
+          -0.974927912182,
+          -0.222520933957,
+          -5e-12,
+          1.0,
+          0.0,
+          -2.0,
+          0.0,
+          0.0,
+          0.866025403786,
+          -0.499999999997,
+          0.0,
+          -1.0,
+          -3e-12,
+          1.0,
+          -0.866025403783,
+          -0.500000000002,
+          0.0,
+          0.0,
+          0.781831482466,
+          0.623489801862,
+          -8e-12,
+          1.0,
+          0.0,
+          1.0,
+          0.974927912182,
+          -0.222520933955,
+          0.866025403788,
+          -0.499999999994,
+          0.0,
+          2.0,
+          0.0,
+          0.0,
+          -0.866025403782,
+          -0.500000000005,
+          0.0,
+          -2.0,
+          -0.433883739118,
+          -0.900968867902,
+          -4e-12,
+          1.0,
+          0.0,
+          -1.0,
+          -0.974927912181,
+          -0.22252093396,
+          0.866025403786,
+          -0.499999999998,
+          0.0,
+          0.0
+        ],
+        "trend": [
+          23.8250124197,
+          24.034543517,
+          25.2917301009
+        ],
+        "value": [
+          13.2710852597,
+          20.1266688635,
+          5.88228035623
+        ]
+      },
+      "growth": "linear",
+      "id": "linear-minmax-mixed-components",
+      "kind": "mixed-map-fitted",
+      "observations": [
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": -2.0
+          },
+          "timestamp": "2020-01-01T00:00:00.000Z",
+          "value": 19.785
+        },
+        {
+          "conditions": {
+            "active": false
+          },
+          "regressors": {
+            "promotion": -1.0
+          },
+          "timestamp": "2020-01-02T00:00:00.000Z",
+          "value": 18.5827
+        },
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": 0.0
+          },
+          "timestamp": "2020-01-03T00:00:00.000Z",
+          "value": 21.066427312101
+        },
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": 1.0
+          },
+          "timestamp": "2020-01-04T00:00:00.000Z",
+          "value": 19.827303291509
+        },
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": 2.0
+          },
+          "timestamp": "2020-01-05T00:00:00.000Z",
+          "value": 15.972724000874
+        },
+        {
+          "conditions": {
+            "active": false
+          },
+          "regressors": {
+            "promotion": -2.0
+          },
+          "timestamp": "2020-01-06T00:00:00.000Z",
+          "value": 20.187
+        },
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": -1.0
+          },
+          "timestamp": "2020-01-07T00:00:00.000Z",
+          "value": 18.104402521395
+        },
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": 0.0
+          },
+          "timestamp": "2020-01-08T00:00:00.000Z",
+          "value": 19.265
+        },
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": 1.0
+          },
+          "timestamp": "2020-01-09T00:00:00.000Z",
+          "value": 22.690238414971
+        },
+        {
+          "conditions": {
+            "active": false
+          },
+          "regressors": {
+            "promotion": 2.0
+          },
+          "timestamp": "2020-01-10T00:00:00.000Z",
+          "value": 19.1064
+        },
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": -2.0
+          },
+          "timestamp": "2020-01-11T00:00:00.000Z",
+          "value": 22.741312244828
+        },
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": -1.0
+          },
+          "timestamp": "2020-01-12T00:00:00.000Z",
+          "value": 19.467115047555
+        },
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": 0.0
+          },
+          "timestamp": "2020-01-13T00:00:00.000Z",
+          "value": 17.945398062811
+        },
+        {
+          "conditions": {
+            "active": false
+          },
+          "regressors": {
+            "promotion": 1.0
+          },
+          "timestamp": "2020-01-14T00:00:00.000Z",
+          "value": 19.8549
+        },
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": 2.0
+          },
+          "timestamp": "2020-01-15T00:00:00.000Z",
+          "value": 19.3544
+        },
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": -2.0
+          },
+          "timestamp": "2020-01-16T00:00:00.000Z",
+          "value": 25.980481692251
+        },
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": -1.0
+          },
+          "timestamp": "2020-01-17T00:00:00.000Z",
+          "value": 25.355071787224
+        },
+        {
+          "conditions": {
+            "active": false
+          },
+          "regressors": {
+            "promotion": 0.0
+          },
+          "timestamp": "2020-01-18T00:00:00.000Z",
+          "value": 21.49
+        },
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": 1.0
+          },
+          "timestamp": "2020-01-19T00:00:00.000Z",
+          "value": 20.191906094237
+        },
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": 2.0
+          },
+          "timestamp": "2020-01-20T00:00:00.000Z",
+          "value": 16.892575825249
+        },
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": -2.0
+          },
+          "timestamp": "2020-01-21T00:00:00.000Z",
+          "value": 20.915915966835
+        },
+        {
+          "conditions": {
+            "active": false
+          },
+          "regressors": {
+            "promotion": -1.0
+          },
+          "timestamp": "2020-01-22T00:00:00.000Z",
+          "value": 23.9367
+        },
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": 0.0
+          },
+          "timestamp": "2020-01-23T00:00:00.000Z",
+          "value": 25.422124969531
+        },
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": 1.0
+          },
+          "timestamp": "2020-01-24T00:00:00.000Z",
+          "value": 25.599994024786
+        },
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": 2.0
+          },
+          "timestamp": "2020-01-25T00:00:00.000Z",
+          "value": 23.791530151465
+        },
+        {
+          "conditions": {
+            "active": false
+          },
+          "regressors": {
+            "promotion": -2.0
+          },
+          "timestamp": "2020-01-26T00:00:00.000Z",
+          "value": 24.87
+        },
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": -1.0
+          },
+          "timestamp": "2020-01-27T00:00:00.000Z",
+          "value": 20.600153587688
+        },
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": 0.0
+          },
+          "timestamp": "2020-01-28T00:00:00.000Z",
+          "value": 21.470272689554
+        }
+      ],
+      "predictionRows": [
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": 0.0
+          },
+          "timestamp": "2020-01-28T00:00:00.000Z"
+        },
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": 1.0
+          },
+          "timestamp": "2020-01-29T00:00:00.000Z"
+        },
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": 2.0
+          },
+          "timestamp": "2020-02-04T00:00:00.000Z"
+        }
+      ],
+      "regressors": [
+        {
+          "mode": "multiplicative",
+          "name": "promotion",
+          "priorScale": 3.0,
+          "standardization": "never"
+        }
+      ],
+      "scaling": "minmax",
+      "seasonalities": [
+        {
+          "conditionName": "active",
+          "fourierOrder": 1,
+          "mode": "multiplicative",
+          "name": "weekly-relative",
+          "periodDays": 7.0,
+          "priorScale": 5.0
+        },
+        {
+          "fourierOrder": 1,
+          "mode": "additive",
+          "name": "three-day-additive",
+          "periodDays": 3.0,
+          "priorScale": 4.0
+        }
+      ],
+      "settings": {
+        "algorithm": "Newton",
+        "changepointPriorScale": 0.2,
+        "densityConvention": "Prophet 1.4.0 constrained-parameter MAP",
+        "offset": 15.972724000874,
+        "scale": 10.007757691377
+      },
+      "tolerance": {
+        "coefficientAbsolute": 0.08,
+        "componentAbsolute": 0.08,
+        "forecastAbsolute": 0.08
+      }
+    },
+    {
+      "events": [
+        {
+          "date": "2020-01-09",
+          "mode": "additive",
+          "name": "launch",
+          "priorScale": 6.0
+        }
+      ],
+      "expected": {
+        "additive": [
+          0.524999997389,
+          -0.275000005385,
+          -0.275000005382
+        ],
+        "changepointTimestamps": [],
+        "coefficients": [
+          0.099758368,
+          0.12509304,
+          0.461880216953,
+          -0.249999992003,
+          1.39999999048,
+          -0.035
+        ],
+        "componentNames": [
+          "weekly-relative",
+          "three-day-additive",
+          "launch",
+          "promotion"
+        ],
+        "componentsRowMajor": [
+          -0.12509303753,
+          0.524999997389,
+          0.0,
+          0.0,
+          1.9813070351e-09,
+          -0.275000005385,
+          0.0,
+          -0.035,
+          -0.125093037529,
+          -0.275000005382,
+          0.0,
+          -0.07
+        ],
+        "deltas": [],
+        "featureColumnNames": [
+          "weekly-relative_delim_1",
+          "weekly-relative_delim_2",
+          "three-day-additive_delim_1",
+          "three-day-additive_delim_2",
+          "launch_delim_+0",
+          "promotion"
+        ],
+        "featureModes": [
+          "multiplicative",
+          "multiplicative",
+          "additive",
+          "additive",
+          "additive",
+          "multiplicative"
+        ],
+        "featurePriorScales": [
+          5.0,
+          5.0,
+          4.0,
+          4.0,
+          6.0,
+          3.0
+        ],
+        "featuresRowMajor": [
+          -0.974927912181,
+          -0.22252093396,
+          0.866025403786,
+          -0.499999999998,
+          0.0,
+          0.0,
+          -0.781831482469,
+          0.623489801858,
+          -0.866025403784,
+          -0.500000000001,
+          0.0,
+          1.0,
+          -0.974927912181,
+          -0.222520933959,
+          -0.866025403781,
+          -0.500000000006,
+          0.0,
+          2.0
+        ],
+        "intercept": 17.999999909,
+        "multiplicative": [
+          -0.12509303753,
+          -0.0349999980187,
+          -0.195093037529
+        ],
+        "noiseScale": 1.76935841347e-12,
+        "scaledLikelihoodMean": [
+          0.897821483162,
+          0.832929658207,
+          0.932889949393,
+          0.868760161986,
+          0.690458743348,
+          0.8626528365,
+          0.767054262615,
+          0.804340954575,
+          0.942595692447,
+          0.783466660544,
+          0.918223159649,
+          0.777359332142,
+          0.71322954693,
+          0.775752247707,
+          0.748298017118,
+          0.99999999724,
+          0.9603441816,
+          0.805475426,
+          0.755350566685,
+          0.619749018343,
+          0.760474322821,
+          0.869232776294,
+          0.906519468653,
+          0.904301244143,
+          0.840171456736,
+          0.861518363457,
+          0.706649607136,
+          0.738465557365
+        ],
+        "slope": 0.0,
+        "trainingFeaturesRowMajor": [
+          -0.78183148247,
+          0.623489801856,
+          0.866025403787,
+          -0.499999999996,
+          0.0,
+          -2.0,
+          0.0,
+          0.0,
+          -0.866025403783,
+          -0.500000000003,
+          0.0,
+          -1.0,
+          0.781831482467,
+          0.62348980186,
+          -2e-12,
+          1.0,
+          0.0,
+          0.0,
+          0.974927912182,
+          -0.222520933953,
+          0.866025403788,
+          -0.499999999993,
+          0.0,
+          1.0,
+          0.433883739118,
+          -0.900968867902,
+          -0.866025403781,
+          -0.500000000006,
+          0.0,
+          2.0,
+          0.0,
+          0.0,
+          -5e-12,
+          1.0,
+          0.0,
+          -2.0,
+          -0.974927912181,
+          -0.222520933958,
+          0.866025403786,
+          -0.499999999997,
+          0.0,
+          -1.0,
+          -0.78183148247,
+          0.623489801856,
+          -0.866025403783,
+          -0.500000000002,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          -1e-12,
+          1.0,
+          1.0,
+          1.0,
+          0.0,
+          0.0,
+          0.866025403784,
+          -0.500000000001,
+          0.0,
+          2.0,
+          0.974927912182,
+          -0.222520933954,
+          -0.866025403782,
+          -0.500000000005,
+          0.0,
+          -2.0,
+          0.43388373912,
+          -0.900968867901,
+          -4e-12,
+          1.0,
+          0.0,
+          -1.0,
+          -0.433883739117,
+          -0.900968867903,
+          0.866025403786,
+          -0.499999999998,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -0.86602540378,
+          -0.500000000007,
+          0.0,
+          1.0,
+          -0.78183148247,
+          0.623489801857,
+          -7e-12,
+          1.0,
+          0.0,
+          2.0,
+          0.0,
+          1.0,
+          0.866025403787,
+          -0.499999999995,
+          0.0,
+          -2.0,
+          0.781831482465,
+          0.623489801862,
+          -0.866025403782,
+          -0.500000000003,
+          0.0,
+          -1.0,
+          0.0,
+          0.0,
+          -2e-12,
+          1.0,
+          0.0,
+          0.0,
+          0.43388373912,
+          -0.900968867901,
+          0.866025403785,
+          -0.499999999999,
+          0.0,
+          1.0,
+          -0.433883739118,
+          -0.900968867902,
+          -0.866025403785,
+          -0.5,
+          0.0,
+          2.0,
+          -0.974927912182,
+          -0.222520933957,
+          -5e-12,
+          1.0,
+          0.0,
+          -2.0,
+          0.0,
+          0.0,
+          0.866025403786,
+          -0.499999999997,
+          0.0,
+          -1.0,
+          -3e-12,
+          1.0,
+          -0.866025403783,
+          -0.500000000002,
+          0.0,
+          0.0,
+          0.781831482466,
+          0.623489801862,
+          -8e-12,
+          1.0,
+          0.0,
+          1.0,
+          0.974927912182,
+          -0.222520933955,
+          0.866025403788,
+          -0.499999999994,
+          0.0,
+          2.0,
+          0.0,
+          0.0,
+          -0.866025403782,
+          -0.500000000005,
+          0.0,
+          -2.0,
+          -0.433883739118,
+          -0.900968867902,
+          -4e-12,
+          1.0,
+          0.0,
+          -1.0,
+          -0.974927912181,
+          -0.22252093396,
+          0.866025403786,
+          -0.499999999998,
+          0.0,
+          0.0
+        ],
+        "trend": [
+          17.999999909,
+          17.999999909,
+          17.999999909
+        ],
+        "value": [
+          16.2733252423,
+          17.0949999425,
+          14.2133252459
+        ]
+      },
+      "growth": "flat",
+      "id": "flat-absmax-mixed-components",
+      "kind": "mixed-map-fitted",
+      "observations": [
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": -2.0
+          },
+          "timestamp": "2020-01-01T00:00:00.000Z",
+          "value": 19.785
+        },
+        {
+          "conditions": {
+            "active": false
+          },
+          "regressors": {
+            "promotion": -1.0
+          },
+          "timestamp": "2020-01-02T00:00:00.000Z",
+          "value": 18.355
+        },
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": 0.0
+          },
+          "timestamp": "2020-01-03T00:00:00.000Z",
+          "value": 20.557792387084
+        },
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": 1.0
+          },
+          "timestamp": "2020-01-04T00:00:00.000Z",
+          "value": 19.144585168659
+        },
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": 2.0
+          },
+          "timestamp": "2020-01-05T00:00:00.000Z",
+          "value": 15.215414831341
+        },
+        {
+          "conditions": {
+            "active": false
+          },
+          "regressors": {
+            "promotion": -2.0
+          },
+          "timestamp": "2020-01-06T00:00:00.000Z",
+          "value": 19.01
+        },
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": -1.0
+          },
+          "timestamp": "2020-01-07T00:00:00.000Z",
+          "value": 16.903325330492
+        },
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": 0.0
+          },
+          "timestamp": "2020-01-08T00:00:00.000Z",
+          "value": 17.725
+        },
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": 1.0
+          },
+          "timestamp": "2020-01-09T00:00:00.000Z",
+          "value": 20.771674669508
+        },
+        {
+          "conditions": {
+            "active": false
+          },
+          "regressors": {
+            "promotion": 2.0
+          },
+          "timestamp": "2020-01-10T00:00:00.000Z",
+          "value": 17.265
+        },
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": -2.0
+          },
+          "timestamp": "2020-01-11T00:00:00.000Z",
+          "value": 20.234585168659
+        },
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": -1.0
+          },
+          "timestamp": "2020-01-12T00:00:00.000Z",
+          "value": 17.130414831341
+        },
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": 0.0
+          },
+          "timestamp": "2020-01-13T00:00:00.000Z",
+          "value": 15.717207612916
+        },
+        {
+          "conditions": {
+            "active": false
+          },
+          "regressors": {
+            "promotion": 1.0
+          },
+          "timestamp": "2020-01-14T00:00:00.000Z",
+          "value": 17.095
+        },
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": 2.0
+          },
+          "timestamp": "2020-01-15T00:00:00.000Z",
+          "value": 16.49
+        },
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": -2.0
+          },
+          "timestamp": "2020-01-16T00:00:00.000Z",
+          "value": 22.036674669508
+        },
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": -1.0
+          },
+          "timestamp": "2020-01-17T00:00:00.000Z",
+          "value": 21.162792387084
+        },
+        {
+          "conditions": {
+            "active": false
+          },
+          "regressors": {
+            "promotion": 0.0
+          },
+          "timestamp": "2020-01-18T00:00:00.000Z",
+          "value": 17.75
+        },
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": 1.0
+          },
+          "timestamp": "2020-01-19T00:00:00.000Z",
+          "value": 16.645414831341
+        },
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": 2.0
+          },
+          "timestamp": "2020-01-20T00:00:00.000Z",
+          "value": 13.657207612916
+        },
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": -2.0
+          },
+          "timestamp": "2020-01-21T00:00:00.000Z",
+          "value": 16.758325330492
+        },
+        {
+          "conditions": {
+            "active": false
+          },
+          "regressors": {
+            "promotion": -1.0
+          },
+          "timestamp": "2020-01-22T00:00:00.000Z",
+          "value": 19.155
+        },
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": 0.0
+          },
+          "timestamp": "2020-01-23T00:00:00.000Z",
+          "value": 19.976674669508
+        },
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": 1.0
+          },
+          "timestamp": "2020-01-24T00:00:00.000Z",
+          "value": 19.927792387084
+        },
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": 2.0
+          },
+          "timestamp": "2020-01-25T00:00:00.000Z",
+          "value": 18.514585168659
+        },
+        {
+          "conditions": {
+            "active": false
+          },
+          "regressors": {
+            "promotion": -2.0
+          },
+          "timestamp": "2020-01-26T00:00:00.000Z",
+          "value": 18.985
+        },
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": -1.0
+          },
+          "timestamp": "2020-01-27T00:00:00.000Z",
+          "value": 15.572207612916
+        },
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": 0.0
+          },
+          "timestamp": "2020-01-28T00:00:00.000Z",
+          "value": 16.273325330492
+        }
+      ],
+      "predictionRows": [
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": 0.0
+          },
+          "timestamp": "2020-01-28T00:00:00.000Z"
+        },
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": 1.0
+          },
+          "timestamp": "2020-01-29T00:00:00.000Z"
+        },
+        {
+          "conditions": {
+            "active": true
+          },
+          "regressors": {
+            "promotion": 2.0
+          },
+          "timestamp": "2020-02-04T00:00:00.000Z"
+        }
+      ],
+      "regressors": [
+        {
+          "mode": "multiplicative",
+          "name": "promotion",
+          "priorScale": 3.0,
+          "standardization": "never"
+        }
+      ],
+      "scaling": "absmax",
+      "seasonalities": [
+        {
+          "conditionName": "active",
+          "fourierOrder": 1,
+          "mode": "multiplicative",
+          "name": "weekly-relative",
+          "periodDays": 7.0,
+          "priorScale": 5.0
+        },
+        {
+          "fourierOrder": 1,
+          "mode": "additive",
+          "name": "three-day-additive",
+          "periodDays": 3.0,
+          "priorScale": 4.0
+        }
+      ],
+      "settings": {
+        "algorithm": "Newton",
+        "changepointPriorScale": 0.2,
+        "densityConvention": "Prophet 1.4.0 constrained-parameter MAP",
+        "offset": 0.0,
+        "scale": 22.036674669508
+      },
+      "tolerance": {
+        "coefficientAbsolute": 0.08,
+        "componentAbsolute": 0.08,
+        "forecastAbsolute": 0.08
+      }
+    }
+  ],
+  "independentCases": [
+    {
+      "beta": [
+        0.4,
+        -0.8,
+        0.3
+      ],
+      "columnCount": 3,
+      "designRowMajor": [
+        1.0,
+        0.5,
+        -0.25,
+        0.0,
+        1.5,
+        0.75,
+        -1.0,
+        2.0,
+        1.25
+      ],
+      "expected": {
+        "additiveScaled": [
+          0.4,
+          0.0,
+          -0.4
+        ],
+        "betaGradient": [
+          2.6390624999999988,
+          5.379861111111108,
+          3.1803710937499985
+        ],
+        "factor": [
+          -0.47500000000000003,
+          -0.9750000000000002,
+          -1.225
+        ],
+        "likelihoodMean": [
+          0.6625,
+          0.0249999999999998,
+          -0.34375
+        ],
+        "objective": -0.8230187885044102,
+        "publicAdditive": [
+          1.6,
+          0.0,
+          -1.6
+        ],
+        "publicTrend": [
+          12.0,
+          14.0,
+          9.0
+        ],
+        "publicValue": [
+          7.899999999999999,
+          0.3499999999999972,
+          -3.625000000000001
+        ]
+      },
+      "id": "fixed-trend-mixed-objective",
+      "kind": "mixed-map-independent",
+      "modes": [
+        "additive",
+        "multiplicative",
+        "multiplicative"
+      ],
+      "priorScales": [
+        2.0,
+        3.0,
+        4.0
+      ],
+      "rowCount": 3,
+      "scaledTarget": [
+        0.8,
+        -0.4,
+        0.2
+      ],
+      "scaledTrend": [
+        0.5,
+        1.0,
+        -0.25
+      ],
+      "sigma": 0.4,
+      "targetScaling": {
+        "mode": "minmax",
+        "offset": 10.0,
+        "scale": 4.0
+      },
+      "tolerance": {
+        "absolute": 1e-12,
+        "relative": 1e-12
+      }
+    }
+  ]
+}

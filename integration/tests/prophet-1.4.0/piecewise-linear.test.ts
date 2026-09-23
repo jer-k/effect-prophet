@@ -89,7 +89,11 @@ describe("Prophet 1.4.0 fixed piecewise-linear compatibility", () => {
           expect(expectedComponent).toBeDefined();
 
           if (expectedComponent !== undefined) {
-            expectClose(seasonalForecast.value, expectedComponent, referenceCase.tolerance);
+            expect(seasonalForecast.mode).toBe("additive");
+
+            if (seasonalForecast.mode === "additive") {
+              expectClose(seasonalForecast.value, expectedComponent, referenceCase.tolerance);
+            }
           }
         }
       }

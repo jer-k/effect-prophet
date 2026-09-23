@@ -1,5 +1,6 @@
 import { Effect, Schema } from "effect";
 
+import { ComponentModeSchema, type ComponentMode } from "./component-mode";
 import {
   ModelSerializationError,
   modelSerializationErrorFromIssue,
@@ -60,6 +61,7 @@ export interface EncodedFittedRegressor {
   readonly priorScale: number;
   readonly standardization: EncodedRegressorStandardization;
   readonly transform: RegressorTransform;
+  readonly mode?: ComponentMode;
 }
 
 /** Portable representation of a reduced flat MAP model. */
@@ -74,7 +76,13 @@ export interface EncodedFlatMapModel {
   readonly coefficients: {
     readonly level: number;
     readonly seasonal: ReadonlyArray<number>;
+    readonly events?: ReadonlyArray<number>;
+    readonly regressors?: ReadonlyArray<number>;
   };
+
+  readonly holidaysMode?: ComponentMode;
+  readonly events?: ReadonlyArray<EncodedEventOccurrence>;
+  readonly regressors?: ReadonlyArray<EncodedFittedRegressor>;
 
   /** Ordered definitions from which coefficient offsets are reconstructed. */
   readonly seasonalities: ReadonlyArray<{
@@ -83,6 +91,7 @@ export interface EncodedFlatMapModel {
     readonly fourierOrder: number;
     readonly priorScale: number;
     readonly conditionName?: string;
+    readonly mode?: ComponentMode;
   }>;
 
   /** Positive fitted observation noise in observation units. */
@@ -105,6 +114,7 @@ export interface EncodedPiecewiseMapModel {
     readonly regressors?: ReadonlyArray<number>;
   };
   readonly events: ReadonlyArray<EncodedEventOccurrence>;
+  readonly holidaysMode?: ComponentMode;
   readonly regressors?: ReadonlyArray<EncodedFittedRegressor>;
   readonly timeScaling: {
     readonly origin: number;
@@ -117,6 +127,7 @@ export interface EncodedPiecewiseMapModel {
     readonly fourierOrder: number;
     readonly priorScale: number;
     readonly conditionName?: string;
+    readonly mode?: ComponentMode;
   }>;
   readonly noiseScale: number;
   readonly fitSummary: PiecewiseMapParameters["fitSummary"];
@@ -160,6 +171,7 @@ const EncodedFittedRegressorSchema = Schema.Struct({
   name: Schema.String,
   priorScale: Schema.Number,
   standardization: Schema.Literals(["auto", "always", "never"]),
+  mode: Schema.optionalKey(ComponentModeSchema),
   transform: Schema.Union([
     Schema.Struct({
       mode: Schema.Literal("identity"),
@@ -179,7 +191,14 @@ const EncodedFlatMapModelSchema = Schema.Struct({
   coefficients: Schema.Struct({
     level: Schema.Number,
     seasonal: Schema.Array(Schema.Number),
+    events: Schema.Array(Schema.Number).pipe(Schema.withDecodingDefaultKey(Effect.succeed([]))),
+    regressors: Schema.Array(Schema.Number).pipe(Schema.withDecodingDefaultKey(Effect.succeed([]))),
   }),
+  holidaysMode: ComponentModeSchema.pipe(Schema.withDecodingDefaultKey(Effect.succeed("additive"))),
+  events: EncodedEventOccurrencesSchema.pipe(Schema.withDecodingDefaultKey(Effect.succeed([]))),
+  regressors: Schema.Array(EncodedFittedRegressorSchema).pipe(
+    Schema.withDecodingDefaultKey(Effect.succeed([])),
+  ),
   seasonalities: Schema.Array(
     Schema.Struct({
       name: Schema.String,
@@ -187,11 +206,12 @@ const EncodedFlatMapModelSchema = Schema.Struct({
       fourierOrder: Schema.Number,
       priorScale: Schema.Number,
       conditionName: Schema.optionalKey(Schema.String),
+      mode: ComponentModeSchema.pipe(Schema.withDecodingDefaultKey(Effect.succeed("additive"))),
     }),
   ),
   noiseScale: Schema.Number,
   fitSummary: Schema.Struct({
-    method: Schema.Literal("flat-map-coordinate-v1"),
+    method: Schema.Literals(["flat-map-coordinate-v1", "mixed-flat-map-coordinate-v1"]),
     termination: Schema.Literals(["converged", "constant-target-shortcut"]),
     valueScale: Schema.Number,
     observationCount: Schema.Number,
@@ -216,6 +236,7 @@ const EncodedPiecewiseMapModelSchema = Schema.Struct({
     Schema.withDecodingDefaultKey(Effect.succeed([])),
   ),
   events: EncodedEventOccurrencesSchema.pipe(Schema.withDecodingDefaultKey(Effect.succeed([]))),
+  holidaysMode: ComponentModeSchema.pipe(Schema.withDecodingDefaultKey(Effect.succeed("additive"))),
   timeScaling: Schema.Struct({
     origin: Schema.Number,
     scale: Schema.Number,
@@ -228,11 +249,12 @@ const EncodedPiecewiseMapModelSchema = Schema.Struct({
       fourierOrder: Schema.Number,
       priorScale: Schema.Number,
       conditionName: Schema.optionalKey(Schema.String),
+      mode: ComponentModeSchema.pipe(Schema.withDecodingDefaultKey(Effect.succeed("additive"))),
     }),
   ),
   noiseScale: Schema.Number,
   fitSummary: Schema.Struct({
-    method: Schema.Literal("piecewise-map-coordinate-v1"),
+    method: Schema.Literals(["piecewise-map-coordinate-v1", "mixed-piecewise-map-coordinate-v1"]),
     termination: Schema.Literals(["converged", "constant-target-shortcut"]),
     valueScale: Schema.Number,
     observationCount: Schema.Number,
@@ -402,6 +424,7 @@ const encodeFittedRegressors = (
     priorScale: regressor.definition.priorScale,
     standardization: regressor.definition.standardization,
     transform: { ...regressor.transform },
+    mode: regressor.definition.mode,
   }));
 
 const encodeSeasonalityDefinition = (
@@ -412,6 +435,7 @@ const encodeSeasonalityDefinition = (
     periodDays: component.definition.periodDays,
     fourierOrder: component.definition.fourierOrder,
     priorScale: component.definition.priorScale,
+    mode: component.definition.mode,
   };
 
   if (component.definition.conditionName === undefined) {
@@ -427,7 +451,18 @@ const encodeFlatMapModel = (model: FittedFlatMapProphet): EncodedFlatMapModel =>
   coefficients: {
     level: model.level,
     seasonal: Array.from(model.coefficients),
+    events: Array.from(model.eventCoefficients),
+    regressors: model.regressors.map((regressor) => regressor.coefficient),
   },
+  holidaysMode: model.events.mode,
+  events: model.events.occurrences.map((occurrence) => ({
+    name: occurrence.name,
+    date: occurrence.date,
+    lowerWindowDays: occurrence.lowerWindowDays,
+    upperWindowDays: occurrence.upperWindowDays,
+    priorScale: occurrence.priorScale,
+  })),
+  regressors: encodeFittedRegressors(model.regressors),
   seasonalities: model.seasonalities.components.map(encodeSeasonalityDefinition),
   noiseScale: model.noiseScale,
   fitSummary: {
@@ -453,6 +488,7 @@ const encodePiecewiseMapModel = (model: FittedPiecewiseMapProphet): EncodedPiece
     regressors: model.regressors.map((regressor) => regressor.coefficient),
   },
   regressors: encodeFittedRegressors(model.regressors),
+  holidaysMode: model.events.mode,
   events: model.events.occurrences.map((occurrence) => ({
     name: occurrence.name,
     date: occurrence.date,
@@ -506,6 +542,7 @@ const fittedRegressorsFromEncoded = (
         name: regressor.name,
         priorScale: regressor.priorScale,
         standardization: regressor.standardization,
+        mode: regressor.mode ?? "additive",
       },
       transform: regressor.transform,
       coefficient: resolvedCoefficients[index] ?? Number.NaN,
@@ -524,6 +561,15 @@ const decodeFlatMapModel = Effect.fn("decodeFlatMapModel")(function* (
     Effect.mapError(serializationErrorFromInvalidSeasonality),
   );
 
+  const events = yield* parseEventCalendar(encoded.events, encoded.holidaysMode).pipe(
+    Effect.mapError(serializationErrorFromInvalidEvent),
+  );
+
+  const regressors = yield* fittedRegressorsFromEncoded(
+    encoded.regressors,
+    encoded.coefficients.regressors,
+  );
+
   const targetScaling = encoded.targetScaling ?? {
     mode: "absmax" as const,
     offset: 0,
@@ -536,6 +582,9 @@ const decodeFlatMapModel = Effect.fn("decodeFlatMapModel")(function* (
     level: encoded.coefficients.level,
     seasonalities,
     coefficients: encoded.coefficients.seasonal,
+    events,
+    eventCoefficients: encoded.coefficients.events,
+    regressors,
     noiseScale: encoded.noiseScale,
     fitSummary: encoded.fitSummary,
   }).pipe(
@@ -554,7 +603,7 @@ const decodePiecewiseMapModel = Effect.fn("decodePiecewiseMapModel")(function* (
     Effect.mapError(serializationErrorFromInvalidSeasonality),
   );
 
-  const events = yield* parseEventCalendar(encoded.events).pipe(
+  const events = yield* parseEventCalendar(encoded.events, encoded.holidaysMode).pipe(
     Effect.mapError(serializationErrorFromInvalidEvent),
   );
 

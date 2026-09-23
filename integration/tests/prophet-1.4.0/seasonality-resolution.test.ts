@@ -30,7 +30,12 @@ describe("Prophet 1.4.0 seasonality resolution compatibility", () => {
       const resolved = await Effect.runPromise(resolveSeasonalities(observations, options));
 
       const actualBuiltIns = resolved.layout.components
-        .map((component) => component.definition)
+        .map((component) => ({
+          name: component.definition.name,
+          periodDays: component.definition.periodDays,
+          fourierOrder: component.definition.fourierOrder,
+          priorScale: component.definition.priorScale,
+        }))
         .filter(
           (definition) =>
             definition.name === "yearly" ||
