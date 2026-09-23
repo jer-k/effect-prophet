@@ -283,6 +283,11 @@ pub fn simulate_logistic_map_with_features(
     LogisticFloorPolicy::Explicit => Some(explicit_floors),
     _ => return vec![INVALID_REQUEST],
   };
+  if capacities.len() != timestamps.len()
+    || floors.is_some_and(|values| values.len() != timestamps.len())
+  {
+    return vec![INVALID_REQUEST];
+  }
   let Ok(seasonalities) = parse_seasonalities(periods_days, fourier_orders, None) else {
     return vec![INVALID_REQUEST];
   };

@@ -627,6 +627,31 @@ mod tests {
   }
 
   #[test]
+  fn forced_logistic_rate_crossing_and_zero_rate_keep_the_latent_logit_continuous() {
+    let points = [5.0, 15.0];
+    let deltas = [-1.0, 0.5];
+    let eta = |time: f64| logistic_eta(time, 0.0, 10.0, &points, 0.5, 0.4, &deltas).unwrap();
+
+    for (time, expected) in [(5.0, 0.05), (10.0, -0.2), (15.0, -0.45), (20.0, -0.45)] {
+      assert!((eta(time / 10.0) - expected).abs() < 1e-14);
+    }
+
+    let before = eta(1.5 - 1e-6);
+    let after = eta(1.5 + 1e-6);
+    assert!((before + 0.45).abs() < 1e-6);
+    assert!((after + 0.45).abs() < 1e-14);
+
+    let fraction = stable_sigmoid(eta(1.5));
+    let first_trend = 1.0 + 9.0 * fraction;
+    let second_trend = 2.0 + 18.0 * stable_sigmoid(eta(2.0));
+    assert!((second_trend - 2.0 * first_trend).abs() < 1e-14);
+    assert!(first_trend > 1.0 && first_trend < 10.0);
+    assert!(second_trend > 2.0 && second_trend < 20.0);
+    assert!((1.5 * first_trend + 0.5).is_finite());
+    assert!((0.5 * second_trend - 1.0).is_finite());
+  }
+
+  #[test]
   fn logistic_zero_and_crossing_rates_remain_finite_and_bounded() {
     let capacities = [10.0, 12.0];
     let scaling = LogisticScaling::parse(0.0, 10.0, 0.0, 0.0).unwrap();

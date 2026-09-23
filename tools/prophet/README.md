@@ -80,13 +80,16 @@ The suite is intentionally excluded from ordinary `npm test`.
     below `1e-8` to zero, preserves positive noise scales, and rounds the remaining fitted outputs
     to 12 significant digits, well inside the fixture tolerances, then writes stable JSON with
     non-finite values rejected;
-12. calls `sample_posterior_predictive(..., vectorized=False)` with four authored fixed MAP
-    states (linear, flat, linear with fixed additive/multiplicative regressors, and logistic
-    with changing capacity), a pinned
-    Python seed and explicit future dates, then records
-    12-significant-digit means, population variances and 10th/90th percentiles of 2048
-    trend and observation draws. These distribution summaries are compared to generated
-    WASM with a different RNG and predeclared tolerances; individual draws are not equal.
+12. calls `sample_posterior_predictive(..., vectorized=False)` with five authored fixed MAP
+    states (linear, flat, linear with fixed additive/multiplicative regressors, implicit-floor
+    logistic with changing capacity, and explicit-changing-floor logistic with mixed fixed
+    regressors and a nonzero historical rate crossing). A pinned Python seed and explicit future
+    dates produce 12-significant-digit means, population variances and 10th/90th percentiles.
+    The first four cases use 2048 draws; the higher-variance explicit-floor case uses 8192.
+    That case pools four predetermined independent 2048-draw generated-WASM requests for
+    test-only distribution comparison without exceeding the per-request sample limit.
+    Different RNGs prevent individual draw equality; zero-rate singular extensions are
+    tested separately and not presented as release parity.
 
 The fixed-parameter fixture families explicitly populate `changepoints_t`, `params.k`, `params.m`,
 and `params.delta` without fitting. With the default zero floor, Prophet evaluates:

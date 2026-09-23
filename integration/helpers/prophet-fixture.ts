@@ -1034,11 +1034,22 @@ const MapUncertaintyReferenceFileSchema = Schema.Struct({
           rate: Schema.Finite,
           offset: Schema.Finite,
           capacities: Schema.Array(Schema.Finite),
-          floor: Schema.Finite,
+          floor: Schema.NullOr(Schema.Finite),
+          explicitFloors: Schema.NullOr(Schema.Array(Schema.Finite)),
         }),
       ),
       method: Schema.Literal("sample_posterior_predictive(vectorized=False)"),
       sampleCount: Schema.Int.check(Schema.isGreaterThan(0)),
+      wasmSamplesPerSeed: Schema.Int.check(
+        Schema.isGreaterThan(0),
+        Schema.isLessThanOrEqualTo(2_048),
+      ),
+      wasmSeeds: Schema.NonEmptyArray(
+        Schema.Int.check(
+          Schema.isGreaterThanOrEqualTo(0),
+          Schema.isLessThanOrEqualTo(4_294_967_295),
+        ),
+      ),
       pythonSeed: Schema.Natural,
       trainingTimestamps: Schema.NonEmptyArray(CanonicalTimestamp),
       trainingValues: Schema.NonEmptyArray(Schema.Finite),
@@ -1073,13 +1084,25 @@ const MapUncertaintyReferenceFileSchema = Schema.Struct({
       seen.add(referenceCase.id);
       const length = referenceCase.predictionTimestamps.length;
       const columns = referenceCase.additionalCoefficients.length;
+      const logistic = referenceCase.logistic;
 
       if (
         referenceCase.trainingTimestamps.length !== referenceCase.trainingValues.length ||
+        referenceCase.sampleCount !==
+          referenceCase.wasmSamplesPerSeed * referenceCase.wasmSeeds.length ||
+        new Set(referenceCase.wasmSeeds).size !== referenceCase.wasmSeeds.length ||
         referenceCase.additionalModes.length !== columns ||
         referenceCase.additionalValuesRowMajor.length !== length * columns ||
         (referenceCase.growth === "logistic") !== (referenceCase.logistic !== null) ||
-        (referenceCase.logistic !== null && referenceCase.logistic.capacities.length !== length) ||
+        (logistic !== null &&
+          (logistic.capacities.length !== length ||
+            (logistic.floor === null) === (logistic.explicitFloors === null) ||
+            (logistic.explicitFloors !== null && logistic.explicitFloors.length !== length) ||
+            logistic.capacities.some(
+              (capacity, row) =>
+                capacity <=
+                (logistic.floor ?? logistic.explicitFloors?.[row] ?? Number.POSITIVE_INFINITY),
+            ))) ||
         [referenceCase.expected.trend, referenceCase.expected.yhat].some((summary) =>
           [summary.mean, summary.variance, summary.low, summary.high].some(
             (values) => values.length !== length,

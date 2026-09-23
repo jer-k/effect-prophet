@@ -130,9 +130,64 @@ describe("seeded MAP simulation generated WASM boundary", () => {
 
     assert.deepEqual(invalid(0, new Float64Array([Number.NaN, 20])), [1]);
     assert.deepEqual(invalid(1, new Float64Array([0, 20])), [1]);
-    assert.deepEqual(invalid(5, 1), [2]);
+    assert.deepEqual(invalid(5, 1), [1]);
     assert.deepEqual(invalid(24, 2 ** 32), [1]);
     assert.deepEqual(invalid(25, 2_049), [3]);
+
+    const explicit: Array<number | Float64Array> = [...args];
+    explicit[2] = new Float64Array([2, 3]);
+    explicit[5] = 1;
+    const bounded = wasm.simulate_logistic_map_with_features(...explicit);
+    const bands = wasm.simulate_logistic_map_with_features(...explicit.slice(0, -1), 0);
+
+    assert.deepEqual(Array.from(bounded.slice(0, 4)), [0, 1, 2, 16]);
+    assert.deepEqual(Array.from(bands.slice(0, 4)), [0, 0, 2, 16]);
+    assert.equal(bounded.length, 4 + 2 * 2 * 16);
+    assert.equal(bands.length, 4 + 2 * 4);
+
+    for (let sample = 0; sample < 16; sample++) {
+      const first = ((bounded[4 + sample] ?? NaN) - 2) / 8;
+      const second = ((bounded[20 + sample] ?? NaN) - 3) / 17;
+      assert.ok(Math.abs(first - second) < 1e-14);
+    }
+
+    for (let row = 0; row < 2; row++) {
+      const floor = row === 0 ? 2 : 3;
+      const capacity = row === 0 ? 10 : 20;
+
+      for (let sample = 0; sample < 16; sample++) {
+        const trend = bounded[4 + row * 16 + sample] ?? NaN;
+
+        assert.ok(trend >= floor && trend <= capacity);
+      }
+
+      assert.ok((bands[4 + row * 4] ?? NaN) >= floor);
+      assert.ok((bands[5 + row * 4] ?? NaN) <= capacity);
+    }
+
+    const halfWidth = wasm.simulate_logistic_map_with_features(...explicit.slice(0, -2), 0.5, 1);
+    assert.deepEqual(Array.from(halfWidth), Array.from(bounded));
+    assert.deepEqual(
+      Array.from(
+        wasm.simulate_logistic_map_with_features(...explicit.slice(0, -2), 0.5, 0).slice(0, 4),
+      ),
+      [0, 0, 2, 16],
+    );
+
+    const withExplicitChange = (index: number, value: number | Float64Array) => {
+      const modified = [...explicit];
+      modified[index] = value;
+
+      return Array.from(wasm.simulate_logistic_map_with_features(...modified));
+    };
+
+    assert.deepEqual(withExplicitChange(2, new Float64Array([2])), [1]);
+    assert.deepEqual(withExplicitChange(2, new Float64Array([2, 20])), [1]);
+    assert.deepEqual(withExplicitChange(6, 1), [2]);
+    assert.deepEqual(invalid(2, new Float64Array([2, 3])), [1]);
+    assert.deepEqual(invalid(1, new Float64Array([10])), [1]);
+    assert.deepEqual(invalid(26, 0), [1]);
+    assert.deepEqual(invalid(27, 2), [1]);
   });
 
   it("rejects invalid seeds, sample counts, flags, masks and sizes before drawing", () => {

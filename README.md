@@ -2,7 +2,7 @@
 
 An Effect-based TypeScript package for time-series forecasting.
 
-The Rust/WASM backends fit ordinary least-squares linear trends plus flat, linear-piecewise, and floor-aware logistic MAP models with additive and multiplicative components. Forecasts expose trend, additive and multiplicative totals, final value, and ordered named components. TypeScript owns validation, Effect service composition, persistence, and WASM protocol translation; numerical fitting, changepoint resolution, and evaluation run in Rust. The package does not yet implement uncertainty intervals.
+The Rust/WASM backends fit ordinary least-squares linear trends plus flat, linear-piecewise, and floor-aware logistic MAP models with additive and multiplicative components. Forecasts expose trend, additive and multiplicative totals, final value, and ordered named components. TypeScript owns validation, Effect service composition, persistence, and WASM protocol translation; numerical fitting, changepoint resolution, and evaluation run in Rust. Seeded MAP predictive intervals and samples are experimental; see the [validation and interpretation report](docs/validation/uncertainty.md).
 
 ## Compatibility target
 
@@ -164,7 +164,7 @@ const seasonal = await Effect.runPromise(
 
 ## Experimental MAP predictive uncertainty
 
-`predictUncertainty(model, completeRows, { seed, samples?, intervalWidth?, output? })` runs a seeded Rust/WASM simulation for fitted **linear-piecewise and flat MAP** models (including resolved mixed components). It returns equal-tailed trend/forecast intervals by default or caller-owned row-major sample buffers with `output: "samples"`. For example:
+`predictUncertainty(model, completeRows, { seed, samples?, intervalWidth?, output? })` runs a seeded Rust/WASM simulation for fitted **linear-piecewise, flat and floor-aware logistic MAP** models (including resolved mixed components). It returns equal-tailed trend/forecast intervals by default or caller-owned row-major sample buffers with `output: "samples"`. For example:
 
 ```ts
 import { Effect } from "effect";
@@ -187,7 +187,7 @@ const bands = await Effect.runPromise(
 if (bands.kind === "intervals") console.log(bands.rows[0]?.value);
 ```
 
-`predict` remains point-only. OLS uncertainty is unsupported; linear, flat and logistic MAP uncertainty are experimental. The stochastic process follows Prophet 1.4.0's **scalar** rather than default vectorized future-trend path; fitted feature coefficients and caller-supplied future covariates do not vary. A seed replays the same ordered request within a build; Python's seeded draws, cross-version replay, statistical calibration and guaranteed coverage are not claimed. See [modeling and resource limits](docs/modeling/uncertainty.md) and the [typechecked save/reload example](examples/uncertainty.ts).
+`predict` remains point-only. OLS uncertainty is unsupported; linear, flat and logistic MAP uncertainty are experimental. The stochastic process follows Prophet 1.4.0's **scalar** rather than default vectorized future-trend path; fitted feature coefficients and caller-supplied future covariates do not vary. A seed replays the same ordered request within a build; Python's seeded draws, cross-version replay, statistical calibration and guaranteed coverage are not claimed. See [modeling and resource limits](docs/modeling/uncertainty.md), the [fitted synthetic holdout report](docs/validation/uncertainty.md) and the [typechecked save/reload example](examples/uncertainty.ts).
 
 ## Linear trend forecast
 
