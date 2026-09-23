@@ -76,9 +76,10 @@ The suite is intentionally excluded from ordinary `npm test`.
    `make_all_seasonality_features`, retaining ungated and gated matrices plus fixed components;
 10. fits one baseline and four conditional/mixed-feature explicit-changepoint cases through the
     bundled CmdStan Newton optimizer;
-11. rounds CPU-sensitive Fourier values to 12 decimal places and fitted optimizer outputs to 12
-    significant digits, well inside the fixture tolerances, then writes stable JSON with non-finite
-    values rejected.
+11. rounds CPU-sensitive Fourier values to 12 decimal places, snaps fitted optimizer residuals
+    below `1e-8` to zero, preserves positive noise scales, and rounds the remaining fitted outputs
+    to 12 significant digits, well inside the fixture tolerances, then writes stable JSON with
+    non-finite values rejected.
 
 The fixed-parameter fixture families explicitly populate `changepoints_t`, `params.k`, `params.m`,
 and `params.delta` without fitting. With the default zero floor, Prophet evaluates:
@@ -107,12 +108,14 @@ all-false regularized training block, and a condition/event/regressor combinatio
 explicit changepoint, `changepoint_prior_scale=0.2`, and the Newton algorithm, then record the
 complete design order, output-unit coefficients/noise, grouped components, and predictions. Their
 looser quantity-specific tolerances reflect cross-optimizer agreement rather than bitwise
-algorithm identity. Fitted values are canonicalized to 12 significant digits so host CPU math
-implementation differences cannot cause irrelevant last-bit fixture drift. `logistic-map.json`
-adds fixed explicit-floor/minmax and implicit-floor/absmax changing-capacity trends plus a fitted
-explicit-floor, one-changepoint Newton case. Its fitted parameters, noise, and forecasts use the
-same 12-significant-digit canonicalization and cross-optimizer tolerance policy. Ridge remains a
-distinct objective and makes no fitted-Prophet parity claim.
+algorithm identity. Fitted values below `1e-8` are canonicalized to zero, except positive noise
+scales, and all values are limited to 12 significant digits so host CPU math implementation
+differences cannot cause irrelevant last-bit fixture drift. `logistic-map.json` adds fixed
+changing-capacity trends for explicit-floor/minmax and implicit-floor/absmax cases, plus a fitted
+explicit-floor, one-changepoint Newton case. Its fitted
+parameters, noise, and forecasts use the same zero threshold, 12-significant-digit
+canonicalization, and cross-optimizer tolerance policy. Ridge remains a distinct objective and
+makes no fitted-Prophet parity claim.
 
 ## Shared comparison substrate
 
