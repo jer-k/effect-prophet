@@ -31,6 +31,11 @@
     "pretest": "npm run build:wasm",
     "test": "vitest run --dir test",
     "test:package": "npm run build && node tools/test-package.ts",
+    "example:data-policy:typecheck": "tsc --ignoreConfig --noEmit --strict --skipLibCheck --target ES2022 --module NodeNext --moduleResolution NodeNext examples/data-policy.ts",
+    "example:data-policy:run": "node examples/data-policy.ts",
+    "example:uncertainty:typecheck": "tsc --ignoreConfig --noEmit --strict --skipLibCheck --target ES2022 --module NodeNext --moduleResolution NodeNext examples/uncertainty.ts",
+    "example:uncertainty:run": "node examples/uncertainty.ts",
+    "example:data-policy": "npm run build && npm run example:data-policy:typecheck && npm run example:data-policy:run",
     "test:integration:prophet": "npm run build:wasm && vitest run --dir integration/tests/prophet-1.4.0",
     "fixtures:generate": "docker compose --profile fixtures-generate run --rm --build prophet-fixtures-generate",
     "fixtures:check": "docker compose --profile fixtures-check run --rm --build prophet-fixtures-check && docker compose --profile fixtures-check run --rm --build --no-deps effect-prophet-fixtures",
@@ -48,7 +53,7 @@
     "format:rust": "cargo fmt --manifest-path rust/prophet-wasm/Cargo.toml",
     "format:check": "oxfmt --check .",
     "format:rust:check": "cargo fmt --manifest-path rust/prophet-wasm/Cargo.toml --check",
-    "check": "npm run format:check && npm run format:rust:check && npm run lint && npm run lint:rust && npm run typecheck && npm run benchmark:typecheck && npm test && npm run benchmark:test && npm run test:integration:prophet && npm run test:rust && npm run test:wasm && npm run test:package"
+    "check": "npm run format:check && npm run format:rust:check && npm run lint && npm run lint:rust && npm run typecheck && npm run benchmark:typecheck && npm test && npm run benchmark:test && npm run test:integration:prophet && npm run test:rust && npm run test:wasm && npm run test:package && npm run example:data-policy:typecheck && npm run example:data-policy:run && npm run example:uncertainty:typecheck && npm run example:uncertainty:run"
   },
   "dependencies": {
     "effect": "4.0.0-beta.107"

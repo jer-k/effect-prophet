@@ -790,7 +790,7 @@ fn initialize_logistic(
   Ok((rate, offset))
 }
 
-fn stable_sigmoid(value: f64) -> f64 {
+pub(crate) fn stable_sigmoid(value: f64) -> f64 {
   if value >= 0.0 {
     1.0 / (1.0 + (-value).exp())
   } else {
@@ -821,7 +821,7 @@ fn eta_from_hinges(
   }
 }
 
-fn logistic_eta(
+pub(crate) fn logistic_eta(
   time: f64,
   origin: f64,
   scale: f64,

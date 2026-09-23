@@ -239,6 +239,15 @@ export interface MixedMapWasmBindings {
   readonly predict_mixed_flat_map: (...args: ReadonlyArray<unknown>) => Float64Array;
 }
 
+/** Rust/WASM binding for coarse seeded MAP prediction. */
+export interface MapUncertaintyWasmBindings {
+  /** Simulate one complete linear/flat batch and return tagged samples or intervals. */
+  readonly simulate_map_with_features: (...args: ReadonlyArray<unknown>) => Float64Array;
+
+  /** Simulate one complete floor-aware logistic batch through the same protocol. */
+  readonly simulate_logistic_map_with_features: (...args: ReadonlyArray<unknown>) => Float64Array;
+}
+
 /** Rust/WASM bindings for floor-aware logistic MAP operations. */
 export interface LogisticMapWasmBindings {
   /** Fit one complete logistic MAP request. */
@@ -254,7 +263,8 @@ export type ProphetWasmModule = LinearTrendWasmBindings &
   FlatMapWasmBindings &
   PiecewiseMapWasmBindings &
   MixedMapWasmBindings &
-  LogisticMapWasmBindings;
+  LogisticMapWasmBindings &
+  MapUncertaintyWasmBindings;
 
 /** Lazy loader that returns a checked Rust/WASM module. */
 export type ProphetWasmModuleLoader = () => ProphetWasmModule;
@@ -282,6 +292,8 @@ const requiredFunctionExports = [
   "predict_mixed_flat_map",
   "fit_logistic_map_with_features",
   "predict_logistic_map_with_features",
+  "simulate_map_with_features",
+  "simulate_logistic_map_with_features",
 ] as const;
 
 /**

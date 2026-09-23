@@ -1,0 +1,336 @@
+{
+  "cases": [
+    {
+      "additionalCoefficients": [],
+      "additionalModes": [],
+      "additionalValuesRowMajor": [],
+      "expected": {
+        "trend": {
+          "high": [
+            4.62948760841,
+            5.63145647325
+          ],
+          "low": [
+            4.57186326716,
+            5.36413417009
+          ],
+          "mean": [
+            4.60021488999,
+            5.5004938377
+          ],
+          "variance": [
+            0.00334241832285,
+            0.0266625816897
+          ]
+        },
+        "yhat": {
+          "high": [
+            5.11590298497,
+            6.03986983918
+          ],
+          "low": [
+            4.09168511638,
+            4.9670357402
+          ],
+          "mean": [
+            4.60065786678,
+            5.51082441077
+          ],
+          "variance": [
+            0.161287558084,
+            0.182239201126
+          ]
+        }
+      },
+      "growth": "linear",
+      "id": "linear",
+      "logistic": null,
+      "method": "sample_posterior_predictive(vectorized=False)",
+      "parameters": {
+        "changepointTimestamp": "2025-01-06T00:00:00.000Z",
+        "delta": 0.2,
+        "interceptOrLevel": 2.0,
+        "noiseScale": 0.4,
+        "slope": 1.6,
+        "targetOffset": 0.0,
+        "targetScale": 4.0
+      },
+      "predictionTimestamps": [
+        "2025-01-16T00:00:00.000Z",
+        "2025-01-21T00:00:00.000Z"
+      ],
+      "pythonSeed": 2831,
+      "sampleCount": 2048,
+      "tolerances": {
+        "meanAbsolute": 0.09,
+        "quantileAbsolute": 0.16,
+        "trendVarianceAbsolute": 0.014,
+        "valueVarianceAbsolute": 0.07
+      },
+      "trainingTimestamps": [
+        "2025-01-01T00:00:00.000Z",
+        "2025-01-06T00:00:00.000Z",
+        "2025-01-11T00:00:00.000Z"
+      ],
+      "trainingValues": [
+        2.0,
+        3.0,
+        4.0
+      ]
+    },
+    {
+      "additionalCoefficients": [],
+      "additionalModes": [],
+      "additionalValuesRowMajor": [],
+      "expected": {
+        "trend": {
+          "high": [
+            2.0,
+            2.0
+          ],
+          "low": [
+            2.0,
+            2.0
+          ],
+          "mean": [
+            2.0,
+            2.0
+          ],
+          "variance": [
+            0.0,
+            0.0
+          ]
+        },
+        "yhat": {
+          "high": [
+            2.51427859675,
+            2.51447372755
+          ],
+          "low": [
+            1.49180339112,
+            1.52023522504
+          ],
+          "mean": [
+            2.00044297679,
+            2.01033057307
+          ],
+          "variance": [
+            0.158977155478,
+            0.15674520046
+          ]
+        }
+      },
+      "growth": "flat",
+      "id": "flat",
+      "logistic": null,
+      "method": "sample_posterior_predictive(vectorized=False)",
+      "parameters": {
+        "changepointTimestamp": "2025-01-06T00:00:00.000Z",
+        "delta": 0.2,
+        "interceptOrLevel": 2.0,
+        "noiseScale": 0.4,
+        "slope": 1.6,
+        "targetOffset": 0.0,
+        "targetScale": 4.0
+      },
+      "predictionTimestamps": [
+        "2025-01-16T00:00:00.000Z",
+        "2025-01-21T00:00:00.000Z"
+      ],
+      "pythonSeed": 2831,
+      "sampleCount": 2048,
+      "tolerances": {
+        "meanAbsolute": 0.09,
+        "quantileAbsolute": 0.16,
+        "trendVarianceAbsolute": 0.014,
+        "valueVarianceAbsolute": 0.07
+      },
+      "trainingTimestamps": [
+        "2025-01-01T00:00:00.000Z",
+        "2025-01-06T00:00:00.000Z",
+        "2025-01-11T00:00:00.000Z"
+      ],
+      "trainingValues": [
+        2.0,
+        3.0,
+        4.0
+      ]
+    },
+    {
+      "additionalCoefficients": [
+        1.0,
+        0.25
+      ],
+      "additionalModes": [
+        "additive",
+        "multiplicative"
+      ],
+      "additionalValuesRowMajor": [
+        0.5,
+        0.5,
+        -1.0,
+        -0.5
+      ],
+      "expected": {
+        "trend": {
+          "high": [
+            4.62948760841,
+            5.63145647325
+          ],
+          "low": [
+            4.57186326716,
+            5.36413417009
+          ],
+          "mean": [
+            4.60021488999,
+            5.5004938377
+          ],
+          "variance": [
+            0.00334241832285,
+            0.0266625816897
+          ]
+        },
+        "yhat": {
+          "high": [
+            6.19273037983,
+            4.34755221226
+          ],
+          "low": [
+            5.17030397967,
+            3.29006907361
+          ],
+          "mean": [
+            5.67568472803,
+            3.82326268106
+          ],
+          "variance": [
+            0.162046385987,
+            0.176136231171
+          ]
+        }
+      },
+      "growth": "linear",
+      "id": "linear-mixed",
+      "logistic": null,
+      "method": "sample_posterior_predictive(vectorized=False)",
+      "parameters": {
+        "changepointTimestamp": "2025-01-06T00:00:00.000Z",
+        "delta": 0.2,
+        "interceptOrLevel": 2.0,
+        "noiseScale": 0.4,
+        "slope": 1.6,
+        "targetOffset": 0.0,
+        "targetScale": 4.0
+      },
+      "predictionTimestamps": [
+        "2025-01-16T00:00:00.000Z",
+        "2025-01-21T00:00:00.000Z"
+      ],
+      "pythonSeed": 2831,
+      "sampleCount": 2048,
+      "tolerances": {
+        "meanAbsolute": 0.09,
+        "quantileAbsolute": 0.16,
+        "trendVarianceAbsolute": 0.014,
+        "valueVarianceAbsolute": 0.07
+      },
+      "trainingTimestamps": [
+        "2025-01-01T00:00:00.000Z",
+        "2025-01-06T00:00:00.000Z",
+        "2025-01-11T00:00:00.000Z"
+      ],
+      "trainingValues": [
+        2.0,
+        3.0,
+        4.0
+      ]
+    },
+    {
+      "additionalCoefficients": [],
+      "additionalModes": [],
+      "additionalValuesRowMajor": [],
+      "expected": {
+        "trend": {
+          "high": [
+            9.1009077513,
+            19.3638496295
+          ],
+          "low": [
+            9.07705181619,
+            19.2761691291
+          ],
+          "mean": [
+            9.08857764489,
+            19.3202414148
+          ],
+          "variance": [
+            0.000566448027385,
+            0.00284549588164
+          ]
+        },
+        "yhat": {
+          "high": [
+            9.34592342505,
+            19.5845417825
+          ],
+          "low": [
+            8.83558478388,
+            19.0653131619
+          ],
+          "mean": [
+            9.08879913329,
+            19.3254067013
+          ],
+          "variance": [
+            0.040106044833,
+            0.0417582230568
+          ]
+        }
+      },
+      "growth": "logistic",
+      "id": "logistic",
+      "logistic": {
+        "capacities": [
+          10.0,
+          20.0
+        ],
+        "floor": 0.0,
+        "offset": 0.4,
+        "rate": 2.0
+      },
+      "method": "sample_posterior_predictive(vectorized=False)",
+      "parameters": {
+        "changepointTimestamp": "2025-01-06T00:00:00.000Z",
+        "delta": 0.1,
+        "interceptOrLevel": 2.0,
+        "noiseScale": 0.2,
+        "slope": 1.6,
+        "targetOffset": 0.0,
+        "targetScale": 4.0
+      },
+      "predictionTimestamps": [
+        "2025-01-16T00:00:00.000Z",
+        "2025-01-21T00:00:00.000Z"
+      ],
+      "pythonSeed": 2831,
+      "sampleCount": 2048,
+      "tolerances": {
+        "meanAbsolute": 0.08,
+        "quantileAbsolute": 0.12,
+        "trendVarianceAbsolute": 0.0018,
+        "valueVarianceAbsolute": 0.025
+      },
+      "trainingTimestamps": [
+        "2025-01-01T00:00:00.000Z",
+        "2025-01-06T00:00:00.000Z",
+        "2025-01-11T00:00:00.000Z"
+      ],
+      "trainingValues": [
+        2.0,
+        3.0,
+        4.0
+      ]
+    }
+  ],
+  "sourceMethod": "Python Prophet 1.4.0 scalar MAP fixed-state simulation"
+}

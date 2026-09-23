@@ -70,3 +70,14 @@ prediction rows or current defaults.
 
 The payload has no independent format version and is interpreted by the installed package's
 schema. Compatibility therefore remains experimental until the package reaches `1.0.0`.
+
+## Experimental linear/flat MAP uncertainty replay
+
+The [MAP uncertainty decision](../decisions/map-uncertainty.md) inventories the currently
+stored output-unit noise, train-only scaling, time bounds, resolved changepoint timestamps and
+deltas, and fixed feature/mode metadata. For the proposed true-empty-point scalar simulation,
+those fields reconstruct the linear/flat scalar simulation process; the caller supplies a seed and complete ordered
+prediction rows. Neither a seed nor future covariates/capacities are stored in the fitted model.
+Point-only OLS models do not store MAP observation noise and cannot simulate uncertainty.
+Missing historical noise or process state must never be silently filled during decoding or
+prediction. Same-build replay is tested through real generated WASM and JSON reload; cross-version replay is not promised. Logistic MAP uncertainty is supported experimentally; OLS uncertainty remains unsupported.

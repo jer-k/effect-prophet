@@ -1,4 +1,4 @@
-import { Effect, Result } from "effect";
+import { Effect, Exit, Predicate, Result, Tracer } from "effect";
 import { describe, expect, expectTypeOf, it } from "vitest";
 
 import {
@@ -59,6 +59,61 @@ describe("linear-trend Prophet integration", () => {
     expect(forecasts[1]?.timestamp).toBe(1_704_067_204_000);
     expect(forecasts[1]?.value).toBeCloseTo(14, linearForecastPrecisionDigits);
     expect(forecasts[1]?.trend).toBeCloseTo(14, linearForecastPrecisionDigits);
+  });
+
+  it("fits only retained complete rows and does not enter WASM for a missing target", async () => {
+    const retained = [observations[0], observations[2]];
+
+    const model = await Effect.runPromise(
+      fit(retained).pipe(Effect.provide(prophetFittingBackendLayer)),
+    );
+
+    expect(model.model).toBe("linear-trend");
+
+    if (model.model !== "linear-trend") {
+      throw new Error("Expected an OLS model from retained rows");
+    }
+
+    expect(model.timeScale).toBe(2_000);
+
+    const spans: Array<Tracer.Span> = [];
+
+    const tracer = Tracer.make({
+      span: (options) => {
+        const span = new Tracer.NativeSpan(options);
+        spans.push(span);
+
+        return span;
+      },
+    });
+
+    const error = await Effect.runPromise(
+      Effect.flip(
+        fit([
+          observations[0],
+          { timestamp: "2024-01-01T00:00:01.000Z", value: null },
+          observations[2],
+        ]).pipe(Effect.provide(prophetFittingBackendLayer), Effect.withTracer(tracer)),
+      ),
+    );
+
+    expect(error).toBeInstanceOf(InputValidationError);
+
+    if (error instanceof InputValidationError) {
+      expect(error.input).toBe("observations");
+    }
+
+    expect(spans.some((span) => span.name === "effect-prophet.wasm.fit")).toBe(false);
+
+    const publicSpan = spans.find((span) => span.name === "Prophet.fit");
+
+    expect(publicSpan).toBeDefined();
+
+    if (publicSpan === undefined || !Predicate.isTagged("Ended")(publicSpan.status)) {
+      throw new Error("Expected a completed public fit span");
+    }
+
+    expect(Exit.isFailure(publicSpan.status.exit)).toBe(true);
   });
 
   it("uses exactly the origin and scale returned by the backend", async () => {

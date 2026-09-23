@@ -40,6 +40,7 @@ CONDITIONAL_MAP_FIT_FILENAME = "conditional-map-fit.json"
 TARGET_SCALING_FILENAME = "target-scaling.json"
 MIXED_MAP_FILENAME = "mixed-map.json"
 LOGISTIC_MAP_FILENAME = "logistic-map.json"
+MAP_UNCERTAINTY_FILENAME = "map-uncertainty.json"
 MANIFEST_FILENAME = "manifest.json"
 ROOT = Path(__file__).resolve().parents[2]
 REFERENCE_PATH = ROOT / "tools" / "prophet" / "reference.json"
@@ -2211,6 +2212,132 @@ def make_logistic_map_fixture() -> dict[str, Any]:
     }
 
 
+def make_map_uncertainty_fixture() -> dict[str, Any]:
+    """Summarize fixed-state, scalar-path release draws without fitting CmdStan."""
+
+    training_dates = pd.to_datetime(["2025-01-01", "2025-01-06", "2025-01-11"])
+    prediction_dates = pd.to_datetime(["2025-01-16", "2025-01-21"])
+    cases = []
+
+    for identifier, growth, mixed in (
+        ("linear", "linear", False),
+        ("flat", "flat", False),
+        ("linear-mixed", "linear", True),
+        ("logistic", "logistic", False),
+    ):
+        model = Prophet(
+            growth=growth,
+            changepoints=[pd.Timestamp("2025-01-06")],
+            yearly_seasonality=False,
+            weekly_seasonality=False,
+            daily_seasonality=False,
+            uncertainty_samples=2048,
+        )
+        if mixed:
+            model.add_regressor("known_additive", mode="additive", standardize=False)
+            model.add_regressor("known_multiplicative", mode="multiplicative", standardize=False)
+
+        training = pd.DataFrame({"ds": training_dates, "y": [2.0, 3.0, 4.0]})
+        prediction = pd.DataFrame({"ds": prediction_dates})
+        additional_values = [0.5, 0.5, -1.0, -0.5] if mixed else []
+
+        if growth == "logistic":
+            training["cap"] = [10.0, 10.0, 10.0]
+            prediction["cap"] = [10.0, 20.0]
+
+        if mixed:
+            training["known_additive"] = [0.0, 1.0, 0.0]
+            training["known_multiplicative"] = [0.0, 1.0, 1.0]
+            prediction["known_additive"] = [0.5, -1.0]
+            prediction["known_multiplicative"] = [0.5, -0.5]
+
+        model.setup_dataframe(training, initialize_scales=True)
+        model.changepoints_t = np.asarray([0.5], dtype=np.float64)
+        model.params = {
+            "k": np.asarray([[2.0 if growth == "logistic" else 0.4]], dtype=np.float64),
+            "m": np.asarray([[0.4 if growth == "logistic" else 0.5]], dtype=np.float64),
+            "delta": np.asarray([[0.1 if growth == "logistic" else 0.05]], dtype=np.float64),
+            # Without regressors, release inserts one private zero-valued column.
+            "beta": (
+                np.asarray([[0.25, 0.25]], dtype=np.float64)
+                if mixed
+                else np.zeros((1, 1), dtype=np.float64)
+            ),
+            "sigma_obs": np.asarray([[0.05 if growth == "logistic" else 0.1]], dtype=np.float64),
+        }
+        prediction = model.setup_dataframe(prediction)
+
+        # The seed identifies only Python's reference run: our RNG is intentionally different.
+        np.random.seed(2831)
+        draws = model.sample_posterior_predictive(prediction, vectorized=False)
+        expected = {}
+
+        for name in ("trend", "yhat"):
+            values = draws[name]
+            expected[name] = {
+                "mean": [
+                    canonical_fitted_float(value, zero_threshold=0.0)
+                    for value in values.mean(axis=1)
+                ],
+                "variance": [
+                    canonical_fitted_float(value, zero_threshold=0.0)
+                    for value in values.var(axis=1)
+                ],
+                "low": [
+                    canonical_fitted_float(value, zero_threshold=0.0)
+                    for value in np.percentile(values, 10, axis=1)
+                ],
+                "high": [
+                    canonical_fitted_float(value, zero_threshold=0.0)
+                    for value in np.percentile(values, 90, axis=1)
+                ],
+            }
+
+        cases.append({
+            "id": identifier,
+            "growth": growth,
+            "additionalValuesRowMajor": additional_values,
+            "additionalCoefficients": [1.0, 0.25] if mixed else [],
+            "additionalModes": ["additive", "multiplicative"] if mixed else [],
+            "logistic": (
+                {"rate": 2.0, "offset": 0.4, "capacities": [10.0, 20.0], "floor": 0.0}
+                if growth == "logistic"
+                else None
+            ),
+            "method": "sample_posterior_predictive(vectorized=False)",
+            "sampleCount": 2048,
+            "pythonSeed": 2831,
+            "trainingTimestamps": [
+                timestamp.strftime("%Y-%m-%dT00:00:00.000Z") for timestamp in training_dates
+            ],
+            "trainingValues": [2.0, 3.0, 4.0],
+            "predictionTimestamps": [
+                timestamp.strftime("%Y-%m-%dT00:00:00.000Z") for timestamp in prediction_dates
+            ],
+            "parameters": {
+                "interceptOrLevel": 2.0,
+                "slope": 1.6,
+                "changepointTimestamp": "2025-01-06T00:00:00.000Z",
+                "delta": 0.1 if growth == "logistic" else 0.2,
+                "noiseScale": 0.2 if growth == "logistic" else 0.4,
+                "targetScale": 4.0,
+                "targetOffset": 0.0,
+            },
+            "expected": expected,
+            "tolerances": {
+                "meanAbsolute": 0.08 if growth == "logistic" else 0.09,
+                "trendVarianceAbsolute": 0.0018 if growth == "logistic" else 0.014,
+                "valueVarianceAbsolute": 0.025 if growth == "logistic" else 0.07,
+                "quantileAbsolute": 0.12 if growth == "logistic" else 0.16,
+            },
+        })
+
+    return {
+        "cases": cases,
+        "sourceMethod": "Python Prophet 1.4.0 scalar MAP fixed-state simulation",
+    }
+
+
 def find_prophet_model() -> Path:
     """Locate the model binary bundled in the installed Prophet distribution."""
 
@@ -2290,6 +2417,8 @@ def write_outputs(output: Path, execution: dict[str, str], reference: dict[str, 
     mixed_map_path.write_bytes(stable_json(make_mixed_map_fixture()))
     logistic_map_path = output / LOGISTIC_MAP_FILENAME
     logistic_map_path.write_bytes(stable_json(make_logistic_map_fixture()))
+    map_uncertainty_path = output / MAP_UNCERTAINTY_FILENAME
+    map_uncertainty_path.write_bytes(stable_json(make_map_uncertainty_fixture()))
 
     model_path = find_prophet_model()
     manifest = {
@@ -2338,6 +2467,10 @@ def write_outputs(output: Path, execution: dict[str, str], reference: dict[str, 
                 "path": LOGISTIC_MAP_FILENAME,
                 "sha256": sha256_file(logistic_map_path),
             },
+            {
+                "path": MAP_UNCERTAINTY_FILENAME,
+                "sha256": sha256_file(map_uncertainty_path),
+            },
         ],
         "backendArtifacts": [
             {
@@ -2374,6 +2507,8 @@ def compare_outputs(generated: Path, committed: Path) -> None:
         CONDITIONAL_MAP_FIT_FILENAME,
         TARGET_SCALING_FILENAME,
         MIXED_MAP_FILENAME,
+        LOGISTIC_MAP_FILENAME,
+        MAP_UNCERTAINTY_FILENAME,
         MANIFEST_FILENAME,
     ):
         generated_path = generated / filename

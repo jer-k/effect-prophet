@@ -104,6 +104,8 @@ The maintenance cost introduced by the Rust backend is a Rust toolchain and WASM
 
 ## Observations
 
+Applications prepare complete model-ready rows before calling the library: omit entire missing-target or excluded observations, decide sorting/deduplication/aggregation and UTC conversion, and provide explicit complete future rows. The package rejects malformed inputs instead of cleaning or inferring values. See the [data-preparation decision](docs/decisions/data-preparation-boundary.md), [data and edge-case guide](docs/usage/data-and-edge-cases.md), and [runnable source-to-holdout example](examples/data-policy.ts) (`npm run example:data-policy`).
+
 `decodeObservations` accepts an unknown value and returns an `Effect` that either succeeds with a non-empty observation collection or fails with `InputValidationError`. The error identifies `observations` as its input boundary and includes structured issue paths.
 
 Encoded observations use this shape:
@@ -119,7 +121,7 @@ Encoded observations use this shape:
 
 Timestamps must use the canonical UTC ISO representation emitted by Effect's `DateTime.formatIso`. Decoded timestamps are integer epoch milliseconds, keeping mutable JavaScript `Date` objects out of the numerical core. Values and regressor covariates must be finite numbers. Seasonality conditions must be actual booleans; numeric `0`/`1`, strings, null, and missing values are rejected. Every training row must contain exactly the configured regressor and condition name sets; missing and extra names are rejected rather than imputed or ignored.
 
-Collections must be non-empty and arrive in strictly ascending timestamp order. The decoder does not sort input, and duplicate timestamps are rejected.
+Collections must be non-empty and arrive in strictly ascending timestamp order. The decoder does not sort input, and duplicate timestamps are rejected. Irregular gaps are valid; they are not filled. Callers own fixed-duration versus calendar-based future schedules, and must provide required future regressors, conditions and logistic bounds for every chosen prediction row.
 
 ```ts
 import { Effect } from "effect";
@@ -140,7 +142,7 @@ Each configured custom seasonality requires a unique name, positive period in fi
 
 Built-ins deliberately default to `"off"`, unlike Python Prophet. Set an individual control to `"auto"` for Prophet 1.4.0's training-history rule, or use `{ mode: "on" }` to force its default order. Forced controls also accept positive `fourierOrder` and `priorScale` overrides. `prophetFittingBackendLayer` is total over every configuration accepted by `fit` and dispatches to the corresponding narrow numerical adapter.
 
-Linear, flat, and logistic MAP support Python Prophet's train-only `"absmax"` and `"minmax"` target scaling; absmax is the default. An explicit `scaling` option on featureless linear input selects MAP so centering and priors retain their Python meaning. The selected scaling state is persisted and reused during prediction; logistic state also records whether its floor was explicit or inferred. Country holiday catalogs and uncertainty remain out of scope. See the [target-scaling contract](docs/modeling/target-scaling.md), [linear piecewise MAP contract](docs/modeling/piecewise-map.md), [reduced flat MAP contract](docs/modeling/flat-map.md), and [logistic MAP contract](docs/modeling/logistic-map.md).
+Linear, flat, and logistic MAP support Python Prophet's train-only `"absmax"` and `"minmax"` target scaling; absmax is the default. An explicit `scaling` option on featureless linear input selects MAP so centering and priors retain their Python meaning. The selected scaling state is persisted and reused during prediction; logistic state also records whether its floor was explicit or inferred. Country holiday catalogs remain out of scope; experimental opt-in MAP uncertainty is documented below. See the [target-scaling contract](docs/modeling/target-scaling.md), [linear piecewise MAP contract](docs/modeling/piecewise-map.md), [reduced flat MAP contract](docs/modeling/flat-map.md), and [logistic MAP contract](docs/modeling/logistic-map.md).
 
 ```ts
 import { Effect } from "effect";
@@ -159,6 +161,33 @@ const seasonal = await Effect.runPromise(
   }),
 );
 ```
+
+## Experimental MAP predictive uncertainty
+
+`predictUncertainty(model, completeRows, { seed, samples?, intervalWidth?, output? })` runs a seeded Rust/WASM simulation for fitted **linear-piecewise and flat MAP** models (including resolved mixed components). It returns equal-tailed trend/forecast intervals by default or caller-owned row-major sample buffers with `output: "samples"`. For example:
+
+```ts
+import { Effect } from "effect";
+import { fit, predictUncertainty, prophetFittingBackendLayer } from "effect-prophet";
+
+const model = await Effect.runPromise(
+  fit(
+    [
+      { timestamp: "2025-01-01T00:00:00.000Z", value: 2 },
+      { timestamp: "2025-01-02T00:00:00.000Z", value: 3 },
+      { timestamp: "2025-01-03T00:00:00.000Z", value: 2.5 },
+    ],
+    { map: { changepoints: { mode: "explicit", timestamps: [] } } },
+  ).pipe(Effect.provide(prophetFittingBackendLayer)),
+);
+
+const bands = await Effect.runPromise(
+  predictUncertainty(model, ["2025-01-04T00:00:00.000Z"], { seed: 42 }),
+);
+if (bands.kind === "intervals") console.log(bands.rows[0]?.value);
+```
+
+`predict` remains point-only. OLS uncertainty is unsupported; linear, flat and logistic MAP uncertainty are experimental. The stochastic process follows Prophet 1.4.0's **scalar** rather than default vectorized future-trend path; fitted feature coefficients and caller-supplied future covariates do not vary. A seed replays the same ordered request within a build; Python's seeded draws, cross-version replay, statistical calibration and guaranteed coverage are not claimed. See [modeling and resource limits](docs/modeling/uncertainty.md) and the [typechecked save/reload example](examples/uncertainty.ts).
 
 ## Linear trend forecast
 
@@ -274,7 +303,7 @@ const forecasts = await Effect.runPromise(
 // forecasts[0].seasonalities[0].value === 0
 ```
 
-Timestamp strings remain valid for models without conditions. Conditional models require object rows containing exactly all fitted condition names. Equal timestamps with different conditions remain distinct before and after model serialization. Linear piecewise MAP supports conditions; flat MAP rejects them explicitly.
+Timestamp strings remain valid for models without conditions. Conditional models require object rows containing exactly all fitted condition names. Equal timestamps with different conditions remain distinct before and after model serialization. Linear piecewise MAP supports conditions; flat MAP supports them through mixed-mode fitting, while its reduced additive-only path rejects them.
 
 See [known additive features](docs/modeling/additive-features.md) for ordering, normalization, UTC event-window semantics, memory ownership, and the WASM protocol.
 

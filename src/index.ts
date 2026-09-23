@@ -101,6 +101,7 @@ export {
   fit,
   getRegressorCoefficients,
   predict,
+  predictUncertainty,
   type EncodedPredictionRow,
   type EncodedPredictionRows,
   type EncodedPredictionTimestamps,
@@ -114,6 +115,14 @@ export {
   type RegressorForecastComponent,
   type SeasonalForecastComponent,
 } from "./prophet";
+
+export {
+  simulationIdentity,
+  type EncodedUncertaintyOptions,
+  type UncertaintyInterval,
+  type UncertaintyOptions,
+  type UncertaintyResult,
+} from "./uncertainty";
 
 export {
   parseRegressorDefinitions,

@@ -9,6 +9,7 @@ import {
   encodeFittedModel,
   fit,
   predict,
+  predictUncertainty,
   prophetFittingBackendLayer,
   type ForecastComponent,
 } from "../src/index";
@@ -253,6 +254,34 @@ describe("conditional seasonality public lifecycle", () => {
     expect(before[0]?.events).toHaveLength(1);
     expect(before[0]?.regressors).toHaveLength(1);
     expect(after).toEqual(before);
+
+    const uncertaintyRows = [
+      ...rows,
+      {
+        timestamp: "2025-01-06T00:00:00.000Z",
+        conditions: { onSeason: true },
+        regressors: { promotion: 1 },
+      },
+    ];
+
+    const request = { seed: 5, samples: 32, output: "samples" } as const;
+    const samples = await Effect.runPromise(predictUncertainty(model, uncertaintyRows, request));
+    const replay = await Effect.runPromise(predictUncertainty(decoded, uncertaintyRows, request));
+
+    expect(replay).toEqual(samples);
+
+    if (samples.kind !== "samples") {
+      throw new Error("Expected mixed uncertainty samples");
+    }
+
+    expect(samples.trend).toHaveLength(uncertaintyRows.length * request.samples);
+    expect(samples.trend[0]).toBe(samples.trend[request.samples]);
+    expect(samples.value[0]).not.toBe(samples.value[request.samples]);
+    expect(
+      samples.trend
+        .slice(2 * request.samples)
+        .every((value) => value === samples.trend[2 * request.samples]),
+    ).toBe(true);
   });
 
   it("rejects malformed, missing, and extra condition values before WASM", async () => {
