@@ -8,7 +8,8 @@ The current portable model kinds are:
 
 - `linear-trend` — intercept, slope, and time scaling;
 - `linear-piecewise-map` — target scaling, relative piecewise trend and changepoints, ordered mode-resolved seasonality definitions and coefficients, condition names, events, fitted regressors, positive observation noise, and MAP diagnostics;
-- `flat-map` — target scaling, relative constant level, ordered mode-resolved seasonalities, events and regressors, positive observation noise, and flat MAP diagnostics.
+- `flat-map` — target scaling, relative constant level, ordered mode-resolved seasonalities, events and regressors, positive observation noise, and flat MAP diagnostics;
+- `logistic-piecewise-map` — floor-aware target scaling, dimensionless rate/time-offset/deltas, training time bounds, resolved changepoints and mixed features, output-unit noise, and logistic MAP diagnostics. Future capacities and explicit floors remain row inputs and are not persisted as curves.
 
 Payloads from the removed pre-release additive ridge model are rejected as typed decode errors;
 models are never silently refit or migrated.

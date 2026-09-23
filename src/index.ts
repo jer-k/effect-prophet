@@ -39,6 +39,7 @@ export {
   type EncodedFittedRegressor,
   type EncodedFlatMapModel,
   type EncodedLinearModel,
+  type EncodedLogisticMapModel,
   type EncodedPiecewiseMapModel,
   type SerializableFittedModel,
 } from "./model-serialization";
@@ -55,6 +56,7 @@ export {
   type EncodedFlatTrendOptions,
   type EncodedLinearAdditiveOptions,
   type EncodedLinearTrendOptions,
+  type EncodedLogisticOptions,
   type EncodedMapOptions,
   type EncodedChangepointSetting,
   type EncodedProphetOptions,
@@ -63,6 +65,7 @@ export {
   type Growth,
   type LinearAdditiveOptions,
   type LinearTrendOptions,
+  type LogisticOptions,
   type MapOptions,
   type MapOptimizerControls,
   type ChangepointSetting,
@@ -72,11 +75,15 @@ export {
 export {
   type FittedFlatMapProphet,
   type FittedLinearProphet,
+  type FittedLogisticMapProphet,
   type FittedPiecewiseMapProphet,
   type FittedProphet,
   type FlatMapParameters,
+  type LogisticMapParameters,
   type PiecewiseMapParameters,
 } from "./fitted-model";
+
+export { type LogisticFloorPolicy, type LogisticTargetScaling } from "./logistic";
 
 export {
   defaultSeasonalityPriorScale,

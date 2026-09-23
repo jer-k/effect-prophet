@@ -1069,6 +1069,7 @@ const FixtureManifestSchema = Schema.Struct({
       "conditional-map-fit.json",
       "target-scaling.json",
       "mixed-map.json",
+      "logistic-map.json",
     ]) {
       if (!paths.has(requiredPath)) {
         return {

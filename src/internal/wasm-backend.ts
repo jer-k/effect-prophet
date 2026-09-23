@@ -224,7 +224,11 @@ export const packKnownAdditiveFeatures = (
   return { packedMasks, values, priors, offsets, counts };
 };
 
-type WasmModelType = "flat-map" | "linear-piecewise-map" | "linear-trend";
+type WasmModelType =
+  | "flat-map"
+  | "linear-piecewise-map"
+  | "logistic-piecewise-map"
+  | "linear-trend";
 
 type SeasonalPredictionStatuses = {
   readonly success: number;
@@ -347,7 +351,7 @@ export const decodeSeasonalPredictions = (
 
 /** Build stable span options for a WASM fitting boundary. */
 export const wasmFitSpanOptions = (
-  model: { readonly type: WasmModelType; readonly growth: "flat" | "linear" },
+  model: { readonly type: WasmModelType; readonly growth: "flat" | "linear" | "logistic" },
   observationCount: number,
   seasonalCounts?: { readonly components: number; readonly coefficients: number },
   scaling?: TargetScalingMode,

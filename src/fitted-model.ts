@@ -9,6 +9,7 @@ import { EventCalendarSchema, emptyEventCalendar } from "./event";
 import { FittedRegressorSchema } from "./regressor";
 import { SeasonalityLayoutSchema } from "./seasonality";
 import { PositiveFinite } from "./internal/numeric-schemas";
+import { LogisticTargetScalingSchema } from "./logistic";
 import { TargetScalingSchema } from "./target-scaling";
 
 const LinearModel = Schema.Literal("linear-trend");
@@ -17,8 +18,10 @@ const FlatMapModel = Schema.Literal("flat-map");
 
 const PiecewiseMapModel = Schema.Literal("linear-piecewise-map");
 
+const LogisticMapModel = Schema.Literal("logistic-piecewise-map");
+
 const ModelDiscriminantSchema = Schema.Struct({
-  model: Schema.Union([LinearModel, FlatMapModel, PiecewiseMapModel]),
+  model: Schema.Union([LinearModel, FlatMapModel, PiecewiseMapModel, LogisticMapModel]),
 });
 
 const LinearParametersSchema = Schema.Struct({
@@ -345,6 +348,105 @@ const PiecewiseMapParametersSchema = PiecewiseMapParametersFieldsSchema.check(
   consistentPiecewiseMapParameters,
 );
 
+const LogisticMapFitSummarySchema = Schema.Struct({
+  method: Schema.Literal("logistic-piecewise-map-proximal-v1"),
+  termination: Schema.Literal("converged"),
+  valueScale: PositiveFinite,
+  observationCount: Schema.Int.check(Schema.isGreaterThanOrEqualTo(2)),
+  iterations: Schema.Int.check(Schema.isGreaterThan(0)),
+  objective: Schema.Finite,
+  stationarityResidual: Schema.Finite.check(Schema.isGreaterThanOrEqualTo(0)),
+  changepointPriorScale: PositiveFinite,
+});
+
+const LogisticMapParametersFieldsSchema = Schema.Struct({
+  model: LogisticMapModel,
+  targetScaling: LogisticTargetScalingSchema,
+  rate: Schema.Finite,
+  offset: Schema.Finite,
+  timeOrigin: Schema.Int,
+  timeScale: Schema.Int.check(Schema.isGreaterThan(0)),
+  changepointTimestamps: Schema.Array(Schema.Int),
+  deltas: Schema.Array(Schema.Finite),
+  seasonalities: SeasonalityLayoutSchema,
+  coefficients: Schema.Array(Schema.Finite),
+  events: EventCalendarSchema,
+  eventCoefficients: Schema.Array(Schema.Finite),
+  regressors: Schema.Array(FittedRegressorSchema),
+  noiseScale: PositiveFinite,
+  fitSummary: LogisticMapFitSummarySchema,
+});
+
+type LogisticMapParametersFields = typeof LogisticMapParametersFieldsSchema.Type;
+
+const consistentLogisticMapParameters = Schema.makeFilter<LogisticMapParametersFields>(
+  (parameters) => {
+    const issues: Array<{ readonly path: ReadonlyArray<PropertyKey>; readonly issue: string }> = [];
+
+    if (parameters.targetScaling.scale !== parameters.fitSummary.valueScale) {
+      issues.push({
+        path: ["targetScaling", "scale"],
+        issue: "Target scale must match the fitted objective value scale",
+      });
+    }
+
+    if (parameters.changepointTimestamps.length !== parameters.deltas.length) {
+      issues.push({ path: ["deltas"], issue: "Changepoint timestamps and deltas must align" });
+    }
+
+    if (parameters.coefficients.length !== parameters.seasonalities.coefficientCount) {
+      issues.push({
+        path: ["coefficients"],
+        issue: `Expected exactly ${parameters.seasonalities.coefficientCount} seasonal coefficients`,
+      });
+    }
+
+    if (parameters.eventCoefficients.length !== parameters.events.layout.coefficientCount) {
+      issues.push({
+        path: ["eventCoefficients"],
+        issue: `Expected exactly ${parameters.events.layout.coefficientCount} event coefficients`,
+      });
+    }
+
+    issues.push(...featureIdentityIssues(parameters));
+
+    const end = parameters.timeOrigin + parameters.timeScale;
+
+    if (
+      !Number.isSafeInteger(parameters.timeOrigin) ||
+      !Number.isSafeInteger(parameters.timeScale) ||
+      !Number.isSafeInteger(end)
+    ) {
+      issues.push({
+        path: ["timeScale"],
+        issue: "Training time bounds must remain inside safe integer arithmetic",
+      });
+    }
+
+    for (const [index, changepoint] of parameters.changepointTimestamps.entries()) {
+      const previous = parameters.changepointTimestamps[index - 1];
+
+      if (
+        !Number.isSafeInteger(changepoint) ||
+        changepoint < parameters.timeOrigin ||
+        changepoint > end ||
+        (previous !== undefined && changepoint <= previous)
+      ) {
+        issues.push({
+          path: ["changepointTimestamps", index],
+          issue: "Changepoints must be safe, strictly increasing timestamps in training bounds",
+        });
+      }
+    }
+
+    return issues;
+  },
+);
+
+const LogisticMapParametersSchema = LogisticMapParametersFieldsSchema.check(
+  consistentLogisticMapParameters,
+);
+
 const FittedLinearProphetSchema = LinearParametersSchema.pipe(
   Schema.brand("effect-prophet/FittedLinearProphet"),
 );
@@ -357,10 +459,15 @@ const FittedPiecewiseMapProphetSchema = PiecewiseMapParametersSchema.pipe(
   Schema.brand("effect-prophet/FittedPiecewiseMapProphet"),
 );
 
+const FittedLogisticMapProphetSchema = LogisticMapParametersSchema.pipe(
+  Schema.brand("effect-prophet/FittedLogisticMapProphet"),
+);
+
 const FittedProphetSchema = Schema.Union([
   FittedLinearProphetSchema,
   FittedFlatMapProphetSchema,
   FittedPiecewiseMapProphetSchema,
+  FittedLogisticMapProphetSchema,
 ]);
 
 type ParsedPiecewiseMapParameters = typeof PiecewiseMapParametersSchema.Type;
@@ -385,8 +492,17 @@ export type PiecewiseMapParameters = Omit<ParsedPiecewiseMapParameters, "regress
   readonly regressors?: ParsedPiecewiseMapParameters["regressors"];
 };
 
+type ParsedLogisticMapParameters = typeof LogisticMapParametersSchema.Type;
+
+/** Complete, untrusted fitted state for a logistic piecewise MAP model. */
+export type LogisticMapParameters = ParsedLogisticMapParameters;
+
 /** Untrusted fitted parameters returned by a fitting backend. */
-export type Parameters = LinearParameters | FlatMapParameters | PiecewiseMapParameters;
+export type Parameters =
+  | LinearParameters
+  | FlatMapParameters
+  | PiecewiseMapParameters
+  | LogisticMapParameters;
 
 /** A parsed ordinary least-squares linear-trend model. */
 export type FittedLinearProphet = typeof FittedLinearProphetSchema.Type;
@@ -396,6 +512,9 @@ export type FittedFlatMapProphet = typeof FittedFlatMapProphetSchema.Type;
 
 /** A trusted, deeply immutable linear piecewise MAP model. */
 export type FittedPiecewiseMapProphet = typeof FittedPiecewiseMapProphetSchema.Type;
+
+/** A trusted, deeply immutable logistic piecewise MAP model. */
+export type FittedLogisticMapProphet = typeof FittedLogisticMapProphetSchema.Type;
 
 /** A parsed fitted model accepted by the public prediction operation. */
 export type FittedProphet = typeof FittedProphetSchema.Type;
@@ -431,13 +550,19 @@ const decodePiecewiseMapModel = Schema.decodeUnknownEffect(FittedPiecewiseMapPro
   errors: "all",
 });
 
+const decodeLogisticMapModel = Schema.decodeUnknownEffect(FittedLogisticMapProphetSchema, {
+  errors: "all",
+});
+
 const decodeFittedModel = Schema.decodeUnknownEffect(FittedProphetSchema, {
   errors: "all",
 });
 
 const freezeLinearModel = (model: FittedLinearProphet): FittedLinearProphet => Object.freeze(model);
 
-const freezeFeatureModel = <Model extends FittedFlatMapProphet | FittedPiecewiseMapProphet>(
+const freezeFeatureModel = <
+  Model extends FittedFlatMapProphet | FittedPiecewiseMapProphet | FittedLogisticMapProphet,
+>(
   model: Model,
 ): Model => {
   for (const component of model.seasonalities.components) {
@@ -449,7 +574,11 @@ const freezeFeatureModel = <Model extends FittedFlatMapProphet | FittedPiecewise
   Object.freeze(model.seasonalities);
   Object.freeze(model.coefficients);
 
-  if (model.model === "flat-map" || model.model === "linear-piecewise-map") {
+  if (
+    model.model === "flat-map" ||
+    model.model === "linear-piecewise-map" ||
+    model.model === "logistic-piecewise-map"
+  ) {
     for (const occurrence of model.events.occurrences) {
       Object.freeze(occurrence);
     }
@@ -479,9 +608,13 @@ const freezeFeatureModel = <Model extends FittedFlatMapProphet | FittedPiecewise
     Object.freeze(model.regressors);
   }
 
-  if (model.model === "linear-piecewise-map") {
+  if (model.model === "linear-piecewise-map" || model.model === "logistic-piecewise-map") {
     Object.freeze(model.changepointTimestamps);
     Object.freeze(model.deltas);
+  }
+
+  if (model.model === "logistic-piecewise-map") {
+    Object.freeze(model.targetScaling.floorPolicy);
   }
 
   Object.freeze(model.targetScaling);
@@ -491,7 +624,11 @@ const freezeFeatureModel = <Model extends FittedFlatMapProphet | FittedPiecewise
 };
 
 const freezeFittedModel = (model: FittedProphet): FittedProphet => {
-  if (model.model === "flat-map" || model.model === "linear-piecewise-map") {
+  if (
+    model.model === "flat-map" ||
+    model.model === "linear-piecewise-map" ||
+    model.model === "logistic-piecewise-map"
+  ) {
     return freezeFeatureModel(model);
   }
 
@@ -543,6 +680,15 @@ export const parsePiecewiseMapModel = (
   input: FirstArgument<typeof decodePiecewiseMapModel>,
 ): Effect.Effect<FittedPiecewiseMapProphet, InvalidFittedModel> =>
   decodePiecewiseMapModel(input).pipe(
+    Effect.map(freezeFeatureModel),
+    Effect.mapError((error) => invalidFittedModelFromIssue(error.issue)),
+  );
+
+/** Parse complete logistic MAP state into a fresh, deeply frozen model. */
+export const parseLogisticMapModel = (
+  input: FirstArgument<typeof decodeLogisticMapModel>,
+): Effect.Effect<FittedLogisticMapProphet, InvalidFittedModel> =>
+  decodeLogisticMapModel(input).pipe(
     Effect.map(freezeFeatureModel),
     Effect.mapError((error) => invalidFittedModelFromIssue(error.issue)),
   );

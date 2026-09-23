@@ -271,7 +271,7 @@ describe("linear-trend Prophet integration", () => {
     );
 
     // @ts-expect-error -- Invalid JavaScript input still exercises runtime option parsing.
-    const program = fit(observations, { growth: "logistic" }).pipe(
+    const program = fit(observations, { growth: "constant" }).pipe(
       Effect.provide(testBackend.layer),
     );
 

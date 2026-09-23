@@ -24,6 +24,8 @@ const validModule: ProphetWasmModule = {
   fit_mixed_flat_map: () => new Float64Array([0]),
   predict_mixed_linear_map: () => new Float64Array([0]),
   predict_mixed_flat_map: () => new Float64Array([0]),
+  fit_logistic_map_with_features: () => new Float64Array([0]),
+  predict_logistic_map_with_features: () => new Float64Array([0]),
 };
 
 describe("Prophet WASM module boundary", () => {

@@ -622,7 +622,7 @@ fn validate_common(
   validate_component_modes(seasonalities, layout, modes, seasonal_count)
 }
 
-fn validate_component_modes(
+pub(crate) fn validate_component_modes(
   seasonalities: &[SeasonalitySpec],
   layout: AdditionalFeatureLayoutView<'_>,
   modes: &[ComponentMode],
@@ -689,7 +689,7 @@ fn parse_seasonalities(
     .collect()
 }
 
-fn make_combined_features(
+pub(crate) fn make_combined_features(
   timestamps: &[f64],
   seasonalities: &[FourierSeasonality],
   masks: SeasonalityMaskView<'_>,
@@ -755,7 +755,7 @@ fn make_trend_design(
   Ok(design)
 }
 
-fn feature_priors(
+pub(crate) fn feature_priors(
   seasonalities: &[SeasonalitySpec],
   additional: AdditionalFeatureLayoutView<'_>,
   seasonal_count: usize,
@@ -866,7 +866,7 @@ fn is_delta_column(trend: MixedTrendInput<'_>, column: usize) -> bool {
   matches!(trend, MixedTrendInput::Linear { .. }) && column >= 2
 }
 
-fn soft_threshold(value: f64, threshold: f64) -> f64 {
+pub(crate) fn soft_threshold(value: f64, threshold: f64) -> f64 {
   if value > threshold {
     value - threshold
   } else if value < -threshold {

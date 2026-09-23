@@ -18,9 +18,18 @@ import {
   parseFittedModel,
   type FittedFlatMapProphet,
   type FittedLinearProphet,
+  type FittedLogisticMapProphet,
   type FittedPiecewiseMapProphet,
   type FittedProphet,
 } from "./fitted-model";
+import {
+  parseLogisticPredictionBounds,
+  parseLogisticTrainingBounds,
+  rejectNonLogisticPredictionBounds,
+  rejectNonLogisticTrainingBounds,
+  type LogisticPredictionBounds,
+  type LogisticTrainingBounds,
+} from "./logistic";
 import {
   concatenateKnownAdditiveFeatures,
   type KnownAdditiveFeatures,
@@ -37,6 +46,7 @@ import { resolveSeasonalities } from "./internal/seasonality-resolution";
 import { createSeasonalityMasks } from "./internal/seasonality-masks";
 import { predictFlatMapWithWasm } from "./internal/wasm-flat-map-backend";
 import { predictLinearTrendWithWasm } from "./internal/wasm-linear-trend-backend";
+import { predictLogisticMapWithWasm } from "./internal/wasm-logistic-map-backend";
 import {
   predictMixedFlatMapWithWasm,
   predictMixedLinearMapWithWasm,
@@ -176,7 +186,7 @@ const checkExplicitChangepointBounds = (
 ): Effect.Effect<void, InputValidationError> => {
   if (
     observations.length < 2 ||
-    options.growth !== "linear" ||
+    options.growth === "flat" ||
     options.map === undefined ||
     options.map.changepoints.mode !== "explicit"
   ) {
@@ -216,7 +226,23 @@ const makeFitPlan = (
   masks: SeasonalityMaskMatrix,
   additionalFeatures: KnownAdditiveFeatures,
   regressors: ReadonlyArray<ResolvedRegressor>,
+  logisticBounds?: LogisticTrainingBounds,
 ): FitPlan => {
+  if (options.growth === "logistic" && logisticBounds !== undefined) {
+    return FitPlan.LogisticPiecewiseMap({
+      scaling: options.scaling ?? defaultTargetScalingMode,
+      bounds: logisticBounds,
+      seasonalities: layout,
+      changepoints: options.map.changepoints,
+      changepointPriorScale: options.map.changepointPriorScale,
+      optimizer: options.map.optimizer,
+      seasonalityMasks: masks,
+      additionalFeatures,
+      events: options.events,
+      regressors,
+    });
+  }
+
   const hasMultiplicativeComponent =
     layout.components.some((component) => component.definition.mode === "multiplicative") ||
     additionalFeatures.layout.components.some((component) => component.mode === "multiplicative");
@@ -502,6 +528,17 @@ export const fit = Effect.fn("Prophet.fit")(function* (
 
   yield* checkExplicitChangepointBounds(observations, options);
 
+  let logisticBounds: LogisticTrainingBounds | undefined;
+
+  if (options.growth === "logistic") {
+    logisticBounds = yield* parseLogisticTrainingBounds(
+      observations,
+      options.scaling ?? defaultTargetScalingMode,
+    );
+  } else {
+    yield* rejectNonLogisticTrainingBounds(observations);
+  }
+
   const alignedConditionValues = yield* alignConditionValues(
     observations,
     conditionNames,
@@ -549,6 +586,7 @@ export const fit = Effect.fn("Prophet.fit")(function* (
     masks,
     additionalFeatures,
     regressorFeatures.regressors,
+    logisticBounds,
   );
 
   const enabledBuiltInCount = resolved.decisions.reduce(
@@ -645,7 +683,10 @@ const predictLinearForecasts = (
     return forecasts;
   });
 
-type FittedSeasonalProphet = FittedFlatMapProphet | FittedPiecewiseMapProphet;
+type FittedSeasonalProphet =
+  | FittedFlatMapProphet
+  | FittedPiecewiseMapProphet
+  | FittedLogisticMapProphet;
 
 type SeasonalPredictionBatch = {
   readonly values: Float64Array;
@@ -971,7 +1012,7 @@ const predictPiecewiseMapForecasts = (
       });
 
 const predictMixedMapForecasts = (
-  model: FittedSeasonalProphet,
+  model: FittedFlatMapProphet | FittedPiecewiseMapProphet,
   timestamps: PredictionTimestamps,
   alignedRegressorValues: ReadonlyArray<ReadonlyArray<number>>,
   masks: SeasonalityMaskMatrix,
@@ -993,12 +1034,33 @@ const predictMixedMapForecasts = (
     return yield* forecastsFromMixedBatch(model, timestamps, batch);
   });
 
-const isMixedModel = (model: FittedSeasonalProphet): boolean =>
+const predictLogisticMapForecasts = (
+  model: FittedLogisticMapProphet,
+  timestamps: PredictionTimestamps,
+  bounds: Parameters<typeof predictLogisticMapWithWasm>[2],
+  alignedRegressorValues: ReadonlyArray<ReadonlyArray<number>>,
+  masks: SeasonalityMaskMatrix,
+): Effect.Effect<Forecasts, PredictionError | InputValidationError> =>
+  Effect.gen(function* () {
+    const { features } = yield* makePredictionFeatures(
+      timestamps,
+      alignedRegressorValues,
+      masks,
+      model.events,
+      model.regressors,
+    );
+
+    const batch = yield* predictLogisticMapWithWasm(model, timestamps, bounds, masks, features);
+
+    return yield* forecastsFromMixedBatch(model, timestamps, batch);
+  });
+
+const isMixedModel = (model: FittedFlatMapProphet | FittedPiecewiseMapProphet): boolean =>
   model.fitSummary.method === "mixed-flat-map-coordinate-v1" ||
   model.fitSummary.method === "mixed-piecewise-map-coordinate-v1";
 
 const predictFittedSeasonalModel = (
-  model: FittedSeasonalProphet,
+  model: FittedFlatMapProphet | FittedPiecewiseMapProphet,
   timestamps: PredictionTimestamps,
   alignedRegressorValues: ReadonlyArray<ReadonlyArray<number>>,
   masks: SeasonalityMaskMatrix,
@@ -1014,7 +1076,11 @@ const predictFittedSeasonalModel = (
       );
 
 const fittedRegressors = (model: FittedProphet): ReadonlyArray<FittedRegressor> =>
-  model.model === "linear-piecewise-map" || model.model === "flat-map" ? model.regressors : [];
+  model.model === "linear-piecewise-map" ||
+  model.model === "flat-map" ||
+  model.model === "logistic-piecewise-map"
+    ? model.regressors
+    : [];
 
 /** Return fitted regressor coefficients in original input units. */
 export const getRegressorCoefficients = (
@@ -1057,6 +1123,17 @@ export const predict = Effect.fn("Prophet.predict")(function* (
   const conditionNames =
     parsedModel.model === "linear-trend" ? [] : conditionNamesFromLayout(parsedModel.seasonalities);
 
+  let logisticBounds: LogisticPredictionBounds | undefined;
+
+  if (parsedModel.model === "logistic-piecewise-map") {
+    logisticBounds = yield* parseLogisticPredictionBounds(
+      rows,
+      parsedModel.targetScaling.floorPolicy,
+    );
+  } else {
+    yield* rejectNonLogisticPredictionBounds(rows);
+  }
+
   const alignedConditionValues = yield* alignConditionValues(
     rows,
     conditionNames,
@@ -1081,6 +1158,26 @@ export const predict = Effect.fn("Prophet.predict")(function* (
     parsedModel.seasonalities,
     alignedConditionValues,
   ).pipe(Effect.mapError((error) => conditionValidationError("prediction-rows", error)));
+
+  if (parsedModel.model === "logistic-piecewise-map") {
+    if (logisticBounds === undefined) {
+      return yield* Effect.fail(
+        new PredictionError({
+          reason: "invalid-model",
+          timestamp: firstRow.timestamp,
+          message: "Logistic prediction bounds were not resolved",
+        }),
+      );
+    }
+
+    return yield* predictLogisticMapForecasts(
+      parsedModel,
+      timestamps,
+      logisticBounds,
+      alignedRegressorValues,
+      masks,
+    );
+  }
 
   return yield* predictFittedSeasonalModel(parsedModel, timestamps, alignedRegressorValues, masks);
 });

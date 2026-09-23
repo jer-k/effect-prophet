@@ -69,7 +69,7 @@ const predictionStatus = {
   nonFiniteResult: 5,
 } as const;
 
-const modesFor = (
+export const modesFor = (
   seasonalities: SeasonalityLayout,
   features: KnownAdditiveFeatures,
 ): Float64Array => {

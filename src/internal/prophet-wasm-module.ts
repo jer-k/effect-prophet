@@ -239,12 +239,22 @@ export interface MixedMapWasmBindings {
   readonly predict_mixed_flat_map: (...args: ReadonlyArray<unknown>) => Float64Array;
 }
 
+/** Rust/WASM bindings for floor-aware logistic MAP operations. */
+export interface LogisticMapWasmBindings {
+  /** Fit one complete logistic MAP request. */
+  readonly fit_logistic_map_with_features: (...args: ReadonlyArray<unknown>) => Float64Array;
+
+  /** Predict one complete logistic MAP batch. */
+  readonly predict_logistic_map_with_features: (...args: ReadonlyArray<unknown>) => Float64Array;
+}
+
 /** Complete generated Rust/WASM module contract required by this package version. */
 export type ProphetWasmModule = LinearTrendWasmBindings &
   AdditiveFeatureWasmBindings &
   FlatMapWasmBindings &
   PiecewiseMapWasmBindings &
-  MixedMapWasmBindings;
+  MixedMapWasmBindings &
+  LogisticMapWasmBindings;
 
 /** Lazy loader that returns a checked Rust/WASM module. */
 export type ProphetWasmModuleLoader = () => ProphetWasmModule;
@@ -270,6 +280,8 @@ const requiredFunctionExports = [
   "fit_mixed_flat_map",
   "predict_mixed_linear_map",
   "predict_mixed_flat_map",
+  "fit_logistic_map_with_features",
+  "predict_logistic_map_with_features",
 ] as const;
 
 /**

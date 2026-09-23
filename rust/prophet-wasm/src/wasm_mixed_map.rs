@@ -15,10 +15,10 @@ use crate::wasm_map::{
 };
 use crate::wasm_protocol::{parse_nonnegative_integer, parse_positive_integer};
 
-struct ParsedMetadata {
-  masks: Vec<u8>,
-  offsets: Vec<usize>,
-  counts: Vec<usize>,
+pub(crate) struct ParsedMetadata {
+  pub(crate) masks: Vec<u8>,
+  pub(crate) offsets: Vec<usize>,
+  pub(crate) counts: Vec<usize>,
 }
 
 /// Fit a mixed additive/multiplicative linear MAP model through one checked WASM call.
@@ -401,14 +401,14 @@ fn pack_flat_fit(model: crate::mixed_map::MixedMapModel) -> Vec<f64> {
   packed
 }
 
-fn termination_code(termination: crate::piecewise_map::MapTermination) -> f64 {
+pub(crate) fn termination_code(termination: crate::piecewise_map::MapTermination) -> f64 {
   match termination {
     crate::piecewise_map::MapTermination::Converged => 0.0,
     crate::piecewise_map::MapTermination::ConstantTargetShortcut => 1.0,
   }
 }
 
-fn parse_modes(values: &[f64]) -> Result<Vec<ComponentMode>, ()> {
+pub(crate) fn parse_modes(values: &[f64]) -> Result<Vec<ComponentMode>, ()> {
   values
     .iter()
     .map(|value| match *value {
@@ -420,7 +420,7 @@ fn parse_modes(values: &[f64]) -> Result<Vec<ComponentMode>, ()> {
 }
 
 #[allow(clippy::too_many_arguments)]
-fn parse_metadata(
+pub(crate) fn parse_metadata(
   row_count: usize,
   seasonal_component_count: usize,
   masks: &[f64],
@@ -462,7 +462,7 @@ fn parse_metadata(
   })
 }
 
-fn parse_seasonalities(
+pub(crate) fn parse_seasonalities(
   periods: &[f64],
   orders: &[f64],
   priors: Option<&[f64]>,
@@ -492,7 +492,11 @@ fn parse_seasonalities(
     .collect()
 }
 
-fn parse_controls(max_iterations: f64, relative: f64, absolute: f64) -> Option<MapControls> {
+pub(crate) fn parse_controls(
+  max_iterations: f64,
+  relative: f64,
+  absolute: f64,
+) -> Option<MapControls> {
   if !relative.is_finite() || relative <= 0.0 || !absolute.is_finite() || absolute <= 0.0 {
     return None;
   }
@@ -504,7 +508,7 @@ fn parse_controls(max_iterations: f64, relative: f64, absolute: f64) -> Option<M
   })
 }
 
-fn parse_changepoints(
+pub(crate) fn parse_changepoints(
   timestamps: &[f64],
   mode: f64,
   explicit: &[f64],
@@ -527,7 +531,7 @@ fn parse_changepoints(
   resolve_automatic_changepoints(timestamps, count, range).map_err(|_| ())
 }
 
-fn mask_view<'a>(
+pub(crate) fn mask_view<'a>(
   rows: usize,
   components: usize,
   metadata: &'a ParsedMetadata,
@@ -539,7 +543,7 @@ fn mask_view<'a>(
   }
 }
 
-fn matrix_view(rows: usize, columns: usize, values: &[f64]) -> FeatureMatrixView<'_> {
+pub(crate) fn matrix_view(rows: usize, columns: usize, values: &[f64]) -> FeatureMatrixView<'_> {
   FeatureMatrixView {
     row_count: rows,
     column_count: columns,
@@ -547,7 +551,7 @@ fn matrix_view(rows: usize, columns: usize, values: &[f64]) -> FeatureMatrixView
   }
 }
 
-fn layout_view<'a>(
+pub(crate) fn layout_view<'a>(
   priors: &'a [f64],
   offsets: &'a [usize],
   counts: &'a [usize],
