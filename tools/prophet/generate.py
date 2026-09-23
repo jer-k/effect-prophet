@@ -28,6 +28,7 @@ EXPECTED_PROPHET_VERSION = "1.4.0"
 EXPECTED_CONTAINER_PLATFORM = "linux/amd64"
 FOURIER_DECIMAL_PLACES = 12
 FITTED_SIGNIFICANT_DIGITS = 12
+FITTED_ZERO_THRESHOLD = 1e-8
 LINEAR_TREND_FILENAME = "linear-trend.json"
 FOURIER_FILENAME = "fourier.json"
 PIECEWISE_LINEAR_FILENAME = "piecewise-linear.json"
@@ -489,10 +490,17 @@ def canonical_fourier_float(value: np.floating[Any]) -> float:
     return 0.0 if rounded == 0.0 else rounded
 
 
-def canonical_fitted_float(value: Any) -> float:
-    """Round optimizer output to stable significant digits across amd64 CPU implementations."""
+def canonical_fitted_float(
+    value: Any, *, zero_threshold: float = FITTED_ZERO_THRESHOLD
+) -> float:
+    """Canonicalize optimizer output across supported amd64 CPU implementations."""
 
-    rounded = float(format(float(value), f".{FITTED_SIGNIFICANT_DIGITS}g"))
+    numeric = float(value)
+
+    if abs(numeric) < zero_threshold:
+        return 0.0
+
+    rounded = float(format(numeric, f".{FITTED_SIGNIFICANT_DIGITS}g"))
 
     return 0.0 if rounded == 0.0 else rounded
 
@@ -1173,7 +1181,8 @@ def make_linear_map_fit_fixture() -> dict[str, Any]:
             ],
             "intercept": canonical_fitted_float(model.params["m"][0][0] * model.y_scale),
             "noiseScale": canonical_fitted_float(
-                model.params["sigma_obs"][0][0] * model.y_scale
+                model.params["sigma_obs"][0][0] * model.y_scale,
+                zero_threshold=0.0,
             ),
             "slope": canonical_fitted_float(model.params["k"][0][0] * model.y_scale),
             "trend": [canonical_fitted_float(value) for value in prediction["trend"]],
@@ -1404,7 +1413,8 @@ def make_conditional_map_fit_fixture() -> dict[str, Any]:
                         for value in features.to_numpy(dtype=np.float64).ravel()
                     ],
                     "noiseScale": canonical_fitted_float(
-                        model.params["sigma_obs"][0][0] * model.y_scale
+                        model.params["sigma_obs"][0][0] * model.y_scale,
+                        zero_threshold=0.0,
                     ),
                     "observationUnitCoefficients": [
                         canonical_fitted_float(value * model.y_scale)
@@ -1935,7 +1945,8 @@ def make_mixed_map_fixture() -> dict[str, Any]:
                 ),
                 "coefficients": coefficients,
                 "noiseScale": canonical_fitted_float(
-                    model.params["sigma_obs"][0][0] * model.y_scale
+                    model.params["sigma_obs"][0][0] * model.y_scale,
+                    zero_threshold=0.0,
                 ),
                 "scaledLikelihoodMean": [
                     canonical_fitted_float(value) for value in likelihood_mean
@@ -2184,7 +2195,8 @@ def make_logistic_map_fixture() -> dict[str, Any]:
                         canonical_fitted_float(value) for value in fitted.params["delta"][0]
                     ],
                     "noiseScale": canonical_fitted_float(
-                        fitted.params["sigma_obs"][0][0] * fitted.y_scale
+                        fitted.params["sigma_obs"][0][0] * fitted.y_scale,
+                        zero_threshold=0.0,
                     ),
                     "trend": [
                         canonical_fitted_float(value) for value in fitted_prediction["trend"]

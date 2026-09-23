@@ -14,7 +14,6 @@ import {
   predict,
   prophetFittingBackendLayer,
   type FittedProphet,
-  type ForecastComponent,
   type Forecasts,
 } from "effect-prophet";
 
@@ -29,6 +28,7 @@ import { effectOptionsForCase } from "../effect-case.ts";
 import {
   BenchmarkMeasurementSchema,
   CorrectnessProjectionSchema,
+  ForecastProjectionSchema,
   parseImplementationResult,
   type BenchmarkEnvironment,
   type BenchmarkFailure,
@@ -61,11 +61,15 @@ interface PreparedInput {
   readonly observations: ReadonlyArray<{
     readonly timestamp: string;
     readonly value: number;
+    readonly capacity?: number;
+    readonly floor?: number;
     readonly regressors?: Readonly<Record<string, number>>;
     readonly conditions?: Readonly<Record<string, boolean>>;
   }>;
   readonly predictionRows: ReadonlyArray<{
     readonly timestamp: string;
+    readonly capacity?: number;
+    readonly floor?: number;
     readonly regressors?: Readonly<Record<string, number>>;
     readonly conditions?: Readonly<Record<string, boolean>>;
   }>;
@@ -104,10 +108,27 @@ const copyRecord = <Value>(
   record: Readonly<Record<string, Value>>,
 ): Readonly<Record<string, Value>> => Object.fromEntries(Object.entries(record));
 
+type BenchmarkBounds = Pick<BenchmarkDataset["observations"][number], "capacity" | "floor">;
+
+const copyBounds = (row: BenchmarkBounds) => {
+  if (row.capacity === undefined) {
+    return row.floor === undefined ? {} : { floor: row.floor };
+  }
+
+  return row.floor === undefined
+    ? { capacity: row.capacity }
+    : { capacity: row.capacity, floor: row.floor };
+};
+
 const prepareObservation = (
   observation: BenchmarkDataset["observations"][number],
 ): PreparedInput["observations"][number] => {
-  const base = { timestamp: observation.timestamp, value: observation.value };
+  const base = {
+    timestamp: observation.timestamp,
+    value: observation.value,
+    ...copyBounds(observation),
+  };
+
   const regressors = observation.regressors;
   const conditions = observation.conditions;
 
@@ -133,7 +154,7 @@ const prepareObservation = (
 const preparePredictionRow = (
   row: BenchmarkDataset["predictionRows"][number],
 ): PreparedInput["predictionRows"][number] => {
-  const base = { timestamp: row.timestamp };
+  const base = { timestamp: row.timestamp, ...copyBounds(row) };
   const regressors = row.regressors;
   const conditions = row.conditions;
 
@@ -192,30 +213,27 @@ const setupModel = (input: PreparedInput, benchmarkCase: BenchmarkCase): FittedP
 const runPredict = (model: FittedProphet, input: PreparedInput): Forecasts =>
   Effect.runSync(predict(model, input.predictionRows));
 
-const additiveComponentProjection = (
-  component: ForecastComponent,
-): ForecastProjection["seasonalities"][number] => {
-  if (component.mode !== "additive") {
-    throw new Error("The current benchmark protocol supports additive components only");
-  }
-
-  return { name: component.name, value: component.value };
-};
-
 const forecastProjection = (forecasts: Forecasts): ReadonlyArray<ForecastProjection> =>
   forecasts.map((forecast) => ({
     timestamp: forecast.timestamp,
     value: forecast.value,
     trend: forecast.trend,
     additive: forecast.additive,
-    seasonalities: forecast.seasonalities.map(additiveComponentProjection),
-    events: forecast.events.map(additiveComponentProjection),
-    regressors: forecast.regressors.map(additiveComponentProjection),
+    multiplicative: forecast.multiplicative,
+    seasonalities: forecast.seasonalities,
+    events: forecast.events,
+    regressors: forecast.regressors,
   }));
 
-const sumComponents = (forecast: ForecastProjection): number =>
+const sumComponents = (forecast: ForecastProjection, mode: "additive" | "multiplicative"): number =>
   [...forecast.seasonalities, ...forecast.events, ...forecast.regressors].reduce(
-    (sum, component) => sum + component.value,
+    (sum, component) =>
+      sum +
+      (component.mode === "additive" && mode === "additive"
+        ? component.value
+        : component.mode === "multiplicative" && mode === "multiplicative"
+          ? component.factor
+          : 0),
     0,
   );
 
@@ -229,7 +247,9 @@ const assertForecasts = (
   }
 
   const configuration =
-    benchmarkCase.workload.kind === "linear-map" ? benchmarkCase.workload.configuration : undefined;
+    benchmarkCase.workload.kind === "fixed-linear-prediction"
+      ? undefined
+      : benchmarkCase.workload.configuration;
 
   for (const [index, forecast] of forecasts.entries()) {
     const row = dataset.predictionRows[index];
@@ -238,17 +258,31 @@ const assertForecasts = (
       throw new Error(`Case ${benchmarkCase.id} changed prediction row order`);
     }
 
-    const values = [forecast.value, forecast.trend, forecast.additive, sumComponents(forecast)];
+    const multiplicative = forecast.multiplicative ?? 0;
+
+    const values = [
+      forecast.value,
+      forecast.trend,
+      forecast.additive,
+      multiplicative,
+      sumComponents(forecast, "additive"),
+      sumComponents(forecast, "multiplicative"),
+    ];
 
     if (!values.every(Number.isFinite)) {
       throw new Error(`Case ${benchmarkCase.id} returned non-finite forecast values`);
     }
 
-    if (Math.abs(forecast.value - forecast.trend - forecast.additive) > 1e-8) {
+    if (
+      Math.abs(forecast.value - forecast.trend * (1 + multiplicative) - forecast.additive) > 1e-8
+    ) {
       throw new Error(`Case ${benchmarkCase.id} failed total forecast reconstruction`);
     }
 
-    if (Math.abs(forecast.additive - sumComponents(forecast)) > 1e-8) {
+    if (
+      Math.abs(forecast.additive - sumComponents(forecast, "additive")) > 1e-8 ||
+      Math.abs(multiplicative - sumComponents(forecast, "multiplicative")) > 1e-8
+    ) {
       throw new Error(`Case ${benchmarkCase.id} failed additive component reconstruction`);
     }
 
@@ -260,7 +294,7 @@ const assertForecasts = (
       if (
         seasonality?.conditionName !== undefined &&
         row.conditions?.[seasonality.conditionName] === false &&
-        component.value !== 0
+        (component.mode === "additive" ? component.value !== 0 : component.factor !== 0)
       ) {
         throw new Error(`Case ${benchmarkCase.id} did not zero a condition-false component`);
       }
@@ -293,7 +327,7 @@ const assertFixedEquation = (
 };
 
 const eventMetadata = (model: FittedProphet): CorrectnessProjection["events"] => {
-  if (model.model !== "linear-piecewise-map") {
+  if (model.model === "linear-trend") {
     return [];
   }
 
@@ -310,6 +344,7 @@ const eventMetadata = (model: FittedProphet): CorrectnessProjection["events"] =>
 
     return {
       name: component.name,
+      mode: component.mode,
       dates: occurrences.map((occurrence) => occurrence.date),
       lowerWindowDays: first.lowerWindowDays,
       upperWindowDays: first.upperWindowDays,
@@ -319,7 +354,7 @@ const eventMetadata = (model: FittedProphet): CorrectnessProjection["events"] =>
 };
 
 const regressorMetadata = (model: FittedProphet): CorrectnessProjection["regressors"] => {
-  if (model.model !== "linear-piecewise-map") {
+  if (model.model === "linear-trend") {
     return [];
   }
 
@@ -336,6 +371,7 @@ const regressorMetadata = (model: FittedProphet): CorrectnessProjection["regress
       name: regressor.definition.name,
       priorScale: regressor.definition.priorScale,
       standardization: regressor.definition.standardization,
+      mode: regressor.definition.mode,
       transform: regressor.transform,
       coefficient: projected.coefficient,
       center: projected.center,
@@ -350,9 +386,10 @@ const seasonalityMetadata = (
   >["seasonalities"]["components"][number],
 ): CorrectnessProjection["seasonalities"][number] =>
   component.definition.conditionName === undefined
-    ? { name: component.definition.name }
+    ? { name: component.definition.name, mode: component.definition.mode }
     : {
         name: component.definition.name,
+        mode: component.definition.mode,
         conditionName: component.definition.conditionName,
       };
 
@@ -360,34 +397,91 @@ const metadataProjection = (
   model: FittedProphet,
 ): Pick<
   CorrectnessProjection,
-  "modelKind" | "changepointTimestamps" | "seasonalities" | "events" | "regressors"
-> => ({
-  modelKind: model.model,
-  changepointTimestamps: model.model === "linear-piecewise-map" ? model.changepointTimestamps : [],
-  seasonalities:
-    model.model === "linear-trend" ? [] : model.seasonalities.components.map(seasonalityMetadata),
-  events: eventMetadata(model),
-  regressors: regressorMetadata(model),
-});
+  | "modelKind"
+  | "targetScaling"
+  | "changepointTimestamps"
+  | "seasonalities"
+  | "events"
+  | "regressors"
+> => {
+  const metadata: Pick<
+    CorrectnessProjection,
+    | "modelKind"
+    | "targetScaling"
+    | "changepointTimestamps"
+    | "seasonalities"
+    | "events"
+    | "regressors"
+  > = {
+    modelKind: model.model,
+    changepointTimestamps:
+      model.model === "linear-piecewise-map" || model.model === "logistic-piecewise-map"
+        ? model.changepointTimestamps
+        : [],
+    seasonalities:
+      model.model === "linear-trend" ? [] : model.seasonalities.components.map(seasonalityMetadata),
+    events: eventMetadata(model),
+    regressors: regressorMetadata(model),
+  };
+
+  if (model.model === "logistic-piecewise-map") {
+    return {
+      ...metadata,
+      targetScaling: {
+        mode: model.targetScaling.mode,
+        scale: model.targetScaling.scale,
+        offset:
+          model.targetScaling.floorPolicy.kind === "implicit"
+            ? model.targetScaling.floorPolicy.floor
+            : 0,
+        floorPolicy: model.targetScaling.floorPolicy.kind,
+      },
+    };
+  } else if (model.model !== "linear-trend") {
+    return { ...metadata, targetScaling: { ...model.targetScaling } };
+  }
+
+  return metadata;
+};
 
 const assertMetadata = (
   benchmarkCase: BenchmarkCase,
   metadata: ReturnType<typeof metadataProjection>,
 ): void => {
-  if (benchmarkCase.workload.kind !== "linear-map") {
+  if (benchmarkCase.workload.kind === "fixed-linear-prediction") {
     return;
   }
 
   const configuration = benchmarkCase.workload.configuration;
 
-  if (metadata.modelKind !== "linear-piecewise-map") {
+  const growth =
+    benchmarkCase.workload.kind === "stage-f-map"
+      ? benchmarkCase.workload.configuration.growth
+      : "linear";
+
+  const expectedKind = {
+    flat: "flat-map",
+    linear: "linear-piecewise-map",
+    logistic: "logistic-piecewise-map",
+  }[growth];
+
+  if (metadata.modelKind !== expectedKind) {
     throw new Error(`Case ${benchmarkCase.id} did not fit the expected model kind`);
   }
 
+  const inheritedMode =
+    benchmarkCase.workload.kind === "stage-f-map"
+      ? benchmarkCase.workload.configuration.seasonalityMode
+      : "additive";
+
   const expectedSeasonalities = configuration.seasonalities.map((seasonality) =>
     seasonality.conditionName === undefined
-      ? { name: seasonality.name }
-      : { name: seasonality.name, conditionName: seasonality.conditionName },
+      ? { name: seasonality.name, mode: seasonality.mode ?? inheritedMode }
+      : {
+          name: seasonality.name,
+          mode: seasonality.mode ?? inheritedMode,
+          conditionName: seasonality.conditionName,
+        },
   );
 
   if (JSON.stringify(metadata.seasonalities) !== JSON.stringify(expectedSeasonalities)) {
@@ -411,6 +505,7 @@ const assertMetadata = (
     if (
       configured === undefined ||
       configured.standardization !== regressor.standardization ||
+      regressor.mode !== (configured.mode ?? inheritedMode) ||
       !Number.isFinite(regressor.coefficient) ||
       !Number.isFinite(regressor.center)
     ) {
@@ -425,6 +520,10 @@ const assertMetadata = (
     if (regressor.transform.mode !== expectedMode) {
       throw new Error(`Case ${benchmarkCase.id} resolved an unexpected regressor transform`);
     }
+  }
+
+  if (growth === "flat") {
+    return;
   }
 
   if (configuration.changepoints.mode === "explicit") {
@@ -455,18 +554,32 @@ const maximumProjectionDifference = (
       leftForecast.value,
       leftForecast.trend,
       leftForecast.additive,
-      ...leftForecast.seasonalities.map((component) => component.value),
-      ...leftForecast.events.map((component) => component.value),
-      ...leftForecast.regressors.map((component) => component.value),
+      leftForecast.multiplicative ?? 0,
+      ...[
+        ...leftForecast.seasonalities,
+        ...leftForecast.events,
+        ...leftForecast.regressors,
+      ].flatMap((component) =>
+        component.mode === "additive"
+          ? [component.value]
+          : [component.factor, component.contribution],
+      ),
     ];
 
     const rightValues = [
       rightForecast.value,
       rightForecast.trend,
       rightForecast.additive,
-      ...rightForecast.seasonalities.map((component) => component.value),
-      ...rightForecast.events.map((component) => component.value),
-      ...rightForecast.regressors.map((component) => component.value),
+      rightForecast.multiplicative ?? 0,
+      ...[
+        ...rightForecast.seasonalities,
+        ...rightForecast.events,
+        ...rightForecast.regressors,
+      ].flatMap((component) =>
+        component.mode === "additive"
+          ? [component.value]
+          : [component.factor, component.contribution],
+      ),
     ];
 
     if (leftValues.length !== rightValues.length) {
@@ -517,6 +630,29 @@ const correctnessProjection = (
 
   const persistenceError = persistenceMaximumError(model, input, forecasts);
 
+  const verified = spawnSync(
+    process.execPath,
+    [adapterPath, "--verify-restored", benchmarkCase.id],
+    {
+      encoding: "utf8",
+      env: process.env,
+      input: JSON.stringify({
+        model: Effect.runSync(encodeFittedModel(model)),
+        forecasts,
+        tolerance: benchmarkCase.correctnessTolerances.persistence.absolute,
+      }),
+      timeout: benchmarkCase.timeoutSeconds * 1_000,
+    },
+  );
+
+  if (verified.status !== 0 || !verified.stdout.includes(protocolPrefix)) {
+    throw new Error(
+      verified.stderr ||
+        verified.stdout ||
+        `Case ${benchmarkCase.id} failed fresh-process restoration`,
+    );
+  }
+
   const common = {
     caseId: benchmarkCase.id,
     run,
@@ -526,7 +662,7 @@ const correctnessProjection = (
     persistenceMaximumAbsoluteError: persistenceError,
   };
 
-  if (model.model === "linear-piecewise-map" || model.model === "flat-map") {
+  if (model.model !== "linear-trend") {
     return {
       ...common,
       noiseScale: model.noiseScale,
@@ -708,7 +844,7 @@ const runColdWorker = async (caseId: string): Promise<void> => {
   process.stdout.write(`${protocolPrefix}{"status":"passed"}\n`);
 };
 
-const runRestoredWorker = async (caseId: string): Promise<void> => {
+const runRestoredWorker = async (caseId: string, verify = false): Promise<void> => {
   const benchmarkCase = await findCase(caseId);
   const dataset = await loadDataset(benchmarkCase);
 
@@ -723,13 +859,32 @@ const runRestoredWorker = async (caseId: string): Promise<void> => {
     process.stdin.on("error", reject);
   });
 
-  const encoded: unknown = JSON.parse(serialized);
-  const model = Effect.runSync(decodeFittedModel(encoded));
+  const inputValue: unknown = JSON.parse(serialized);
+
+  const verification = verify
+    ? Schema.decodeUnknownSync(
+        Schema.Struct({
+          model: Schema.Unknown,
+          forecasts: Schema.Array(ForecastProjectionSchema),
+          tolerance: Schema.Finite,
+        }),
+      )(inputValue)
+    : undefined;
+
+  const model = Effect.runSync(decodeFittedModel(verification?.model ?? inputValue));
   const input = prepareInput(dataset);
   const forecasts = runPredict(model, input);
 
   if (forecasts.length !== input.predictionRows.length) {
     throw new Error("Restored forecast omitted requested rows");
+  }
+
+  if (
+    verification !== undefined &&
+    maximumProjectionDifference(verification.forecasts, forecastProjection(forecasts)) >
+      verification.tolerance
+  ) {
+    throw new Error("Fresh-process restored forecasts differ from the fitted model");
   }
 
   process.stdout.write(`${protocolPrefix}{"status":"passed"}\n`);
@@ -950,7 +1105,7 @@ try {
     const output = await runWorker(caseId, run, stage);
 
     process.stdout.write(`${protocolPrefix}${JSON.stringify(output)}\n`);
-  } else if (mode === "--cold" || mode === "--restored") {
+  } else if (mode === "--cold" || mode === "--restored" || mode === "--verify-restored") {
     const caseId = process.argv[3];
 
     if (caseId === undefined) {
@@ -960,7 +1115,7 @@ try {
     if (mode === "--cold") {
       await runColdWorker(caseId);
     } else {
-      await runRestoredWorker(caseId);
+      await runRestoredWorker(caseId, mode === "--verify-restored");
     }
   } else {
     await runCoordinator();

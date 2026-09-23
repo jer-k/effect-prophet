@@ -82,6 +82,10 @@ def records_frame(rows: list[dict[str, Any]], include_value: bool) -> pd.DataFra
     }
     if include_value:
         data["y"] = [row["value"] for row in rows]
+    if rows and "capacity" in rows[0]:
+        data["cap"] = [row["capacity"] for row in rows]
+    if rows and "floor" in rows[0]:
+        data["floor"] = [row["floor"] for row in rows]
     regressor_names = list(rows[0].get("regressors", {}).keys()) if rows else []
     condition_names = list(rows[0].get("conditions", {}).keys()) if rows else []
     for name in regressor_names:
@@ -121,20 +125,27 @@ def configure_model(benchmark_case: dict[str, Any]) -> Prophet:
     """Construct a fresh public Prophet model with the shared configuration."""
 
     workload = benchmark_case["workload"]
-    if workload["kind"] != "linear-map":
+    if workload["kind"] not in ("linear-map", "stage-f-map"):
         raise ValueError(f"Case {benchmark_case['id']} is not a fitting workload")
     configuration = workload["configuration"]
     changepoints = configuration["changepoints"]
+    stage_f = workload["kind"] == "stage-f-map"
+    growth = configuration["growth"] if stage_f else "linear"
     common: dict[str, Any] = {
-        "growth": "linear",
+        "growth": growth,
         "changepoint_prior_scale": configuration["changepointPriorScale"],
         "yearly_seasonality": False,
         "weekly_seasonality": False,
         "daily_seasonality": False,
         "uncertainty_samples": 0,
         "holidays": holidays_frame(configuration["events"]),
+        "seasonality_mode": configuration.get("seasonalityMode", "additive"),
+        "holidays_mode": configuration.get("holidaysMode", "additive"),
+        "scaling": configuration.get("scaling", "absmax"),
     }
-    if changepoints["mode"] == "explicit":
+    if growth == "flat":
+        common["changepoints"] = []
+    elif changepoints["mode"] == "explicit":
         common["changepoints"] = [
             pd.to_datetime(value, utc=True).tz_localize(None)
             for value in changepoints["timestamps"]
@@ -149,7 +160,7 @@ def configure_model(benchmark_case: dict[str, Any]) -> Prophet:
             period=seasonality["periodDays"],
             fourier_order=seasonality["fourierOrder"],
             prior_scale=seasonality["priorScale"],
-            mode="additive",
+            mode=seasonality.get("mode", configuration.get("seasonalityMode", "additive")),
             condition_name=seasonality.get("conditionName"),
         )
     standardization = {"never": False, "auto": "auto", "always": True}
@@ -158,7 +169,7 @@ def configure_model(benchmark_case: dict[str, Any]) -> Prophet:
             name=regressor["name"],
             prior_scale=regressor["priorScale"],
             standardize=standardization[regressor["standardization"]],
-            mode="additive",
+            mode=regressor.get("mode", configuration.get("seasonalityMode", "additive")),
         )
     model.stan_backend.set_options(
         newton_fallback=workload["pythonOptimizer"]["newtonFallback"]
@@ -234,6 +245,12 @@ def forecast_projection(
     grouped_events = event_names(model)
     regressors = list(model.extra_regressors.keys())
     projected: list[dict[str, Any]] = []
+    def component(name: str, mode: str, row: pd.Series) -> dict[str, Any]:
+        value = float(row[name])
+        if mode == "multiplicative":
+            return {"name": name, "mode": mode, "factor": value, "contribution": value * float(row["trend"])}
+        return {"name": name, "mode": mode, "value": value}
+
     for _, row in predicted.iterrows():
         projected.append(
             {
@@ -241,16 +258,17 @@ def forecast_projection(
                 "value": float(row["yhat"]),
                 "trend": float(row["trend"]),
                 "additive": float(row.get("additive_terms", 0.0)),
+                "multiplicative": float(row.get("multiplicative_terms", 0.0)),
                 "seasonalities": [
-                    {"name": name, "value": float(row[name])}
+                    component(name, model.seasonalities[name]["mode"], row)
                     for name in seasonality_names
                 ],
                 "events": [
-                    {"name": name, "value": float(row[name])}
+                    component(name, model.holidays_mode, row)
                     for name in grouped_events
                 ],
                 "regressors": [
-                    {"name": name, "value": float(row[name])}
+                    component(name, model.extra_regressors[name]["mode"], row)
                     for name in regressors
                 ],
             }
@@ -258,15 +276,18 @@ def forecast_projection(
     return predicted, projected
 
 
-def component_sum(forecast: dict[str, Any]) -> float:
-    """Sum every projected named additive component."""
+def component_sum(forecast: dict[str, Any], mode: str) -> float:
+    """Sum every projected named component of a selected mode."""
 
     groups = (
         forecast["seasonalities"],
         forecast["events"],
         forecast["regressors"],
     )
-    return sum(component["value"] for group in groups for component in group)
+    return sum(
+        component["value" if mode == "additive" else "factor"]
+        for group in groups for component in group if component["mode"] == mode
+    )
 
 
 def assert_forecasts(
@@ -290,18 +311,19 @@ def assert_forecasts(
         expected_timestamp = int(pd.Timestamp(row["timestamp"]).value // 1_000_000)
         if forecast["timestamp"] != expected_timestamp:
             raise ValueError("Prophet prediction changed row order")
-        values = (forecast["value"], forecast["trend"], forecast["additive"])
+        values = (forecast["value"], forecast["trend"], forecast["additive"], forecast["multiplicative"])
         if not all(math.isfinite(value) for value in values):
             raise ValueError("Prophet prediction returned a non-finite value")
-        if abs(forecast["value"] - forecast["trend"] - forecast["additive"]) > 1e-8:
+        if abs(forecast["value"] - forecast["trend"] * (1 + forecast["multiplicative"]) - forecast["additive"]) > 1e-8:
             raise ValueError("Prophet prediction failed total reconstruction")
-        if abs(forecast["additive"] - component_sum(forecast)) > 1e-8:
+        if (abs(forecast["additive"] - component_sum(forecast, "additive")) > 1e-8 or
+            abs(forecast["multiplicative"] - component_sum(forecast, "multiplicative")) > 1e-8):
             raise ValueError("Prophet prediction failed named component reconstruction")
         for component in forecast["seasonalities"]:
             definition = seasonalities.get(component["name"], {})
             condition_name = definition.get("conditionName")
             if condition_name and row.get("conditions", {}).get(condition_name) is False:
-                if component["value"] != 0:
+                if component.get("value", component.get("factor")) != 0:
                     raise ValueError("Prophet did not zero a condition-false component")
         day = pd.to_datetime(row["timestamp"], utc=True).tz_localize(None).normalize()
         for component in forecast["events"]:
@@ -312,7 +334,7 @@ def assert_forecasts(
                 <= pd.Timestamp(event["date"]) + pd.Timedelta(days=event["upperWindowDays"])
                 for event in occurrences
             )
-            if not active and component["value"] != 0:
+            if not active and component.get("value", component.get("factor")) != 0:
                 raise ValueError("Prophet activated an event outside its window")
 
 
@@ -348,6 +370,7 @@ def event_metadata(model: Prophet) -> list[dict[str, Any]]:
         result.append(
             {
                 "name": name,
+                "mode": model.holidays_mode,
                 "dates": [pd.Timestamp(value).strftime("%Y-%m-%d") for value in rows["ds"]],
                 "lowerWindowDays": int(first["lower_window"]),
                 "upperWindowDays": int(first["upper_window"]),
@@ -397,6 +420,7 @@ def regressor_metadata(
                 "name": name,
                 "priorScale": float(state["prior_scale"]),
                 "standardization": declaration["standardization"],
+                "mode": state["mode"],
                 "transform": transform,
                 "coefficient": float(coefficient["coef"]),
                 "center": float(coefficient["center"]),
@@ -418,12 +442,20 @@ def metadata_projection(model: Prophet, benchmark_case: dict[str, Any]) -> dict[
         }
     seasonalities = []
     for name, state in model.seasonalities.items():
-        item = {"name": name}
+        item = {"name": name, "mode": state["mode"]}
         if state.get("condition_name") is not None:
             item["conditionName"] = state["condition_name"]
         seasonalities.append(item)
+    growth = benchmark_case["workload"]["configuration"].get("growth", "linear")
+    scaling = {"mode": model.scaling, "scale": float(model.y_scale)}
+    if growth == "logistic":
+        scaling["floorPolicy"] = "explicit" if model.logistic_floor else "implicit"
+        scaling["offset"] = 0.0 if model.logistic_floor else float(model.y_min)
+    else:
+        scaling["offset"] = float(model.y_min)
     return {
-        "modelKind": "linear-piecewise-map",
+        "modelKind": {"linear": "linear-piecewise-map", "flat": "flat-map", "logistic": "logistic-piecewise-map"}[growth],
+        "targetScaling": scaling,
         "changepointTimestamps": [
             int(pd.Timestamp(value).value // 1_000_000) for value in model.changepoints
         ],
@@ -437,12 +469,13 @@ def assert_metadata(benchmark_case: dict[str, Any], metadata: dict[str, Any]) ->
     """Verify public Prophet retained the declared benchmark configuration."""
 
     workload = benchmark_case["workload"]
-    if workload["kind"] != "linear-map":
+    if workload["kind"] not in ("linear-map", "stage-f-map"):
         return
     configuration = workload["configuration"]
     expected_seasonalities = [
         {
             "name": item["name"],
+            "mode": item.get("mode", configuration.get("seasonalityMode", "additive")),
             **(
                 {"conditionName": item["conditionName"]}
                 if "conditionName" in item
@@ -451,7 +484,9 @@ def assert_metadata(benchmark_case: dict[str, Any], metadata: dict[str, Any]) ->
         }
         for item in configuration["seasonalities"]
     ]
-    if metadata["modelKind"] != "linear-piecewise-map":
+    growth = configuration.get("growth", "linear")
+    expected_kind = {"linear": "linear-piecewise-map", "flat": "flat-map", "logistic": "logistic-piecewise-map"}[growth]
+    if metadata["modelKind"] != expected_kind:
         raise ValueError("Prophet did not fit the expected model kind")
     if metadata["seasonalities"] != expected_seasonalities:
         raise ValueError("Prophet changed seasonality metadata")
@@ -469,6 +504,8 @@ def assert_metadata(benchmark_case: dict[str, Any], metadata: dict[str, Any]) ->
         )
         if regressor["transform"]["mode"] != expected_mode:
             raise ValueError("Prophet resolved an unexpected regressor transform")
+    if growth == "flat":
+        return
     changepoints = configuration["changepoints"]
     if changepoints["mode"] == "explicit":
         expected = [int(pd.Timestamp(value).value // 1_000_000) for value in changepoints["timestamps"]]
@@ -493,17 +530,15 @@ def maximum_projection_difference(
             left_forecast["value"],
             left_forecast["trend"],
             left_forecast["additive"],
-            *[item["value"] for item in left_forecast["seasonalities"]],
-            *[item["value"] for item in left_forecast["events"]],
-            *[item["value"] for item in left_forecast["regressors"]],
+            left_forecast["multiplicative"],
+            *[value for item in (*left_forecast["seasonalities"], *left_forecast["events"], *left_forecast["regressors"]) for value in ([item["value"]] if item["mode"] == "additive" else [item["factor"], item["contribution"]])],
         ]
         right_values = [
             right_forecast["value"],
             right_forecast["trend"],
             right_forecast["additive"],
-            *[item["value"] for item in right_forecast["seasonalities"]],
-            *[item["value"] for item in right_forecast["events"]],
-            *[item["value"] for item in right_forecast["regressors"]],
+            right_forecast["multiplicative"],
+            *[value for item in (*right_forecast["seasonalities"], *right_forecast["events"], *right_forecast["regressors"]) for value in ([item["value"]] if item["mode"] == "additive" else [item["factor"], item["contribution"]])],
         ]
         if len(left_values) != len(right_values):
             raise ValueError("Persistence round trip changed component layout")
@@ -538,6 +573,21 @@ def correctness_projection(
     assert_forecasts(benchmark_case, dataset, projections)
     assert_fixed_equation(benchmark_case, projections)
     assert_metadata(benchmark_case, metadata)
+    verified = subprocess.run(
+        [sys.executable, str(ADAPTER_PATH), "--verify-restored", benchmark_case["id"]],
+        input=json.dumps({
+            "model": model_to_json(model),
+            "forecasts": projections,
+            "tolerance": benchmark_case["correctnessTolerances"]["persistence"]["absolute"],
+        }),
+        text=True,
+        capture_output=True,
+        timeout=benchmark_case["timeoutSeconds"],
+        check=False,
+    )
+    if verified.returncode != 0 or PROTOCOL_PREFIX not in verified.stdout:
+        raise ValueError(verified.stderr or verified.stdout or "Fresh-process restoration failed")
+
     result: dict[str, Any] = {
         "caseId": benchmark_case["id"],
         "run": run,
@@ -549,7 +599,7 @@ def correctness_projection(
         ),
     }
     sigma = model.params.get("sigma_obs")
-    if benchmark_case["workload"]["kind"] == "linear-map":
+    if benchmark_case["workload"]["kind"] in ("linear-map", "stage-f-map"):
         if sigma is None or model.y_scale is None:
             raise ValueError("Prophet MAP fit omitted its noise scale")
         result["noiseScale"] = float(sigma[0][0] * model.y_scale)
@@ -692,17 +742,25 @@ def run_cold_worker(case_id: str) -> None:
     print(f'{PROTOCOL_PREFIX}{{"status":"passed"}}')
 
 
-def run_restored_worker(case_id: str) -> None:
+def run_restored_worker(case_id: str, verify: bool = False) -> None:
     """Decode a persisted model and predict in a fresh process without fitting."""
 
     benchmark_case = find_case(case_id)
     dataset = load_dataset(benchmark_case)
     serialized = sys.stdin.read()
-    model = model_from_json(serialized)
+    verification = json.loads(serialized) if verify else None
+    model = model_from_json(verification["model"] if verify else serialized)
     _, prediction_frame = prepare_input(dataset)
-    predicted = model.predict(prediction_frame)
-    if len(predicted) != len(prediction_frame):
-        raise ValueError("Restored Prophet forecast omitted rows")
+    if verify:
+        _, projections = forecast_projection(model, prediction_frame)
+        if len(projections) != len(prediction_frame):
+            raise ValueError("Restored Prophet forecast omitted rows")
+        if maximum_projection_difference(verification["forecasts"], projections) > verification["tolerance"]:
+            raise ValueError("Fresh-process restored forecasts differ from the fitted model")
+    else:
+        predicted = model.predict(prediction_frame)
+        if len(predicted) != len(prediction_frame):
+            raise ValueError("Restored Prophet forecast omitted rows")
     print(f'{PROTOCOL_PREFIX}{{"status":"passed"}}')
 
 
@@ -892,10 +950,10 @@ def main() -> None:
         if len(sys.argv) != 3:
             raise ValueError("Cold worker requires case id")
         run_cold_worker(sys.argv[2])
-    elif mode == "--restored":
+    elif mode in ("--restored", "--verify-restored"):
         if len(sys.argv) != 3:
             raise ValueError("Restored worker requires case id")
-        run_restored_worker(sys.argv[2])
+        run_restored_worker(sys.argv[2], verify=mode == "--verify-restored")
     else:
         run_coordinator()
 

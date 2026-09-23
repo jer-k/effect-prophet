@@ -578,16 +578,16 @@
       "expected": {
         "additive": [
           0.0,
-          -6.72272467743e-13,
-          -1.25564865176e-12
+          0.0,
+          0.0
         ],
         "componentNames": [
           "weekly-off"
         ],
         "componentsRowMajor": [
           0.0,
-          -6.72272467743e-13,
-          -1.25564865176e-12
+          0.0,
+          0.0
         ],
         "featureColumnNames": [
           "weekly-off_delim_1",
@@ -607,8 +607,8 @@
         ],
         "noiseScale": 0.0330888376175,
         "observationUnitCoefficients": [
-          -8.9349579044e-13,
-          -8.9349579044e-13
+          0.0,
+          0.0
         ],
         "trend": [
           10.7680520437,

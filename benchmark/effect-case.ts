@@ -6,12 +6,14 @@ import type { BenchmarkCase } from "./case.ts";
 export const effectOptionsForCase = (
   benchmarkCase: BenchmarkCase,
 ): EncodedProphetOptions | undefined => {
-  if (benchmarkCase.workload.kind !== "linear-map") {
+  const workload = benchmarkCase.workload;
+
+  if (workload.kind === "fixed-linear-prediction") {
     return undefined;
   }
 
-  const workload = benchmarkCase.workload;
   const configuration = workload.configuration;
+
   const firstSeasonality = configuration.seasonalities[0];
 
   const seasonalities =
@@ -20,7 +22,6 @@ export const effectOptionsForCase = (
       : ([firstSeasonality, ...configuration.seasonalities.slice(1)] as const);
 
   const common = {
-    growth: "linear" as const,
     builtInSeasonalities: {
       daily: "off" as const,
       weekly: "off" as const,
@@ -30,10 +31,45 @@ export const effectOptionsForCase = (
     regressors: configuration.regressors,
   };
 
-  if (configuration.effectMap === "omitted") {
+  if (workload.kind === "stage-f-map") {
+    const options = {
+      ...common,
+      scaling: workload.configuration.scaling,
+      seasonalityMode: workload.configuration.seasonalityMode,
+      holidaysMode: workload.configuration.holidaysMode,
+    };
+
+    if (workload.configuration.growth === "flat") {
+      return seasonalities === undefined
+        ? { ...options, growth: "flat", seasonalities: [] }
+        : { ...options, growth: "flat", seasonalities };
+    }
+
+    if (workload.effectOptimizer === undefined) {
+      throw new Error(`Stage F case ${benchmarkCase.id} has no numerical optimizer controls`);
+    }
+
+    const map = {
+      changepoints: workload.configuration.changepoints,
+      changepointPriorScale: workload.configuration.changepointPriorScale,
+      optimizer: workload.effectOptimizer,
+    };
+
+    if (workload.configuration.growth === "logistic") {
+      return { ...options, growth: "logistic", seasonalities: configuration.seasonalities, map };
+    }
+
     return seasonalities === undefined
-      ? { ...common, seasonalities: [] }
-      : { ...common, seasonalities };
+      ? { ...options, growth: "linear", seasonalities: [], map }
+      : { ...options, growth: "linear", seasonalities, map };
+  }
+
+  const linear = { ...common, growth: "linear" as const };
+
+  if (workload.configuration.effectMap === "omitted") {
+    return seasonalities === undefined
+      ? { ...linear, seasonalities: [] }
+      : { ...linear, seasonalities };
   }
 
   const map = {
@@ -43,6 +79,6 @@ export const effectOptionsForCase = (
   };
 
   return seasonalities === undefined
-    ? { ...common, seasonalities: [], map }
-    : { ...common, seasonalities, map };
+    ? { ...linear, seasonalities: [], map }
+    : { ...linear, seasonalities, map };
 };

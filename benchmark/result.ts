@@ -40,10 +40,15 @@ export const BenchmarkEnvironmentSchema = Schema.Struct({
 /** Implementation-specific execution provenance. */
 export type BenchmarkEnvironment = typeof BenchmarkEnvironmentSchema.Type;
 
-const NamedComponentSchema = Schema.Struct({
-  name: NonEmptyString,
-  value: Schema.Finite,
-});
+const NamedComponentSchema = Schema.Union([
+  Schema.Struct({ name: NonEmptyString, mode: Schema.Literal("additive"), value: Schema.Finite }),
+  Schema.Struct({
+    name: NonEmptyString,
+    mode: Schema.Literal("multiplicative"),
+    factor: Schema.Finite,
+    contribution: Schema.Finite,
+  }),
+]);
 
 /** Runtime schema for one public forecast projected into the shared correctness surface. */
 export const ForecastProjectionSchema = Schema.Struct({
@@ -51,6 +56,7 @@ export const ForecastProjectionSchema = Schema.Struct({
   value: Schema.Finite,
   trend: Schema.Finite,
   additive: Schema.Finite,
+  multiplicative: Schema.optionalKey(Schema.Finite),
   seasonalities: Schema.Array(NamedComponentSchema),
   events: Schema.Array(NamedComponentSchema),
   regressors: Schema.Array(NamedComponentSchema),
@@ -61,11 +67,13 @@ export type ForecastProjection = typeof ForecastProjectionSchema.Type;
 
 const SeasonalityMetadataSchema = Schema.Struct({
   name: NonEmptyString,
+  mode: Schema.optionalKey(Schema.Literals(["additive", "multiplicative"])),
   conditionName: Schema.optionalKey(NonEmptyString),
 });
 
 const EventMetadataSchema = Schema.Struct({
   name: NonEmptyString,
+  mode: Schema.optionalKey(Schema.Literals(["additive", "multiplicative"])),
   dates: Schema.Array(NonEmptyString),
   lowerWindowDays: Schema.Int,
   upperWindowDays: Schema.Int,
@@ -88,6 +96,7 @@ const RegressorMetadataSchema = Schema.Struct({
   name: NonEmptyString,
   priorScale: Schema.Finite.check(Schema.isGreaterThan(0)),
   standardization: Schema.Literals(["auto", "always", "never"]),
+  mode: Schema.optionalKey(Schema.Literals(["additive", "multiplicative"])),
   transform: RegressorTransformSchema,
   coefficient: Schema.Finite,
   center: Schema.Finite,
@@ -99,6 +108,14 @@ export const CorrectnessProjectionSchema = Schema.Struct({
   run: NonNegativeInteger,
   status: Schema.Literal("locally-passed"),
   modelKind: NonEmptyString,
+  targetScaling: Schema.optionalKey(
+    Schema.Struct({
+      mode: Schema.Literals(["absmax", "minmax"]),
+      scale: Schema.Finite,
+      offset: Schema.Finite,
+      floorPolicy: Schema.optionalKey(Schema.Literals(["implicit", "explicit"])),
+    }),
+  ),
   changepointTimestamps: Schema.Array(Schema.Int),
   seasonalities: Schema.Array(SeasonalityMetadataSchema),
   events: Schema.Array(EventMetadataSchema),

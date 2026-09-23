@@ -8,7 +8,7 @@ x-runtime: &runtime
     - /tmp
   environment: &runtime-environment
     BENCHMARK_CASE_IDS: ${BENCHMARK_CASE_IDS:-}
-    BENCHMARK_CASES_PATH: /workspace/benchmark/cases/public-api.json
+    BENCHMARK_CASES_PATH: ${BENCHMARK_CASES_PATH:-/workspace/benchmark/cases/public-api.json}
     BENCHMARK_DATA_ROOT: /workspace/benchmark/data
     BENCHMARK_CONTAINER_PLATFORM: ${BENCHMARK_CONTAINER_PLATFORM:?BENCHMARK_CONTAINER_PLATFORM is required}
     BENCHMARK_ELIGIBILITY_PATH: /results/eligible-cases.json

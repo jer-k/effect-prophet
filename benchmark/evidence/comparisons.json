@@ -121,6 +121,60 @@
         "noise scale",
         "persistence equivalence"
       ]
+    },
+    {
+      "id": "stage-f-scaling-v1",
+      "classification": "equivalent-objective",
+      "statement": "The same large-offset linear MAP rows are fit separately with matching absmax or minmax target scaling, explicit changepoint and additive Fourier priors; scaling variants are not equated with each other.",
+      "prerequisiteFixtures": ["target-scaling.json", "linear-map-fit.json"],
+      "checks": [
+        "train-only target scaling",
+        "resolved changepoints",
+        "forecast",
+        "noise scale",
+        "persistence equivalence"
+      ]
+    },
+    {
+      "id": "stage-f-flat-mixed-v1",
+      "classification": "equivalent-objective",
+      "statement": "Flat MAP with minmax scaling and a conditional multiplicative seasonality, additive event and regressor; Python's prior-only trend parameters are at their MAP modes.",
+      "prerequisiteFixtures": ["target-scaling.json", "mixed-map.json", "conditional-map-fit.json"],
+      "checks": [
+        "target scaling",
+        "component modes and units",
+        "condition masks",
+        "named effects",
+        "forecast",
+        "persistence equivalence"
+      ]
+    },
+    {
+      "id": "stage-f-linear-mixed-v1",
+      "classification": "equivalent-objective",
+      "statement": "Linear MAP with nonzero target offset, inherited multiplicative seasonality and explicit additive event/regressor overrides.",
+      "prerequisiteFixtures": ["mixed-map.json", "target-scaling.json"],
+      "checks": [
+        "target scaling",
+        "mode inheritance",
+        "component factors and contributions",
+        "forecast",
+        "persistence equivalence"
+      ]
+    },
+    {
+      "id": "stage-f-logistic-v1",
+      "classification": "equivalent-objective",
+      "statement": "Nonsingular logistic MAP with nonempty explicit or automatic changepoints, changing capacities, matched floor and scaling policy, additive Fourier effects and optional multiplicative regressor; no empty-point or singular-rate parity claim.",
+      "prerequisiteFixtures": ["logistic-map.json", "mixed-map.json", "target-scaling.json"],
+      "checks": [
+        "floor policy",
+        "train-only scaling",
+        "capacity rows",
+        "named component units",
+        "forecast",
+        "persistence equivalence"
+      ]
     }
   ]
 }

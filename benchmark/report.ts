@@ -155,6 +155,12 @@ const compareForecast = (
   includeDifference(differences, "forecast", effectForecast.value, pythonForecast.value);
   includeDifference(differences, "trend", effectForecast.trend, pythonForecast.trend);
   includeDifference(differences, "additive", effectForecast.additive, pythonForecast.additive);
+  includeDifference(
+    differences,
+    "component",
+    effectForecast.multiplicative ?? 0,
+    pythonForecast.multiplicative ?? 0,
+  );
 
   const effectComponents = [
     ...effectForecast.seasonalities,
@@ -175,7 +181,24 @@ const compareForecast = (
       return false;
     }
 
-    includeDifference(differences, "component", effectComponent.value, pythonComponent.value);
+    if (effectComponent.mode !== pythonComponent.mode) {
+      return false;
+    }
+
+    if (effectComponent.mode === "additive" && pythonComponent.mode === "additive") {
+      includeDifference(differences, "component", effectComponent.value, pythonComponent.value);
+    } else if (
+      effectComponent.mode === "multiplicative" &&
+      pythonComponent.mode === "multiplicative"
+    ) {
+      includeDifference(differences, "component", effectComponent.factor, pythonComponent.factor);
+      includeDifference(
+        differences,
+        "component",
+        effectComponent.contribution,
+        pythonComponent.contribution,
+      );
+    }
   }
 
   return true;
@@ -183,6 +206,8 @@ const compareForecast = (
 
 const stableMetadata = (projection: CorrectnessProjection) => ({
   modelKind: projection.modelKind,
+  scalingMode: projection.targetScaling?.mode,
+  floorPolicy: projection.targetScaling?.floorPolicy,
   changepointTimestamps: projection.changepointTimestamps,
   seasonalities: projection.seasonalities,
   events: projection.events,
@@ -190,6 +215,7 @@ const stableMetadata = (projection: CorrectnessProjection) => ({
     name: regressor.name,
     priorScale: regressor.priorScale,
     standardization: regressor.standardization,
+    mode: regressor.mode,
     transform:
       regressor.transform.mode === "identity"
         ? { mode: regressor.transform.mode, reason: regressor.transform.reason }
@@ -210,6 +236,31 @@ const compareProjection = (
   }
 
   const differences = emptyDifferences();
+
+  if (
+    effectProjection.targetScaling !== undefined ||
+    pythonProjection.targetScaling !== undefined
+  ) {
+    if (
+      effectProjection.targetScaling === undefined ||
+      pythonProjection.targetScaling === undefined
+    ) {
+      return undefined;
+    }
+
+    includeDifference(
+      differences,
+      "trend",
+      effectProjection.targetScaling.scale,
+      pythonProjection.targetScaling.scale,
+    );
+    includeDifference(
+      differences,
+      "trend",
+      effectProjection.targetScaling.offset,
+      pythonProjection.targetScaling.offset,
+    );
+  }
 
   for (const [index, effectRegressor] of effectProjection.regressors.entries()) {
     const pythonRegressor = pythonProjection.regressors[index];
@@ -309,7 +360,11 @@ const quantityPasses = (
           ...forecast.events,
           ...forecast.regressors,
         ]) {
-          scale = Math.max(scale, Math.abs(component.value));
+          scale = Math.max(
+            scale,
+            Math.abs(component.mode === "additive" ? component.value : component.contribution),
+            Math.abs(component.mode === "multiplicative" ? component.factor : 0),
+          );
         }
       }
     }
@@ -458,7 +513,7 @@ const correctnessForCase = (
     comparison: benchmarkCase.workload.comparison.kind,
     maximumDifferences: maximum,
     note: passed
-      ? `Cross-language projections passed evidence ${evidenceId}.`
+      ? `Verified equivalent behavior for this configuration under evidence ${evidenceId}.`
       : `Cross-language quantities exceeded tolerance: ${failedQuantities.join(", ")}.`,
   };
 };
