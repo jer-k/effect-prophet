@@ -126,6 +126,17 @@ export const CorrectnessProjectionSchema = Schema.Struct({
     Schema.Array(Schema.Struct({ name: NonEmptyString, value: Schema.Finite })),
   ),
   persistenceMaximumAbsoluteError: Schema.optionalKey(NonNegativeFinite),
+  uncertainty: Schema.optionalKey(
+    Schema.Struct({
+      algorithm: NonEmptyString,
+      output: Schema.Literals(["intervals", "samples"]),
+      rows: NonNegativeInteger,
+      samples: PositiveInteger,
+      replay: Schema.Literal("passed"),
+      reduction: Schema.Literal("passed"),
+      finite: Schema.Literal("passed"),
+    }),
+  ),
 });
 
 /** Untimed correctness evidence emitted by one independent run. */
@@ -136,11 +147,16 @@ export const BenchmarkMeasurementSchema = Schema.Struct({
   caseId: NonEmptyString,
   implementation: BenchmarkImplementationSchema,
   phase: BenchmarkPhaseSchema,
-  comparison: Schema.Literals(["equivalent-equation", "equivalent-objective"]),
+  comparison: Schema.Literals([
+    "equivalent-equation",
+    "equivalent-objective",
+    "scalar-process-different-public-work",
+  ]),
   evidenceId: NonEmptyString,
   run: NonNegativeInteger,
   samplesNanoseconds: Schema.Array(PositiveInteger).check(Schema.isMinLength(1)),
   correctness: Schema.Literal("locally-passed"),
+  peakRssBytes: Schema.optionalKey(NonNegativeInteger),
 });
 
 /** One independently collected timing sample set. */

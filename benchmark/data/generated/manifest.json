@@ -62,6 +62,11 @@
       "sha256": "7ee4bb9692dfb115e926da542b37298a311e06037c0e5a638ca067a1fb937b11"
     },
     {
+      "file": "logistic-uncertainty-mixed.json",
+      "recipe": "logistic-uncertainty-mixed-v1:n=96:h=24:changing-capacity-floor+conditional-weekly+campaign+promotion",
+      "sha256": "6dd8e686d92b341795f6e1f4cf7be9c247ccdb275ca309059fd9114369416767"
+    },
+    {
       "file": "logistic-implicit-floor.json",
       "recipe": "logistic-implicit-floor-v1:n=96:h=24:changing-capacity:weekly",
       "sha256": "d8cde080f7a8af86acb6e70e2577d0d1d2ee8f813bf4836e5a61702a16dc1558"

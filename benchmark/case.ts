@@ -31,6 +31,10 @@ export const BenchmarkPhaseSchema = Schema.Literals([
   "model-json-encode",
   "model-json-decode",
   "fresh-process-restored-predict",
+  "uncertainty-input-conversion",
+  "warm-uncertainty",
+  "cold-first-uncertainty",
+  "fresh-process-restored-uncertainty",
 ]);
 
 /** A phase measured by the public benchmark adapters. */
@@ -145,6 +149,17 @@ const StageFMapWorkloadSchema = Schema.Struct({
   }),
   effectOptimizer: Schema.optionalKey(LinearMapWorkloadSchema.fields.effectOptimizer),
   pythonOptimizer: LinearMapWorkloadSchema.fields.pythonOptimizer,
+  uncertainty: Schema.optionalKey(
+    Schema.Struct({
+      seed: NonNegativeInteger.check(Schema.isLessThanOrEqualTo(4_294_967_295)),
+      samples: PositiveInteger.check(Schema.isLessThanOrEqualTo(2_048)),
+      intervalWidth: Schema.Finite.check(Schema.isGreaterThan(0), Schema.isLessThan(1)),
+      output: Schema.Literals(["intervals", "samples"]),
+      algorithm: Schema.Literal("scalar-continuous-time"),
+      evidence: NonEmptyString,
+      samplerMemoryLimitBytes: PositiveInteger,
+    }),
+  ),
 });
 
 /** A public forecasting workload understood by both language adapters. */
@@ -184,6 +199,23 @@ export const BenchmarkCaseSchema = Schema.Struct({
   independentRuns: PositiveInteger,
   timeoutSeconds: PositiveInteger,
   correctnessTolerances: CorrectnessTolerancesSchema,
+  rowSelection: Schema.optionalKey(
+    Schema.Struct({
+      historical: NonNegativeInteger,
+      future: NonNegativeInteger,
+      stride: PositiveInteger,
+    }),
+  ),
+  datasetIdentity: Schema.optionalKey(
+    Schema.Struct({
+      recipe: NonEmptyString,
+      sha256: NonEmptyString,
+      trainingRows: PositiveInteger,
+      predictionRows: PositiveInteger,
+      futureRows: NonNegativeInteger,
+      horizonDays: NonNegativeFinite,
+    }),
+  ),
 });
 
 /** One parsed benchmark case declaration. */
@@ -295,6 +327,49 @@ const validateCaseRelationships = (
           message: `Fixed prediction case ${benchmarkCase.id} may only convert input or predict`,
         }),
       );
+    }
+
+    const uncertainty =
+      benchmarkCase.workload.kind === "stage-f-map"
+        ? benchmarkCase.workload.uncertainty
+        : undefined;
+
+    const uncertaintyPhases = benchmarkCase.phases.filter(
+      (phase) => phase.endsWith("uncertainty") || phase === "uncertainty-input-conversion",
+    );
+
+    if (
+      (uncertainty === undefined &&
+        (uncertaintyPhases.length > 0 || benchmarkCase.rowSelection !== undefined)) ||
+      (uncertainty !== undefined && !benchmarkCase.phases.includes("warm-uncertainty"))
+    ) {
+      return Effect.fail(
+        new BenchmarkInputError({
+          input: "cases",
+          message: `Case ${benchmarkCase.id} has mismatched uncertainty workload and phases`,
+        }),
+      );
+    }
+
+    if (uncertainty !== undefined) {
+      const selection = benchmarkCase.rowSelection;
+
+      const rows =
+        selection === undefined
+          ? benchmarkCase.datasetIdentity?.predictionRows
+          : selection.historical + selection.future;
+
+      if (
+        (selection !== undefined && rows === 0) ||
+        (rows !== undefined && (rows > 10_000 || rows * uncertainty.samples > 1_000_000))
+      ) {
+        return Effect.fail(
+          new BenchmarkInputError({
+            input: "cases",
+            message: `Case ${benchmarkCase.id} exceeds MAP uncertainty row/sample limits`,
+          }),
+        );
+      }
     }
 
     if (benchmarkCase.workload.kind === "stage-f-map") {

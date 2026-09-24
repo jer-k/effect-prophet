@@ -2,6 +2,7 @@ import { Effect } from "effect";
 import { describe, expect, it } from "vitest";
 
 import { parseBenchmarkCases } from "../case.ts";
+import { uncertaintyCases } from "../cases/uncertainty.ts";
 import { buildBenchmarkReport, renderBenchmarkMarkdown } from "../report.ts";
 import { parseImplementationResult, parseRunManifest } from "../result.ts";
 
@@ -195,6 +196,96 @@ describe("benchmark reporting", () => {
 
     expect(report.correctness[0]?.status).toBe("failed");
     expect(report.timings).toEqual([]);
+  });
+
+  it("keeps uncertainty timings ineligible without matching reduction and replay evidence", async () => {
+    const selected = uncertaintyCases[0];
+
+    if (
+      selected === undefined ||
+      selected.workload.kind !== "stage-f-map" ||
+      selected.workload.uncertainty === undefined
+    ) {
+      throw new Error("Missing declared uncertainty case");
+    }
+
+    const [cases, manifest] = await Promise.all([
+      Effect.runPromise(
+        parseBenchmarkCases([{ ...selected, independentRuns: 1, measuredIterations: 3 }]),
+      ),
+      Effect.runPromise(parseRunManifest(manifestInput)),
+    ]);
+
+    const inputFor = (implementation: "effect-prophet" | "python-prophet") => ({
+      ...makeResultInput(implementation, 100),
+      correctness: [
+        {
+          ...correctness,
+          caseId: selected.id,
+          modelKind: "linear-piecewise-map",
+          noiseScale: 0.2,
+          fitQuality: [{ name: "objective", value: 1 }],
+        },
+      ],
+      measurements: [
+        {
+          ...makeResultInput(implementation, 100).measurements[0],
+          caseId: selected.id,
+          phase: "warm-uncertainty",
+          comparison: "scalar-process-different-public-work",
+          evidenceId: selected.workload.comparison.evidenceId,
+          peakRssBytes: 100_000,
+        },
+      ],
+    });
+
+    const effectInput = inputFor("effect-prophet");
+    const pythonInput = inputFor("python-prophet");
+    const evidence = new Set([selected.workload.comparison.evidenceId]);
+
+    const missing = buildBenchmarkReport(
+      manifest,
+      cases,
+      await Effect.runPromise(parseImplementationResult(effectInput)),
+      await Effect.runPromise(parseImplementationResult(pythonInput)),
+      evidence,
+    );
+
+    expect(missing.correctness[0]?.status).toBe("failed");
+    expect(missing.timings).toEqual([]);
+
+    const checks = {
+      algorithm: "scalar",
+      output: selected.workload.uncertainty.output,
+      rows: 8,
+      samples: selected.workload.uncertainty.samples,
+      replay: "passed",
+      reduction: "passed",
+      finite: "passed",
+    };
+
+    const accepted = buildBenchmarkReport(
+      manifest,
+      cases,
+      await Effect.runPromise(
+        parseImplementationResult({
+          ...effectInput,
+          correctness: [{ ...effectInput.correctness[0], uncertainty: checks }],
+        }),
+      ),
+      await Effect.runPromise(
+        parseImplementationResult({
+          ...pythonInput,
+          correctness: [{ ...pythonInput.correctness[0], uncertainty: checks }],
+        }),
+      ),
+      evidence,
+    );
+
+    expect(accepted.correctness[0]?.status).toBe("passed");
+    expect(accepted.correctness[0]?.comparison).toBe("scalar-process-different-public-work");
+    expect(accepted.timings).toHaveLength(2);
+    expect(accepted.timings[0]?.peakRssBytes).toBe(100_000);
   });
 
   it("rejects metadata disagreement before accepting timing rows", async () => {

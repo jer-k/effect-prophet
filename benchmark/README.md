@@ -35,6 +35,8 @@ adapters and the report read; there is no second runner. Earlier EP-071 run arti
 not observation or prediction-row values. Do not merge those historical samples with new runs
 without verifying that their recorded configurations and row values match.
 
+EP-081 adds 12 opt-in MAP uncertainty cases from [`cases/uncertainty.ts`](cases/uncertainty.ts) using the same versioned datasets/configurations: linear with nonzero offset, mixed linear, feature-bearing flat, implicit/explicit logistic with changing bounds, and a new conditional/event/regressor logistic recipe. Row selections include historical-only, single-future, and irregular mixed historical/future requests. N, requested rows, output kind and S are recorded independently; every case is bounded by public row×sample policy. EP-080's [distribution evidence](../docs/validation/uncertainty.md) is a prerequisite, not established by timing; the [local run review](results/uncertainty/README.md) includes failures and findings.
+
 `Ks` is the Fourier-column count and `Ka` is the event-plus-regressor column count. Fixed-equation
 prediction and nonempty explicit-MAP controls remain as calibration cases.
 
@@ -92,6 +94,7 @@ Select cases or reuse built images:
 npm run benchmark -- --case map-events-small --case map-mixed-features-automatic-large
 npm run benchmark -- --no-build --case map-conditional-seasonalities-medium
 npm run benchmark -- --case flat-mixed-components --case logistic-explicit-floor-minmax
+npm run benchmark -- --case uncertainty-linear-mixed-components-mixed-samples-512
 ```
 
 The host orchestrator maps Apple Silicon to `linux/arm64` and x64 to `linux/amd64`, then passes the
@@ -120,6 +123,20 @@ promotion. Docker startup remains outside measured cold-process boundaries.
 | `model-json-decode`                | JSON parse plus Effect public decode; Python public `model_from_json`                                  | File reads                            |
 | `fresh-process-restored-predict`   | Fresh imports, persisted-model parse/decode, future-row conversion, public prediction, protocol output | Fitting and Docker startup            |
 
+Uncertainty-only phases use the **same** workers, correctness gate, results and report:
+
+| Phase                                     | Included                                                                                                                                                                                                   | Excluded                                                                            |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `uncertainty-input-conversion`            | Shared complete JSON records → Effect objects / Python DataFrames                                                                                                                                          | File reads, JSON parsing, fit, simulation                                           |
+| `warm-uncertainty`                        | Full public `predictUncertainty` (intervals or samples) / Python `predict(df, vectorized=False)` for intervals or `predictive_samples(df, vectorized=False)` for samples; Python per-call NumPy seed reset | Fit, adapter conversion, model persistence, Python default-vectorized approximation |
+| `cold-first-uncertainty`                  | Fresh language process/imports, JSON input, conversion, public fit, first scalar uncertainty call, worker protocol response                                                                                | Image build and Docker startup                                                      |
+| `fresh-process-restored-uncertainty`      | Fresh process/imports, JSON model decode, future-row conversion, first public scalar call, worker protocol response                                                                                        | Fit and Docker startup                                                              |
+| `model-json-encode` / `model-json-decode` | Public model encode/stringify and parse/decode, respectively                                                                                                                                               | Sample-output serialization (not measured separately)                               |
+
+Effect explicitly disables tracing with `Effect.withTracerEnabled(false)` for public measurements; no tracer/exporter is installed or required. Warm measured `predict` includes Python point and component assembly plus marginal intervals, whereas `predictive_samples` only returns trend/yhat sample arrays. Effect's `predictUncertainty` returns either owned row-major sample arrays or intervals, with conversion, feature setup, WASM simulation, decoding and copying inside the complete public call. These are scalar **process** comparisons, not identical-work entrypoints or matching NumPy/xoshiro draws. Python's default `vectorized=True` grid algorithm is not an equivalent comparator and is not timed here. No private Python kernels are timed. Underlying Rust phase times cannot be derived from these boundaries or coarse tracing spans. Sampling and interval reduction consume `O(rows × S)` work and space; interval mode includes sample/workspace allocations rather than constant scratch.
+
+Warm worker peak RSS uses Linux `maxRSS` / `ru_maxrss` high-water marks: **imports, previously fitted model, case preparation and uncertainty all contribute**, and Python's CmdStan fitting child is excluded. These process-only values are not simulation-only allocations, process-tree peaks or a cross-runtime RAM ranking. Runtime/library allocation limits apply to sampler buffers only, not total RSS. Synchronous WASM is not preempted by an Effect timeout. Raw nanosecond samples and per-case recipe hashes, build/lock/container/tool identities, clock choice (`process.hrtime.bigint` / `time.perf_counter_ns`) and memory method are retained in the run artifacts.
+
 Effect imports `effect-prophet` through the built package entrypoint after a release WASM build.
 The public API does not expose a supported parsing/copying/optimization split, so this suite does
 not present Effect spans as an internal profiler.
@@ -135,6 +152,7 @@ Local runs are ignored under:
 benchmark/results/runs/<run-id>/
   manifest.json
   cases.json
+  inputs/generated/*.json  # exact complete-row snapshots used for selected cases
   effect-prophet.json
   python-prophet.json
   eligible-cases.json
@@ -162,5 +180,4 @@ npm run benchmark:typecheck
 npm run benchmark:test
 ```
 
-Normal package tests do not install Python or execute this suite. Memory measurements are not a
-Stage F requirement; the environment records that process-tree peak RSS is unsupported.
+Normal package tests do not install Python or execute this suite. The uncertainty cases record worker high-water RSS with the limitations above; process-tree peak RSS is unsupported.

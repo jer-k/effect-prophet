@@ -72,7 +72,7 @@ npm run fixtures:check
 
 See the [Prophet reference tooling guide](tools/prophet/README.md) for the pinned environments, provenance, and shared-mount design.
 
-The Docker Compose [public API benchmark suite](benchmark/README.md) records correctness-gated absolute timings for equivalent MAP workloads, including events, regressors, conditional seasonalities, and mixed models. Runs use the host's native ARM64 or AMD64 container architecture, retain raw samples and provenance, and make no performance ranking or RAM claim. Deliberately reviewed snapshots are indexed under [benchmark results](benchmark/results/baselines/README.md).
+The Docker Compose [public API benchmark suite](benchmark/README.md) records correctness-gated absolute timings for equivalent MAP workloads, including events, regressors, conditional seasonalities, and mixed models. Runs use the host's native ARM64 or AMD64 container architecture, retain raw samples and provenance, and make no performance ranking or RAM claim. Deliberately reviewed snapshots are indexed under [benchmark results](benchmark/results/baselines/README.md); uncommitted Stage G uncertainty findings and a correctness-gated failure are summarized in [the uncertainty benchmark review](benchmark/results/uncertainty/README.md).
 
 ## Rust/WASM numerical backend
 
