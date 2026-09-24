@@ -281,6 +281,29 @@ const datasets: ReadonlyArray<BenchmarkDataset> = [
         1.2 * (covariates.regressors?.promotion ?? 0),
     });
   }),
+  makeDataset({
+    id: "logistic-uncertainty-mixed",
+    observationCount: 96,
+    predictionCount: 24,
+    recipe:
+      "logistic-uncertainty-mixed-v1:n=96:h=24:changing-capacity-floor+conditional-weekly+campaign+promotion",
+    trend: (index) => {
+      const floor = 12 + 0.01 * index;
+      const capacity = 60 + index * 0.12;
+
+      return floor + (capacity - floor) / (1 + Math.exp(-(-2 + index * 0.045)));
+    },
+    covariates: (index) => ({
+      capacity: canonical(60 + index * 0.12),
+      floor: canonical(12 + index * 0.01),
+      conditions: { active: index % 5 !== 0 },
+      regressors: { promotion: index % 6 === 2 ? 1 : 0 },
+    }),
+    additive: (index, covariates) =>
+      (covariates.conditions?.active === true ? 0.45 * Math.sin((2 * Math.PI * index) / 7) : 0) +
+      (eventActive(index, [21, 106], 0, 0) ? 1.5 : 0) +
+      0.2 * (covariates.regressors?.promotion ?? 0),
+  }),
   ...(["implicit", "explicit", "large"] as const).map((floorPolicy) => {
     const observationCount = floorPolicy === "large" ? 256 : 96;
     const predictionCount = floorPolicy === "large" ? 64 : 24;

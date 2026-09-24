@@ -7,8 +7,9 @@ import { fileURLToPath } from "node:url";
 
 import { Effect } from "effect";
 
-import { parseBenchmarkCases } from "./case.ts";
+import { parseBenchmarkCases, parseBenchmarkDataset } from "./case.ts";
 import { growthScalingAndMixedMapCases } from "./cases/growth-scaling-and-mixed-map.ts";
+import { uncertaintyCases } from "./cases/uncertainty.ts";
 import { resolveContainerPlatform } from "./container-platform.ts";
 import { generateBenchmarkData } from "./generate-data.ts";
 import type { RunManifest } from "./result.ts";
@@ -108,8 +109,60 @@ const main = async (): Promise<void> => {
   const casesInput: unknown = JSON.parse(await readFile(casesPath, "utf8"));
   const originalCases = await Effect.runPromise(parseBenchmarkCases(casesInput));
 
-  const cases = await Effect.runPromise(
-    parseBenchmarkCases([...originalCases, ...growthScalingAndMixedMapCases]),
+  const declarations = await Effect.runPromise(
+    parseBenchmarkCases([...originalCases, ...growthScalingAndMixedMapCases, ...uncertaintyCases]),
+  );
+
+  const cases = await Promise.all(
+    declarations.map(async (benchmarkCase) => {
+      const path = resolve(benchmarkRoot, "data", benchmarkCase.dataset);
+      const bytes = await readFile(path);
+
+      const dataset = await Effect.runPromise(
+        parseBenchmarkDataset(JSON.parse(bytes.toString("utf8"))),
+      );
+
+      const selection = benchmarkCase.rowSelection;
+
+      const futureRows =
+        selection === undefined
+          ? dataset.predictionRows
+          : dataset.predictionRows
+              .filter((_, index) => index % selection.stride === 0)
+              .slice(0, selection.future);
+
+      const lastTraining = dataset.observations.at(-1);
+      const lastFuture = futureRows.at(-1);
+
+      if (
+        lastTraining === undefined ||
+        (selection !== undefined && futureRows.length !== selection.future)
+      ) {
+        throw new Error(`Case ${benchmarkCase.id} cannot select its declared future rows`);
+      }
+
+      return {
+        ...benchmarkCase,
+        datasetIdentity: {
+          recipe: dataset.recipe,
+          sha256: createHash("sha256").update(bytes).digest("hex"),
+          trainingRows: dataset.observations.length,
+          predictionRows:
+            selection === undefined
+              ? dataset.predictionRows.length
+              : selection.historical + selection.future,
+          futureRows: futureRows.length,
+          horizonDays:
+            lastFuture === undefined
+              ? 0
+              : Math.max(
+                  0,
+                  (Date.parse(lastFuture.timestamp) - Date.parse(lastTraining.timestamp)) /
+                    86_400_000,
+                ),
+        },
+      };
+    }),
   );
 
   const knownIds = new Set(cases.map((benchmarkCase) => benchmarkCase.id));
@@ -130,13 +183,26 @@ const main = async (): Promise<void> => {
   const runId = `${timestampRunId()}-${gitRevision.slice(0, 8)}`;
   const runDirectory = resolve(benchmarkRoot, "results/runs", runId);
 
-  await mkdir(runDirectory, { recursive: true });
+  await mkdir(resolve(runDirectory, "inputs"), { recursive: true });
   await writeFile(resolve(runDirectory, "cases.json"), `${JSON.stringify(cases, null, 2)}\n`);
+
+  for (const dataset of new Set(
+    cases
+      .filter((benchmarkCase) => selectedCases.includes(benchmarkCase.id))
+      .map((benchmarkCase) => benchmarkCase.dataset),
+  )) {
+    const source = resolve(benchmarkRoot, "data", dataset);
+    const snapshot = resolve(runDirectory, "inputs", dataset);
+
+    await mkdir(resolve(snapshot, ".."), { recursive: true });
+    await writeFile(snapshot, await readFile(source));
+  }
 
   const inputPaths = Array.from(
     new Set([
       casesPath,
       resolve(benchmarkRoot, "cases/growth-scaling-and-mixed-map.ts"),
+      resolve(benchmarkRoot, "cases/uncertainty.ts"),
       resolve(runDirectory, "cases.json"),
       evidencePath,
       resolve(benchmarkRoot, "python/uv.lock"),

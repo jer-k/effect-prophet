@@ -9,6 +9,7 @@ import json
 import math
 import os
 import platform
+import resource
 import subprocess
 import sys
 import time
@@ -56,9 +57,28 @@ def load_dataset(benchmark_case: dict[str, Any]) -> dict[str, Any]:
     path = (root / relative).resolve()
     if root not in path.parents:
         raise ValueError("Benchmark dataset path escapes the shared data root")
-    value = read_json(path)
+    contents = path.read_bytes()
+    value = json.loads(contents)
     if not isinstance(value, dict):
         raise ValueError("Benchmark dataset must be an object")
+    identity = benchmark_case.get("datasetIdentity")
+    if identity is not None and (identity["sha256"] != hashlib.sha256(contents).hexdigest() or
+                                 identity["recipe"] != value["recipe"] or
+                                 identity["trainingRows"] != len(value["observations"])):
+        raise ValueError("Benchmark dataset recipe or checksum changed")
+    selection = benchmark_case.get("rowSelection")
+    if selection is not None:
+        historical = [
+            {key: item for key, item in row.items() if key != "value"}
+            for row in value["observations"][-selection["historical"]:]
+        ] if selection["historical"] else []
+        future = value["predictionRows"][::selection["stride"]][:selection["future"]]
+        if (len(historical) != selection["historical"] or
+                len(future) != selection["future"] or not historical + future):
+            raise ValueError("Invalid uncertainty prediction-row selection")
+        value["predictionRows"] = historical + future
+    if identity is not None and identity["predictionRows"] != len(value["predictionRows"]):
+        raise ValueError("Benchmark selected prediction dimensions changed")
     return value
 
 
@@ -561,6 +581,81 @@ def persistence_maximum_error(
     return maximum_projection_difference(original, restored_projection)
 
 
+def run_uncertainty(model: Prophet, frame: pd.DataFrame, benchmark_case: dict[str, Any], output: str | None = None) -> Any:
+    """Call a public scalar-path operation with an explicit per-call RNG reset."""
+
+    controls = benchmark_case["workload"]["uncertainty"]
+    model.uncertainty_samples = controls["samples"]
+    model.interval_width = controls["intervalWidth"]
+    np.random.seed(controls["seed"])
+    if (output or controls["output"]) == "samples":
+        return model.predictive_samples(frame, vectorized=False)
+    return model.predict(frame, vectorized=False)
+
+
+def uncertainty_digest(result: Any) -> str:
+    """Fingerprint the exact public output for a same-machine fresh-process replay."""
+
+    digest = hashlib.sha256()
+    if isinstance(result, pd.DataFrame):
+        digest.update(b"intervals")
+        arrays = (result[name].to_numpy(dtype=np.float64) for name in
+                  ("trend_lower", "trend_upper", "yhat_lower", "yhat_upper"))
+    else:
+        digest.update(b"samples")
+        arrays = (result[name] for name in ("trend", "yhat"))
+    for array in arrays:
+        digest.update(str(array.shape).encode("ascii"))
+        digest.update(np.ascontiguousarray(array).tobytes())
+    return digest.hexdigest()
+
+
+def assert_uncertainty(model: Prophet, frame: pd.DataFrame, benchmark_case: dict[str, Any]) -> dict[str, Any]:
+    """Check finite dimensions, exact same-draw quantiles, and persisted public replay."""
+
+    controls = benchmark_case["workload"]["uncertainty"]
+    count = controls["samples"]
+    length = len(frame)
+    draws = run_uncertainty(model, frame, benchmark_case, "samples")
+    intervals = run_uncertainty(model, frame, benchmark_case, "intervals")
+    original = run_uncertainty(model, frame, benchmark_case)
+    replay = run_uncertainty(model, frame, benchmark_case)
+    restored = model_from_json(model_to_json(model))
+    reloaded = run_uncertainty(restored, frame, benchmark_case)
+    if any(draws[key].shape != (length, count) or not np.isfinite(draws[key]).all()
+           for key in ("trend", "yhat")) or len(intervals) != length:
+        raise ValueError("Uncertainty returned incorrect or non-finite dimensions")
+    lower = (1 - controls["intervalWidth"]) * 50
+    upper = (1 + controls["intervalWidth"]) * 50
+    for key in ("trend", "yhat"):
+        for probability, column in ((lower, key + "_lower"), (upper, key + "_upper")):
+            expected = np.percentile(draws[key], probability, axis=1)
+            actual = intervals[column].to_numpy()
+            if (not np.isfinite(actual).all() or
+                    not np.allclose(actual, expected, rtol=0, atol=1e-8)):
+                raise ValueError("Public interval quantiles differ from matching scalar draws")
+        if (intervals[key + "_lower"] > intervals[key + "_upper"]).any():
+            raise ValueError("Uncertainty interval bounds are reversed")
+    if controls["output"] == "samples":
+        if any(not np.array_equal(original[key], other[key]) for other in (replay, reloaded)
+               for key in ("trend", "yhat")):
+            raise ValueError("Seeded sample replay changed after model reload")
+    else:
+        for other in (replay, reloaded):
+            if not original.equals(other):
+                raise ValueError("Seeded interval replay changed after model reload")
+    verified = subprocess.run(
+        [sys.executable, str(ADAPTER_PATH), "--verify-uncertainty", benchmark_case["id"]],
+        input=json.dumps({"model": model_to_json(model), "expected": uncertainty_digest(original)}),
+        text=True, capture_output=True, timeout=benchmark_case["timeoutSeconds"], check=False,
+    )
+    if verified.returncode != 0 or PROTOCOL_PREFIX not in verified.stdout:
+        raise ValueError(verified.stderr or verified.stdout or "Fresh-process uncertainty replay failed")
+
+    return {"algorithm": "prophet-1.4.0-scalar-continuous-time", "output": controls["output"],
+            "rows": length, "samples": count, "replay": "passed", "reduction": "passed", "finite": "passed"}
+
+
 def correctness_projection(
     benchmark_case: dict[str, Any], dataset: dict[str, Any], run: int
 ) -> dict[str, Any]:
@@ -588,6 +683,7 @@ def correctness_projection(
     if verified.returncode != 0 or PROTOCOL_PREFIX not in verified.stdout:
         raise ValueError(verified.stderr or verified.stdout or "Fresh-process restoration failed")
 
+    uncertainty = benchmark_case["workload"].get("uncertainty")
     result: dict[str, Any] = {
         "caseId": benchmark_case["id"],
         "run": run,
@@ -597,6 +693,8 @@ def correctness_projection(
         "persistenceMaximumAbsoluteError": persistence_maximum_error(
             model, prediction_frame, projections
         ),
+        **({"uncertainty": assert_uncertainty(model, prediction_frame, benchmark_case)}
+           if uncertainty is not None else {}),
     }
     sigma = model.params.get("sigma_obs")
     if benchmark_case["workload"]["kind"] in ("linear-map", "stage-f-map"):
@@ -690,6 +788,14 @@ def measurement_for_phase(
         samples = measure(benchmark_case, lambda: model_from_json(serialized))
     elif phase == "fresh-process-restored-predict":
         samples = process_samples(benchmark_case, "--restored", serialized)
+    elif phase == "uncertainty-input-conversion":
+        samples = measure(benchmark_case, lambda: prepare_input(dataset))
+    elif phase == "warm-uncertainty":
+        samples = measure(benchmark_case, lambda: run_uncertainty(model, prediction_frame, benchmark_case))
+    elif phase == "cold-first-uncertainty":
+        samples = process_samples(benchmark_case, "--cold-uncertainty")
+    elif phase == "fresh-process-restored-uncertainty":
+        samples = process_samples(benchmark_case, "--restored-uncertainty", serialized)
     else:
         raise ValueError(f"Unsupported benchmark phase: {phase}")
     comparison = benchmark_case["workload"]["comparison"]
@@ -697,7 +803,11 @@ def measurement_for_phase(
         "caseId": benchmark_case["id"],
         "implementation": "python-prophet",
         "phase": phase,
-        "comparison": comparison["kind"],
+        **({"peakRssBytes": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024}
+           if phase == "warm-uncertainty" else {}),
+        "comparison": ("scalar-process-different-public-work"
+                       if benchmark_case["workload"].get("uncertainty") is not None
+                       else comparison["kind"]),
         "evidenceId": comparison["evidenceId"],
         "run": run,
         "samplesNanoseconds": samples,
@@ -730,26 +840,31 @@ def run_worker(case_id: str, run: int, stage: str = "all") -> dict[str, Any]:
     return result
 
 
-def run_cold_worker(case_id: str) -> None:
+def run_cold_worker(case_id: str, uncertainty: bool = False) -> None:
     """Execute cold conversion, fit, prediction, and protocol output."""
 
     benchmark_case = find_case(case_id)
     dataset = load_dataset(benchmark_case)
     training, prediction_frame = prepare_input(dataset)
-    predicted = fit_model(training, benchmark_case).predict(prediction_frame)
-    if len(predicted) != len(prediction_frame):
-        raise ValueError("Cold Prophet forecast omitted rows")
+    model = fit_model(training, benchmark_case)
+    if uncertainty:
+        result = run_uncertainty(model, prediction_frame, benchmark_case)
+        length = len(result) if isinstance(result, pd.DataFrame) else result["trend"].shape[0]
+    else:
+        length = len(model.predict(prediction_frame))
+    if length != len(prediction_frame):
+        raise ValueError("Cold Prophet output omitted rows")
     print(f'{PROTOCOL_PREFIX}{{"status":"passed"}}')
 
 
-def run_restored_worker(case_id: str, verify: bool = False) -> None:
+def run_restored_worker(case_id: str, verify: bool = False, uncertainty: bool = False, verify_uncertainty: bool = False) -> None:
     """Decode a persisted model and predict in a fresh process without fitting."""
 
     benchmark_case = find_case(case_id)
     dataset = load_dataset(benchmark_case)
     serialized = sys.stdin.read()
-    verification = json.loads(serialized) if verify else None
-    model = model_from_json(verification["model"] if verify else serialized)
+    verification = json.loads(serialized) if (verify or verify_uncertainty) else None
+    model = model_from_json(verification["model"] if verification is not None else serialized)
     _, prediction_frame = prepare_input(dataset)
     if verify:
         _, projections = forecast_projection(model, prediction_frame)
@@ -758,9 +873,13 @@ def run_restored_worker(case_id: str, verify: bool = False) -> None:
         if maximum_projection_difference(verification["forecasts"], projections) > verification["tolerance"]:
             raise ValueError("Fresh-process restored forecasts differ from the fitted model")
     else:
-        predicted = model.predict(prediction_frame)
-        if len(predicted) != len(prediction_frame):
-            raise ValueError("Restored Prophet forecast omitted rows")
+        result = (run_uncertainty(model, prediction_frame, benchmark_case) if uncertainty
+                  else model.predict(prediction_frame))
+        length = len(result) if isinstance(result, pd.DataFrame) else result["trend"].shape[0]
+        if length != len(prediction_frame):
+            raise ValueError("Restored Prophet output omitted rows")
+        if verify_uncertainty and uncertainty_digest(result) != verification["expected"]:
+            raise ValueError("Fresh-process uncertainty replay differs from the fitted model")
     print(f'{PROTOCOL_PREFIX}{{"status":"passed"}}')
 
 
@@ -818,8 +937,9 @@ def collect_environment() -> dict[str, Any]:
             {"name": "collection-method", "value": "python-os and cgroup-v2"},
         ],
         "memoryMeasurement": (
-            "unsupported; Prophet fitting may use a backend child process and timings do not "
-            "report a process-tree peak RSS"
+            "warm-uncertainty: worker high-water RSS via resource.RUSAGE_SELF.ru_maxrss "
+            "(Linux KiB); includes imports, fitted model, setup and simulation; excludes "
+            "CmdStan fit child and is not simulation-only allocation"
         ),
     }
 
@@ -900,7 +1020,7 @@ def run_coordinator() -> None:
                         "caseId": benchmark_case["id"],
                         "implementation": "python-prophet",
                         "run": run,
-                        "stage": "runtime",
+                        "stage": "correctness" if stage == "correctness" else "runtime",
                         "message": (worker.stderr or worker.stdout or "Worker failed").strip()[:4000],
                     }
                 )
@@ -946,14 +1066,16 @@ def main() -> None:
             f"{PROTOCOL_PREFIX}"
             f"{json.dumps(run_worker(sys.argv[2], int(sys.argv[3]), stage))}"
         )
-    elif mode == "--cold":
+    elif mode in ("--cold", "--cold-uncertainty"):
         if len(sys.argv) != 3:
             raise ValueError("Cold worker requires case id")
-        run_cold_worker(sys.argv[2])
-    elif mode in ("--restored", "--verify-restored"):
+        run_cold_worker(sys.argv[2], uncertainty=mode == "--cold-uncertainty")
+    elif mode in ("--restored", "--verify-restored", "--restored-uncertainty", "--verify-uncertainty"):
         if len(sys.argv) != 3:
             raise ValueError("Restored worker requires case id")
-        run_restored_worker(sys.argv[2], verify=mode == "--verify-restored")
+        run_restored_worker(sys.argv[2], verify=mode == "--verify-restored",
+                            uncertainty=mode in ("--restored-uncertainty", "--verify-uncertainty"),
+                            verify_uncertainty=mode == "--verify-uncertainty")
     else:
         run_coordinator()
 

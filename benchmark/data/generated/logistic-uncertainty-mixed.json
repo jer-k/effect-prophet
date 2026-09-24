@@ -1,0 +1,1424 @@
+{
+  "id": "logistic-uncertainty-mixed",
+  "recipe": "logistic-uncertainty-mixed-v1:n=96:h=24:changing-capacity-floor+conditional-weekly+campaign+promotion",
+  "observations": [
+    {
+      "timestamp": "2020-01-01T00:00:00.000Z",
+      "value": 17.7567402571,
+      "capacity": 60,
+      "floor": 12,
+      "conditions": {
+        "active": false
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-01-02T00:00:00.000Z",
+      "value": 18.4388822711,
+      "capacity": 60.12,
+      "floor": 12.01,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-01-03T00:00:00.000Z",
+      "value": 18.8764951473,
+      "capacity": 60.24,
+      "floor": 12.02,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 1
+      }
+    },
+    {
+      "timestamp": "2020-01-04T00:00:00.000Z",
+      "value": 18.6473973735,
+      "capacity": 60.36,
+      "floor": 12.03,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-01-05T00:00:00.000Z",
+      "value": 18.6433602465,
+      "capacity": 60.48,
+      "floor": 12.04,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-01-06T00:00:00.000Z",
+      "value": 19.1244088162,
+      "capacity": 60.6,
+      "floor": 12.05,
+      "conditions": {
+        "active": false
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-01-07T00:00:00.000Z",
+      "value": 18.9420942542,
+      "capacity": 60.72,
+      "floor": 12.06,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-01-08T00:00:00.000Z",
+      "value": 19.6304232014,
+      "capacity": 60.84,
+      "floor": 12.07,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-01-09T00:00:00.000Z",
+      "value": 20.615454285,
+      "capacity": 60.96,
+      "floor": 12.08,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 1
+      }
+    },
+    {
+      "timestamp": "2020-01-10T00:00:00.000Z",
+      "value": 20.7740579227,
+      "capacity": 61.08,
+      "floor": 12.09,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-01-11T00:00:00.000Z",
+      "value": 20.5987083772,
+      "capacity": 61.2,
+      "floor": 12.1,
+      "conditions": {
+        "active": false
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-01-12T00:00:00.000Z",
+      "value": 20.8661181338,
+      "capacity": 61.32,
+      "floor": 12.11,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-01-13T00:00:00.000Z",
+      "value": 21.0616577794,
+      "capacity": 61.44,
+      "floor": 12.12,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-01-14T00:00:00.000Z",
+      "value": 21.4226963086,
+      "capacity": 61.56,
+      "floor": 12.13,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-01-15T00:00:00.000Z",
+      "value": 22.3467722671,
+      "capacity": 61.68,
+      "floor": 12.14,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 1
+      }
+    },
+    {
+      "timestamp": "2020-01-16T00:00:00.000Z",
+      "value": 22.6700280683,
+      "capacity": 61.8,
+      "floor": 12.15,
+      "conditions": {
+        "active": false
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-01-17T00:00:00.000Z",
+      "value": 23.5001346149,
+      "capacity": 61.92,
+      "floor": 12.16,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-01-18T00:00:00.000Z",
+      "value": 23.5524634105,
+      "capacity": 62.04,
+      "floor": 12.17,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-01-19T00:00:00.000Z",
+      "value": 23.6345628681,
+      "capacity": 62.16,
+      "floor": 12.18,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-01-20T00:00:00.000Z",
+      "value": 23.9203902521,
+      "capacity": 62.28,
+      "floor": 12.19,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-01-21T00:00:00.000Z",
+      "value": 24.9155986694,
+      "capacity": 62.4,
+      "floor": 12.2,
+      "conditions": {
+        "active": false
+      },
+      "regressors": {
+        "promotion": 1
+      }
+    },
+    {
+      "timestamp": "2020-01-22T00:00:00.000Z",
+      "value": 26.5978618672,
+      "capacity": 62.52,
+      "floor": 12.21,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-01-23T00:00:00.000Z",
+      "value": 26.0289311383,
+      "capacity": 62.64,
+      "floor": 12.22,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-01-24T00:00:00.000Z",
+      "value": 26.6428160891,
+      "capacity": 62.76,
+      "floor": 12.23,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-01-25T00:00:00.000Z",
+      "value": 26.7845624325,
+      "capacity": 62.88,
+      "floor": 12.24,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-01-26T00:00:00.000Z",
+      "value": 27.1105232641,
+      "capacity": 63,
+      "floor": 12.25,
+      "conditions": {
+        "active": false
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-01-27T00:00:00.000Z",
+      "value": 27.5276399221,
+      "capacity": 63.12,
+      "floor": 12.26,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 1
+      }
+    },
+    {
+      "timestamp": "2020-01-28T00:00:00.000Z",
+      "value": 27.9234839068,
+      "capacity": 63.24,
+      "floor": 12.27,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-01-29T00:00:00.000Z",
+      "value": 28.7231176802,
+      "capacity": 63.36,
+      "floor": 12.28,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-01-30T00:00:00.000Z",
+      "value": 29.7099237683,
+      "capacity": 63.48,
+      "floor": 12.29,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-01-31T00:00:00.000Z",
+      "value": 30.0099565812,
+      "capacity": 63.6,
+      "floor": 12.3,
+      "conditions": {
+        "active": false
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-02-01T00:00:00.000Z",
+      "value": 30.6759431401,
+      "capacity": 63.72,
+      "floor": 12.31,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-02-02T00:00:00.000Z",
+      "value": 31.0064203119,
+      "capacity": 63.84,
+      "floor": 12.32,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 1
+      }
+    },
+    {
+      "timestamp": "2020-02-03T00:00:00.000Z",
+      "value": 31.2583651204,
+      "capacity": 63.96,
+      "floor": 12.33,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-02-04T00:00:00.000Z",
+      "value": 31.9461628682,
+      "capacity": 64.08,
+      "floor": 12.34,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-02-05T00:00:00.000Z",
+      "value": 32.7695155769,
+      "capacity": 64.2,
+      "floor": 12.35,
+      "conditions": {
+        "active": false
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-02-06T00:00:00.000Z",
+      "value": 33.7478552944,
+      "capacity": 64.32,
+      "floor": 12.36,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-02-07T00:00:00.000Z",
+      "value": 34.5645323555,
+      "capacity": 64.44,
+      "floor": 12.37,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-02-08T00:00:00.000Z",
+      "value": 35.089358688,
+      "capacity": 64.56,
+      "floor": 12.38,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 1
+      }
+    },
+    {
+      "timestamp": "2020-02-09T00:00:00.000Z",
+      "value": 35.0432185569,
+      "capacity": 64.68,
+      "floor": 12.39,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-02-10T00:00:00.000Z",
+      "value": 35.978942833,
+      "capacity": 64.8,
+      "floor": 12.4,
+      "conditions": {
+        "active": false
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-02-11T00:00:00.000Z",
+      "value": 36.3529199306,
+      "capacity": 64.92,
+      "floor": 12.41,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-02-12T00:00:00.000Z",
+      "value": 37.2581017618,
+      "capacity": 65.04,
+      "floor": 12.42,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-02-13T00:00:00.000Z",
+      "value": 38.2457330206,
+      "capacity": 65.16,
+      "floor": 12.43,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-02-14T00:00:00.000Z",
+      "value": 39.3206633558,
+      "capacity": 65.28,
+      "floor": 12.44,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 1
+      }
+    },
+    {
+      "timestamp": "2020-02-15T00:00:00.000Z",
+      "value": 39.3388793527,
+      "capacity": 65.4,
+      "floor": 12.45,
+      "conditions": {
+        "active": false
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-02-16T00:00:00.000Z",
+      "value": 39.6852185719,
+      "capacity": 65.52,
+      "floor": 12.46,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-02-17T00:00:00.000Z",
+      "value": 40.1433599549,
+      "capacity": 65.64,
+      "floor": 12.47,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-02-18T00:00:00.000Z",
+      "value": 40.9875345842,
+      "capacity": 65.76,
+      "floor": 12.48,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-02-19T00:00:00.000Z",
+      "value": 41.9115725397,
+      "capacity": 65.88,
+      "floor": 12.49,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-02-20T00:00:00.000Z",
+      "value": 42.6828375067,
+      "capacity": 66,
+      "floor": 12.5,
+      "conditions": {
+        "active": false
+      },
+      "regressors": {
+        "promotion": 1
+      }
+    },
+    {
+      "timestamp": "2020-02-21T00:00:00.000Z",
+      "value": 43.6777045581,
+      "capacity": 66.12,
+      "floor": 12.51,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-02-22T00:00:00.000Z",
+      "value": 44.1356850339,
+      "capacity": 66.24,
+      "floor": 12.52,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-02-23T00:00:00.000Z",
+      "value": 44.2854666381,
+      "capacity": 66.36,
+      "floor": 12.53,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-02-24T00:00:00.000Z",
+      "value": 44.6959468128,
+      "capacity": 66.48,
+      "floor": 12.54,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-02-25T00:00:00.000Z",
+      "value": 45.9202935397,
+      "capacity": 66.6,
+      "floor": 12.55,
+      "conditions": {
+        "active": false
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-02-26T00:00:00.000Z",
+      "value": 46.7540687809,
+      "capacity": 66.72,
+      "floor": 12.56,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 1
+      }
+    },
+    {
+      "timestamp": "2020-02-27T00:00:00.000Z",
+      "value": 47.4554543626,
+      "capacity": 66.84,
+      "floor": 12.57,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-02-28T00:00:00.000Z",
+      "value": 48.263584076,
+      "capacity": 66.96,
+      "floor": 12.58,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-02-29T00:00:00.000Z",
+      "value": 48.7572686385,
+      "capacity": 67.08,
+      "floor": 12.59,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-03-01T00:00:00.000Z",
+      "value": 49.1029224217,
+      "capacity": 67.2,
+      "floor": 12.6,
+      "conditions": {
+        "active": false
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-03-02T00:00:00.000Z",
+      "value": 49.2276688167,
+      "capacity": 67.32,
+      "floor": 12.61,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-03-03T00:00:00.000Z",
+      "value": 50.2402774666,
+      "capacity": 67.44,
+      "floor": 12.62,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 1
+      }
+    },
+    {
+      "timestamp": "2020-03-04T00:00:00.000Z",
+      "value": 51.0162659909,
+      "capacity": 67.56,
+      "floor": 12.63,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-03-05T00:00:00.000Z",
+      "value": 51.8369226866,
+      "capacity": 67.68,
+      "floor": 12.64,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-03-06T00:00:00.000Z",
+      "value": 52.0830227747,
+      "capacity": 67.8,
+      "floor": 12.65,
+      "conditions": {
+        "active": false
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-03-07T00:00:00.000Z",
+      "value": 52.9727751764,
+      "capacity": 67.92,
+      "floor": 12.66,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-03-08T00:00:00.000Z",
+      "value": 53.1038597661,
+      "capacity": 68.04,
+      "floor": 12.67,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-03-09T00:00:00.000Z",
+      "value": 53.5312841,
+      "capacity": 68.16,
+      "floor": 12.68,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 1
+      }
+    },
+    {
+      "timestamp": "2020-03-10T00:00:00.000Z",
+      "value": 54.0710872894,
+      "capacity": 68.28,
+      "floor": 12.69,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-03-11T00:00:00.000Z",
+      "value": 55.0615286103,
+      "capacity": 68.4,
+      "floor": 12.7,
+      "conditions": {
+        "active": false
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-03-12T00:00:00.000Z",
+      "value": 55.8656373499,
+      "capacity": 68.52,
+      "floor": 12.71,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-03-13T00:00:00.000Z",
+      "value": 56.4658302636,
+      "capacity": 68.64,
+      "floor": 12.72,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-03-14T00:00:00.000Z",
+      "value": 56.8846662376,
+      "capacity": 68.76,
+      "floor": 12.73,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-03-15T00:00:00.000Z",
+      "value": 57.2244634226,
+      "capacity": 68.88,
+      "floor": 12.74,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 1
+      }
+    },
+    {
+      "timestamp": "2020-03-16T00:00:00.000Z",
+      "value": 57.6145031393,
+      "capacity": 69,
+      "floor": 12.75,
+      "conditions": {
+        "active": false
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-03-17T00:00:00.000Z",
+      "value": 57.8002426198,
+      "capacity": 69.12,
+      "floor": 12.76,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-03-18T00:00:00.000Z",
+      "value": 58.7451733486,
+      "capacity": 69.24,
+      "floor": 12.77,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-03-19T00:00:00.000Z",
+      "value": 59.4955021612,
+      "capacity": 69.36,
+      "floor": 12.78,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-03-20T00:00:00.000Z",
+      "value": 59.9558010996,
+      "capacity": 69.48,
+      "floor": 12.79,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-03-21T00:00:00.000Z",
+      "value": 60.2656672328,
+      "capacity": 69.6,
+      "floor": 12.8,
+      "conditions": {
+        "active": false
+      },
+      "regressors": {
+        "promotion": 1
+      }
+    },
+    {
+      "timestamp": "2020-03-22T00:00:00.000Z",
+      "value": 60.366015484,
+      "capacity": 69.72,
+      "floor": 12.81,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-03-23T00:00:00.000Z",
+      "value": 60.4430384124,
+      "capacity": 69.84,
+      "floor": 12.82,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-03-24T00:00:00.000Z",
+      "value": 60.9470459701,
+      "capacity": 69.96,
+      "floor": 12.83,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-03-25T00:00:00.000Z",
+      "value": 61.8510942196,
+      "capacity": 70.08,
+      "floor": 12.84,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-03-26T00:00:00.000Z",
+      "value": 62.2554555778,
+      "capacity": 70.2,
+      "floor": 12.85,
+      "conditions": {
+        "active": false
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-03-27T00:00:00.000Z",
+      "value": 63.2013173559,
+      "capacity": 70.32,
+      "floor": 12.86,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 1
+      }
+    },
+    {
+      "timestamp": "2020-03-28T00:00:00.000Z",
+      "value": 63.2315023322,
+      "capacity": 70.44,
+      "floor": 12.87,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-03-29T00:00:00.000Z",
+      "value": 63.3419302599,
+      "capacity": 70.56,
+      "floor": 12.88,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-03-30T00:00:00.000Z",
+      "value": 63.4023309549,
+      "capacity": 70.68,
+      "floor": 12.89,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-03-31T00:00:00.000Z",
+      "value": 64.1540091797,
+      "capacity": 70.8,
+      "floor": 12.9,
+      "conditions": {
+        "active": false
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-04-01T00:00:00.000Z",
+      "value": 64.631151167,
+      "capacity": 70.92,
+      "floor": 12.91,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-04-02T00:00:00.000Z",
+      "value": 65.5670675546,
+      "capacity": 71.04,
+      "floor": 12.92,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 1
+      }
+    },
+    {
+      "timestamp": "2020-04-03T00:00:00.000Z",
+      "value": 65.6725598583,
+      "capacity": 71.16,
+      "floor": 12.93,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-04-04T00:00:00.000Z",
+      "value": 65.7652713849,
+      "capacity": 71.28,
+      "floor": 12.94,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-04-05T00:00:00.000Z",
+      "value": 66.0103982596,
+      "capacity": 71.4,
+      "floor": 12.95,
+      "conditions": {
+        "active": false
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    }
+  ],
+  "predictionRows": [
+    {
+      "timestamp": "2020-04-06T00:00:00.000Z",
+      "capacity": 71.52,
+      "floor": 12.96,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-04-07T00:00:00.000Z",
+      "capacity": 71.64,
+      "floor": 12.97,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-04-08T00:00:00.000Z",
+      "capacity": 71.76,
+      "floor": 12.98,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 1
+      }
+    },
+    {
+      "timestamp": "2020-04-09T00:00:00.000Z",
+      "capacity": 71.88,
+      "floor": 12.99,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-04-10T00:00:00.000Z",
+      "capacity": 72,
+      "floor": 13,
+      "conditions": {
+        "active": false
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-04-11T00:00:00.000Z",
+      "capacity": 72.12,
+      "floor": 13.01,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-04-12T00:00:00.000Z",
+      "capacity": 72.24,
+      "floor": 13.02,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-04-13T00:00:00.000Z",
+      "capacity": 72.36,
+      "floor": 13.03,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-04-14T00:00:00.000Z",
+      "capacity": 72.48,
+      "floor": 13.04,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 1
+      }
+    },
+    {
+      "timestamp": "2020-04-15T00:00:00.000Z",
+      "capacity": 72.6,
+      "floor": 13.05,
+      "conditions": {
+        "active": false
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-04-16T00:00:00.000Z",
+      "capacity": 72.72,
+      "floor": 13.06,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-04-17T00:00:00.000Z",
+      "capacity": 72.84,
+      "floor": 13.07,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-04-18T00:00:00.000Z",
+      "capacity": 72.96,
+      "floor": 13.08,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-04-19T00:00:00.000Z",
+      "capacity": 73.08,
+      "floor": 13.09,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-04-20T00:00:00.000Z",
+      "capacity": 73.2,
+      "floor": 13.1,
+      "conditions": {
+        "active": false
+      },
+      "regressors": {
+        "promotion": 1
+      }
+    },
+    {
+      "timestamp": "2020-04-21T00:00:00.000Z",
+      "capacity": 73.32,
+      "floor": 13.11,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-04-22T00:00:00.000Z",
+      "capacity": 73.44,
+      "floor": 13.12,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-04-23T00:00:00.000Z",
+      "capacity": 73.56,
+      "floor": 13.13,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-04-24T00:00:00.000Z",
+      "capacity": 73.68,
+      "floor": 13.14,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-04-25T00:00:00.000Z",
+      "capacity": 73.8,
+      "floor": 13.15,
+      "conditions": {
+        "active": false
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-04-26T00:00:00.000Z",
+      "capacity": 73.92,
+      "floor": 13.16,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 1
+      }
+    },
+    {
+      "timestamp": "2020-04-27T00:00:00.000Z",
+      "capacity": 74.04,
+      "floor": 13.17,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-04-28T00:00:00.000Z",
+      "capacity": 74.16,
+      "floor": 13.18,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    },
+    {
+      "timestamp": "2020-04-29T00:00:00.000Z",
+      "capacity": 74.28,
+      "floor": 13.19,
+      "conditions": {
+        "active": true
+      },
+      "regressors": {
+        "promotion": 0
+      }
+    }
+  ]
+}

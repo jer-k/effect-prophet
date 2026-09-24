@@ -18,6 +18,7 @@ export interface TimingSummary {
   readonly p90Nanoseconds: number;
   readonly minimumNanoseconds: number;
   readonly maximumNanoseconds: number;
+  readonly peakRssBytes?: number;
 }
 
 /** Maximum cross-language differences by correctness quantity. */
@@ -33,7 +34,10 @@ export interface QuantityDifferences {
 export interface CaseCorrectnessSummary {
   readonly caseId: string;
   readonly status: "passed" | "failed";
-  readonly comparison: "equivalent-equation" | "equivalent-objective";
+  readonly comparison:
+    | "equivalent-equation"
+    | "equivalent-objective"
+    | "scalar-process-different-public-work";
   readonly maximumDifferences?: QuantityDifferences;
   readonly note: string;
 }
@@ -46,6 +50,17 @@ export interface BenchmarkReport {
   readonly purpose: string;
   readonly correctness: ReadonlyArray<CaseCorrectnessSummary>;
   readonly timings: ReadonlyArray<TimingSummary>;
+  readonly workloads: ReadonlyArray<{
+    readonly id: string;
+    readonly dataset: string;
+    readonly identity: BenchmarkCase["datasetIdentity"];
+    readonly samples: number;
+    readonly output: "intervals" | "samples";
+    readonly evidence: string;
+    readonly samplerMemoryLimitBytes: number;
+    readonly featureColumns: number;
+    readonly changepoints: number;
+  }>;
   readonly failures: ReadonlyArray<ImplementationResult["failures"][number]>;
   readonly environments: ReadonlyArray<{
     readonly implementation: BenchmarkImplementation;
@@ -67,7 +82,11 @@ const summarizeMeasurements = (
   measurements: ReadonlyArray<BenchmarkMeasurement>,
 ): ReadonlyArray<TimingSummary> => {
   const grouped = new Map<string, Array<number>>();
-  const metadata = new Map<string, Pick<TimingSummary, "caseId" | "phase" | "implementation">>();
+
+  const metadata = new Map<
+    string,
+    Pick<TimingSummary, "caseId" | "phase" | "implementation" | "peakRssBytes">
+  >();
 
   for (const measurement of measurements) {
     const key = `${measurement.caseId}\u0000${measurement.phase}\u0000${measurement.implementation}`;
@@ -75,13 +94,29 @@ const summarizeMeasurements = (
 
     if (samples === undefined) {
       grouped.set(key, Array.from(measurement.samplesNanoseconds));
-      metadata.set(key, {
+
+      const fields = {
         caseId: measurement.caseId,
         phase: measurement.phase,
         implementation: measurement.implementation,
-      });
+      };
+
+      metadata.set(
+        key,
+        measurement.peakRssBytes === undefined
+          ? fields
+          : { ...fields, peakRssBytes: measurement.peakRssBytes },
+      );
     } else {
       samples.push(...measurement.samplesNanoseconds);
+      const previous = metadata.get(key);
+
+      if (previous !== undefined && measurement.peakRssBytes !== undefined) {
+        metadata.set(key, {
+          ...previous,
+          peakRssBytes: Math.max(previous.peakRssBytes ?? 0, measurement.peakRssBytes),
+        });
+      }
     }
   }
 
@@ -383,11 +418,17 @@ const correctnessForCase = (
     (failure) => failure.caseId === benchmarkCase.id,
   );
 
+  const comparison =
+    benchmarkCase.workload.kind === "stage-f-map" &&
+    benchmarkCase.workload.uncertainty !== undefined
+      ? ("scalar-process-different-public-work" as const)
+      : benchmarkCase.workload.comparison.kind;
+
   if (failures.length > 0) {
     return {
       caseId: benchmarkCase.id,
       status: "failed",
-      comparison: benchmarkCase.workload.comparison.kind,
+      comparison,
       note: "At least one implementation run failed before correctness eligibility was established.",
     };
   }
@@ -402,7 +443,7 @@ const correctnessForCase = (
     return {
       caseId: benchmarkCase.id,
       status: "failed",
-      comparison: benchmarkCase.workload.comparison.kind,
+      comparison,
       note: "One or more independent runs omitted local correctness evidence.",
     };
   }
@@ -418,7 +459,7 @@ const correctnessForCase = (
     return {
       caseId: benchmarkCase.id,
       status: "failed",
-      comparison: benchmarkCase.workload.comparison.kind,
+      comparison,
       note: "At least one public persistence round trip exceeded its tolerance.",
     };
   }
@@ -432,7 +473,7 @@ const correctnessForCase = (
     return {
       caseId: benchmarkCase.id,
       status: "failed",
-      comparison: benchmarkCase.workload.comparison.kind,
+      comparison,
       note: "Equivalent-objective timing requires finite optimizer evidence.",
     };
   }
@@ -443,8 +484,34 @@ const correctnessForCase = (
     return {
       caseId: benchmarkCase.id,
       status: "failed",
-      comparison: benchmarkCase.workload.comparison.kind,
+      comparison,
       note: `Comparison evidence ${evidenceId} is missing.`,
+    };
+  }
+
+  const controls =
+    benchmarkCase.workload.kind === "stage-f-map" ? benchmarkCase.workload.uncertainty : undefined;
+
+  if (
+    controls !== undefined &&
+    [...effectProjections, ...pythonProjections].some(
+      (projection) =>
+        projection.uncertainty === undefined ||
+        projection.uncertainty.output !== controls.output ||
+        projection.uncertainty.samples !== controls.samples ||
+        projection.uncertainty.rows === 0 ||
+        (benchmarkCase.datasetIdentity !== undefined &&
+          projection.uncertainty.rows !== benchmarkCase.datasetIdentity.predictionRows) ||
+        projection.uncertainty.replay !== "passed" ||
+        projection.uncertainty.reduction !== "passed" ||
+        projection.uncertainty.finite !== "passed",
+    )
+  ) {
+    return {
+      caseId: benchmarkCase.id,
+      status: "failed",
+      comparison,
+      note: "Uncertainty dimensions, sample reduction, or replay evidence is missing or failed.",
     };
   }
 
@@ -457,7 +524,7 @@ const correctnessForCase = (
       return {
         caseId: benchmarkCase.id,
         status: "failed",
-        comparison: benchmarkCase.workload.comparison.kind,
+        comparison,
         note: "Independent correctness runs are not aligned.",
       };
     }
@@ -468,7 +535,7 @@ const correctnessForCase = (
       return {
         caseId: benchmarkCase.id,
         status: "failed",
-        comparison: benchmarkCase.workload.comparison.kind,
+        comparison,
         note: "Fitted metadata, forecast rows, or named component layouts differ.",
       };
     }
@@ -510,10 +577,12 @@ const correctnessForCase = (
   return {
     caseId: benchmarkCase.id,
     status: passed ? "passed" : "failed",
-    comparison: benchmarkCase.workload.comparison.kind,
+    comparison,
     maximumDifferences: maximum,
     note: passed
-      ? `Verified equivalent behavior for this configuration under evidence ${evidenceId}.`
+      ? controls === undefined
+        ? `Verified equivalent behavior for this configuration under evidence ${evidenceId}.`
+        : `Verified fitted point behavior under ${evidenceId}; scalar simulation gated by ${controls.evidence}. Public output work differs.`
       : `Cross-language quantities exceeded tolerance: ${failedQuantities.join(", ")}.`,
   };
 };
@@ -530,16 +599,29 @@ export const buildBenchmarkReport = (
     correctnessForCase(benchmarkCase, effectResult, pythonResult, evidenceIds),
   );
 
-  const passedCases = new Set<string>();
+  const passedCases = new Map(
+    correctness.flatMap((summary) =>
+      summary.status === "passed" ? [[summary.caseId, summary] as const] : [],
+    ),
+  );
 
-  for (const summary of correctness) {
-    if (summary.status === "passed") {
-      passedCases.add(summary.caseId);
-    }
-  }
+  const casesById = new Map(cases.map((benchmarkCase) => [benchmarkCase.id, benchmarkCase]));
 
   const acceptedMeasurements = [...effectResult.measurements, ...pythonResult.measurements].filter(
-    (measurement) => passedCases.has(measurement.caseId),
+    (measurement) => {
+      const summary = passedCases.get(measurement.caseId);
+      const benchmarkCase = casesById.get(measurement.caseId);
+
+      return (
+        summary !== undefined &&
+        benchmarkCase !== undefined &&
+        measurement.comparison === summary.comparison &&
+        measurement.evidenceId === benchmarkCase.workload.comparison.evidenceId &&
+        benchmarkCase.phases.includes(measurement.phase) &&
+        measurement.run < benchmarkCase.independentRuns &&
+        measurement.samplesNanoseconds.length === benchmarkCase.measuredIterations
+      );
+    },
   );
 
   return {
@@ -550,6 +632,42 @@ export const buildBenchmarkReport = (
       "Descriptive public API timing and correctness evidence; this report presents absolute measurements without ranking implementations.",
     correctness,
     timings: summarizeMeasurements(acceptedMeasurements),
+    workloads: cases.flatMap((benchmarkCase) => {
+      const uncertainty =
+        benchmarkCase.workload.kind === "stage-f-map"
+          ? benchmarkCase.workload.uncertainty
+          : undefined;
+
+      return uncertainty === undefined
+        ? []
+        : [
+            {
+              id: benchmarkCase.id,
+              dataset: benchmarkCase.dataset,
+              identity: benchmarkCase.datasetIdentity,
+              samples: uncertainty.samples,
+              output: uncertainty.output,
+              evidence: uncertainty.evidence,
+              samplerMemoryLimitBytes: uncertainty.samplerMemoryLimitBytes,
+              featureColumns:
+                benchmarkCase.workload.kind === "stage-f-map"
+                  ? benchmarkCase.workload.configuration.seasonalities.reduce(
+                      (count, item) => count + 2 * item.fourierOrder,
+                      0,
+                    ) +
+                    new Set(benchmarkCase.workload.configuration.events.map((item) => item.name))
+                      .size +
+                    benchmarkCase.workload.configuration.regressors.length
+                  : 0,
+              changepoints:
+                benchmarkCase.workload.kind === "stage-f-map"
+                  ? benchmarkCase.workload.configuration.changepoints.mode === "explicit"
+                    ? benchmarkCase.workload.configuration.changepoints.timestamps.length
+                    : benchmarkCase.workload.configuration.changepoints.count
+                  : 0,
+            },
+          ];
+    }),
     failures: [...effectResult.failures, ...pythonResult.failures],
     environments: [
       { implementation: effectResult.implementation, environment: effectResult.environment },
@@ -559,6 +677,12 @@ export const buildBenchmarkReport = (
 };
 
 const milliseconds = (nanoseconds: number): string => (nanoseconds / 1_000_000).toFixed(3);
+
+const reportWorkloadRows = (report: BenchmarkReport): ReadonlyArray<string> =>
+  report.workloads.map(
+    (workload) =>
+      `| ${workload.id} | ${workload.identity?.trainingRows ?? "n/a"} | ${workload.featureColumns} | ${workload.changepoints} | ${workload.identity?.predictionRows ?? "n/a"} | ${workload.identity?.futureRows ?? "n/a"} | ${workload.identity?.horizonDays ?? "n/a"} | ${workload.samples} | ${workload.output} | ${workload.samplerMemoryLimitBytes} | ${workload.identity?.recipe ?? "n/a"} / ${workload.identity?.sha256 ?? "n/a"} | ${workload.evidence} |`,
+  );
 
 const escapeTableCell = (value: string): string =>
   value.replaceAll("|", "\\|").replaceAll("\r\n", "<br>").replaceAll("\n", "<br>");
@@ -586,17 +710,25 @@ export const renderBenchmarkMarkdown = (report: BenchmarkReport): string => {
 
   lines.push(
     "",
+    "## Uncertainty workloads",
+    "",
+    "Python public `predict(..., vectorized=False)` includes point/component/interval assembly; `predictive_samples(..., vectorized=False)` returns trend/yhat matrices. Effect uses `predictUncertainty` for both modes. Python RNG reset is included in warm operation timings; fitted model/setup and input conversion are excluded. Both use scalar continuous-time algorithms, not identical random draws or equivalent public-output work. Only absolute times are reported. The external EP-080 distribution evidence establishes eligibility; this run checks replay, finite dimensions, same-sample quantiles and fitted point equivalence, not fitted distribution parity or calibration.",
+    "",
+    "| Case | N | Features | Changepoints | Rows | Future | Horizon (days) | S | Output | Effect sampler limit (bytes) | Dataset recipe / SHA-256 | Evidence |",
+    "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | --- | --- |",
+    ...reportWorkloadRows(report),
+    "",
     "## Absolute timings",
     "",
     "Only cases with accepted correctness evidence appear below. Values combine retained samples from all independent runs. Percentiles are descriptive; small sample counts do not establish stable tail behavior.",
     "",
-    "| Case | Phase | Implementation | Samples | Median (ms) | p90 (ms) | Min (ms) | Max (ms) |",
-    "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: |",
+    "| Case | Phase | Implementation | Samples | Median (ms) | p90 (ms) | Min (ms) | Max (ms) | Worker peak RSS (MiB) |",
+    "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |",
   );
 
   for (const timing of report.timings) {
     lines.push(
-      `| ${escapeTableCell(timing.caseId)} | ${timing.phase} | ${timing.implementation} | ${timing.sampleCount} | ${milliseconds(timing.medianNanoseconds)} | ${milliseconds(timing.p90Nanoseconds)} | ${milliseconds(timing.minimumNanoseconds)} | ${milliseconds(timing.maximumNanoseconds)} |`,
+      `| ${escapeTableCell(timing.caseId)} | ${timing.phase} | ${timing.implementation} | ${timing.sampleCount} | ${milliseconds(timing.medianNanoseconds)} | ${milliseconds(timing.p90Nanoseconds)} | ${milliseconds(timing.minimumNanoseconds)} | ${milliseconds(timing.maximumNanoseconds)} | ${timing.peakRssBytes === undefined ? "n/a" : (timing.peakRssBytes / 1_048_576).toFixed(1)} |`,
     );
   }
 

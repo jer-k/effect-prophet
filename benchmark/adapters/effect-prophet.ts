@@ -12,6 +12,7 @@ import {
   fit,
   getRegressorCoefficients,
   predict,
+  predictUncertainty,
   prophetFittingBackendLayer,
   type FittedProphet,
   type Forecasts,
@@ -25,6 +26,7 @@ import {
   type BenchmarkPhase,
 } from "../case.ts";
 import { effectOptionsForCase } from "../effect-case.ts";
+import { percentile } from "../uncertainty.ts";
 import {
   BenchmarkMeasurementSchema,
   CorrectnessProjectionSchema,
@@ -77,6 +79,10 @@ interface PreparedInput {
 
 let measurementSink: unknown;
 
+// No exporter or tracing cost is part of the measured public operations.
+const runWithoutTracing = <A, E>(operation: Effect.Effect<A, E>): A =>
+  Effect.runSync(operation.pipe(Effect.withTracerEnabled(false)));
+
 const loadCases = async (): Promise<ReadonlyArray<BenchmarkCase>> => {
   const path = process.env.BENCHMARK_CASES_PATH ?? defaultCasesPath;
   const input: unknown = JSON.parse(await readFile(path, "utf8"));
@@ -87,9 +93,52 @@ const loadCases = async (): Promise<ReadonlyArray<BenchmarkCase>> => {
 const loadDataset = async (benchmarkCase: BenchmarkCase): Promise<BenchmarkDataset> => {
   const root = process.env.BENCHMARK_DATA_ROOT ?? defaultDataRoot;
   const path = resolve(root, benchmarkCase.dataset);
-  const input: unknown = JSON.parse(await readFile(path, "utf8"));
+  const bytes = await readFile(path);
+  const input: unknown = JSON.parse(bytes.toString("utf8"));
 
-  return Effect.runPromise(parseBenchmarkDataset(input));
+  const dataset = await Effect.runPromise(parseBenchmarkDataset(input));
+  const identity = benchmarkCase.datasetIdentity;
+
+  if (
+    identity !== undefined &&
+    (identity.sha256 !== createHash("sha256").update(bytes).digest("hex") ||
+      identity.recipe !== dataset.recipe ||
+      identity.trainingRows !== dataset.observations.length)
+  ) {
+    throw new Error(`Case ${benchmarkCase.id} dataset identity changed`);
+  }
+
+  const selection = benchmarkCase.rowSelection;
+
+  if (selection === undefined) {
+    if (identity !== undefined && identity.predictionRows !== dataset.predictionRows.length) {
+      throw new Error(`Case ${benchmarkCase.id} prediction dimensions changed`);
+    }
+
+    return dataset;
+  }
+
+  const historical = (
+    selection.historical === 0 ? [] : dataset.observations.slice(-selection.historical)
+  ).map(({ value: _value, ...row }) => row);
+
+  const future = dataset.predictionRows
+    .filter((_, index) => index % selection.stride === 0)
+    .slice(0, selection.future);
+
+  if (
+    historical.length !== selection.historical ||
+    future.length !== selection.future ||
+    historical.length + future.length === 0
+  ) {
+    throw new Error(`Case ${benchmarkCase.id} has an invalid prediction-row selection`);
+  }
+
+  if (identity !== undefined && identity.predictionRows !== historical.length + future.length) {
+    throw new Error(`Case ${benchmarkCase.id} selected prediction dimensions changed`);
+  }
+
+  return { ...dataset, predictionRows: [...historical, ...future] };
 };
 
 const selectCases = (cases: ReadonlyArray<BenchmarkCase>): ReadonlyArray<BenchmarkCase> => {
@@ -183,7 +232,7 @@ const prepareInput = (dataset: BenchmarkDataset): PreparedInput => ({
 });
 
 const runFit = (input: PreparedInput, benchmarkCase: BenchmarkCase): FittedProphet =>
-  Effect.runSync(
+  runWithoutTracing(
     fit(input.observations, effectOptionsForCase(benchmarkCase)).pipe(
       Effect.provide(prophetFittingBackendLayer),
     ),
@@ -196,7 +245,7 @@ const fixedPredictionModel = (benchmarkCase: BenchmarkCase): FittedProphet => {
 
   const parameters = benchmarkCase.workload.parameters;
 
-  return Effect.runSync(
+  return runWithoutTracing(
     decodeFittedModel({
       modelKind: "linear-trend",
       coefficients: { intercept: parameters.intercept, slope: parameters.slope },
@@ -211,7 +260,7 @@ const setupModel = (input: PreparedInput, benchmarkCase: BenchmarkCase): FittedP
     : runFit(input, benchmarkCase);
 
 const runPredict = (model: FittedProphet, input: PreparedInput): Forecasts =>
-  Effect.runSync(predict(model, input.predictionRows));
+  runWithoutTracing(predict(model, input.predictionRows));
 
 const forecastProjection = (forecasts: Forecasts): ReadonlyArray<ForecastProjection> =>
   forecasts.map((forecast) => ({
@@ -605,13 +654,149 @@ const persistenceMaximumError = (
   input: PreparedInput,
   forecasts: ReadonlyArray<ForecastProjection>,
 ): number => {
-  const encoded = Effect.runSync(encodeFittedModel(model));
+  const encoded = runWithoutTracing(encodeFittedModel(model));
   const serialized = JSON.stringify(encoded);
   const decodedInput: unknown = JSON.parse(serialized);
-  const restored = Effect.runSync(decodeFittedModel(decodedInput));
+  const restored = runWithoutTracing(decodeFittedModel(decodedInput));
   const restoredForecasts = forecastProjection(runPredict(restored, input));
 
   return maximumProjectionDifference(forecasts, restoredForecasts);
+};
+
+const runUncertainty = (
+  model: FittedProphet,
+  input: PreparedInput,
+  benchmarkCase: BenchmarkCase,
+  output?: "intervals" | "samples",
+) => {
+  const controls =
+    benchmarkCase.workload.kind === "stage-f-map" ? benchmarkCase.workload.uncertainty : undefined;
+
+  if (controls === undefined) {
+    throw new Error("Uncertainty phase requires explicit controls");
+  }
+
+  return runWithoutTracing(
+    predictUncertainty(model, input.predictionRows, {
+      seed: controls.seed,
+      samples: controls.samples,
+      intervalWidth: controls.intervalWidth,
+      output: output ?? controls.output,
+    }),
+  );
+};
+
+const uncertaintySignature = (result: ReturnType<typeof runUncertainty>): string =>
+  result.kind === "samples"
+    ? JSON.stringify([
+        result.simulation,
+        result.sampleCount,
+        result.timestamps,
+        Array.from(result.trend),
+        Array.from(result.value),
+      ])
+    : JSON.stringify(result);
+
+const assertUncertainty = (
+  model: FittedProphet,
+  input: PreparedInput,
+  benchmarkCase: BenchmarkCase,
+): NonNullable<CorrectnessProjection["uncertainty"]> => {
+  const controls =
+    benchmarkCase.workload.kind === "stage-f-map" ? benchmarkCase.workload.uncertainty : undefined;
+
+  if (controls === undefined) {
+    throw new Error("Missing uncertainty controls");
+  }
+
+  const samples = runUncertainty(model, input, benchmarkCase, "samples");
+  const intervals = runUncertainty(model, input, benchmarkCase, "intervals");
+  const replay = runUncertainty(model, input, benchmarkCase, controls.output);
+  const original = controls.output === "samples" ? samples : intervals;
+
+  const restored = runWithoutTracing(
+    decodeFittedModel(JSON.parse(JSON.stringify(runWithoutTracing(encodeFittedModel(model))))),
+  );
+
+  const reloaded = runUncertainty(restored, input, benchmarkCase, controls.output);
+  const rows = input.predictionRows.length;
+  const count = controls.samples;
+  const lower = (1 - controls.intervalWidth) / 2;
+  const upper = (1 + controls.intervalWidth) / 2;
+
+  if (
+    samples.kind !== "samples" ||
+    intervals.kind !== "intervals" ||
+    samples.trend.length !== rows * count ||
+    samples.value.length !== rows * count ||
+    samples.timestamps.length !== rows ||
+    intervals.rows.length !== rows ||
+    samples.sampleCount !== count ||
+    intervals.sampleCount !== count
+  ) {
+    throw new Error("Uncertainty returned incorrect dimensions");
+  }
+
+  for (let index = 0; index < rows; index += 1) {
+    const timestamp = Date.parse(input.predictionRows[index]?.timestamp ?? "");
+    const interval = intervals.rows[index];
+
+    if (samples.timestamps[index] !== timestamp || interval?.timestamp !== timestamp) {
+      throw new Error("Uncertainty changed prediction row order");
+    }
+
+    for (const [values, bounds] of [
+      [samples.trend, interval.trend],
+      [samples.value, interval.value],
+    ] as const) {
+      const row = values.slice(index * count, (index + 1) * count);
+      const expectedLower = percentile(row, lower);
+      const expectedUpper = percentile(row, upper);
+
+      if (
+        !Number.isFinite(bounds.lower) ||
+        !Number.isFinite(bounds.upper) ||
+        bounds.lower > bounds.upper ||
+        Math.abs(bounds.lower - expectedLower) > 1e-8 ||
+        Math.abs(bounds.upper - expectedUpper) > 1e-8
+      ) {
+        throw new Error("Uncertainty quantiles do not reduce the matching samples");
+      }
+    }
+  }
+
+  const expected = uncertaintySignature(original);
+
+  if (expected !== uncertaintySignature(replay) || expected !== uncertaintySignature(reloaded)) {
+    throw new Error("Uncertainty did not replay after reload");
+  }
+
+  const verified = spawnSync(
+    process.execPath,
+    [adapterPath, "--verify-uncertainty", benchmarkCase.id],
+    {
+      encoding: "utf8",
+      env: process.env,
+      input: JSON.stringify({ model: runWithoutTracing(encodeFittedModel(model)), expected }),
+      timeout: benchmarkCase.timeoutSeconds * 1_000,
+    },
+  );
+
+  if (verified.status !== 0 || !verified.stdout.includes(protocolPrefix)) {
+    throw new Error(
+      verified.stderr || verified.stdout || "Fresh-process uncertainty replay failed",
+    );
+  }
+
+  return {
+    algorithm: samples.simulation,
+    output: controls.output,
+    rows,
+    samples: count,
+    replay: "passed",
+    reduction: "passed",
+    finite: "passed",
+  };
 };
 
 const correctnessProjection = (
@@ -630,6 +815,12 @@ const correctnessProjection = (
 
   const persistenceError = persistenceMaximumError(model, input, forecasts);
 
+  const uncertainty =
+    benchmarkCase.workload.kind === "stage-f-map" &&
+    benchmarkCase.workload.uncertainty !== undefined
+      ? assertUncertainty(model, input, benchmarkCase)
+      : undefined;
+
   const verified = spawnSync(
     process.execPath,
     [adapterPath, "--verify-restored", benchmarkCase.id],
@@ -637,7 +828,7 @@ const correctnessProjection = (
       encoding: "utf8",
       env: process.env,
       input: JSON.stringify({
-        model: Effect.runSync(encodeFittedModel(model)),
+        model: runWithoutTracing(encodeFittedModel(model)),
         forecasts,
         tolerance: benchmarkCase.correctnessTolerances.persistence.absolute,
       }),
@@ -653,7 +844,7 @@ const correctnessProjection = (
     );
   }
 
-  const common = {
+  const common: CorrectnessProjection = {
     caseId: benchmarkCase.id,
     run,
     status: "locally-passed" as const,
@@ -662,9 +853,12 @@ const correctnessProjection = (
     persistenceMaximumAbsoluteError: persistenceError,
   };
 
+  const withUncertainty: CorrectnessProjection =
+    uncertainty === undefined ? common : { ...common, uncertainty };
+
   if (model.model !== "linear-trend") {
     return {
-      ...common,
+      ...withUncertainty,
       noiseScale: model.noiseScale,
       fitQuality: [
         { name: "objective", value: model.fitSummary.objective },
@@ -674,7 +868,7 @@ const correctnessProjection = (
     };
   }
 
-  return common;
+  return withUncertainty;
 };
 
 const measure = <Value>(
@@ -701,7 +895,7 @@ const measure = <Value>(
 
 const processSamples = (
   benchmarkCase: BenchmarkCase,
-  mode: "--cold" | "--restored",
+  mode: "--cold" | "--restored" | "--cold-uncertainty" | "--restored-uncertainty",
   serializedModel?: string,
 ): ReadonlyArray<number> => {
   const samples: Array<number> = [];
@@ -737,7 +931,7 @@ const measurementForPhase = (
   const prepared = prepareInput(dataset);
   const model = setupModel(prepared, benchmarkCase);
   const forecasts = runPredict(model, prepared);
-  const encodedJson = JSON.stringify(Effect.runSync(encodeFittedModel(model)));
+  const encodedJson = JSON.stringify(runWithoutTracing(encodeFittedModel(model)));
   let samples: ReadonlyArray<number>;
 
   switch (phase) {
@@ -770,33 +964,53 @@ const measurementForPhase = (
       break;
     case "model-json-encode":
       samples = measure(benchmarkCase, () =>
-        JSON.stringify(Effect.runSync(encodeFittedModel(model))),
+        JSON.stringify(runWithoutTracing(encodeFittedModel(model))),
       );
       break;
     case "model-json-decode":
       samples = measure(benchmarkCase, () => {
         const decodedInput: unknown = JSON.parse(encodedJson);
 
-        return Effect.runSync(decodeFittedModel(decodedInput));
+        return runWithoutTracing(decodeFittedModel(decodedInput));
       });
       break;
     case "fresh-process-restored-predict":
       samples = processSamples(benchmarkCase, "--restored", encodedJson);
       break;
+    case "uncertainty-input-conversion":
+      samples = measure(benchmarkCase, () => prepareInput(dataset));
+      break;
+    case "warm-uncertainty":
+      samples = measure(benchmarkCase, () => runUncertainty(model, prepared, benchmarkCase));
+      break;
+    case "cold-first-uncertainty":
+      samples = processSamples(benchmarkCase, "--cold-uncertainty");
+      break;
+    case "fresh-process-restored-uncertainty":
+      samples = processSamples(benchmarkCase, "--restored-uncertainty", encodedJson);
+      break;
   }
 
   measurementSink = forecasts;
 
-  return {
+  const measurement: BenchmarkMeasurement = {
     caseId: benchmarkCase.id,
     implementation: "effect-prophet",
     phase,
-    comparison: benchmarkCase.workload.comparison.kind,
+    comparison:
+      benchmarkCase.workload.kind === "stage-f-map" &&
+      benchmarkCase.workload.uncertainty !== undefined
+        ? "scalar-process-different-public-work"
+        : benchmarkCase.workload.comparison.kind,
     evidenceId: benchmarkCase.workload.comparison.evidenceId,
     run,
     samplesNanoseconds: samples,
     correctness: "locally-passed",
   };
+
+  return phase === "warm-uncertainty"
+    ? { ...measurement, peakRssBytes: process.resourceUsage().maxRSS * 1_024 }
+    : measurement;
 };
 
 const findCase = async (caseId: string): Promise<BenchmarkCase> => {
@@ -830,21 +1044,35 @@ const runWorker = async (
   return correctness === undefined ? { measurements } : { measurements, correctness };
 };
 
-const runColdWorker = async (caseId: string): Promise<void> => {
+const runColdWorker = async (caseId: string, uncertainty = false): Promise<void> => {
   const benchmarkCase = await findCase(caseId);
   const dataset = await loadDataset(benchmarkCase);
   const input = prepareInput(dataset);
   const model = runFit(input, benchmarkCase);
-  const forecasts = runPredict(model, input);
 
-  if (forecasts.length !== input.predictionRows.length) {
+  if (uncertainty) {
+    const result = runUncertainty(model, input, benchmarkCase);
+
+    if (
+      result.kind === "intervals"
+        ? result.rows.length !== input.predictionRows.length
+        : result.timestamps.length !== input.predictionRows.length
+    ) {
+      throw new Error("Cold uncertainty omitted requested rows");
+    }
+  } else if (runPredict(model, input).length !== input.predictionRows.length) {
     throw new Error("Cold forecast omitted requested rows");
   }
 
   process.stdout.write(`${protocolPrefix}{"status":"passed"}\n`);
 };
 
-const runRestoredWorker = async (caseId: string, verify = false): Promise<void> => {
+const runRestoredWorker = async (
+  caseId: string,
+  verify = false,
+  uncertainty = false,
+  verifyUncertainty = false,
+): Promise<void> => {
   const benchmarkCase = await findCase(caseId);
   const dataset = await loadDataset(benchmarkCase);
 
@@ -871,11 +1099,37 @@ const runRestoredWorker = async (caseId: string, verify = false): Promise<void> 
       )(inputValue)
     : undefined;
 
-  const model = Effect.runSync(decodeFittedModel(verification?.model ?? inputValue));
-  const input = prepareInput(dataset);
-  const forecasts = runPredict(model, input);
+  const uncertaintyVerification = verifyUncertainty
+    ? Schema.decodeUnknownSync(Schema.Struct({ model: Schema.Unknown, expected: Schema.String }))(
+        inputValue,
+      )
+    : undefined;
 
-  if (forecasts.length !== input.predictionRows.length) {
+  const model = runWithoutTracing(
+    decodeFittedModel(verification?.model ?? uncertaintyVerification?.model ?? inputValue),
+  );
+
+  const input = prepareInput(dataset);
+  const result = uncertainty ? runUncertainty(model, input, benchmarkCase) : undefined;
+  const forecasts = uncertainty ? [] : runPredict(model, input);
+
+  if (
+    result !== undefined &&
+    (result.kind === "intervals"
+      ? result.rows.length !== input.predictionRows.length
+      : result.timestamps.length !== input.predictionRows.length)
+  ) {
+    throw new Error("Restored uncertainty omitted requested rows");
+  }
+
+  if (
+    uncertaintyVerification !== undefined &&
+    (result === undefined || uncertaintySignature(result) !== uncertaintyVerification.expected)
+  ) {
+    throw new Error("Fresh-process uncertainty replay differs from the fitted model");
+  }
+
+  if (!uncertainty && forecasts.length !== input.predictionRows.length) {
     throw new Error("Restored forecast omitted requested rows");
   }
 
@@ -948,7 +1202,8 @@ const collectEnvironment = async (): Promise<BenchmarkEnvironment> => {
       { name: "cgroup-memory-max", value: await readResource("/sys/fs/cgroup/memory.max") },
       { name: "collection-method", value: "node:os and cgroup-v2" },
     ],
-    memoryMeasurement: "unsupported; timings do not report a process-tree peak RSS",
+    memoryMeasurement:
+      "warm-uncertainty: worker high-water RSS via process.resourceUsage.maxRSS (Linux KiB), includes imports, fitted model, setup and simulation; not process-tree RSS or simulation-only allocation; Effect tracing disabled",
   };
 };
 
@@ -1046,7 +1301,7 @@ const runCoordinator = async (): Promise<void> => {
           caseId: benchmarkCase.id,
           implementation: "effect-prophet",
           run,
-          stage: "runtime",
+          stage: stageInput === "correctness" ? "correctness" : "runtime",
           message: (worker.stderr || worker.stdout || "Worker failed").trim().slice(0, 4_000),
         });
         continue;
@@ -1105,25 +1360,40 @@ try {
     const output = await runWorker(caseId, run, stage);
 
     process.stdout.write(`${protocolPrefix}${JSON.stringify(output)}\n`);
-  } else if (mode === "--cold" || mode === "--restored" || mode === "--verify-restored") {
+  } else if (
+    mode === "--cold" ||
+    mode === "--restored" ||
+    mode === "--verify-restored" ||
+    mode === "--cold-uncertainty" ||
+    mode === "--restored-uncertainty" ||
+    mode === "--verify-uncertainty"
+  ) {
     const caseId = process.argv[3];
 
     if (caseId === undefined) {
       throw new Error(`${mode} worker requires a case id`);
     }
 
-    if (mode === "--cold") {
-      await runColdWorker(caseId);
+    if (mode === "--cold" || mode === "--cold-uncertainty") {
+      await runColdWorker(caseId, mode === "--cold-uncertainty");
     } else {
-      await runRestoredWorker(caseId, mode === "--verify-restored");
+      await runRestoredWorker(
+        caseId,
+        mode === "--verify-restored",
+        mode === "--restored-uncertainty" || mode === "--verify-uncertainty",
+        mode === "--verify-uncertainty",
+      );
     }
   } else {
     await runCoordinator();
   }
 } catch (error) {
-  process.stderr.write(
-    `${error instanceof Error ? (error.stack ?? error.message) : String(error)}\n`,
-  );
+  const detail =
+    error instanceof Error
+      ? `${error.name}: ${error.message}${"reason" in error ? ` [reason=${String(error.reason)}]` : ""}`
+      : String(error);
+
+  process.stderr.write(`${detail}\n`);
   process.exitCode = 1;
 }
 
