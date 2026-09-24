@@ -46,6 +46,7 @@ import { resolveSeasonalities } from "./internal/seasonality-resolution";
 import { createSeasonalityMasks } from "./internal/seasonality-masks";
 import { predictFlatMapWithWasm } from "./internal/wasm-flat-map-backend";
 import { predictLinearTrendWithWasm } from "./internal/wasm-linear-trend-backend";
+import { simulateMapWithWasm } from "./internal/wasm-map-uncertainty-backend";
 import { predictLogisticMapWithWasm } from "./internal/wasm-logistic-map-backend";
 import {
   predictMixedFlatMapWithWasm,
@@ -78,6 +79,12 @@ import type {
   SeasonalityLayout,
 } from "./seasonality";
 import { defaultTargetScalingMode } from "./target-scaling";
+import {
+  parseUncertaintyOptions,
+  simulationIdentity,
+  type EncodedUncertaintyOptions,
+  type UncertaintyResult,
+} from "./uncertainty";
 
 export type {
   EncodedPredictionRow,
@@ -1180,4 +1187,128 @@ export const predict = Effect.fn("Prophet.predict")(function* (
   }
 
   return yield* predictFittedSeasonalModel(parsedModel, timestamps, alignedRegressorValues, masks);
+});
+
+/** Simulate seeded MAP predictive samples or intervals for complete MAP rows. */
+export const predictUncertainty = Effect.fn("Prophet.predictUncertainty")(function* (
+  model: FittedProphet,
+  rowsInput: Parameters<typeof decodePredictionRows>[0],
+  optionsInput: EncodedUncertaintyOptions,
+): Effect.fn.Return<UncertaintyResult, InputValidationError | PredictionError> {
+  const rows = yield* decodePredictionRows(rowsInput);
+  const options = yield* parseUncertaintyOptions(optionsInput);
+  const firstRow = rows[0];
+
+  if (firstRow === undefined) {
+    return options.output === "samples"
+      ? {
+          kind: "samples",
+          simulation: simulationIdentity,
+          sampleCount: options.samples,
+          timestamps: [],
+          trend: new Float64Array(),
+          value: new Float64Array(),
+        }
+      : {
+          kind: "intervals",
+          simulation: simulationIdentity,
+          sampleCount: options.samples,
+          intervalWidth: options.intervalWidth,
+          rows: [],
+        };
+  }
+
+  const parsedModel = yield* parseFittedModel(model).pipe(
+    Effect.mapError(
+      () =>
+        new PredictionError({
+          reason: "invalid-model",
+          timestamp: firstRow.timestamp,
+          message: "Fitted model is invalid",
+        }),
+    ),
+  );
+
+  if (
+    parsedModel.model !== "linear-piecewise-map" &&
+    parsedModel.model !== "flat-map" &&
+    parsedModel.model !== "logistic-piecewise-map"
+  ) {
+    return yield* Effect.fail(
+      new PredictionError({
+        reason: "unsupported-uncertainty",
+        timestamp: firstRow.timestamp,
+        message: "Predictive simulation requires a supported MAP model",
+      }),
+    );
+  }
+
+  const logisticBounds =
+    parsedModel.model === "logistic-piecewise-map"
+      ? yield* parseLogisticPredictionBounds(rows, parsedModel.targetScaling.floorPolicy)
+      : undefined;
+
+  if (parsedModel.model !== "logistic-piecewise-map") {
+    yield* rejectNonLogisticPredictionBounds(rows);
+  }
+
+  const names = conditionNamesFromLayout(parsedModel.seasonalities);
+
+  const alignedConditions = yield* alignConditionValues(rows, names, "prediction-rows").pipe(
+    Effect.mapError((error) => conditionValidationError("prediction-rows", error)),
+  );
+
+  const alignedRegressors = yield* alignRegressorValues(
+    rows,
+    parsedModel.regressors.map((regressor) => regressor.definition),
+    "prediction-rows",
+  );
+
+  const timestamps = rows.map((row) => row.timestamp);
+
+  const masks = yield* createSeasonalityMasks(parsedModel.seasonalities, alignedConditions).pipe(
+    Effect.mapError((error) => conditionValidationError("prediction-rows", error)),
+  );
+
+  const cells = timestamps.length * options.samples;
+
+  const horizon =
+    parsedModel.model !== "flat-map"
+      ? Math.max(0, (Math.max(...timestamps) - parsedModel.timeOrigin) / parsedModel.timeScale - 1)
+      : 0;
+
+  if (
+    timestamps.length > 10_000 ||
+    cells > 1_000_000 ||
+    !Number.isSafeInteger(cells) ||
+    (parsedModel.model !== "flat-map" && parsedModel.deltas.length > 10_000) ||
+    horizon > 20 ||
+    (parsedModel.model !== "flat-map" && parsedModel.deltas.length * horizon > 256)
+  ) {
+    return yield* Effect.fail(
+      new PredictionError({
+        reason: "simulation-limit",
+        timestamp: firstRow.timestamp,
+        message: "MAP simulation exceeds its bounded row, draw or horizon budget",
+      }),
+    );
+  }
+
+  const { features } = yield* makePredictionFeatures(
+    timestamps,
+    alignedRegressors,
+    masks,
+    parsedModel.events,
+    parsedModel.regressors,
+  );
+
+  return yield* simulateMapWithWasm(
+    parsedModel,
+    timestamps,
+    masks,
+    features,
+    options,
+    undefined,
+    logisticBounds,
+  );
 });

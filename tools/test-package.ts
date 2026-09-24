@@ -3,7 +3,13 @@ import { readFile, readdir } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 
 import { Effect, Schema } from "effect";
-import { fit, getRegressorCoefficients, predict, prophetFittingBackendLayer } from "effect-prophet";
+import {
+  fit,
+  getRegressorCoefficients,
+  predict,
+  predictUncertainty,
+  prophetFittingBackendLayer,
+} from "effect-prophet";
 
 const projectRoot = new URL("../", import.meta.url);
 
@@ -58,6 +64,7 @@ const expectedDeclarationFiles = [
   "dist/regressor.d.ts",
   "dist/seasonality.d.ts",
   "dist/target-scaling.d.ts",
+  "dist/uncertainty.d.ts",
 ];
 
 const expectedWasmFiles = [
@@ -202,6 +209,20 @@ const [regressorForecast] = await Effect.runPromise(
 assert.equal(regressorForecast?.regressors[0]?.name, "promotion");
 
 assert.equal(getRegressorCoefficients(regressorModel)[0]?.name, "promotion");
+
+const samples = await Effect.runPromise(
+  predictUncertainty(
+    regressorModel,
+    [{ timestamp: "2024-01-01T00:00:04.000Z", regressors: { promotion: 1 } }],
+    { seed: 42, samples: 4, output: "samples" },
+  ),
+);
+
+assert.equal(samples.kind, "samples");
+
+if (samples.kind === "samples") {
+  assert.equal(samples.value.length, 4);
+}
 
 const logisticModel = await Effect.runPromise(
   fit(

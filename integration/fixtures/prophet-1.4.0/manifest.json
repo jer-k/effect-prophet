@@ -43,6 +43,10 @@
     {
       "path": "logistic-map.json",
       "sha256": "b8710f7b996c0f92497518b146b3c5f245bbd2f39b964a423d3dd09ec8e92884"
+    },
+    {
+      "path": "map-uncertainty.json",
+      "sha256": "e2f7d5ea78e96f1ed4b589f73039eabd8e2491aeb55004b0be9c117718f2c70f"
     }
   ],
   "backendArtifacts": [
@@ -58,7 +62,7 @@
     "platform": "linux/amd64",
     "uvVersion": "0.8.15"
   },
-  "generatorRevision": "cdebf519f35ecaf2a43c770d536b8eb1525f68dcf92ab6efa0cad7c5fecd01f8",
+  "generatorRevision": "a21bede6dd9a2287a0400fafed5c1bc908d4a3f33c1066bd809a5dc8852d02b3",
   "numericalEnvironment": [
     {
       "name": "cmdstanpy",

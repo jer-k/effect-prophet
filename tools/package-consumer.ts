@@ -1,6 +1,8 @@
 import {
   fit,
+  predictUncertainty,
   type EncodedPredictionRows,
+  type FittedProphet,
   type EncodedRegressorDefinition,
   type Forecast,
   type RegressorCoefficient,
@@ -24,7 +26,13 @@ const coefficient: RegressorCoefficient | undefined = undefined;
 
 const targetScaling: TargetScaling = { mode: "minmax", offset: 1, scale: 1 };
 
+declare const fittedModel: FittedProphet;
+
+const simulation = predictUncertainty(fittedModel, rows, { seed: 42 });
+
 void operation;
+
+void simulation;
 
 void forecast;
 

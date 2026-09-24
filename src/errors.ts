@@ -11,6 +11,7 @@ const ValidationInputSchema = Schema.Literals([
   "options",
   "prediction-timestamps",
   "prediction-rows",
+  "uncertainty-options",
 ]);
 
 const FittingFailureReasonSchema = Schema.Literals([
@@ -27,6 +28,8 @@ const PredictionFailureReasonSchema = Schema.Literals([
   "invalid-model",
   "non-finite-forecast",
   "backend-failure",
+  "unsupported-uncertainty",
+  "simulation-limit",
 ]);
 
 const ModelSerializationOperationSchema = Schema.Literals(["encode", "decode"]);
@@ -43,7 +46,8 @@ export type ValidationInput =
   | "observations"
   | "options"
   | "prediction-timestamps"
-  | "prediction-rows";
+  | "prediction-rows"
+  | "uncertainty-options";
 
 export type FittingFailureReason =
   | "insufficient-observations"
@@ -54,7 +58,12 @@ export type FittingFailureReason =
   | "non-convergence"
   | "backend-failure";
 
-export type PredictionFailureReason = "invalid-model" | "non-finite-forecast" | "backend-failure";
+export type PredictionFailureReason =
+  | "invalid-model"
+  | "non-finite-forecast"
+  | "backend-failure"
+  | "unsupported-uncertainty"
+  | "simulation-limit";
 
 /** The WASM adapter phase that failed. */
 export type WasmFailurePhase = "load" | "execute" | "protocol";

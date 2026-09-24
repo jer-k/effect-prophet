@@ -1013,6 +1013,88 @@ const ArtifactPath = Schema.String.check(
   ),
 );
 
+const UncertaintySummarySchema = Schema.Struct({
+  mean: Schema.Array(Schema.Finite),
+  variance: Schema.Array(NonNegativeFinite),
+  low: Schema.Array(Schema.Finite),
+  high: Schema.Array(Schema.Finite),
+});
+
+const MapUncertaintyReferenceFileSchema = Schema.Struct({
+  sourceMethod: Schema.Literal("Python Prophet 1.4.0 scalar MAP fixed-state simulation"),
+  cases: Schema.NonEmptyArray(
+    Schema.Struct({
+      id: Schema.NonEmptyString,
+      growth: Schema.Literals(["linear", "flat", "logistic"]),
+      additionalValuesRowMajor: Schema.Array(Schema.Finite),
+      additionalCoefficients: Schema.Array(Schema.Finite),
+      additionalModes: Schema.Array(Schema.Literals(["additive", "multiplicative"])),
+      logistic: Schema.NullOr(
+        Schema.Struct({
+          rate: Schema.Finite,
+          offset: Schema.Finite,
+          capacities: Schema.Array(Schema.Finite),
+          floor: Schema.Finite,
+        }),
+      ),
+      method: Schema.Literal("sample_posterior_predictive(vectorized=False)"),
+      sampleCount: Schema.Int.check(Schema.isGreaterThan(0)),
+      pythonSeed: Schema.Natural,
+      trainingTimestamps: Schema.NonEmptyArray(CanonicalTimestamp),
+      trainingValues: Schema.NonEmptyArray(Schema.Finite),
+      predictionTimestamps: Schema.NonEmptyArray(CanonicalTimestamp),
+      parameters: Schema.Struct({
+        interceptOrLevel: Schema.Finite,
+        slope: Schema.Finite,
+        changepointTimestamp: CanonicalTimestamp,
+        delta: Schema.Finite,
+        noiseScale: PositiveFinite,
+        targetScale: PositiveFinite,
+        targetOffset: Schema.Finite,
+      }),
+      expected: Schema.Struct({ trend: UncertaintySummarySchema, yhat: UncertaintySummarySchema }),
+      tolerances: Schema.Struct({
+        meanAbsolute: PositiveFinite,
+        trendVarianceAbsolute: PositiveFinite,
+        valueVarianceAbsolute: PositiveFinite,
+        quantileAbsolute: PositiveFinite,
+      }),
+    }),
+  ),
+}).check(
+  Schema.makeFilter((fixture) => {
+    const seen = new Set<string>();
+
+    for (const [index, referenceCase] of fixture.cases.entries()) {
+      if (seen.has(referenceCase.id)) {
+        return { path: ["cases", index, "id"], issue: "Reference case IDs must be distinct" };
+      }
+
+      seen.add(referenceCase.id);
+      const length = referenceCase.predictionTimestamps.length;
+      const columns = referenceCase.additionalCoefficients.length;
+
+      if (
+        referenceCase.trainingTimestamps.length !== referenceCase.trainingValues.length ||
+        referenceCase.additionalModes.length !== columns ||
+        referenceCase.additionalValuesRowMajor.length !== length * columns ||
+        (referenceCase.growth === "logistic") !== (referenceCase.logistic !== null) ||
+        (referenceCase.logistic !== null && referenceCase.logistic.capacities.length !== length) ||
+        [referenceCase.expected.trend, referenceCase.expected.yhat].some((summary) =>
+          [summary.mean, summary.variance, summary.low, summary.high].some(
+            (values) => values.length !== length,
+          ),
+        )
+      ) {
+        return {
+          path: ["cases", index, "expected"],
+          issue: "Simulation summaries must match prediction rows",
+        };
+      }
+    }
+  }),
+);
+
 const ArtifactSchema = Schema.Struct({
   path: ArtifactPath,
   sha256: Sha256,
@@ -1070,6 +1152,7 @@ const FixtureManifestSchema = Schema.Struct({
       "target-scaling.json",
       "mixed-map.json",
       "logistic-map.json",
+      "map-uncertainty.json",
     ]) {
       if (!paths.has(requiredPath)) {
         return {
@@ -1128,6 +1211,11 @@ const decodeTargetScalingReferenceSchema = Schema.decodeUnknownEffect(
 const decodeMixedMapReferenceSchema = Schema.decodeUnknownEffect(MixedMapReferenceFileSchema, {
   errors: "all",
 });
+
+const decodeMapUncertaintyReferenceSchema = Schema.decodeUnknownEffect(
+  MapUncertaintyReferenceFileSchema,
+  { errors: "all" },
+);
 
 const decodeFixtureManifestSchema = Schema.decodeUnknownEffect(FixtureManifestSchema, {
   errors: "all",
@@ -1197,6 +1285,9 @@ export type TargetScalingReferenceFile = typeof TargetScalingReferenceFileSchema
 
 /** Parsed independent and Prophet-fitted mixed MAP evidence. */
 export type MixedMapReferenceFile = typeof MixedMapReferenceFileSchema.Type;
+
+/** Parsed fixed-state Prophet scalar-path distribution summaries. */
+export type MapUncertaintyReferenceFile = typeof MapUncertaintyReferenceFileSchema.Type;
 
 /** Parsed provenance and artifact integrity metadata for the fixture folder. */
 export type FixtureManifest = typeof FixtureManifestSchema.Type;
@@ -1430,6 +1521,26 @@ export const decodeMixedMapReference = Effect.fn("ProphetFixture.decodeMixedMapR
   },
 );
 
+/** Parse fixed-state scalar-path uncertainty summaries and complete row dimensions. */
+export const decodeMapUncertaintyReference = Effect.fn(
+  "ProphetFixture.decodeMapUncertaintyReference",
+)(function* (
+  input: Parameters<typeof decodeMapUncertaintyReferenceSchema>[0],
+  path = "<memory>",
+): Effect.fn.Return<MapUncertaintyReferenceFile, FixtureLoadError> {
+  return yield* decodeMapUncertaintyReferenceSchema(input).pipe(
+    Effect.mapError(
+      (cause) =>
+        new FixtureLoadError({
+          operation: "schema",
+          fixturePath: path,
+          message: formatSchemaIssue(cause.issue),
+          cause,
+        }),
+    ),
+  );
+});
+
 /** Parse an untrusted fixture manifest, including safe relative artifact paths. */
 export const decodeFixtureManifest = Effect.fn("ProphetFixture.decodeFixtureManifest")(function* (
   input: Parameters<typeof decodeFixtureManifestSchema>[0],
@@ -1603,6 +1714,18 @@ export const loadProphetFixtureBundle = Effect.fn("ProphetFixture.loadBundle")(f
   });
 
   const mixedMap = yield* decodeMixedMapReference(mixedMapInput, mixedMapPath);
+  const mapUncertaintyPath = nodePath.join(root, "map-uncertainty.json");
+  const mapUncertaintyContents = yield* readFixtureText(mapUncertaintyPath);
+
+  const mapUncertaintyInput: unknown = yield* Effect.try({
+    try: () => JSON.parse(mapUncertaintyContents),
+    catch: (cause) => invalidJson(mapUncertaintyPath, cause),
+  });
+
+  const mapUncertainty = yield* decodeMapUncertaintyReference(
+    mapUncertaintyInput,
+    mapUncertaintyPath,
+  );
 
   const seasonalityResolutionPath = nodePath.join(root, "seasonality-resolution.json");
   const seasonalityResolutionContents = yield* readFixtureText(seasonalityResolutionPath);
@@ -1624,6 +1747,7 @@ export const loadProphetFixtureBundle = Effect.fn("ProphetFixture.loadBundle")(f
     fourier,
     linearMapFit,
     linearTrend,
+    mapUncertainty,
     manifest,
     mixedMap,
     piecewiseLinear,

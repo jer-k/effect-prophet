@@ -8,15 +8,18 @@ pub mod linear_trend;
 pub mod logistic_map;
 pub mod map_least_squares;
 pub mod map_objective;
+pub mod map_uncertainty;
 pub mod mixed_map;
 pub mod piecewise_linear;
 pub mod piecewise_map;
 pub mod seasonality;
+mod simulation_rng;
 pub mod target_scaling;
 mod wasm_additive_features;
 mod wasm_flat_map;
 mod wasm_logistic_map;
 mod wasm_map;
+mod wasm_map_uncertainty;
 mod wasm_mixed_map;
 mod wasm_protocol;
 

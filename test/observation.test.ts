@@ -106,6 +106,32 @@ describe("decodeObservations", () => {
     );
   });
 
+  it("rejects missing and null targets instead of silently dropping observations", async () => {
+    for (const row of [
+      { timestamp: "2024-01-01T00:00:00.000Z" },
+      { timestamp: "2024-01-01T00:00:00.000Z", value: undefined },
+      { timestamp: "2024-01-01T00:00:00.000Z", value: null },
+    ]) {
+      const error = await Effect.runPromise(Effect.flip(decodeObservations([row])));
+
+      expect(error).toBeInstanceOf(InputValidationError);
+      expect(error.input).toBe("observations");
+      expect(error.issues.some((issue) => issue.path?.includes("value"))).toBe(true);
+    }
+  });
+
+  it("preserves a positive timestamp gap when the caller omits an entire row", async () => {
+    const observations = await Effect.runPromise(
+      decodeObservations([
+        { timestamp: "2024-01-01T00:00:00.000Z", value: 1 },
+        { timestamp: "2024-01-03T00:00:00.000Z", value: 3 },
+      ]),
+    );
+
+    expect(observations.map((row) => row.value)).toEqual([1, 3]);
+    expect(observations[1]?.timestamp).toBe(1_704_240_000_000);
+  });
+
   it("rejects NaN values", async () => {
     await expectValidationFailure(
       [{ timestamp: "2024-01-01T00:00:00.000Z", value: Number.NaN }],

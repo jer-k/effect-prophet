@@ -6,6 +6,7 @@ import {
   decodeFixtureManifest,
   decodeFourierReference,
   decodeLinearTrendReference,
+  decodeMapUncertaintyReference,
   decodePiecewiseLinearReference,
   decodeSeasonalityResolutionReference,
   loadProphetFixtureBundle,
@@ -112,8 +113,33 @@ describe("Prophet fixture loader", () => {
       "linear",
       "flat",
     ]);
+    expect(bundle.mapUncertainty.cases.map((referenceCase) => referenceCase.id)).toEqual([
+      "linear",
+      "flat",
+      "linear-mixed",
+      "logistic",
+    ]);
     expect(bundle.seasonalityResolution.cases).toHaveLength(22);
     expect(bundle.seasonalityResolution.cases[0]?.kind).toBe("seasonality-resolution");
+  });
+
+  it("rejects misaligned scalar-simulation feature rows", async () => {
+    const reference = (await Effect.runPromise(loadProphetFixtureBundle())).mapUncertainty;
+    const mixed = reference.cases.find((referenceCase) => referenceCase.id === "linear-mixed");
+
+    expect(mixed).toBeDefined();
+
+    const error = await Effect.runPromise(
+      Effect.flip(
+        decodeMapUncertaintyReference({
+          ...reference,
+          cases: [{ ...mixed, additionalValuesRowMajor: [0] }],
+        }),
+      ),
+    );
+
+    expect(error.operation).toBe("schema");
+    expect(error.message).toContain("Simulation summaries must match prediction rows");
   });
 
   it("rejects misaligned expected arrays", async () => {
