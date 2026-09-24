@@ -46,7 +46,7 @@
     },
     {
       "path": "map-uncertainty.json",
-      "sha256": "e2f7d5ea78e96f1ed4b589f73039eabd8e2491aeb55004b0be9c117718f2c70f"
+      "sha256": "1b8eb6b3758f48592111ad0fffc9de144e833bf61c0b80b2430bfa7373c76b65"
     }
   ],
   "backendArtifacts": [
@@ -62,7 +62,7 @@
     "platform": "linux/amd64",
     "uvVersion": "0.8.15"
   },
-  "generatorRevision": "a21bede6dd9a2287a0400fafed5c1bc908d4a3f33c1066bd809a5dc8852d02b3",
+  "generatorRevision": "df2e10d3f58c7c1a27b2db929c2e72a982f76493d238a0650d0a24565ea6456b",
   "numericalEnvironment": [
     {
       "name": "cmdstanpy",

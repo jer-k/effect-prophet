@@ -2224,14 +2224,17 @@ def make_map_uncertainty_fixture() -> dict[str, Any]:
         ("flat", "flat", False),
         ("linear-mixed", "linear", True),
         ("logistic", "logistic", False),
+        ("logistic-explicit-floor-mixed-crossing", "logistic", True),
     ):
+        explicit_floor = identifier == "logistic-explicit-floor-mixed-crossing"
+        sample_count = 8192 if explicit_floor else 2048
         model = Prophet(
             growth=growth,
             changepoints=[pd.Timestamp("2025-01-06")],
             yearly_seasonality=False,
             weekly_seasonality=False,
             daily_seasonality=False,
-            uncertainty_samples=2048,
+            uncertainty_samples=sample_count,
         )
         if mixed:
             model.add_regressor("known_additive", mode="additive", standardize=False)
@@ -2244,6 +2247,9 @@ def make_map_uncertainty_fixture() -> dict[str, Any]:
         if growth == "logistic":
             training["cap"] = [10.0, 10.0, 10.0]
             prediction["cap"] = [10.0, 20.0]
+            if explicit_floor:
+                training["floor"] = [1.0, 1.0, 1.0]
+                prediction["floor"] = [1.0, 2.0]
 
         if mixed:
             training["known_additive"] = [0.0, 1.0, 0.0]
@@ -2253,13 +2259,15 @@ def make_map_uncertainty_fixture() -> dict[str, Any]:
 
         model.setup_dataframe(training, initialize_scales=True)
         model.changepoints_t = np.asarray([0.5], dtype=np.float64)
+        rate = 0.5 if explicit_floor else 2.0
+        delta = -1.0 if explicit_floor else 0.1
         model.params = {
-            "k": np.asarray([[2.0 if growth == "logistic" else 0.4]], dtype=np.float64),
+            "k": np.asarray([[rate if growth == "logistic" else 0.4]], dtype=np.float64),
             "m": np.asarray([[0.4 if growth == "logistic" else 0.5]], dtype=np.float64),
-            "delta": np.asarray([[0.1 if growth == "logistic" else 0.05]], dtype=np.float64),
+            "delta": np.asarray([[delta if growth == "logistic" else 0.05]], dtype=np.float64),
             # Without regressors, release inserts one private zero-valued column.
             "beta": (
-                np.asarray([[0.25, 0.25]], dtype=np.float64)
+                np.asarray([[1.0 / float(model.y_scale), 0.25]], dtype=np.float64)
                 if mixed
                 else np.zeros((1, 1), dtype=np.float64)
             ),
@@ -2300,12 +2308,20 @@ def make_map_uncertainty_fixture() -> dict[str, Any]:
             "additionalCoefficients": [1.0, 0.25] if mixed else [],
             "additionalModes": ["additive", "multiplicative"] if mixed else [],
             "logistic": (
-                {"rate": 2.0, "offset": 0.4, "capacities": [10.0, 20.0], "floor": 0.0}
+                {
+                    "rate": rate,
+                    "offset": 0.4,
+                    "capacities": [10.0, 20.0],
+                    "floor": 0.0 if not explicit_floor else None,
+                    "explicitFloors": [1.0, 2.0] if explicit_floor else None,
+                }
                 if growth == "logistic"
                 else None
             ),
             "method": "sample_posterior_predictive(vectorized=False)",
-            "sampleCount": 2048,
+            "sampleCount": sample_count,
+            "wasmSamplesPerSeed": 2048,
+            "wasmSeeds": [42, 101, 203, 307] if explicit_floor else [42],
             "pythonSeed": 2831,
             "trainingTimestamps": [
                 timestamp.strftime("%Y-%m-%dT00:00:00.000Z") for timestamp in training_dates
@@ -2318,17 +2334,20 @@ def make_map_uncertainty_fixture() -> dict[str, Any]:
                 "interceptOrLevel": 2.0,
                 "slope": 1.6,
                 "changepointTimestamp": "2025-01-06T00:00:00.000Z",
-                "delta": 0.1 if growth == "logistic" else 0.2,
-                "noiseScale": 0.2 if growth == "logistic" else 0.4,
-                "targetScale": 4.0,
+                "delta": delta if growth == "logistic" else 0.2,
+                "noiseScale": canonical_fitted_float(
+                    float(model.y_scale) * (0.05 if growth == "logistic" else 0.1),
+                    zero_threshold=0.0,
+                ),
+                "targetScale": float(model.y_scale),
                 "targetOffset": 0.0,
             },
             "expected": expected,
             "tolerances": {
-                "meanAbsolute": 0.08 if growth == "logistic" else 0.09,
-                "trendVarianceAbsolute": 0.0018 if growth == "logistic" else 0.014,
-                "valueVarianceAbsolute": 0.025 if growth == "logistic" else 0.07,
-                "quantileAbsolute": 0.12 if growth == "logistic" else 0.16,
+                "meanAbsolute": 0.12 if explicit_floor else (0.08 if growth == "logistic" else 0.09),
+                "trendVarianceAbsolute": 0.04 if explicit_floor else (0.0018 if growth == "logistic" else 0.014),
+                "valueVarianceAbsolute": 0.08 if explicit_floor else (0.025 if growth == "logistic" else 0.07),
+                "quantileAbsolute": 0.2 if explicit_floor else (0.12 if growth == "logistic" else 0.16),
             },
         })
 

@@ -44,3 +44,66 @@ const samples = await Effect.runPromise(
 if (samples.kind === "samples") {
   console.log(`Draws for ${samples.timestamps.length} complete rows: ${samples.value.length}`);
 }
+
+const logisticTraining = [1.2, 2.2, 4.2, 6.1, 7.6, 8.9].map((value, index) => ({
+  timestamp: new Date(Date.UTC(2024, 0, index + 1)).toISOString(),
+  value,
+  capacity: 10,
+  floor: -2,
+}));
+
+const logistic = await Effect.runPromise(
+  fit(logisticTraining, {
+    growth: "logistic",
+    map: { changepoints: { mode: "explicit", timestamps: ["2024-01-03T00:00:00.000Z"] } },
+  }).pipe(Effect.provide(prophetFittingBackendLayer)),
+);
+
+if (logistic.model === "logistic-piecewise-map") {
+  const savedLogistic = await Effect.runPromise(encodeFittedModel(logistic));
+
+  const reloaded = await Effect.runPromise(
+    decodeFittedModel(JSON.parse(JSON.stringify(savedLogistic))),
+  );
+
+  const completeBounds = [
+    { timestamp: "2024-01-08T00:00:00.000Z", capacity: 10, floor: -2 },
+    { timestamp: "2024-01-08T00:00:00.000Z", capacity: 20, floor: -1 },
+  ];
+
+  const logisticBands = await Effect.runPromise(
+    predictUncertainty(reloaded, completeBounds, { seed: 42, samples: 512 }),
+  );
+
+  if (logisticBands.kind === "intervals") {
+    console.log(
+      "Bounded trend intervals; observation bands can exceed the bounds:",
+      logisticBands.rows,
+    );
+  }
+
+  // Holdout targets are kept outside fitting and never passed into prediction rows.
+  const heldOut = [
+    { timestamp: "2024-01-07T00:00:00.000Z", capacity: 10, floor: -2, observed: 9.1 },
+    { timestamp: "2024-01-08T00:00:00.000Z", capacity: 10, floor: -2, observed: 9.3 },
+  ];
+
+  const heldOutBands = await Effect.runPromise(
+    predictUncertainty(
+      reloaded,
+      heldOut.map(({ timestamp, capacity, floor }) => ({ timestamp, capacity, floor })),
+      { seed: 42, samples: 512 },
+    ),
+  );
+
+  if (heldOutBands.kind === "intervals") {
+    const coverage =
+      heldOutBands.rows.filter((row, index) => {
+        const observed = heldOut[index]?.observed ?? NaN;
+
+        return observed >= row.value.lower && observed <= row.value.upper;
+      }).length / heldOut.length;
+
+    console.log(`Two-row illustrative holdout coverage: ${coverage} (not a calibration estimate)`);
+  }
+}

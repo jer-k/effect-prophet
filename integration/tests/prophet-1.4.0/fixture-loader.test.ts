@@ -118,6 +118,7 @@ describe("Prophet fixture loader", () => {
       "flat",
       "linear-mixed",
       "logistic",
+      "logistic-explicit-floor-mixed-crossing",
     ]);
     expect(bundle.seasonalityResolution.cases).toHaveLength(22);
     expect(bundle.seasonalityResolution.cases[0]?.kind).toBe("seasonality-resolution");
@@ -140,6 +141,30 @@ describe("Prophet fixture loader", () => {
 
     expect(error.operation).toBe("schema");
     expect(error.message).toContain("Simulation summaries must match prediction rows");
+  });
+
+  it("rejects mismatched logistic floor rows and pooled sample counts", async () => {
+    const reference = (await Effect.runPromise(loadProphetFixtureBundle())).mapUncertainty;
+
+    const logistic = reference.cases.find(
+      (referenceCase) => referenceCase.id === "logistic-explicit-floor-mixed-crossing",
+    );
+
+    if (logistic?.logistic === null || logistic === undefined) {
+      throw new Error("Expected committed explicit-floor logistic reference");
+    }
+
+    for (const changed of [
+      { ...logistic, logistic: { ...logistic.logistic, explicitFloors: [1] } },
+      { ...logistic, wasmSeeds: [42] },
+    ]) {
+      const error = await Effect.runPromise(
+        Effect.flip(decodeMapUncertaintyReference({ ...reference, cases: [changed] })),
+      );
+
+      expect(error.operation).toBe("schema");
+      expect(error.message).toContain("Simulation summaries must match prediction rows");
+    }
   });
 
   it("rejects misaligned expected arrays", async () => {

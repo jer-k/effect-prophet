@@ -76,6 +76,10 @@
         2.0,
         3.0,
         4.0
+      ],
+      "wasmSamplesPerSeed": 2048,
+      "wasmSeeds": [
+        42
       ]
     },
     {
@@ -154,6 +158,10 @@
         2.0,
         3.0,
         4.0
+      ],
+      "wasmSamplesPerSeed": 2048,
+      "wasmSeeds": [
+        42
       ]
     },
     {
@@ -243,6 +251,10 @@
         2.0,
         3.0,
         4.0
+      ],
+      "wasmSamplesPerSeed": 2048,
+      "wasmSeeds": [
+        42
       ]
     },
     {
@@ -294,6 +306,7 @@
           10.0,
           20.0
         ],
+        "explicitFloors": null,
         "floor": 0.0,
         "offset": 0.4,
         "rate": 2.0
@@ -329,6 +342,118 @@
         2.0,
         3.0,
         4.0
+      ],
+      "wasmSamplesPerSeed": 2048,
+      "wasmSeeds": [
+        42
+      ]
+    },
+    {
+      "additionalCoefficients": [
+        1.0,
+        0.25
+      ],
+      "additionalModes": [
+        "additive",
+        "multiplicative"
+      ],
+      "additionalValuesRowMajor": [
+        0.5,
+        0.5,
+        -1.0,
+        -0.5
+      ],
+      "expected": {
+        "trend": {
+          "high": [
+            4.85724537371,
+            11.0580086041
+          ],
+          "low": [
+            4.21469841381,
+            5.61299954481
+          ],
+          "mean": [
+            4.5302352831,
+            8.2552223779
+          ],
+          "variance": [
+            0.304850087051,
+            6.47619105056
+          ]
+        },
+        "yhat": {
+          "high": [
+            5.99137108796,
+            8.66399346778
+          ],
+          "low": [
+            5.18743992622,
+            3.88360555995
+          ],
+          "mean": [
+            5.59797509499,
+            6.22182045992
+          ],
+          "variance": [
+            0.407971662276,
+            4.9930055049
+          ]
+        }
+      },
+      "growth": "logistic",
+      "id": "logistic-explicit-floor-mixed-crossing",
+      "logistic": {
+        "capacities": [
+          10.0,
+          20.0
+        ],
+        "explicitFloors": [
+          1.0,
+          2.0
+        ],
+        "floor": null,
+        "offset": 0.4,
+        "rate": 0.5
+      },
+      "method": "sample_posterior_predictive(vectorized=False)",
+      "parameters": {
+        "changepointTimestamp": "2025-01-06T00:00:00.000Z",
+        "delta": -1.0,
+        "interceptOrLevel": 2.0,
+        "noiseScale": 0.15,
+        "slope": 1.6,
+        "targetOffset": 0.0,
+        "targetScale": 3.0
+      },
+      "predictionTimestamps": [
+        "2025-01-16T00:00:00.000Z",
+        "2025-01-21T00:00:00.000Z"
+      ],
+      "pythonSeed": 2831,
+      "sampleCount": 8192,
+      "tolerances": {
+        "meanAbsolute": 0.12,
+        "quantileAbsolute": 0.2,
+        "trendVarianceAbsolute": 0.04,
+        "valueVarianceAbsolute": 0.08
+      },
+      "trainingTimestamps": [
+        "2025-01-01T00:00:00.000Z",
+        "2025-01-06T00:00:00.000Z",
+        "2025-01-11T00:00:00.000Z"
+      ],
+      "trainingValues": [
+        2.0,
+        3.0,
+        4.0
+      ],
+      "wasmSamplesPerSeed": 2048,
+      "wasmSeeds": [
+        42,
+        101,
+        203,
+        307
       ]
     }
   ],

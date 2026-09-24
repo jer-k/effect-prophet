@@ -142,6 +142,97 @@ describe("MAP uncertainty WASM adapter", () => {
     }
   });
 
+  it("translates an indexed logistic simulation failure under the complete child span", async () => {
+    const history = [1.2, 2.2, 4.2, 6.1, 7.6, 8.9].map((value, index) => ({
+      timestamp: new Date(Date.UTC(2024, 0, index + 1)).toISOString(),
+      value,
+      capacity: 10,
+    }));
+
+    const model = await Effect.runPromise(
+      fit(history, {
+        growth: "logistic",
+        map: { changepoints: { mode: "explicit", timestamps: ["2024-01-03T00:00:00.000Z"] } },
+      }).pipe(Effect.provide(prophetFittingBackendLayer)),
+    );
+
+    if (model.model !== "logistic-piecewise-map") {
+      throw new Error("Expected logistic MAP state");
+    }
+
+    const timestamps = [Date.UTC(2024, 0, 8), Date.UTC(2024, 0, 9)];
+
+    const bounds = {
+      capacities: new Float64Array([10, 20]),
+      explicitFloors: new Float64Array(),
+    };
+
+    const masks = { rowCount: 2, componentCount: 0, values: new Uint8Array() };
+
+    const features = {
+      matrix: { rowCount: 2, columnCount: 0, values: new Float64Array() },
+      layout: { components: [], coefficientCount: 0, priorScales: [] },
+    };
+
+    const spans: Array<Tracer.Span> = [];
+
+    const tracer = Tracer.make({
+      span: (options) => {
+        const span = new Tracer.NativeSpan(options);
+        spans.push(span);
+
+        return span;
+      },
+    });
+
+    const error = await Effect.runPromise(
+      Effect.flip(
+        simulateMapWithWasm(
+          model,
+          timestamps,
+          masks,
+          features,
+          { seed: 42, samples: 2, intervalWidth: 0.8, output: "samples" },
+          () => ({
+            simulate_map_with_features: () => new Float64Array([1]),
+            simulate_logistic_map_with_features: () => new Float64Array([4, 1, 1]),
+          }),
+          bounds,
+        ).pipe(Effect.withSpan("forecast.job"), Effect.withTracer(tracer)),
+      ),
+    );
+
+    expect(error.reason).toBe("non-finite-forecast");
+    expect(error.timestamp).toBe(timestamps[1]);
+
+    const parent = spans.find((span) => span.name === "forecast.job");
+    const boundary = spans.find((span) => span.name === "effect-prophet.wasm.simulate");
+
+    if (
+      parent === undefined ||
+      boundary === undefined ||
+      !Predicate.isTagged("Ended")(parent.status) ||
+      !Predicate.isTagged("Ended")(boundary.status)
+    ) {
+      throw new Error("Expected completed logistic simulation failure trace");
+    }
+
+    expect(boundary.traceId).toBe(parent.traceId);
+    expect(boundary.parent.pipe(Option.getOrUndefined)?.spanId).toBe(parent.spanId);
+    expect(Exit.isFailure(parent.status.exit)).toBe(true);
+    expect(Exit.isFailure(boundary.status.exit)).toBe(true);
+    expect(boundary.status.startTime).toBeGreaterThanOrEqual(parent.status.startTime);
+    expect(boundary.status.endTime).toBeLessThanOrEqual(parent.status.endTime);
+    expect(Object.fromEntries(boundary.attributes)).toEqual({
+      "effect_prophet.operation": "simulate",
+      "effect_prophet.backend.type": "rust-wasm",
+      "effect_prophet.model.type": "logistic-piecewise-map",
+      "effect_prophet.output.kind": "samples",
+      "effect_prophet.prediction.count": 2,
+      "effect_prophet.sample.count": 2,
+    });
+  });
+
   it("keeps original execute failure as a runtime-only cause", async () => {
     const { model, timestamps, masks, features } = await fixture();
     const cause = new Error("test-only generated binding failure");

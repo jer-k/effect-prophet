@@ -71,7 +71,7 @@ prediction rows or current defaults.
 The payload has no independent format version and is interpreted by the installed package's
 schema. Compatibility therefore remains experimental until the package reaches `1.0.0`.
 
-## Experimental linear/flat MAP uncertainty replay
+## Experimental MAP uncertainty replay
 
 The [MAP uncertainty decision](../decisions/map-uncertainty.md) inventories the currently
 stored output-unit noise, train-only scaling, time bounds, resolved changepoint timestamps and
