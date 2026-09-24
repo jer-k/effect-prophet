@@ -1,4 +1,7 @@
-import { readFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join, sep } from "node:path";
+import { pathToFileURL } from "node:url";
 
 import { Effect } from "effect";
 import { describe, expect, it } from "vitest";
@@ -81,44 +84,54 @@ describe("growth, scaling, and mixed-component MAP benchmark workloads", () => {
   });
 
   it("generates complete, deterministic shared growth and mixed-component rows", async () => {
-    await generateBenchmarkData();
+    const directory = await mkdtemp(join(tmpdir(), "effect-prophet-benchmark-data-"));
+    const outputRoot = pathToFileURL(`${directory}${sep}`);
 
-    for (const benchmarkCase of growthScalingAndMixedMapCases) {
-      const input = JSON.parse(
-        await readFile(new URL(`../data/${benchmarkCase.dataset}`, import.meta.url), "utf8"),
-      );
+    try {
+      await generateBenchmarkData(outputRoot);
 
-      const dataset = await Effect.runPromise(parseBenchmarkDataset(input));
-      const workload = benchmarkCase.workload;
-
-      if (workload.kind !== "stage-f-map") continue;
-
-      expect(dataset.observations.length).toBeGreaterThan(20);
-      expect(dataset.predictionRows.length).toBeGreaterThan(0);
-      expect(dataset.observations.every((row) => Number.isFinite(row.value))).toBe(true);
-
-      if (workload.configuration.growth === "logistic") {
-        expect(
-          [...dataset.observations, ...dataset.predictionRows].every(
-            (row) => row.capacity !== undefined && row.capacity > (row.floor ?? 0),
+      for (const benchmarkCase of growthScalingAndMixedMapCases) {
+        const input = JSON.parse(
+          await readFile(
+            new URL(benchmarkCase.dataset.replace(/^generated\//u, ""), outputRoot),
+            "utf8",
           ),
-        ).toBe(true);
-        expect(
-          dataset.predictionRows.every(
-            (row) => (row.floor !== undefined) === benchmarkCase.id.includes("explicit"),
-          ),
-        ).toBe(true);
-      }
+        );
 
-      if (workload.configuration.regressors.length > 0) {
-        expect(
-          [...dataset.observations, ...dataset.predictionRows].every((row) =>
-            workload.configuration.regressors.every(
-              (regressor) => row.regressors?.[regressor.name] !== undefined,
+        const dataset = await Effect.runPromise(parseBenchmarkDataset(input));
+        const workload = benchmarkCase.workload;
+
+        if (workload.kind !== "stage-f-map") continue;
+
+        expect(dataset.observations.length).toBeGreaterThan(20);
+        expect(dataset.predictionRows.length).toBeGreaterThan(0);
+        expect(dataset.observations.every((row) => Number.isFinite(row.value))).toBe(true);
+
+        if (workload.configuration.growth === "logistic") {
+          expect(
+            [...dataset.observations, ...dataset.predictionRows].every(
+              (row) => row.capacity !== undefined && row.capacity > (row.floor ?? 0),
             ),
-          ),
-        ).toBe(true);
+          ).toBe(true);
+          expect(
+            dataset.predictionRows.every(
+              (row) => (row.floor !== undefined) === benchmarkCase.id.includes("explicit"),
+            ),
+          ).toBe(true);
+        }
+
+        if (workload.configuration.regressors.length > 0) {
+          expect(
+            [...dataset.observations, ...dataset.predictionRows].every((row) =>
+              workload.configuration.regressors.every(
+                (regressor) => row.regressors?.[regressor.name] !== undefined,
+              ),
+            ),
+          ).toBe(true);
+        }
       }
+    } finally {
+      await rm(directory, { recursive: true, force: true });
     }
   });
 });

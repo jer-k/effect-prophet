@@ -554,6 +554,78 @@ describe("predictUncertainty", () => {
     }
   });
 
+  it("returns ordered seeded intervals on saturated implicit-floor logistic forecasts", async () => {
+    const origin = Date.UTC(2020, 0, 1);
+
+    const timestamp = (day: number): string => new Date(origin + day * 86_400_000).toISOString();
+    const capacity = (day: number): number => Number((60 + day * 0.12).toPrecision(12));
+
+    const observations = Array.from({ length: 256 }, (_, day) => ({
+      timestamp: timestamp(day),
+      capacity: capacity(day),
+      value: Number(
+        (
+          capacity(day) / (1 + Math.exp(-(-2 + day * 0.045))) +
+          0.45 * Math.sin((2 * Math.PI * day) / 7) +
+          0.08 * Math.sin(day * 1.731) +
+          0.035 * Math.cos(day * 0.417)
+        ).toPrecision(12),
+      ),
+    }));
+
+    const rows = Array.from({ length: 64 }, (_, index) => ({
+      timestamp: timestamp(256 + index),
+      capacity: capacity(256 + index),
+    }));
+
+    const model = await Effect.runPromise(
+      fit(observations, {
+        growth: "logistic",
+        scaling: "minmax",
+        seasonalities: [{ name: "weekly-custom", periodDays: 7, fourierOrder: 2, priorScale: 10 }],
+        map: {
+          changepoints: { mode: "explicit", timestamps: [timestamp(40)] },
+          changepointPriorScale: 0.2,
+          optimizer: { maxIterations: 10_000, relativeTolerance: 1e-7, absoluteTolerance: 1e-9 },
+        },
+      }).pipe(Effect.provide(prophetFittingBackendLayer)),
+    );
+
+    const samples = await Effect.runPromise(
+      predictUncertainty(model, rows, { seed: 19, samples: 128, output: "samples" }),
+    );
+
+    const intervals = await Effect.runPromise(
+      predictUncertainty(model, rows, { seed: 19, samples: 128 }),
+    );
+
+    const replay = await Effect.runPromise(
+      predictUncertainty(model, rows, { seed: 19, samples: 128 }),
+    );
+
+    if (samples.kind !== "samples" || intervals.kind !== "intervals") {
+      throw new Error("Expected saturated logistic samples and intervals");
+    }
+
+    expect(replay).toEqual(intervals);
+    expect(samples.trend).toHaveLength(rows.length * 128);
+
+    for (const [index, interval] of intervals.rows.entries()) {
+      const sorted = Array.from(samples.trend.slice(index * 128, (index + 1) * 128)).sort(
+        (left, right) => left - right,
+      );
+
+      const low = sorted[Math.floor(127 * 0.1)] ?? NaN;
+      const high = sorted[Math.ceil(127 * 0.9)] ?? NaN;
+
+      expect(Number.isFinite(interval.trend.lower)).toBe(true);
+      expect(interval.trend.lower).toBeGreaterThanOrEqual(low);
+      expect(interval.trend.upper).toBeLessThanOrEqual(high);
+      expect(interval.trend.lower).toBeLessThanOrEqual(interval.trend.upper);
+      expect(interval.value.lower).toBeLessThanOrEqual(interval.value.upper);
+    }
+  });
+
   it("checks flat conditional Gaussian moments and quantiles through the public replay seam", async () => {
     const model = await Effect.runPromise(
       fit(history, { growth: "flat" }).pipe(Effect.provide(prophetFittingBackendLayer)),

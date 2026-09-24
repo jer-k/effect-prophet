@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   FixtureLoadError,
+  decodeEvaluationCutoffReference,
   decodeFixtureManifest,
   decodeFourierReference,
   decodeLinearTrendReference,
@@ -88,6 +89,15 @@ const validPiecewiseCase = () => ({
 });
 
 describe("Prophet fixture loader", () => {
+  it("rejects malformed cutoff/count alignment in release evidence", async () => {
+    const { evaluationCutoffs } = await Effect.runPromise(loadProphetFixtureBundle());
+    const corrupted = { cases: [{ ...evaluationCutoffs.cases[0], expectedFoldCounts: [] }] };
+    const error = await Effect.runPromise(Effect.flip(decodeEvaluationCutoffReference(corrupted)));
+
+    expect(error).toBeInstanceOf(FixtureLoadError);
+    expect(error.operation).toBe("schema");
+  });
+
   it("loads committed fixtures and verifies their digests", async () => {
     const bundle = await Effect.runPromise(loadProphetFixtureBundle());
 

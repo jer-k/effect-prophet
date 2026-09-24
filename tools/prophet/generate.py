@@ -22,6 +22,7 @@ import numpy as np
 import pandas as pd
 import prophet
 from prophet import Prophet
+from prophet.diagnostics import generate_cutoffs
 
 
 EXPECTED_PROPHET_VERSION = "1.4.0"
@@ -33,6 +34,7 @@ LINEAR_TREND_FILENAME = "linear-trend.json"
 FOURIER_FILENAME = "fourier.json"
 PIECEWISE_LINEAR_FILENAME = "piecewise-linear.json"
 CHANGEPOINT_RESOLUTION_FILENAME = "changepoint-resolution.json"
+EVALUATION_CUTOFFS_FILENAME = "evaluation-cutoffs.json"
 LINEAR_MAP_FIT_FILENAME = "linear-map-fit.json"
 SEASONALITY_RESOLUTION_FILENAME = "seasonality-resolution.json"
 CONDITIONAL_SEASONALITY_FILENAME = "conditional-seasonality.json"
@@ -378,6 +380,17 @@ class ChangepointResolutionCaseSpec:
 
 
 @dataclass(frozen=True)
+class EvaluationCutoffCaseSpec:
+    """Authored release cutoff-generation inputs with explicit fixed-ms durations."""
+
+    identifier: str
+    offsets_milliseconds: tuple[int, ...]
+    horizon_ms: int
+    initial_ms: int
+    period_ms: int
+
+
+@dataclass(frozen=True)
 class SeasonalityResolutionCaseSpec:
     """Training history and explicit controls for one built-in policy fixture."""
 
@@ -422,6 +435,21 @@ CHANGEPOINT_RESOLUTION_CASES = (
     ),
     ChangepointResolutionCaseSpec(
         "default-controls", tuple(index * DAY_MILLISECONDS for index in range(40)), 25, 0.8
+    ),
+)
+
+
+EVALUATION_CUTOFF_CASES = (
+    EvaluationCutoffCaseSpec(
+        "daily-default", tuple(index * DAY_MILLISECONDS for index in range(12)),
+        2 * DAY_MILLISECONDS, 6 * DAY_MILLISECONDS, DAY_MILLISECONDS,
+    ),
+    EvaluationCutoffCaseSpec(
+        "subdaily-odd-ms", tuple(range(41)), 5, 15, 3,
+    ),
+    EvaluationCutoffCaseSpec(
+        "irregular-gap", (0, 4 * DAY_MILLISECONDS, *(index * DAY_MILLISECONDS for index in range(20, 25))),
+        2 * DAY_MILLISECONDS, DAY_MILLISECONDS, DAY_MILLISECONDS,
     ),
 )
 
@@ -1014,6 +1042,43 @@ def effect_built_in_setting(control: str | bool | int) -> str | dict[str, Any]:
         return {"mode": "on"}
 
     return {"fourierOrder": control, "mode": "on"}
+
+
+def make_evaluation_cutoff_case(spec: EvaluationCutoffCaseSpec) -> dict[str, Any]:
+    """Use unmodified release generate_cutoffs and the release's fold inequalities."""
+
+    history = pd.DataFrame({
+        "ds": pd.to_datetime(
+            [prophet_timestamp(timestamp_from_offset(offset)) for offset in spec.offsets_milliseconds],
+            format="mixed",
+        )
+    })
+    horizon = pd.Timedelta(milliseconds=spec.horizon_ms)
+    cutoffs = generate_cutoffs(
+        history, horizon, pd.Timedelta(milliseconds=spec.initial_ms),
+        pd.Timedelta(milliseconds=spec.period_ms),
+    )
+
+    def render(date: pd.Timestamp) -> str:
+        return date.tz_localize("UTC").isoformat(timespec="milliseconds").replace("+00:00", "Z")
+
+    return {
+        "id": spec.identifier,
+        "kind": "evaluation-cutoffs",
+        "sourceMethod": "Prophet 1.4.0 generate_cutoffs",
+        "trainingTimestamps": [timestamp_from_offset(offset) for offset in spec.offsets_milliseconds],
+        "horizonMs": spec.horizon_ms,
+        "initialMs": spec.initial_ms,
+        "periodMs": spec.period_ms,
+        "expectedCutoffs": [render(cutoff) for cutoff in cutoffs],
+        "expectedFoldCounts": [
+            {
+                "training": int((history.ds <= cutoff).sum()),
+                "assessment": int(((history.ds > cutoff) & (history.ds <= cutoff + horizon)).sum()),
+            }
+            for cutoff in cutoffs
+        ],
+    }
 
 
 def make_changepoint_resolution_case(spec: ChangepointResolutionCaseSpec) -> dict[str, Any]:
@@ -2404,6 +2469,8 @@ def write_outputs(output: Path, execution: dict[str, str], reference: dict[str, 
             }
         )
     )
+    evaluation_cutoffs_path = output / EVALUATION_CUTOFFS_FILENAME
+    evaluation_cutoffs_path.write_bytes(stable_json({"cases": [make_evaluation_cutoff_case(spec) for spec in EVALUATION_CUTOFF_CASES]}))
     linear_map_fit_path = output / LINEAR_MAP_FIT_FILENAME
     linear_map_fit_path.write_bytes(stable_json({"cases": [make_linear_map_fit_fixture()]}))
     seasonality_resolution_path = output / SEASONALITY_RESOLUTION_FILENAME
@@ -2457,6 +2524,10 @@ def write_outputs(output: Path, execution: dict[str, str], reference: dict[str, 
             {
                 "path": CHANGEPOINT_RESOLUTION_FILENAME,
                 "sha256": sha256_file(changepoint_resolution_path),
+            },
+            {
+                "path": EVALUATION_CUTOFFS_FILENAME,
+                "sha256": sha256_file(evaluation_cutoffs_path),
             },
             {
                 "path": LINEAR_MAP_FIT_FILENAME,
@@ -2520,6 +2591,7 @@ def compare_outputs(generated: Path, committed: Path) -> None:
         FOURIER_FILENAME,
         PIECEWISE_LINEAR_FILENAME,
         CHANGEPOINT_RESOLUTION_FILENAME,
+        EVALUATION_CUTOFFS_FILENAME,
         LINEAR_MAP_FIT_FILENAME,
         SEASONALITY_RESOLUTION_FILENAME,
         CONDITIONAL_SEASONALITY_FILENAME,

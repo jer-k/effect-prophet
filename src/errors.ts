@@ -12,6 +12,7 @@ const ValidationInputSchema = Schema.Literals([
   "prediction-timestamps",
   "prediction-rows",
   "uncertainty-options",
+  "evaluation-plan",
 ]);
 
 const FittingFailureReasonSchema = Schema.Literals([
@@ -47,7 +48,8 @@ export type ValidationInput =
   | "options"
   | "prediction-timestamps"
   | "prediction-rows"
-  | "uncertainty-options";
+  | "uncertainty-options"
+  | "evaluation-plan";
 
 export type FittingFailureReason =
   | "insufficient-observations"
@@ -160,6 +162,56 @@ export class PredictionError extends Schema.TaggedError<PredictionError>()("Pred
       readonly message: string;
     },
     options?: RuntimeCauseOptions,
+  ) {
+    super(fields);
+    defineRuntimeCause(this, options);
+  }
+}
+
+/** A failed evaluation fold with its original typed cause retained in memory. */
+export class EvaluationError extends Schema.TaggedError<EvaluationError>()("EvaluationError", {
+  fold: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0), Schema.isLessThanOrEqualTo(127)),
+  cutoff: Schema.Int,
+  stage: Schema.Literals(["fit", "predict", "result", "uncertainty", "interval-result"]),
+  reason: Schema.Literals([
+    "fit-failed",
+    "prediction-failed",
+    "result-mismatch",
+    "uncertainty-failed",
+    "interval-result-mismatch",
+  ]),
+  rowIndex: Schema.optionalKey(Schema.Natural.check(Schema.isLessThan(1_000_000))),
+  message: Schema.String,
+}) {
+  /** The original typed failure, never encoded or enumerated. */
+  declare readonly cause?:
+    | InputValidationError
+    | UnsupportedConfigurationError
+    | FittingError
+    | PredictionError;
+
+  /** Construct fold context without flattening the underlying expected failure. */
+  constructor(
+    fields: {
+      readonly fold: number;
+      readonly cutoff: number;
+      readonly stage: "fit" | "predict" | "result" | "uncertainty" | "interval-result";
+      readonly reason:
+        | "fit-failed"
+        | "prediction-failed"
+        | "result-mismatch"
+        | "uncertainty-failed"
+        | "interval-result-mismatch";
+      readonly rowIndex?: number;
+      readonly message: string;
+    },
+    options?: {
+      readonly cause?:
+        | InputValidationError
+        | UnsupportedConfigurationError
+        | FittingError
+        | PredictionError;
+    },
   ) {
     super(fields);
     defineRuntimeCause(this, options);

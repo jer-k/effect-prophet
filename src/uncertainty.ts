@@ -3,7 +3,7 @@ import { Effect, Schema } from "effect";
 import { InputValidationError, inputValidationErrorFromIssue } from "./errors";
 
 /** Versioned scalar-path algorithm identity returned with every result. */
-export const simulationIdentity = "prophet-map-scalar-xoshiro128ss-v1" as const;
+export const simulationIdentity = "prophet-map-scalar-xoshiro128ss-v2" as const;
 
 const OptionsSchema = Schema.Struct({
   seed: Schema.Int.check(

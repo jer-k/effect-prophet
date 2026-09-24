@@ -11,6 +11,7 @@ import {
 } from "./event";
 import { PositiveFinite, PositiveFourierOrder } from "./internal/numeric-schemas";
 import { TimestampSchema } from "./internal/timestamp";
+import type { Observations } from "./observation";
 import {
   parseRegressorDefinitions,
   type EncodedRegressorDefinition,
@@ -105,6 +106,47 @@ export type ChangepointSetting =
       readonly count: number;
       readonly range: number;
     };
+
+/** Check explicit MAP points against the inclusive range of the original observed history. */
+export const checkExplicitChangepointBounds = (
+  observations: Observations,
+  options: ProphetOptions,
+): Effect.Effect<void, InputValidationError> => {
+  if (
+    observations.length < 2 ||
+    options.growth === "flat" ||
+    options.map === undefined ||
+    options.map.changepoints.mode !== "explicit"
+  ) {
+    return Effect.void;
+  }
+
+  const first = observations[0];
+  const last = observations.at(-1);
+
+  if (first === undefined || last === undefined) {
+    return Effect.void;
+  }
+
+  for (const [index, changepoint] of options.map.changepoints.timestamps.entries()) {
+    if (changepoint < first.timestamp || changepoint > last.timestamp) {
+      return Effect.fail(
+        new InputValidationError({
+          input: "options",
+          issues: [
+            {
+              path: ["map", "changepoints", "timestamps", index],
+              message: "Explicit changepoints must be inside the inclusive training range",
+            },
+          ],
+          message: "Explicit changepoints must be inside the inclusive training range",
+        }),
+      );
+    }
+  }
+
+  return Effect.void;
+};
 
 /** Parsed deterministic optimizer controls. */
 export interface MapOptimizerControls {

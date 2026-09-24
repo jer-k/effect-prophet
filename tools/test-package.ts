@@ -8,6 +8,8 @@ import {
   getRegressorCoefficients,
   predict,
   predictUncertainty,
+  planRollingOrigin,
+  crossValidate,
   prophetFittingBackendLayer,
 } from "effect-prophet";
 
@@ -48,6 +50,7 @@ const expectedJavaScriptFiles = sourceFiles.flatMap((sourceFile) => {
 const expectedDeclarationFiles = [
   "dist/component-mode.d.ts",
   "dist/errors.d.ts",
+  "dist/evaluation.d.ts",
   "dist/event.d.ts",
   "dist/feature-name.d.ts",
   "dist/fitted-model.d.ts",
@@ -152,6 +155,70 @@ assert.equal(
   0,
   declarationTypecheck.stderr || declarationTypecheck.stdout,
 );
+
+const plan = await Effect.runPromise(
+  planRollingOrigin(
+    [
+      { timestamp: "2024-01-01T00:00:00.000Z", value: 2 },
+      { timestamp: "2024-01-02T00:00:00.000Z", value: 3 },
+      { timestamp: "2024-01-03T00:00:00.000Z", value: 4 },
+    ],
+    {},
+    {
+      horizonMs: 86_400_000,
+      cutoffs: { mode: "explicit", timestamps: ["2024-01-02T00:00:00.000Z"] },
+    },
+  ),
+);
+
+assert.equal(plan.folds[0]?.assessmentCount, 1);
+
+const evaluated = await Effect.runPromise(
+  crossValidate(
+    [
+      { timestamp: "2024-01-01T00:00:00.000Z", value: 2 },
+      { timestamp: "2024-01-02T00:00:00.000Z", value: 3 },
+      { timestamp: "2024-01-03T00:00:00.000Z", value: 4 },
+    ],
+    {},
+    {
+      horizonMs: 86_400_000,
+      cutoffs: { mode: "explicit", timestamps: ["2024-01-02T00:00:00.000Z"] },
+    },
+  ).pipe(Effect.provide(prophetFittingBackendLayer)),
+);
+
+assert.equal(evaluated.kind, "point");
+
+assert.equal(evaluated.rows[0]?.actual, 4);
+
+assert.ok(Math.abs((evaluated.rows[0]?.predicted ?? NaN) - 4) < 1e-12);
+
+assert.equal(evaluated.folds[0]?.model, "linear-trend");
+
+const evaluatedIntervals = await Effect.runPromise(
+  crossValidate(
+    [
+      { timestamp: "2024-01-01T00:00:00.000Z", value: 2 },
+      { timestamp: "2024-01-02T00:00:00.000Z", value: 3 },
+      { timestamp: "2024-01-03T00:00:00.000Z", value: 4 },
+    ],
+    { map: { changepoints: { mode: "explicit", timestamps: [] } } },
+    {
+      horizonMs: 86_400_000,
+      cutoffs: { mode: "explicit", timestamps: ["2024-01-02T00:00:00.000Z"] },
+    },
+    { mode: "intervals", uncertainty: { seed: 19, samples: 32 } },
+  ).pipe(Effect.provide(prophetFittingBackendLayer)),
+);
+
+assert.equal(evaluatedIntervals.kind, "intervals");
+
+assert.equal(evaluatedIntervals.sampleCount, 32);
+
+assert.ok(Number.isFinite(evaluatedIntervals.rows[0]?.lower));
+
+assert.ok(Number.isFinite(evaluatedIntervals.rows[0]?.upper));
 
 const model = await Effect.runPromise(
   fit([

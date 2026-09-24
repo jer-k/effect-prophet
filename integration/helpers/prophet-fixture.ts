@@ -500,6 +500,59 @@ const ChangepointResolutionReferenceFileSchema = Schema.Struct({
   cases: Schema.NonEmptyArray(ChangepointResolutionReferenceCaseSchema),
 });
 
+const EvaluationCutoffReferenceCaseSchema = Schema.Struct({
+  id: Schema.NonEmptyString,
+  kind: Schema.Literal("evaluation-cutoffs"),
+  sourceMethod: Schema.Literal("Prophet 1.4.0 generate_cutoffs"),
+  trainingTimestamps: Schema.NonEmptyArray(CanonicalTimestamp),
+  horizonMs: Schema.Int.check(Schema.isGreaterThan(0)),
+  initialMs: Schema.Int.check(Schema.isGreaterThan(0)),
+  periodMs: Schema.Int.check(Schema.isGreaterThan(0)),
+  expectedCutoffs: Schema.NonEmptyArray(CanonicalTimestamp),
+  expectedFoldCounts: Schema.NonEmptyArray(
+    Schema.Struct({
+      training: Schema.Int.check(Schema.isGreaterThan(0)),
+      assessment: Schema.Int.check(Schema.isGreaterThan(0)),
+    }),
+  ),
+}).check(
+  Schema.makeFilter((referenceCase) => {
+    if (referenceCase.expectedCutoffs.length !== referenceCase.expectedFoldCounts.length) {
+      return { path: ["expectedFoldCounts"], issue: "Fold counts must align with cutoffs" };
+    }
+
+    for (const timestamps of [referenceCase.trainingTimestamps, referenceCase.expectedCutoffs]) {
+      for (let index = 1; index < timestamps.length; index += 1) {
+        const previous = timestamps[index - 1];
+        const current = timestamps[index];
+
+        if (previous !== undefined && current !== undefined && current <= previous) {
+          return {
+            path: ["trainingTimestamps"],
+            issue: "Timestamps and cutoffs must be strictly ordered",
+          };
+        }
+      }
+    }
+  }),
+);
+
+const EvaluationCutoffReferenceFileSchema = Schema.Struct({
+  cases: Schema.NonEmptyArray(EvaluationCutoffReferenceCaseSchema),
+}).check(
+  Schema.makeFilter((fixture) => {
+    const ids = new Set<string>();
+
+    for (const [index, referenceCase] of fixture.cases.entries()) {
+      if (ids.has(referenceCase.id)) {
+        return { path: ["cases", index, "id"], issue: "Evaluation cutoff IDs must be unique" };
+      }
+
+      ids.add(referenceCase.id);
+    }
+  }),
+);
+
 const LinearMapFitReferenceCaseSchema = Schema.Struct({
   id: Schema.NonEmptyString,
   kind: Schema.Literal("fitted-linear-map"),
@@ -1168,6 +1221,7 @@ const FixtureManifestSchema = Schema.Struct({
       "fourier.json",
       "piecewise-linear.json",
       "changepoint-resolution.json",
+      "evaluation-cutoffs.json",
       "linear-map-fit.json",
       "seasonality-resolution.json",
       "conditional-seasonality.json",
@@ -1208,6 +1262,11 @@ const decodePiecewiseLinearReferenceSchema = Schema.decodeUnknownEffect(
 
 const decodeChangepointResolutionReferenceSchema = Schema.decodeUnknownEffect(
   ChangepointResolutionReferenceFileSchema,
+  { errors: "all" },
+);
+
+const decodeEvaluationCutoffReferenceSchema = Schema.decodeUnknownEffect(
+  EvaluationCutoffReferenceFileSchema,
   { errors: "all" },
 );
 
@@ -1282,6 +1341,9 @@ export type ChangepointResolutionReferenceCase =
 /** A parsed collection of automatic changepoint-resolution cases. */
 export type ChangepointResolutionReferenceFile =
   typeof ChangepointResolutionReferenceFileSchema.Type;
+
+/** Pinned release cutoff and fold-count evidence. */
+export type EvaluationCutoffReferenceFile = typeof EvaluationCutoffReferenceFileSchema.Type;
 
 /** A parsed fitted linear MAP reference case. */
 export type LinearMapFitReferenceCase = typeof LinearMapFitReferenceCaseSchema.Type;
@@ -1432,6 +1494,26 @@ export const decodeChangepointResolutionReference = Effect.fn(
   path = "<memory>",
 ): Effect.fn.Return<ChangepointResolutionReferenceFile, FixtureLoadError> {
   return yield* decodeChangepointResolutionReferenceSchema(input).pipe(
+    Effect.mapError(
+      (cause) =>
+        new FixtureLoadError({
+          operation: "schema",
+          fixturePath: path,
+          message: formatSchemaIssue(cause.issue),
+          cause,
+        }),
+    ),
+  );
+});
+
+/** Parse untrusted release cutoff-generation fixture evidence. */
+export const decodeEvaluationCutoffReference = Effect.fn(
+  "ProphetFixture.decodeEvaluationCutoffReference",
+)(function* (
+  input: Parameters<typeof decodeEvaluationCutoffReferenceSchema>[0],
+  path = "<memory>",
+): Effect.fn.Return<EvaluationCutoffReferenceFile, FixtureLoadError> {
+  return yield* decodeEvaluationCutoffReferenceSchema(input).pipe(
     Effect.mapError(
       (cause) =>
         new FixtureLoadError({
@@ -1696,6 +1778,19 @@ export const loadProphetFixtureBundle = Effect.fn("ProphetFixture.loadBundle")(f
     changepointResolutionPath,
   );
 
+  const evaluationCutoffPath = nodePath.join(root, "evaluation-cutoffs.json");
+  const evaluationCutoffContents = yield* readFixtureText(evaluationCutoffPath);
+
+  const evaluationCutoffInput: unknown = yield* Effect.try({
+    try: () => JSON.parse(evaluationCutoffContents),
+    catch: (cause) => invalidJson(evaluationCutoffPath, cause),
+  });
+
+  const evaluationCutoffs = yield* decodeEvaluationCutoffReference(
+    evaluationCutoffInput,
+    evaluationCutoffPath,
+  );
+
   const linearMapFitPath = nodePath.join(root, "linear-map-fit.json");
   const linearMapFitContents = yield* readFixtureText(linearMapFitPath);
 
@@ -1767,6 +1862,7 @@ export const loadProphetFixtureBundle = Effect.fn("ProphetFixture.loadBundle")(f
     changepointResolution,
     conditionalMapFit,
     conditionalSeasonality,
+    evaluationCutoffs,
     fourier,
     linearMapFit,
     linearTrend,

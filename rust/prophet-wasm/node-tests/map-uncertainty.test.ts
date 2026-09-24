@@ -190,6 +190,46 @@ describe("seeded MAP simulation generated WASM boundary", () => {
     assert.deepEqual(invalid(27, 2), [1]);
   });
 
+  it("reduces the same seeded saturated logistic samples to ordered finite intervals", () => {
+    const args: Array<number | Float64Array> = [...logisticRequest()];
+    args[0] = Float64Array.from({ length: 64 }, (_, index) => 20 + index);
+    args[1] = Float64Array.from({ length: 64 }, (_, index) => 90 + index * 0.12);
+    args[8] = 15;
+    args[24] = 19;
+    args[25] = 128;
+
+    const samples = wasm.simulate_logistic_map_with_features(...args);
+    const bands = wasm.simulate_logistic_map_with_features(...args.slice(0, -1), 0);
+
+    assert.deepEqual(Array.from(samples.slice(0, 4)), [0, 1, 64, 128]);
+    assert.deepEqual(Array.from(bands.slice(0, 4)), [0, 0, 64, 128]);
+
+    const quantile = (sorted: ReadonlyArray<number>, probability: number): number => {
+      const position = (sorted.length - 1) * probability;
+      const lower = Math.floor(position);
+      const upper = Math.ceil(position);
+      const first = sorted[lower] ?? NaN;
+      const last = sorted[upper] ?? NaN;
+
+      return first + (last - first) * (position - lower);
+    };
+
+    for (let row = 0; row < 64; row++) {
+      for (let column = 0; column < 2; column++) {
+        const sorted = Array.from(
+          samples.slice(4 + (column * 64 + row) * 128, 4 + (column * 64 + row + 1) * 128),
+        ).sort((left, right) => left - right);
+
+        const lower = bands[4 + row * 4 + column * 2] ?? NaN;
+        const upper = bands[5 + row * 4 + column * 2] ?? NaN;
+
+        assert.ok(Number.isFinite(lower) && Number.isFinite(upper) && lower <= upper);
+        assert.ok(Math.abs(lower - quantile(sorted, 0.1)) < 1e-12);
+        assert.ok(Math.abs(upper - quantile(sorted, 0.9)) < 1e-12);
+      }
+    }
+  });
+
   it("rejects invalid seeds, sample counts, flags, masks and sizes before drawing", () => {
     const args = request();
 

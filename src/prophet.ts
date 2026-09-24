@@ -59,6 +59,7 @@ import {
 } from "./internal/wasm-piecewise-map-backend";
 import { decodeObservations, type Observations } from "./observation";
 import {
+  checkExplicitChangepointBounds,
   decodeOptions,
   defaultAutomaticMapOptions,
   optionsValidationErrorFromSeasonality,
@@ -185,46 +186,6 @@ const nonEmptyLayoutFromResolved = (
     ...layout,
     components,
   });
-};
-
-const checkExplicitChangepointBounds = (
-  observations: Observations,
-  options: ProphetOptions,
-): Effect.Effect<void, InputValidationError> => {
-  if (
-    observations.length < 2 ||
-    options.growth === "flat" ||
-    options.map === undefined ||
-    options.map.changepoints.mode !== "explicit"
-  ) {
-    return Effect.void;
-  }
-
-  const first = observations[0];
-  const last = observations.at(-1);
-
-  if (first === undefined || last === undefined) {
-    return Effect.void;
-  }
-
-  for (const [index, changepoint] of options.map.changepoints.timestamps.entries()) {
-    if (changepoint < first.timestamp || changepoint > last.timestamp) {
-      return Effect.fail(
-        new InputValidationError({
-          input: "options",
-          issues: [
-            {
-              path: ["map", "changepoints", "timestamps", index],
-              message: "Explicit changepoints must be inside the inclusive training range",
-            },
-          ],
-          message: "Explicit changepoints must be inside the inclusive training range",
-        }),
-      );
-    }
-  }
-
-  return Effect.void;
 };
 
 const makeFitPlan = (

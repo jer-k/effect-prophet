@@ -2,7 +2,7 @@
 
 An Effect-based TypeScript package for time-series forecasting.
 
-The Rust/WASM backends fit ordinary least-squares linear trends plus flat, linear-piecewise, and floor-aware logistic MAP models with additive and multiplicative components. Forecasts expose trend, additive and multiplicative totals, final value, and ordered named components. TypeScript owns validation, Effect service composition, persistence, and WASM protocol translation; numerical fitting, changepoint resolution, and evaluation run in Rust. Seeded MAP predictive intervals and samples are experimental; see the [validation and interpretation report](docs/validation/uncertainty.md).
+The Rust/WASM backends fit ordinary least-squares linear trends plus flat, linear-piecewise, and floor-aware logistic MAP models with additive and multiplicative components. Forecasts expose trend, additive and multiplicative totals, final value, and ordered named components. TypeScript owns validation, Effect service composition, persistence, and WASM protocol translation; numerical fitting, changepoint resolution, and point-forecast kernels run in Rust; rolling-origin orchestration is in TypeScript. Seeded MAP predictive intervals and samples are experimental; see the [validation and interpretation report](docs/validation/uncertainty.md).
 
 ## Compatibility target
 
@@ -188,6 +188,8 @@ if (bands.kind === "intervals") console.log(bands.rows[0]?.value);
 ```
 
 `predict` remains point-only. OLS uncertainty is unsupported; linear, flat and logistic MAP uncertainty are experimental. The stochastic process follows Prophet 1.4.0's **scalar** rather than default vectorized future-trend path; fitted feature coefficients and caller-supplied future covariates do not vary. A seed replays the same ordered request within a build; Python's seeded draws, cross-version replay, statistical calibration and guaranteed coverage are not claimed. See [modeling and resource limits](docs/modeling/uncertainty.md), the [fitted synthetic holdout report](docs/validation/uncertainty.md) and the [typechecked save/reload example](examples/uncertainty.ts).
+
+`planRollingOrigin` returns a pure, bounded rolling-origin cutoff/fold-count summary without fitting. `crossValidate` sequentially refits each planned prefix through the caller-provided `FittingBackend` Layer, predicts known future inputs with held-out targets removed and returns immutable point rows (`actual`, `predicted`, elapsed `horizonMs`, fold/cutoff). Opt in to bounded, seeded MAP value intervals with a fourth `{ mode: "intervals", uncertainty: { seed, samples?, intervalWidth? } }` argument; point prediction runs first and a typed fold error stops evaluation without a partial result. OLS has no intervals. Run the [typechecked example](examples/cross-validation.ts) with `npm run example:cross-validation:run` after building. Metrics, baselines, selection and holdout remain approved designs, not public APIs; see the [Stage H decision](docs/decisions/evaluation-and-selection.md), [modeling explanation](docs/modeling/evaluation.md) and [operational limits](docs/usage/operations.md). EP-086–090 own their implementation and evidence. EP-085's logistic acceptance additionally requires EP-094's local fix to be merged and independently verified; no calibration claim follows from interval support.
 
 ## Linear trend forecast
 

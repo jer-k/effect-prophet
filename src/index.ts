@@ -1,6 +1,23 @@
 export { type ComponentMode } from "./component-mode";
 
 export {
+  crossValidate,
+  planRollingOrigin,
+  type CrossValidationFoldSummary,
+  type CrossValidationIntervalInput,
+  type CrossValidationIntervalRow,
+  type CrossValidationPointRow,
+  type CrossValidationResult,
+  type IntervalCrossValidationResult,
+  type PointCrossValidationResult,
+  type PositiveDurationMs,
+  type RollingOriginFoldSummary,
+  type RollingOriginPlanInput,
+  type RollingOriginPlanSummary,
+} from "./evaluation";
+
+export {
+  EvaluationError,
   FittingError,
   InputValidationError,
   ModelSerializationError,

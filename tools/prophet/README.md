@@ -72,15 +72,16 @@ The suite is intentionally excluded from ordinary `npm test`.
 7. evaluates explicit fixed changepoints, output-unit slope adjustments, and composed Fourier
    components for interior, endpoint, and no-changepoint cases;
 8. invokes release `set_changepoints` for exact automatic row-index candidate fixtures;
-9. evaluates strict boolean conditional seasonalities through the release's unmodified
-   `make_all_seasonality_features`, retaining ungated and gated matrices plus fixed components;
-10. fits one baseline and four conditional/mixed-feature explicit-changepoint cases through the
+9. invokes unmodified `diagnostics.generate_cutoffs` for daily, millisecond and irregular-gap cutoff/fold-count fixtures with explicit fixed-duration controls;
+10. evaluates strict boolean conditional seasonalities through the release's unmodified
+    `make_all_seasonality_features`, retaining ungated and gated matrices plus fixed components;
+11. fits one baseline and four conditional/mixed-feature explicit-changepoint cases through the
     bundled CmdStan Newton optimizer;
-11. rounds CPU-sensitive Fourier values to 12 decimal places, snaps fitted optimizer residuals
+12. rounds CPU-sensitive Fourier values to 12 decimal places, snaps fitted optimizer residuals
     below `1e-8` to zero, preserves positive noise scales, and rounds the remaining fitted outputs
     to 12 significant digits, well inside the fixture tolerances, then writes stable JSON with
     non-finite values rejected;
-12. calls `sample_posterior_predictive(..., vectorized=False)` with five authored fixed MAP
+13. calls `sample_posterior_predictive(..., vectorized=False)` with five authored fixed MAP
     states (linear, flat, linear with fixed additive/multiplicative regressors, implicit-floor
     logistic with changing capacity, and explicit-changing-floor logistic with mixed fixed
     regressors and a nonzero historical rate crossing). A pinned Python seed and explicit future
