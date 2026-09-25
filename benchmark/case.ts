@@ -35,6 +35,17 @@ export const BenchmarkPhaseSchema = Schema.Literals([
   "warm-uncertainty",
   "cold-first-uncertainty",
   "fresh-process-restored-uncertainty",
+  "evaluation-input-conversion",
+  "evaluation-plan",
+  "evaluation-point",
+  "evaluation-intervals",
+  "evaluation-metrics",
+  "evaluation-baseline",
+  "evaluation-search",
+  "evaluation-holdout",
+  "evaluation-report-encode",
+  "evaluation-report-decode",
+  "cold-first-evaluation",
 ]);
 
 /** A phase measured by the public benchmark adapters. */
@@ -162,8 +173,44 @@ const StageFMapWorkloadSchema = Schema.Struct({
   ),
 });
 
+const EvaluationWorkloadSchema = Schema.Struct({
+  kind: Schema.Literal("evaluation"),
+  comparison: Schema.Struct({
+    kind: Schema.Literal("different-public-work"),
+    evidenceId: NonEmptyString,
+  }),
+  configuration: StageFMapWorkloadSchema.fields.configuration,
+  effectOptimizer: Schema.optionalKey(LinearMapWorkloadSchema.fields.effectOptimizer),
+  pythonOptimizer: LinearMapWorkloadSchema.fields.pythonOptimizer,
+  plan: Schema.Struct({
+    horizonMs: PositiveInteger,
+    cutoffs: Schema.Array(CanonicalTimestamp).check(Schema.isMinLength(1)),
+  }),
+  metricAggregation: Schema.Literals(["horizons", "rolling", "overall"]),
+  mapeZeroActual: Schema.Literals(["error", "exclude"]),
+  interval: Schema.optionalKey(
+    Schema.Struct({
+      seed: NonNegativeInteger.check(Schema.isLessThanOrEqualTo(4_294_967_295)),
+      samples: PositiveInteger.check(Schema.isLessThanOrEqualTo(2_048)),
+      intervalWidth: Schema.Finite.check(Schema.isGreaterThan(0), Schema.isLessThan(1)),
+    }),
+  ),
+  candidates: Schema.optionalKey(
+    Schema.Array(
+      Schema.Struct({
+        id: NonEmptyString,
+        changepointPriorScale: PositiveFinite,
+        growth: Schema.optionalKey(Schema.Literal("logistic")),
+      }),
+    ).check(Schema.isMinLength(1)),
+  ),
+  expectedFailures: Schema.optionalKey(NonNegativeInteger),
+  holdoutRows: Schema.optionalKey(PositiveInteger),
+});
+
 /** A public forecasting workload understood by both language adapters. */
 export const BenchmarkWorkloadSchema = Schema.Union([
+  EvaluationWorkloadSchema,
   FixedLinearPredictionWorkloadSchema,
   LinearMapWorkloadSchema,
   StageFMapWorkloadSchema,
@@ -372,7 +419,63 @@ const validateCaseRelationships = (
       }
     }
 
-    if (benchmarkCase.workload.kind === "stage-f-map") {
+    if (benchmarkCase.workload.kind === "evaluation") {
+      const workload = benchmarkCase.workload;
+      const phases = benchmarkCase.phases;
+      const needsIntervals = phases.includes("evaluation-intervals");
+
+      const needsSearch =
+        phases.includes("evaluation-search") ||
+        phases.includes("evaluation-holdout") ||
+        phases.includes("evaluation-report-encode") ||
+        phases.includes("evaluation-report-decode");
+
+      if (
+        phases.some(
+          (phase) => !phase.startsWith("evaluation-") && phase !== "cold-first-evaluation",
+        ) ||
+        (needsIntervals && workload.interval === undefined) ||
+        workload.plan.cutoffs.length > 128 ||
+        workload.plan.horizonMs > 315_360_000_000 ||
+        (benchmarkCase.datasetIdentity !== undefined &&
+          (benchmarkCase.datasetIdentity.trainingRows > 10_000 ||
+            (workload.interval !== undefined &&
+              workload.plan.cutoffs.length *
+                benchmarkCase.datasetIdentity.trainingRows *
+                workload.interval.samples >
+                8_000_000) ||
+            (workload.candidates !== undefined &&
+              workload.candidates.length *
+                workload.plan.cutoffs.length *
+                benchmarkCase.datasetIdentity.trainingRows >
+                2_000_000))) ||
+        (needsSearch && workload.candidates === undefined) ||
+        ((phases.includes("evaluation-holdout") ||
+          phases.includes("evaluation-report-encode") ||
+          phases.includes("evaluation-report-decode")) &&
+          workload.holdoutRows === undefined) ||
+        workload.plan.cutoffs.some(
+          (cutoff, index) => index > 0 && cutoff <= (workload.plan.cutoffs[index - 1] ?? ""),
+        ) ||
+        (workload.candidates !== undefined &&
+          (workload.candidates.length > 32 ||
+            new Set(workload.candidates.map((candidate) => candidate.id)).size !==
+              workload.candidates.length ||
+            (workload.expectedFailures ?? 0) >= workload.candidates.length))
+      ) {
+        return Effect.fail(
+          new BenchmarkInputError({
+            input: "cases",
+            message: `Case ${benchmarkCase.id} has inconsistent evaluation configuration`,
+          }),
+        );
+      }
+    }
+
+    if (
+      benchmarkCase.workload.kind === "stage-f-map" ||
+      benchmarkCase.workload.kind === "evaluation"
+    ) {
       const configuration = benchmarkCase.workload.configuration;
       const points = configuration.changepoints;
       const flat = configuration.growth === "flat";
@@ -390,7 +493,7 @@ const validateCaseRelationships = (
         return Effect.fail(
           new BenchmarkInputError({
             input: "cases",
-            message: `Stage F case ${benchmarkCase.id} must use flat defaults or a nonempty comparable changepoint MAP fit`,
+            message: `MAP case ${benchmarkCase.id} must use flat defaults or a nonempty comparable changepoint MAP fit`,
           }),
         );
       }

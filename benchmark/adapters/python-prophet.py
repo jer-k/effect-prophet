@@ -23,6 +23,8 @@ from prophet import Prophet
 from prophet.serialize import model_from_json, model_to_json
 from prophet.utilities import regressor_coefficients
 
+import evaluation as evaluation_work
+
 PROTOCOL_PREFIX = "EFFECT_PROPHET_BENCHMARK_RESULT="
 ADAPTER_PATH = Path(__file__).resolve()
 BENCHMARK_ROOT = ADAPTER_PATH.parent.parent
@@ -145,11 +147,11 @@ def configure_model(benchmark_case: dict[str, Any]) -> Prophet:
     """Construct a fresh public Prophet model with the shared configuration."""
 
     workload = benchmark_case["workload"]
-    if workload["kind"] not in ("linear-map", "stage-f-map"):
+    if workload["kind"] not in ("linear-map", "stage-f-map", "evaluation"):
         raise ValueError(f"Case {benchmark_case['id']} is not a fitting workload")
     configuration = workload["configuration"]
     changepoints = configuration["changepoints"]
-    stage_f = workload["kind"] == "stage-f-map"
+    stage_f = workload["kind"] in ("stage-f-map", "evaluation")
     growth = configuration["growth"] if stage_f else "linear"
     common: dict[str, Any] = {
         "growth": growth,
@@ -760,6 +762,21 @@ def measurement_for_phase(
 ) -> dict[str, Any]:
     """Collect one phase's raw samples after untimed correctness."""
 
+    if benchmark_case["workload"]["kind"] == "evaluation":
+        if phase == "cold-first-evaluation":
+            samples = process_samples(benchmark_case, "--cold-evaluation")
+        else:
+            operation = evaluation_work.prepare_operation(
+                benchmark_case, dataset, phase, configure_model, fit_model, records_frame)
+            samples = measure(benchmark_case, operation)
+        comparison = benchmark_case["workload"]["comparison"]
+        return {
+            "caseId": benchmark_case["id"], "implementation": "python-prophet",
+            "phase": phase, "comparison": comparison["kind"], "evidenceId": comparison["evidenceId"],
+            "run": run, "samplesNanoseconds": samples, "correctness": "locally-passed",
+            "peakRssBytes": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024,
+        }
+
     training, prediction_frame = prepare_input(dataset)
     model = setup_model(training, benchmark_case)
     serialized = model_to_json(model)
@@ -831,7 +848,9 @@ def run_worker(case_id: str, run: int, stage: str = "all") -> dict[str, Any]:
     dataset = load_dataset(benchmark_case)
     result: dict[str, Any] = {"measurements": []}
     if stage != "timing":
-        result["correctness"] = correctness_projection(benchmark_case, dataset, run)
+        result["correctness"] = (evaluation_work.correctness(benchmark_case, dataset, configure_model, fit_model, records_frame, run)
+                                 if benchmark_case["workload"]["kind"] == "evaluation"
+                                 else correctness_projection(benchmark_case, dataset, run))
     if stage != "correctness":
         result["measurements"] = [
             measurement_for_phase(benchmark_case, dataset, run, phase)
@@ -937,9 +956,9 @@ def collect_environment() -> dict[str, Any]:
             {"name": "collection-method", "value": "python-os and cgroup-v2"},
         ],
         "memoryMeasurement": (
-            "warm-uncertainty: worker high-water RSS via resource.RUSAGE_SELF.ru_maxrss "
-            "(Linux KiB); includes imports, fitted model, setup and simulation; excludes "
-            "CmdStan fit child and is not simulation-only allocation"
+            "warm-uncertainty/evaluation: worker high-water RSS via resource.RUSAGE_SELF.ru_maxrss "
+            "(Linux KiB); includes imports and previous operations; excludes CmdStan fit child "
+            "and cold subprocesses; heap-only peaks unavailable"
         ),
     }
 
@@ -1066,6 +1085,11 @@ def main() -> None:
             f"{PROTOCOL_PREFIX}"
             f"{json.dumps(run_worker(sys.argv[2], int(sys.argv[3]), stage))}"
         )
+    elif mode == "--cold-evaluation":
+        benchmark_case = find_case(sys.argv[2])
+        dataset = load_dataset(benchmark_case)
+        evaluation_work.operation(benchmark_case, dataset, "evaluation-point", configure_model, fit_model, records_frame)
+        print(f'{PROTOCOL_PREFIX}{{"status":"passed"}}')
     elif mode in ("--cold", "--cold-uncertainty"):
         if len(sys.argv) != 3:
             raise ValueError("Cold worker requires case id")
