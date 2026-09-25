@@ -5,6 +5,8 @@ import {
   EvaluationError,
   EvaluationMetricError,
   EvaluationSearchError,
+  EvaluationReportError,
+  HoldoutEvaluationError,
   FittingError,
   InputValidationError,
   PredictionError,
@@ -12,6 +14,36 @@ import {
 import { CandidateIdSchema } from "../src/errors";
 
 describe("typed domain errors", () => {
+  it("keeps holdout causes in memory and separates portable report failures", () => {
+    const original = new FittingError(
+      {
+        reason: "backend-failure",
+        observationCount: 3,
+        message: "Sensitive backend details",
+      },
+      { cause: new Error("private path") },
+    );
+
+    const holdout = new HoldoutEvaluationError(
+      {
+        step: "fit",
+        reason: "operation-failed",
+        message: "Holdout fit failed",
+      },
+      { cause: original },
+    );
+
+    const report = new EvaluationReportError({
+      operation: "decode",
+      issues: [{ path: ["forecasts"], message: "Invalid report" }],
+      message: "Invalid report",
+    });
+
+    expect(holdout.cause).toBe(original);
+    expect(JSON.stringify(holdout)).not.toContain("Sensitive backend details");
+    expect(Schema.encodeSync(HoldoutEvaluationError)(holdout)).not.toHaveProperty("cause");
+    expect(Schema.encodeSync(EvaluationReportError)(report)).toMatchObject({ operation: "decode" });
+  });
   it("encodes structured evaluation-plan validation issues", () => {
     const error = new InputValidationError({
       input: "evaluation-plan",

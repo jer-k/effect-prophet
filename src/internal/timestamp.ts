@@ -14,6 +14,10 @@ const CanonicalTimestampString = Schema.String.check(
   ),
 );
 
+/** Whether an integer epoch millisecond has a representable canonical UTC timestamp. */
+export const isValidTimestamp = (epoch: number): boolean =>
+  Number.isSafeInteger(epoch) && Option.isSome(DateTime.make(epoch));
+
 /** Codec between canonical UTC timestamp strings and integer epoch milliseconds. */
 export const TimestampSchema = CanonicalTimestampString.pipe(
   Schema.decodeTo(Schema.Int, {

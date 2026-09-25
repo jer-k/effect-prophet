@@ -1,4 +1,4 @@
-import { DateTime, Effect, Option, Schema } from "effect";
+import { Effect, Schema } from "effect";
 
 import {
   EvaluationError,
@@ -12,11 +12,12 @@ import type { FittingBackend } from "./internal/fitting-backend";
 import { checkedAdd, checkedMultiply } from "./internal/safe-arithmetic";
 import { deriveEvaluationFoldSeed } from "./evaluation-seed";
 import { millisecondsPerDay } from "./internal/time";
-import { TimestampSchema } from "./internal/timestamp";
+import { isValidTimestamp as validEpoch, TimestampSchema } from "./internal/timestamp";
 import { decodeObservations, type EncodedObservation, type Observations } from "./observation";
 import {
   checkExplicitChangepointBounds,
   decodeOptions,
+  isFeaturelessOls,
   type EncodedProphetOptions,
   type ProphetOptions,
 } from "./options";
@@ -185,9 +186,6 @@ type ParsedPlan = typeof RollingOriginPlanInputSchema.Type;
 
 const invalidPlan = (path: ReadonlyArray<PropertyKey>, message: string): InputValidationError =>
   new InputValidationError({ input: "evaluation-plan", issues: [{ path, message }], message });
-
-const validEpoch = (epoch: number): boolean =>
-  Number.isSafeInteger(epoch) && Option.isSome(DateTime.make(epoch));
 
 const upperBound = (observations: Observations, cutoff: number): number => {
   let lower = 0;
@@ -504,17 +502,7 @@ const prepareRollingOrigin = (
         totalCells = nextTotal;
       }
 
-      if (
-        options.growth === "linear" &&
-        options.map === undefined &&
-        options.scaling === undefined &&
-        options.seasonalities.length === 0 &&
-        options.events.layout.coefficientCount === 0 &&
-        options.regressors.length === 0 &&
-        options.builtInSeasonalities.yearly === "off" &&
-        options.builtInSeasonalities.weekly === "off" &&
-        options.builtInSeasonalities.daily === "off"
-      ) {
+      if (isFeaturelessOls(options)) {
         return yield* Effect.fail(
           invalidPlan(
             ["uncertainty"],
