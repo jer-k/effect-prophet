@@ -23,6 +23,33 @@ describe("typed domain errors", () => {
     });
   });
 
+  it("encodes baseline input and fold failure context", () => {
+    const input = new InputValidationError({
+      input: "evaluation-baseline",
+      issues: [{ path: ["lagMs"], message: "Expected a positive duration" }],
+      message: "Expected a positive duration",
+    });
+
+    const failure = new EvaluationError({
+      fold: 1,
+      cutoff: 1_704_067_200_000,
+      stage: "baseline",
+      reason: "baseline-unavailable",
+      rowIndex: 2,
+      message: "Exact lag unavailable",
+    });
+
+    expect(Schema.encodeSync(InputValidationError)(input)).toMatchObject({
+      input: "evaluation-baseline",
+    });
+    expect(Schema.encodeSync(EvaluationError)(failure)).toMatchObject({
+      stage: "baseline",
+      reason: "baseline-unavailable",
+      fold: 1,
+      rowIndex: 2,
+    });
+  });
+
   it("encodes bounded metric and aggregation failure context", () => {
     const error = new EvaluationMetricError({
       metric: "mdape",

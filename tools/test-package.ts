@@ -10,6 +10,8 @@ import {
   predictUncertainty,
   planRollingOrigin,
   crossValidate,
+  crossValidateBaseline,
+  comparePerformance,
   performanceMetrics,
   prophetFittingBackendLayer,
 } from "effect-prophet";
@@ -52,6 +54,7 @@ const expectedDeclarationFiles = [
   "dist/component-mode.d.ts",
   "dist/errors.d.ts",
   "dist/evaluation.d.ts",
+  "dist/evaluation-baseline.d.ts",
   "dist/evaluation-metrics.d.ts",
   "dist/event.d.ts",
   "dist/feature-name.d.ts",
@@ -197,6 +200,29 @@ assert.equal(evaluated.rows[0]?.actual, 4);
 assert.ok(Math.abs((evaluated.rows[0]?.predicted ?? NaN) - 4) < 1e-12);
 
 assert.equal(evaluated.folds[0]?.model, "linear-trend");
+
+const baseline = await Effect.runPromise(
+  crossValidateBaseline(
+    [
+      { timestamp: "2024-01-01T00:00:00.000Z", value: 2 },
+      { timestamp: "2024-01-02T00:00:00.000Z", value: 3 },
+      { timestamp: "2024-01-03T00:00:00.000Z", value: 4 },
+    ],
+    evaluated.plan,
+    { kind: "last-observation" },
+  ),
+);
+
+assert.equal(baseline.rows[0]?.predicted, 3);
+
+const comparison = await Effect.runPromise(
+  comparePerformance(evaluated, [baseline], {
+    metrics: ["mae"],
+    aggregation: { kind: "overall" },
+  }),
+);
+
+assert.equal(comparison.baselines[0]?.metrics.source, "baseline");
 
 const metricReport = await Effect.runPromise(
   performanceMetrics(evaluated, {
