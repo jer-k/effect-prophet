@@ -40,11 +40,15 @@ export {
 export {
   EvaluationError,
   EvaluationMetricError,
+  EvaluationSearchError,
   FittingError,
   InputValidationError,
   ModelSerializationError,
   PredictionError,
   UnsupportedConfigurationError,
+  type CandidateId,
+  type PortableCandidateOutcome,
+  type PortableEvaluationFailure,
   type FittingFailureReason,
   type ModelSerializationOperation,
   type PredictionFailureReason,
@@ -60,6 +64,15 @@ export {
   type EventFeatureColumn,
   type EventOccurrence,
 } from "./event";
+
+export {
+  searchModels,
+  type ModelSearchInput,
+  type ModelSearchResult,
+  type SearchCandidateInput,
+  type SearchCandidateResult,
+  type SearchObjective,
+} from "./model-search";
 
 export {
   decodeObservations,

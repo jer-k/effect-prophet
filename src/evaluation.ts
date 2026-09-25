@@ -660,6 +660,7 @@ const crossValidateOperation = Effect.fn("Prophet.crossValidate")(function* (
   optionsInput: EncodedProphetOptions,
   input: RollingOriginPlanInput,
   modeInput?: CrossValidationIntervalInput,
+  candidateId = "",
 ): Effect.fn.Return<CrossValidationResult, InputValidationError | EvaluationError, FittingBackend> {
   const { observations, options, foldPlan, uncertainty } = yield* prepareRollingOrigin(
     observationsInput,
@@ -672,7 +673,7 @@ const crossValidateOperation = Effect.fn("Prophet.crossValidate")(function* (
     uncertainty === undefined
       ? []
       : foldPlan.indexes.map((fold) =>
-          deriveEvaluationFoldSeed(uncertainty.seed, foldPlan.summary, "", fold.cutoff),
+          deriveEvaluationFoldSeed(uncertainty.seed, foldPlan.summary, candidateId, fold.cutoff),
         );
 
   if (seeds.some((seed) => seed === undefined)) {
@@ -896,6 +897,16 @@ const crossValidateOperation = Effect.fn("Prophet.crossValidate")(function* (
     folds: Object.freeze(folds),
   });
 });
+
+/** Search-only entry to the same named public CV operation, with candidate-isolated interval seeds. */
+export const crossValidateCandidate = (
+  observationsInput: Parameters<typeof decodeObservations>[0],
+  optionsInput: EncodedProphetOptions,
+  input: RollingOriginPlanInput,
+  candidateId: string,
+  modeInput?: CrossValidationIntervalInput,
+): Effect.Effect<CrossValidationResult, InputValidationError | EvaluationError, FittingBackend> =>
+  crossValidateOperation(observationsInput, optionsInput, input, modeInput, candidateId);
 
 /** Point-only by default; opt in to complete seeded intervals with a tagged fourth argument. */
 export function crossValidate(

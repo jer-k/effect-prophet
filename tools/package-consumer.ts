@@ -3,12 +3,14 @@ import {
   fit,
   planRollingOrigin,
   predictUncertainty,
+  searchModels,
   type EncodedPredictionRows,
   type FittedProphet,
   type EncodedRegressorDefinition,
   type CrossValidationResult,
   type Forecast,
   type PointCrossValidationResult,
+  type ModelSearchResult,
   type RollingOriginPlanSummary,
   type RegressorCoefficient,
   type TargetScaling,
@@ -36,6 +38,25 @@ const crossValidationOperation = crossValidate(
 );
 
 const pointResult: PointCrossValidationResult | undefined = undefined;
+
+const searchOperation = searchModels(
+  [
+    { timestamp: "2024-01-01T00:00:00.000Z", value: 1 },
+    { timestamp: "2024-01-02T00:00:00.000Z", value: 2 },
+    { timestamp: "2024-01-03T00:00:00.000Z", value: 3 },
+  ],
+  {
+    candidates: [{ id: "baseline", options: {} }],
+    plan: {
+      horizonMs: 86_400_000,
+      cutoffs: { mode: "explicit", timestamps: ["2024-01-02T00:00:00.000Z"] },
+    },
+    objective: { metric: "mae", aggregation: { kind: "overall" }, direction: "minimize" },
+    failurePolicy: "record",
+  },
+);
+
+const searchResult: ModelSearchResult | undefined = undefined;
 
 const intervalOperation = crossValidate(
   [
@@ -78,6 +99,10 @@ const simulation = predictUncertainty(fittedModel, rows, { seed: 42 });
 void planOperation;
 
 void crossValidationOperation;
+
+void searchOperation;
+
+void searchResult;
 
 void pointResult;
 

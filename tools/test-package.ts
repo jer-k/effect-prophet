@@ -14,6 +14,7 @@ import {
   comparePerformance,
   performanceMetrics,
   prophetFittingBackendLayer,
+  searchModels,
 } from "effect-prophet";
 
 const projectRoot = new URL("../", import.meta.url);
@@ -64,6 +65,7 @@ const expectedDeclarationFiles = [
   "dist/internal/fitting-backend.d.ts",
   "dist/internal/prophet-fitting-backend.d.ts",
   "dist/logistic.d.ts",
+  "dist/model-search.d.ts",
   "dist/model-serialization.d.ts",
   "dist/observation.d.ts",
   "dist/options.d.ts",
@@ -200,6 +202,32 @@ assert.equal(evaluated.rows[0]?.actual, 4);
 assert.ok(Math.abs((evaluated.rows[0]?.predicted ?? NaN) - 4) < 1e-12);
 
 assert.equal(evaluated.folds[0]?.model, "linear-trend");
+
+const selection = await Effect.runPromise(
+  searchModels(
+    [
+      { timestamp: "2024-01-01T00:00:00.000Z", value: 2 },
+      { timestamp: "2024-01-02T00:00:00.000Z", value: 3 },
+      { timestamp: "2024-01-03T00:00:00.000Z", value: 4 },
+    ],
+    {
+      candidates: [
+        { id: "one", options: {} },
+        { id: "two", options: { growth: "linear" } },
+      ],
+      plan: {
+        horizonMs: 86_400_000,
+        cutoffs: { mode: "explicit", timestamps: ["2024-01-02T00:00:00.000Z"] },
+      },
+      objective: { metric: "mae", aggregation: { kind: "overall" }, direction: "minimize" },
+      failurePolicy: "record",
+    },
+  ).pipe(Effect.provide(prophetFittingBackendLayer)),
+);
+
+assert.equal(selection.candidates.length, 2);
+
+assert.equal(selection.selected.id, "one");
 
 const baseline = await Effect.runPromise(
   crossValidateBaseline(

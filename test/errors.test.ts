@@ -4,10 +4,12 @@ import { describe, expect, it } from "vitest";
 import {
   EvaluationError,
   EvaluationMetricError,
+  EvaluationSearchError,
   FittingError,
   InputValidationError,
   PredictionError,
 } from "../src/index";
+import { CandidateIdSchema } from "../src/errors";
 
 describe("typed domain errors", () => {
   it("encodes structured evaluation-plan validation issues", () => {
@@ -48,6 +50,36 @@ describe("typed domain errors", () => {
       fold: 1,
       rowIndex: 2,
     });
+  });
+
+  it("encodes bounded all-failed outcomes without a runtime cause or message projection", () => {
+    const error = new EvaluationSearchError({
+      reason: "no-success",
+      outcomes: [
+        {
+          id: Schema.decodeSync(CandidateIdSchema)("candidate-1"),
+          candidateIndex: 0,
+          failure: {
+            tag: "EvaluationError",
+            fold: 0,
+            stage: "fit",
+            reason: "fit-failed",
+            causeTag: "FittingError",
+            causeReason: "backend-failure",
+          },
+        },
+      ],
+      message: "No search candidate succeeded",
+    });
+
+    const encoded = Schema.encodeSync(EvaluationSearchError)(error);
+
+    expect(encoded).toMatchObject({
+      reason: "no-success",
+      outcomes: [{ candidateIndex: 0, failure: { causeReason: "backend-failure" } }],
+    });
+    expect(encoded).not.toHaveProperty("cause");
+    expect(JSON.stringify(encoded)).not.toMatch(/stack|timestamp|observationCount/);
   });
 
   it("encodes bounded metric and aggregation failure context", () => {
