@@ -16,7 +16,7 @@ import {
 } from "./evaluation";
 import { performanceMetrics, type MetricOptions, type MetricReport } from "./evaluation-metrics";
 import { checkedAdd } from "./internal/safe-arithmetic";
-import { decodeObservations } from "./observation";
+import { decodeObservations, type Observation } from "./observation";
 
 const BaselineDefinitionSchema = Schema.Union([
   Schema.Struct({ kind: Schema.Literal("last-observation") }),
@@ -56,6 +56,15 @@ const decodeBaseline = Schema.decodeUnknownEffect(BaselineDefinitionSchema, {
   onExcessProperty: "error",
 });
 
+/** A pure baseline forecast failure without rolling-fold or final-holdout context. */
+export class BaselineForecastError extends Schema.TaggedError<BaselineForecastError>()(
+  "BaselineForecastError",
+  {
+    reason: Schema.Literals(["baseline-unavailable", "non-finite"]),
+    rowIndex: Schema.optionalKey(Schema.Natural),
+  },
+) {}
+
 const baselineFailure = (
   fold: number,
   cutoff: number,
@@ -81,6 +90,92 @@ const baselineFailure = (
         },
   );
 
+const baselineValues = (
+  training: ReadonlyArray<Observation>,
+  assessment: ReadonlyArray<Observation>,
+  baseline: BaselineDefinition,
+): Effect.Effect<ReadonlyArray<number>, BaselineForecastError> =>
+  Effect.gen(function* () {
+    const last = training[training.length - 1];
+
+    if (last === undefined) {
+      return yield* Effect.fail(new BaselineForecastError({ reason: "baseline-unavailable" }));
+    }
+
+    let predicted = last.value;
+
+    if (baseline.kind === "training-mean") {
+      let sum = 0;
+      let correction = 0;
+
+      for (const row of training) {
+        const value = row.value;
+        const next = sum + value;
+        const term = Math.abs(sum) >= Math.abs(value) ? sum - next + value : value - next + sum;
+        const corrected = correction + term;
+
+        if (!Number.isFinite(next) || !Number.isFinite(corrected)) {
+          return yield* Effect.fail(new BaselineForecastError({ reason: "non-finite" }));
+        }
+
+        sum = next;
+        correction = corrected;
+      }
+
+      const total = sum + correction;
+      predicted = total / training.length;
+
+      if (!Number.isFinite(total) || !Number.isFinite(predicted)) {
+        return yield* Effect.fail(new BaselineForecastError({ reason: "non-finite" }));
+      }
+    }
+
+    const trainingByTimestamp = new Map<number, number>();
+
+    if (baseline.kind === "seasonal-naive") {
+      for (const row of training) trainingByTimestamp.set(row.timestamp, row.value);
+    }
+
+    const forecasts: Array<number> = [];
+
+    for (const [index, row] of assessment.entries()) {
+      let forecast = predicted;
+
+      if (baseline.kind === "seasonal-naive") {
+        const lagTimestamp = checkedAdd(row.timestamp, -baseline.lagMs);
+
+        const value =
+          lagTimestamp === undefined ? undefined : trainingByTimestamp.get(lagTimestamp);
+
+        if (value === undefined) {
+          return yield* Effect.fail(
+            new BaselineForecastError({ reason: "baseline-unavailable", rowIndex: index }),
+          );
+        }
+
+        forecast = value;
+      }
+
+      forecasts.push(forecast);
+    }
+
+    return forecasts;
+  });
+
+/** Forecast a separate holdout using the same training-only baseline rules as CV. */
+export const forecastHoldoutBaseline = (
+  development: ReadonlyArray<Observation>,
+  holdout: ReadonlyArray<Observation>,
+  definition: BaselineDefinition,
+): Effect.Effect<ReadonlyArray<number>, InputValidationError | BaselineForecastError> =>
+  Effect.gen(function* () {
+    const baseline = yield* decodeBaseline(definition).pipe(
+      Effect.mapError((error) => inputValidationErrorFromIssue("evaluation-baseline", error.issue)),
+    );
+
+    return yield* baselineValues(development, holdout, baseline);
+  });
+
 /** Evaluate a validated rolling-origin summary using only each fold's training prefix. */
 export const crossValidateBaseline = Effect.fn("Prophet.crossValidateBaseline")(function* (
   history: Parameters<typeof decodeObservations>[0],
@@ -97,82 +192,20 @@ export const crossValidateBaseline = Effect.fn("Prophet.crossValidateBaseline")(
   const rows: Array<CrossValidationPointRow> = [];
 
   for (const fold of plan.indexes) {
-    const last = observations[fold.trainingEndExclusive - 1];
+    const training = observations.slice(0, fold.trainingEndExclusive);
+    const assessment = observations.slice(fold.assessmentStart, fold.assessmentEndExclusive);
 
-    if (last === undefined) {
-      return yield* Effect.fail(baselineFailure(fold.index, fold.cutoff, "baseline-unavailable"));
-    }
+    const forecasts = yield* baselineValues(training, assessment, baseline).pipe(
+      Effect.mapError((error) =>
+        baselineFailure(fold.index, fold.cutoff, error.reason, error.rowIndex),
+      ),
+    );
 
-    let predicted = last.value;
+    for (const [index, row] of assessment.entries()) {
+      const forecast = forecasts[index];
 
-    if (baseline.kind === "training-mean") {
-      let sum = 0;
-      let correction = 0;
-
-      for (let index = 0; index < fold.trainingEndExclusive; index += 1) {
-        const value = observations[index]?.value;
-
-        if (value === undefined) {
-          return yield* Effect.fail(baselineFailure(fold.index, fold.cutoff, "non-finite"));
-        }
-
-        const next = sum + value;
-        const term = Math.abs(sum) >= Math.abs(value) ? sum - next + value : value - next + sum;
-        const corrected = correction + term;
-
-        if (!Number.isFinite(next) || !Number.isFinite(corrected)) {
-          return yield* Effect.fail(baselineFailure(fold.index, fold.cutoff, "non-finite"));
-        }
-
-        sum = next;
-        correction = corrected;
-      }
-
-      const total = sum + correction;
-      predicted = total / fold.trainingEndExclusive;
-
-      if (!Number.isFinite(total) || !Number.isFinite(predicted)) {
-        return yield* Effect.fail(baselineFailure(fold.index, fold.cutoff, "non-finite"));
-      }
-    }
-
-    const trainingByTimestamp = new Map<number, number>();
-
-    if (baseline.kind === "seasonal-naive") {
-      for (let index = 0; index < fold.trainingEndExclusive; index += 1) {
-        const row = observations[index];
-
-        if (row !== undefined) {
-          trainingByTimestamp.set(row.timestamp, row.value);
-        }
-      }
-    }
-
-    for (let index = fold.assessmentStart; index < fold.assessmentEndExclusive; index += 1) {
-      const row = observations[index];
-      const rowIndex = index - fold.assessmentStart;
-
-      if (row === undefined) {
-        return yield* Effect.fail(
-          baselineFailure(fold.index, fold.cutoff, "baseline-unavailable", rowIndex),
-        );
-      }
-
-      let forecast = predicted;
-
-      if (baseline.kind === "seasonal-naive") {
-        const lagTimestamp = checkedAdd(row.timestamp, -baseline.lagMs);
-
-        const value =
-          lagTimestamp === undefined ? undefined : trainingByTimestamp.get(lagTimestamp);
-
-        if (value === undefined) {
-          return yield* Effect.fail(
-            baselineFailure(fold.index, fold.cutoff, "baseline-unavailable", rowIndex),
-          );
-        }
-
-        forecast = value;
+      if (forecast === undefined) {
+        return yield* Effect.die(new Error("Baseline result omitted a validated assessment row"));
       }
 
       rows.push(

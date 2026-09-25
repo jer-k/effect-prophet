@@ -57,6 +57,7 @@ const expectedDeclarationFiles = [
   "dist/evaluation.d.ts",
   "dist/evaluation-baseline.d.ts",
   "dist/evaluation-metrics.d.ts",
+  "dist/evaluation-report.d.ts",
   "dist/event.d.ts",
   "dist/feature-name.d.ts",
   "dist/fitted-model.d.ts",

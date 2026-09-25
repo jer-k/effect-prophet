@@ -253,6 +253,18 @@ export type ProphetOptions =
   | FlatAdditiveOptions
   | LogisticOptions;
 
+/** Recognize the only known model configuration without MAP predictive simulation. */
+export const isFeaturelessOls = (options: ProphetOptions): boolean =>
+  options.growth === "linear" &&
+  options.map === undefined &&
+  options.scaling === undefined &&
+  options.seasonalities.length === 0 &&
+  options.events.layout.coefficientCount === 0 &&
+  options.regressors.length === 0 &&
+  options.builtInSeasonalities.yearly === "off" &&
+  options.builtInSeasonalities.weekly === "off" &&
+  options.builtInSeasonalities.daily === "off";
+
 const emptySeasonalities: readonly [] = Object.freeze([]);
 
 const emptyRegressors: readonly [] = Object.freeze([]);

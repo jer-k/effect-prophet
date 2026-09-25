@@ -10,6 +10,16 @@ export {
 } from "./evaluation-baseline";
 
 export {
+  evaluateHoldout,
+  encodeEvaluationReport,
+  decodeEvaluationReport,
+  type EvaluationProvenance,
+  type HoldoutEvaluationInput,
+  type HoldoutEvaluationReport,
+  type SelectedCandidateReceipt,
+} from "./evaluation-report";
+
+export {
   performanceMetrics,
   type HorizonMetricPoint,
   type MetricAggregation,
@@ -41,6 +51,8 @@ export {
   EvaluationError,
   EvaluationMetricError,
   EvaluationSearchError,
+  EvaluationReportError,
+  HoldoutEvaluationError,
   FittingError,
   InputValidationError,
   ModelSerializationError,
