@@ -1,5 +1,7 @@
 import { Predicate, Schema, SchemaIssue } from "effect";
 
+import type { BaselineForecastError } from "./evaluation-baseline";
+
 /** Runtime schema for one structured validation issue. */
 export const ValidationIssueSchema = Schema.Struct({
   message: Schema.String,
@@ -16,6 +18,7 @@ const ValidationInputSchema = Schema.Literals([
   "evaluation-metrics",
   "evaluation-baseline",
   "evaluation-search",
+  "evaluation-holdout",
 ]);
 
 const FittingFailureReasonSchema = Schema.Literals([
@@ -55,7 +58,8 @@ export type ValidationInput =
   | "evaluation-plan"
   | "evaluation-metrics"
   | "evaluation-baseline"
-  | "evaluation-search";
+  | "evaluation-search"
+  | "evaluation-holdout";
 
 export type FittingFailureReason =
   | "insufficient-observations"
@@ -235,6 +239,61 @@ export class EvaluationError extends Schema.TaggedError<EvaluationError>()("Eval
   }
 }
 
+/** A failed final holdout operation with its original typed cause retained only in memory. */
+export class HoldoutEvaluationError extends Schema.TaggedError<HoldoutEvaluationError>()(
+  "HoldoutEvaluationError",
+  {
+    step: Schema.Literals(["fit", "predict", "uncertainty", "result", "report", "baseline"]),
+    reason: Schema.Literals([
+      "operation-failed",
+      "result-mismatch",
+      "baseline-unavailable",
+      "non-finite",
+    ]),
+    rowIndex: Schema.optionalKey(Schema.Natural.check(Schema.isLessThan(10_000))),
+    message: Schema.String,
+  },
+) {
+  /** Original expected failure, excluded from the report. */
+  declare readonly cause?:
+    | InputValidationError
+    | UnsupportedConfigurationError
+    | FittingError
+    | PredictionError
+    | EvaluationMetricError
+    | EvaluationError
+    | EvaluationReportError
+    | BaselineForecastError;
+
+  /** Construct holdout context without exposing runtime causes in JSON. */
+  constructor(
+    fields: {
+      readonly step: "fit" | "predict" | "uncertainty" | "result" | "report" | "baseline";
+      readonly reason:
+        | "operation-failed"
+        | "result-mismatch"
+        | "baseline-unavailable"
+        | "non-finite";
+      readonly rowIndex?: number;
+      readonly message: string;
+    },
+    options?: {
+      readonly cause?:
+        | InputValidationError
+        | UnsupportedConfigurationError
+        | FittingError
+        | PredictionError
+        | EvaluationMetricError
+        | EvaluationError
+        | EvaluationReportError
+        | BaselineForecastError;
+    },
+  ) {
+    super(fields);
+    defineRuntimeCause(this, options);
+  }
+}
+
 /** A requested evaluation metric cannot be computed for the given bucket. */
 export class EvaluationMetricError extends Schema.TaggedError<EvaluationMetricError>()(
   "EvaluationMetricError",
@@ -264,7 +323,8 @@ export const CandidateIdSchema = Schema.String.check(
 /** A parsed candidate label, never suitable for telemetry attributes. */
 export type CandidateId = typeof CandidateIdSchema.Type;
 
-const PortableEvaluationFailureSchema = Schema.Union([
+/** Strict portable projection for expected candidate-local failures. */
+export const PortableEvaluationFailureSchema = Schema.Union([
   Schema.Struct({
     tag: Schema.Literal("EvaluationError"),
     fold: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0), Schema.isLessThanOrEqualTo(127)),
@@ -360,6 +420,16 @@ export class EvaluationSearchError extends Schema.TaggedError<EvaluationSearchEr
     defineRuntimeCause(this, options);
   }
 }
+
+/** An expected schema or consistency failure for a portable evaluation report. */
+export class EvaluationReportError extends Schema.TaggedError<EvaluationReportError>()(
+  "EvaluationReportError",
+  {
+    operation: Schema.Literals(["encode", "decode"]),
+    issues: Schema.Array(ValidationIssueSchema),
+    message: Schema.String,
+  },
+) {}
 
 /** An expected schema failure while encoding or decoding a portable fitted model. */
 export class ModelSerializationError extends Schema.TaggedError<ModelSerializationError>()(
