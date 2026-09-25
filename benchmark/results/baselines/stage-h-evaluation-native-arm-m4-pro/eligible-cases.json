@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "caseIds": [
+    "evaluation-linear-point",
+    "evaluation-linear-intervals",
+    "evaluation-linear-search",
+    "evaluation-logistic-point",
+    "evaluation-logistic-intervals",
+    "evaluation-logistic-search",
+    "evaluation-logistic-large-point",
+    "evaluation-logistic-large-intervals",
+    "evaluation-linear-failure-search"
+  ]
+}

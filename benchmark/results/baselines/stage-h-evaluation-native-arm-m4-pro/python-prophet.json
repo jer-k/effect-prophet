@@ -1,0 +1,3975 @@
+{
+  "schemaVersion": 1,
+  "implementation": "python-prophet",
+  "generatedAt": "2026-09-25T20:58:45.612139Z",
+  "environment": {
+    "runtime": "python",
+    "runtimeVersion": "3.12.11",
+    "operatingSystem": "Linux 7.0.12-linuxkit",
+    "architecture": "aarch64",
+    "processor": "unavailable",
+    "containerPlatform": "linux/arm64",
+    "versions": [
+      {
+        "name": "cmdstanpy",
+        "value": "1.3.0"
+      },
+      {
+        "name": "holidays",
+        "value": "0.104"
+      },
+      {
+        "name": "numpy",
+        "value": "2.5.3"
+      },
+      {
+        "name": "pandas",
+        "value": "3.0.5"
+      },
+      {
+        "name": "prophet",
+        "value": "1.4.0"
+      }
+    ],
+    "artifactHashes": [
+      {
+        "name": "benchmark/python/uv.lock",
+        "value": "c90f2464e1d50dbe489bdcdaf8350f04c162f6c617559cfb75d6977b0f430ab1"
+      },
+      {
+        "name": "prophet/stan_model/prophet_model.bin",
+        "value": "faff590e554b6dd4e8c232d2a51c63fe734ae018dd529ee7433a5cdcd86fc54e"
+      }
+    ],
+    "numericalThreads": [
+      {
+        "name": "OMP_NUM_THREADS",
+        "value": "1"
+      },
+      {
+        "name": "OPENBLAS_NUM_THREADS",
+        "value": "1"
+      },
+      {
+        "name": "MKL_NUM_THREADS",
+        "value": "1"
+      }
+    ],
+    "resources": [
+      {
+        "name": "logical-cpu-count",
+        "value": "4"
+      },
+      {
+        "name": "runtime-total-memory-bytes",
+        "value": "8320299008"
+      },
+      {
+        "name": "cgroup-memory-max",
+        "value": "max"
+      },
+      {
+        "name": "collection-method",
+        "value": "python-os and cgroup-v2"
+      }
+    ],
+    "memoryMeasurement": "warm-uncertainty/evaluation: worker high-water RSS via resource.RUSAGE_SELF.ru_maxrss (Linux KiB); includes imports and previous operations; excludes CmdStan fit child and cold subprocesses; heap-only peaks unavailable"
+  },
+  "measurements": [
+    {
+      "caseId": "evaluation-linear-point",
+      "implementation": "python-prophet",
+      "phase": "evaluation-input-conversion",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        498542,
+        410125
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 119488512
+    },
+    {
+      "caseId": "evaluation-linear-point",
+      "implementation": "python-prophet",
+      "phase": "evaluation-plan",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        1085875,
+        886875
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 120352768
+    },
+    {
+      "caseId": "evaluation-linear-point",
+      "implementation": "python-prophet",
+      "phase": "evaluation-point",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        33606125,
+        31512542
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123260928
+    },
+    {
+      "caseId": "evaluation-linear-point",
+      "implementation": "python-prophet",
+      "phase": "evaluation-metrics",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        5861166,
+        6726084
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123809792
+    },
+    {
+      "caseId": "evaluation-linear-point",
+      "implementation": "python-prophet",
+      "phase": "evaluation-baseline",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        1176833,
+        1149750
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123809792
+    },
+    {
+      "caseId": "evaluation-linear-point",
+      "implementation": "python-prophet",
+      "phase": "cold-first-evaluation",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        1622914542,
+        1703335167
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123809792
+    },
+    {
+      "caseId": "evaluation-linear-point",
+      "implementation": "python-prophet",
+      "phase": "evaluation-input-conversion",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        505166,
+        427416
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 119488512
+    },
+    {
+      "caseId": "evaluation-linear-point",
+      "implementation": "python-prophet",
+      "phase": "evaluation-plan",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        742833,
+        704875
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 120352768
+    },
+    {
+      "caseId": "evaluation-linear-point",
+      "implementation": "python-prophet",
+      "phase": "evaluation-point",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        35817167,
+        39629875
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123260928
+    },
+    {
+      "caseId": "evaluation-linear-point",
+      "implementation": "python-prophet",
+      "phase": "evaluation-metrics",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        9954208,
+        10163208
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123809792
+    },
+    {
+      "caseId": "evaluation-linear-point",
+      "implementation": "python-prophet",
+      "phase": "evaluation-baseline",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        2688583,
+        1626083
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123809792
+    },
+    {
+      "caseId": "evaluation-linear-point",
+      "implementation": "python-prophet",
+      "phase": "cold-first-evaluation",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        1676500668,
+        1732842543
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123809792
+    },
+    {
+      "caseId": "evaluation-linear-intervals",
+      "implementation": "python-prophet",
+      "phase": "evaluation-intervals",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        40476875,
+        39532000
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123854848
+    },
+    {
+      "caseId": "evaluation-linear-intervals",
+      "implementation": "python-prophet",
+      "phase": "evaluation-intervals",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        40919083,
+        40055167
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123822080
+    },
+    {
+      "caseId": "evaluation-linear-search",
+      "implementation": "python-prophet",
+      "phase": "evaluation-search",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        67882250,
+        68138042
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123801600
+    },
+    {
+      "caseId": "evaluation-linear-search",
+      "implementation": "python-prophet",
+      "phase": "evaluation-holdout",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        12015334,
+        12969125
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123801600
+    },
+    {
+      "caseId": "evaluation-linear-search",
+      "implementation": "python-prophet",
+      "phase": "evaluation-report-encode",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        11208,
+        8625
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123801600
+    },
+    {
+      "caseId": "evaluation-linear-search",
+      "implementation": "python-prophet",
+      "phase": "evaluation-report-decode",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        91375,
+        19666
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123801600
+    },
+    {
+      "caseId": "evaluation-linear-search",
+      "implementation": "python-prophet",
+      "phase": "evaluation-search",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        69938167,
+        68931500
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123781120
+    },
+    {
+      "caseId": "evaluation-linear-search",
+      "implementation": "python-prophet",
+      "phase": "evaluation-holdout",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        12489833,
+        11731708
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123781120
+    },
+    {
+      "caseId": "evaluation-linear-search",
+      "implementation": "python-prophet",
+      "phase": "evaluation-report-encode",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        10958,
+        8583
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123781120
+    },
+    {
+      "caseId": "evaluation-linear-search",
+      "implementation": "python-prophet",
+      "phase": "evaluation-report-decode",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        6375,
+        4666
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123781120
+    },
+    {
+      "caseId": "evaluation-logistic-point",
+      "implementation": "python-prophet",
+      "phase": "evaluation-input-conversion",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        794042,
+        2286167
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 119492608
+    },
+    {
+      "caseId": "evaluation-logistic-point",
+      "implementation": "python-prophet",
+      "phase": "evaluation-plan",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        782625,
+        874500
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 120422400
+    },
+    {
+      "caseId": "evaluation-logistic-point",
+      "implementation": "python-prophet",
+      "phase": "evaluation-point",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        26975125,
+        24701292
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123265024
+    },
+    {
+      "caseId": "evaluation-logistic-point",
+      "implementation": "python-prophet",
+      "phase": "evaluation-metrics",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        6085458,
+        8084334
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123813888
+    },
+    {
+      "caseId": "evaluation-logistic-point",
+      "implementation": "python-prophet",
+      "phase": "evaluation-baseline",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        871875,
+        833666
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123813888
+    },
+    {
+      "caseId": "evaluation-logistic-point",
+      "implementation": "python-prophet",
+      "phase": "cold-first-evaluation",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        1737431751,
+        1757863667
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123813888
+    },
+    {
+      "caseId": "evaluation-logistic-point",
+      "implementation": "python-prophet",
+      "phase": "evaluation-input-conversion",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        480542,
+        436583
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 119558144
+    },
+    {
+      "caseId": "evaluation-logistic-point",
+      "implementation": "python-prophet",
+      "phase": "evaluation-plan",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        632167,
+        583750
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 120475648
+    },
+    {
+      "caseId": "evaluation-logistic-point",
+      "implementation": "python-prophet",
+      "phase": "evaluation-point",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        24964667,
+        22644542
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123383808
+    },
+    {
+      "caseId": "evaluation-logistic-point",
+      "implementation": "python-prophet",
+      "phase": "evaluation-metrics",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        6424417,
+        5750458
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123932672
+    },
+    {
+      "caseId": "evaluation-logistic-point",
+      "implementation": "python-prophet",
+      "phase": "evaluation-baseline",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        835083,
+        814833
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123932672
+    },
+    {
+      "caseId": "evaluation-logistic-point",
+      "implementation": "python-prophet",
+      "phase": "cold-first-evaluation",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        1705920251,
+        1604786751
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123932672
+    },
+    {
+      "caseId": "evaluation-logistic-intervals",
+      "implementation": "python-prophet",
+      "phase": "evaluation-intervals",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        28091959,
+        27115625
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123822080
+    },
+    {
+      "caseId": "evaluation-logistic-intervals",
+      "implementation": "python-prophet",
+      "phase": "evaluation-intervals",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        29903916,
+        31999750
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123826176
+    },
+    {
+      "caseId": "evaluation-logistic-search",
+      "implementation": "python-prophet",
+      "phase": "evaluation-search",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        48368958,
+        48235667
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123826176
+    },
+    {
+      "caseId": "evaluation-logistic-search",
+      "implementation": "python-prophet",
+      "phase": "evaluation-holdout",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        12902625,
+        13290875
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123826176
+    },
+    {
+      "caseId": "evaluation-logistic-search",
+      "implementation": "python-prophet",
+      "phase": "evaluation-report-encode",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        11791,
+        9459
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123826176
+    },
+    {
+      "caseId": "evaluation-logistic-search",
+      "implementation": "python-prophet",
+      "phase": "evaluation-report-decode",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        5625,
+        4542
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123826176
+    },
+    {
+      "caseId": "evaluation-logistic-search",
+      "implementation": "python-prophet",
+      "phase": "evaluation-search",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        49139834,
+        48078500
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123871232
+    },
+    {
+      "caseId": "evaluation-logistic-search",
+      "implementation": "python-prophet",
+      "phase": "evaluation-holdout",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        12535917,
+        13040667
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123871232
+    },
+    {
+      "caseId": "evaluation-logistic-search",
+      "implementation": "python-prophet",
+      "phase": "evaluation-report-encode",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        10958,
+        8875
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123871232
+    },
+    {
+      "caseId": "evaluation-logistic-search",
+      "implementation": "python-prophet",
+      "phase": "evaluation-report-decode",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        5458,
+        4500
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123871232
+    },
+    {
+      "caseId": "evaluation-logistic-large-point",
+      "implementation": "python-prophet",
+      "phase": "evaluation-input-conversion",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        595792,
+        518084
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 119439360
+    },
+    {
+      "caseId": "evaluation-logistic-large-point",
+      "implementation": "python-prophet",
+      "phase": "evaluation-plan",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        808000,
+        773750
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 120369152
+    },
+    {
+      "caseId": "evaluation-logistic-large-point",
+      "implementation": "python-prophet",
+      "phase": "evaluation-point",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        51416375,
+        50827667
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123211776
+    },
+    {
+      "caseId": "evaluation-logistic-large-point",
+      "implementation": "python-prophet",
+      "phase": "evaluation-metrics",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        5853625,
+        6407084
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123760640
+    },
+    {
+      "caseId": "evaluation-logistic-large-point",
+      "implementation": "python-prophet",
+      "phase": "evaluation-baseline",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        1432208,
+        1343250
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123760640
+    },
+    {
+      "caseId": "evaluation-logistic-large-point",
+      "implementation": "python-prophet",
+      "phase": "cold-first-evaluation",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        1687065417,
+        1636891375
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123760640
+    },
+    {
+      "caseId": "evaluation-logistic-large-point",
+      "implementation": "python-prophet",
+      "phase": "evaluation-input-conversion",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        548750,
+        520833
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 119435264
+    },
+    {
+      "caseId": "evaluation-logistic-large-point",
+      "implementation": "python-prophet",
+      "phase": "evaluation-plan",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        790083,
+        768500
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 120365056
+    },
+    {
+      "caseId": "evaluation-logistic-large-point",
+      "implementation": "python-prophet",
+      "phase": "evaluation-point",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        50701667,
+        51719417
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123207680
+    },
+    {
+      "caseId": "evaluation-logistic-large-point",
+      "implementation": "python-prophet",
+      "phase": "evaluation-metrics",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        5916292,
+        5783583
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123756544
+    },
+    {
+      "caseId": "evaluation-logistic-large-point",
+      "implementation": "python-prophet",
+      "phase": "evaluation-baseline",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        1382750,
+        1457208
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123756544
+    },
+    {
+      "caseId": "evaluation-logistic-large-point",
+      "implementation": "python-prophet",
+      "phase": "cold-first-evaluation",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        1621028626,
+        1667214584
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123756544
+    },
+    {
+      "caseId": "evaluation-logistic-large-intervals",
+      "implementation": "python-prophet",
+      "phase": "evaluation-intervals",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        70974958,
+        68845917
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 126107648
+    },
+    {
+      "caseId": "evaluation-logistic-large-intervals",
+      "implementation": "python-prophet",
+      "phase": "evaluation-intervals",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        72495417,
+        100865792
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 126087168
+    },
+    {
+      "caseId": "evaluation-linear-failure-search",
+      "implementation": "python-prophet",
+      "phase": "evaluation-search",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        69993250,
+        71703542
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123756544
+    },
+    {
+      "caseId": "evaluation-linear-failure-search",
+      "implementation": "python-prophet",
+      "phase": "evaluation-holdout",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        12636000,
+        12909000
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123756544
+    },
+    {
+      "caseId": "evaluation-linear-failure-search",
+      "implementation": "python-prophet",
+      "phase": "evaluation-report-encode",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        11500,
+        9250
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123756544
+    },
+    {
+      "caseId": "evaluation-linear-failure-search",
+      "implementation": "python-prophet",
+      "phase": "evaluation-report-decode",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        6083,
+        4833
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123756544
+    },
+    {
+      "caseId": "evaluation-linear-failure-search",
+      "implementation": "python-prophet",
+      "phase": "evaluation-search",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        71476125,
+        71711584
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123752448
+    },
+    {
+      "caseId": "evaluation-linear-failure-search",
+      "implementation": "python-prophet",
+      "phase": "evaluation-holdout",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        12603583,
+        12433542
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123752448
+    },
+    {
+      "caseId": "evaluation-linear-failure-search",
+      "implementation": "python-prophet",
+      "phase": "evaluation-report-encode",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        11958,
+        9125
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123752448
+    },
+    {
+      "caseId": "evaluation-linear-failure-search",
+      "implementation": "python-prophet",
+      "phase": "evaluation-report-decode",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        6125,
+        4833
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123752448
+    }
+  ],
+  "failures": [],
+  "correctness": [
+    {
+      "caseId": "evaluation-linear-point",
+      "run": 0,
+      "status": "locally-passed",
+      "modelKind": "linear",
+      "changepointTimestamps": [],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [],
+      "evaluation": {
+        "cutoffs": [
+          1583798400000,
+          1584403200000
+        ],
+        "trainingRows": 147,
+        "assessmentRows": 14,
+        "rows": [
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1583884800000,
+            "actual": 107.256770536,
+            "predicted": 107.16881923416271
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1583971200000,
+            "actual": 107.477610966,
+            "predicted": 107.49621767249633
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584057600000,
+            "actual": 107.621305003,
+            "predicted": 107.70181020957362
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584144000000,
+            "actual": 107.73960814,
+            "predicted": 107.65545289865508
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584230400000,
+            "actual": 107.653446934,
+            "predicted": 107.52948825642848
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584316800000,
+            "actual": 107.522764913,
+            "predicted": 107.55318205768579
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584403200000,
+            "actual": 107.727735768,
+            "predicted": 107.73168634960756
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584489600000,
+            "actual": 108.144805759,
+            "predicted": 108.02617140081112
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584576000000,
+            "actual": 108.376652781,
+            "predicted": 108.34418008733986
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584662400000,
+            "actual": 108.445583559,
+            "predicted": 108.54434489496141
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584748800000,
+            "actual": 108.515493892,
+            "predicted": 108.5134327246225
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584835200000,
+            "actual": 108.460025493,
+            "predicted": 108.39115310760053
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584921600000,
+            "actual": 108.320362399,
+            "predicted": 108.40133653675873
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1585008000000,
+            "actual": 108.47000673,
+            "predicted": 108.58231139747888
+          }
+        ],
+        "mae": 0.06740182899585838
+      }
+    },
+    {
+      "caseId": "evaluation-linear-point",
+      "run": 1,
+      "status": "locally-passed",
+      "modelKind": "linear",
+      "changepointTimestamps": [],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [],
+      "evaluation": {
+        "cutoffs": [
+          1583798400000,
+          1584403200000
+        ],
+        "trainingRows": 147,
+        "assessmentRows": 14,
+        "rows": [
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1583884800000,
+            "actual": 107.256770536,
+            "predicted": 107.16881923416271
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1583971200000,
+            "actual": 107.477610966,
+            "predicted": 107.49621767249633
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584057600000,
+            "actual": 107.621305003,
+            "predicted": 107.70181020957362
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584144000000,
+            "actual": 107.73960814,
+            "predicted": 107.65545289865508
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584230400000,
+            "actual": 107.653446934,
+            "predicted": 107.52948825642848
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584316800000,
+            "actual": 107.522764913,
+            "predicted": 107.55318205768579
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584403200000,
+            "actual": 107.727735768,
+            "predicted": 107.73168634960756
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584489600000,
+            "actual": 108.144805759,
+            "predicted": 108.02617140081112
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584576000000,
+            "actual": 108.376652781,
+            "predicted": 108.34418008733986
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584662400000,
+            "actual": 108.445583559,
+            "predicted": 108.54434489496141
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584748800000,
+            "actual": 108.515493892,
+            "predicted": 108.5134327246225
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584835200000,
+            "actual": 108.460025493,
+            "predicted": 108.39115310760053
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584921600000,
+            "actual": 108.320362399,
+            "predicted": 108.40133653675873
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1585008000000,
+            "actual": 108.47000673,
+            "predicted": 108.58231139747888
+          }
+        ],
+        "mae": 0.06740182899585838
+      }
+    },
+    {
+      "caseId": "evaluation-linear-intervals",
+      "run": 0,
+      "status": "locally-passed",
+      "modelKind": "linear",
+      "changepointTimestamps": [],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [],
+      "evaluation": {
+        "cutoffs": [
+          1583798400000,
+          1584403200000
+        ],
+        "trainingRows": 147,
+        "assessmentRows": 14,
+        "rows": [
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1583884800000,
+            "actual": 107.256770536,
+            "predicted": 107.16881923416271
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1583971200000,
+            "actual": 107.477610966,
+            "predicted": 107.49621767249633
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584057600000,
+            "actual": 107.621305003,
+            "predicted": 107.70181020957362
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584144000000,
+            "actual": 107.73960814,
+            "predicted": 107.65545289865508
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584230400000,
+            "actual": 107.653446934,
+            "predicted": 107.52948825642848
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584316800000,
+            "actual": 107.522764913,
+            "predicted": 107.55318205768579
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584403200000,
+            "actual": 107.727735768,
+            "predicted": 107.73168634960756
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584489600000,
+            "actual": 108.144805759,
+            "predicted": 108.02617140081112
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584576000000,
+            "actual": 108.376652781,
+            "predicted": 108.34418008733986
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584662400000,
+            "actual": 108.445583559,
+            "predicted": 108.54434489496141
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584748800000,
+            "actual": 108.515493892,
+            "predicted": 108.5134327246225
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584835200000,
+            "actual": 108.460025493,
+            "predicted": 108.39115310760053
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584921600000,
+            "actual": 108.320362399,
+            "predicted": 108.40133653675873
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1585008000000,
+            "actual": 108.47000673,
+            "predicted": 108.58231139747888
+          }
+        ],
+        "mae": 0.06740182899585838
+      }
+    },
+    {
+      "caseId": "evaluation-linear-intervals",
+      "run": 1,
+      "status": "locally-passed",
+      "modelKind": "linear",
+      "changepointTimestamps": [],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [],
+      "evaluation": {
+        "cutoffs": [
+          1583798400000,
+          1584403200000
+        ],
+        "trainingRows": 147,
+        "assessmentRows": 14,
+        "rows": [
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1583884800000,
+            "actual": 107.256770536,
+            "predicted": 107.16881923416271
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1583971200000,
+            "actual": 107.477610966,
+            "predicted": 107.49621767249633
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584057600000,
+            "actual": 107.621305003,
+            "predicted": 107.70181020957362
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584144000000,
+            "actual": 107.73960814,
+            "predicted": 107.65545289865508
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584230400000,
+            "actual": 107.653446934,
+            "predicted": 107.52948825642848
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584316800000,
+            "actual": 107.522764913,
+            "predicted": 107.55318205768579
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584403200000,
+            "actual": 107.727735768,
+            "predicted": 107.73168634960756
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584489600000,
+            "actual": 108.144805759,
+            "predicted": 108.02617140081112
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584576000000,
+            "actual": 108.376652781,
+            "predicted": 108.34418008733986
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584662400000,
+            "actual": 108.445583559,
+            "predicted": 108.54434489496141
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584748800000,
+            "actual": 108.515493892,
+            "predicted": 108.5134327246225
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584835200000,
+            "actual": 108.460025493,
+            "predicted": 108.39115310760053
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584921600000,
+            "actual": 108.320362399,
+            "predicted": 108.40133653675873
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1585008000000,
+            "actual": 108.47000673,
+            "predicted": 108.58231139747888
+          }
+        ],
+        "mae": 0.06740182899585838
+      }
+    },
+    {
+      "caseId": "evaluation-linear-search",
+      "run": 0,
+      "status": "locally-passed",
+      "modelKind": "linear",
+      "changepointTimestamps": [],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [],
+      "evaluation": {
+        "cutoffs": [
+          1583798400000,
+          1584403200000
+        ],
+        "trainingRows": 147,
+        "assessmentRows": 14,
+        "rows": [
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1583884800000,
+            "actual": 107.256770536,
+            "predicted": 107.16881923416271
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1583971200000,
+            "actual": 107.477610966,
+            "predicted": 107.49621767249633
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584057600000,
+            "actual": 107.621305003,
+            "predicted": 107.70181020957362
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584144000000,
+            "actual": 107.73960814,
+            "predicted": 107.65545289865508
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584230400000,
+            "actual": 107.653446934,
+            "predicted": 107.52948825642848
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584316800000,
+            "actual": 107.522764913,
+            "predicted": 107.55318205768579
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584403200000,
+            "actual": 107.727735768,
+            "predicted": 107.73168634960756
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584489600000,
+            "actual": 108.144805759,
+            "predicted": 108.02617140081112
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584576000000,
+            "actual": 108.376652781,
+            "predicted": 108.34418008733986
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584662400000,
+            "actual": 108.445583559,
+            "predicted": 108.54434489496141
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584748800000,
+            "actual": 108.515493892,
+            "predicted": 108.5134327246225
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584835200000,
+            "actual": 108.460025493,
+            "predicted": 108.39115310760053
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584921600000,
+            "actual": 108.320362399,
+            "predicted": 108.40133653675873
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1585008000000,
+            "actual": 108.47000673,
+            "predicted": 108.58231139747888
+          }
+        ],
+        "mae": 0.06740182899585838
+      }
+    },
+    {
+      "caseId": "evaluation-linear-search",
+      "run": 1,
+      "status": "locally-passed",
+      "modelKind": "linear",
+      "changepointTimestamps": [],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [],
+      "evaluation": {
+        "cutoffs": [
+          1583798400000,
+          1584403200000
+        ],
+        "trainingRows": 147,
+        "assessmentRows": 14,
+        "rows": [
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1583884800000,
+            "actual": 107.256770536,
+            "predicted": 107.16881923416271
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1583971200000,
+            "actual": 107.477610966,
+            "predicted": 107.49621767249633
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584057600000,
+            "actual": 107.621305003,
+            "predicted": 107.70181020957362
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584144000000,
+            "actual": 107.73960814,
+            "predicted": 107.65545289865508
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584230400000,
+            "actual": 107.653446934,
+            "predicted": 107.52948825642848
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584316800000,
+            "actual": 107.522764913,
+            "predicted": 107.55318205768579
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584403200000,
+            "actual": 107.727735768,
+            "predicted": 107.73168634960756
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584489600000,
+            "actual": 108.144805759,
+            "predicted": 108.02617140081112
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584576000000,
+            "actual": 108.376652781,
+            "predicted": 108.34418008733986
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584662400000,
+            "actual": 108.445583559,
+            "predicted": 108.54434489496141
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584748800000,
+            "actual": 108.515493892,
+            "predicted": 108.5134327246225
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584835200000,
+            "actual": 108.460025493,
+            "predicted": 108.39115310760053
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584921600000,
+            "actual": 108.320362399,
+            "predicted": 108.40133653675873
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1585008000000,
+            "actual": 108.47000673,
+            "predicted": 108.58231139747888
+          }
+        ],
+        "mae": 0.06740182899585838
+      }
+    },
+    {
+      "caseId": "evaluation-flat-mixed-point",
+      "run": 0,
+      "status": "locally-passed",
+      "modelKind": "flat",
+      "changepointTimestamps": [],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [],
+      "evaluation": {
+        "cutoffs": [
+          1583193600000,
+          1583798400000,
+          1584403200000
+        ],
+        "trainingRows": 210,
+        "assessmentRows": 21,
+        "rows": [
+          {
+            "cutoff": 1583193600000,
+            "timestamp": 1583280000000,
+            "actual": 35.0774734771,
+            "predicted": 34.97798331986127
+          },
+          {
+            "cutoff": 1583193600000,
+            "timestamp": 1583366400000,
+            "actual": 45.887244225,
+            "predicted": 45.94051306028288
+          },
+          {
+            "cutoff": 1583193600000,
+            "timestamp": 1583452800000,
+            "actual": 34.9423251457,
+            "predicted": 35.001906960082444
+          },
+          {
+            "cutoff": 1583193600000,
+            "timestamp": 1583539200000,
+            "actual": 41.1217963936,
+            "predicted": 41.064456257182975
+          },
+          {
+            "cutoff": 1583193600000,
+            "timestamp": 1583625600000,
+            "actual": 28.9132926113,
+            "predicted": 28.893851413972406
+          },
+          {
+            "cutoff": 1583193600000,
+            "timestamp": 1583712000000,
+            "actual": 22.4365394365,
+            "predicted": 22.57749816469105
+          },
+          {
+            "cutoff": 1583193600000,
+            "timestamp": 1583798400000,
+            "actual": 24.0282971677,
+            "predicted": 24.082646271650308
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1583884800000,
+            "actual": 35.0567705362,
+            "predicted": 35.002116687619036
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1583971200000,
+            "actual": 45.9077938496,
+            "predicted": 45.939803200013465
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584057600000,
+            "actual": 48.5865637957,
+            "predicted": 48.67750988704487
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584144000000,
+            "actual": 41.1455095528,
+            "predicted": 41.07586823016968
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584230400000,
+            "actual": 30.2075455206,
+            "predicted": 30.088108578763855
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584316800000,
+            "actual": 34.9664968915,
+            "predicted": 35.002116687619036
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584403200000,
+            "actual": 24.0575528836,
+            "predicted": 24.079545550092362
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584489600000,
+            "actual": 35.1048057594,
+            "predicted": 34.98970585174506
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584576000000,
+            "actual": 45.9668356652,
+            "predicted": 45.93300150680932
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584662400000,
+            "actual": 48.5708423513,
+            "predicted": 48.6674960235069
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584748800000,
+            "actual": 36.2070229572,
+            "predicted": 36.20365268572773
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584835200000,
+            "actual": 28.9741240797,
+            "predicted": 28.90710121992503
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584921600000,
+            "actual": 21.2751036062,
+            "predicted": 21.355874053933462
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1585008000000,
+            "actual": 23.9598238459,
+            "predicted": 24.074582923718342
+          }
+        ],
+        "mae": 0.06763049453613133
+      }
+    },
+    {
+      "caseId": "evaluation-flat-mixed-point",
+      "run": 1,
+      "status": "locally-passed",
+      "modelKind": "flat",
+      "changepointTimestamps": [],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [],
+      "evaluation": {
+        "cutoffs": [
+          1583193600000,
+          1583798400000,
+          1584403200000
+        ],
+        "trainingRows": 210,
+        "assessmentRows": 21,
+        "rows": [
+          {
+            "cutoff": 1583193600000,
+            "timestamp": 1583280000000,
+            "actual": 35.0774734771,
+            "predicted": 34.97798331986127
+          },
+          {
+            "cutoff": 1583193600000,
+            "timestamp": 1583366400000,
+            "actual": 45.887244225,
+            "predicted": 45.94051306028288
+          },
+          {
+            "cutoff": 1583193600000,
+            "timestamp": 1583452800000,
+            "actual": 34.9423251457,
+            "predicted": 35.001906960082444
+          },
+          {
+            "cutoff": 1583193600000,
+            "timestamp": 1583539200000,
+            "actual": 41.1217963936,
+            "predicted": 41.064456257182975
+          },
+          {
+            "cutoff": 1583193600000,
+            "timestamp": 1583625600000,
+            "actual": 28.9132926113,
+            "predicted": 28.893851413972406
+          },
+          {
+            "cutoff": 1583193600000,
+            "timestamp": 1583712000000,
+            "actual": 22.4365394365,
+            "predicted": 22.57749816469105
+          },
+          {
+            "cutoff": 1583193600000,
+            "timestamp": 1583798400000,
+            "actual": 24.0282971677,
+            "predicted": 24.082646271650308
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1583884800000,
+            "actual": 35.0567705362,
+            "predicted": 35.002116687619036
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1583971200000,
+            "actual": 45.9077938496,
+            "predicted": 45.939803200013465
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584057600000,
+            "actual": 48.5865637957,
+            "predicted": 48.67750988704487
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584144000000,
+            "actual": 41.1455095528,
+            "predicted": 41.07586823016968
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584230400000,
+            "actual": 30.2075455206,
+            "predicted": 30.088108578763855
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584316800000,
+            "actual": 34.9664968915,
+            "predicted": 35.002116687619036
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584403200000,
+            "actual": 24.0575528836,
+            "predicted": 24.079545550092362
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584489600000,
+            "actual": 35.1048057594,
+            "predicted": 34.98970585174506
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584576000000,
+            "actual": 45.9668356652,
+            "predicted": 45.93300150680932
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584662400000,
+            "actual": 48.5708423513,
+            "predicted": 48.6674960235069
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584748800000,
+            "actual": 36.2070229572,
+            "predicted": 36.20365268572773
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584835200000,
+            "actual": 28.9741240797,
+            "predicted": 28.90710121992503
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584921600000,
+            "actual": 21.2751036062,
+            "predicted": 21.355874053933462
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1585008000000,
+            "actual": 23.9598238459,
+            "predicted": 24.074582923718342
+          }
+        ],
+        "mae": 0.06763049453613133
+      }
+    },
+    {
+      "caseId": "evaluation-flat-mixed-intervals",
+      "run": 0,
+      "status": "locally-passed",
+      "modelKind": "flat",
+      "changepointTimestamps": [],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [],
+      "evaluation": {
+        "cutoffs": [
+          1583193600000,
+          1583798400000,
+          1584403200000
+        ],
+        "trainingRows": 210,
+        "assessmentRows": 21,
+        "rows": [
+          {
+            "cutoff": 1583193600000,
+            "timestamp": 1583280000000,
+            "actual": 35.0774734771,
+            "predicted": 34.97798331986127
+          },
+          {
+            "cutoff": 1583193600000,
+            "timestamp": 1583366400000,
+            "actual": 45.887244225,
+            "predicted": 45.94051306028288
+          },
+          {
+            "cutoff": 1583193600000,
+            "timestamp": 1583452800000,
+            "actual": 34.9423251457,
+            "predicted": 35.001906960082444
+          },
+          {
+            "cutoff": 1583193600000,
+            "timestamp": 1583539200000,
+            "actual": 41.1217963936,
+            "predicted": 41.064456257182975
+          },
+          {
+            "cutoff": 1583193600000,
+            "timestamp": 1583625600000,
+            "actual": 28.9132926113,
+            "predicted": 28.893851413972406
+          },
+          {
+            "cutoff": 1583193600000,
+            "timestamp": 1583712000000,
+            "actual": 22.4365394365,
+            "predicted": 22.57749816469105
+          },
+          {
+            "cutoff": 1583193600000,
+            "timestamp": 1583798400000,
+            "actual": 24.0282971677,
+            "predicted": 24.082646271650308
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1583884800000,
+            "actual": 35.0567705362,
+            "predicted": 35.002116687619036
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1583971200000,
+            "actual": 45.9077938496,
+            "predicted": 45.939803200013465
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584057600000,
+            "actual": 48.5865637957,
+            "predicted": 48.67750988704487
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584144000000,
+            "actual": 41.1455095528,
+            "predicted": 41.07586823016968
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584230400000,
+            "actual": 30.2075455206,
+            "predicted": 30.088108578763855
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584316800000,
+            "actual": 34.9664968915,
+            "predicted": 35.002116687619036
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584403200000,
+            "actual": 24.0575528836,
+            "predicted": 24.079545550092362
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584489600000,
+            "actual": 35.1048057594,
+            "predicted": 34.98970585174506
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584576000000,
+            "actual": 45.9668356652,
+            "predicted": 45.93300150680932
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584662400000,
+            "actual": 48.5708423513,
+            "predicted": 48.6674960235069
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584748800000,
+            "actual": 36.2070229572,
+            "predicted": 36.20365268572773
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584835200000,
+            "actual": 28.9741240797,
+            "predicted": 28.90710121992503
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584921600000,
+            "actual": 21.2751036062,
+            "predicted": 21.355874053933462
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1585008000000,
+            "actual": 23.9598238459,
+            "predicted": 24.074582923718342
+          }
+        ],
+        "mae": 0.06763049453613133
+      }
+    },
+    {
+      "caseId": "evaluation-flat-mixed-intervals",
+      "run": 1,
+      "status": "locally-passed",
+      "modelKind": "flat",
+      "changepointTimestamps": [],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [],
+      "evaluation": {
+        "cutoffs": [
+          1583193600000,
+          1583798400000,
+          1584403200000
+        ],
+        "trainingRows": 210,
+        "assessmentRows": 21,
+        "rows": [
+          {
+            "cutoff": 1583193600000,
+            "timestamp": 1583280000000,
+            "actual": 35.0774734771,
+            "predicted": 34.97798331986127
+          },
+          {
+            "cutoff": 1583193600000,
+            "timestamp": 1583366400000,
+            "actual": 45.887244225,
+            "predicted": 45.94051306028288
+          },
+          {
+            "cutoff": 1583193600000,
+            "timestamp": 1583452800000,
+            "actual": 34.9423251457,
+            "predicted": 35.001906960082444
+          },
+          {
+            "cutoff": 1583193600000,
+            "timestamp": 1583539200000,
+            "actual": 41.1217963936,
+            "predicted": 41.064456257182975
+          },
+          {
+            "cutoff": 1583193600000,
+            "timestamp": 1583625600000,
+            "actual": 28.9132926113,
+            "predicted": 28.893851413972406
+          },
+          {
+            "cutoff": 1583193600000,
+            "timestamp": 1583712000000,
+            "actual": 22.4365394365,
+            "predicted": 22.57749816469105
+          },
+          {
+            "cutoff": 1583193600000,
+            "timestamp": 1583798400000,
+            "actual": 24.0282971677,
+            "predicted": 24.082646271650308
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1583884800000,
+            "actual": 35.0567705362,
+            "predicted": 35.002116687619036
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1583971200000,
+            "actual": 45.9077938496,
+            "predicted": 45.939803200013465
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584057600000,
+            "actual": 48.5865637957,
+            "predicted": 48.67750988704487
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584144000000,
+            "actual": 41.1455095528,
+            "predicted": 41.07586823016968
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584230400000,
+            "actual": 30.2075455206,
+            "predicted": 30.088108578763855
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584316800000,
+            "actual": 34.9664968915,
+            "predicted": 35.002116687619036
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584403200000,
+            "actual": 24.0575528836,
+            "predicted": 24.079545550092362
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584489600000,
+            "actual": 35.1048057594,
+            "predicted": 34.98970585174506
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584576000000,
+            "actual": 45.9668356652,
+            "predicted": 45.93300150680932
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584662400000,
+            "actual": 48.5708423513,
+            "predicted": 48.6674960235069
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584748800000,
+            "actual": 36.2070229572,
+            "predicted": 36.20365268572773
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584835200000,
+            "actual": 28.9741240797,
+            "predicted": 28.90710121992503
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584921600000,
+            "actual": 21.2751036062,
+            "predicted": 21.355874053933462
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1585008000000,
+            "actual": 23.9598238459,
+            "predicted": 24.074582923718342
+          }
+        ],
+        "mae": 0.06763049453613133
+      }
+    },
+    {
+      "caseId": "evaluation-flat-mixed-search",
+      "run": 0,
+      "status": "locally-passed",
+      "modelKind": "flat",
+      "changepointTimestamps": [],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [],
+      "evaluation": {
+        "cutoffs": [
+          1583193600000,
+          1583798400000,
+          1584403200000
+        ],
+        "trainingRows": 210,
+        "assessmentRows": 21,
+        "rows": [
+          {
+            "cutoff": 1583193600000,
+            "timestamp": 1583280000000,
+            "actual": 35.0774734771,
+            "predicted": 34.97798331986127
+          },
+          {
+            "cutoff": 1583193600000,
+            "timestamp": 1583366400000,
+            "actual": 45.887244225,
+            "predicted": 45.94051306028288
+          },
+          {
+            "cutoff": 1583193600000,
+            "timestamp": 1583452800000,
+            "actual": 34.9423251457,
+            "predicted": 35.001906960082444
+          },
+          {
+            "cutoff": 1583193600000,
+            "timestamp": 1583539200000,
+            "actual": 41.1217963936,
+            "predicted": 41.064456257182975
+          },
+          {
+            "cutoff": 1583193600000,
+            "timestamp": 1583625600000,
+            "actual": 28.9132926113,
+            "predicted": 28.893851413972406
+          },
+          {
+            "cutoff": 1583193600000,
+            "timestamp": 1583712000000,
+            "actual": 22.4365394365,
+            "predicted": 22.57749816469105
+          },
+          {
+            "cutoff": 1583193600000,
+            "timestamp": 1583798400000,
+            "actual": 24.0282971677,
+            "predicted": 24.082646271650308
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1583884800000,
+            "actual": 35.0567705362,
+            "predicted": 35.002116687619036
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1583971200000,
+            "actual": 45.9077938496,
+            "predicted": 45.939803200013465
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584057600000,
+            "actual": 48.5865637957,
+            "predicted": 48.67750988704487
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584144000000,
+            "actual": 41.1455095528,
+            "predicted": 41.07586823016968
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584230400000,
+            "actual": 30.2075455206,
+            "predicted": 30.088108578763855
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584316800000,
+            "actual": 34.9664968915,
+            "predicted": 35.002116687619036
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584403200000,
+            "actual": 24.0575528836,
+            "predicted": 24.079545550092362
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584489600000,
+            "actual": 35.1048057594,
+            "predicted": 34.98970585174506
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584576000000,
+            "actual": 45.9668356652,
+            "predicted": 45.93300150680932
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584662400000,
+            "actual": 48.5708423513,
+            "predicted": 48.6674960235069
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584748800000,
+            "actual": 36.2070229572,
+            "predicted": 36.20365268572773
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584835200000,
+            "actual": 28.9741240797,
+            "predicted": 28.90710121992503
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584921600000,
+            "actual": 21.2751036062,
+            "predicted": 21.355874053933462
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1585008000000,
+            "actual": 23.9598238459,
+            "predicted": 24.074582923718342
+          }
+        ],
+        "mae": 0.06763049453613133
+      }
+    },
+    {
+      "caseId": "evaluation-flat-mixed-search",
+      "run": 1,
+      "status": "locally-passed",
+      "modelKind": "flat",
+      "changepointTimestamps": [],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [],
+      "evaluation": {
+        "cutoffs": [
+          1583193600000,
+          1583798400000,
+          1584403200000
+        ],
+        "trainingRows": 210,
+        "assessmentRows": 21,
+        "rows": [
+          {
+            "cutoff": 1583193600000,
+            "timestamp": 1583280000000,
+            "actual": 35.0774734771,
+            "predicted": 34.97798331986127
+          },
+          {
+            "cutoff": 1583193600000,
+            "timestamp": 1583366400000,
+            "actual": 45.887244225,
+            "predicted": 45.94051306028288
+          },
+          {
+            "cutoff": 1583193600000,
+            "timestamp": 1583452800000,
+            "actual": 34.9423251457,
+            "predicted": 35.001906960082444
+          },
+          {
+            "cutoff": 1583193600000,
+            "timestamp": 1583539200000,
+            "actual": 41.1217963936,
+            "predicted": 41.064456257182975
+          },
+          {
+            "cutoff": 1583193600000,
+            "timestamp": 1583625600000,
+            "actual": 28.9132926113,
+            "predicted": 28.893851413972406
+          },
+          {
+            "cutoff": 1583193600000,
+            "timestamp": 1583712000000,
+            "actual": 22.4365394365,
+            "predicted": 22.57749816469105
+          },
+          {
+            "cutoff": 1583193600000,
+            "timestamp": 1583798400000,
+            "actual": 24.0282971677,
+            "predicted": 24.082646271650308
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1583884800000,
+            "actual": 35.0567705362,
+            "predicted": 35.002116687619036
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1583971200000,
+            "actual": 45.9077938496,
+            "predicted": 45.939803200013465
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584057600000,
+            "actual": 48.5865637957,
+            "predicted": 48.67750988704487
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584144000000,
+            "actual": 41.1455095528,
+            "predicted": 41.07586823016968
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584230400000,
+            "actual": 30.2075455206,
+            "predicted": 30.088108578763855
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584316800000,
+            "actual": 34.9664968915,
+            "predicted": 35.002116687619036
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584403200000,
+            "actual": 24.0575528836,
+            "predicted": 24.079545550092362
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584489600000,
+            "actual": 35.1048057594,
+            "predicted": 34.98970585174506
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584576000000,
+            "actual": 45.9668356652,
+            "predicted": 45.93300150680932
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584662400000,
+            "actual": 48.5708423513,
+            "predicted": 48.6674960235069
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584748800000,
+            "actual": 36.2070229572,
+            "predicted": 36.20365268572773
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584835200000,
+            "actual": 28.9741240797,
+            "predicted": 28.90710121992503
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584921600000,
+            "actual": 21.2751036062,
+            "predicted": 21.355874053933462
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1585008000000,
+            "actual": 23.9598238459,
+            "predicted": 24.074582923718342
+          }
+        ],
+        "mae": 0.06763049453613133
+      }
+    },
+    {
+      "caseId": "evaluation-logistic-point",
+      "run": 0,
+      "status": "locally-passed",
+      "modelKind": "logistic",
+      "changepointTimestamps": [],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [],
+      "evaluation": {
+        "cutoffs": [
+          1584403200000
+        ],
+        "trainingRows": 77,
+        "assessmentRows": 7,
+        "rows": [
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584489600000,
+            "actual": 56.3481960883,
+            "predicted": 56.229008729152
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584576000000,
+            "actual": 57.1831043847,
+            "predicted": 57.15005561004578
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584662400000,
+            "actual": 57.7256690966,
+            "predicted": 57.82370584393283
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584748800000,
+            "actual": 58.1107502451,
+            "predicted": 58.107892854053674
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584835200000,
+            "actual": 58.2935386246,
+            "predicted": 58.223798406420855
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584921600000,
+            "actual": 58.445992142,
+            "predicted": 58.52596080083184
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1585008000000,
+            "actual": 59.0231984825,
+            "predicted": 59.134493046856946
+          }
+        ],
+        "mae": 0.07344767336418556
+      }
+    },
+    {
+      "caseId": "evaluation-logistic-point",
+      "run": 1,
+      "status": "locally-passed",
+      "modelKind": "logistic",
+      "changepointTimestamps": [],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [],
+      "evaluation": {
+        "cutoffs": [
+          1584403200000
+        ],
+        "trainingRows": 77,
+        "assessmentRows": 7,
+        "rows": [
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584489600000,
+            "actual": 56.3481960883,
+            "predicted": 56.229008729152
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584576000000,
+            "actual": 57.1831043847,
+            "predicted": 57.15005561004578
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584662400000,
+            "actual": 57.7256690966,
+            "predicted": 57.82370584393283
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584748800000,
+            "actual": 58.1107502451,
+            "predicted": 58.107892854053674
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584835200000,
+            "actual": 58.2935386246,
+            "predicted": 58.223798406420855
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584921600000,
+            "actual": 58.445992142,
+            "predicted": 58.52596080083184
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1585008000000,
+            "actual": 59.0231984825,
+            "predicted": 59.134493046856946
+          }
+        ],
+        "mae": 0.07344767336418556
+      }
+    },
+    {
+      "caseId": "evaluation-logistic-intervals",
+      "run": 0,
+      "status": "locally-passed",
+      "modelKind": "logistic",
+      "changepointTimestamps": [],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [],
+      "evaluation": {
+        "cutoffs": [
+          1584403200000
+        ],
+        "trainingRows": 77,
+        "assessmentRows": 7,
+        "rows": [
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584489600000,
+            "actual": 56.3481960883,
+            "predicted": 56.229008729152
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584576000000,
+            "actual": 57.1831043847,
+            "predicted": 57.15005561004578
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584662400000,
+            "actual": 57.7256690966,
+            "predicted": 57.82370584393283
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584748800000,
+            "actual": 58.1107502451,
+            "predicted": 58.107892854053674
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584835200000,
+            "actual": 58.2935386246,
+            "predicted": 58.223798406420855
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584921600000,
+            "actual": 58.445992142,
+            "predicted": 58.52596080083184
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1585008000000,
+            "actual": 59.0231984825,
+            "predicted": 59.134493046856946
+          }
+        ],
+        "mae": 0.07344767336418556
+      }
+    },
+    {
+      "caseId": "evaluation-logistic-intervals",
+      "run": 1,
+      "status": "locally-passed",
+      "modelKind": "logistic",
+      "changepointTimestamps": [],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [],
+      "evaluation": {
+        "cutoffs": [
+          1584403200000
+        ],
+        "trainingRows": 77,
+        "assessmentRows": 7,
+        "rows": [
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584489600000,
+            "actual": 56.3481960883,
+            "predicted": 56.229008729152
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584576000000,
+            "actual": 57.1831043847,
+            "predicted": 57.15005561004578
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584662400000,
+            "actual": 57.7256690966,
+            "predicted": 57.82370584393283
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584748800000,
+            "actual": 58.1107502451,
+            "predicted": 58.107892854053674
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584835200000,
+            "actual": 58.2935386246,
+            "predicted": 58.223798406420855
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584921600000,
+            "actual": 58.445992142,
+            "predicted": 58.52596080083184
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1585008000000,
+            "actual": 59.0231984825,
+            "predicted": 59.134493046856946
+          }
+        ],
+        "mae": 0.07344767336418556
+      }
+    },
+    {
+      "caseId": "evaluation-logistic-search",
+      "run": 0,
+      "status": "locally-passed",
+      "modelKind": "logistic",
+      "changepointTimestamps": [],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [],
+      "evaluation": {
+        "cutoffs": [
+          1584403200000
+        ],
+        "trainingRows": 77,
+        "assessmentRows": 7,
+        "rows": [
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584489600000,
+            "actual": 56.3481960883,
+            "predicted": 56.229008729152
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584576000000,
+            "actual": 57.1831043847,
+            "predicted": 57.15005561004578
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584662400000,
+            "actual": 57.7256690966,
+            "predicted": 57.82370584393283
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584748800000,
+            "actual": 58.1107502451,
+            "predicted": 58.107892854053674
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584835200000,
+            "actual": 58.2935386246,
+            "predicted": 58.223798406420855
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584921600000,
+            "actual": 58.445992142,
+            "predicted": 58.52596080083184
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1585008000000,
+            "actual": 59.0231984825,
+            "predicted": 59.134493046856946
+          }
+        ],
+        "mae": 0.07344767336418556
+      }
+    },
+    {
+      "caseId": "evaluation-logistic-search",
+      "run": 1,
+      "status": "locally-passed",
+      "modelKind": "logistic",
+      "changepointTimestamps": [],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [],
+      "evaluation": {
+        "cutoffs": [
+          1584403200000
+        ],
+        "trainingRows": 77,
+        "assessmentRows": 7,
+        "rows": [
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584489600000,
+            "actual": 56.3481960883,
+            "predicted": 56.229008729152
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584576000000,
+            "actual": 57.1831043847,
+            "predicted": 57.15005561004578
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584662400000,
+            "actual": 57.7256690966,
+            "predicted": 57.82370584393283
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584748800000,
+            "actual": 58.1107502451,
+            "predicted": 58.107892854053674
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584835200000,
+            "actual": 58.2935386246,
+            "predicted": 58.223798406420855
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584921600000,
+            "actual": 58.445992142,
+            "predicted": 58.52596080083184
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1585008000000,
+            "actual": 59.0231984825,
+            "predicted": 59.134493046856946
+          }
+        ],
+        "mae": 0.07344767336418556
+      }
+    },
+    {
+      "caseId": "evaluation-flat-large-point",
+      "run": 0,
+      "status": "locally-passed",
+      "modelKind": "flat",
+      "changepointTimestamps": [],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [],
+      "evaluation": {
+        "cutoffs": [
+          1597190400000,
+          1597795200000
+        ],
+        "trainingRows": 457,
+        "assessmentRows": 14,
+        "rows": [
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597276800000,
+            "actual": 35.0253266777,
+            "predicted": 35.000527751853724
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597363200000,
+            "actual": 48.763748725,
+            "predicted": 48.65245782564801
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597449600000,
+            "actual": 41.0876001201,
+            "predicted": 41.06623713662305
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597536000000,
+            "actual": 28.875550973,
+            "predicted": 28.925065444664245
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597622400000,
+            "actual": 21.4045854856,
+            "predicted": 21.358544989760077
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597708800000,
+            "actual": 36.2570265861,
+            "predicted": 36.19928451055671
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597795200000,
+            "actual": 34.9213674772,
+            "predicted": 34.99603140497292
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1597881600000,
+            "actual": 45.8771091383,
+            "predicted": 45.953423293121375
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1597968000000,
+            "actual": 48.6894376828,
+            "predicted": 48.656676312456554
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1598054400000,
+            "actual": 41.056783568,
+            "predicted": 41.0670514318308
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1598140800000,
+            "actual": 34.8913299624,
+            "predicted": 35.000930728334744
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1598227200000,
+            "actual": 22.5414690206,
+            "predicted": 22.559918430517392
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1598313600000,
+            "actual": 24.1269010945,
+            "predicted": 24.05267509741116
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1598400000000,
+            "actual": 34.9765651416,
+            "predicted": 34.99297212068165
+          }
+        ],
+        "mae": 0.05167430860813076
+      }
+    },
+    {
+      "caseId": "evaluation-flat-large-point",
+      "run": 1,
+      "status": "locally-passed",
+      "modelKind": "flat",
+      "changepointTimestamps": [],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [],
+      "evaluation": {
+        "cutoffs": [
+          1597190400000,
+          1597795200000
+        ],
+        "trainingRows": 457,
+        "assessmentRows": 14,
+        "rows": [
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597276800000,
+            "actual": 35.0253266777,
+            "predicted": 35.000527751853724
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597363200000,
+            "actual": 48.763748725,
+            "predicted": 48.65245782564801
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597449600000,
+            "actual": 41.0876001201,
+            "predicted": 41.06623713662305
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597536000000,
+            "actual": 28.875550973,
+            "predicted": 28.925065444664245
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597622400000,
+            "actual": 21.4045854856,
+            "predicted": 21.358544989760077
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597708800000,
+            "actual": 36.2570265861,
+            "predicted": 36.19928451055671
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597795200000,
+            "actual": 34.9213674772,
+            "predicted": 34.99603140497292
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1597881600000,
+            "actual": 45.8771091383,
+            "predicted": 45.953423293121375
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1597968000000,
+            "actual": 48.6894376828,
+            "predicted": 48.656676312456554
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1598054400000,
+            "actual": 41.056783568,
+            "predicted": 41.0670514318308
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1598140800000,
+            "actual": 34.8913299624,
+            "predicted": 35.000930728334744
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1598227200000,
+            "actual": 22.5414690206,
+            "predicted": 22.559918430517392
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1598313600000,
+            "actual": 24.1269010945,
+            "predicted": 24.05267509741116
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1598400000000,
+            "actual": 34.9765651416,
+            "predicted": 34.99297212068165
+          }
+        ],
+        "mae": 0.05167430860813076
+      }
+    },
+    {
+      "caseId": "evaluation-flat-large-intervals",
+      "run": 0,
+      "status": "locally-passed",
+      "modelKind": "flat",
+      "changepointTimestamps": [],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [],
+      "evaluation": {
+        "cutoffs": [
+          1597190400000,
+          1597795200000
+        ],
+        "trainingRows": 457,
+        "assessmentRows": 14,
+        "rows": [
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597276800000,
+            "actual": 35.0253266777,
+            "predicted": 35.000527751853724
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597363200000,
+            "actual": 48.763748725,
+            "predicted": 48.65245782564801
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597449600000,
+            "actual": 41.0876001201,
+            "predicted": 41.06623713662305
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597536000000,
+            "actual": 28.875550973,
+            "predicted": 28.925065444664245
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597622400000,
+            "actual": 21.4045854856,
+            "predicted": 21.358544989760077
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597708800000,
+            "actual": 36.2570265861,
+            "predicted": 36.19928451055671
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597795200000,
+            "actual": 34.9213674772,
+            "predicted": 34.99603140497292
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1597881600000,
+            "actual": 45.8771091383,
+            "predicted": 45.953423293121375
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1597968000000,
+            "actual": 48.6894376828,
+            "predicted": 48.656676312456554
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1598054400000,
+            "actual": 41.056783568,
+            "predicted": 41.0670514318308
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1598140800000,
+            "actual": 34.8913299624,
+            "predicted": 35.000930728334744
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1598227200000,
+            "actual": 22.5414690206,
+            "predicted": 22.559918430517392
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1598313600000,
+            "actual": 24.1269010945,
+            "predicted": 24.05267509741116
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1598400000000,
+            "actual": 34.9765651416,
+            "predicted": 34.99297212068165
+          }
+        ],
+        "mae": 0.05167430860813076
+      }
+    },
+    {
+      "caseId": "evaluation-flat-large-intervals",
+      "run": 1,
+      "status": "locally-passed",
+      "modelKind": "flat",
+      "changepointTimestamps": [],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [],
+      "evaluation": {
+        "cutoffs": [
+          1597190400000,
+          1597795200000
+        ],
+        "trainingRows": 457,
+        "assessmentRows": 14,
+        "rows": [
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597276800000,
+            "actual": 35.0253266777,
+            "predicted": 35.000527751853724
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597363200000,
+            "actual": 48.763748725,
+            "predicted": 48.65245782564801
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597449600000,
+            "actual": 41.0876001201,
+            "predicted": 41.06623713662305
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597536000000,
+            "actual": 28.875550973,
+            "predicted": 28.925065444664245
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597622400000,
+            "actual": 21.4045854856,
+            "predicted": 21.358544989760077
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597708800000,
+            "actual": 36.2570265861,
+            "predicted": 36.19928451055671
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597795200000,
+            "actual": 34.9213674772,
+            "predicted": 34.99603140497292
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1597881600000,
+            "actual": 45.8771091383,
+            "predicted": 45.953423293121375
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1597968000000,
+            "actual": 48.6894376828,
+            "predicted": 48.656676312456554
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1598054400000,
+            "actual": 41.056783568,
+            "predicted": 41.0670514318308
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1598140800000,
+            "actual": 34.8913299624,
+            "predicted": 35.000930728334744
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1598227200000,
+            "actual": 22.5414690206,
+            "predicted": 22.559918430517392
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1598313600000,
+            "actual": 24.1269010945,
+            "predicted": 24.05267509741116
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1598400000000,
+            "actual": 34.9765651416,
+            "predicted": 34.99297212068165
+          }
+        ],
+        "mae": 0.05167430860813076
+      }
+    },
+    {
+      "caseId": "evaluation-logistic-large-point",
+      "run": 0,
+      "status": "locally-passed",
+      "modelKind": "logistic",
+      "changepointTimestamps": [],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [],
+      "evaluation": {
+        "cutoffs": [
+          1597190400000,
+          1597795200000
+        ],
+        "trainingRows": 457,
+        "assessmentRows": 14,
+        "rows": [
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597276800000,
+            "actual": 87.351402576,
+            "predicted": 87.31370339869876
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597363200000,
+            "actual": 87.6488259616,
+            "predicted": 87.54133001433667
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597449600000,
+            "actual": 87.4248777918,
+            "predicted": 87.41098679541537
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597536000000,
+            "actual": 87.0920850318,
+            "predicted": 87.1515125906607
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597622400000,
+            "actual": 87.0732322213,
+            "predicted": 87.0563922658498
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597708800000,
+            "actual": 87.2844989782,
+            "predicted": 87.24534432421629
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597795200000,
+            "actual": 87.6215477209,
+            "predicted": 87.67895468416891
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1597881600000,
+            "actual": 88.1043188049,
+            "predicted": 88.15954972207011
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1597968000000,
+            "actual": 88.4210006669,
+            "predicted": 88.38944739520613
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1598054400000,
+            "actual": 88.2402705026,
+            "predicted": 88.25581587053212
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1598140800000,
+            "actual": 87.8794362207,
+            "predicted": 87.99395233987293
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1598227200000,
+            "actual": 87.8558068567,
+            "predicted": 87.90117969129716
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1598313600000,
+            "actual": 88.1454626848,
+            "predicted": 88.09015121220307
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1598400000000,
+            "actual": 88.5219615039,
+            "predicted": 88.52136723405908
+          }
+        ],
+        "mae": 0.046431393251198064
+      }
+    },
+    {
+      "caseId": "evaluation-logistic-large-point",
+      "run": 1,
+      "status": "locally-passed",
+      "modelKind": "logistic",
+      "changepointTimestamps": [],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [],
+      "evaluation": {
+        "cutoffs": [
+          1597190400000,
+          1597795200000
+        ],
+        "trainingRows": 457,
+        "assessmentRows": 14,
+        "rows": [
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597276800000,
+            "actual": 87.351402576,
+            "predicted": 87.31370339869876
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597363200000,
+            "actual": 87.6488259616,
+            "predicted": 87.54133001433667
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597449600000,
+            "actual": 87.4248777918,
+            "predicted": 87.41098679541537
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597536000000,
+            "actual": 87.0920850318,
+            "predicted": 87.1515125906607
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597622400000,
+            "actual": 87.0732322213,
+            "predicted": 87.0563922658498
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597708800000,
+            "actual": 87.2844989782,
+            "predicted": 87.24534432421629
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597795200000,
+            "actual": 87.6215477209,
+            "predicted": 87.67895468416891
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1597881600000,
+            "actual": 88.1043188049,
+            "predicted": 88.15954972207011
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1597968000000,
+            "actual": 88.4210006669,
+            "predicted": 88.38944739520613
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1598054400000,
+            "actual": 88.2402705026,
+            "predicted": 88.25581587053212
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1598140800000,
+            "actual": 87.8794362207,
+            "predicted": 87.99395233987293
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1598227200000,
+            "actual": 87.8558068567,
+            "predicted": 87.90117969129716
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1598313600000,
+            "actual": 88.1454626848,
+            "predicted": 88.09015121220307
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1598400000000,
+            "actual": 88.5219615039,
+            "predicted": 88.52136723405908
+          }
+        ],
+        "mae": 0.046431393251198064
+      }
+    },
+    {
+      "caseId": "evaluation-logistic-large-intervals",
+      "run": 0,
+      "status": "locally-passed",
+      "modelKind": "logistic",
+      "changepointTimestamps": [],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [],
+      "evaluation": {
+        "cutoffs": [
+          1597190400000,
+          1597795200000
+        ],
+        "trainingRows": 457,
+        "assessmentRows": 14,
+        "rows": [
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597276800000,
+            "actual": 87.351402576,
+            "predicted": 87.31370339869876
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597363200000,
+            "actual": 87.6488259616,
+            "predicted": 87.54133001433667
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597449600000,
+            "actual": 87.4248777918,
+            "predicted": 87.41098679541537
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597536000000,
+            "actual": 87.0920850318,
+            "predicted": 87.1515125906607
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597622400000,
+            "actual": 87.0732322213,
+            "predicted": 87.0563922658498
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597708800000,
+            "actual": 87.2844989782,
+            "predicted": 87.24534432421629
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597795200000,
+            "actual": 87.6215477209,
+            "predicted": 87.67895468416891
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1597881600000,
+            "actual": 88.1043188049,
+            "predicted": 88.15954972207011
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1597968000000,
+            "actual": 88.4210006669,
+            "predicted": 88.38944739520613
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1598054400000,
+            "actual": 88.2402705026,
+            "predicted": 88.25581587053212
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1598140800000,
+            "actual": 87.8794362207,
+            "predicted": 87.99395233987293
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1598227200000,
+            "actual": 87.8558068567,
+            "predicted": 87.90117969129716
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1598313600000,
+            "actual": 88.1454626848,
+            "predicted": 88.09015121220307
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1598400000000,
+            "actual": 88.5219615039,
+            "predicted": 88.52136723405908
+          }
+        ],
+        "mae": 0.046431393251198064
+      }
+    },
+    {
+      "caseId": "evaluation-logistic-large-intervals",
+      "run": 1,
+      "status": "locally-passed",
+      "modelKind": "logistic",
+      "changepointTimestamps": [],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [],
+      "evaluation": {
+        "cutoffs": [
+          1597190400000,
+          1597795200000
+        ],
+        "trainingRows": 457,
+        "assessmentRows": 14,
+        "rows": [
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597276800000,
+            "actual": 87.351402576,
+            "predicted": 87.31370339869876
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597363200000,
+            "actual": 87.6488259616,
+            "predicted": 87.54133001433667
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597449600000,
+            "actual": 87.4248777918,
+            "predicted": 87.41098679541537
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597536000000,
+            "actual": 87.0920850318,
+            "predicted": 87.1515125906607
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597622400000,
+            "actual": 87.0732322213,
+            "predicted": 87.0563922658498
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597708800000,
+            "actual": 87.2844989782,
+            "predicted": 87.24534432421629
+          },
+          {
+            "cutoff": 1597190400000,
+            "timestamp": 1597795200000,
+            "actual": 87.6215477209,
+            "predicted": 87.67895468416891
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1597881600000,
+            "actual": 88.1043188049,
+            "predicted": 88.15954972207011
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1597968000000,
+            "actual": 88.4210006669,
+            "predicted": 88.38944739520613
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1598054400000,
+            "actual": 88.2402705026,
+            "predicted": 88.25581587053212
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1598140800000,
+            "actual": 87.8794362207,
+            "predicted": 87.99395233987293
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1598227200000,
+            "actual": 87.8558068567,
+            "predicted": 87.90117969129716
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1598313600000,
+            "actual": 88.1454626848,
+            "predicted": 88.09015121220307
+          },
+          {
+            "cutoff": 1597795200000,
+            "timestamp": 1598400000000,
+            "actual": 88.5219615039,
+            "predicted": 88.52136723405908
+          }
+        ],
+        "mae": 0.046431393251198064
+      }
+    },
+    {
+      "caseId": "evaluation-linear-failure-search",
+      "run": 0,
+      "status": "locally-passed",
+      "modelKind": "linear",
+      "changepointTimestamps": [],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [],
+      "evaluation": {
+        "cutoffs": [
+          1583798400000,
+          1584403200000
+        ],
+        "trainingRows": 147,
+        "assessmentRows": 14,
+        "rows": [
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1583884800000,
+            "actual": 107.256770536,
+            "predicted": 107.16881923416271
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1583971200000,
+            "actual": 107.477610966,
+            "predicted": 107.49621767249633
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584057600000,
+            "actual": 107.621305003,
+            "predicted": 107.70181020957362
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584144000000,
+            "actual": 107.73960814,
+            "predicted": 107.65545289865508
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584230400000,
+            "actual": 107.653446934,
+            "predicted": 107.52948825642848
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584316800000,
+            "actual": 107.522764913,
+            "predicted": 107.55318205768579
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584403200000,
+            "actual": 107.727735768,
+            "predicted": 107.73168634960756
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584489600000,
+            "actual": 108.144805759,
+            "predicted": 108.02617140081112
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584576000000,
+            "actual": 108.376652781,
+            "predicted": 108.34418008733986
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584662400000,
+            "actual": 108.445583559,
+            "predicted": 108.54434489496141
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584748800000,
+            "actual": 108.515493892,
+            "predicted": 108.5134327246225
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584835200000,
+            "actual": 108.460025493,
+            "predicted": 108.39115310760053
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584921600000,
+            "actual": 108.320362399,
+            "predicted": 108.40133653675873
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1585008000000,
+            "actual": 108.47000673,
+            "predicted": 108.58231139747888
+          }
+        ],
+        "mae": 0.06740182899585838
+      }
+    },
+    {
+      "caseId": "evaluation-linear-failure-search",
+      "run": 1,
+      "status": "locally-passed",
+      "modelKind": "linear",
+      "changepointTimestamps": [],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [],
+      "evaluation": {
+        "cutoffs": [
+          1583798400000,
+          1584403200000
+        ],
+        "trainingRows": 147,
+        "assessmentRows": 14,
+        "rows": [
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1583884800000,
+            "actual": 107.256770536,
+            "predicted": 107.16881923416271
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1583971200000,
+            "actual": 107.477610966,
+            "predicted": 107.49621767249633
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584057600000,
+            "actual": 107.621305003,
+            "predicted": 107.70181020957362
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584144000000,
+            "actual": 107.73960814,
+            "predicted": 107.65545289865508
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584230400000,
+            "actual": 107.653446934,
+            "predicted": 107.52948825642848
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584316800000,
+            "actual": 107.522764913,
+            "predicted": 107.55318205768579
+          },
+          {
+            "cutoff": 1583798400000,
+            "timestamp": 1584403200000,
+            "actual": 107.727735768,
+            "predicted": 107.73168634960756
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584489600000,
+            "actual": 108.144805759,
+            "predicted": 108.02617140081112
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584576000000,
+            "actual": 108.376652781,
+            "predicted": 108.34418008733986
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584662400000,
+            "actual": 108.445583559,
+            "predicted": 108.54434489496141
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584748800000,
+            "actual": 108.515493892,
+            "predicted": 108.5134327246225
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584835200000,
+            "actual": 108.460025493,
+            "predicted": 108.39115310760053
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1584921600000,
+            "actual": 108.320362399,
+            "predicted": 108.40133653675873
+          },
+          {
+            "cutoff": 1584403200000,
+            "timestamp": 1585008000000,
+            "actual": 108.47000673,
+            "predicted": 108.58231139747888
+          }
+        ],
+        "mae": 0.06740182899585838
+      }
+    }
+  ]
+}
