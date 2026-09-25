@@ -12,7 +12,11 @@ const EvidenceFileSchema = Schema.Struct({
   evidence: Schema.Array(
     Schema.Struct({
       id: Schema.String,
-      classification: Schema.Literals(["equivalent-equation", "equivalent-objective"]),
+      classification: Schema.Literals([
+        "equivalent-equation",
+        "equivalent-objective",
+        "different-public-work",
+      ]),
       statement: Schema.String,
       checks: Schema.Array(Schema.String),
     }),

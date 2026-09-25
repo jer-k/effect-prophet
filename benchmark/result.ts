@@ -126,6 +126,22 @@ export const CorrectnessProjectionSchema = Schema.Struct({
     Schema.Array(Schema.Struct({ name: NonEmptyString, value: Schema.Finite })),
   ),
   persistenceMaximumAbsoluteError: Schema.optionalKey(NonNegativeFinite),
+  evaluation: Schema.optionalKey(
+    Schema.Struct({
+      cutoffs: Schema.Array(Schema.Int),
+      trainingRows: NonNegativeInteger,
+      assessmentRows: NonNegativeInteger,
+      rows: Schema.Array(
+        Schema.Struct({
+          cutoff: Schema.Int,
+          timestamp: Schema.Int,
+          actual: Schema.Finite,
+          predicted: Schema.Finite,
+        }),
+      ),
+      mae: NonNegativeFinite,
+    }),
+  ),
   uncertainty: Schema.optionalKey(
     Schema.Struct({
       algorithm: NonEmptyString,
@@ -151,6 +167,7 @@ export const BenchmarkMeasurementSchema = Schema.Struct({
     "equivalent-equation",
     "equivalent-objective",
     "scalar-process-different-public-work",
+    "different-public-work",
   ]),
   evidenceId: NonEmptyString,
   run: NonNegativeInteger,

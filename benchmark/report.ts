@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import type { BenchmarkCase, BenchmarkPhase } from "./case.ts";
 import type {
   BenchmarkImplementation,
@@ -37,7 +39,8 @@ export interface CaseCorrectnessSummary {
   readonly comparison:
     | "equivalent-equation"
     | "equivalent-objective"
-    | "scalar-process-different-public-work";
+    | "scalar-process-different-public-work"
+    | "different-public-work";
   readonly maximumDifferences?: QuantityDifferences;
   readonly note: string;
 }
@@ -58,6 +61,24 @@ export interface BenchmarkReport {
     readonly output: "intervals" | "samples";
     readonly evidence: string;
     readonly samplerMemoryLimitBytes: number;
+    readonly featureColumns: number;
+    readonly changepoints: number;
+  }>;
+  readonly evaluations: ReadonlyArray<{
+    readonly id: string;
+    readonly dataset: string;
+    readonly identity: BenchmarkCase["datasetIdentity"];
+    readonly growth: string;
+    readonly foldCount: number;
+    readonly trainingRows: number;
+    readonly assessmentRows: number;
+    readonly candidates: number;
+    readonly samples: number;
+    readonly seed: number | undefined;
+    readonly intervalWidth: number | undefined;
+    readonly metricAggregation: string;
+    readonly mapeZeroActual: string;
+    readonly candidateOptionsHashes: ReadonlyArray<string>;
     readonly featureColumns: number;
     readonly changepoints: number;
   }>;
@@ -448,6 +469,98 @@ const correctnessForCase = (
     };
   }
 
+  if (benchmarkCase.workload.kind === "evaluation") {
+    if (!evidenceIds.has(benchmarkCase.workload.comparison.evidenceId)) {
+      return {
+        caseId: benchmarkCase.id,
+        status: "failed",
+        comparison,
+        note: "Evaluation mapping evidence is missing.",
+      };
+    }
+
+    let maximum = 0;
+
+    for (const [index, left] of effectProjections.entries()) {
+      const right = pythonProjections[index];
+      const effect = left.evaluation;
+      const python = right?.evaluation;
+
+      if (
+        right?.run !== left.run ||
+        effect === undefined ||
+        python === undefined ||
+        JSON.stringify(effect.cutoffs) !== JSON.stringify(python.cutoffs) ||
+        effect.trainingRows !== python.trainingRows ||
+        effect.assessmentRows !== python.assessmentRows ||
+        effect.rows.length !== python.rows.length
+      ) {
+        return {
+          caseId: benchmarkCase.id,
+          status: "failed",
+          comparison,
+          note: "Evaluation cutoff, fold or row dimensions differ.",
+        };
+      }
+
+      const tolerance = benchmarkCase.correctnessTolerances.forecast;
+
+      for (const [rowIndex, row] of effect.rows.entries()) {
+        const other = python.rows[rowIndex];
+
+        if (
+          other === undefined ||
+          row.cutoff !== other.cutoff ||
+          row.timestamp !== other.timestamp ||
+          row.actual !== other.actual
+        ) {
+          return {
+            caseId: benchmarkCase.id,
+            status: "failed",
+            comparison,
+            note: "Evaluation forecast identity or actual targets differ.",
+          };
+        }
+
+        const difference = Math.abs(row.predicted - other.predicted);
+        maximum = Math.max(maximum, difference);
+
+        if (
+          difference >
+          tolerance.absolute +
+            tolerance.relative * Math.max(Math.abs(row.predicted), Math.abs(other.predicted))
+        ) {
+          return {
+            caseId: benchmarkCase.id,
+            status: "failed",
+            comparison,
+            note: "Cross-language evaluation point forecasts exceed the declared tolerance.",
+          };
+        }
+      }
+
+      if (
+        Math.abs(effect.mae - python.mae) >
+        tolerance.absolute + tolerance.relative * Math.max(effect.mae, python.mae)
+      ) {
+        return {
+          caseId: benchmarkCase.id,
+          status: "failed",
+          comparison,
+          note: "Cross-language overall MAE exceeds the declared tolerance.",
+        };
+      }
+    }
+
+    return {
+      caseId: benchmarkCase.id,
+      status: "passed",
+      comparison,
+      maximumDifferences: { ...emptyDifferences(), forecast: maximum },
+      note: "Aligned folds, rows, targets and point forecasts passed; public evaluation/uncertainty/metric/report work differs. Absolute times only.",
+    };
+  }
+
   const persistenceFailed = [...effectProjections, ...pythonProjections].some((projection) => {
     const error = projection.persistenceMaximumAbsoluteError;
     const tolerance = benchmarkCase.correctnessTolerances.persistence;
@@ -668,6 +781,55 @@ export const buildBenchmarkReport = (
             },
           ];
     }),
+    evaluations: cases.flatMap((benchmarkCase) => {
+      if (benchmarkCase.workload.kind !== "evaluation") return [];
+
+      const workload = benchmarkCase.workload;
+
+      const projection = effectResult.correctness.find(
+        (item) => item.caseId === benchmarkCase.id,
+      )?.evaluation;
+
+      return [
+        {
+          id: benchmarkCase.id,
+          dataset: benchmarkCase.dataset,
+          identity: benchmarkCase.datasetIdentity,
+          growth: workload.configuration.growth,
+          foldCount: workload.plan.cutoffs.length,
+          trainingRows: projection?.trainingRows ?? 0,
+          assessmentRows: projection?.assessmentRows ?? 0,
+          candidates: workload.candidates?.length ?? 0,
+          samples: workload.interval?.samples ?? 0,
+          seed: workload.interval?.seed,
+          intervalWidth: workload.interval?.intervalWidth,
+          metricAggregation: workload.metricAggregation,
+          mapeZeroActual: workload.mapeZeroActual,
+          candidateOptionsHashes: (workload.candidates ?? []).map((candidate) =>
+            createHash("sha256")
+              .update(
+                JSON.stringify({
+                  configuration: workload.configuration,
+                  optimizer: workload.effectOptimizer,
+                  candidate,
+                }),
+              )
+              .digest("hex"),
+          ),
+          featureColumns:
+            workload.configuration.seasonalities.reduce(
+              (sum, entry) => sum + entry.fourierOrder * 2,
+              0,
+            ) +
+            workload.configuration.regressors.length +
+            new Set(workload.configuration.events.map((entry) => entry.name)).size,
+          changepoints:
+            workload.configuration.changepoints.mode === "explicit"
+              ? workload.configuration.changepoints.timestamps.length
+              : workload.configuration.changepoints.count,
+        },
+      ];
+    }),
     failures: [...effectResult.failures, ...pythonResult.failures],
     environments: [
       { implementation: effectResult.implementation, environment: effectResult.environment },
@@ -717,6 +879,17 @@ export const renderBenchmarkMarkdown = (report: BenchmarkReport): string => {
     "| Case | N | Features | Changepoints | Rows | Future | Horizon (days) | S | Output | Effect sampler limit (bytes) | Dataset recipe / SHA-256 | Evidence |",
     "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | --- | --- |",
     ...reportWorkloadRows(report),
+    "",
+    "## Evaluation workloads",
+    "",
+    "Point alignment is gated before timing; the classification `different-public-work` precludes relative performance rankings. Python requires an untimed full-history fit before public CV, copies pandas history, and uses default vectorized intervals; Effect performs per-fold sequential scalar simulation. Python has no public baseline/search/holdout-report APIs: those entries use explicit application-level operations. Metrics and rolling/percentage policies differ. Both adapters disable parallelism. C, F, total training visits, assessment rows, features/changepoints, and S are separate axes.",
+    "",
+    "| Case | Recipe / SHA-256 | Model | C | F | Training visits | Assessment rows | Features | Points | S | Seed / width | Metric / zero policy | Candidate option hashes (input order) |",
+    "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | --- |",
+    ...report.evaluations.map(
+      (item) =>
+        `| ${item.id} | ${item.identity?.recipe ?? "n/a"} / ${item.identity?.sha256 ?? "n/a"} | ${item.growth} | ${item.candidates} | ${item.foldCount} | ${item.trainingRows} | ${item.assessmentRows} | ${item.featureColumns} | ${item.changepoints} | ${item.samples} | ${item.seed ?? "n/a"} / ${item.intervalWidth ?? "n/a"} | ${item.metricAggregation} / ${item.mapeZeroActual} | ${item.candidateOptionsHashes.join(", ") || "n/a"} |`,
+    ),
     "",
     "## Absolute timings",
     "",

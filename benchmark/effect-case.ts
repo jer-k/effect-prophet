@@ -31,7 +31,7 @@ export const effectOptionsForCase = (
     regressors: configuration.regressors,
   };
 
-  if (workload.kind === "stage-f-map") {
+  if (workload.kind === "stage-f-map" || workload.kind === "evaluation") {
     const options = {
       ...common,
       scaling: workload.configuration.scaling,

@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "runId": "2026-09-25T205622-287Z-85139681",
+  "createdAt": "2026-09-25T20:56:40.860Z",
+  "gitRevision": "851396812952749bc7f8bfa6f415f880279ec544",
+  "gitDirty": false,
+  "hostPlatform": "darwin",
+  "hostRelease": "25.5.0",
+  "hostArchitecture": "arm64",
+  "hostProcessor": "Apple M4 Pro",
+  "containerPlatform": "linux/arm64",
+  "emulated": false,
+  "selectedCases": [
+    "evaluation-linear-point",
+    "evaluation-linear-intervals",
+    "evaluation-linear-search",
+    "evaluation-flat-mixed-point",
+    "evaluation-flat-mixed-intervals",
+    "evaluation-flat-mixed-search",
+    "evaluation-logistic-point",
+    "evaluation-logistic-intervals",
+    "evaluation-logistic-search",
+    "evaluation-flat-large-point",
+    "evaluation-flat-large-intervals",
+    "evaluation-logistic-large-point",
+    "evaluation-logistic-large-intervals",
+    "evaluation-linear-failure-search"
+  ],
+  "commands": [
+    "BENCHMARK_STAGE=correctness BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/compose.yaml run --rm effect-prophet-benchmark",
+    "BENCHMARK_STAGE=correctness BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/compose.yaml run --rm python-prophet-benchmark",
+    "BENCHMARK_REPORT_MODE=eligibility BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/compose.yaml run --rm benchmark-report",
+    "BENCHMARK_STAGE=timing BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/compose.yaml run --rm effect-prophet-benchmark",
+    "BENCHMARK_STAGE=timing BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/compose.yaml run --rm python-prophet-benchmark",
+    "BENCHMARK_REPORT_MODE=final BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/compose.yaml run --rm benchmark-report"
+  ],
+  "inputHashes": [
+    {
+      "name": "benchmark/cases/public-api.json",
+      "value": "a88e1eec32763e9a310799af5ec6bd8821eb1ce655a383e4952a90e0a25f3cc0"
+    },
+    {
+      "name": "benchmark/cases/growth-scaling-and-mixed-map.ts",
+      "value": "eb01214b72e234cb05acc2795caa5adf87a4d4638dfc66542feb081dc3d450e7"
+    },
+    {
+      "name": "benchmark/cases/uncertainty.ts",
+      "value": "2d14b373d815482563daa87ea3a2e210b0607b7f102f1773356243023c4c5523"
+    },
+    {
+      "name": "benchmark/cases/evaluation.ts",
+      "value": "6109ac468a89df0988b00f16bf259eff7f1c0c7b8f998f8ae018b7ae518b11b9"
+    },
+    {
+      "name": "benchmark/evaluation.ts",
+      "value": "c43533177e62947ab15b2900cf891316304833fb2c4dd5e2a0496541ddca44cd"
+    },
+    {
+      "name": "benchmark/adapters/evaluation.py",
+      "value": "9367194d33169bb7fdccd9493cfa0f38cfe63376ed9b9d950d423d1e3c2129aa"
+    },
+    {
+      "name": "benchmark/results/runs/2026-09-25T205622-287Z-85139681/cases.json",
+      "value": "7de9e77085192df951cc5fc159fe566d91d73ac9fc6db4319054cff6696b3286"
+    },
+    {
+      "name": "benchmark/evidence/comparisons.json",
+      "value": "7882402bf2231ec41f9e602c2ba00fce4bd750258d30c35c5adacb288a974a9b"
+    },
+    {
+      "name": "benchmark/python/uv.lock",
+      "value": "c90f2464e1d50dbe489bdcdaf8350f04c162f6c617559cfb75d6977b0f430ab1"
+    },
+    {
+      "name": "benchmark/data/generated/manifest.json",
+      "value": "d1896f8b7f28d8e34dd6cd974aea66348c558938ed1292d8363ec45366e8f60e"
+    },
+    {
+      "name": "package-lock.json",
+      "value": "99bda82607c5764a965fc84c4f1c3aeb518b7a1604975e958b3ad63e4887d936"
+    },
+    {
+      "name": "benchmark/data/generated/linear-offset-scaling.json",
+      "value": "bfea515181446ef72eeed2acaef46db63d6fcee5cd1d6af177ad886a6c973b5e"
+    },
+    {
+      "name": "benchmark/data/generated/flat-mixed-components.json",
+      "value": "4e1e4fd02c0e9a88f9f8369942d9ae9deaa9a3ebe0dcdffbb6d45e8a23c3263f"
+    },
+    {
+      "name": "benchmark/data/generated/logistic-implicit-floor.json",
+      "value": "d8cde080f7a8af86acb6e70e2577d0d1d2ee8f813bf4836e5a61702a16dc1558"
+    },
+    {
+      "name": "benchmark/data/generated/flat-mixed-components-large.json",
+      "value": "7ee4bb9692dfb115e926da542b37298a311e06037c0e5a638ca067a1fb937b11"
+    },
+    {
+      "name": "benchmark/data/generated/logistic-implicit-floor-large.json",
+      "value": "61b169aa9c925333f6dd11301febfdeb82e9ae7f2b95f3cb4c222e6dcfb080d9"
+    }
+  ],
+  "containerImages": [
+    {
+      "name": "effect-prophet/benchmark-effect:local",
+      "value": "sha256:636cace0ebe769b03820e45e654af64a1e8078d7abf13d3b7494dbf5b1725c49"
+    },
+    {
+      "name": "effect-prophet/benchmark-python:1.4.0",
+      "value": "sha256:5d27409f26f1a65b107932fb279ee318cf07553272402f2de2003c2594f4c042"
+    }
+  ]
+}
