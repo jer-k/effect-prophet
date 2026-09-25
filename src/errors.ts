@@ -15,6 +15,7 @@ const ValidationInputSchema = Schema.Literals([
   "evaluation-plan",
   "evaluation-metrics",
   "evaluation-baseline",
+  "evaluation-search",
 ]);
 
 const FittingFailureReasonSchema = Schema.Literals([
@@ -53,7 +54,8 @@ export type ValidationInput =
   | "uncertainty-options"
   | "evaluation-plan"
   | "evaluation-metrics"
-  | "evaluation-baseline";
+  | "evaluation-baseline"
+  | "evaluation-search";
 
 export type FittingFailureReason =
   | "insufficient-observations"
@@ -251,6 +253,113 @@ export class EvaluationMetricError extends Schema.TaggedError<EvaluationMetricEr
     message: Schema.String,
   },
 ) {}
+
+/** A bounded ASCII identity for one declared search candidate. */
+export const CandidateIdSchema = Schema.String.check(
+  Schema.makeFilter((id) => /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/.test(id), {
+    message: "Expected an ASCII candidate ID of 1 to 64 characters",
+  }),
+).pipe(Schema.brand("effect-prophet/CandidateId"));
+
+/** A parsed candidate label, never suitable for telemetry attributes. */
+export type CandidateId = typeof CandidateIdSchema.Type;
+
+const PortableEvaluationFailureSchema = Schema.Union([
+  Schema.Struct({
+    tag: Schema.Literal("EvaluationError"),
+    fold: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0), Schema.isLessThanOrEqualTo(127)),
+    stage: Schema.Literals([
+      "fit",
+      "predict",
+      "result",
+      "uncertainty",
+      "interval-result",
+      "baseline",
+    ]),
+    reason: Schema.Literals([
+      "fit-failed",
+      "prediction-failed",
+      "result-mismatch",
+      "uncertainty-failed",
+      "interval-result-mismatch",
+      "baseline-unavailable",
+      "non-finite",
+    ]),
+    rowIndex: Schema.optionalKey(Schema.Natural.check(Schema.isLessThan(1_000_000))),
+    causeTag: Schema.optionalKey(
+      Schema.Literals([
+        "InputValidationError",
+        "UnsupportedConfigurationError",
+        "FittingError",
+        "PredictionError",
+      ]),
+    ),
+    causeReason: Schema.optionalKey(
+      Schema.Union([FittingFailureReasonSchema, PredictionFailureReasonSchema]),
+    ),
+  }),
+  Schema.Struct({
+    tag: Schema.Literal("EvaluationMetricError"),
+    metric: Schema.Literals(["mae", "mse", "rmse", "mape", "mdape", "smape", "coverage"]),
+    aggregation: Schema.Literals(["rows", "horizons", "rolling", "overall"]),
+    bucket: Schema.Natural,
+    reason: Schema.Literals([
+      "unavailable",
+      "zero-actual",
+      "empty-bucket",
+      "non-finite",
+      "misaligned",
+    ]),
+    stage: Schema.Literals(["input", "difference", "square", "division", "sum", "mean", "median"]),
+  }),
+  Schema.Struct({ tag: Schema.Literal("InputValidationError"), input: ValidationInputSchema }),
+]);
+
+/** Bounded expected-failure fields safe for caller-controlled result serialization. */
+export type PortableEvaluationFailure = typeof PortableEvaluationFailureSchema.Type;
+
+const PortableCandidateOutcomeSchema = Schema.Struct({
+  id: CandidateIdSchema,
+  candidateIndex: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0), Schema.isLessThan(32)),
+  failure: PortableEvaluationFailureSchema,
+});
+
+/** A failed candidate retained when no configuration succeeded. */
+export type PortableCandidateOutcome = typeof PortableCandidateOutcomeSchema.Type;
+
+/** A search failure with original typed cause in memory or safe all-failed outcomes. */
+export class EvaluationSearchError extends Schema.TaggedError<EvaluationSearchError>()(
+  "EvaluationSearchError",
+  {
+    reason: Schema.Literals(["candidate-failed", "no-success"]),
+    candidateIndex: Schema.optionalKey(
+      Schema.Int.check(Schema.isGreaterThanOrEqualTo(0), Schema.isLessThan(32)),
+    ),
+    candidateId: Schema.optionalKey(CandidateIdSchema),
+    outcomes: Schema.optionalKey(Schema.Array(PortableCandidateOutcomeSchema)),
+    message: Schema.String,
+  },
+) {
+  /** Original expected candidate failure, omitted from portable encoding. */
+  declare readonly cause?: InputValidationError | EvaluationError | EvaluationMetricError;
+
+  /** Construct search context without serializing a runtime cause. */
+  constructor(
+    fields: {
+      readonly reason: "candidate-failed" | "no-success";
+      readonly candidateIndex?: number;
+      readonly candidateId?: CandidateId;
+      readonly outcomes?: ReadonlyArray<PortableCandidateOutcome>;
+      readonly message: string;
+    },
+    options?: {
+      readonly cause?: InputValidationError | EvaluationError | EvaluationMetricError;
+    },
+  ) {
+    super(fields);
+    defineRuntimeCause(this, options);
+  }
+}
 
 /** An expected schema failure while encoding or decoding a portable fitted model. */
 export class ModelSerializationError extends Schema.TaggedError<ModelSerializationError>()(
