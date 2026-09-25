@@ -397,7 +397,26 @@ fn quantile(sorted: &[f64], probability: f64) -> f64 {
   let lower = position.floor() as usize;
   let upper = position.ceil() as usize;
   let fraction = position - lower as f64;
-  sorted[lower] * (1.0 - fraction) + sorted[upper] * fraction
+  let start = sorted[lower];
+  let end = sorted[upper];
+
+  // Preserve plateaus exactly: multiplying equal values by complementary weights can
+  // round two quantiles in opposite directions on saturated logistic trends.
+  if start == end || fraction == 0.0 {
+    return start;
+  }
+  if fraction == 1.0 {
+    return end;
+  }
+
+  // The difference avoids cancellation for nearby values, but may overflow when
+  // the finite endpoints have opposite signs. In that case use bounded weights.
+  let difference = end - start;
+  if difference.is_finite() {
+    start + difference * fraction
+  } else {
+    start * (1.0 - fraction) + end * fraction
+  }
 }
 
 /// Reduce already-generated samples without mutating their column identity.
@@ -867,6 +886,42 @@ mod tests {
       .err(),
       Some(SimulationError::NonFiniteResult { row: 0, sample: 0 })
     );
+  }
+
+  #[test]
+  fn quantiles_preserve_saturated_plateaus_and_ordered_finite_extremes() {
+    let plateau = 91.4363479694379;
+    let constant = PredictiveSamples {
+      rows: 1,
+      samples: 128,
+      trend: vec![plateau; 128],
+      value: vec![-plateau; 128],
+    };
+
+    for width in [f64::MIN_POSITIVE, 0.8, 1.0 - f64::EPSILON] {
+      assert_eq!(
+        reduce_intervals(&constant, width).unwrap().values,
+        [plateau, plateau, -plateau, -plateau]
+      );
+    }
+
+    let next = f64::from_bits(plateau.to_bits() + 1);
+    let close = PredictiveSamples {
+      trend: (0..128)
+        .map(|index| if index < 64 { plateau } else { next })
+        .collect(),
+      value: vec![-f64::MAX, f64::MAX]
+        .into_iter()
+        .cycle()
+        .take(128)
+        .collect(),
+      ..constant
+    };
+
+    let intervals = reduce_intervals(&close, 0.8).unwrap();
+    assert_eq!(intervals.values[0], plateau);
+    assert_eq!(intervals.values[1], next);
+    assert!(intervals.values[2].is_finite() && intervals.values[2] <= intervals.values[3]);
   }
 
   #[test]

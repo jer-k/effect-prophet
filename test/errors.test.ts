@@ -1,9 +1,81 @@
 import { Schema } from "effect";
 import { describe, expect, it } from "vitest";
 
-import { FittingError, PredictionError } from "../src/index";
+import { EvaluationError, FittingError, InputValidationError, PredictionError } from "../src/index";
 
 describe("typed domain errors", () => {
+  it("encodes structured evaluation-plan validation issues", () => {
+    const error = new InputValidationError({
+      input: "evaluation-plan",
+      issues: [{ path: ["cutoffs", "timestamps", 0], message: "Cutoff has no assessment rows" }],
+      message: "Cutoff has no assessment rows",
+    });
+
+    expect(Schema.encodeSync(InputValidationError)(error)).toMatchObject({
+      input: "evaluation-plan",
+      issues: [{ path: ["cutoffs", "timestamps", 0] }],
+    });
+  });
+
+  it("encodes fold context without the underlying typed error or its runtime cause", () => {
+    const original = new FittingError(
+      {
+        reason: "backend-failure",
+        observationCount: 2,
+        message: "Backend did not load",
+      },
+      { cause: new Error("private path") },
+    );
+
+    const error = new EvaluationError(
+      {
+        fold: 0,
+        cutoff: 1_704_067_200_000,
+        stage: "fit",
+        reason: "fit-failed",
+        message: "Evaluation fold fit failed",
+      },
+      { cause: original },
+    );
+
+    expect(error.cause).toBe(original);
+    expect(Object.keys(error)).not.toContain("cause");
+    expect(Schema.encodeSync(EvaluationError)(error)).toMatchObject({
+      fold: 0,
+      stage: "fit",
+      reason: "fit-failed",
+    });
+    expect(Schema.encodeSync(EvaluationError)(error)).not.toHaveProperty("cause");
+    expect(JSON.parse(JSON.stringify(error))).not.toHaveProperty("cause");
+  });
+
+  it("encodes uncertainty fold context without disclosing prediction causes", () => {
+    const original = new PredictionError({
+      reason: "simulation-limit",
+      timestamp: 1_704_067_200_000,
+      message: "private simulation details",
+    });
+
+    const error = new EvaluationError(
+      {
+        fold: 1,
+        cutoff: 1_704_067_200_000,
+        stage: "uncertainty",
+        reason: "uncertainty-failed",
+        message: "Evaluation fold uncertainty failed",
+      },
+      { cause: original },
+    );
+
+    expect(error.cause).toBe(original);
+    expect(Schema.encodeSync(EvaluationError)(error)).toMatchObject({
+      stage: "uncertainty",
+      reason: "uncertainty-failed",
+      fold: 1,
+    });
+    expect(Schema.encodeSync(EvaluationError)(error)).not.toHaveProperty("cause");
+  });
+
   it("exposes structured fitting failure context", () => {
     const error = new FittingError({
       reason: "insufficient-observations",
