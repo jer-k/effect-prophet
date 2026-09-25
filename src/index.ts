@@ -1,6 +1,18 @@
 export { type ComponentMode } from "./component-mode";
 
 export {
+  performanceMetrics,
+  type HorizonMetricPoint,
+  type MetricAggregation,
+  type MetricBucket,
+  type MetricName,
+  type MetricOptions,
+  type MetricReport,
+  type MetricScore,
+  type RowMetricPoint,
+} from "./evaluation-metrics";
+
+export {
   crossValidate,
   planRollingOrigin,
   type CrossValidationFoldSummary,
@@ -18,6 +30,7 @@ export {
 
 export {
   EvaluationError,
+  EvaluationMetricError,
   FittingError,
   InputValidationError,
   ModelSerializationError,

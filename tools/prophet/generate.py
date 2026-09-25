@@ -22,7 +22,7 @@ import numpy as np
 import pandas as pd
 import prophet
 from prophet import Prophet
-from prophet.diagnostics import generate_cutoffs
+from prophet.diagnostics import generate_cutoffs, performance_metrics
 
 
 EXPECTED_PROPHET_VERSION = "1.4.0"
@@ -35,6 +35,7 @@ FOURIER_FILENAME = "fourier.json"
 PIECEWISE_LINEAR_FILENAME = "piecewise-linear.json"
 CHANGEPOINT_RESOLUTION_FILENAME = "changepoint-resolution.json"
 EVALUATION_CUTOFFS_FILENAME = "evaluation-cutoffs.json"
+EVALUATION_METRICS_FILENAME = "evaluation-metrics.json"
 LINEAR_MAP_FIT_FILENAME = "linear-map-fit.json"
 SEASONALITY_RESOLUTION_FILENAME = "seasonality-resolution.json"
 CONDITIONAL_SEASONALITY_FILENAME = "conditional-seasonality.json"
@@ -1078,6 +1079,57 @@ def make_evaluation_cutoff_case(spec: EvaluationCutoffCaseSpec) -> dict[str, Any
             }
             for cutoff in cutoffs
         ],
+    }
+
+
+def make_evaluation_metrics_fixture() -> dict[str, Any]:
+    """Pin unmodified Prophet metrics on nonzero, finite interval forecast instances.
+
+    Distinct horizons make Python's rolling boundary and our whole-group boundary
+    identical here; overlapping-horizon differences are covered in the TS tests.
+    """
+    offsets = (1, 2, 3, 4)
+    actuals = (2.0, -4.0, 4.0, 8.0)
+    predictions = (1.0, -2.0, 2.0, 6.0)
+    lower = (1.0, -4.0, 1.0, 6.0)
+    upper = (2.0, -2.0, 4.0, 7.0)
+    cutoff = pd.Timestamp("2024-01-01")
+    frame = pd.DataFrame({
+        "ds": [cutoff + pd.Timedelta(days=offset) for offset in offsets],
+        "cutoff": [cutoff] * len(offsets),
+        "y": actuals,
+        "yhat": predictions,
+        "yhat_lower": lower,
+        "yhat_upper": upper,
+    })
+    names = ["mae", "mse", "rmse", "mape", "mdape", "smape", "coverage"]
+    modes = {"rows": -1.0, "horizons": 0.0, "rolling": 0.5, "overall": 1.0}
+    expected = {}
+    for mode, window in modes.items():
+        reference = performance_metrics(frame, metrics=names.copy(), rolling_window=window)
+        assert reference is not None
+        expected[mode] = [
+            {
+                "horizonMs": int(row.horizon / pd.Timedelta(milliseconds=1)),
+                "scores": {name: float(format(getattr(row, name), ".12g")) for name in names},
+            }
+            for row in reference.itertuples()
+        ]
+
+    return {
+        "kind": "evaluation-metrics",
+        "sourceMethod": "Prophet 1.4.0 performance_metrics",
+        "rows": [
+            {
+                "horizonMs": offset * 86_400_000,
+                "actual": actual,
+                "predicted": predicted,
+                "lower": low,
+                "upper": high,
+            }
+            for offset, actual, predicted, low, high in zip(offsets, actuals, predictions, lower, upper)
+        ],
+        "expected": expected,
     }
 
 
@@ -2471,6 +2523,8 @@ def write_outputs(output: Path, execution: dict[str, str], reference: dict[str, 
     )
     evaluation_cutoffs_path = output / EVALUATION_CUTOFFS_FILENAME
     evaluation_cutoffs_path.write_bytes(stable_json({"cases": [make_evaluation_cutoff_case(spec) for spec in EVALUATION_CUTOFF_CASES]}))
+    evaluation_metrics_path = output / EVALUATION_METRICS_FILENAME
+    evaluation_metrics_path.write_bytes(stable_json(make_evaluation_metrics_fixture()))
     linear_map_fit_path = output / LINEAR_MAP_FIT_FILENAME
     linear_map_fit_path.write_bytes(stable_json({"cases": [make_linear_map_fit_fixture()]}))
     seasonality_resolution_path = output / SEASONALITY_RESOLUTION_FILENAME
@@ -2528,6 +2582,10 @@ def write_outputs(output: Path, execution: dict[str, str], reference: dict[str, 
             {
                 "path": EVALUATION_CUTOFFS_FILENAME,
                 "sha256": sha256_file(evaluation_cutoffs_path),
+            },
+            {
+                "path": EVALUATION_METRICS_FILENAME,
+                "sha256": sha256_file(evaluation_metrics_path),
             },
             {
                 "path": LINEAR_MAP_FIT_FILENAME,

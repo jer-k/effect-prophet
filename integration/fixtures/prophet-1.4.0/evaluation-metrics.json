@@ -1,0 +1,188 @@
+{
+  "expected": {
+    "horizons": [
+      {
+        "horizonMs": 86400000,
+        "scores": {
+          "coverage": 1.0,
+          "mae": 1.0,
+          "mape": 0.5,
+          "mdape": 0.5,
+          "mse": 1.0,
+          "rmse": 1.0,
+          "smape": 0.666666666667
+        }
+      },
+      {
+        "horizonMs": 172800000,
+        "scores": {
+          "coverage": 1.0,
+          "mae": 2.0,
+          "mape": 0.5,
+          "mdape": 0.5,
+          "mse": 4.0,
+          "rmse": 2.0,
+          "smape": 0.666666666667
+        }
+      },
+      {
+        "horizonMs": 259200000,
+        "scores": {
+          "coverage": 1.0,
+          "mae": 2.0,
+          "mape": 0.5,
+          "mdape": 0.5,
+          "mse": 4.0,
+          "rmse": 2.0,
+          "smape": 0.666666666667
+        }
+      },
+      {
+        "horizonMs": 345600000,
+        "scores": {
+          "coverage": 0.0,
+          "mae": 2.0,
+          "mape": 0.25,
+          "mdape": 0.25,
+          "mse": 4.0,
+          "rmse": 2.0,
+          "smape": 0.285714285714
+        }
+      }
+    ],
+    "overall": [
+      {
+        "horizonMs": 345600000,
+        "scores": {
+          "coverage": 0.75,
+          "mae": 1.75,
+          "mape": 0.4375,
+          "mdape": 0.5,
+          "mse": 3.25,
+          "rmse": 1.80277563773,
+          "smape": 0.571428571429
+        }
+      }
+    ],
+    "rolling": [
+      {
+        "horizonMs": 172800000,
+        "scores": {
+          "coverage": 1.0,
+          "mae": 1.5,
+          "mape": 0.5,
+          "mdape": 0.5,
+          "mse": 2.5,
+          "rmse": 1.58113883008,
+          "smape": 0.666666666667
+        }
+      },
+      {
+        "horizonMs": 259200000,
+        "scores": {
+          "coverage": 1.0,
+          "mae": 2.0,
+          "mape": 0.5,
+          "mdape": 0.5,
+          "mse": 4.0,
+          "rmse": 2.0,
+          "smape": 0.666666666667
+        }
+      },
+      {
+        "horizonMs": 345600000,
+        "scores": {
+          "coverage": 0.5,
+          "mae": 2.0,
+          "mape": 0.375,
+          "mdape": 0.375,
+          "mse": 4.0,
+          "rmse": 2.0,
+          "smape": 0.47619047619
+        }
+      }
+    ],
+    "rows": [
+      {
+        "horizonMs": 86400000,
+        "scores": {
+          "coverage": 1.0,
+          "mae": 1.0,
+          "mape": 0.5,
+          "mdape": 0.5,
+          "mse": 1.0,
+          "rmse": 1.0,
+          "smape": 0.666666666667
+        }
+      },
+      {
+        "horizonMs": 172800000,
+        "scores": {
+          "coverage": 1.0,
+          "mae": 2.0,
+          "mape": 0.5,
+          "mdape": 0.5,
+          "mse": 4.0,
+          "rmse": 2.0,
+          "smape": 0.666666666667
+        }
+      },
+      {
+        "horizonMs": 259200000,
+        "scores": {
+          "coverage": 1.0,
+          "mae": 2.0,
+          "mape": 0.5,
+          "mdape": 0.5,
+          "mse": 4.0,
+          "rmse": 2.0,
+          "smape": 0.666666666667
+        }
+      },
+      {
+        "horizonMs": 345600000,
+        "scores": {
+          "coverage": 0.0,
+          "mae": 2.0,
+          "mape": 0.25,
+          "mdape": 0.25,
+          "mse": 4.0,
+          "rmse": 2.0,
+          "smape": 0.285714285714
+        }
+      }
+    ]
+  },
+  "kind": "evaluation-metrics",
+  "rows": [
+    {
+      "actual": 2.0,
+      "horizonMs": 86400000,
+      "lower": 1.0,
+      "predicted": 1.0,
+      "upper": 2.0
+    },
+    {
+      "actual": -4.0,
+      "horizonMs": 172800000,
+      "lower": -4.0,
+      "predicted": -2.0,
+      "upper": -2.0
+    },
+    {
+      "actual": 4.0,
+      "horizonMs": 259200000,
+      "lower": 1.0,
+      "predicted": 2.0,
+      "upper": 4.0
+    },
+    {
+      "actual": 8.0,
+      "horizonMs": 345600000,
+      "lower": 6.0,
+      "predicted": 6.0,
+      "upper": 7.0
+    }
+  ],
+  "sourceMethod": "Prophet 1.4.0 performance_metrics"
+}

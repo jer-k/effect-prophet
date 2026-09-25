@@ -1,7 +1,13 @@
 import { Schema } from "effect";
 import { describe, expect, it } from "vitest";
 
-import { EvaluationError, FittingError, InputValidationError, PredictionError } from "../src/index";
+import {
+  EvaluationError,
+  EvaluationMetricError,
+  FittingError,
+  InputValidationError,
+  PredictionError,
+} from "../src/index";
 
 describe("typed domain errors", () => {
   it("encodes structured evaluation-plan validation issues", () => {
@@ -14,6 +20,25 @@ describe("typed domain errors", () => {
     expect(Schema.encodeSync(InputValidationError)(error)).toMatchObject({
       input: "evaluation-plan",
       issues: [{ path: ["cutoffs", "timestamps", 0] }],
+    });
+  });
+
+  it("encodes bounded metric and aggregation failure context", () => {
+    const error = new EvaluationMetricError({
+      metric: "mdape",
+      aggregation: "rolling",
+      bucket: 2,
+      reason: "zero-actual",
+      stage: "division",
+      message: "Zero actual in window",
+    });
+
+    expect(Schema.encodeSync(EvaluationMetricError)(error)).toMatchObject({
+      metric: "mdape",
+      aggregation: "rolling",
+      bucket: 2,
+      reason: "zero-actual",
+      stage: "division",
     });
   });
 

@@ -13,6 +13,7 @@ const ValidationInputSchema = Schema.Literals([
   "prediction-rows",
   "uncertainty-options",
   "evaluation-plan",
+  "evaluation-metrics",
 ]);
 
 const FittingFailureReasonSchema = Schema.Literals([
@@ -49,7 +50,8 @@ export type ValidationInput =
   | "prediction-timestamps"
   | "prediction-rows"
   | "uncertainty-options"
-  | "evaluation-plan";
+  | "evaluation-plan"
+  | "evaluation-metrics";
 
 export type FittingFailureReason =
   | "insufficient-observations"
@@ -217,6 +219,25 @@ export class EvaluationError extends Schema.TaggedError<EvaluationError>()("Eval
     defineRuntimeCause(this, options);
   }
 }
+
+/** A requested evaluation metric cannot be computed for the given bucket. */
+export class EvaluationMetricError extends Schema.TaggedError<EvaluationMetricError>()(
+  "EvaluationMetricError",
+  {
+    metric: Schema.Literals(["mae", "mse", "rmse", "mape", "mdape", "smape", "coverage"]),
+    aggregation: Schema.Literals(["rows", "horizons", "rolling", "overall"]),
+    bucket: Schema.Natural,
+    reason: Schema.Literals([
+      "unavailable",
+      "zero-actual",
+      "empty-bucket",
+      "non-finite",
+      "misaligned",
+    ]),
+    stage: Schema.Literals(["input", "difference", "square", "division", "sum", "mean", "median"]),
+    message: Schema.String,
+  },
+) {}
 
 /** An expected schema failure while encoding or decoding a portable fitted model. */
 export class ModelSerializationError extends Schema.TaggedError<ModelSerializationError>()(
