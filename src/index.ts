@@ -1,6 +1,15 @@
 export { type ComponentMode } from "./component-mode";
 
 export {
+  comparePerformance,
+  crossValidateBaseline,
+  type BaselineCrossValidationResult,
+  type BaselineDefinition,
+  type BaselineFoldSummary,
+  type ComparisonReport,
+} from "./evaluation-baseline";
+
+export {
   performanceMetrics,
   type HorizonMetricPoint,
   type MetricAggregation,

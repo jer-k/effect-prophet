@@ -5,6 +5,7 @@ import {
   InputValidationError,
   inputValidationErrorFromIssue,
 } from "./errors";
+import type { BaselineCrossValidationResult } from "./evaluation-baseline";
 import type {
   CrossValidationIntervalRow,
   CrossValidationPointRow,
@@ -12,6 +13,8 @@ import type {
   IntervalCrossValidationResult,
   PointCrossValidationResult,
 } from "./evaluation";
+
+type MetricSource = CrossValidationResult["kind"] | "baseline";
 
 const MetricNameSchema = Schema.Literals([
   "mae",
@@ -64,9 +67,7 @@ const MetricOptionsSchema = Schema.Struct({
 export type MetricOptions = typeof MetricOptionsSchema.Encoded;
 
 /** A finite bucket score, with denominators on actual-dependent percentage metrics. */
-export type MetricScore<
-  Source extends CrossValidationResult["kind"] = CrossValidationResult["kind"],
-> =
+export type MetricScore<Source extends MetricSource = MetricSource> =
   | {
       readonly metric: "mape" | "mdape";
       readonly value: number;
@@ -77,16 +78,14 @@ export type MetricScore<
   | (Source extends "intervals" ? { readonly metric: "coverage"; readonly value: number } : never);
 
 /** All requested metrics on the same set of forecast instances. */
-export interface MetricBucket<
-  Source extends CrossValidationResult["kind"] = CrossValidationResult["kind"],
-> {
+export interface MetricBucket<Source extends MetricSource = MetricSource> {
   readonly rowCount: number;
   readonly scores: ReadonlyArray<MetricScore<Source>>;
 }
 
 /** A score for one forecast instance in original fold/input order. */
 export interface RowMetricPoint<
-  Source extends CrossValidationResult["kind"] = CrossValidationResult["kind"],
+  Source extends MetricSource = MetricSource,
 > extends MetricBucket<Source> {
   readonly fold: number;
   readonly cutoff: number;
@@ -96,15 +95,13 @@ export interface RowMetricPoint<
 
 /** A score at the right edge of an exact-horizon or rolling bucket. */
 export interface HorizonMetricPoint<
-  Source extends CrossValidationResult["kind"] = CrossValidationResult["kind"],
+  Source extends MetricSource = MetricSource,
 > extends MetricBucket<Source> {
   readonly horizonMs: number;
 }
 
 /** The aggregation determines which bucket coordinates are available. */
-export type MetricReport<
-  Source extends CrossValidationResult["kind"] = CrossValidationResult["kind"],
-> =
+export type MetricReport<Source extends MetricSource = MetricSource> =
   | {
       readonly source: Source;
       readonly kind: "rows";
@@ -190,7 +187,7 @@ const mean = (
 const contribution = (
   row: Row,
   metric: MetricName,
-  kind: CrossValidationResult["kind"],
+  kind: MetricSource,
   aggregation: MetricAggregation["kind"],
   bucket: number,
   zeroPolicy: "error" | "exclude",
@@ -248,7 +245,7 @@ const contribution = (
 const bucketScores = (
   rows: ReadonlyArray<Row>,
   options: ParsedOptions,
-  kind: CrossValidationResult["kind"],
+  kind: MetricSource,
   bucketIndex: number,
 ) =>
   Effect.gen(function* () {
@@ -340,7 +337,7 @@ const rollingPoints = (
     readonly end: number;
   }>,
   options: ParsedOptions,
-  kind: CrossValidationResult["kind"],
+  kind: MetricSource,
   windowRows: number,
 ) =>
   Effect.gen(function* () {
@@ -536,7 +533,7 @@ const rollingPoints = (
   });
 
 const computeMetrics = (
-  result: PointCrossValidationResult | IntervalCrossValidationResult,
+  result: CrossValidationResult | BaselineCrossValidationResult,
   input: MetricOptions,
 ): Effect.Effect<MetricReport, InputValidationError | EvaluationMetricError> =>
   Effect.gen(function* () {
@@ -558,7 +555,7 @@ const computeMetrics = (
       );
     }
 
-    if (result.kind === "point" && options.metrics.includes("coverage")) {
+    if (result.kind !== "intervals" && options.metrics.includes("coverage")) {
       return yield* Effect.fail(
         metricFailure("coverage", aggregation.kind, 0, "unavailable", "input"),
       );
@@ -679,6 +676,10 @@ const computeMetrics = (
 
 /** Compute checked point-error and interval-coverage metrics over trusted CV forecast instances. */
 export function performanceMetrics(
+  result: BaselineCrossValidationResult,
+  input: MetricOptions,
+): Effect.Effect<MetricReport<"baseline">, InputValidationError | EvaluationMetricError>;
+export function performanceMetrics(
   result: PointCrossValidationResult,
   input: MetricOptions,
 ): Effect.Effect<MetricReport<"point">, InputValidationError | EvaluationMetricError>;
@@ -689,9 +690,12 @@ export function performanceMetrics(
 export function performanceMetrics(
   result: CrossValidationResult,
   input: MetricOptions,
-): Effect.Effect<MetricReport, InputValidationError | EvaluationMetricError>;
+): Effect.Effect<
+  MetricReport<CrossValidationResult["kind"]>,
+  InputValidationError | EvaluationMetricError
+>;
 export function performanceMetrics(
-  result: CrossValidationResult,
+  result: CrossValidationResult | BaselineCrossValidationResult,
   input: MetricOptions,
 ): Effect.Effect<MetricReport, InputValidationError | EvaluationMetricError> {
   return computeMetrics(result, input);

@@ -43,7 +43,8 @@ const maximumSimulationRows = 10_000;
 
 const maximumSimulationCells = 1_000_000;
 
-const PositiveDurationMsSchema = Schema.Int.check(
+/** Shared positive elapsed-millisecond codec for evaluation plans and exact baseline lags. */
+export const PositiveDurationMsSchema = Schema.Int.check(
   Schema.isGreaterThan(0),
   Schema.isLessThanOrEqualTo(maximumDurationMs),
 ).pipe(Schema.brand("effect-prophet/PositiveDurationMs"));
@@ -538,6 +539,57 @@ export const planRollingOrigin = Effect.fn("Prophet.planRollingOrigin")(function
 });
 
 const encodeTimestamp = Schema.encodeSync(TimestampSchema);
+
+/** Reconstruct and check a supplied fold summary against the complete observed history. */
+export const resolveBaselinePlan = (
+  observations: Observations,
+  summary: RollingOriginPlanSummary,
+): Effect.Effect<EvaluationFoldPlan, InputValidationError> =>
+  Effect.gen(function* () {
+    if (
+      !Number.isSafeInteger(summary?.horizonMs) ||
+      summary.horizonMs <= 0 ||
+      !Array.isArray(summary.cutoffs) ||
+      summary.cutoffs.length === 0 ||
+      summary.cutoffs.length > maximumFolds ||
+      !Array.isArray(summary.folds) ||
+      summary.folds.length !== summary.cutoffs.length ||
+      summary.cutoffs.some((cutoff) => !validEpoch(cutoff))
+    ) {
+      return yield* Effect.fail(invalidPlan(["summary"], "Invalid rolling-origin plan summary"));
+    }
+
+    const plan = yield* decodePlan({
+      horizonMs: summary.horizonMs,
+      cutoffs: {
+        mode: "explicit",
+        timestamps: summary.cutoffs.map((cutoff) => encodeTimestamp(cutoff)),
+      },
+    }).pipe(
+      Effect.mapError((error) => inputValidationErrorFromIssue("evaluation-plan", error.issue)),
+    );
+
+    // Explicit planning shares the same fold-index and resource checks as model CV.
+    const options = yield* decodeOptions({});
+    const resolved = yield* planRollingOriginIndexes(observations, options, plan);
+
+    for (const [index, fold] of resolved.summary.folds.entries()) {
+      const supplied = summary.folds[index];
+
+      if (
+        supplied?.index !== fold.index ||
+        supplied.cutoff !== fold.cutoff ||
+        supplied.trainingCount !== fold.trainingCount ||
+        supplied.assessmentCount !== fold.assessmentCount
+      ) {
+        return yield* Effect.fail(
+          invalidPlan(["summary", "folds", index], "Fold summary does not match history"),
+        );
+      }
+    }
+
+    return resolved;
+  });
 
 const projectTrainingRow = (row: Observations[number]): EncodedObservation =>
   Object.freeze({ ...row, timestamp: encodeTimestamp(row.timestamp) });

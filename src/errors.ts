@@ -14,6 +14,7 @@ const ValidationInputSchema = Schema.Literals([
   "uncertainty-options",
   "evaluation-plan",
   "evaluation-metrics",
+  "evaluation-baseline",
 ]);
 
 const FittingFailureReasonSchema = Schema.Literals([
@@ -51,7 +52,8 @@ export type ValidationInput =
   | "prediction-rows"
   | "uncertainty-options"
   | "evaluation-plan"
-  | "evaluation-metrics";
+  | "evaluation-metrics"
+  | "evaluation-baseline";
 
 export type FittingFailureReason =
   | "insufficient-observations"
@@ -174,13 +176,22 @@ export class PredictionError extends Schema.TaggedError<PredictionError>()("Pred
 export class EvaluationError extends Schema.TaggedError<EvaluationError>()("EvaluationError", {
   fold: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0), Schema.isLessThanOrEqualTo(127)),
   cutoff: Schema.Int,
-  stage: Schema.Literals(["fit", "predict", "result", "uncertainty", "interval-result"]),
+  stage: Schema.Literals([
+    "fit",
+    "predict",
+    "result",
+    "uncertainty",
+    "interval-result",
+    "baseline",
+  ]),
   reason: Schema.Literals([
     "fit-failed",
     "prediction-failed",
     "result-mismatch",
     "uncertainty-failed",
     "interval-result-mismatch",
+    "baseline-unavailable",
+    "non-finite",
   ]),
   rowIndex: Schema.optionalKey(Schema.Natural.check(Schema.isLessThan(1_000_000))),
   message: Schema.String,
@@ -197,13 +208,15 @@ export class EvaluationError extends Schema.TaggedError<EvaluationError>()("Eval
     fields: {
       readonly fold: number;
       readonly cutoff: number;
-      readonly stage: "fit" | "predict" | "result" | "uncertainty" | "interval-result";
+      readonly stage: "fit" | "predict" | "result" | "uncertainty" | "interval-result" | "baseline";
       readonly reason:
         | "fit-failed"
         | "prediction-failed"
         | "result-mismatch"
         | "uncertainty-failed"
-        | "interval-result-mismatch";
+        | "interval-result-mismatch"
+        | "baseline-unavailable"
+        | "non-finite";
       readonly rowIndex?: number;
       readonly message: string;
     },

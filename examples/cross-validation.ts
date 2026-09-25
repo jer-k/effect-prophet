@@ -1,6 +1,8 @@
 import { Effect } from "effect";
 import {
+  comparePerformance,
   crossValidate,
+  crossValidateBaseline,
   prophetFittingBackendLayer,
   type CrossValidationResult,
 } from "effect-prophet";
@@ -38,6 +40,28 @@ console.log(
     predicted,
   })),
 );
+
+const baseline = await Effect.runPromise(
+  crossValidateBaseline(observations, result.plan, { kind: "last-observation" }),
+);
+
+const comparison = await Effect.runPromise(
+  comparePerformance(result, [baseline], {
+    metrics: ["mae", "rmse"],
+    aggregation: { kind: "overall" },
+  }),
+);
+
+// These are paired holdout errors on overlapping folds, not significance evidence.
+if (comparison.model.kind === "overall") {
+  console.log("model", comparison.model.bucket.scores);
+
+  for (const { baseline: definition, metrics } of comparison.baselines) {
+    if (metrics.kind === "overall") {
+      console.log(definition.kind, metrics.bucket.scores);
+    }
+  }
+}
 
 const intervalResult: CrossValidationResult = await Effect.runPromise(
   crossValidate(
