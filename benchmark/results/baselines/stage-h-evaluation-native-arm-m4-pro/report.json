@@ -1,0 +1,1499 @@
+{
+  "schemaVersion": 1,
+  "run": {
+    "schemaVersion": 1,
+    "runId": "2026-09-25T205622-287Z-85139681",
+    "createdAt": "2026-09-25T20:56:40.860Z",
+    "gitRevision": "851396812952749bc7f8bfa6f415f880279ec544",
+    "gitDirty": false,
+    "hostPlatform": "darwin",
+    "hostRelease": "25.5.0",
+    "hostArchitecture": "arm64",
+    "hostProcessor": "Apple M4 Pro",
+    "containerPlatform": "linux/arm64",
+    "emulated": false,
+    "selectedCases": [
+      "evaluation-linear-point",
+      "evaluation-linear-intervals",
+      "evaluation-linear-search",
+      "evaluation-flat-mixed-point",
+      "evaluation-flat-mixed-intervals",
+      "evaluation-flat-mixed-search",
+      "evaluation-logistic-point",
+      "evaluation-logistic-intervals",
+      "evaluation-logistic-search",
+      "evaluation-flat-large-point",
+      "evaluation-flat-large-intervals",
+      "evaluation-logistic-large-point",
+      "evaluation-logistic-large-intervals",
+      "evaluation-linear-failure-search"
+    ],
+    "commands": [
+      "BENCHMARK_STAGE=correctness BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/compose.yaml run --rm effect-prophet-benchmark",
+      "BENCHMARK_STAGE=correctness BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/compose.yaml run --rm python-prophet-benchmark",
+      "BENCHMARK_REPORT_MODE=eligibility BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/compose.yaml run --rm benchmark-report",
+      "BENCHMARK_STAGE=timing BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/compose.yaml run --rm effect-prophet-benchmark",
+      "BENCHMARK_STAGE=timing BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/compose.yaml run --rm python-prophet-benchmark",
+      "BENCHMARK_REPORT_MODE=final BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/compose.yaml run --rm benchmark-report"
+    ],
+    "inputHashes": [
+      {
+        "name": "benchmark/cases/public-api.json",
+        "value": "a88e1eec32763e9a310799af5ec6bd8821eb1ce655a383e4952a90e0a25f3cc0"
+      },
+      {
+        "name": "benchmark/cases/growth-scaling-and-mixed-map.ts",
+        "value": "eb01214b72e234cb05acc2795caa5adf87a4d4638dfc66542feb081dc3d450e7"
+      },
+      {
+        "name": "benchmark/cases/uncertainty.ts",
+        "value": "2d14b373d815482563daa87ea3a2e210b0607b7f102f1773356243023c4c5523"
+      },
+      {
+        "name": "benchmark/cases/evaluation.ts",
+        "value": "6109ac468a89df0988b00f16bf259eff7f1c0c7b8f998f8ae018b7ae518b11b9"
+      },
+      {
+        "name": "benchmark/evaluation.ts",
+        "value": "c43533177e62947ab15b2900cf891316304833fb2c4dd5e2a0496541ddca44cd"
+      },
+      {
+        "name": "benchmark/adapters/evaluation.py",
+        "value": "9367194d33169bb7fdccd9493cfa0f38cfe63376ed9b9d950d423d1e3c2129aa"
+      },
+      {
+        "name": "benchmark/results/runs/2026-09-25T205622-287Z-85139681/cases.json",
+        "value": "7de9e77085192df951cc5fc159fe566d91d73ac9fc6db4319054cff6696b3286"
+      },
+      {
+        "name": "benchmark/evidence/comparisons.json",
+        "value": "7882402bf2231ec41f9e602c2ba00fce4bd750258d30c35c5adacb288a974a9b"
+      },
+      {
+        "name": "benchmark/python/uv.lock",
+        "value": "c90f2464e1d50dbe489bdcdaf8350f04c162f6c617559cfb75d6977b0f430ab1"
+      },
+      {
+        "name": "benchmark/data/generated/manifest.json",
+        "value": "d1896f8b7f28d8e34dd6cd974aea66348c558938ed1292d8363ec45366e8f60e"
+      },
+      {
+        "name": "package-lock.json",
+        "value": "99bda82607c5764a965fc84c4f1c3aeb518b7a1604975e958b3ad63e4887d936"
+      },
+      {
+        "name": "benchmark/data/generated/linear-offset-scaling.json",
+        "value": "bfea515181446ef72eeed2acaef46db63d6fcee5cd1d6af177ad886a6c973b5e"
+      },
+      {
+        "name": "benchmark/data/generated/flat-mixed-components.json",
+        "value": "4e1e4fd02c0e9a88f9f8369942d9ae9deaa9a3ebe0dcdffbb6d45e8a23c3263f"
+      },
+      {
+        "name": "benchmark/data/generated/logistic-implicit-floor.json",
+        "value": "d8cde080f7a8af86acb6e70e2577d0d1d2ee8f813bf4836e5a61702a16dc1558"
+      },
+      {
+        "name": "benchmark/data/generated/flat-mixed-components-large.json",
+        "value": "7ee4bb9692dfb115e926da542b37298a311e06037c0e5a638ca067a1fb937b11"
+      },
+      {
+        "name": "benchmark/data/generated/logistic-implicit-floor-large.json",
+        "value": "61b169aa9c925333f6dd11301febfdeb82e9ae7f2b95f3cb4c222e6dcfb080d9"
+      }
+    ],
+    "containerImages": [
+      {
+        "name": "effect-prophet/benchmark-effect:local",
+        "value": "sha256:636cace0ebe769b03820e45e654af64a1e8078d7abf13d3b7494dbf5b1725c49"
+      },
+      {
+        "name": "effect-prophet/benchmark-python:1.4.0",
+        "value": "sha256:5d27409f26f1a65b107932fb279ee318cf07553272402f2de2003c2594f4c042"
+      }
+    ]
+  },
+  "generatedAt": "2026-09-25T20:58:46.221Z",
+  "purpose": "Descriptive public API timing and correctness evidence; this report presents absolute measurements without ranking implementations.",
+  "correctness": [
+    {
+      "caseId": "evaluation-linear-point",
+      "status": "passed",
+      "comparison": "different-public-work",
+      "maximumDifferences": {
+        "trend": 0,
+        "component": 0,
+        "additive": 0,
+        "forecast": 0.00001956792220880743,
+        "noiseScale": 0
+      },
+      "note": "Aligned folds, rows, targets and point forecasts passed; public evaluation/uncertainty/metric/report work differs. Absolute times only."
+    },
+    {
+      "caseId": "evaluation-linear-intervals",
+      "status": "passed",
+      "comparison": "different-public-work",
+      "maximumDifferences": {
+        "trend": 0,
+        "component": 0,
+        "additive": 0,
+        "forecast": 0.00001956792220880743,
+        "noiseScale": 0
+      },
+      "note": "Aligned folds, rows, targets and point forecasts passed; public evaluation/uncertainty/metric/report work differs. Absolute times only."
+    },
+    {
+      "caseId": "evaluation-linear-search",
+      "status": "passed",
+      "comparison": "different-public-work",
+      "maximumDifferences": {
+        "trend": 0,
+        "component": 0,
+        "additive": 0,
+        "forecast": 0.00001956792220880743,
+        "noiseScale": 0
+      },
+      "note": "Aligned folds, rows, targets and point forecasts passed; public evaluation/uncertainty/metric/report work differs. Absolute times only."
+    },
+    {
+      "caseId": "evaluation-flat-mixed-point",
+      "status": "failed",
+      "comparison": "different-public-work",
+      "note": "Cross-language evaluation point forecasts exceed the declared tolerance."
+    },
+    {
+      "caseId": "evaluation-flat-mixed-intervals",
+      "status": "failed",
+      "comparison": "different-public-work",
+      "note": "Cross-language evaluation point forecasts exceed the declared tolerance."
+    },
+    {
+      "caseId": "evaluation-flat-mixed-search",
+      "status": "failed",
+      "comparison": "different-public-work",
+      "note": "Cross-language evaluation point forecasts exceed the declared tolerance."
+    },
+    {
+      "caseId": "evaluation-logistic-point",
+      "status": "passed",
+      "comparison": "different-public-work",
+      "maximumDifferences": {
+        "trend": 0,
+        "component": 0,
+        "additive": 0,
+        "forecast": 0.0002351830496181151,
+        "noiseScale": 0
+      },
+      "note": "Aligned folds, rows, targets and point forecasts passed; public evaluation/uncertainty/metric/report work differs. Absolute times only."
+    },
+    {
+      "caseId": "evaluation-logistic-intervals",
+      "status": "passed",
+      "comparison": "different-public-work",
+      "maximumDifferences": {
+        "trend": 0,
+        "component": 0,
+        "additive": 0,
+        "forecast": 0.0002351830496181151,
+        "noiseScale": 0
+      },
+      "note": "Aligned folds, rows, targets and point forecasts passed; public evaluation/uncertainty/metric/report work differs. Absolute times only."
+    },
+    {
+      "caseId": "evaluation-logistic-search",
+      "status": "passed",
+      "comparison": "different-public-work",
+      "maximumDifferences": {
+        "trend": 0,
+        "component": 0,
+        "additive": 0,
+        "forecast": 0.0002351830496181151,
+        "noiseScale": 0
+      },
+      "note": "Aligned folds, rows, targets and point forecasts passed; public evaluation/uncertainty/metric/report work differs. Absolute times only."
+    },
+    {
+      "caseId": "evaluation-flat-large-point",
+      "status": "failed",
+      "comparison": "different-public-work",
+      "note": "Cross-language evaluation point forecasts exceed the declared tolerance."
+    },
+    {
+      "caseId": "evaluation-flat-large-intervals",
+      "status": "failed",
+      "comparison": "different-public-work",
+      "note": "Cross-language evaluation point forecasts exceed the declared tolerance."
+    },
+    {
+      "caseId": "evaluation-logistic-large-point",
+      "status": "passed",
+      "comparison": "different-public-work",
+      "maximumDifferences": {
+        "trend": 0,
+        "component": 0,
+        "additive": 0,
+        "forecast": 0.0005667246764744505,
+        "noiseScale": 0
+      },
+      "note": "Aligned folds, rows, targets and point forecasts passed; public evaluation/uncertainty/metric/report work differs. Absolute times only."
+    },
+    {
+      "caseId": "evaluation-logistic-large-intervals",
+      "status": "passed",
+      "comparison": "different-public-work",
+      "maximumDifferences": {
+        "trend": 0,
+        "component": 0,
+        "additive": 0,
+        "forecast": 0.0005667246764744505,
+        "noiseScale": 0
+      },
+      "note": "Aligned folds, rows, targets and point forecasts passed; public evaluation/uncertainty/metric/report work differs. Absolute times only."
+    },
+    {
+      "caseId": "evaluation-linear-failure-search",
+      "status": "passed",
+      "comparison": "different-public-work",
+      "maximumDifferences": {
+        "trend": 0,
+        "component": 0,
+        "additive": 0,
+        "forecast": 0.00001956792220880743,
+        "noiseScale": 0
+      },
+      "note": "Aligned folds, rows, targets and point forecasts passed; public evaluation/uncertainty/metric/report work differs. Absolute times only."
+    }
+  ],
+  "timings": [
+    {
+      "caseId": "evaluation-linear-failure-search",
+      "phase": "evaluation-holdout",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 154583040,
+      "sampleCount": 4,
+      "medianNanoseconds": 1938625,
+      "p90Nanoseconds": 2486458,
+      "minimumNanoseconds": 1877792,
+      "maximumNanoseconds": 2486458
+    },
+    {
+      "caseId": "evaluation-linear-failure-search",
+      "phase": "evaluation-holdout",
+      "implementation": "python-prophet",
+      "peakRssBytes": 123756544,
+      "sampleCount": 4,
+      "medianNanoseconds": 12603583,
+      "p90Nanoseconds": 12909000,
+      "minimumNanoseconds": 12433542,
+      "maximumNanoseconds": 12909000
+    },
+    {
+      "caseId": "evaluation-linear-failure-search",
+      "phase": "evaluation-report-decode",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 157523968,
+      "sampleCount": 4,
+      "medianNanoseconds": 207459,
+      "p90Nanoseconds": 227292,
+      "minimumNanoseconds": 197958,
+      "maximumNanoseconds": 227292
+    },
+    {
+      "caseId": "evaluation-linear-failure-search",
+      "phase": "evaluation-report-decode",
+      "implementation": "python-prophet",
+      "peakRssBytes": 123756544,
+      "sampleCount": 4,
+      "medianNanoseconds": 4833,
+      "p90Nanoseconds": 6125,
+      "minimumNanoseconds": 4833,
+      "maximumNanoseconds": 6125
+    },
+    {
+      "caseId": "evaluation-linear-failure-search",
+      "phase": "evaluation-report-encode",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 156868608,
+      "sampleCount": 4,
+      "medianNanoseconds": 248667,
+      "p90Nanoseconds": 328000,
+      "minimumNanoseconds": 243209,
+      "maximumNanoseconds": 328000
+    },
+    {
+      "caseId": "evaluation-linear-failure-search",
+      "phase": "evaluation-report-encode",
+      "implementation": "python-prophet",
+      "peakRssBytes": 123756544,
+      "sampleCount": 4,
+      "medianNanoseconds": 9250,
+      "p90Nanoseconds": 11958,
+      "minimumNanoseconds": 9125,
+      "maximumNanoseconds": 11958
+    },
+    {
+      "caseId": "evaluation-linear-failure-search",
+      "phase": "evaluation-search",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 154058752,
+      "sampleCount": 4,
+      "medianNanoseconds": 9668625,
+      "p90Nanoseconds": 12102834,
+      "minimumNanoseconds": 9348250,
+      "maximumNanoseconds": 12102834
+    },
+    {
+      "caseId": "evaluation-linear-failure-search",
+      "phase": "evaluation-search",
+      "implementation": "python-prophet",
+      "peakRssBytes": 123756544,
+      "sampleCount": 4,
+      "medianNanoseconds": 71476125,
+      "p90Nanoseconds": 71711584,
+      "minimumNanoseconds": 69993250,
+      "maximumNanoseconds": 71711584
+    },
+    {
+      "caseId": "evaluation-linear-intervals",
+      "phase": "evaluation-intervals",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 144502784,
+      "sampleCount": 4,
+      "medianNanoseconds": 5097833,
+      "p90Nanoseconds": 6043250,
+      "minimumNanoseconds": 5084125,
+      "maximumNanoseconds": 6043250
+    },
+    {
+      "caseId": "evaluation-linear-intervals",
+      "phase": "evaluation-intervals",
+      "implementation": "python-prophet",
+      "peakRssBytes": 123854848,
+      "sampleCount": 4,
+      "medianNanoseconds": 40055167,
+      "p90Nanoseconds": 40919083,
+      "minimumNanoseconds": 39532000,
+      "maximumNanoseconds": 40919083
+    },
+    {
+      "caseId": "evaluation-linear-point",
+      "phase": "cold-first-evaluation",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 154640384,
+      "sampleCount": 4,
+      "medianNanoseconds": 185354417,
+      "p90Nanoseconds": 194095833,
+      "minimumNanoseconds": 183710542,
+      "maximumNanoseconds": 194095833
+    },
+    {
+      "caseId": "evaluation-linear-point",
+      "phase": "cold-first-evaluation",
+      "implementation": "python-prophet",
+      "peakRssBytes": 123809792,
+      "sampleCount": 4,
+      "medianNanoseconds": 1676500668,
+      "p90Nanoseconds": 1732842543,
+      "minimumNanoseconds": 1622914542,
+      "maximumNanoseconds": 1732842543
+    },
+    {
+      "caseId": "evaluation-linear-point",
+      "phase": "evaluation-baseline",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 154640384,
+      "sampleCount": 4,
+      "medianNanoseconds": 1463375,
+      "p90Nanoseconds": 2144667,
+      "minimumNanoseconds": 1355958,
+      "maximumNanoseconds": 2144667
+    },
+    {
+      "caseId": "evaluation-linear-point",
+      "phase": "evaluation-baseline",
+      "implementation": "python-prophet",
+      "peakRssBytes": 123809792,
+      "sampleCount": 4,
+      "medianNanoseconds": 1176833,
+      "p90Nanoseconds": 2688583,
+      "minimumNanoseconds": 1149750,
+      "maximumNanoseconds": 2688583
+    },
+    {
+      "caseId": "evaluation-linear-point",
+      "phase": "evaluation-input-conversion",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 133931008,
+      "sampleCount": 4,
+      "medianNanoseconds": 8000,
+      "p90Nanoseconds": 19917,
+      "minimumNanoseconds": 6916,
+      "maximumNanoseconds": 19917
+    },
+    {
+      "caseId": "evaluation-linear-point",
+      "phase": "evaluation-input-conversion",
+      "implementation": "python-prophet",
+      "peakRssBytes": 119488512,
+      "sampleCount": 4,
+      "medianNanoseconds": 427416,
+      "p90Nanoseconds": 505166,
+      "minimumNanoseconds": 410125,
+      "maximumNanoseconds": 505166
+    },
+    {
+      "caseId": "evaluation-linear-point",
+      "phase": "evaluation-metrics",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 154640384,
+      "sampleCount": 4,
+      "medianNanoseconds": 208875,
+      "p90Nanoseconds": 335167,
+      "minimumNanoseconds": 184667,
+      "maximumNanoseconds": 335167
+    },
+    {
+      "caseId": "evaluation-linear-point",
+      "phase": "evaluation-metrics",
+      "implementation": "python-prophet",
+      "peakRssBytes": 123809792,
+      "sampleCount": 4,
+      "medianNanoseconds": 6726084,
+      "p90Nanoseconds": 10163208,
+      "minimumNanoseconds": 5861166,
+      "maximumNanoseconds": 10163208
+    },
+    {
+      "caseId": "evaluation-linear-point",
+      "phase": "evaluation-plan",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 136552448,
+      "sampleCount": 4,
+      "medianNanoseconds": 784333,
+      "p90Nanoseconds": 1198834,
+      "minimumNanoseconds": 691041,
+      "maximumNanoseconds": 1198834
+    },
+    {
+      "caseId": "evaluation-linear-point",
+      "phase": "evaluation-plan",
+      "implementation": "python-prophet",
+      "peakRssBytes": 120352768,
+      "sampleCount": 4,
+      "medianNanoseconds": 742833,
+      "p90Nanoseconds": 1085875,
+      "minimumNanoseconds": 704875,
+      "maximumNanoseconds": 1085875
+    },
+    {
+      "caseId": "evaluation-linear-point",
+      "phase": "evaluation-point",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 149708800,
+      "sampleCount": 4,
+      "medianNanoseconds": 5994333,
+      "p90Nanoseconds": 6052958,
+      "minimumNanoseconds": 5424042,
+      "maximumNanoseconds": 6052958
+    },
+    {
+      "caseId": "evaluation-linear-point",
+      "phase": "evaluation-point",
+      "implementation": "python-prophet",
+      "peakRssBytes": 123260928,
+      "sampleCount": 4,
+      "medianNanoseconds": 33606125,
+      "p90Nanoseconds": 39629875,
+      "minimumNanoseconds": 31512542,
+      "maximumNanoseconds": 39629875
+    },
+    {
+      "caseId": "evaluation-linear-search",
+      "phase": "evaluation-holdout",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 152141824,
+      "sampleCount": 4,
+      "medianNanoseconds": 2322416,
+      "p90Nanoseconds": 3414750,
+      "minimumNanoseconds": 2272417,
+      "maximumNanoseconds": 3414750
+    },
+    {
+      "caseId": "evaluation-linear-search",
+      "phase": "evaluation-holdout",
+      "implementation": "python-prophet",
+      "peakRssBytes": 123801600,
+      "sampleCount": 4,
+      "medianNanoseconds": 12015334,
+      "p90Nanoseconds": 12969125,
+      "minimumNanoseconds": 11731708,
+      "maximumNanoseconds": 12969125
+    },
+    {
+      "caseId": "evaluation-linear-search",
+      "phase": "evaluation-report-decode",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 152666112,
+      "sampleCount": 4,
+      "medianNanoseconds": 252084,
+      "p90Nanoseconds": 392959,
+      "minimumNanoseconds": 247000,
+      "maximumNanoseconds": 392959
+    },
+    {
+      "caseId": "evaluation-linear-search",
+      "phase": "evaluation-report-decode",
+      "implementation": "python-prophet",
+      "peakRssBytes": 123801600,
+      "sampleCount": 4,
+      "medianNanoseconds": 6375,
+      "p90Nanoseconds": 91375,
+      "minimumNanoseconds": 4666,
+      "maximumNanoseconds": 91375
+    },
+    {
+      "caseId": "evaluation-linear-search",
+      "phase": "evaluation-report-encode",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 152272896,
+      "sampleCount": 4,
+      "medianNanoseconds": 263958,
+      "p90Nanoseconds": 360917,
+      "minimumNanoseconds": 255542,
+      "maximumNanoseconds": 360917
+    },
+    {
+      "caseId": "evaluation-linear-search",
+      "phase": "evaluation-report-encode",
+      "implementation": "python-prophet",
+      "peakRssBytes": 123801600,
+      "sampleCount": 4,
+      "medianNanoseconds": 8625,
+      "p90Nanoseconds": 11208,
+      "minimumNanoseconds": 8583,
+      "maximumNanoseconds": 11208
+    },
+    {
+      "caseId": "evaluation-linear-search",
+      "phase": "evaluation-search",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 151224320,
+      "sampleCount": 4,
+      "medianNanoseconds": 7367125,
+      "p90Nanoseconds": 13222708,
+      "minimumNanoseconds": 7136667,
+      "maximumNanoseconds": 13222708
+    },
+    {
+      "caseId": "evaluation-linear-search",
+      "phase": "evaluation-search",
+      "implementation": "python-prophet",
+      "peakRssBytes": 123801600,
+      "sampleCount": 4,
+      "medianNanoseconds": 68138042,
+      "p90Nanoseconds": 69938167,
+      "minimumNanoseconds": 67882250,
+      "maximumNanoseconds": 69938167
+    },
+    {
+      "caseId": "evaluation-logistic-intervals",
+      "phase": "evaluation-intervals",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 146300928,
+      "sampleCount": 4,
+      "medianNanoseconds": 4461208,
+      "p90Nanoseconds": 9403666,
+      "minimumNanoseconds": 4411833,
+      "maximumNanoseconds": 9403666
+    },
+    {
+      "caseId": "evaluation-logistic-intervals",
+      "phase": "evaluation-intervals",
+      "implementation": "python-prophet",
+      "peakRssBytes": 123826176,
+      "sampleCount": 4,
+      "medianNanoseconds": 28091959,
+      "p90Nanoseconds": 31999750,
+      "minimumNanoseconds": 27115625,
+      "maximumNanoseconds": 31999750
+    },
+    {
+      "caseId": "evaluation-logistic-large-intervals",
+      "phase": "evaluation-intervals",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 157814784,
+      "sampleCount": 4,
+      "medianNanoseconds": 18402583,
+      "p90Nanoseconds": 22796458,
+      "minimumNanoseconds": 16854750,
+      "maximumNanoseconds": 22796458
+    },
+    {
+      "caseId": "evaluation-logistic-large-intervals",
+      "phase": "evaluation-intervals",
+      "implementation": "python-prophet",
+      "peakRssBytes": 126107648,
+      "sampleCount": 4,
+      "medianNanoseconds": 70974958,
+      "p90Nanoseconds": 100865792,
+      "minimumNanoseconds": 68845917,
+      "maximumNanoseconds": 100865792
+    },
+    {
+      "caseId": "evaluation-logistic-large-point",
+      "phase": "cold-first-evaluation",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 159531008,
+      "sampleCount": 4,
+      "medianNanoseconds": 202862334,
+      "p90Nanoseconds": 206468667,
+      "minimumNanoseconds": 199498542,
+      "maximumNanoseconds": 206468667
+    },
+    {
+      "caseId": "evaluation-logistic-large-point",
+      "phase": "cold-first-evaluation",
+      "implementation": "python-prophet",
+      "peakRssBytes": 123760640,
+      "sampleCount": 4,
+      "medianNanoseconds": 1636891375,
+      "p90Nanoseconds": 1687065417,
+      "minimumNanoseconds": 1621028626,
+      "maximumNanoseconds": 1687065417
+    },
+    {
+      "caseId": "evaluation-logistic-large-point",
+      "phase": "evaluation-baseline",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 159399936,
+      "sampleCount": 4,
+      "medianNanoseconds": 2555375,
+      "p90Nanoseconds": 2942625,
+      "minimumNanoseconds": 2314542,
+      "maximumNanoseconds": 2942625
+    },
+    {
+      "caseId": "evaluation-logistic-large-point",
+      "phase": "evaluation-baseline",
+      "implementation": "python-prophet",
+      "peakRssBytes": 123760640,
+      "sampleCount": 4,
+      "medianNanoseconds": 1382750,
+      "p90Nanoseconds": 1457208,
+      "minimumNanoseconds": 1343250,
+      "maximumNanoseconds": 1457208
+    },
+    {
+      "caseId": "evaluation-logistic-large-point",
+      "phase": "evaluation-input-conversion",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 135135232,
+      "sampleCount": 4,
+      "medianNanoseconds": 48791,
+      "p90Nanoseconds": 67417,
+      "minimumNanoseconds": 43959,
+      "maximumNanoseconds": 67417
+    },
+    {
+      "caseId": "evaluation-logistic-large-point",
+      "phase": "evaluation-input-conversion",
+      "implementation": "python-prophet",
+      "peakRssBytes": 119439360,
+      "sampleCount": 4,
+      "medianNanoseconds": 520833,
+      "p90Nanoseconds": 595792,
+      "minimumNanoseconds": 518084,
+      "maximumNanoseconds": 595792
+    },
+    {
+      "caseId": "evaluation-logistic-large-point",
+      "phase": "evaluation-metrics",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 159006720,
+      "sampleCount": 4,
+      "medianNanoseconds": 216875,
+      "p90Nanoseconds": 240834,
+      "minimumNanoseconds": 216375,
+      "maximumNanoseconds": 240834
+    },
+    {
+      "caseId": "evaluation-logistic-large-point",
+      "phase": "evaluation-metrics",
+      "implementation": "python-prophet",
+      "peakRssBytes": 123760640,
+      "sampleCount": 4,
+      "medianNanoseconds": 5853625,
+      "p90Nanoseconds": 6407084,
+      "minimumNanoseconds": 5783583,
+      "maximumNanoseconds": 6407084
+    },
+    {
+      "caseId": "evaluation-logistic-large-point",
+      "phase": "evaluation-plan",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 137887744,
+      "sampleCount": 4,
+      "medianNanoseconds": 1686208,
+      "p90Nanoseconds": 2834875,
+      "minimumNanoseconds": 1549042,
+      "maximumNanoseconds": 2834875
+    },
+    {
+      "caseId": "evaluation-logistic-large-point",
+      "phase": "evaluation-plan",
+      "implementation": "python-prophet",
+      "peakRssBytes": 120369152,
+      "sampleCount": 4,
+      "medianNanoseconds": 773750,
+      "p90Nanoseconds": 808000,
+      "minimumNanoseconds": 768500,
+      "maximumNanoseconds": 808000
+    },
+    {
+      "caseId": "evaluation-logistic-large-point",
+      "phase": "evaluation-point",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 158613504,
+      "sampleCount": 4,
+      "medianNanoseconds": 16518416,
+      "p90Nanoseconds": 18314333,
+      "minimumNanoseconds": 16229167,
+      "maximumNanoseconds": 18314333
+    },
+    {
+      "caseId": "evaluation-logistic-large-point",
+      "phase": "evaluation-point",
+      "implementation": "python-prophet",
+      "peakRssBytes": 123211776,
+      "sampleCount": 4,
+      "medianNanoseconds": 50827667,
+      "p90Nanoseconds": 51719417,
+      "minimumNanoseconds": 50701667,
+      "maximumNanoseconds": 51719417
+    },
+    {
+      "caseId": "evaluation-logistic-point",
+      "phase": "cold-first-evaluation",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 156553216,
+      "sampleCount": 4,
+      "medianNanoseconds": 186479250,
+      "p90Nanoseconds": 189405084,
+      "minimumNanoseconds": 180310083,
+      "maximumNanoseconds": 189405084
+    },
+    {
+      "caseId": "evaluation-logistic-point",
+      "phase": "cold-first-evaluation",
+      "implementation": "python-prophet",
+      "peakRssBytes": 123932672,
+      "sampleCount": 4,
+      "medianNanoseconds": 1705920251,
+      "p90Nanoseconds": 1757863667,
+      "minimumNanoseconds": 1604786751,
+      "maximumNanoseconds": 1757863667
+    },
+    {
+      "caseId": "evaluation-logistic-point",
+      "phase": "evaluation-baseline",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 156553216,
+      "sampleCount": 4,
+      "medianNanoseconds": 1280375,
+      "p90Nanoseconds": 1581833,
+      "minimumNanoseconds": 1265958,
+      "maximumNanoseconds": 1581833
+    },
+    {
+      "caseId": "evaluation-logistic-point",
+      "phase": "evaluation-baseline",
+      "implementation": "python-prophet",
+      "peakRssBytes": 123932672,
+      "sampleCount": 4,
+      "medianNanoseconds": 833666,
+      "p90Nanoseconds": 871875,
+      "minimumNanoseconds": 814833,
+      "maximumNanoseconds": 871875
+    },
+    {
+      "caseId": "evaluation-logistic-point",
+      "phase": "evaluation-input-conversion",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 134279168,
+      "sampleCount": 4,
+      "medianNanoseconds": 14833,
+      "p90Nanoseconds": 26041,
+      "minimumNanoseconds": 13833,
+      "maximumNanoseconds": 26041
+    },
+    {
+      "caseId": "evaluation-logistic-point",
+      "phase": "evaluation-input-conversion",
+      "implementation": "python-prophet",
+      "peakRssBytes": 119558144,
+      "sampleCount": 4,
+      "medianNanoseconds": 480542,
+      "p90Nanoseconds": 2286167,
+      "minimumNanoseconds": 436583,
+      "maximumNanoseconds": 2286167
+    },
+    {
+      "caseId": "evaluation-logistic-point",
+      "phase": "evaluation-metrics",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 149999616,
+      "sampleCount": 4,
+      "medianNanoseconds": 320875,
+      "p90Nanoseconds": 375708,
+      "minimumNanoseconds": 244083,
+      "maximumNanoseconds": 375708
+    },
+    {
+      "caseId": "evaluation-logistic-point",
+      "phase": "evaluation-metrics",
+      "implementation": "python-prophet",
+      "peakRssBytes": 123932672,
+      "sampleCount": 4,
+      "medianNanoseconds": 6085458,
+      "p90Nanoseconds": 8084334,
+      "minimumNanoseconds": 5750458,
+      "maximumNanoseconds": 8084334
+    },
+    {
+      "caseId": "evaluation-logistic-point",
+      "phase": "evaluation-plan",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 136769536,
+      "sampleCount": 4,
+      "medianNanoseconds": 891500,
+      "p90Nanoseconds": 1103917,
+      "minimumNanoseconds": 863375,
+      "maximumNanoseconds": 1103917
+    },
+    {
+      "caseId": "evaluation-logistic-point",
+      "phase": "evaluation-plan",
+      "implementation": "python-prophet",
+      "peakRssBytes": 120475648,
+      "sampleCount": 4,
+      "medianNanoseconds": 632167,
+      "p90Nanoseconds": 874500,
+      "minimumNanoseconds": 583750,
+      "maximumNanoseconds": 874500
+    },
+    {
+      "caseId": "evaluation-logistic-point",
+      "phase": "evaluation-point",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 146984960,
+      "sampleCount": 4,
+      "medianNanoseconds": 4333167,
+      "p90Nanoseconds": 5379583,
+      "minimumNanoseconds": 4119250,
+      "maximumNanoseconds": 5379583
+    },
+    {
+      "caseId": "evaluation-logistic-point",
+      "phase": "evaluation-point",
+      "implementation": "python-prophet",
+      "peakRssBytes": 123383808,
+      "sampleCount": 4,
+      "medianNanoseconds": 24701292,
+      "p90Nanoseconds": 26975125,
+      "minimumNanoseconds": 22644542,
+      "maximumNanoseconds": 26975125
+    },
+    {
+      "caseId": "evaluation-logistic-search",
+      "phase": "evaluation-holdout",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 156127232,
+      "sampleCount": 4,
+      "medianNanoseconds": 3129916,
+      "p90Nanoseconds": 3696791,
+      "minimumNanoseconds": 3077375,
+      "maximumNanoseconds": 3696791
+    },
+    {
+      "caseId": "evaluation-logistic-search",
+      "phase": "evaluation-holdout",
+      "implementation": "python-prophet",
+      "peakRssBytes": 123871232,
+      "sampleCount": 4,
+      "medianNanoseconds": 12902625,
+      "p90Nanoseconds": 13290875,
+      "minimumNanoseconds": 12535917,
+      "maximumNanoseconds": 13290875
+    },
+    {
+      "caseId": "evaluation-logistic-search",
+      "phase": "evaluation-report-decode",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 156782592,
+      "sampleCount": 4,
+      "medianNanoseconds": 255667,
+      "p90Nanoseconds": 526333,
+      "minimumNanoseconds": 236500,
+      "maximumNanoseconds": 526333
+    },
+    {
+      "caseId": "evaluation-logistic-search",
+      "phase": "evaluation-report-decode",
+      "implementation": "python-prophet",
+      "peakRssBytes": 123871232,
+      "sampleCount": 4,
+      "medianNanoseconds": 4542,
+      "p90Nanoseconds": 5625,
+      "minimumNanoseconds": 4500,
+      "maximumNanoseconds": 5625
+    },
+    {
+      "caseId": "evaluation-logistic-search",
+      "phase": "evaluation-report-encode",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 156651520,
+      "sampleCount": 4,
+      "medianNanoseconds": 266541,
+      "p90Nanoseconds": 832583,
+      "minimumNanoseconds": 261833,
+      "maximumNanoseconds": 832583
+    },
+    {
+      "caseId": "evaluation-logistic-search",
+      "phase": "evaluation-report-encode",
+      "implementation": "python-prophet",
+      "peakRssBytes": 123871232,
+      "sampleCount": 4,
+      "medianNanoseconds": 9459,
+      "p90Nanoseconds": 11791,
+      "minimumNanoseconds": 8875,
+      "maximumNanoseconds": 11791
+    },
+    {
+      "caseId": "evaluation-logistic-search",
+      "phase": "evaluation-search",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 155471872,
+      "sampleCount": 4,
+      "medianNanoseconds": 7358125,
+      "p90Nanoseconds": 13440083,
+      "minimumNanoseconds": 7088375,
+      "maximumNanoseconds": 13440083
+    },
+    {
+      "caseId": "evaluation-logistic-search",
+      "phase": "evaluation-search",
+      "implementation": "python-prophet",
+      "peakRssBytes": 123871232,
+      "sampleCount": 4,
+      "medianNanoseconds": 48235667,
+      "p90Nanoseconds": 49139834,
+      "minimumNanoseconds": 48078500,
+      "maximumNanoseconds": 49139834
+    }
+  ],
+  "workloads": [],
+  "evaluations": [
+    {
+      "id": "evaluation-linear-point",
+      "dataset": "generated/linear-offset-scaling.json",
+      "identity": {
+        "recipe": "linear-offset-scaling-v1:n=96:h=24:offset=100:weekly:bounded-noise",
+        "sha256": "bfea515181446ef72eeed2acaef46db63d6fcee5cd1d6af177ad886a6c973b5e",
+        "trainingRows": 96,
+        "predictionRows": 24,
+        "futureRows": 24,
+        "horizonDays": 24
+      },
+      "growth": "linear",
+      "foldCount": 2,
+      "trainingRows": 147,
+      "assessmentRows": 14,
+      "candidates": 0,
+      "samples": 0,
+      "metricAggregation": "overall",
+      "mapeZeroActual": "exclude",
+      "candidateOptionsHashes": [],
+      "featureColumns": 4,
+      "changepoints": 1
+    },
+    {
+      "id": "evaluation-linear-intervals",
+      "dataset": "generated/linear-offset-scaling.json",
+      "identity": {
+        "recipe": "linear-offset-scaling-v1:n=96:h=24:offset=100:weekly:bounded-noise",
+        "sha256": "bfea515181446ef72eeed2acaef46db63d6fcee5cd1d6af177ad886a6c973b5e",
+        "trainingRows": 96,
+        "predictionRows": 24,
+        "futureRows": 24,
+        "horizonDays": 24
+      },
+      "growth": "linear",
+      "foldCount": 2,
+      "trainingRows": 147,
+      "assessmentRows": 14,
+      "candidates": 0,
+      "samples": 64,
+      "seed": 19,
+      "intervalWidth": 0.8,
+      "metricAggregation": "overall",
+      "mapeZeroActual": "exclude",
+      "candidateOptionsHashes": [],
+      "featureColumns": 4,
+      "changepoints": 1
+    },
+    {
+      "id": "evaluation-linear-search",
+      "dataset": "generated/linear-offset-scaling.json",
+      "identity": {
+        "recipe": "linear-offset-scaling-v1:n=96:h=24:offset=100:weekly:bounded-noise",
+        "sha256": "bfea515181446ef72eeed2acaef46db63d6fcee5cd1d6af177ad886a6c973b5e",
+        "trainingRows": 96,
+        "predictionRows": 24,
+        "futureRows": 24,
+        "horizonDays": 24
+      },
+      "growth": "linear",
+      "foldCount": 2,
+      "trainingRows": 147,
+      "assessmentRows": 14,
+      "candidates": 2,
+      "samples": 0,
+      "metricAggregation": "overall",
+      "mapeZeroActual": "exclude",
+      "candidateOptionsHashes": [
+        "bf3c207aa0527b3fed26c6457a38096f22eb265b1f14cfb914dbba06c9c586b7",
+        "26bc8f8bd4f0cee5faf2f59db6e36fb571eca1651ff35f9e3af955f31e7a1bd2"
+      ],
+      "featureColumns": 4,
+      "changepoints": 1
+    },
+    {
+      "id": "evaluation-flat-mixed-point",
+      "dataset": "generated/flat-mixed-components.json",
+      "identity": {
+        "recipe": "flat-mixed-components-v1:n=96:h=24:conditional-weekly+event+regressor",
+        "sha256": "4e1e4fd02c0e9a88f9f8369942d9ae9deaa9a3ebe0dcdffbb6d45e8a23c3263f",
+        "trainingRows": 96,
+        "predictionRows": 24,
+        "futureRows": 24,
+        "horizonDays": 24
+      },
+      "growth": "flat",
+      "foldCount": 3,
+      "trainingRows": 210,
+      "assessmentRows": 21,
+      "candidates": 0,
+      "samples": 0,
+      "metricAggregation": "horizons",
+      "mapeZeroActual": "exclude",
+      "candidateOptionsHashes": [],
+      "featureColumns": 6,
+      "changepoints": 0
+    },
+    {
+      "id": "evaluation-flat-mixed-intervals",
+      "dataset": "generated/flat-mixed-components.json",
+      "identity": {
+        "recipe": "flat-mixed-components-v1:n=96:h=24:conditional-weekly+event+regressor",
+        "sha256": "4e1e4fd02c0e9a88f9f8369942d9ae9deaa9a3ebe0dcdffbb6d45e8a23c3263f",
+        "trainingRows": 96,
+        "predictionRows": 24,
+        "futureRows": 24,
+        "horizonDays": 24
+      },
+      "growth": "flat",
+      "foldCount": 3,
+      "trainingRows": 210,
+      "assessmentRows": 21,
+      "candidates": 0,
+      "samples": 128,
+      "seed": 19,
+      "intervalWidth": 0.8,
+      "metricAggregation": "horizons",
+      "mapeZeroActual": "exclude",
+      "candidateOptionsHashes": [],
+      "featureColumns": 6,
+      "changepoints": 0
+    },
+    {
+      "id": "evaluation-flat-mixed-search",
+      "dataset": "generated/flat-mixed-components.json",
+      "identity": {
+        "recipe": "flat-mixed-components-v1:n=96:h=24:conditional-weekly+event+regressor",
+        "sha256": "4e1e4fd02c0e9a88f9f8369942d9ae9deaa9a3ebe0dcdffbb6d45e8a23c3263f",
+        "trainingRows": 96,
+        "predictionRows": 24,
+        "futureRows": 24,
+        "horizonDays": 24
+      },
+      "growth": "flat",
+      "foldCount": 3,
+      "trainingRows": 210,
+      "assessmentRows": 21,
+      "candidates": 3,
+      "samples": 0,
+      "metricAggregation": "horizons",
+      "mapeZeroActual": "exclude",
+      "candidateOptionsHashes": [
+        "285e7251ecc2e6cb3c1ce6a3f2ff707fc782ff4df6b3a5086d8ce3fe1a856fc2",
+        "dbdeb05fe17bf42d396923238981fea7187dec239a32e6ab1c93dc665d0b0abe",
+        "2d51500a53bf15ca176e6fdf576923588833aeac4bf90f5813df0b2730ce4b51"
+      ],
+      "featureColumns": 6,
+      "changepoints": 0
+    },
+    {
+      "id": "evaluation-logistic-point",
+      "dataset": "generated/logistic-implicit-floor.json",
+      "identity": {
+        "recipe": "logistic-implicit-floor-v1:n=96:h=24:changing-capacity:weekly",
+        "sha256": "d8cde080f7a8af86acb6e70e2577d0d1d2ee8f813bf4836e5a61702a16dc1558",
+        "trainingRows": 96,
+        "predictionRows": 24,
+        "futureRows": 24,
+        "horizonDays": 24
+      },
+      "growth": "logistic",
+      "foldCount": 1,
+      "trainingRows": 77,
+      "assessmentRows": 7,
+      "candidates": 0,
+      "samples": 0,
+      "metricAggregation": "horizons",
+      "mapeZeroActual": "exclude",
+      "candidateOptionsHashes": [],
+      "featureColumns": 4,
+      "changepoints": 1
+    },
+    {
+      "id": "evaluation-logistic-intervals",
+      "dataset": "generated/logistic-implicit-floor.json",
+      "identity": {
+        "recipe": "logistic-implicit-floor-v1:n=96:h=24:changing-capacity:weekly",
+        "sha256": "d8cde080f7a8af86acb6e70e2577d0d1d2ee8f813bf4836e5a61702a16dc1558",
+        "trainingRows": 96,
+        "predictionRows": 24,
+        "futureRows": 24,
+        "horizonDays": 24
+      },
+      "growth": "logistic",
+      "foldCount": 1,
+      "trainingRows": 77,
+      "assessmentRows": 7,
+      "candidates": 0,
+      "samples": 256,
+      "seed": 19,
+      "intervalWidth": 0.8,
+      "metricAggregation": "horizons",
+      "mapeZeroActual": "exclude",
+      "candidateOptionsHashes": [],
+      "featureColumns": 4,
+      "changepoints": 1
+    },
+    {
+      "id": "evaluation-logistic-search",
+      "dataset": "generated/logistic-implicit-floor.json",
+      "identity": {
+        "recipe": "logistic-implicit-floor-v1:n=96:h=24:changing-capacity:weekly",
+        "sha256": "d8cde080f7a8af86acb6e70e2577d0d1d2ee8f813bf4836e5a61702a16dc1558",
+        "trainingRows": 96,
+        "predictionRows": 24,
+        "futureRows": 24,
+        "horizonDays": 24
+      },
+      "growth": "logistic",
+      "foldCount": 1,
+      "trainingRows": 77,
+      "assessmentRows": 7,
+      "candidates": 2,
+      "samples": 0,
+      "metricAggregation": "horizons",
+      "mapeZeroActual": "exclude",
+      "candidateOptionsHashes": [
+        "dba3d8a0e0e3ddcb7dd9692b3ab9750e8e1bffa1d9fc232268475e0bc8ba8ee9",
+        "0d80f40ef7483ec9065f001be65b89994445474261459293f7e262af838bb5c1"
+      ],
+      "featureColumns": 4,
+      "changepoints": 1
+    },
+    {
+      "id": "evaluation-flat-large-point",
+      "dataset": "generated/flat-mixed-components-large.json",
+      "identity": {
+        "recipe": "flat-mixed-components-large-v1:n=256:h=64:conditional-weekly+event+regressor",
+        "sha256": "7ee4bb9692dfb115e926da542b37298a311e06037c0e5a638ca067a1fb937b11",
+        "trainingRows": 256,
+        "predictionRows": 64,
+        "futureRows": 64,
+        "horizonDays": 64
+      },
+      "growth": "flat",
+      "foldCount": 2,
+      "trainingRows": 457,
+      "assessmentRows": 14,
+      "candidates": 0,
+      "samples": 0,
+      "metricAggregation": "rolling",
+      "mapeZeroActual": "exclude",
+      "candidateOptionsHashes": [],
+      "featureColumns": 6,
+      "changepoints": 0
+    },
+    {
+      "id": "evaluation-flat-large-intervals",
+      "dataset": "generated/flat-mixed-components-large.json",
+      "identity": {
+        "recipe": "flat-mixed-components-large-v1:n=256:h=64:conditional-weekly+event+regressor",
+        "sha256": "7ee4bb9692dfb115e926da542b37298a311e06037c0e5a638ca067a1fb937b11",
+        "trainingRows": 256,
+        "predictionRows": 64,
+        "futureRows": 64,
+        "horizonDays": 64
+      },
+      "growth": "flat",
+      "foldCount": 2,
+      "trainingRows": 457,
+      "assessmentRows": 14,
+      "candidates": 0,
+      "samples": 128,
+      "seed": 19,
+      "intervalWidth": 0.8,
+      "metricAggregation": "rolling",
+      "mapeZeroActual": "exclude",
+      "candidateOptionsHashes": [],
+      "featureColumns": 6,
+      "changepoints": 0
+    },
+    {
+      "id": "evaluation-logistic-large-point",
+      "dataset": "generated/logistic-implicit-floor-large.json",
+      "identity": {
+        "recipe": "logistic-implicit-floor-large-v1:n=256:h=64:changing-capacity:weekly",
+        "sha256": "61b169aa9c925333f6dd11301febfdeb82e9ae7f2b95f3cb4c222e6dcfb080d9",
+        "trainingRows": 256,
+        "predictionRows": 64,
+        "futureRows": 64,
+        "horizonDays": 64
+      },
+      "growth": "logistic",
+      "foldCount": 2,
+      "trainingRows": 457,
+      "assessmentRows": 14,
+      "candidates": 0,
+      "samples": 0,
+      "metricAggregation": "rolling",
+      "mapeZeroActual": "exclude",
+      "candidateOptionsHashes": [],
+      "featureColumns": 4,
+      "changepoints": 1
+    },
+    {
+      "id": "evaluation-logistic-large-intervals",
+      "dataset": "generated/logistic-implicit-floor-large.json",
+      "identity": {
+        "recipe": "logistic-implicit-floor-large-v1:n=256:h=64:changing-capacity:weekly",
+        "sha256": "61b169aa9c925333f6dd11301febfdeb82e9ae7f2b95f3cb4c222e6dcfb080d9",
+        "trainingRows": 256,
+        "predictionRows": 64,
+        "futureRows": 64,
+        "horizonDays": 64
+      },
+      "growth": "logistic",
+      "foldCount": 2,
+      "trainingRows": 457,
+      "assessmentRows": 14,
+      "candidates": 0,
+      "samples": 256,
+      "seed": 19,
+      "intervalWidth": 0.8,
+      "metricAggregation": "rolling",
+      "mapeZeroActual": "exclude",
+      "candidateOptionsHashes": [],
+      "featureColumns": 4,
+      "changepoints": 1
+    },
+    {
+      "id": "evaluation-linear-failure-search",
+      "dataset": "generated/linear-offset-scaling.json",
+      "identity": {
+        "recipe": "linear-offset-scaling-v1:n=96:h=24:offset=100:weekly:bounded-noise",
+        "sha256": "bfea515181446ef72eeed2acaef46db63d6fcee5cd1d6af177ad886a6c973b5e",
+        "trainingRows": 96,
+        "predictionRows": 24,
+        "futureRows": 24,
+        "horizonDays": 24
+      },
+      "growth": "linear",
+      "foldCount": 2,
+      "trainingRows": 147,
+      "assessmentRows": 14,
+      "candidates": 3,
+      "samples": 0,
+      "metricAggregation": "horizons",
+      "mapeZeroActual": "exclude",
+      "candidateOptionsHashes": [
+        "bf3c207aa0527b3fed26c6457a38096f22eb265b1f14cfb914dbba06c9c586b7",
+        "26bc8f8bd4f0cee5faf2f59db6e36fb571eca1651ff35f9e3af955f31e7a1bd2",
+        "bd41a7b2cd8f20228fba957e8872693bd9f7239910257231775ff02553340aca"
+      ],
+      "featureColumns": 4,
+      "changepoints": 1
+    }
+  ],
+  "failures": [],
+  "environments": [
+    {
+      "implementation": "effect-prophet",
+      "environment": {
+        "runtime": "node",
+        "runtimeVersion": "v26.7.0",
+        "operatingSystem": "linux 7.0.12-linuxkit",
+        "architecture": "arm64",
+        "processor": "unknown",
+        "containerPlatform": "linux/arm64",
+        "versions": [
+          {
+            "name": "effect-prophet",
+            "value": "0.0.0"
+          },
+          {
+            "name": "effect",
+            "value": "4.0.0-beta.107"
+          },
+          {
+            "name": "rustc",
+            "value": "rustc 1.98.1 (48a229cea 2026-09-01)"
+          },
+          {
+            "name": "wasm-pack",
+            "value": "wasm-pack 0.15.0"
+          },
+          {
+            "name": "wasm-build-profile",
+            "value": "release"
+          }
+        ],
+        "artifactHashes": [
+          {
+            "name": "wasm/prophet_wasm_bg.wasm",
+            "value": "6c7775c1059974ad5f5d72c8a640696c254e358e2f5793fff6755ef32b570d0b"
+          },
+          {
+            "name": "package-lock.json",
+            "value": "99bda82607c5764a965fc84c4f1c3aeb518b7a1604975e958b3ad63e4887d936"
+          }
+        ],
+        "numericalThreads": [
+          {
+            "name": "OMP_NUM_THREADS",
+            "value": "1"
+          },
+          {
+            "name": "OPENBLAS_NUM_THREADS",
+            "value": "1"
+          },
+          {
+            "name": "MKL_NUM_THREADS",
+            "value": "1"
+          }
+        ],
+        "resources": [
+          {
+            "name": "logical-cpu-count",
+            "value": "4"
+          },
+          {
+            "name": "runtime-total-memory-bytes",
+            "value": "8320299008"
+          },
+          {
+            "name": "cgroup-memory-max",
+            "value": "max"
+          },
+          {
+            "name": "collection-method",
+            "value": "node:os and cgroup-v2"
+          }
+        ],
+        "memoryMeasurement": "warm-uncertainty/evaluation: worker high-water RSS via process.resourceUsage.maxRSS (Linux KiB); includes imports and previous operations; excludes subprocess peaks; heap/WASM-only peaks unavailable; Effect tracing disabled"
+      }
+    },
+    {
+      "implementation": "python-prophet",
+      "environment": {
+        "runtime": "python",
+        "runtimeVersion": "3.12.11",
+        "operatingSystem": "Linux 7.0.12-linuxkit",
+        "architecture": "aarch64",
+        "processor": "unavailable",
+        "containerPlatform": "linux/arm64",
+        "versions": [
+          {
+            "name": "cmdstanpy",
+            "value": "1.3.0"
+          },
+          {
+            "name": "holidays",
+            "value": "0.104"
+          },
+          {
+            "name": "numpy",
+            "value": "2.5.3"
+          },
+          {
+            "name": "pandas",
+            "value": "3.0.5"
+          },
+          {
+            "name": "prophet",
+            "value": "1.4.0"
+          }
+        ],
+        "artifactHashes": [
+          {
+            "name": "benchmark/python/uv.lock",
+            "value": "c90f2464e1d50dbe489bdcdaf8350f04c162f6c617559cfb75d6977b0f430ab1"
+          },
+          {
+            "name": "prophet/stan_model/prophet_model.bin",
+            "value": "faff590e554b6dd4e8c232d2a51c63fe734ae018dd529ee7433a5cdcd86fc54e"
+          }
+        ],
+        "numericalThreads": [
+          {
+            "name": "OMP_NUM_THREADS",
+            "value": "1"
+          },
+          {
+            "name": "OPENBLAS_NUM_THREADS",
+            "value": "1"
+          },
+          {
+            "name": "MKL_NUM_THREADS",
+            "value": "1"
+          }
+        ],
+        "resources": [
+          {
+            "name": "logical-cpu-count",
+            "value": "4"
+          },
+          {
+            "name": "runtime-total-memory-bytes",
+            "value": "8320299008"
+          },
+          {
+            "name": "cgroup-memory-max",
+            "value": "max"
+          },
+          {
+            "name": "collection-method",
+            "value": "python-os and cgroup-v2"
+          }
+        ],
+        "memoryMeasurement": "warm-uncertainty/evaluation: worker high-water RSS via resource.RUSAGE_SELF.ru_maxrss (Linux KiB); includes imports and previous operations; excludes CmdStan fit child and cold subprocesses; heap-only peaks unavailable"
+      }
+    }
+  ]
+}
