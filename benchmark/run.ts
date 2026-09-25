@@ -9,6 +9,7 @@ import { Effect } from "effect";
 
 import { parseBenchmarkCases, parseBenchmarkDataset } from "./case.ts";
 import { growthScalingAndMixedMapCases } from "./cases/growth-scaling-and-mixed-map.ts";
+import { evaluationCases } from "./cases/evaluation.ts";
 import { uncertaintyCases } from "./cases/uncertainty.ts";
 import { resolveContainerPlatform } from "./container-platform.ts";
 import { generateBenchmarkData } from "./generate-data.ts";
@@ -110,7 +111,12 @@ const main = async (): Promise<void> => {
   const originalCases = await Effect.runPromise(parseBenchmarkCases(casesInput));
 
   const declarations = await Effect.runPromise(
-    parseBenchmarkCases([...originalCases, ...growthScalingAndMixedMapCases, ...uncertaintyCases]),
+    parseBenchmarkCases([
+      ...originalCases,
+      ...growthScalingAndMixedMapCases,
+      ...uncertaintyCases,
+      ...evaluationCases,
+    ]),
   );
 
   const cases = await Promise.all(
@@ -203,6 +209,9 @@ const main = async (): Promise<void> => {
       casesPath,
       resolve(benchmarkRoot, "cases/growth-scaling-and-mixed-map.ts"),
       resolve(benchmarkRoot, "cases/uncertainty.ts"),
+      resolve(benchmarkRoot, "cases/evaluation.ts"),
+      resolve(benchmarkRoot, "evaluation.ts"),
+      resolve(benchmarkRoot, "adapters/evaluation.py"),
       resolve(runDirectory, "cases.json"),
       evidencePath,
       resolve(benchmarkRoot, "python/uv.lock"),

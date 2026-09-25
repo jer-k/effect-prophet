@@ -26,6 +26,11 @@ import {
   type BenchmarkPhase,
 } from "../case.ts";
 import { effectOptionsForCase } from "../effect-case.ts";
+import {
+  evaluationCorrectness,
+  evaluationOperation,
+  preparedEvaluationOperation,
+} from "../evaluation.ts";
 import { percentile } from "../uncertainty.ts";
 import {
   BenchmarkMeasurementSchema,
@@ -895,7 +900,12 @@ const measure = <Value>(
 
 const processSamples = (
   benchmarkCase: BenchmarkCase,
-  mode: "--cold" | "--restored" | "--cold-uncertainty" | "--restored-uncertainty",
+  mode:
+    | "--cold"
+    | "--restored"
+    | "--cold-uncertainty"
+    | "--restored-uncertainty"
+    | "--cold-evaluation",
   serializedModel?: string,
 ): ReadonlyArray<number> => {
   const samples: Array<number> = [];
@@ -928,6 +938,30 @@ const measurementForPhase = (
   run: number,
   phase: BenchmarkPhase,
 ): BenchmarkMeasurement => {
+  if (benchmarkCase.workload.kind === "evaluation") {
+    const operation =
+      phase === "evaluation-input-conversion"
+        ? () => prepareInput(dataset)
+        : preparedEvaluationOperation(benchmarkCase, dataset, phase);
+
+    const samples =
+      phase === "cold-first-evaluation"
+        ? processSamples(benchmarkCase, "--cold-evaluation")
+        : measure(benchmarkCase, () => operation());
+
+    return {
+      caseId: benchmarkCase.id,
+      implementation: "effect-prophet",
+      phase,
+      comparison: "different-public-work",
+      evidenceId: benchmarkCase.workload.comparison.evidenceId,
+      run,
+      samplesNanoseconds: samples,
+      correctness: "locally-passed",
+      peakRssBytes: process.resourceUsage().maxRSS * 1_024,
+    };
+  }
+
   const prepared = prepareInput(dataset);
   const model = setupModel(prepared, benchmarkCase);
   const forecasts = runPredict(model, prepared);
@@ -989,6 +1023,8 @@ const measurementForPhase = (
     case "fresh-process-restored-uncertainty":
       samples = processSamples(benchmarkCase, "--restored-uncertainty", encodedJson);
       break;
+    default:
+      throw new Error(`Evaluation phase ${phase} requires an evaluation workload`);
   }
 
   measurementSink = forecasts;
@@ -1032,7 +1068,11 @@ const runWorker = async (
   const dataset = await loadDataset(benchmarkCase);
 
   const correctness =
-    stage === "timing" ? undefined : correctnessProjection(benchmarkCase, dataset, run);
+    stage === "timing"
+      ? undefined
+      : benchmarkCase.workload.kind === "evaluation"
+        ? evaluationCorrectness(benchmarkCase, dataset, run)
+        : correctnessProjection(benchmarkCase, dataset, run);
 
   const measurements =
     stage === "correctness"
@@ -1203,7 +1243,7 @@ const collectEnvironment = async (): Promise<BenchmarkEnvironment> => {
       { name: "collection-method", value: "node:os and cgroup-v2" },
     ],
     memoryMeasurement:
-      "warm-uncertainty: worker high-water RSS via process.resourceUsage.maxRSS (Linux KiB), includes imports, fitted model, setup and simulation; not process-tree RSS or simulation-only allocation; Effect tracing disabled",
+      "warm-uncertainty/evaluation: worker high-water RSS via process.resourceUsage.maxRSS (Linux KiB); includes imports and previous operations; excludes subprocess peaks; heap/WASM-only peaks unavailable; Effect tracing disabled",
   };
 };
 
@@ -1360,6 +1400,15 @@ try {
     const output = await runWorker(caseId, run, stage);
 
     process.stdout.write(`${protocolPrefix}${JSON.stringify(output)}\n`);
+  } else if (mode === "--cold-evaluation") {
+    const caseId = process.argv[3];
+
+    if (caseId === undefined) throw new Error("Cold evaluation requires a case id");
+
+    const benchmarkCase = await findCase(caseId);
+    const dataset = await loadDataset(benchmarkCase);
+    evaluationOperation(benchmarkCase, dataset, "evaluation-point");
+    process.stdout.write(`${protocolPrefix}{"status":"passed"}\n`);
   } else if (
     mode === "--cold" ||
     mode === "--restored" ||

@@ -2,6 +2,19 @@
   "schemaVersion": 1,
   "evidence": [
     {
+      "id": "stage-h-evaluation-v1",
+      "classification": "different-public-work",
+      "statement": "Explicit shared rolling-origin folds use public evaluation entrypoints but differ in fitted-model setup, uncertainty algorithm, metrics policy, and report shape; absolute timings only.",
+      "checks": [
+        "fold identities",
+        "row alignment",
+        "finite forecasts",
+        "metric score",
+        "interval dimensions",
+        "sequential search"
+      ]
+    },
+    {
       "id": "fixed-linear-equation-v1",
       "classification": "equivalent-equation",
       "statement": "Both adapters publicly restore the same intercept, slope, time origin, and time scale before prediction.",
