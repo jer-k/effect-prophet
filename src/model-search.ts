@@ -23,6 +23,7 @@ import {
   type RollingOriginPlanSummary,
 } from "./evaluation";
 import { checkedAdd, checkedMultiply } from "./internal/safe-arithmetic";
+import { copyFrozen as ownedInput } from "./internal/owned-input";
 import type { FittingBackend } from "./internal/fitting-backend";
 import { decodeObservations } from "./observation";
 import { decodeOptions, type EncodedProphetOptions } from "./options";
@@ -143,24 +144,6 @@ const searchInputContext = (
     })),
     message,
   });
-
-// A parsed input is copied and recursively frozen so nested caller-owned references cannot survive.
-const ownedInput = <T>(input: T): T => {
-  const copy = structuredClone(input);
-
-  // oxlint-disable-next-line anti-slop/no-object-parameters -- Parsed inputs are closed plain-object/array trees; only the owned copy is traversed.
-  const freeze = (value: object): void => {
-    for (const child of Object.values(value)) {
-      if (Predicate.isObjectKeyword(child)) freeze(child);
-    }
-
-    Object.freeze(value);
-  };
-
-  if (Predicate.isObjectKeyword(copy)) freeze(copy);
-
-  return copy;
-};
 
 const portableFailure = (
   error: InputValidationError | EvaluationError | EvaluationMetricError,

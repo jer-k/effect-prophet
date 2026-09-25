@@ -124,6 +124,11 @@ type ParsedOptions = typeof MetricOptionsSchema.Type;
 
 type Row = CrossValidationPointRow | CrossValidationIntervalRow;
 
+type MetricInput =
+  | { readonly kind: "point"; readonly rows: ReadonlyArray<CrossValidationPointRow> }
+  | { readonly kind: "intervals"; readonly rows: ReadonlyArray<CrossValidationIntervalRow> }
+  | { readonly kind: "baseline"; readonly rows: ReadonlyArray<CrossValidationPointRow> };
+
 const decodeOptions = Schema.decodeUnknownEffect(MetricOptionsSchema, {
   errors: "all",
   onExcessProperty: "error",
@@ -533,7 +538,7 @@ const rollingPoints = (
   });
 
 const computeMetrics = (
-  result: CrossValidationResult | BaselineCrossValidationResult,
+  result: MetricInput,
   input: MetricOptions,
 ): Effect.Effect<MetricReport, InputValidationError | EvaluationMetricError> =>
   Effect.gen(function* () {
@@ -694,8 +699,13 @@ export function performanceMetrics(
   MetricReport<CrossValidationResult["kind"]>,
   InputValidationError | EvaluationMetricError
 >;
+/** Compute metrics from owned forecast rows without requiring a rolling-origin plan. */
 export function performanceMetrics(
-  result: CrossValidationResult | BaselineCrossValidationResult,
+  result: MetricInput,
+  input: MetricOptions,
+): Effect.Effect<MetricReport, InputValidationError | EvaluationMetricError>;
+export function performanceMetrics(
+  result: MetricInput,
   input: MetricOptions,
 ): Effect.Effect<MetricReport, InputValidationError | EvaluationMetricError> {
   return computeMetrics(result, input);
