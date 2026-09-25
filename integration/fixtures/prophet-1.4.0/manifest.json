@@ -21,6 +21,10 @@
       "sha256": "f50d9e886d8c6305650e484a2d6cbe2800ec73acc8e077282105ae3d4ba984aa"
     },
     {
+      "path": "evaluation-metrics.json",
+      "sha256": "e658092852f1300701b67cd19c25de9f92f3db881a6c5a272440c55c610c2e32"
+    },
+    {
       "path": "linear-map-fit.json",
       "sha256": "4929f2b0ea584709305a6ca153c2828965c549183755a5c393fc4f48bd403755"
     },
@@ -66,7 +70,7 @@
     "platform": "linux/amd64",
     "uvVersion": "0.8.15"
   },
-  "generatorRevision": "bd5d623c55dd7a91c08d53a3facefe59e737a2cf91d521b87293cf79acfe9d09",
+  "generatorRevision": "4de4d5d14ac0aa603dd000db1f3bd3b6c289918de7208f9aa60ae86dabe39f3b",
   "numericalEnvironment": [
     {
       "name": "cmdstanpy",

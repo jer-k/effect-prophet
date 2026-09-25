@@ -553,6 +553,43 @@ const EvaluationCutoffReferenceFileSchema = Schema.Struct({
   }),
 );
 
+const MetricScoresSchema = Schema.Struct({
+  mae: Schema.Finite,
+  mse: Schema.Finite,
+  rmse: Schema.Finite,
+  mape: Schema.Finite,
+  mdape: Schema.Finite,
+  smape: Schema.Finite,
+  coverage: Schema.Finite,
+});
+
+const MetricExpectedSchema = Schema.Array(
+  Schema.Struct({
+    horizonMs: Schema.Int.check(Schema.isGreaterThan(0)),
+    scores: MetricScoresSchema,
+  }),
+);
+
+const EvaluationMetricsReferenceFileSchema = Schema.Struct({
+  kind: Schema.Literal("evaluation-metrics"),
+  sourceMethod: Schema.Literal("Prophet 1.4.0 performance_metrics"),
+  rows: Schema.NonEmptyArray(
+    Schema.Struct({
+      horizonMs: Schema.Int.check(Schema.isGreaterThan(0)),
+      actual: Schema.Finite,
+      predicted: Schema.Finite,
+      lower: Schema.Finite,
+      upper: Schema.Finite,
+    }),
+  ),
+  expected: Schema.Struct({
+    rows: MetricExpectedSchema,
+    horizons: MetricExpectedSchema,
+    rolling: MetricExpectedSchema,
+    overall: MetricExpectedSchema,
+  }),
+});
+
 const LinearMapFitReferenceCaseSchema = Schema.Struct({
   id: Schema.NonEmptyString,
   kind: Schema.Literal("fitted-linear-map"),
@@ -1222,6 +1259,7 @@ const FixtureManifestSchema = Schema.Struct({
       "piecewise-linear.json",
       "changepoint-resolution.json",
       "evaluation-cutoffs.json",
+      "evaluation-metrics.json",
       "linear-map-fit.json",
       "seasonality-resolution.json",
       "conditional-seasonality.json",
@@ -1267,6 +1305,11 @@ const decodeChangepointResolutionReferenceSchema = Schema.decodeUnknownEffect(
 
 const decodeEvaluationCutoffReferenceSchema = Schema.decodeUnknownEffect(
   EvaluationCutoffReferenceFileSchema,
+  { errors: "all" },
+);
+
+const decodeEvaluationMetricsReferenceSchema = Schema.decodeUnknownEffect(
+  EvaluationMetricsReferenceFileSchema,
   { errors: "all" },
 );
 
@@ -1344,6 +1387,9 @@ export type ChangepointResolutionReferenceFile =
 
 /** Pinned release cutoff and fold-count evidence. */
 export type EvaluationCutoffReferenceFile = typeof EvaluationCutoffReferenceFileSchema.Type;
+
+/** Pinned unmodified Prophet diagnostic metric evidence. */
+export type EvaluationMetricsReferenceFile = typeof EvaluationMetricsReferenceFileSchema.Type;
 
 /** A parsed fitted linear MAP reference case. */
 export type LinearMapFitReferenceCase = typeof LinearMapFitReferenceCaseSchema.Type;
@@ -1514,6 +1560,26 @@ export const decodeEvaluationCutoffReference = Effect.fn(
   path = "<memory>",
 ): Effect.fn.Return<EvaluationCutoffReferenceFile, FixtureLoadError> {
   return yield* decodeEvaluationCutoffReferenceSchema(input).pipe(
+    Effect.mapError(
+      (cause) =>
+        new FixtureLoadError({
+          operation: "schema",
+          fixturePath: path,
+          message: formatSchemaIssue(cause.issue),
+          cause,
+        }),
+    ),
+  );
+});
+
+/** Parse untrusted release metric fixture evidence. */
+export const decodeEvaluationMetricsReference = Effect.fn(
+  "ProphetFixture.decodeEvaluationMetricsReference",
+)(function* (
+  input: Parameters<typeof decodeEvaluationMetricsReferenceSchema>[0],
+  path = "<memory>",
+): Effect.fn.Return<EvaluationMetricsReferenceFile, FixtureLoadError> {
+  return yield* decodeEvaluationMetricsReferenceSchema(input).pipe(
     Effect.mapError(
       (cause) =>
         new FixtureLoadError({
@@ -1791,6 +1857,19 @@ export const loadProphetFixtureBundle = Effect.fn("ProphetFixture.loadBundle")(f
     evaluationCutoffPath,
   );
 
+  const evaluationMetricsPath = nodePath.join(root, "evaluation-metrics.json");
+  const evaluationMetricsContents = yield* readFixtureText(evaluationMetricsPath);
+
+  const evaluationMetricsInput: unknown = yield* Effect.try({
+    try: () => JSON.parse(evaluationMetricsContents),
+    catch: (cause) => invalidJson(evaluationMetricsPath, cause),
+  });
+
+  const evaluationMetrics = yield* decodeEvaluationMetricsReference(
+    evaluationMetricsInput,
+    evaluationMetricsPath,
+  );
+
   const linearMapFitPath = nodePath.join(root, "linear-map-fit.json");
   const linearMapFitContents = yield* readFixtureText(linearMapFitPath);
 
@@ -1863,6 +1942,7 @@ export const loadProphetFixtureBundle = Effect.fn("ProphetFixture.loadBundle")(f
     conditionalMapFit,
     conditionalSeasonality,
     evaluationCutoffs,
+    evaluationMetrics,
     fourier,
     linearMapFit,
     linearTrend,

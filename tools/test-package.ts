@@ -10,6 +10,7 @@ import {
   predictUncertainty,
   planRollingOrigin,
   crossValidate,
+  performanceMetrics,
   prophetFittingBackendLayer,
 } from "effect-prophet";
 
@@ -51,6 +52,7 @@ const expectedDeclarationFiles = [
   "dist/component-mode.d.ts",
   "dist/errors.d.ts",
   "dist/evaluation.d.ts",
+  "dist/evaluation-metrics.d.ts",
   "dist/event.d.ts",
   "dist/feature-name.d.ts",
   "dist/fitted-model.d.ts",
@@ -196,6 +198,20 @@ assert.ok(Math.abs((evaluated.rows[0]?.predicted ?? NaN) - 4) < 1e-12);
 
 assert.equal(evaluated.folds[0]?.model, "linear-trend");
 
+const metricReport = await Effect.runPromise(
+  performanceMetrics(evaluated, {
+    metrics: ["mae", "mse", "rmse"],
+    aggregation: { kind: "overall" },
+  }),
+);
+
+assert.equal(metricReport.kind, "overall");
+
+if (metricReport.kind === "overall") {
+  assert.equal(metricReport.bucket.rowCount, 1);
+  assert.ok(metricReport.bucket.scores.every(({ value }) => Number.isFinite(value)));
+}
+
 const evaluatedIntervals = await Effect.runPromise(
   crossValidate(
     [
@@ -219,6 +235,19 @@ assert.equal(evaluatedIntervals.sampleCount, 32);
 assert.ok(Number.isFinite(evaluatedIntervals.rows[0]?.lower));
 
 assert.ok(Number.isFinite(evaluatedIntervals.rows[0]?.upper));
+
+const intervalReport = await Effect.runPromise(
+  performanceMetrics(evaluatedIntervals, {
+    metrics: ["coverage"],
+    aggregation: { kind: "overall" },
+  }),
+);
+
+assert.equal(intervalReport.kind, "overall");
+
+if (intervalReport.kind === "overall") {
+  assert.equal(intervalReport.bucket.scores[0]?.metric, "coverage");
+}
 
 const model = await Effect.runPromise(
   fit([
