@@ -513,6 +513,256 @@ describe("crossValidate", () => {
     expect(result.rows[0]).not.toHaveProperty("regressors");
   });
 
+  it("defaults MAP folds to absmax and allows an explicit minmax override without leaking targets", async () => {
+    const observations = Array.from({ length: 35 }, (_, index) => ({
+      timestamp: at(index),
+      value:
+        35 +
+        (index % 5 !== 0 ? 14 * Math.sin((2 * Math.PI * index) / 7) : 0) +
+        1.2 * (index % 6 === 2 ? 1 : 0) +
+        0.08 * Math.cos(index * 1.731),
+      conditions: { active: index % 5 !== 0 },
+      regressors: { promotion: index % 6 === 2 ? 1 : 0 },
+    }));
+
+    const options = {
+      growth: "flat",
+      scaling: "minmax",
+      seasonalities: [
+        {
+          name: "weekly-active",
+          periodDays: 7,
+          fourierOrder: 2,
+          conditionName: "active",
+          mode: "multiplicative",
+        },
+      ],
+      regressors: [{ name: "promotion", standardization: "never" }],
+    } as const;
+
+    const selection = {
+      horizonMs: 7 * dayMs,
+      cutoffs: { mode: "explicit", timestamps: [at(27)] },
+    } as const;
+
+    const originalOptions = structuredClone(options);
+    const originalRows = structuredClone(observations);
+
+    const defaultResult = await Effect.runPromise(
+      crossValidate(observations, options, selection).pipe(
+        Effect.provide(prophetFittingBackendLayer),
+      ),
+    );
+
+    const explicitAbsmax = await Effect.runPromise(
+      crossValidate(observations, options, selection, { scaling: "absmax" }).pipe(
+        Effect.provide(prophetFittingBackendLayer),
+      ),
+    );
+
+    expect(defaultResult).toEqual(explicitAbsmax);
+
+    for (const scaling of ["absmax", "minmax"] as const) {
+      const model = await Effect.runPromise(
+        fit(observations.slice(0, 28), { ...options, scaling }).pipe(
+          Effect.provide(prophetFittingBackendLayer),
+        ),
+      );
+
+      const predictionRows = observations.slice(28).map(({ value: _actual, ...known }) => known);
+      const independent = await Effect.runPromise(predict(model, predictionRows));
+
+      const result = await Effect.runPromise(
+        crossValidate(observations, options, selection, { scaling }).pipe(
+          Effect.provide(prophetFittingBackendLayer),
+        ),
+      );
+
+      const poisoned = await Effect.runPromise(
+        crossValidate(
+          observations.map((row, index) => ({ ...row, value: index >= 28 ? 1e8 : row.value })),
+          options,
+          selection,
+          { scaling },
+        ).pipe(Effect.provide(prophetFittingBackendLayer)),
+      );
+
+      expect(result.rows.map(({ predicted }) => predicted)).toEqual(
+        independent.map(({ value }) => value),
+      );
+      expect(poisoned.rows.map(({ predicted }) => predicted)).toEqual(
+        result.rows.map(({ predicted }) => predicted),
+      );
+
+      if (scaling === "minmax") {
+        expect(result.rows.map(({ predicted }) => predicted)).not.toEqual(
+          defaultResult.rows.map(({ predicted }) => predicted),
+        );
+      }
+
+      const intervals = await Effect.runPromise(
+        crossValidate(observations, options, selection, {
+          mode: "intervals",
+          scaling,
+          uncertainty: { seed: 19, samples: 32 },
+        }).pipe(Effect.provide(prophetFittingBackendLayer)),
+      );
+
+      const seed = deriveEvaluationFoldSeed(19, result.plan, "", epoch + 27 * dayMs);
+
+      const independentIntervals = await Effect.runPromise(
+        predictUncertainty(model, predictionRows, { seed: seed ?? NaN, samples: 32 }),
+      );
+
+      if (independentIntervals.kind !== "intervals") {
+        throw new Error("Expected independently simulated intervals");
+      }
+
+      expect(intervals.rows.map(({ predicted }) => predicted)).toEqual(
+        result.rows.map(({ predicted }) => predicted),
+      );
+      expect(intervals.rows.map(({ lower, upper }) => ({ lower, upper }))).toEqual(
+        independentIntervals.rows.map(({ value }) => value),
+      );
+    }
+
+    expect(options).toEqual(originalOptions);
+    expect(observations).toEqual(originalRows);
+  });
+
+  it("retains unconfigured OLS while an explicit CV scaling request selects linear MAP", async () => {
+    const observations = history([0, 1, 2, 3, 4, 5]).map((row, index) => ({
+      ...row,
+      value: row.value + (index % 2) * 0.2,
+    }));
+
+    const defaultResult = await Effect.runPromise(
+      crossValidate(observations, {}, plan, {}).pipe(Effect.provide(prophetFittingBackendLayer)),
+    );
+
+    const explicit = await Effect.runPromise(
+      crossValidate(observations, {}, plan, { scaling: "minmax" }).pipe(
+        Effect.provide(prophetFittingBackendLayer),
+      ),
+    );
+
+    expect(defaultResult.folds.every(({ model }) => model === "linear-trend")).toBe(true);
+    expect(explicit.folds.every(({ model }) => model === "linear-piecewise-map")).toBe(true);
+  });
+
+  it.each(["absmax", "minmax"] as const)(
+    "traces %s policy through a real flat fold without changing span parents or completion",
+    async (scaling) => {
+      const spans: Array<Tracer.Span> = [];
+
+      const tracer = Tracer.make({
+        span: (options) => {
+          const span = new Tracer.NativeSpan(options);
+          spans.push(span);
+
+          return span;
+        },
+      });
+
+      await Effect.runPromise(
+        crossValidate(
+          history([0, 1, 2, 3, 4, 5]),
+          { growth: "flat", scaling: "minmax" },
+          { horizonMs: 2 * dayMs, cutoffs: { mode: "explicit", timestamps: [at(2)] } },
+          { scaling },
+        ).pipe(
+          Effect.provide(prophetFittingBackendLayer),
+          Effect.withSpan("evaluation.scaling.parent"),
+          Effect.withTracer(tracer),
+        ),
+      );
+
+      const operation = spans.find((span) => span.name === "Prophet.crossValidate");
+      const fold = spans.find((span) => span.name === "effect-prophet.evaluation.fold");
+
+      if (operation === undefined || fold === undefined) {
+        throw new Error("Expected complete scaling operation and fold spans");
+      }
+
+      for (const span of [operation, fold]) {
+        expect(Object.fromEntries(span.attributes)["effect_prophet.evaluation.scaling.mode"]).toBe(
+          scaling,
+        );
+      }
+
+      for (const child of spans) {
+        if (!Predicate.isTagged("Ended")(child.status)) {
+          throw new Error("Expected ended real integration span");
+        }
+
+        expect(Exit.isSuccess(child.status.exit)).toBe(true);
+        expect(child.traceId).toBe(operation.traceId);
+
+        const parentId = child.parent.pipe(Option.getOrUndefined)?.spanId;
+        const parent = spans.find((span) => span.spanId === parentId);
+
+        if (parent !== undefined && Predicate.isTagged("Ended")(parent.status)) {
+          expect(child.status.startTime).toBeGreaterThanOrEqual(parent.status.startTime);
+          expect(child.status.endTime).toBeLessThanOrEqual(parent.status.endTime);
+        }
+      }
+
+      expect(fold.parent.pipe(Option.getOrUndefined)?.spanId).toBe(operation.spanId);
+      expect(operation.parent.pipe(Option.getOrUndefined)?.spanId).toBe(
+        spans.find((span) => span.name === "evaluation.scaling.parent")?.spanId,
+      );
+      expect(
+        spans
+          .find((span) => span.name === "effect-prophet.wasm.fit")
+          ?.attributes.get("effect_prophet.scaling.mode"),
+      ).toBe(scaling);
+      expect(spans.some((span) => span.name === "effect-prophet.wasm.predict")).toBe(true);
+    },
+  );
+
+  it("rejects malformed scaling before any fold or WASM boundary", async () => {
+    const spans: Array<Tracer.Span> = [];
+
+    const tracer = Tracer.make({
+      span: (options) => {
+        const span = new Tracer.NativeSpan(options);
+        spans.push(span);
+
+        return span;
+      },
+    });
+
+    for (const controls of [
+      '{"scaling":"auto"}',
+      '{"mode":"point","uncertainty":{"seed":1}}',
+      '{"mode":"intervals","scaling":"unknown","uncertainty":{"seed":1}}',
+    ]) {
+      const error = await Effect.runPromise(
+        Effect.flip(
+          crossValidate(
+            history([0, 1, 2, 3, 4, 5]),
+            { growth: "flat" },
+            plan,
+            JSON.parse(controls),
+          ).pipe(Effect.provide(prophetFittingBackendLayer), Effect.withTracer(tracer)),
+        ),
+      );
+
+      expect(error).toBeInstanceOf(InputValidationError);
+    }
+
+    expect(spans.some((span) => span.name === "effect-prophet.evaluation.fold")).toBe(false);
+    expect(spans.some((span) => span.name.startsWith("effect-prophet.wasm."))).toBe(false);
+    expect(spans.filter((span) => span.name === "Prophet.crossValidate")).toHaveLength(3);
+    expect(
+      spans
+        .filter((span) => span.name === "Prophet.crossValidate")
+        .every(
+          (span) => Predicate.isTagged("Ended")(span.status) && Exit.isFailure(span.status.exit),
+        ),
+    ).toBe(true);
+  });
+
   it("projects explicit changepoints strictly before the final observed training row", async () => {
     const requested: Array<FitPlan> = [];
 
@@ -997,6 +1247,7 @@ describe("crossValidate", () => {
         "effect_prophet.training.count": index + 3,
         "effect_prophet.assessment.count": 2,
         "effect_prophet.model.type": "linear-trend",
+        "effect_prophet.evaluation.scaling.mode": "absmax",
       });
 
       for (const [child, directParent] of [

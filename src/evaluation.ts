@@ -9,6 +9,14 @@ import {
   inputValidationErrorFromIssue,
 } from "./errors";
 import type { FittingBackend } from "./internal/fitting-backend";
+import {
+  crossValidationFitOptions,
+  parseCrossValidationInput,
+  type CrossValidationInput,
+  type CrossValidationIntervalInput,
+  type CrossValidationPointInput,
+} from "./internal/cross-validation-options";
+import { defaultTargetScalingMode } from "./target-scaling";
 import { checkedAdd, checkedMultiply } from "./internal/safe-arithmetic";
 import { deriveEvaluationFoldSeed } from "./evaluation-seed";
 import { millisecondsPerDay } from "./internal/time";
@@ -22,12 +30,7 @@ import {
   type ProphetOptions,
 } from "./options";
 import { fit, predict, predictUncertainty } from "./prophet";
-import {
-  parseUncertaintyOptions,
-  simulationIdentity,
-  type EncodedUncertaintyOptions,
-  type UncertaintyOptions,
-} from "./uncertainty";
+import { simulationIdentity } from "./uncertainty";
 import type { FittedProphet } from "./fitted-model";
 
 const maximumDurationMs = 3_650 * millisecondsPerDay;
@@ -88,21 +91,11 @@ const RollingOriginPlanInputSchema = Schema.Struct({
 /** Untrusted fixed-duration cutoff selection for rolling-origin evaluation. */
 export type RollingOriginPlanInput = typeof RollingOriginPlanInputSchema.Encoded;
 
-const IntervalModeSchema = Schema.Struct({
-  mode: Schema.Literal("intervals"),
-  uncertainty: Schema.Unknown,
-});
-
-const decodeIntervalMode = Schema.decodeUnknownEffect(IntervalModeSchema, {
-  errors: "all",
-  onExcessProperty: "error",
-});
-
-/** Explicit opt-in interval mode; Stage G's seeded controls and defaults apply. */
-export interface CrossValidationIntervalInput {
-  readonly mode: "intervals";
-  readonly uncertainty: Omit<EncodedUncertaintyOptions, "output"> & { readonly output?: never };
-}
+export type {
+  CrossValidationInput,
+  CrossValidationIntervalInput,
+  CrossValidationPointInput,
+} from "./internal/cross-validation-options";
 
 /** One planned cutoff with row counts, never a reference to caller-owned history. */
 export interface RollingOriginFoldSummary {
@@ -443,37 +436,25 @@ const prepareRollingOrigin = (
   observationsInput: Parameters<typeof decodeObservations>[0],
   optionsInput: EncodedProphetOptions,
   input: RollingOriginPlanInput,
-  modeInput?: CrossValidationIntervalInput,
+  modeInput?: CrossValidationInput,
 ) =>
   Effect.gen(function* () {
     const observations = yield* decodeObservations(observationsInput);
-    const options = yield* decodeOptions(optionsInput);
+    const originalOptions = yield* decodeOptions(optionsInput);
 
-    yield* checkExplicitChangepointBounds(observations, options);
+    yield* checkExplicitChangepointBounds(observations, originalOptions);
 
     const plan = yield* decodePlan(input).pipe(
       Effect.mapError((error) => inputValidationErrorFromIssue("evaluation-plan", error.issue)),
     );
 
-    let uncertainty: UncertaintyOptions | undefined;
+    const controls = yield* parseCrossValidationInput(modeInput);
+    const fitOptions = crossValidationFitOptions(optionsInput, originalOptions, controls);
 
-    if (modeInput !== undefined) {
-      yield* decodeIntervalMode(modeInput).pipe(
-        Effect.mapError((error) => inputValidationErrorFromIssue("evaluation-plan", error.issue)),
-      );
+    const options =
+      fitOptions === optionsInput ? originalOptions : yield* decodeOptions(fitOptions);
 
-      uncertainty = yield* parseUncertaintyOptions(modeInput.uncertainty);
-
-      if (uncertainty.output !== "intervals") {
-        return yield* Effect.fail(
-          new InputValidationError({
-            input: "uncertainty-options",
-            issues: [{ path: ["output"], message: "Cross-validation requires interval output" }],
-            message: "Cross-validation requires interval output",
-          }),
-        );
-      }
-    }
+    const uncertainty = controls.mode === "intervals" ? controls.uncertaintyOptions : undefined;
 
     const foldPlan = yield* planRollingOriginIndexes(observations, options, plan);
 
@@ -512,7 +493,7 @@ const prepareRollingOrigin = (
       }
     }
 
-    return { observations, options, foldPlan, uncertainty };
+    return { observations, options, fitOptions, controls, foldPlan, uncertainty };
   });
 
 /** Parse complete ordered history, options and cutoffs into a pure rolling-origin plan summary. */
@@ -647,15 +628,15 @@ const crossValidateOperation = Effect.fn("Prophet.crossValidate")(function* (
   observationsInput: Parameters<typeof decodeObservations>[0],
   optionsInput: EncodedProphetOptions,
   input: RollingOriginPlanInput,
-  modeInput?: CrossValidationIntervalInput,
+  modeInput?: CrossValidationInput,
   candidateId = "",
 ): Effect.fn.Return<CrossValidationResult, InputValidationError | EvaluationError, FittingBackend> {
-  const { observations, options, foldPlan, uncertainty } = yield* prepareRollingOrigin(
-    observationsInput,
-    optionsInput,
-    input,
-    modeInput,
-  );
+  const { observations, options, fitOptions, controls, foldPlan, uncertainty } =
+    yield* prepareRollingOrigin(observationsInput, optionsInput, input, modeInput);
+
+  const scaling = controls.scaling ?? defaultTargetScalingMode;
+
+  yield* Effect.annotateCurrentSpan({ "effect_prophet.evaluation.scaling.mode": scaling });
 
   const seeds =
     uncertainty === undefined
@@ -694,7 +675,7 @@ const crossValidateOperation = Effect.fn("Prophet.crossValidate")(function* (
 
       const model = yield* fit(
         trainingRows,
-        foldOptions(optionsInput, options, lastTraining.timestamp),
+        foldOptions(fitOptions, options, lastTraining.timestamp),
       ).pipe(Effect.mapError((cause) => foldFailure(fold, "fit", cause)));
 
       yield* Effect.annotateCurrentSpan({ "effect_prophet.model.type": model.model });
@@ -849,6 +830,7 @@ const crossValidateOperation = Effect.fn("Prophet.crossValidate")(function* (
             "effect_prophet.training.count": fold.trainingEndExclusive,
             "effect_prophet.assessment.count": fold.assessmentEndExclusive - fold.assessmentStart,
             "effect_prophet.growth": options.growth,
+            "effect_prophet.evaluation.scaling.mode": scaling,
             "effect_prophet.uncertainty.enabled": uncertainty !== undefined,
             "effect_prophet.sample.count": uncertainty?.samples ?? 0,
           },
@@ -892,15 +874,16 @@ export const crossValidateCandidate = (
   optionsInput: EncodedProphetOptions,
   input: RollingOriginPlanInput,
   candidateId: string,
-  modeInput?: CrossValidationIntervalInput,
+  modeInput?: CrossValidationInput,
 ): Effect.Effect<CrossValidationResult, InputValidationError | EvaluationError, FittingBackend> =>
   crossValidateOperation(observationsInput, optionsInput, input, modeInput, candidateId);
 
-/** Point-only by default; opt in to complete seeded intervals with a tagged fourth argument. */
+/** Point CV defaults to absmax; the fourth argument overrides fold scaling or enables intervals. */
 export function crossValidate(
   observationsInput: Parameters<typeof decodeObservations>[0],
   optionsInput: EncodedProphetOptions,
   input: RollingOriginPlanInput,
+  controls?: CrossValidationPointInput,
 ): Effect.Effect<
   PointCrossValidationResult,
   InputValidationError | EvaluationError,
@@ -920,7 +903,13 @@ export function crossValidate(
   observationsInput: Parameters<typeof decodeObservations>[0],
   optionsInput: EncodedProphetOptions,
   input: RollingOriginPlanInput,
-  mode?: CrossValidationIntervalInput,
+  controls?: CrossValidationInput,
+): Effect.Effect<CrossValidationResult, InputValidationError | EvaluationError, FittingBackend>;
+export function crossValidate(
+  observationsInput: Parameters<typeof decodeObservations>[0],
+  optionsInput: EncodedProphetOptions,
+  input: RollingOriginPlanInput,
+  mode?: CrossValidationInput,
 ): Effect.Effect<CrossValidationResult, InputValidationError | EvaluationError, FittingBackend> {
   return crossValidateOperation(observationsInput, optionsInput, input, mode);
 }

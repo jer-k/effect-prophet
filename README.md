@@ -30,7 +30,7 @@ const futureTimestamps = Array.from({ length: 7 }, (_, offset) =>
 
 ## Linear Growth
 
-`fit` validates complete rows, stably sorts decoded training observations, and retains every duplicate timestamp without mutating caller data. Prediction preserves requested order and duplicates. Featureless `fit(observations)` uses OLS, not Python Prophet's default MAP objective; use explicit `map` controls for comparable MAP fitting. See the [compatibility contract](docs/compatibility/prophet-1.4.0.md) and [migration edge cases](benchmark/cases/linear-growth/README.md). The [original run](benchmark/results/baselines/linear-growth-training-rows-native-arm64/README.md) preserves the former coordinate-optimizer exhaustion. The [Stan fit-quality closeout](benchmark/results/baselines/linear-map-stan-fit-quality-native-arm64/README.md) passes all 22 usable comparisons, with two zero-span linear exceptions. Stationarity remains diagnostic-only under EP-097; blanket compatibility and small-KKT-residual claims are not made.
+`fit` validates complete rows, stably sorts decoded training observations, and retains every duplicate timestamp without mutating caller data. Prediction preserves requested order and duplicates. Featureless `fit(observations)` uses OLS, not Python Prophet's default MAP objective; use explicit `map` controls for comparable MAP fitting. See the [compatibility contract](docs/compatibility/prophet-1.4.0.md) and [migration edge cases](benchmark/cases/growth/linear/README.md). The [original run](benchmark/results/retained/linear-growth-training-rows/2026-09-30T224402-292Z-4d661a06/README.md) preserves the former coordinate-optimizer exhaustion. The [Stan fit-quality closeout](benchmark/results/retained/linear-map-fit-quality/2026-10-02T043132-582Z-4d661a06/README.md) passes all 22 usable comparisons, with two zero-span linear exceptions. Stationarity remains diagnostic-only under EP-097; blanket compatibility and small-KKT-residual claims are not made.
 
 ```ts
 const model = await Effect.runPromise(
@@ -75,7 +75,7 @@ const model = await Effect.runPromise(
 
 ```ts
 const benchmarkDataset = JSON.parse(
-  await readFile("benchmark/data/generated/map-irregular-medium.json", "utf8"),
+  await readFile("benchmark/inputs/v1/map-irregular-medium.json", "utf8"),
 ) as {
   readonly observations: ReadonlyArray<{ readonly timestamp: string; readonly value: number }>;
   readonly predictionRows: ReadonlyArray<{ readonly timestamp: string }>;
@@ -364,7 +364,7 @@ npm run benchmark -- --case map-seasonal-breaks-irregular-medium
 | -------------------------------------- | ---------------: | -------------------: | ------------------: | ---------------: | -------------------------- |
 | `map-seasonal-breaks-irregular-medium` |         1.077e-3 |             1.088e-4 |            1.124e-3 |         3.340e-4 | Passed recorded tolerances |
 
-[Benchmark report](benchmark/results/baselines/public-api-native-arm-m4-pro/report.md)
+[Benchmark report](benchmark/results/retained/public-api/2026-09-20T224643-979Z-ff2c99b0/report.md)
 
 ## Prepare Data
 

@@ -1,284 +1,162 @@
-# Public API benchmark suite
+# Prophet benchmarks
 
-This suite records **correctness-gated absolute timing evidence** for the built Effect Prophet
-package and Python `prophet==1.4.0`. It is not a race: reports contain no speedup, winner, RAM
-comparison, or cross-machine threshold.
+Correctness-gated public API benchmarks for Effect Prophet and pinned Python Prophet 1.4.0.
+Passing evidence is bounded by each case's contract—not universal compatibility, optimizer
+optimality, interval calibration, a speed ranking or a RAM comparison.
 
-Matched-fit cases compare the same MAP objective and feature matrix in both implementations.
-Fixed-equation, scalar-uncertainty and evaluation workloads retain their separately declared
-comparison contracts. Historical OLS-versus-MAP and true-empty-versus-dummy cases did not perform
-equivalent fitting work; default featureless OLS remains outside matched-fit comparisons.
+## Where things live
 
-## Workloads
+| Folder / file                            | Responsibility                                                                    |
+| ---------------------------------------- | --------------------------------------------------------------------------------- |
+| `tools/`                                 | Runner, adapters, schemas, reports, comparison and retention tools                |
+| `tools/runtime/`                         | Compose, pinned Docker builds, Python lockfile and isolated builder configuration |
+| `cases/`                                 | Maintained declarations grouped by primary Prophet functionality                  |
+| [CASES.md](CASES.md)                     | Generated list of runnable coverage; declarations are not passing evidence        |
+| [inputs/](inputs/README.md)              | Committed versioned datasets, complete future covariates and checksum manifests   |
+| `results/runs/`                          | Gitignored developer runs, including failures and partial attempts                |
+| `results/comparisons/`                   | Gitignored developer comparison reports                                           |
+| `results/retained/<scope>/<run-id>/`     | Explicitly reviewed, checked-in evidence                                          |
+| `results/baselines.json`                 | Named pointers to retained evidence, never duplicate snapshots                    |
+| [results/RESULTS.md](results/RESULTS.md) | Generated human-readable retained outcomes and report links                       |
 
-Generated inputs are explicit, deterministic JSON records shared by both adapters. Training rows
-contain every observation, regressor, and condition. Future rows contain every timestamp,
-regressor, and condition; neither implementation invents future covariates or calendars.
-
-The canonical linear-growth scenario inventory is in [`cases/linear-growth/`](cases/linear-growth/).
-MAP controls are declared in `cases/linear-growth/public-api.json`; migration edge cases are in `cases/linear-growth/edge-cases.ts` (including diagnostic failures, which never admit timings). Compatibility scenarios that
-are intentionally not timing-eligible are listed in `cases/linear-growth/scenarios.json`.
-
-| Case                                   | Shape                              | Capability                                                                                                     |
-| -------------------------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `map-events-small`                     | `N=96`, `H=28`, `Ks=0`, `Ka=6`     | Two event calendars, overlapping activations, asymmetric windows, future occurrences, one explicit changepoint |
-| `map-regressors-medium`                | `N=256`, `H=64`, `Ks=0`, `Ka=4`    | Binary `auto`, numeric `auto`, numeric `always`, and numeric `never` regressors in caller order                |
-| `map-conditional-seasonalities-medium` | `N=256`, `H=64`, `Ks=12`, `Ka=0`   | Two order-three weekly seasonalities with dense and sparse boolean masks                                       |
-| `map-mixed-features-explicit-small`    | `N=24`, `H=3`                      | Fixture-scale conditional/unconditional seasonality, event, regressor, and explicit changepoint control        |
-| `map-mixed-features-automatic-large`   | `N=768`, `H=128`, `Ks=10`, `Ka=10` | Mixed feature model with Effect's omitted-`map` automatic defaults (`25`, `0.8`)                               |
-
-Eleven growth, scaling, and mixed-component MAP cases come from [`cases/growth-scaling-and-mixed-map.ts`](cases/growth-scaling-and-mixed-map.ts): absmax and minmax
-large-offset linear fits (`N=96`), conditional flat mixed fits (`N=96,256`), linear mixed
-(`N=96`), and floor-aware changing-capacity logistic fits (`N=96,256`) with both floor policies,
-both scaling modes, and additive-only or mixed features. Logistic fits use nonempty explicit
-or automatically resolved nonsingular changepoints; true-empty-point and singular-policy comparisons are deliberately not
-part of the equivalent-fit timing set. Flat mixed fits have no changepoints and use Effect's fixed flat optimizer; the case does not
-pretend to configure flat optimizer controls that the public API does not expose. The runner
-serializes these declarations beside the run artifacts into `cases.json`, which both mounted
-adapters and the report read; there is no second runner. Earlier EP-071 run artifacts use
-`stage-f-*` IDs and dataset hashes; the descriptive names change only generated metadata,
-not observation or prediction-row values. Do not merge those historical samples with new runs
-without verifying that their recorded configurations and row values match.
-
-EP-081 adds 12 opt-in MAP uncertainty cases from [`cases/uncertainty.ts`](cases/uncertainty.ts) using the same versioned datasets/configurations: linear with nonzero offset, mixed linear, feature-bearing flat, implicit/explicit logistic with changing bounds, and a new conditional/event/regressor logistic recipe. Row selections include historical-only, single-future, and irregular mixed historical/future requests. N, requested rows, output kind and S are recorded independently; every case is bounded by public row×sample policy. EP-080's [distribution evidence](../docs/validation/uncertainty.md) is a prerequisite, not established by timing; the [local run review](results/uncertainty/README.md) includes failures and findings.
-
-Stage H adds the evaluation cases in [`cases/evaluation.ts`](cases/evaluation.ts) on the same versioned complete-row datasets. Linear additive, feature-bearing flat, changing-bound logistic and two larger-row variants exercise explicit rolling-origin folds. Fold count, aggregate training visits, assessment rows, feature/point columns, interval samples, and ordered candidate count are recorded separately. The `linear-failure` search includes one deliberately unsupported logistic candidate on a dataset without capacities; both adapters record its expected failure and select from the remaining candidates. A three-candidate flat search exercises stable ties. Development-only folds and the last eight rows reserved as final holdout remain disjoint.
-
-For Stage H, `different-public-work` is the only comparison classification. Each adapter checks cutoff/row/actual alignment, finite point forecasts and MAE before the report admits timing samples. It also checks interval dimensions and bounds, search failure counts and holdout construction on the applicable cases. Matched point forecasts must meet the declared per-case tolerance. This gate does **not** establish equivalence of interval distributions, Python's vectorized sampler and Effect's scalar simulator, Python rolling/percentage metric policy, or report payloads. Failed cases remain visible with no accepted timings. The [`evaluation and selection policy`](../docs/decisions/evaluation-and-selection.md), [Stage G evidence](results/uncertainty/README.md), and [Stage H report](results/evaluation/README.md) provide interpretation.
-
-`Ks` is the Fourier-column count and `Ka` is the event-plus-regressor column count. Fixed-equation
-prediction and nonempty explicit-MAP controls remain as calibration cases.
-
-`generate-data.ts` creates bounded-noise targets from known piecewise trends and named seasonal,
-event, and regressor terms. The mixed automatic case uses smaller slope breaks and a larger but
-bounded deterministic perturbation originally selected for the coordinate policy at `N=768`.
-The Stan cutover preserves that recipe, the required size, omitted-`map` path and 10,000-step
-per-attempt budget; returned stopping states are not near-stationarity certificates. Every generated
-file's versioned recipe and SHA-256 appears in `data/generated/manifest.json`; the recipe is analytic and seedless (no random generator). Selected data hashes are
-also captured in each run manifest.
-
-## Exact API mapping
-
-The original cases use linear growth and additive features. Stage F also maps public flat and
-logistic growth, absmax/minmax scaling, inherited and overridden additive/multiplicative modes,
-and logistic training/prediction `capacity`/optional `floor` rows to Prophet's `cap`/`floor`
-DataFrame columns. Both adapters disable built-in seasonalities and uncertainty samples. The
-Python adapter translates:
-
-- Effect UTC event calendar days to a naive-date holidays DataFrame with matching names, dates,
-  windows, and prior scales;
-- Effect regressor `never`, `auto`, and `always` to Prophet `False`, `"auto"`, and `True`;
-- conditional seasonalities to `add_seasonality(..., mode="additive", condition_name=...)`;
-- explicit changepoints directly, or Effect's omitted-map defaults to Python
-  `n_changepoints=25, changepoint_range=0.8`;
-- each case's recorded Newton/LBFGS algorithm and iteration budget to public `fit` arguments.
-
-Event names are ordered by Prophet's deterministic feature-column ordering in both projections.
-This calendar/API translation does not change feature activation or the fitted objective.
-
-Before timings are accepted, each independent worker verifies row identity, finite output,
-`value = trend * (1 + multiplicative) + additive`, complete named-component reconstruction (including factor and output-unit contribution), condition-false exact zeros,
-event-window activation, fitted regressor transforms and coefficient metadata, model kind,
-resolved changepoints, optimizer evidence, and encode/stringify/parse/decode prediction
-equivalence, including a separate fresh-process restoration check. The report then compares both languages using committed per-quantity trend,
-component, additive, forecast, noise, and persistence tolerances. Fitted scaling mode/floor policy and train-only scale/offset are checked too. Any local or cross-language
-failure suppresses that case's timing summary.
-
-## Linear Stan fit-quality acceptance
-
-Current versioned linear counterparts come from `cases/linear-growth/stan-aligned.ts`, retaining
-`-stan-v2` solver case IDs and evidence `linear-stan-map-fit-quality-v3`. Under the
-[approved EP-096 policy](../docs/decisions/linear-map-benchmark-acceptance.md), independent objective
-and normalized-noise differences must remain within `0.01` and `0.0002` absolute respectively;
-all other quantity/lifecycle gates remain unchanged. Both endpoints must supply exactly one
-finite, nonnegative stationarity diagnostic. JSON and Markdown retain those values, but equality
-and near-stationarity are explicitly deferred to EP-097.
-
-Historical `linear-stan-map-v2` snapshots keep their `stationarityAbsolute: 0.01` gate and failed
-records. They are not rewritten or requalified. The [native-arm64 closeout](results/baselines/linear-map-stan-fit-quality-native-arm64/README.md)
-qualifies 22 of 24 cases, retaining the two unusable zero-span linear comparisons without timing.
-Its dirty-tree provenance and descriptive timing limits are explicit; passing does not certify
-small residuals, global optima, bitwise trajectories or calibration.
+Scope names describe what was tested. Architecture, emulation, processor, git revision and
+build identities belong in manifests/reports, not descriptive directory names. Each retained
+scope can contain multiple immutable run IDs.
 
 ## Run
 
-Requirements:
-
-- Docker with Compose support;
-- enough memory to build the Rust/WASM and Prophet images;
-- no local Python, Rust, or uv installation.
-
-Run every case:
+Requires Docker with Compose and enough memory to build the release Rust/WASM and Prophet
+images. No local Python or Rust installation is needed. Committed inputs are used directly:
+**running benchmarks never regenerates datasets**. Input bytes are checked before Docker runs,
+and adapters verify their recorded identities again before measuring.
 
 ```sh
 npm run benchmark
+npm run benchmark -- --case flat-level-minmax --case evaluation-flat-mixed-point
+npm run benchmark -- --no-build --case map-events-small-stan-v2
 ```
 
-Select cases or reuse built images:
+Rebuild after source/adapter changes; `--no-build` deliberately reuses existing images.
+Apple Silicon uses `linux/arm64`; x64 uses `linux/amd64`. An explicit
+`BENCHMARK_CONTAINER_PLATFORM=linux/amd64` override is recorded as emulated on ARM.
 
-```sh
-npm run benchmark -- --case map-events-small --case map-mixed-features-automatic-large
-npm run benchmark -- --no-build --case map-conditional-seasonalities-medium
-npm run benchmark -- --case flat-mixed-components --case logistic-explicit-floor-minmax
-npm run benchmark -- --case uncertainty-linear-mixed-components-mixed-samples-512
-npm run benchmark -- --case evaluation-linear-point --case evaluation-flat-mixed-intervals
-```
-
-The host orchestrator maps Apple Silicon to `linux/arm64` and x64 to `linux/amd64`, then passes the
-same platform to build and runtime services. The pinned uv, Python, Node, and Rust image indexes and
-the locked Prophet wheel support both architectures. Normal runs are native. An explicit diagnostic
-override is available:
-
-```sh
-BENCHMARK_CONTAINER_PLATFORM=linux/amd64 npm run benchmark -- --case map-events-small
-```
-
-Such a run is recorded as emulated on an ARM host and is not eligible for native baseline
-promotion. Docker startup remains outside measured cold-process boundaries.
-
-## Docker storage containment
-
-`run --rm` removes run containers, **not images or BuildKit cache**. Results are host bind mounts
-under `benchmark/results/runs/`; this suite creates no persistent runtime volumes. Rebuilding a
-fixed image tag can leave older images dangling. `--no-cache` is not a cleanup mechanism.
-
-The Effect image uses a separate build stage: Rust, dev dependencies, and Cargo compilation
-output are not shipped in the runtime image. Cargo target/registry state lives in reusable,
-architecture-scoped BuildKit cache mounts instead of a new image layer for every source edit.
-Only package build inputs invalidate the WASM build; adapter edits do not. Both runtime images
-copy only their required code, while cases, datasets, and evidence are mounted. Build-tool
-versions are captured during the Effect build and retained for report provenance.
-
-### Recommended: isolated, budgeted benchmark builder
-
-Create this builder once (requires recent Docker Buildx/BuildKit with `default-load` and GC
-space-budget support):
-
-```sh
-npm run benchmark:builder
-npm run benchmark:contained -- --case map-events-small
-npm run benchmark:contained -- --no-build --case map-events-small
-```
-
-`benchmark:contained` is the same runner with `BUILDX_BUILDER=effect-prophet-benchmark`.
-The builder is **not** made globally selected, so other projects keep their existing builder.
-[`docker/buildkitd.toml`](docker/buildkitd.toml) enables GC with an **8 GB cache target**, a
-2 GB retention floor, and a 10 GB free-space target. GC is periodic: this is not a filesystem
-quota, and live builds can exceed it. Loaded/tagged images live separately in Docker Engine,
-so prune obsolete images periodically too. `npm run benchmark` still uses your usual builder
-and does not apply this benchmark-specific budget.
-
-Inspect and clean the isolated builder/image storage when no benchmark build or run is active:
-
-```sh
-docker system df -v
-docker buildx du --builder effect-prophet-benchmark
-docker buildx prune --builder effect-prophet-benchmark --max-used-space 8GB
-# Remove only dangling images carrying the benchmark label (from these updated Dockerfiles).
-docker image prune --filter label=org.effect-prophet.benchmark=true
-```
-
-These cleanup commands prompt for confirmation. They do not delete run artifacts or Docker
-application volumes. Pruning cache may require compilation/downloads next time. To discard
-all isolated build state deliberately, use `docker buildx rm effect-prophet-benchmark`
-(without `--keep-state`), then recreate it with `npm run benchmark:builder`.
-
-### Existing storage from older runs
-
-The isolated builder does **not** reclaim builds made on your old builder. Identify that
-builder with `docker buildx ls`, inspect it with `docker buildx du --builder <name>`, and, only
-if acceptable to other projects sharing it, run:
-
-```sh
-docker buildx prune --builder <name> --all --max-used-space 8GB
-```
-
-Old images do not carry the new benchmark label. Inspect `docker image ls --filter dangling=true`
-and `docker image history <image-id>` before removing confirmed obsolete benchmark images with
-`docker image rm <image-id>`. Avoid blanket `docker system prune --volumes`: unrelated application
-data may be deleted, and it is unnecessary for this suite.
-
-For ordinary runs using the default `docker` driver, you can also merge
-`"builder": { "gc": { "enabled": true, "defaultKeepStorage": "8GB" } }` into Docker Desktop's
-**Settings → Docker Engine** configuration. This is global to that builder, not benchmark-only.
-See [Docker's GC documentation](https://docs.docker.com/build/cache/garbage-collection/) for the
-difference between cache targets and total Docker disk usage. Docker Desktop's sparse VM disk
-may not immediately shrink on the host after pruning; use supported Desktop disk-reclamation
-controls, never delete its backing disk manually.
-
-## Measurement boundaries
-
-| Phase                              | Included                                                                                               | Excluded                              |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------- |
-| `adapter-input-conversion`         | Shared JSON records to Effect input objects or Python DataFrames                                       | File reads and JSON parsing           |
-| `warm-fit`                         | Fresh public configuration, parsing, feature preprocessing, copies, and complete fit                   | Adapter conversion                    |
-| `warm-predict`                     | Public future-row parsing/alignment, features, masks, numerical prediction, returned output            | Fit, restoration, adapter conversion  |
-| `warm-fit-predict`                 | Fresh configuration, fit, and prediction                                                               | Adapter conversion                    |
-| `warm-fit-predict-with-conversion` | Conversion, fresh configuration, fit, prediction, completed output                                     | File reads and JSON parsing           |
-| `cold-first-forecast`              | Fresh language process, imports, conversion, configuration, fit, prediction, protocol output           | Docker startup and image construction |
-| `model-json-encode`                | Effect public encode plus stringify; Python public `model_to_json`                                     | Report serialization                  |
-| `model-json-decode`                | JSON parse plus Effect public decode; Python public `model_from_json`                                  | File reads                            |
-| `fresh-process-restored-predict`   | Fresh imports, persisted-model parse/decode, future-row conversion, public prediction, protocol output | Fitting and Docker startup            |
-
-Uncertainty-only phases use the **same** workers, correctness gate, results and report:
-
-| Phase                                     | Included                                                                                                                                                                                                   | Excluded                                                                            |
-| ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `uncertainty-input-conversion`            | Shared complete JSON records → Effect objects / Python DataFrames                                                                                                                                          | File reads, JSON parsing, fit, simulation                                           |
-| `warm-uncertainty`                        | Full public `predictUncertainty` (intervals or samples) / Python `predict(df, vectorized=False)` for intervals or `predictive_samples(df, vectorized=False)` for samples; Python per-call NumPy seed reset | Fit, adapter conversion, model persistence, Python default-vectorized approximation |
-| `cold-first-uncertainty`                  | Fresh language process/imports, JSON input, conversion, public fit, first scalar uncertainty call, worker protocol response                                                                                | Image build and Docker startup                                                      |
-| `fresh-process-restored-uncertainty`      | Fresh process/imports, JSON model decode, future-row conversion, first public scalar call, worker protocol response                                                                                        | Fit and Docker startup                                                              |
-| `model-json-encode` / `model-json-decode` | Public model encode/stringify and parse/decode, respectively                                                                                                                                               | Sample-output serialization (not measured separately)                               |
-
-Stage H phases follow the same worker and correctness-first orchestration. `evaluation-input-conversion` measures shared rows to Effect observation/prediction objects (including unused future rows) or Python's development DataFrame; these are different adapter workloads. `evaluation-point` and `evaluation-intervals` measure full warm `crossValidate` calls, including fold-local fits and results. Python's matching phases call public `cross_validation` sequentially (`parallel=None`), after an **untimed full-history fit** required by its mutable model; they include its pandas history copying, fold fits, predictions and output assembly. Python interval CV uses the documented default **vectorized** algorithm, not Effect's scalar simulation; S/width and seed are declared but seeded draws do not match. `cold-first-evaluation` includes fresh-process imports, input load and first point evaluation (plus Python's full-history fit), excluding Docker startup. `evaluation-plan` measures public `planRollingOrigin` against Python's explicit-cutoff/count application preparation, not matching planner APIs. `evaluation-metrics` measures only public `performanceMetrics` or `performance_metrics` on **untimed precomputed CV rows**, with exact horizons, overall, or rolling-half aggregation as declared by the case; MAPE uses an explicit Effect `exclude` zero-actual policy. Python's weighted rolling windows and near-zero MAPE handling are not identical policies. `evaluation-baseline` measures three pure train-only baselines against explicit Python application loops; no Prophet baseline API exists. `evaluation-search` includes sequential per-candidate CV and score ranking; Python uses documented public CV in an explicit grid loop. `evaluation-holdout` excludes the precomputed selection but includes fit/point prediction, baseline/metric/report construction against Python's explicit application counterpart. `evaluation-report-encode` includes schema encode/stringify on Effect and JSON stringify on Python; `evaluation-report-decode` measures parse/schema decode on Effect and JSON parse on Python. The Python payload is not an Effect report. No subtraction of measured phases estimates optimizer or Rust internals.
-
-Stage H records process high-water RSS for every warm phase, via the worker's OS accounting; these include imports, previous work and setup, **exclude CmdStan child processes**, and are neither per-operation allocation deltas nor cross-runtime RAM rankings. Cold subprocess peaks, heap peaks and WASM-only allocation peaks are not captured; the report marks them unavailable rather than inventing estimates. The runner uses `process.hrtime.bigint` and `time.perf_counter_ns`; synchronous WASM is not preempted by Effect timeouts. Python parallel modes and private diagnostics kernels are not timed. The case manifest includes explicit folds/options and SHA-256 dataset recipes; raw per-run samples, lock/build/container versions, machine provenance and failures remain in the reviewed snapshot.
-
-Effect explicitly disables tracing with `Effect.withTracerEnabled(false)` for public measurements; no tracer/exporter is installed or required. Warm measured `predict` includes Python point and component assembly plus marginal intervals, whereas `predictive_samples` only returns trend/yhat sample arrays. Effect's `predictUncertainty` returns either owned row-major sample arrays or intervals, with conversion, feature setup, WASM simulation, decoding and copying inside the complete public call. These are scalar **process** comparisons, not identical-work entrypoints or matching NumPy/xoshiro draws. Python's default `vectorized=True` grid algorithm is not an equivalent comparator and is not timed here. No private Python kernels are timed. Underlying Rust phase times cannot be derived from these boundaries or coarse tracing spans. Sampling and interval reduction consume `O(rows × S)` work and space; interval mode includes sample/workspace allocations rather than constant scratch.
-
-Warm worker peak RSS uses Linux `maxRSS` / `ru_maxrss` high-water marks: **imports, previously fitted model, case preparation and uncertainty all contribute**, and Python's CmdStan fitting child is excluded. These process-only values are not simulation-only allocations, process-tree peaks or a cross-runtime RAM ranking. Runtime/library allocation limits apply to sampler buffers only, not total RSS. Synchronous WASM is not preempted by an Effect timeout. Raw nanosecond samples and per-case recipe hashes, build/lock/container/tool identities, clock choice (`process.hrtime.bigint` / `time.perf_counter_ns`) and memory method are retained in the run artifacts.
-
-Effect imports `effect-prophet` through the built package entrypoint after a release WASM build.
-The public API does not expose a supported parsing/copying/optimization split, so this suite does
-not present Effect spans as an internal profiler.
-
-Raw nanosecond repetitions retain their independent-run identities. Reports aggregate medians,
-p90, minima, maxima, and counts; small sample counts are not claims of stable tail behavior.
-
-## Results and reviewed snapshots
-
-Local runs are ignored under:
+Each run freezes **only selected cases**, including configuration, gates and input hashes.
+Both adapters pass independent correctness checks and the cross-language eligibility gate
+before timing. Failed cases stay visible with no accepted timing. Incomplete infrastructure
+attempts stay local and cannot be retained as complete evidence.
 
 ```text
-benchmark/results/runs/<run-id>/
+results/runs/<run-id>/
   manifest.json
   cases.json
-  inputs/generated/*.json  # exact complete-row snapshots used for selected cases
   effect-prophet.json
   python-prophet.json
   eligible-cases.json
-  records.jsonl
   report.json
   report.md
 ```
 
-After reviewing correctness, provenance, native architecture, git state, and the complete report,
-promote a snapshot deliberately:
+Raw samples and correctness projections belong to the two adapter files. `report.json` and
+`report.md` are derived summaries; no additional `records.jsonl` export or per-run dataset copy
+is written. Historical retained snapshots preserve their original redundant artifacts and
+recorded paths/hashes; they are not rewritten or requalified during this migration.
+
+## Replay and compare
+
+Replay freezes the recorded selection/options but runs the **current code/images**, not an
+old executable. It verifies exact shared input bytes; it does not regenerate missing inputs.
+You can further restrict the recorded selection with `--case`.
 
 ```sh
-npm run benchmark:baseline -- <run-id> [baseline-id]
+npm run benchmark -- --replay flat-growth-and-evaluation
+npm run benchmark -- --replay runs/<run-id> --case flat-constant-minmax
+npm run benchmark:compare -- flat-growth-and-evaluation runs/<new-run-id>
+npm run benchmark:compare -- runs/<before-id> runs/<after-id>
 ```
 
-Promoted snapshots are committed under [`results/baselines/`](results/baselines/README.md) with raw
-samples and correctness projections.
+References are baseline names or `runs/...` / `retained/...` paths relative to `results/`.
+Comparison shows recorded validity even when timing cannot be compared. Timing columns require
+both gates to pass, unchanged case/input contracts, matching gate implementation identities and
+compatible hardware/runtime metadata. Legacy snapshots without gate source hashes require
+identical recorded images.
+No cross-language speed ratios are calculated. Dirty-tree comparisons are diagnostic evidence.
+Legacy snapshots without frozen cases cannot be replayed or compared with this tool. Historical
+`generated/` references map to shared `v1/` inputs only when recorded bytes match; otherwise
+restore those inputs under a new immutable version before creating a new declaration.
+
+## Retain reviewed evidence
+
+```sh
+npm run benchmark:retain -- <run-id> flat-growth-and-evaluation
+# Explicitly update that scope's named baseline as well:
+npm run benchmark:retain -- <another-run-id> flat-growth-and-evaluation --baseline
+npm run benchmark:results
+```
+
+Review correctness, failures, input/configuration identities, environment, git state and raw
+samples before retention. The tool checks selected-case completeness, input hashes and that
+exact shared input bytes are committed in HEAD. It refuses existing destinations and does not
+copy arbitrary local files. Failed cases may be retained deliberately; retention is not a pass
+stamp. Naming an emulated or dirty snapshot does not make it a native/clean release baseline.
+`benchmark:baseline` is an alias for the retention command; baseline pointers change only with
+`--baseline`. Local comparisons are never included in the checked-in results overview.
+
+## Maintain inputs and coverage
+
+```sh
+npm run benchmark:catalog
+npm run benchmark:setup -- v2
+```
+
+Generation is explicit maintenance. Existing version bytes cannot be overwritten; recipe changes
+require a new version and updated case references. Commit inputs before retaining dependent
+runs. Cases have one primary capability owner; mixed-feature cases reuse declarations and
+lifecycle serialization phases instead of being copied into every feature folder.
+
+See the [flat coverage gaps](cases/growth/flat/README.md),
+[linear input-policy cases](cases/growth/linear/README.md),
+[measurement contracts](tools/MEASUREMENTS.md), and accepted
+[linear fit-quality](../docs/decisions/linear-map-benchmark-acceptance.md) /
+[CV scaling](../docs/decisions/cross-validation-scaling.md) policies.
 
 ## Tests
-
-Parser, semantic relationship, result, architecture, and report tests require no Docker or Python:
 
 ```sh
 npm run benchmark:typecheck
 npm run benchmark:test
 ```
 
-Normal package tests do not install Python or execute this suite. The uncertainty cases record worker high-water RSS with the limitations above; process-tree peak RSS is unsupported.
+These tests require no Docker or Python. Normal package tests remain Python-free.
+
+### Python input-adapter regressions
+
+After building the pinned Python image, run its real pandas/Prophet conversion and constant
+fit/predict/JSON lifecycle checks:
+
+```sh
+docker run --rm --network none --read-only --tmpfs /tmp \
+  -e OMP_NUM_THREADS=1 -e OPENBLAS_NUM_THREADS=1 -e MKL_NUM_THREADS=1 \
+  -v "$PWD/benchmark/tools/adapters:/workspace/benchmark/tools/adapters:ro" \
+  -v "$PWD/benchmark/tools/test/adapters:/workspace/benchmark/tools/test/adapters:ro" \
+  -v "$PWD/benchmark/inputs:/workspace/benchmark/inputs:ro" \
+  effect-prophet/benchmark-python:1.4.0 \
+  /opt/effect-prophet-benchmark/bin/python \
+  /workspace/benchmark/tools/test/adapters/python-prophet.test.py
+```
+
+## Docker storage
+
+`run --rm` removes containers, not images or BuildKit cache. Results are host mounts; no persistent
+runtime volumes are created. An optional isolated builder uses the checked-in GC budget:
+
+```sh
+npm run benchmark:builder
+npm run benchmark:contained -- --case flat-level-minmax
+docker buildx du --builder effect-prophet-benchmark
+docker buildx prune --builder effect-prophet-benchmark --max-used-space 8GB
+docker image prune --filter label=org.effect-prophet.benchmark=true
+```
+
+GC targets 8 GB of cache, with a 2 GB floor and 10 GB free-space target; this is not a filesystem
+quota. Loaded images are separate. These cleanup commands prompt for confirmation. Avoid blanket
+volume pruning: it can delete unrelated application data. Other/default builders are unaffected.

@@ -5,6 +5,8 @@ import {
   decodeEvaluationReport,
   encodeEvaluationReport,
   evaluateHoldout,
+  fit,
+  predict,
   prophetFittingBackendLayer,
   searchModels,
   type EncodedObservations,
@@ -114,6 +116,50 @@ describe("evaluateHoldout", () => {
       await Effect.runPromise(decodeEvaluationReport(JSON.parse(JSON.stringify(encoded)))),
     ).toEqual(report);
   });
+  it.each([
+    { name: "default", mode: { mode: "point" }, scaling: "absmax" },
+    { name: "override", mode: { scaling: "minmax" }, scaling: "minmax" },
+  ] as const)("fits holdout with the effective $name CV scaling", async ({ mode, scaling }) => {
+    const search = await Effect.runPromise(
+      searchModels(observations, {
+        candidates: [{ id: "flat", options: { growth: "flat", scaling: "minmax" } }],
+        plan: {
+          horizonMs: 2 * day,
+          cutoffs: { mode: "explicit", timestamps: [timestamp(11), timestamp(14)] },
+        },
+        objective: { metric: "mae", aggregation: { kind: "overall" }, direction: "minimize" },
+        failurePolicy: "record",
+        mode,
+      }).pipe(Effect.provide(prophetFittingBackendLayer)),
+    );
+
+    const report = await Effect.runPromise(run(input(search)));
+
+    const model = await Effect.runPromise(
+      fit(observations, { growth: "flat", scaling }).pipe(
+        Effect.provide(prophetFittingBackendLayer),
+      ),
+    );
+
+    const independent = await Effect.runPromise(
+      predict(
+        model,
+        holdout.map(({ value: _actual, ...known }) => known),
+      ),
+    );
+
+    expect(report.selected.options).toEqual({ growth: "flat", scaling });
+    expect(report.forecasts.map(({ predicted }) => predicted)).toEqual(
+      independent.map(({ value }) => value),
+    );
+
+    const encoded = await Effect.runPromise(encodeEvaluationReport(report));
+
+    expect(
+      await Effect.runPromise(decodeEvaluationReport(JSON.parse(JSON.stringify(encoded)))),
+    ).toEqual(report);
+  });
+
   it("fits the selected MAP option only on development and roundtrips a strict report", async () => {
     const search = await find();
     const report = await Effect.runPromise(run(input(search)));

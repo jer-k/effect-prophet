@@ -35,6 +35,8 @@ export {
   crossValidate,
   planRollingOrigin,
   type CrossValidationFoldSummary,
+  type CrossValidationInput,
+  type CrossValidationPointInput,
   type CrossValidationIntervalInput,
   type CrossValidationIntervalRow,
   type CrossValidationPointRow,

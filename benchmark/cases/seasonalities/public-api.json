@@ -1,0 +1,90 @@
+[
+  {
+    "id": "map-conditional-seasonalities-medium",
+    "dataset": "v1/map-conditional-seasonalities-medium.json",
+    "workload": {
+      "kind": "linear-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "conditional-seasonalities-map-v1"
+      },
+      "configuration": {
+        "effectMap": "explicit",
+        "changepoints": {
+          "mode": "explicit",
+          "timestamps": ["2020-03-21T00:00:00.000Z", "2020-06-29T00:00:00.000Z"]
+        },
+        "changepointPriorScale": 0.2,
+        "seasonalities": [
+          {
+            "name": "weekly-dense",
+            "periodDays": 7,
+            "fourierOrder": 3,
+            "priorScale": 10,
+            "conditionName": "dense"
+          },
+          {
+            "name": "weekly-sparse",
+            "periodDays": 7,
+            "fourierOrder": 3,
+            "priorScale": 8,
+            "conditionName": "sparse"
+          }
+        ],
+        "events": [],
+        "regressors": []
+      },
+      "effectOptimizer": {
+        "maxIterations": 10000,
+        "relativeTolerance": 1e-10,
+        "absoluteTolerance": 1e-12
+      },
+      "pythonOptimizer": {
+        "algorithm": "LBFGS",
+        "maxIterations": 10000,
+        "newtonFallback": false
+      }
+    },
+    "phases": [
+      "adapter-input-conversion",
+      "warm-fit",
+      "warm-predict",
+      "warm-fit-predict",
+      "warm-fit-predict-with-conversion",
+      "cold-first-forecast",
+      "model-json-encode",
+      "model-json-decode",
+      "fresh-process-restored-predict"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 3,
+    "independentRuns": 2,
+    "timeoutSeconds": 360,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.12,
+        "relative": 0.008
+      },
+      "component": {
+        "absolute": 0.1,
+        "relative": 0.012
+      },
+      "additive": {
+        "absolute": 0.12,
+        "relative": 0.01
+      },
+      "forecast": {
+        "absolute": 0.12,
+        "relative": 0.008
+      },
+      "noiseScale": {
+        "absolute": 0.04,
+        "relative": 0.1
+      },
+      "persistence": {
+        "absolute": 1e-10,
+        "relative": 0
+      }
+    }
+  }
+]
