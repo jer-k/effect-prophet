@@ -3,6 +3,8 @@
   "ignorePatterns": [
     "tools/oxlint/anti-slop/**",
     "integration/fixtures/**/*.json",
-    "benchmark/results/baselines/**"
+    "benchmark/results/retained/**",
+    "benchmark/results/RESULTS.md",
+    "benchmark/CASES.md"
   ]
 }

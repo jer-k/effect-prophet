@@ -2,6 +2,35 @@
   "schemaVersion": 1,
   "evidence": [
     {
+      "id": "flat-growth-reduced-v1",
+      "classification": "equivalent-objective",
+      "statement": "Featureless or ordinary additive-seasonal flat MAP uses matching absmax/minmax scaling, level/feature/noise priors and exact-constant shortcuts. Fitted output and persistence gates remain required. The Python input adapter explicitly maps shared numeric cells to float64, including integer-spelled constant targets, without altering numeric values or fitted/serialized state.",
+      "prerequisiteFixtures": ["target-scaling.json"],
+      "checks": [
+        "train-only target scaling",
+        "trend",
+        "named components",
+        "forecast",
+        "noise scale",
+        "persistence equivalence"
+      ]
+    },
+    {
+      "id": "flat-growth-mixed-scaling-v1",
+      "classification": "equivalent-objective",
+      "statement": "The original mixed-flat recipes and their exact rolling prefixes are independently fit with matching absmax or minmax scaling, conditional multiplicative seasonality, additive event and regressor. Direct fits do not inherit Python CV's scaling-copy omission.",
+      "prerequisiteFixtures": ["target-scaling.json", "mixed-map.json", "conditional-map-fit.json"],
+      "checks": [
+        "train-only target scaling",
+        "condition-false zero",
+        "component reconstruction",
+        "regressor transforms",
+        "forecast",
+        "noise scale",
+        "persistence equivalence"
+      ]
+    },
+    {
       "id": "training-row-map-v1",
       "classification": "equivalent-objective",
       "statement": "Shared complete histories exercise stable sorting, independently weighted duplicate rows, row-index automatic candidates (including repeats), and zero-span numerical outcomes. Only finite comparable results passing the existing quantity tolerances admit timings; failures and NaN forecasts are migration findings, not parity successes.",

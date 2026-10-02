@@ -65,7 +65,7 @@ const decodeOptions = Schema.decodeUnknownEffect(OptionsSchema, {
 
 /** Parse explicit simulation controls without installing a random service. */
 export const parseUncertaintyOptions = (
-  input: EncodedUncertaintyOptions,
+  input: Parameters<typeof decodeOptions>[0],
 ): Effect.Effect<UncertaintyOptions, InputValidationError> =>
   decodeOptions(input).pipe(
     Effect.map((parsed) => ({

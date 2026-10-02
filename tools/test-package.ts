@@ -63,6 +63,7 @@ const expectedDeclarationFiles = [
   "dist/fitted-model.d.ts",
   "dist/index.d.ts",
   "dist/internal/additional-features.d.ts",
+  "dist/internal/cross-validation-options.d.ts",
   "dist/internal/fitting-backend.d.ts",
   "dist/internal/prophet-fitting-backend.d.ts",
   "dist/linear-optimizer.d.ts",
@@ -293,7 +294,7 @@ const evaluatedIntervals = await Effect.runPromise(
       horizonMs: 86_400_000,
       cutoffs: { mode: "explicit", timestamps: ["2024-01-02T00:00:00.000Z"] },
     },
-    { mode: "intervals", uncertainty: { seed: 19, samples: 32 } },
+    { mode: "intervals", scaling: "minmax", uncertainty: { seed: 19, samples: 32 } },
   ).pipe(Effect.provide(prophetFittingBackendLayer)),
 );
 

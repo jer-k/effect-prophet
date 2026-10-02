@@ -17,7 +17,7 @@ import { performanceMetrics, type MetricName, type MetricReport } from "./evalua
 import {
   crossValidateCandidate,
   planRollingOrigin,
-  type CrossValidationIntervalInput,
+  type CrossValidationInput,
   type CrossValidationResult,
   type RollingOriginPlanInput,
   type RollingOriginPlanSummary,
@@ -25,9 +25,13 @@ import {
 import { checkedAdd, checkedMultiply } from "./internal/safe-arithmetic";
 import { copyFrozen as ownedInput } from "./internal/owned-input";
 import type { FittingBackend } from "./internal/fitting-backend";
+import {
+  crossValidationFitOptions,
+  parseCrossValidationInput,
+} from "./internal/cross-validation-options";
+import { defaultTargetScalingMode } from "./target-scaling";
 import { decodeObservations } from "./observation";
-import { decodeOptions, type EncodedProphetOptions } from "./options";
-import { parseUncertaintyOptions } from "./uncertainty";
+import { decodeOptions, type EncodedProphetOptions, type ProphetOptions } from "./options";
 
 const ObjectiveMetricSchema = Schema.Literals(["mae", "mse", "rmse", "mape", "mdape", "smape"]);
 
@@ -57,17 +61,7 @@ const SearchSchema = Schema.Struct({
   includeCrossValidation: Schema.optionalKey(Schema.Boolean),
 });
 
-const IntervalModeSchema = Schema.Struct({
-  mode: Schema.Literal("intervals"),
-  uncertainty: Schema.Unknown,
-});
-
 const decodeSearch = Schema.decodeUnknownEffect(SearchSchema, {
-  errors: "all",
-  onExcessProperty: "error",
-});
-
-const decodeIntervalMode = Schema.decodeUnknownEffect(IntervalModeSchema, {
   errors: "all",
   onExcessProperty: "error",
 });
@@ -92,7 +86,7 @@ export interface ModelSearchInput {
   readonly plan: RollingOriginPlanInput;
   readonly objective: SearchObjective;
   readonly failurePolicy: "record" | "fail-fast";
-  readonly mode?: CrossValidationIntervalInput;
+  readonly mode?: CrossValidationInput;
   readonly includeCrossValidation?: boolean;
 }
 
@@ -104,6 +98,7 @@ export type SearchCandidateResult =
       readonly kind: "success";
       readonly id: CandidateId;
       readonly candidateIndex: number;
+      /** Effective CV fit options, including the resolved scaling used by later holdout fitting. */
       readonly options: EncodedProphetOptions;
       readonly score: number;
       readonly metrics: OverallReport;
@@ -275,7 +270,11 @@ export const searchModels = Effect.fn("Prophet.searchModels")(function* (
     );
   }
 
-  const candidates: Array<{ id: CandidateId; options: EncodedProphetOptions }> = [];
+  const validatedCandidates: Array<{
+    id: CandidateId;
+    options: EncodedProphetOptions;
+    parsedOptions: ProphetOptions;
+  }> = [];
 
   for (const [index, candidate] of parsed.candidates.entries()) {
     const original = input.candidates[index];
@@ -295,46 +294,40 @@ export const searchModels = Effect.fn("Prophet.searchModels")(function* (
 
     const copy = ownedInput(original.options);
 
-    yield* parseOptions(copy);
+    const parsedOptions = yield* parseOptions(copy);
 
-    candidates.push({ id: candidate.id, options: copy });
+    validatedCandidates.push({ id: candidate.id, options: copy, parsedOptions });
   }
 
-  let mode: CrossValidationIntervalInput | undefined;
+  const controls = yield* parseCrossValidationInput(input.mode).pipe(
+    Effect.mapError((error) =>
+      searchInputContext(
+        error,
+        error.input === "uncertainty-options" ? ["mode", "uncertainty"] : ["mode"],
+        "Invalid search cross-validation controls",
+      ),
+    ),
+  );
+
+  let mode: CrossValidationInput;
   let samples = 0;
 
-  if (parsed.mode !== undefined) {
-    yield* decodeIntervalMode(parsed.mode).pipe(
-      Effect.mapError((error) => inputValidationErrorFromIssue("evaluation-search", error.issue)),
-    );
-    const modeInput = input.mode;
-
-    if (modeInput === undefined) {
-      return yield* Effect.die(new Error("Parsed interval mode is missing its input"));
-    }
-
-    const uncertainty = yield* parseUncertaintyOptions(modeInput.uncertainty).pipe(
-      Effect.mapError((error) =>
-        searchInputContext(error, ["mode", "uncertainty"], "Invalid search interval controls"),
-      ),
-    );
-
-    if (uncertainty.output !== "intervals") {
-      return yield* Effect.fail(
-        invalidSearch(["mode", "uncertainty", "output"], "Search requires interval output"),
-      );
-    }
-
-    mode = Object.freeze({
-      mode: "intervals",
-      uncertainty: Object.freeze({
-        seed: uncertainty.seed,
-        samples: uncertainty.samples,
-        intervalWidth: uncertainty.intervalWidth,
-      }),
-    });
-    samples = uncertainty.samples;
+  if (controls.mode === "intervals") {
+    const { uncertaintyOptions, ...intervalInput } = controls;
+    mode = Object.freeze(intervalInput);
+    samples = uncertaintyOptions.samples;
+  } else {
+    mode = controls;
   }
+
+  yield* Effect.annotateCurrentSpan({
+    "effect_prophet.evaluation.scaling.mode": controls.scaling ?? defaultTargetScalingMode,
+  });
+
+  const candidates = validatedCandidates.map((candidate) => ({
+    id: candidate.id,
+    options: crossValidationFitOptions(candidate.options, candidate.parsedOptions, controls),
+  }));
 
   // Validate the raw plan before attempting to copy it; schema failures remain typed.
   const firstCandidate = candidates[0];
@@ -438,7 +431,9 @@ export const searchModels = Effect.fn("Prophet.searchModels")(function* (
               "effect_prophet.candidate.count": candidates.length,
               "effect_prophet.fold.count": sharedPlan.folds.length,
               "effect_prophet.objective": objective.metric,
-              "effect_prophet.uncertainty.enabled": mode !== undefined,
+              "effect_prophet.uncertainty.enabled": mode.mode === "intervals",
+              "effect_prophet.evaluation.scaling.mode":
+                controls.scaling ?? defaultTargetScalingMode,
             },
           },
           { captureStackTrace: false },

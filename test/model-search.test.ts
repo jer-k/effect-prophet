@@ -124,6 +124,72 @@ describe("searchModels", () => {
     });
   });
 
+  it.each([
+    { name: "default", mode: { mode: "point" }, scaling: "absmax" },
+    { name: "override", mode: { scaling: "minmax" }, scaling: "minmax" },
+  ] as const)(
+    "retains effective $name scaling in candidate receipts",
+    async ({ mode, scaling }) => {
+      const requested = { growth: "flat", scaling: "minmax" } as const;
+
+      const result = await Effect.runPromise(
+        search({
+          candidates: [{ id: "flat", options: requested }],
+          plan,
+          objective,
+          failurePolicy: "record",
+          mode,
+          includeCrossValidation: true,
+        }),
+      );
+
+      const selected = result.candidates[0];
+
+      if (selected?.kind !== "success") {
+        throw new Error("Expected a successful flat candidate");
+      }
+
+      const direct = await Effect.runPromise(
+        crossValidate(rows, requested, plan, mode).pipe(Effect.provide(prophetFittingBackendLayer)),
+      );
+
+      expect(selected.options).toEqual({ growth: "flat", scaling });
+      expect(selected.crossValidation).toEqual(direct);
+      expect(Object.isFrozen(selected.options)).toBe(true);
+      expect(requested).toEqual({ growth: "flat", scaling: "minmax" });
+    },
+  );
+
+  it("rejects invalid CV scaling before candidate or fold boundaries", async () => {
+    const spans: Array<Tracer.Span> = [];
+
+    const tracer = Tracer.make({
+      span: (options) => {
+        const span = new Tracer.NativeSpan(options);
+        spans.push(span);
+
+        return span;
+      },
+    });
+
+    const error = await Effect.runPromise(
+      Effect.flip(
+        search({
+          candidates: [{ id: "flat", options: { growth: "flat" } }],
+          plan,
+          objective,
+          failurePolicy: "record",
+          mode: JSON.parse('{"scaling":"auto"}'),
+        }).pipe(Effect.withTracer(tracer)),
+      ),
+    );
+
+    expect(error).toMatchObject({ input: "evaluation-search" });
+    expect(spans.some((span) => span.name === "effect-prophet.evaluation.candidate")).toBe(false);
+    expect(spans.some((span) => span.name === "effect-prophet.evaluation.fold")).toBe(false);
+    expect(spans.some((span) => span.name.startsWith("effect-prophet.wasm."))).toBe(false);
+  });
+
   it("copies options and retains CV detail only when requested", async () => {
     const original = { id: "owned", options: { map: { changepointPriorScale: 0.1 } } };
     const candidates = [original];
@@ -535,6 +601,7 @@ describe("searchModels", () => {
 
     if (outer === undefined || parent === undefined) throw new Error("Missing search spans");
     expect(outer.parent.pipe(Option.getOrUndefined)?.spanId).toBe(parent.spanId);
+    expect(outer.attributes.get("effect_prophet.evaluation.scaling.mode")).toBe("absmax");
 
     for (const [index, candidate] of candidates.entries()) {
       const nested = cv[index];
@@ -559,6 +626,7 @@ describe("searchModels", () => {
         "effect_prophet.candidate.index": index,
         "effect_prophet.candidate.count": 2,
         "effect_prophet.objective": "mae",
+        "effect_prophet.evaluation.scaling.mode": "absmax",
       });
     }
 

@@ -1,0 +1,330 @@
+import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { cpus, platform, release } from "node:os";
+import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+import { Effect } from "effect";
+
+import type { BenchmarkDataset } from "./case.ts";
+import { loadCaseCatalog, selectCases } from "./catalog.ts";
+import { loadInputDataset } from "./inputs.ts";
+import { loadRunEvidence } from "./stored-results.ts";
+import { resolveRunReference } from "./references.ts";
+import { resolveContainerPlatform } from "./container-platform.ts";
+import type { RunManifest } from "./result.ts";
+
+const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
+
+const benchmarkRoot = fileURLToPath(new URL("../", import.meta.url));
+
+const composePath = resolve(benchmarkRoot, "tools/runtime/compose.yaml");
+
+const evidencePath = resolve(benchmarkRoot, "evidence/comparisons.json");
+
+const inputRoot = resolve(benchmarkRoot, "inputs");
+
+const commandOutput = (command: string, args: ReadonlyArray<string>): string => {
+  const result = spawnSync(command, args, {
+    cwd: projectRoot,
+    encoding: "utf8",
+  });
+
+  if (result.status !== 0) {
+    throw new Error(result.stderr || result.stdout || `${command} failed`);
+  }
+
+  return result.stdout.trim();
+};
+
+const runCommand = (
+  command: string,
+  args: ReadonlyArray<string>,
+  environment: NodeJS.ProcessEnv,
+): void => {
+  const result = spawnSync(command, args, {
+    cwd: projectRoot,
+    env: environment,
+    stdio: "inherit",
+  });
+
+  if (result.status !== 0) {
+    throw new Error(
+      `${command} ${args.join(" ")} failed with status ${result.status ?? "unknown"}`,
+    );
+  }
+};
+
+const sha256File = async (path: string): Promise<string> => {
+  const contents = await readFile(path);
+
+  return createHash("sha256").update(contents).digest("hex");
+};
+
+interface RunArguments {
+  readonly caseIds: ReadonlyArray<string>;
+  readonly build: boolean;
+  readonly replay: string | undefined;
+}
+
+const parseArguments = (): RunArguments => {
+  const caseIds: Array<string> = [];
+  let build = true;
+  let replay: string | undefined;
+
+  for (let index = 2; index < process.argv.length; index += 1) {
+    const argument = process.argv[index];
+
+    if (argument === "--no-build") {
+      build = false;
+      continue;
+    }
+
+    if (argument === "--replay") {
+      const directory = process.argv[index + 1];
+
+      if (directory === undefined)
+        throw new Error("--replay requires a results-relative run directory");
+
+      replay = directory;
+      index += 1;
+      continue;
+    }
+
+    if (argument === "--case") {
+      const caseId = process.argv[index + 1];
+
+      if (caseId === undefined) {
+        throw new Error("--case requires a benchmark case id");
+      }
+
+      caseIds.push(caseId);
+      index += 1;
+      continue;
+    }
+
+    throw new Error(`Unknown benchmark argument: ${argument ?? "undefined"}`);
+  }
+
+  return { caseIds, build, replay };
+};
+
+const timestampRunId = (): string =>
+  new Date().toISOString().replaceAll(":", "").replaceAll(".", "-");
+
+const main = async (): Promise<void> => {
+  const arguments_ = parseArguments();
+
+  const catalog =
+    arguments_.replay === undefined
+      ? await Effect.runPromise(loadCaseCatalog())
+      : (
+          await Effect.runPromise(
+            resolveRunReference(resolve(benchmarkRoot, "results"), arguments_.replay).pipe(
+              Effect.flatMap(loadRunEvidence),
+            ),
+          )
+        ).cases.map((item) => ({
+          ...item,
+          dataset: item.dataset.replace(/^generated\//u, "v1/"),
+        }));
+
+  const declarations = await Effect.runPromise(selectCases(catalog, arguments_.caseIds));
+  const selectedCases = declarations.map((item) => item.id);
+
+  const cases = await Promise.all(
+    declarations.map(async (benchmarkCase) => {
+      const { dataset, sha256 } = await Effect.runPromise(
+        loadInputDataset(inputRoot, benchmarkCase),
+      );
+
+      const selection = benchmarkCase.rowSelection;
+
+      const futureRows =
+        selection === undefined
+          ? dataset.predictionRows
+          : dataset.predictionRows
+              .filter((_, index) => index % selection.stride === 0)
+              .slice(0, selection.future);
+
+      const lastTraining = dataset.observations.reduce<
+        BenchmarkDataset["observations"][number] | undefined
+      >(
+        (latest, row) => (latest === undefined || row.timestamp > latest.timestamp ? row : latest),
+        undefined,
+      );
+
+      const lastFuture = futureRows.at(-1);
+
+      if (
+        lastTraining === undefined ||
+        (selection !== undefined && futureRows.length !== selection.future)
+      ) {
+        throw new Error(`Case ${benchmarkCase.id} cannot select its declared future rows`);
+      }
+
+      return {
+        ...benchmarkCase,
+        datasetIdentity: {
+          recipe: dataset.recipe,
+          sha256,
+          trainingRows: dataset.observations.length,
+          predictionRows:
+            selection === undefined
+              ? dataset.predictionRows.length
+              : selection.historical + selection.future,
+          futureRows: futureRows.length,
+          horizonDays:
+            lastFuture === undefined
+              ? 0
+              : Math.max(
+                  0,
+                  (Date.parse(lastFuture.timestamp) - Date.parse(lastTraining.timestamp)) /
+                    86_400_000,
+                ),
+        },
+      };
+    }),
+  );
+
+  const gitRevision = commandOutput("git", ["rev-parse", "HEAD"]);
+  const gitDirty = commandOutput("git", ["status", "--porcelain"]) !== "";
+  const runId = `${timestampRunId()}-${gitRevision.slice(0, 8)}`;
+  const runDirectory = resolve(benchmarkRoot, "results/runs", runId);
+
+  await mkdir(runDirectory, { recursive: true });
+  await writeFile(resolve(runDirectory, "cases.json"), `${JSON.stringify(cases, null, 2)}\n`);
+
+  const inputPaths = Array.from(
+    new Set([
+      resolve(benchmarkRoot, "cases/growth/linear/public-api.json"),
+      resolve(benchmarkRoot, "cases/holidays/public-api.json"),
+      resolve(benchmarkRoot, "cases/regressors/public-api.json"),
+      resolve(benchmarkRoot, "cases/seasonalities/public-api.json"),
+      resolve(benchmarkRoot, "cases/growth/linear/scenarios.json"),
+      resolve(benchmarkRoot, "cases/growth/linear/edge-cases.ts"),
+      resolve(benchmarkRoot, "cases/growth/linear/stan-aligned.ts"),
+      resolve(projectRoot, "tools/prophet/linear_optimizer_evidence.py"),
+      resolve(benchmarkRoot, "cases/growth/mixed-map.ts"),
+      resolve(benchmarkRoot, "cases/uncertainty/public-api.ts"),
+      resolve(benchmarkRoot, "cases/diagnostics/evaluation.ts"),
+      resolve(benchmarkRoot, "cases/growth/flat/public-api.ts"),
+      resolve(benchmarkRoot, "tools/catalog.ts"),
+      resolve(benchmarkRoot, "tools/case.ts"),
+      resolve(benchmarkRoot, "tools/report.ts"),
+      resolve(benchmarkRoot, "tools/report-cli.ts"),
+      resolve(benchmarkRoot, "tools/evaluation.ts"),
+      resolve(benchmarkRoot, "tools/adapters/evaluation.py"),
+      resolve(runDirectory, "cases.json"),
+      evidencePath,
+      resolve(benchmarkRoot, "tools/runtime/python/uv.lock"),
+      ...new Set(cases.map((item) => resolve(inputRoot, item.dataset, "../manifest.json"))),
+      resolve(projectRoot, "package-lock.json"),
+      ...cases.map((item) => resolve(inputRoot, item.dataset)),
+    ]),
+  );
+
+  const inputHashes = await Promise.all(
+    inputPaths.map(async (path) => ({
+      name: path.slice(projectRoot.length),
+      value: await sha256File(path),
+    })),
+  );
+
+  const hostArchitecture = process.arch;
+
+  const platformResolution = resolveContainerPlatform(
+    hostArchitecture,
+    process.env.BENCHMARK_CONTAINER_PLATFORM,
+  );
+
+  const containerPlatform = platformResolution.platform;
+
+  const commands = ["correctness", "timing"].flatMap((stage) => [
+    `BENCHMARK_STAGE=${stage} BENCHMARK_CONTAINER_PLATFORM=${containerPlatform} docker compose -f benchmark/tools/runtime/compose.yaml run --rm effect-prophet-benchmark`,
+    `BENCHMARK_STAGE=${stage} BENCHMARK_CONTAINER_PLATFORM=${containerPlatform} docker compose -f benchmark/tools/runtime/compose.yaml run --rm python-prophet-benchmark`,
+    `BENCHMARK_REPORT_MODE=${stage === "correctness" ? "eligibility" : "final"} BENCHMARK_CONTAINER_PLATFORM=${containerPlatform} docker compose -f benchmark/tools/runtime/compose.yaml run --rm benchmark-report`,
+  ]);
+
+  const environment: NodeJS.ProcessEnv = {
+    ...process.env,
+    BENCHMARK_CASE_IDS: selectedCases.join(","),
+    BENCHMARK_CASES_PATH: "/results/cases.json",
+    BENCHMARK_CONTAINER_PLATFORM: containerPlatform,
+    BENCHMARK_HOST_RUN_DIRECTORY: runDirectory,
+  };
+
+  const compose = ["compose", "-f", composePath];
+
+  if (arguments_.build) {
+    runCommand("docker", [...compose, "build"], environment);
+  }
+
+  const containerImages = [
+    {
+      name: "effect-prophet/benchmark-effect:local",
+      value: commandOutput("docker", [
+        "image",
+        "inspect",
+        "effect-prophet/benchmark-effect:local",
+        "--format",
+        "{{.Id}}",
+      ]),
+    },
+    {
+      name: "effect-prophet/benchmark-python:1.4.0",
+      value: commandOutput("docker", [
+        "image",
+        "inspect",
+        "effect-prophet/benchmark-python:1.4.0",
+        "--format",
+        "{{.Id}}",
+      ]),
+    },
+  ];
+
+  const manifest: RunManifest = {
+    schemaVersion: 1,
+    runId,
+    createdAt: new Date().toISOString(),
+    gitRevision,
+    gitDirty,
+    hostPlatform: platform(),
+    hostRelease: release(),
+    hostArchitecture,
+    hostProcessor: cpus()[0]?.model ?? "unavailable",
+    containerPlatform,
+    emulated: platformResolution.emulated,
+    selectedCases,
+    commands,
+    inputHashes,
+    containerImages,
+  };
+
+  await writeFile(resolve(runDirectory, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`);
+
+  const runService = (service: string, overrides: NodeJS.ProcessEnv): void =>
+    runCommand("docker", [...compose, "run", "--rm", "--no-deps", service], {
+      ...environment,
+      ...overrides,
+    });
+
+  runService("effect-prophet-benchmark", { BENCHMARK_STAGE: "correctness" });
+  runService("python-prophet-benchmark", { BENCHMARK_STAGE: "correctness" });
+  runService("benchmark-report", { BENCHMARK_REPORT_MODE: "eligibility" });
+  runService("effect-prophet-benchmark", { BENCHMARK_STAGE: "timing" });
+  runService("python-prophet-benchmark", { BENCHMARK_STAGE: "timing" });
+  runService("benchmark-report", { BENCHMARK_REPORT_MODE: "final" });
+
+  process.stdout.write(`Benchmark report: ${resolve(runDirectory, "report.md")}\n`);
+};
+
+try {
+  await main();
+} catch (error) {
+  process.stderr.write(
+    `${error instanceof Error ? (error.stack ?? error.message) : String(error)}\n`,
+  );
+  process.exitCode = 1;
+}

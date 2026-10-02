@@ -8,6 +8,9 @@ import {
   type FittedProphet,
   type EncodedRegressorDefinition,
   type CrossValidationResult,
+  type CrossValidationInput,
+  type CrossValidationPointInput,
+  type CrossValidationIntervalInput,
   type Forecast,
   type PointCrossValidationResult,
   type ModelSearchResult,
@@ -24,6 +27,16 @@ const planOperation = planRollingOrigin(
 
 const plan: RollingOriginPlanSummary | undefined = undefined;
 
+const pointControls: CrossValidationPointInput = { scaling: "minmax" };
+
+const intervalControls: CrossValidationIntervalInput = {
+  mode: "intervals",
+  scaling: "minmax",
+  uncertainty: { seed: 1, samples: 8 },
+};
+
+const controls: CrossValidationInput = pointControls;
+
 const crossValidationOperation = crossValidate(
   [
     { timestamp: "2024-01-01T00:00:00.000Z", value: 1 },
@@ -35,6 +48,7 @@ const crossValidationOperation = crossValidate(
     horizonMs: 86_400_000,
     cutoffs: { mode: "explicit", timestamps: ["2024-01-02T00:00:00.000Z"] },
   },
+  controls,
 );
 
 const pointResult: PointCrossValidationResult | undefined = undefined;
@@ -69,7 +83,7 @@ const intervalOperation = crossValidate(
     horizonMs: 86_400_000,
     cutoffs: { mode: "explicit", timestamps: ["2024-01-02T00:00:00.000Z"] },
   },
-  { mode: "intervals", uncertainty: { seed: 1, samples: 8 } },
+  intervalControls,
 );
 
 const intervalValue = (result: CrossValidationResult): number | undefined =>

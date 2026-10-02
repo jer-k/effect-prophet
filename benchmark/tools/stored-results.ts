@@ -1,0 +1,186 @@
+import { readdir } from "node:fs/promises";
+import { resolve } from "node:path";
+
+import { Effect, Schema } from "effect";
+
+import { BenchmarkArtifactError, readJson } from "./artifacts.ts";
+import { parseBenchmarkCases } from "./case.ts";
+import { parseImplementationResult, parseRunManifest } from "./result.ts";
+
+const StoredReportSchema = Schema.Struct({
+  schemaVersion: Schema.Literal(1),
+  run: Schema.Struct({ runId: Schema.String }),
+  correctness: Schema.Array(
+    Schema.Struct({
+      caseId: Schema.String,
+      status: Schema.Literals(["passed", "failed"]),
+      comparison: Schema.String,
+      note: Schema.String,
+    }),
+  ),
+  timings: Schema.Array(
+    Schema.Struct({
+      caseId: Schema.String,
+      phase: Schema.String,
+      implementation: Schema.String,
+      sampleCount: Schema.Int,
+      medianNanoseconds: Schema.Finite,
+    }),
+  ),
+});
+
+/** Read recorded outcomes without requalifying historical gates against current code. */
+export const loadStoredReport = Effect.fn("benchmark.results.load")(function* (directory: string) {
+  const manifest = yield* readJson(resolve(directory, "manifest.json"), parseRunManifest);
+
+  const report = yield* readJson(
+    resolve(directory, "report.json"),
+    Schema.decodeUnknownEffect(StoredReportSchema),
+  ).pipe(
+    Effect.mapError(
+      (cause) =>
+        new BenchmarkArtifactError({ message: `Invalid recorded report: ${String(cause)}` }),
+    ),
+  );
+
+  if (manifest.runId !== report.run.runId) {
+    return yield* Effect.fail(
+      new BenchmarkArtifactError({ message: "Report and manifest run IDs differ" }),
+    );
+  }
+
+  return { manifest, report };
+});
+
+/** Load the complete raw evidence needed for retention and comparison. */
+export const loadRunEvidence = Effect.fn("benchmark.results.evidence")(function* (
+  directory: string,
+) {
+  const recorded = yield* loadStoredReport(directory);
+  const cases = yield* readJson(resolve(directory, "cases.json"), parseBenchmarkCases);
+
+  const effect = yield* readJson(
+    resolve(directory, "effect-prophet.json"),
+    parseImplementationResult,
+  );
+
+  const python = yield* readJson(
+    resolve(directory, "python-prophet.json"),
+    parseImplementationResult,
+  );
+
+  const selected = cases.filter((item) => recorded.manifest.selectedCases.includes(item.id));
+  const ids = recorded.manifest.selectedCases;
+
+  if (
+    effect.implementation !== "effect-prophet" ||
+    python.implementation !== "python-prophet" ||
+    new Set(ids).size !== ids.length ||
+    selected.length !== ids.length ||
+    recorded.report.correctness.length !== ids.length ||
+    ids.some((id) => !recorded.report.correctness.some((entry) => entry.caseId === id))
+  ) {
+    return yield* Effect.fail(
+      new BenchmarkArtifactError({ message: "Incomplete or inconsistent selected case evidence" }),
+    );
+  }
+
+  for (const item of selected) {
+    for (const implementation of [effect, python]) {
+      for (let run = 0; run < item.independentRuns; run += 1) {
+        const projections = implementation.correctness.filter(
+          (entry) => entry.caseId === item.id && entry.run === run,
+        );
+
+        const failures = implementation.failures.filter(
+          (entry) => entry.caseId === item.id && entry.run === run,
+        );
+
+        if (projections.length > 1 || (projections.length === 0 && failures.length === 0)) {
+          return yield* Effect.fail(
+            new BenchmarkArtifactError({
+              message: `Missing or duplicate independent correctness evidence for ${item.id}`,
+            }),
+          );
+        }
+      }
+    }
+  }
+
+  return { ...recorded, cases: selected, effect, python };
+});
+
+/** Enumerate retained scope/run directories, excluding temporary retention staging directories. */
+export const listRetainedRuns = Effect.fn("benchmark.results.list")(function* (root: string) {
+  return yield* Effect.tryPromise({
+    try: async () => {
+      const scopes = await readdir(root, { withFileTypes: true });
+      const paths: Array<string> = [];
+
+      for (const scope of scopes.filter(
+        (entry) => entry.isDirectory() && !entry.name.startsWith("."),
+      )) {
+        const runs = await readdir(resolve(root, scope.name), { withFileTypes: true });
+        paths.push(
+          ...runs
+            .filter((entry) => entry.isDirectory() && !entry.name.startsWith("."))
+            .map((entry) => `${scope.name}/${entry.name}`),
+        );
+      }
+
+      return paths.sort();
+    },
+    catch: (cause) =>
+      new BenchmarkArtifactError({ message: `Cannot list retained runs: ${String(cause)}` }),
+  });
+});
+
+/** Generate an overview of retained evidence, including failed cases, without selecting a winner. */
+export const renderResultsOverview = (
+  entries: ReadonlyArray<{
+    readonly path: string;
+    readonly evidence: Effect.Success<ReturnType<typeof loadStoredReport>>;
+  }>,
+): string => {
+  const lines = [
+    "# Retained benchmark results",
+    "",
+    "Generated by `npm run benchmark:results`. Local runs and local comparisons are gitignored.",
+    "Retention means reviewed evidence, not passing correctness or a performance ranking.",
+    "Recorded historical outcomes are not recomputed using current gates. Architecture and dirty-tree provenance remain in manifests and reports.",
+    "",
+    "| Scope | Run | Passed | Failed | Provenance | Report |",
+    "| --- | --- | ---: | ---: | --- | --- |",
+  ];
+
+  for (const {
+    path,
+    evidence: { manifest, report },
+  } of entries) {
+    const passed = report.correctness.filter((item) => item.status === "passed").length;
+    const failed = report.correctness.length - passed;
+    lines.push(
+      `| ${path.split("/")[0]} | \`${manifest.runId}\` | ${passed} | ${failed} | ${manifest.gitDirty ? "dirty tree" : "clean tree"}${manifest.emulated ? ", emulated" : ""} | [results](retained/${path}/report.md) |`,
+    );
+  }
+
+  lines.push(
+    "",
+    "## Case outcomes",
+    "",
+    "Only passed gates admit timing. Diagnostic invalid-domain cases remain failed; they are not relabeled as successful fits.",
+    "",
+  );
+
+  for (const { path, evidence } of entries) {
+    lines.push(`### ${path}`, "", "| Case | Outcome | Contract |", "| --- | --- | --- |");
+
+    for (const item of evidence.report.correctness) {
+      lines.push(`| \`${item.caseId}\` | ${item.status} | ${item.comparison} |`);
+    }
+
+    lines.push("");
+  }
+
+  return lines.join("\n");
+};
