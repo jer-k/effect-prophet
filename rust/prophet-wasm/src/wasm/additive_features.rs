@@ -10,10 +10,10 @@ use crate::piecewise_map::{
 };
 use crate::seasonality::SeasonalitySpec;
 use crate::target_scaling::{ScalingMode, TargetScaling};
-use crate::wasm_map::{
+use crate::wasm::map::{
   PiecewiseMapFitStatus, PiecewiseMapPredictionStatus, prediction_error_frame, status_for_fit_error,
 };
-use crate::wasm_protocol::{
+use crate::wasm::protocol::{
   parse_explicit_changepoints, parse_nonnegative_integer, parse_positive_integer,
 };
 
@@ -154,7 +154,7 @@ fn fit_piecewise_map_with_features_protocol(
         )];
       }
     };
-  let controls = match crate::wasm_protocol::parse_linear_optimizer(optimizer) {
+  let controls = match crate::wasm::protocol::parse_linear_optimizer(optimizer) {
     Some(value) => value,
     None => {
       return vec![f64::from(
@@ -221,7 +221,7 @@ fn fit_piecewise_map_with_features_protocol(
       else {
         return vec![f64::from(PiecewiseMapFitStatus::SizeOverflow as u32)];
       };
-      let termination = crate::wasm_protocol::map_termination_code(model.summary.termination);
+      let termination = crate::wasm::protocol::map_termination_code(model.summary.termination);
       let mut packed = Vec::with_capacity(capacity);
 
       packed.push(f64::from(PiecewiseMapFitStatus::Success as u32));
@@ -248,7 +248,7 @@ fn fit_piecewise_map_with_features_protocol(
         model.summary.stationarity_residual,
         termination,
       ]);
-      packed.extend_from_slice(&crate::wasm_protocol::linear_summary_frame(
+      packed.extend_from_slice(&crate::wasm::protocol::linear_summary_frame(
         model.summary.termination,
       ));
       packed.extend_from_slice(&model.trend.changepoint_timestamps);
@@ -258,7 +258,7 @@ fn fit_piecewise_map_with_features_protocol(
 
       packed
     }
-    Err(error) => crate::wasm_map::fit_error_frame(error),
+    Err(error) => crate::wasm::map::fit_error_frame(error),
   }
 }
 

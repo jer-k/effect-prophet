@@ -11,10 +11,10 @@ use crate::piecewise_linear::PiecewiseTrend;
 use crate::piecewise_map::{MapControls, resolve_automatic_changepoints};
 use crate::seasonality::SeasonalitySpec;
 use crate::target_scaling::{ScalingMode, TargetScaling};
-use crate::wasm_map::{
+use crate::wasm::map::{
   PiecewiseMapFitStatus, PiecewiseMapPredictionStatus, prediction_error_frame, status_for_fit_error,
 };
-use crate::wasm_protocol::{
+use crate::wasm::protocol::{
   parse_explicit_changepoints, parse_nonnegative_integer, parse_positive_integer,
 };
 
@@ -57,7 +57,7 @@ pub fn fit_mixed_linear_map(
   else {
     return fit_error(PiecewiseMapFitStatus::InvalidConfiguration);
   };
-  let Some(controls) = crate::wasm_protocol::parse_linear_optimizer(optimizer) else {
+  let Some(controls) = crate::wasm::protocol::parse_linear_optimizer(optimizer) else {
     return fit_error(PiecewiseMapFitStatus::InvalidConfiguration);
   };
   let Ok(changepoints) = parse_changepoints(
@@ -104,7 +104,7 @@ pub fn fit_mixed_linear_map(
     scaling,
   ) {
     Ok(model) => pack_linear_fit(model),
-    Err(error) => crate::wasm_map::fit_error_frame(error),
+    Err(error) => crate::wasm::map::fit_error_frame(error),
   }
 }
 
@@ -368,7 +368,7 @@ fn pack_linear_fit(model: crate::mixed_map::MixedMapModel) -> Vec<f64> {
     model.summary.stationarity_residual,
     termination,
   ]);
-  packed.extend_from_slice(&crate::wasm_protocol::linear_summary_frame(
+  packed.extend_from_slice(&crate::wasm::protocol::linear_summary_frame(
     model.summary.termination,
   ));
   packed.extend_from_slice(&trend.changepoint_timestamps);
@@ -405,7 +405,7 @@ fn pack_flat_fit(model: crate::mixed_map::MixedMapModel) -> Vec<f64> {
 }
 
 pub(crate) fn termination_code(termination: crate::piecewise_map::MapTermination) -> f64 {
-  crate::wasm_protocol::map_termination_code(termination)
+  crate::wasm::protocol::map_termination_code(termination)
 }
 
 pub(crate) fn parse_modes(values: &[f64]) -> Result<Vec<ComponentMode>, ()> {

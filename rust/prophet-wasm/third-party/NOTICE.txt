@@ -22,7 +22,7 @@ Reference-aligned exponential
 Arm optimized-routines, commit 375f32ed2f7098090f41795ad363822752a25a65.
 https://github.com/ARM-software/optimized-routines
 Copyright (c) 2018-2025 Arm Limited.
-stan_math.rs and stan_math_data.rs adapt math/exp.c and math/exp_data.c to
+src/stan/math.rs and src/stan/math/data.rs adapt math/exp.c and math/exp_data.c to
 pure Rust, exact IEEE-754 table bits, explicit fused arithmetic and nearest
 rounding. errno/fenv behavior and C ABI aliases are not included. This fixes
 host-libm-dependent optimizer trajectories without native or C dependencies.

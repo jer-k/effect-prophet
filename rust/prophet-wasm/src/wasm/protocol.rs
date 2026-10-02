@@ -3,9 +3,9 @@ pub(crate) const MAX_WIRE_INTEGER: f64 = u32::MAX as f64;
 /// Versioned linear-only controls: Newton has no L-BFGS or fallback fields.
 pub(crate) fn parse_linear_optimizer(
   values: &[f64],
-) -> Option<crate::stan_linear_optimizer::LinearOptimizerOptions> {
-  use crate::stan_lbfgs::{LbfgsControls, LbfgsSettings};
-  use crate::stan_linear_optimizer::{
+) -> Option<crate::stan::linear_optimizer::LinearOptimizerOptions> {
+  use crate::stan::lbfgs::{LbfgsControls, LbfgsSettings};
+  use crate::stan::linear_optimizer::{
     LinearOptimizerChoice as Choice, LinearOptimizerOptions, NewtonFallback,
   };
 
@@ -59,7 +59,7 @@ pub(crate) fn parse_linear_optimizer(
 /// Stable linear completions; zero is reserved for the unchanged coordinate policies.
 pub(crate) fn map_termination_code(termination: crate::piecewise_map::MapTermination) -> f64 {
   use crate::piecewise_map::MapTermination;
-  use crate::stan_linear_optimizer::LinearTermination as T;
+  use crate::stan::linear_optimizer::LinearTermination as T;
   match termination {
     MapTermination::Converged => 0.0,
     MapTermination::ConstantTargetShortcut => 1.0,
@@ -79,7 +79,7 @@ pub(crate) fn map_termination_code(termination: crate::piecewise_map::MapTermina
 /// Extra linear summary fields, excluding any raw numerical state or failure payload.
 pub(crate) fn linear_summary_frame(termination: crate::piecewise_map::MapTermination) -> [f64; 4] {
   use crate::piecewise_map::MapTermination;
-  use crate::stan_linear_optimizer::LinearAlgorithm;
+  use crate::stan::linear_optimizer::LinearAlgorithm;
   match termination {
     MapTermination::Stan(summary) => [
       match summary.algorithm {

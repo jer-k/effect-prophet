@@ -7,7 +7,7 @@ use std::collections::VecDeque;
 
 use crate::fourier::checked_element_count;
 use crate::map_objective::MapObjectiveError;
-use crate::stan_optimizer::{LogDensityEvaluation, StanOptimizerError, checked_evaluation};
+use crate::stan::optimizer::{LogDensityEvaluation, StanOptimizerError, checked_evaluation};
 
 /// CmdStan's configurable limited-memory optimization settings.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -155,7 +155,7 @@ impl History {
 }
 
 fn dot(a: &[f64], b: &[f64]) -> f64 {
-  crate::stan_reductions::sum(a.len(), |index| a[index] * b[index])
+  crate::stan::reductions::sum(a.len(), |index| a[index] * b[index])
 }
 
 // Literal pinned interpolation: comparisons with NaN roots leave the endpoint
@@ -483,7 +483,7 @@ mod tests {
   #[cfg_attr(not(target_arch = "wasm32"), test)]
   fn accepted_steps_match_the_frozen_early_trajectory() {
     let fixture: serde_json::Value = serde_json::from_str(include_str!(
-      "../../../integration/fixtures/prophet-1.4.0/stan-linear-optimizer.json"
+      "../../../../integration/fixtures/prophet-1.4.0/stan-linear-optimizer.json"
     ))
     .unwrap();
     for case in fixture["cases"].as_array().unwrap() {

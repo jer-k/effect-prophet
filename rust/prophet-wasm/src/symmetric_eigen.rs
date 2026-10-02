@@ -8,7 +8,7 @@
 
 use nalgebra::{DMatrix, DVector, SymmetricTridiagonal};
 
-use crate::stan_optimizer::NewtonError;
+use crate::stan::optimizer::NewtonError;
 
 pub(crate) fn decompose(
   mut matrix: DMatrix<f64>,

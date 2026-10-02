@@ -3,7 +3,7 @@ dist/
 coverage/
 target/
 rust/prophet-wasm/pkg/
-wasm/
+/wasm/
 benchmark/results/runs/
 *.tsbuildinfo
 .DS_Store

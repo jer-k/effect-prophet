@@ -60,9 +60,9 @@ different capacities, floors, conditions, or regressors remain distinct rows.
 ## Rust/WASM ownership
 
 `rust/prophet-wasm/src/logistic_map.rs` owns floor-aware scaling, stable evaluation, initialization,
-optimization, prediction, and numerical failures. `wasm_logistic_map.rs` owns numeric framing and
-validation. TypeScript owns public schemas, complete-row policy, strict frame decoding, trusted
-model construction, persistence, Effect failure translation, and coarse tracing.
+optimization, prediction, and numerical failures. `rust/prophet-wasm/src/wasm/logistic_map.rs` owns
+numeric framing and validation. TypeScript owns public schemas, complete-row policy, strict frame
+decoding, trusted model construction, persistence, Effect failure translation, and coarse tracing.
 
 The fit frame prefix is
 

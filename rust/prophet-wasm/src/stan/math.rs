@@ -3,7 +3,6 @@
 //! Copyright (c) 2018-2025 Arm Limited. SPDX-License-Identifier: MIT
 //! Modified: pure Rust, explicit fused operations, no errno/fenv or ABI aliases.
 
-#[path = "stan_math_data.rs"]
 mod data;
 
 /// Table-based exponential with explicit round-to-nearest fused evaluation.

@@ -2,8 +2,8 @@
 //! This pure policy owns original initialization and never reuses a failed iterate.
 
 use crate::map_objective::StanLinearObjective;
-use crate::stan_lbfgs::{LbfgsControls, LbfgsResult, LbfgsTermination, optimize_lbfgs};
-use crate::stan_optimizer::{
+use crate::stan::lbfgs::{LbfgsControls, LbfgsResult, LbfgsTermination, optimize_lbfgs};
+use crate::stan::optimizer::{
   LogDensityEvaluation, NewtonResult, NewtonTermination, StanOptimizerError,
 };
 

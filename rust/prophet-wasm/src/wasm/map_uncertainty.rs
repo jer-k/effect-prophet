@@ -11,10 +11,10 @@ use crate::mixed_map::{MixedTrendModel, predict_mixed_map};
 use crate::piecewise_linear::PiecewiseTrend;
 use crate::piecewise_map::PiecewiseMapPredictionError;
 use crate::target_scaling::{LogisticFloorPolicy, LogisticScaling, TargetScaling};
-use crate::wasm_mixed_map::{
+use crate::wasm::mixed_map::{
   layout_view, mask_view, matrix_view, parse_metadata, parse_modes, parse_seasonalities,
 };
-use crate::wasm_protocol::{parse_nonnegative_integer, parse_positive_integer};
+use crate::wasm::protocol::{parse_nonnegative_integer, parse_positive_integer};
 
 const INVALID_REQUEST: f64 = 1.0;
 const INVALID_MODEL: f64 = 2.0;
