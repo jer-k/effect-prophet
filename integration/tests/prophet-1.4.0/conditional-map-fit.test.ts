@@ -43,7 +43,20 @@ describe("Prophet 1.4.0 fitted conditional MAP evidence", () => {
       expect(actualCoefficients).toHaveLength(
         referenceCase.expected.observationUnitCoefficients.length,
       );
-      expect(model.fitSummary.stationarityResidual).toBeLessThanOrEqual(1e-2);
+      // Literal Stan stopping is not a KKT certificate: compare independent
+      // executable density/optimality evidence, not coordinate-descent's stop.
+      expectWithin(
+        model.fitSummary.objective,
+        referenceCase.optimizerEvidence.objective,
+        1e-2,
+        `${referenceCase.id} density`,
+      );
+      expectWithin(
+        model.fitSummary.stationarityResidual,
+        referenceCase.optimizerEvidence.stationarityResidual,
+        1e-2,
+        `${referenceCase.id} optimality`,
+      );
 
       for (const [
         index,

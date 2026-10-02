@@ -236,6 +236,10 @@
           "value": 11.91989907705455
         }
       ],
+      "optimizerEvidence": {
+        "objective": -131.342391988,
+        "stationarityResidual": 0.794087715733
+      },
       "predictionRows": [
         {
           "conditions": {
@@ -522,6 +526,10 @@
           "value": 10.554999999999996
         }
       ],
+      "optimizerEvidence": {
+        "objective": -73.877716061,
+        "stationarityResidual": 2.03187242548
+      },
       "predictionRows": [
         {
           "conditions": {
@@ -793,6 +801,10 @@
           "value": 10.805
         }
       ],
+      "optimizerEvidence": {
+        "objective": -126.909800489,
+        "stationarityResidual": 0.460885648353
+      },
       "predictionRows": [
         {
           "conditions": {
@@ -1171,6 +1183,10 @@
           "value": 12.36989907705455
         }
       ],
+      "optimizerEvidence": {
+        "objective": -134.782793687,
+        "stationarityResidual": 0.624414872311
+      },
       "predictionRows": [
         {
           "conditions": {

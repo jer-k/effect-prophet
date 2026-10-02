@@ -73,6 +73,39 @@ describe("benchmark case parsing", () => {
     expect(cases.map((benchmarkCase) => benchmarkCase.id)).toEqual(["fixed", "automatic"]);
   });
 
+  it("requires an explicit EP-097 deferral or the historical stationarity bound", async () => {
+    const base = { objectiveAbsolute: 0.01, normalizedNoiseAbsolute: 0.0002 };
+
+    for (const optimizerQuality of [
+      { ...base, stationarityAbsolute: 0.01 },
+      { ...base, stationarity: { kind: "diagnostic-only", followUp: "EP-097" } },
+    ]) {
+      const cases = await Effect.runPromise(
+        parseBenchmarkCases([{ ...omittedMapCase, optimizerQuality }]),
+      );
+
+      expect(cases[0]?.optimizerQuality).toEqual(optimizerQuality);
+    }
+
+    for (const optimizerQuality of [
+      base,
+      { ...base, stationarity: { kind: "diagnostic-only" } },
+      { ...base, stationarity: { kind: "diagnostic-only", followUp: "unknown" } },
+      { ...base, stationarity: { kind: "ignore", followUp: "EP-097" } },
+      {
+        ...base,
+        stationarityAbsolute: 0.01,
+        stationarity: { kind: "diagnostic-only", followUp: "EP-097" },
+      },
+    ]) {
+      const failure = await Effect.runPromise(
+        Effect.flip(parseBenchmarkCases([{ ...omittedMapCase, optimizerQuality }])),
+      );
+
+      expect(failure._tag).toBe("BenchmarkInputError");
+    }
+  });
+
   it("rejects duplicate ids and dataset traversal", async () => {
     const duplicate = await Effect.runPromise(
       parseBenchmarkCases([validCase, validCase]).pipe(Effect.exit),
@@ -107,7 +140,7 @@ describe("benchmark case parsing", () => {
 
   it("contains every feature workload and no different-objective branch", async () => {
     const input: unknown = JSON.parse(
-      await readFile(new URL("../cases/public-api.json", import.meta.url), "utf8"),
+      await readFile(new URL("../cases/linear-growth/public-api.json", import.meta.url), "utf8"),
     );
 
     const cases = await Effect.runPromise(parseBenchmarkCases(input));
@@ -128,7 +161,7 @@ describe("benchmark case parsing", () => {
 });
 
 describe("benchmark dataset parsing", () => {
-  it("requires strictly ordered observations", async () => {
+  it("preserves unsorted source observations for public-boundary correctness cases", async () => {
     const result = await Effect.runPromise(
       parseBenchmarkDataset({
         id: "unordered",
@@ -141,7 +174,7 @@ describe("benchmark dataset parsing", () => {
       }).pipe(Effect.exit),
     );
 
-    expect(result._tag).toBe("Failure");
+    expect(result._tag).toBe("Success");
   });
 
   it("parses complete future regressor and condition rows", async () => {

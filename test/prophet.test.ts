@@ -212,7 +212,7 @@ describe("linear-trend Prophet integration", () => {
 
     expect(model.changepointTimestamps).toEqual([1_704_240_000_000]);
     expect(model.deltas).toHaveLength(1);
-    expect(model.fitSummary.method).toBe("piecewise-map-coordinate-v1");
+    expect(model.fitSummary.method).toBe("piecewise-map-stan-v2");
     expect(Object.isFrozen(model.changepointTimestamps)).toBe(true);
 
     const forecasts = await Effect.runPromise(
@@ -645,7 +645,7 @@ describe("linear MAP Prophet integration", () => {
       "daily-custom",
       "weekly-custom",
     ]);
-    expect(model.fitSummary.method).toBe("piecewise-map-coordinate-v1");
+    expect(model.fitSummary.method).toBe("piecewise-map-stan-v2");
     expect(Number.isFinite(model.fitSummary.objective)).toBe(true);
 
     const heldOutTimestamps = [

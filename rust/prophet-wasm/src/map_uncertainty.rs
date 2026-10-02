@@ -183,7 +183,7 @@ pub fn simulate_map(
               || !delta.is_finite()
               || point < time_origin
               || point > training_end
-              || (index > 0 && point <= changepoints[index - 1])
+              || (index > 0 && point < changepoints[index - 1])
           },
         )
       {

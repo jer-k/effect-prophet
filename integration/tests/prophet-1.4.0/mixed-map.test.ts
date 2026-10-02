@@ -73,9 +73,7 @@ describe("Prophet 1.4.0 mixed MAP evidence", () => {
               componentCounts,
               modes,
               referenceCase.settings.changepointPriorScale,
-              10_000,
-              1e-10,
-              1e-12,
+              new Float64Array([2, 1, 10_000]),
             )
           : wasm.fit_mixed_flat_map(...common, 10_000, 1e-10, 1e-12);
 
@@ -83,7 +81,7 @@ describe("Prophet 1.4.0 mixed MAP evidence", () => {
 
       const coefficientStart =
         referenceCase.growth === "linear"
-          ? 16 + referenceCase.expected.changepointTimestamps.length * 2
+          ? 20 + referenceCase.expected.changepointTimestamps.length * 2
           : 12;
 
       for (const [index, expected] of referenceCase.expected.coefficients.entries()) {
@@ -113,7 +111,7 @@ describe("Prophet 1.4.0 mixed MAP evidence", () => {
               fit[7],
               fit[8],
               new Float64Array(referenceCase.expected.changepointTimestamps.map(epoch)),
-              fit.slice(16 + referenceCase.expected.changepointTimestamps.length, coefficientStart),
+              fit.slice(20 + referenceCase.expected.changepointTimestamps.length, coefficientStart),
               fit[10],
               new Float64Array(),
               new Float64Array(),

@@ -54,6 +54,38 @@ const modelFrom = (baseline: Awaited<ReturnType<typeof run>>): PointCrossValidat
 });
 
 describe("forecast baselines", () => {
+  it("uses stable-last ties for application baselines and counts every row in the mean", async () => {
+    const rows = history([3, 1, 0, 1, 2, 3, 4], [8, 4, 2, 10, 6, 12, 14]);
+
+    const summary = await Effect.runPromise(
+      planRollingOrigin(
+        rows,
+        {},
+        {
+          horizonMs: 2 * day,
+          cutoffs: { mode: "explicit", timestamps: [at(1)] },
+        },
+      ),
+    );
+
+    const last = await Effect.runPromise(
+      crossValidateBaseline(rows, summary, { kind: "last-observation" }),
+    );
+
+    const mean = await Effect.runPromise(
+      crossValidateBaseline(rows, summary, { kind: "training-mean" }),
+    );
+
+    const seasonal = await Effect.runPromise(
+      crossValidateBaseline(rows, summary, { kind: "seasonal-naive", lagMs: 2 * day }),
+    );
+
+    expect(last.rows.map((row) => row.predicted)).toEqual([10, 10, 10]);
+    expect(mean.rows.map((row) => row.predicted)).toEqual([16 / 3, 16 / 3, 16 / 3]);
+    expect(seasonal.rows.map((row) => row.predicted)).toEqual([2, 10, 10]);
+    expect(last.rows.map((row) => row.actual)).toEqual([6, 8, 12]);
+    expect(summary.folds[0]).toMatchObject({ trainingCount: 3, assessmentCount: 3 });
+  });
   it("uses each fold's training prefix and ignores future target changes", async () => {
     const last = await run({ kind: "last-observation" });
     const mean = await run({ kind: "training-mean" });

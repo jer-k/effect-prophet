@@ -7,7 +7,15 @@ import {
   type FittedPiecewiseMapProphet,
   type PiecewiseMapParameters,
 } from "../fitted-model";
-import type { ChangepointSetting, MapOptimizerControls } from "../options";
+import type { ChangepointSetting } from "../options";
+import type { LinearOptimizer } from "../linear-optimizer";
+import {
+  encodeLinearOptimizer,
+  decodeLinearCompletion,
+  annotateLinearCompletion,
+  annotateLinearRequest,
+  linearOptimizerFailure,
+} from "./linear-map-protocol";
 import type { ResolvedRegressor } from "../regressor";
 import type { SeasonalityLayout } from "../seasonality";
 import { targetScalingModeCode, type TargetScalingMode } from "../target-scaling";
@@ -49,7 +57,7 @@ export interface WasmPiecewiseMapAdapter {
     seasonalities: SeasonalityLayout,
     changepoints: ChangepointSetting,
     changepointPriorScale: number,
-    optimizer: MapOptimizerControls,
+    optimizer: LinearOptimizer,
   ) => Effect.Effect<PiecewiseMapParameters, FittingError>;
 
   /** Fit masked seasonalities and known additive columns. */
@@ -59,7 +67,7 @@ export interface WasmPiecewiseMapAdapter {
     seasonalities: SeasonalityLayout,
     changepoints: ChangepointSetting,
     changepointPriorScale: number,
-    optimizer: MapOptimizerControls,
+    optimizer: LinearOptimizer,
     masks: SeasonalityMaskMatrix,
     features: KnownAdditiveFeatures,
     events: EventCalendar,
@@ -149,7 +157,7 @@ const decodeFittedParameters = (
       regressors.length;
 
     const expectedLength =
-      16 +
+      20 +
       changepointCount * 2 +
       seasonalities.coefficientCount +
       events.layout.coefficientCount +
@@ -159,16 +167,8 @@ const decodeFittedParameters = (
       return protocolFailure(observationCount, parameterCount);
     }
 
-    const terminationCode = packed[15];
-    let termination: "converged" | "constant-target-shortcut" | undefined;
-
-    if (terminationCode === 0) {
-      termination = "converged";
-    }
-
-    if (terminationCode === 1) {
-      termination = "constant-target-shortcut";
-    }
+    const completion = decodeLinearCompletion(packed);
+    const termination = completion.termination;
 
     if (
       termination === undefined ||
@@ -178,7 +178,7 @@ const decodeFittedParameters = (
       return protocolFailure(observationCount, parameterCount);
     }
 
-    const changepointStart = 16;
+    const changepointStart = 20;
     const deltaStart = changepointStart + changepointCount;
     const coefficientStart = deltaStart + changepointCount;
     const eventCoefficientStart = coefficientStart + seasonalities.coefficientCount;
@@ -210,8 +210,8 @@ const decodeFittedParameters = (
       regressors: fittedRegressors,
       noiseScale: packed[10],
       fitSummary: {
-        method: "piecewise-map-coordinate-v1",
-        termination,
+        method: "piecewise-map-stan-v2",
+        ...completion,
         valueScale: packed[9],
         observationCount: packed[11],
         iterations: packed[12],
@@ -229,6 +229,10 @@ const decodeFittedParameters = (
         }),
       ),
     );
+  }
+
+  if (status === 11) {
+    return linearOptimizerFailure(packed, observationCount);
   }
 
   if (packed.length !== 1) {
@@ -324,6 +328,8 @@ export const makeWasmPiecewiseMapAdapter = (
     const automaticRange = explicit ? 0 : changepoints.range;
 
     return Effect.gen(function* () {
+      yield* annotateLinearRequest(optimizer);
+
       const module = yield* attemptWasmFitting(loadModule, observationCount, {
         phase: "load",
         message: "Failed to load the WASM linear MAP fitting backend",
@@ -345,9 +351,7 @@ export const makeWasmPiecewiseMapAdapter = (
             orders,
             priors,
             changepointPriorScale,
-            optimizer.maxIterations,
-            optimizer.relativeTolerance,
-            optimizer.absoluteTolerance,
+            encodeLinearOptimizer(optimizer),
           ),
         observationCount,
         {
@@ -364,6 +368,7 @@ export const makeWasmPiecewiseMapAdapter = (
         changepointPriorScale,
       );
     }).pipe(
+      Effect.tap((model) => annotateLinearCompletion(model.fitSummary)),
       Effect.withSpan(
         "effect-prophet.wasm.fit",
         wasmFitSpanOptions(
@@ -402,6 +407,8 @@ export const makeWasmPiecewiseMapAdapter = (
     const coefficientCount = seasonalities.coefficientCount + features.layout.coefficientCount;
 
     return Effect.gen(function* () {
+      yield* annotateLinearRequest(optimizer);
+
       const module = yield* attemptWasmFitting(loadModule, observationCount, {
         phase: "load",
         message: "Failed to load the WASM linear MAP feature fitting backend",
@@ -444,9 +451,7 @@ export const makeWasmPiecewiseMapAdapter = (
             offsets,
             counts,
             changepointPriorScale,
-            optimizer.maxIterations,
-            optimizer.relativeTolerance,
-            optimizer.absoluteTolerance,
+            encodeLinearOptimizer(optimizer),
           ),
         observationCount,
         {
@@ -465,6 +470,7 @@ export const makeWasmPiecewiseMapAdapter = (
         regressors,
       );
     }).pipe(
+      Effect.tap((model) => annotateLinearCompletion(model.fitSummary)),
       Effect.withSpan(
         "effect-prophet.wasm.fit",
         wasmFitSpanOptions(

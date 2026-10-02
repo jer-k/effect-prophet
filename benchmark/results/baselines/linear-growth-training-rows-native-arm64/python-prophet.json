@@ -1,0 +1,3984 @@
+{
+  "schemaVersion": 1,
+  "implementation": "python-prophet",
+  "generatedAt": "2026-09-30T22:47:44.475192Z",
+  "environment": {
+    "runtime": "python",
+    "runtimeVersion": "3.12.11",
+    "operatingSystem": "Linux 7.0.12-linuxkit",
+    "architecture": "aarch64",
+    "processor": "unavailable",
+    "containerPlatform": "linux/arm64",
+    "versions": [
+      {
+        "name": "cmdstanpy",
+        "value": "1.3.0"
+      },
+      {
+        "name": "holidays",
+        "value": "0.104"
+      },
+      {
+        "name": "numpy",
+        "value": "2.5.3"
+      },
+      {
+        "name": "pandas",
+        "value": "3.0.5"
+      },
+      {
+        "name": "prophet",
+        "value": "1.4.0"
+      }
+    ],
+    "artifactHashes": [
+      {
+        "name": "benchmark/python/uv.lock",
+        "value": "c90f2464e1d50dbe489bdcdaf8350f04c162f6c617559cfb75d6977b0f430ab1"
+      },
+      {
+        "name": "prophet/stan_model/prophet_model.bin",
+        "value": "faff590e554b6dd4e8c232d2a51c63fe734ae018dd529ee7433a5cdcd86fc54e"
+      }
+    ],
+    "numericalThreads": [
+      {
+        "name": "OMP_NUM_THREADS",
+        "value": "1"
+      },
+      {
+        "name": "OPENBLAS_NUM_THREADS",
+        "value": "1"
+      },
+      {
+        "name": "MKL_NUM_THREADS",
+        "value": "1"
+      }
+    ],
+    "resources": [
+      {
+        "name": "logical-cpu-count",
+        "value": "4"
+      },
+      {
+        "name": "runtime-total-memory-bytes",
+        "value": "8320299008"
+      },
+      {
+        "name": "cgroup-memory-max",
+        "value": "max"
+      },
+      {
+        "name": "collection-method",
+        "value": "python-os and cgroup-v2"
+      }
+    ],
+    "memoryMeasurement": "warm-uncertainty/evaluation: worker high-water RSS via resource.RUSAGE_SELF.ru_maxrss (Linux KiB); includes imports and previous operations; excludes CmdStan fit child and cold subprocesses; heap-only peaks unavailable"
+  },
+  "measurements": [
+    {
+      "caseId": "map-training-ordered-explicit",
+      "implementation": "python-prophet",
+      "phase": "warm-fit",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        24187542,
+        23891917
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-ordered-explicit",
+      "implementation": "python-prophet",
+      "phase": "warm-predict",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        3774875,
+        3661750
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-ordered-explicit",
+      "implementation": "python-prophet",
+      "phase": "model-json-encode",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        463584,
+        441625
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-ordered-explicit",
+      "implementation": "python-prophet",
+      "phase": "model-json-decode",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        2519458,
+        2374334
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-ordered-explicit",
+      "implementation": "python-prophet",
+      "phase": "fresh-process-restored-predict",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        1585357668,
+        1599151709
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-ordered-explicit",
+      "implementation": "python-prophet",
+      "phase": "warm-fit",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        23504709,
+        23368500
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-ordered-explicit",
+      "implementation": "python-prophet",
+      "phase": "warm-predict",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        2987166,
+        3300375
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-ordered-explicit",
+      "implementation": "python-prophet",
+      "phase": "model-json-encode",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        467458,
+        439833
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-ordered-explicit",
+      "implementation": "python-prophet",
+      "phase": "model-json-decode",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        2283708,
+        2254375
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-ordered-explicit",
+      "implementation": "python-prophet",
+      "phase": "fresh-process-restored-predict",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        1569633918,
+        1624144084
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-unsorted-explicit",
+      "implementation": "python-prophet",
+      "phase": "warm-fit",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        24655666,
+        24622625
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-unsorted-explicit",
+      "implementation": "python-prophet",
+      "phase": "warm-predict",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        3194167,
+        3238625
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-unsorted-explicit",
+      "implementation": "python-prophet",
+      "phase": "model-json-encode",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        718542,
+        621167
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-unsorted-explicit",
+      "implementation": "python-prophet",
+      "phase": "model-json-decode",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        2281708,
+        2788709
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-unsorted-explicit",
+      "implementation": "python-prophet",
+      "phase": "fresh-process-restored-predict",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        1864881376,
+        1588894709
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-unsorted-explicit",
+      "implementation": "python-prophet",
+      "phase": "warm-fit",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        23375250,
+        24155667
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-unsorted-explicit",
+      "implementation": "python-prophet",
+      "phase": "warm-predict",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        3105375,
+        3232167
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-unsorted-explicit",
+      "implementation": "python-prophet",
+      "phase": "model-json-encode",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        1001542,
+        520750
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-unsorted-explicit",
+      "implementation": "python-prophet",
+      "phase": "model-json-decode",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        2283625,
+        2849125
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-unsorted-explicit",
+      "implementation": "python-prophet",
+      "phase": "fresh-process-restored-predict",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        1945956043,
+        1621442334
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-duplicates-explicit",
+      "implementation": "python-prophet",
+      "phase": "warm-fit",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        21886583,
+        22999792
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-duplicates-explicit",
+      "implementation": "python-prophet",
+      "phase": "warm-predict",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        3135958,
+        3211125
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-duplicates-explicit",
+      "implementation": "python-prophet",
+      "phase": "model-json-encode",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        648583,
+        670042
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-duplicates-explicit",
+      "implementation": "python-prophet",
+      "phase": "model-json-decode",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        2292125,
+        2214500
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-duplicates-explicit",
+      "implementation": "python-prophet",
+      "phase": "fresh-process-restored-predict",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        1576793334,
+        1558301418
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-duplicates-explicit",
+      "implementation": "python-prophet",
+      "phase": "warm-fit",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        21991916,
+        22897375
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-duplicates-explicit",
+      "implementation": "python-prophet",
+      "phase": "warm-predict",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        3174167,
+        2928875
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-duplicates-explicit",
+      "implementation": "python-prophet",
+      "phase": "model-json-encode",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        480333,
+        453875
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-duplicates-explicit",
+      "implementation": "python-prophet",
+      "phase": "model-json-decode",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        2261959,
+        2503041
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-duplicates-explicit",
+      "implementation": "python-prophet",
+      "phase": "fresh-process-restored-predict",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        1590558459,
+        1544395876
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-duplicates-auto",
+      "implementation": "python-prophet",
+      "phase": "warm-fit",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        90567333,
+        91792542
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-duplicates-auto",
+      "implementation": "python-prophet",
+      "phase": "warm-predict",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        3667166,
+        3112000
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-duplicates-auto",
+      "implementation": "python-prophet",
+      "phase": "model-json-encode",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        504459,
+        743667
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-duplicates-auto",
+      "implementation": "python-prophet",
+      "phase": "model-json-decode",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        2256875,
+        2159125
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-duplicates-auto",
+      "implementation": "python-prophet",
+      "phase": "fresh-process-restored-predict",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        1576459876,
+        1596138376
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-duplicates-auto",
+      "implementation": "python-prophet",
+      "phase": "warm-fit",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        92601875,
+        92460250
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-duplicates-auto",
+      "implementation": "python-prophet",
+      "phase": "warm-predict",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        3373417,
+        2956250
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-duplicates-auto",
+      "implementation": "python-prophet",
+      "phase": "model-json-encode",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        478208,
+        457334
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-duplicates-auto",
+      "implementation": "python-prophet",
+      "phase": "model-json-decode",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        2678250,
+        2212791
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-duplicates-auto",
+      "implementation": "python-prophet",
+      "phase": "fresh-process-restored-predict",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        1614620376,
+        1570764542
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-duplicate-features-auto",
+      "implementation": "python-prophet",
+      "phase": "warm-fit",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        121094417,
+        119916417
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-duplicate-features-auto",
+      "implementation": "python-prophet",
+      "phase": "warm-predict",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        3844042,
+        4163167
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-duplicate-features-auto",
+      "implementation": "python-prophet",
+      "phase": "model-json-encode",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        508542,
+        543750
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-duplicate-features-auto",
+      "implementation": "python-prophet",
+      "phase": "model-json-decode",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        2762500,
+        3034125
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-duplicate-features-auto",
+      "implementation": "python-prophet",
+      "phase": "fresh-process-restored-predict",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        1584500584,
+        1609519500
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-duplicate-features-auto",
+      "implementation": "python-prophet",
+      "phase": "warm-fit",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        119753958,
+        119480458
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-duplicate-features-auto",
+      "implementation": "python-prophet",
+      "phase": "warm-predict",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        4104958,
+        4495250
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-duplicate-features-auto",
+      "implementation": "python-prophet",
+      "phase": "model-json-encode",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        539292,
+        501666
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-duplicate-features-auto",
+      "implementation": "python-prophet",
+      "phase": "model-json-decode",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        2772375,
+        2966958
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-duplicate-features-auto",
+      "implementation": "python-prophet",
+      "phase": "fresh-process-restored-predict",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        1644921458,
+        1560914875
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "uncertainty-training-duplicates-auto",
+      "implementation": "python-prophet",
+      "phase": "warm-uncertainty",
+      "peakRssBytes": 123682816,
+      "comparison": "scalar-process-different-public-work",
+      "evidenceId": "training-row-map-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        18892250,
+        18374333
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "uncertainty-training-duplicates-auto",
+      "implementation": "python-prophet",
+      "phase": "fresh-process-restored-uncertainty",
+      "comparison": "scalar-process-different-public-work",
+      "evidenceId": "training-row-map-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        1605817959,
+        1592389543
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "uncertainty-training-duplicates-auto",
+      "implementation": "python-prophet",
+      "phase": "warm-uncertainty",
+      "peakRssBytes": 123629568,
+      "comparison": "scalar-process-different-public-work",
+      "evidenceId": "training-row-map-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        18733583,
+        18813625
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "uncertainty-training-duplicates-auto",
+      "implementation": "python-prophet",
+      "phase": "fresh-process-restored-uncertainty",
+      "comparison": "scalar-process-different-public-work",
+      "evidenceId": "training-row-map-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        1573261292,
+        1660684626
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-zero-span-flat-varied",
+      "implementation": "python-prophet",
+      "phase": "warm-fit",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        6618750,
+        6697250
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-zero-span-flat-varied",
+      "implementation": "python-prophet",
+      "phase": "warm-predict",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        3017500,
+        3913291
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-zero-span-flat-varied",
+      "implementation": "python-prophet",
+      "phase": "model-json-encode",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        375542,
+        356709
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-zero-span-flat-varied",
+      "implementation": "python-prophet",
+      "phase": "model-json-decode",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        2131750,
+        2224459
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-zero-span-flat-varied",
+      "implementation": "python-prophet",
+      "phase": "fresh-process-restored-predict",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        1606488751,
+        1598603293
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-zero-span-flat-varied",
+      "implementation": "python-prophet",
+      "phase": "warm-fit",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        7079333,
+        7119708
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-zero-span-flat-varied",
+      "implementation": "python-prophet",
+      "phase": "warm-predict",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        2937875,
+        3209666
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-zero-span-flat-varied",
+      "implementation": "python-prophet",
+      "phase": "model-json-encode",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        380541,
+        360167
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-zero-span-flat-varied",
+      "implementation": "python-prophet",
+      "phase": "model-json-decode",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        2107208,
+        1972584
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-zero-span-flat-varied",
+      "implementation": "python-prophet",
+      "phase": "fresh-process-restored-predict",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        1686562209,
+        1585717334
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-zero-span-flat-constant",
+      "implementation": "python-prophet",
+      "phase": "warm-fit",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        3150833,
+        3362959
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-zero-span-flat-constant",
+      "implementation": "python-prophet",
+      "phase": "warm-predict",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        3074666,
+        2901042
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-zero-span-flat-constant",
+      "implementation": "python-prophet",
+      "phase": "model-json-encode",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        366542,
+        340084
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-zero-span-flat-constant",
+      "implementation": "python-prophet",
+      "phase": "model-json-decode",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        2121875,
+        2298416
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-zero-span-flat-constant",
+      "implementation": "python-prophet",
+      "phase": "fresh-process-restored-predict",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        1594676667,
+        1564490959
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-zero-span-flat-constant",
+      "implementation": "python-prophet",
+      "phase": "warm-fit",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        4367042,
+        3259125
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-zero-span-flat-constant",
+      "implementation": "python-prophet",
+      "phase": "warm-predict",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        3126042,
+        2802625
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-zero-span-flat-constant",
+      "implementation": "python-prophet",
+      "phase": "model-json-encode",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        358209,
+        344292
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-zero-span-flat-constant",
+      "implementation": "python-prophet",
+      "phase": "model-json-decode",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        2422500,
+        2134459
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "map-training-zero-span-flat-constant",
+      "implementation": "python-prophet",
+      "phase": "fresh-process-restored-predict",
+      "comparison": "equivalent-objective",
+      "evidenceId": "training-row-map-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        1571751209,
+        1567940375
+      ],
+      "correctness": "locally-passed"
+    },
+    {
+      "caseId": "evaluation-training-duplicates",
+      "implementation": "python-prophet",
+      "phase": "evaluation-plan",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        1134708,
+        1012625
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 120512512
+    },
+    {
+      "caseId": "evaluation-training-duplicates",
+      "implementation": "python-prophet",
+      "phase": "evaluation-point",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        60941000,
+        66724084
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123187200
+    },
+    {
+      "caseId": "evaluation-training-duplicates",
+      "implementation": "python-prophet",
+      "phase": "evaluation-baseline",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        1616500,
+        1587875
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123187200
+    },
+    {
+      "caseId": "evaluation-training-duplicates",
+      "implementation": "python-prophet",
+      "phase": "evaluation-search",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        62856458,
+        63582917
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123604992
+    },
+    {
+      "caseId": "evaluation-training-duplicates",
+      "implementation": "python-prophet",
+      "phase": "evaluation-holdout",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        25075125,
+        28563083
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123604992
+    },
+    {
+      "caseId": "evaluation-training-duplicates",
+      "implementation": "python-prophet",
+      "phase": "evaluation-report-encode",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        12792,
+        8667
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123604992
+    },
+    {
+      "caseId": "evaluation-training-duplicates",
+      "implementation": "python-prophet",
+      "phase": "evaluation-report-decode",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 0,
+      "samplesNanoseconds": [
+        5375,
+        4708
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123604992
+    },
+    {
+      "caseId": "evaluation-training-duplicates",
+      "implementation": "python-prophet",
+      "phase": "evaluation-plan",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        1096583,
+        976125
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 120627200
+    },
+    {
+      "caseId": "evaluation-training-duplicates",
+      "implementation": "python-prophet",
+      "phase": "evaluation-point",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        60110459,
+        58716250
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123170816
+    },
+    {
+      "caseId": "evaluation-training-duplicates",
+      "implementation": "python-prophet",
+      "phase": "evaluation-baseline",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        1502834,
+        1788542
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123170816
+    },
+    {
+      "caseId": "evaluation-training-duplicates",
+      "implementation": "python-prophet",
+      "phase": "evaluation-search",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        62609625,
+        61230958
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123588608
+    },
+    {
+      "caseId": "evaluation-training-duplicates",
+      "implementation": "python-prophet",
+      "phase": "evaluation-holdout",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        25160667,
+        25306000
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123588608
+    },
+    {
+      "caseId": "evaluation-training-duplicates",
+      "implementation": "python-prophet",
+      "phase": "evaluation-report-encode",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        10167,
+        8084
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123588608
+    },
+    {
+      "caseId": "evaluation-training-duplicates",
+      "implementation": "python-prophet",
+      "phase": "evaluation-report-decode",
+      "comparison": "different-public-work",
+      "evidenceId": "stage-h-evaluation-v1",
+      "run": 1,
+      "samplesNanoseconds": [
+        5875,
+        5542
+      ],
+      "correctness": "locally-passed",
+      "peakRssBytes": 123588608
+    }
+  ],
+  "failures": [
+    {
+      "caseId": "map-training-zero-span-linear-varied",
+      "implementation": "python-prophet",
+      "run": 0,
+      "stage": "correctness",
+      "message": "Importing plotly failed. Interactive plots will not work.\n22:45:41 - cmdstanpy - INFO - Chain [1] start processing\n22:45:41 - cmdstanpy - INFO - Chain [1] done processing\n22:45:41 - cmdstanpy - ERROR - Chain [1] error: code '1' Operation not permitted\nRuntimeError: Error during optimization! Command '/opt/effect-prophet-benchmark/lib/python3.12/site-packages/prophet/stan_model/prophet_model.bin random seed=43063 data file=/tmp/tmp4qtti9h1/sjq4w6k_.json init=/tmp/tmp4qtti9h1/5tpvtdu8.json output file=/tmp/tmp4qtti9h1/prophet_modeln4vw6f6o/prophet_model-20260930224541.csv method=optimize algorithm=newton iter=10000' failed: console log output:\n\nmethod = optimize\n  optimize\n    algorithm = newton\n      newton\n    jacobian = false (Default)\n    iter = 10000\n    save_iterations = false (Default)\nid = 1 (Default)\ndata\n  file = /tmp/tmp4qtti9h1/sjq4w6k_.json\ninit = /tmp/tmp4qtti9h1/5tpvtdu8.json\nrandom\n  seed = 43063\noutput\n  file = /tmp/tmp4qtti9h1/prophet_modeln4vw6f6o/prophet_model-20260930224541.csv\n  diagnostic_file =  (Default)\n  refresh = 100 (Default)\n  sig_figs = 8 (Default)\n  profile_file = profile.csv (Default)\n  save_cmdstan_config = false (Default)\nnum_threads = 1 (Default)\n\nRejecting initial value:\n  Error evaluating the log probability at the initial value.\nException: normal_lpdf: Random variable is nan, but must be not nan! (in 'prophet.stan', line 130, column 2 to column 19)\n\nUser-specified initialization failed.\n Try specifying new initial values, using partially specialized initialization, reducing the range of constrained values, or reparameterizing the model.\nInitialization failed.\n\nTraceback (most recent call last):\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 1120, in <module>\n    main()\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 1097, in main\n    f\"{json.dumps(run_worker(sys.argv[2], int(sys.argv[3]), stage))}\"\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 864, in run_worker\n    else correctness_projection(benchmark_case, dataset, run))\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 667, in correctness_projection\n    model = setup_model(training, benchmark_case)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 250, in setup_model\n    return fit_model(training, benchmark_case)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 208, in fit_model\n    return model.fit(\n           ^^^^^^^^^^\n  File \"/opt/effect-prophet-benchmark/lib/python3.12/site-packages/prophet/forecaster.py\", line 1442, in fit\n    self.params = stan_backend.fit(stan_init, dat, **kwargs)\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/effect-prophet-benchmark/lib/python3.12/site-packages/prophet/models.py\", line 169, in fit\n    raise e\n  File \"/opt/effect-prophet-benchmark/lib/python3.12/site-packages/prophet/models.py\", line 165, in fit\n    self.stan_fit = self.model.optimize(**args)\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/effect-prophet-benchmark/lib/python3.12/site-packages/cmdstanpy/model.py\", line 658, in optimize\n    raise RuntimeError(msg)\nRuntimeError: Error during optimization! Command '/opt/effect-prophet-benchmark/lib/python3.12/site-packages/prophet/stan_model/prophet_model.bin random seed=43063 data file=/tmp/tmp4qtti9h1/sjq4w6k_.json init=/tmp/tmp4qtti9h1/5tpvtdu8.json output file=/tmp/tmp4qtti9h1/prophet_modeln4vw6f6o/prophet_model-20260930224541.csv method=optimize algorithm=newton iter=10000' failed: console log output:\n\nmethod = optimize\n  optimize\n    algorithm = newton\n      newton\n    jacobian = false (Default)\n    iter = 10000\n    save_iterations = false (Default)\nid = 1 (Default)\ndata\n  file = /tmp/tmp4qtti9h1/sjq4w6k_.json\ninit = /tmp/tmp4qtti9h1/5tpvtdu8.js"
+    },
+    {
+      "caseId": "map-training-zero-span-linear-varied",
+      "implementation": "python-prophet",
+      "run": 1,
+      "stage": "correctness",
+      "message": "Importing plotly failed. Interactive plots will not work.\n22:45:42 - cmdstanpy - INFO - Chain [1] start processing\n22:45:42 - cmdstanpy - INFO - Chain [1] done processing\n22:45:42 - cmdstanpy - ERROR - Chain [1] error: code '1' Operation not permitted\nRuntimeError: Error during optimization! Command '/opt/effect-prophet-benchmark/lib/python3.12/site-packages/prophet/stan_model/prophet_model.bin random seed=48083 data file=/tmp/tmpuyz84pc5/qu33upbp.json init=/tmp/tmpuyz84pc5/232x3icx.json output file=/tmp/tmpuyz84pc5/prophet_modelxo8oxj1d/prophet_model-20260930224542.csv method=optimize algorithm=newton iter=10000' failed: console log output:\n\nmethod = optimize\n  optimize\n    algorithm = newton\n      newton\n    jacobian = false (Default)\n    iter = 10000\n    save_iterations = false (Default)\nid = 1 (Default)\ndata\n  file = /tmp/tmpuyz84pc5/qu33upbp.json\ninit = /tmp/tmpuyz84pc5/232x3icx.json\nrandom\n  seed = 48083\noutput\n  file = /tmp/tmpuyz84pc5/prophet_modelxo8oxj1d/prophet_model-20260930224542.csv\n  diagnostic_file =  (Default)\n  refresh = 100 (Default)\n  sig_figs = 8 (Default)\n  profile_file = profile.csv (Default)\n  save_cmdstan_config = false (Default)\nnum_threads = 1 (Default)\n\nRejecting initial value:\n  Error evaluating the log probability at the initial value.\nException: normal_lpdf: Random variable is nan, but must be not nan! (in 'prophet.stan', line 130, column 2 to column 19)\n\nUser-specified initialization failed.\n Try specifying new initial values, using partially specialized initialization, reducing the range of constrained values, or reparameterizing the model.\nInitialization failed.\n\nTraceback (most recent call last):\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 1120, in <module>\n    main()\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 1097, in main\n    f\"{json.dumps(run_worker(sys.argv[2], int(sys.argv[3]), stage))}\"\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 864, in run_worker\n    else correctness_projection(benchmark_case, dataset, run))\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 667, in correctness_projection\n    model = setup_model(training, benchmark_case)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 250, in setup_model\n    return fit_model(training, benchmark_case)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 208, in fit_model\n    return model.fit(\n           ^^^^^^^^^^\n  File \"/opt/effect-prophet-benchmark/lib/python3.12/site-packages/prophet/forecaster.py\", line 1442, in fit\n    self.params = stan_backend.fit(stan_init, dat, **kwargs)\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/effect-prophet-benchmark/lib/python3.12/site-packages/prophet/models.py\", line 169, in fit\n    raise e\n  File \"/opt/effect-prophet-benchmark/lib/python3.12/site-packages/prophet/models.py\", line 165, in fit\n    self.stan_fit = self.model.optimize(**args)\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/effect-prophet-benchmark/lib/python3.12/site-packages/cmdstanpy/model.py\", line 658, in optimize\n    raise RuntimeError(msg)\nRuntimeError: Error during optimization! Command '/opt/effect-prophet-benchmark/lib/python3.12/site-packages/prophet/stan_model/prophet_model.bin random seed=48083 data file=/tmp/tmpuyz84pc5/qu33upbp.json init=/tmp/tmpuyz84pc5/232x3icx.json output file=/tmp/tmpuyz84pc5/prophet_modelxo8oxj1d/prophet_model-20260930224542.csv method=optimize algorithm=newton iter=10000' failed: console log output:\n\nmethod = optimize\n  optimize\n    algorithm = newton\n      newton\n    jacobian = false (Default)\n    iter = 10000\n    save_iterations = false (Default)\nid = 1 (Default)\ndata\n  file = /tmp/tmpuyz84pc5/qu33upbp.json\ninit = /tmp/tmpuyz84pc5/232x3icx.js"
+    },
+    {
+      "caseId": "map-training-zero-span-linear-constant",
+      "implementation": "python-prophet",
+      "run": 0,
+      "stage": "correctness",
+      "message": "Importing plotly failed. Interactive plots will not work.\n/opt/effect-prophet-benchmark/lib/python3.12/site-packages/prophet/forecaster.py:1619: RuntimeWarning: Mean of empty slice\n  k = np.nanmean(self.params['k'])\n/opt/effect-prophet-benchmark/lib/python3.12/site-packages/prophet/forecaster.py:1620: RuntimeWarning: Mean of empty slice\n  m = np.nanmean(self.params['m'])\nValueError: Prophet prediction returned a non-finite value\nTraceback (most recent call last):\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 1120, in <module>\n    main()\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 1097, in main\n    f\"{json.dumps(run_worker(sys.argv[2], int(sys.argv[3]), stage))}\"\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 864, in run_worker\n    else correctness_projection(benchmark_case, dataset, run))\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 670, in correctness_projection\n    assert_forecasts(benchmark_case, dataset, projections)\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 338, in assert_forecasts\n    raise ValueError(\"Prophet prediction returned a non-finite value\")\nValueError: Prophet prediction returned a non-finite value"
+    },
+    {
+      "caseId": "map-training-zero-span-linear-constant",
+      "implementation": "python-prophet",
+      "run": 1,
+      "stage": "correctness",
+      "message": "Importing plotly failed. Interactive plots will not work.\n/opt/effect-prophet-benchmark/lib/python3.12/site-packages/prophet/forecaster.py:1619: RuntimeWarning: Mean of empty slice\n  k = np.nanmean(self.params['k'])\n/opt/effect-prophet-benchmark/lib/python3.12/site-packages/prophet/forecaster.py:1620: RuntimeWarning: Mean of empty slice\n  m = np.nanmean(self.params['m'])\nValueError: Prophet prediction returned a non-finite value\nTraceback (most recent call last):\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 1120, in <module>\n    main()\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 1097, in main\n    f\"{json.dumps(run_worker(sys.argv[2], int(sys.argv[3]), stage))}\"\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 864, in run_worker\n    else correctness_projection(benchmark_case, dataset, run))\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 670, in correctness_projection\n    assert_forecasts(benchmark_case, dataset, projections)\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 338, in assert_forecasts\n    raise ValueError(\"Prophet prediction returned a non-finite value\")\nValueError: Prophet prediction returned a non-finite value"
+    }
+  ],
+  "correctness": [
+    {
+      "caseId": "map-training-ordered-explicit",
+      "run": 0,
+      "status": "locally-passed",
+      "modelKind": "linear-piecewise-map",
+      "targetScaling": {
+        "mode": "absmax",
+        "scale": 32.6287988238,
+        "offset": 0.0
+      },
+      "changepointTimestamps": [
+        1579219200000
+      ],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [
+        {
+          "timestamp": 1586131200000,
+          "value": 32.80404514851768,
+          "trend": 32.80404514851768,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586217600000,
+          "value": 33.03411596093989,
+          "trend": 33.03411596093989,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586304000000,
+          "value": 33.26418677336212,
+          "trend": 33.26418677336212,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586390400000,
+          "value": 33.494257585784325,
+          "trend": 33.494257585784325,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586476800000,
+          "value": 33.724328398206545,
+          "trend": 33.724328398206545,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586563200000,
+          "value": 33.95439921062877,
+          "trend": 33.95439921062877,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586649600000,
+          "value": 34.184470023050984,
+          "trend": 34.184470023050984,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586736000000,
+          "value": 34.4145408354732,
+          "trend": 34.4145408354732,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        }
+      ],
+      "persistenceMaximumAbsoluteError": 0.0,
+      "noiseScale": 0.061706941548233724,
+      "fitQuality": [
+        {
+          "name": "cmdstan-lp",
+          "value": 549.27016
+        }
+      ]
+    },
+    {
+      "caseId": "map-training-ordered-explicit",
+      "run": 1,
+      "status": "locally-passed",
+      "modelKind": "linear-piecewise-map",
+      "targetScaling": {
+        "mode": "absmax",
+        "scale": 32.6287988238,
+        "offset": 0.0
+      },
+      "changepointTimestamps": [
+        1579219200000
+      ],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [
+        {
+          "timestamp": 1586131200000,
+          "value": 32.80404514851768,
+          "trend": 32.80404514851768,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586217600000,
+          "value": 33.03411596093989,
+          "trend": 33.03411596093989,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586304000000,
+          "value": 33.26418677336212,
+          "trend": 33.26418677336212,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586390400000,
+          "value": 33.494257585784325,
+          "trend": 33.494257585784325,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586476800000,
+          "value": 33.724328398206545,
+          "trend": 33.724328398206545,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586563200000,
+          "value": 33.95439921062877,
+          "trend": 33.95439921062877,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586649600000,
+          "value": 34.184470023050984,
+          "trend": 34.184470023050984,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586736000000,
+          "value": 34.4145408354732,
+          "trend": 34.4145408354732,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        }
+      ],
+      "persistenceMaximumAbsoluteError": 0.0,
+      "noiseScale": 0.061706941548233724,
+      "fitQuality": [
+        {
+          "name": "cmdstan-lp",
+          "value": 549.27016
+        }
+      ]
+    },
+    {
+      "caseId": "map-training-ordered-auto",
+      "run": 0,
+      "status": "locally-passed",
+      "modelKind": "linear-piecewise-map",
+      "targetScaling": {
+        "mode": "absmax",
+        "scale": 32.6287988238,
+        "offset": 0.0
+      },
+      "changepointTimestamps": [
+        1578096000000,
+        1578355200000,
+        1578614400000,
+        1578873600000,
+        1579132800000,
+        1579392000000,
+        1579651200000,
+        1579910400000,
+        1580169600000,
+        1580428800000,
+        1580688000000,
+        1580947200000,
+        1581206400000,
+        1581465600000,
+        1581724800000,
+        1581984000000,
+        1582243200000,
+        1582502400000,
+        1582761600000,
+        1583020800000,
+        1583280000000,
+        1583539200000,
+        1583798400000,
+        1584057600000,
+        1584316800000
+      ],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [
+        {
+          "timestamp": 1586131200000,
+          "value": 32.81185742588453,
+          "trend": 32.81185742588453,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586217600000,
+          "value": 33.042425004769825,
+          "trend": 33.042425004769825,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586304000000,
+          "value": 33.27299258365512,
+          "trend": 33.27299258365512,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586390400000,
+          "value": 33.5035601625404,
+          "trend": 33.5035601625404,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586476800000,
+          "value": 33.734127741425695,
+          "trend": 33.734127741425695,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586563200000,
+          "value": 33.96469532031098,
+          "trend": 33.96469532031098,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586649600000,
+          "value": 34.19526289919627,
+          "trend": 34.19526289919627,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586736000000,
+          "value": 34.425830478081565,
+          "trend": 34.425830478081565,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        }
+      ],
+      "persistenceMaximumAbsoluteError": 0.0,
+      "noiseScale": 0.059686240037075795,
+      "fitQuality": [
+        {
+          "name": "cmdstan-lp",
+          "value": 550.96916
+        }
+      ]
+    },
+    {
+      "caseId": "map-training-ordered-auto",
+      "run": 1,
+      "status": "locally-passed",
+      "modelKind": "linear-piecewise-map",
+      "targetScaling": {
+        "mode": "absmax",
+        "scale": 32.6287988238,
+        "offset": 0.0
+      },
+      "changepointTimestamps": [
+        1578096000000,
+        1578355200000,
+        1578614400000,
+        1578873600000,
+        1579132800000,
+        1579392000000,
+        1579651200000,
+        1579910400000,
+        1580169600000,
+        1580428800000,
+        1580688000000,
+        1580947200000,
+        1581206400000,
+        1581465600000,
+        1581724800000,
+        1581984000000,
+        1582243200000,
+        1582502400000,
+        1582761600000,
+        1583020800000,
+        1583280000000,
+        1583539200000,
+        1583798400000,
+        1584057600000,
+        1584316800000
+      ],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [
+        {
+          "timestamp": 1586131200000,
+          "value": 32.81185742588453,
+          "trend": 32.81185742588453,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586217600000,
+          "value": 33.042425004769825,
+          "trend": 33.042425004769825,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586304000000,
+          "value": 33.27299258365512,
+          "trend": 33.27299258365512,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586390400000,
+          "value": 33.5035601625404,
+          "trend": 33.5035601625404,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586476800000,
+          "value": 33.734127741425695,
+          "trend": 33.734127741425695,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586563200000,
+          "value": 33.96469532031098,
+          "trend": 33.96469532031098,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586649600000,
+          "value": 34.19526289919627,
+          "trend": 34.19526289919627,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586736000000,
+          "value": 34.425830478081565,
+          "trend": 34.425830478081565,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        }
+      ],
+      "persistenceMaximumAbsoluteError": 0.0,
+      "noiseScale": 0.059686240037075795,
+      "fitQuality": [
+        {
+          "name": "cmdstan-lp",
+          "value": 550.96916
+        }
+      ]
+    },
+    {
+      "caseId": "map-training-unsorted-explicit",
+      "run": 0,
+      "status": "locally-passed",
+      "modelKind": "linear-piecewise-map",
+      "targetScaling": {
+        "mode": "absmax",
+        "scale": 32.6287988238,
+        "offset": 0.0
+      },
+      "changepointTimestamps": [
+        1579219200000
+      ],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [
+        {
+          "timestamp": 1586131200000,
+          "value": 32.80404514851768,
+          "trend": 32.80404514851768,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586217600000,
+          "value": 33.03411596093989,
+          "trend": 33.03411596093989,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586304000000,
+          "value": 33.26418677336212,
+          "trend": 33.26418677336212,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586390400000,
+          "value": 33.494257585784325,
+          "trend": 33.494257585784325,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586476800000,
+          "value": 33.724328398206545,
+          "trend": 33.724328398206545,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586563200000,
+          "value": 33.95439921062877,
+          "trend": 33.95439921062877,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586649600000,
+          "value": 34.184470023050984,
+          "trend": 34.184470023050984,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586736000000,
+          "value": 34.4145408354732,
+          "trend": 34.4145408354732,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        }
+      ],
+      "persistenceMaximumAbsoluteError": 0.0,
+      "noiseScale": 0.061706941548233724,
+      "fitQuality": [
+        {
+          "name": "cmdstan-lp",
+          "value": 549.27016
+        }
+      ]
+    },
+    {
+      "caseId": "map-training-unsorted-explicit",
+      "run": 1,
+      "status": "locally-passed",
+      "modelKind": "linear-piecewise-map",
+      "targetScaling": {
+        "mode": "absmax",
+        "scale": 32.6287988238,
+        "offset": 0.0
+      },
+      "changepointTimestamps": [
+        1579219200000
+      ],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [
+        {
+          "timestamp": 1586131200000,
+          "value": 32.80404514851768,
+          "trend": 32.80404514851768,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586217600000,
+          "value": 33.03411596093989,
+          "trend": 33.03411596093989,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586304000000,
+          "value": 33.26418677336212,
+          "trend": 33.26418677336212,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586390400000,
+          "value": 33.494257585784325,
+          "trend": 33.494257585784325,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586476800000,
+          "value": 33.724328398206545,
+          "trend": 33.724328398206545,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586563200000,
+          "value": 33.95439921062877,
+          "trend": 33.95439921062877,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586649600000,
+          "value": 34.184470023050984,
+          "trend": 34.184470023050984,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586736000000,
+          "value": 34.4145408354732,
+          "trend": 34.4145408354732,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        }
+      ],
+      "persistenceMaximumAbsoluteError": 0.0,
+      "noiseScale": 0.061706941548233724,
+      "fitQuality": [
+        {
+          "name": "cmdstan-lp",
+          "value": 549.27016
+        }
+      ]
+    },
+    {
+      "caseId": "map-training-unsorted-auto",
+      "run": 0,
+      "status": "locally-passed",
+      "modelKind": "linear-piecewise-map",
+      "targetScaling": {
+        "mode": "absmax",
+        "scale": 32.6287988238,
+        "offset": 0.0
+      },
+      "changepointTimestamps": [
+        1578096000000,
+        1578355200000,
+        1578614400000,
+        1578873600000,
+        1579132800000,
+        1579392000000,
+        1579651200000,
+        1579910400000,
+        1580169600000,
+        1580428800000,
+        1580688000000,
+        1580947200000,
+        1581206400000,
+        1581465600000,
+        1581724800000,
+        1581984000000,
+        1582243200000,
+        1582502400000,
+        1582761600000,
+        1583020800000,
+        1583280000000,
+        1583539200000,
+        1583798400000,
+        1584057600000,
+        1584316800000
+      ],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [
+        {
+          "timestamp": 1586131200000,
+          "value": 32.81185742588453,
+          "trend": 32.81185742588453,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586217600000,
+          "value": 33.042425004769825,
+          "trend": 33.042425004769825,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586304000000,
+          "value": 33.27299258365512,
+          "trend": 33.27299258365512,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586390400000,
+          "value": 33.5035601625404,
+          "trend": 33.5035601625404,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586476800000,
+          "value": 33.734127741425695,
+          "trend": 33.734127741425695,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586563200000,
+          "value": 33.96469532031098,
+          "trend": 33.96469532031098,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586649600000,
+          "value": 34.19526289919627,
+          "trend": 34.19526289919627,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586736000000,
+          "value": 34.425830478081565,
+          "trend": 34.425830478081565,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        }
+      ],
+      "persistenceMaximumAbsoluteError": 0.0,
+      "noiseScale": 0.059686240037075795,
+      "fitQuality": [
+        {
+          "name": "cmdstan-lp",
+          "value": 550.96916
+        }
+      ]
+    },
+    {
+      "caseId": "map-training-unsorted-auto",
+      "run": 1,
+      "status": "locally-passed",
+      "modelKind": "linear-piecewise-map",
+      "targetScaling": {
+        "mode": "absmax",
+        "scale": 32.6287988238,
+        "offset": 0.0
+      },
+      "changepointTimestamps": [
+        1578096000000,
+        1578355200000,
+        1578614400000,
+        1578873600000,
+        1579132800000,
+        1579392000000,
+        1579651200000,
+        1579910400000,
+        1580169600000,
+        1580428800000,
+        1580688000000,
+        1580947200000,
+        1581206400000,
+        1581465600000,
+        1581724800000,
+        1581984000000,
+        1582243200000,
+        1582502400000,
+        1582761600000,
+        1583020800000,
+        1583280000000,
+        1583539200000,
+        1583798400000,
+        1584057600000,
+        1584316800000
+      ],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [
+        {
+          "timestamp": 1586131200000,
+          "value": 32.81185742588453,
+          "trend": 32.81185742588453,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586217600000,
+          "value": 33.042425004769825,
+          "trend": 33.042425004769825,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586304000000,
+          "value": 33.27299258365512,
+          "trend": 33.27299258365512,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586390400000,
+          "value": 33.5035601625404,
+          "trend": 33.5035601625404,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586476800000,
+          "value": 33.734127741425695,
+          "trend": 33.734127741425695,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586563200000,
+          "value": 33.96469532031098,
+          "trend": 33.96469532031098,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586649600000,
+          "value": 34.19526289919627,
+          "trend": 34.19526289919627,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1586736000000,
+          "value": 34.425830478081565,
+          "trend": 34.425830478081565,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        }
+      ],
+      "persistenceMaximumAbsoluteError": 0.0,
+      "noiseScale": 0.059686240037075795,
+      "fitQuality": [
+        {
+          "name": "cmdstan-lp",
+          "value": 550.96916
+        }
+      ]
+    },
+    {
+      "caseId": "map-training-duplicates-explicit",
+      "run": 0,
+      "status": "locally-passed",
+      "modelKind": "linear-piecewise-map",
+      "targetScaling": {
+        "mode": "absmax",
+        "scale": 16.1035003066,
+        "offset": 0.0
+      },
+      "changepointTimestamps": [
+        1579219200000
+      ],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [
+        {
+          "timestamp": 1579910400000,
+          "value": 16.251398809275674,
+          "trend": 16.251398809275674,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1579996800000,
+          "value": 16.483158817347363,
+          "trend": 16.483158817347363,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1580083200000,
+          "value": 16.714918825419048,
+          "trend": 16.714918825419048,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1580169600000,
+          "value": 16.946678833490736,
+          "trend": 16.946678833490736,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1580256000000,
+          "value": 17.17843884156242,
+          "trend": 17.17843884156242,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1580342400000,
+          "value": 17.41019884963411,
+          "trend": 17.41019884963411,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1580428800000,
+          "value": 17.641958857705802,
+          "trend": 17.641958857705802,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1580515200000,
+          "value": 17.873718865777487,
+          "trend": 17.873718865777487,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        }
+      ],
+      "persistenceMaximumAbsoluteError": 0.0,
+      "noiseScale": 0.06164814453123992,
+      "fitQuality": [
+        {
+          "name": "cmdstan-lp",
+          "value": 483.91724
+        }
+      ]
+    },
+    {
+      "caseId": "map-training-duplicates-explicit",
+      "run": 1,
+      "status": "locally-passed",
+      "modelKind": "linear-piecewise-map",
+      "targetScaling": {
+        "mode": "absmax",
+        "scale": 16.1035003066,
+        "offset": 0.0
+      },
+      "changepointTimestamps": [
+        1579219200000
+      ],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [
+        {
+          "timestamp": 1579910400000,
+          "value": 16.251398809275674,
+          "trend": 16.251398809275674,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1579996800000,
+          "value": 16.483158817347363,
+          "trend": 16.483158817347363,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1580083200000,
+          "value": 16.714918825419048,
+          "trend": 16.714918825419048,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1580169600000,
+          "value": 16.946678833490736,
+          "trend": 16.946678833490736,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1580256000000,
+          "value": 17.17843884156242,
+          "trend": 17.17843884156242,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1580342400000,
+          "value": 17.41019884963411,
+          "trend": 17.41019884963411,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1580428800000,
+          "value": 17.641958857705802,
+          "trend": 17.641958857705802,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1580515200000,
+          "value": 17.873718865777487,
+          "trend": 17.873718865777487,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        }
+      ],
+      "persistenceMaximumAbsoluteError": 0.0,
+      "noiseScale": 0.06164814453123992,
+      "fitQuality": [
+        {
+          "name": "cmdstan-lp",
+          "value": 483.91724
+        }
+      ]
+    },
+    {
+      "caseId": "map-training-duplicates-auto",
+      "run": 0,
+      "status": "locally-passed",
+      "modelKind": "linear-piecewise-map",
+      "targetScaling": {
+        "mode": "absmax",
+        "scale": 16.1035003066,
+        "offset": 0.0
+      },
+      "changepointTimestamps": [
+        1577836800000,
+        1577923200000,
+        1578009600000,
+        1578096000000,
+        1578096000000,
+        1578182400000,
+        1578268800000,
+        1578355200000,
+        1578355200000,
+        1578441600000,
+        1578528000000,
+        1578614400000,
+        1578614400000,
+        1578700800000,
+        1578787200000,
+        1578873600000,
+        1578873600000,
+        1578960000000,
+        1579046400000,
+        1579132800000,
+        1579132800000,
+        1579219200000,
+        1579305600000,
+        1579392000000,
+        1579392000000
+      ],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [
+        {
+          "timestamp": 1579910400000,
+          "value": 16.26040860764426,
+          "trend": 16.26040860764426,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1579996800000,
+          "value": 16.49519069409961,
+          "trend": 16.49519069409961,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1580083200000,
+          "value": 16.729972780554956,
+          "trend": 16.729972780554956,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1580169600000,
+          "value": 16.9647548670103,
+          "trend": 16.9647548670103,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1580256000000,
+          "value": 17.199536953465646,
+          "trend": 17.199536953465646,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1580342400000,
+          "value": 17.434319039920993,
+          "trend": 17.434319039920993,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1580428800000,
+          "value": 17.66910112637634,
+          "trend": 17.66910112637634,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1580515200000,
+          "value": 17.903883212831683,
+          "trend": 17.903883212831683,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        }
+      ],
+      "persistenceMaximumAbsoluteError": 0.0,
+      "noiseScale": 0.0612486231300333,
+      "fitQuality": [
+        {
+          "name": "cmdstan-lp",
+          "value": 484.21806
+        }
+      ]
+    },
+    {
+      "caseId": "map-training-duplicates-auto",
+      "run": 1,
+      "status": "locally-passed",
+      "modelKind": "linear-piecewise-map",
+      "targetScaling": {
+        "mode": "absmax",
+        "scale": 16.1035003066,
+        "offset": 0.0
+      },
+      "changepointTimestamps": [
+        1577836800000,
+        1577923200000,
+        1578009600000,
+        1578096000000,
+        1578096000000,
+        1578182400000,
+        1578268800000,
+        1578355200000,
+        1578355200000,
+        1578441600000,
+        1578528000000,
+        1578614400000,
+        1578614400000,
+        1578700800000,
+        1578787200000,
+        1578873600000,
+        1578873600000,
+        1578960000000,
+        1579046400000,
+        1579132800000,
+        1579132800000,
+        1579219200000,
+        1579305600000,
+        1579392000000,
+        1579392000000
+      ],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [
+        {
+          "timestamp": 1579910400000,
+          "value": 16.26040860764426,
+          "trend": 16.26040860764426,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1579996800000,
+          "value": 16.49519069409961,
+          "trend": 16.49519069409961,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1580083200000,
+          "value": 16.729972780554956,
+          "trend": 16.729972780554956,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1580169600000,
+          "value": 16.9647548670103,
+          "trend": 16.9647548670103,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1580256000000,
+          "value": 17.199536953465646,
+          "trend": 17.199536953465646,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1580342400000,
+          "value": 17.434319039920993,
+          "trend": 17.434319039920993,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1580428800000,
+          "value": 17.66910112637634,
+          "trend": 17.66910112637634,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1580515200000,
+          "value": 17.903883212831683,
+          "trend": 17.903883212831683,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        }
+      ],
+      "persistenceMaximumAbsoluteError": 0.0,
+      "noiseScale": 0.0612486231300333,
+      "fitQuality": [
+        {
+          "name": "cmdstan-lp",
+          "value": 484.21806
+        }
+      ]
+    },
+    {
+      "caseId": "map-training-duplicate-features-auto",
+      "run": 0,
+      "status": "locally-passed",
+      "modelKind": "linear-piecewise-map",
+      "targetScaling": {
+        "mode": "absmax",
+        "scale": 17.2859498451,
+        "offset": 0.0
+      },
+      "changepointTimestamps": [
+        1577836800000,
+        1577923200000,
+        1578009600000,
+        1578096000000,
+        1578096000000,
+        1578182400000,
+        1578268800000,
+        1578355200000,
+        1578355200000,
+        1578441600000,
+        1578528000000,
+        1578614400000,
+        1578614400000,
+        1578700800000,
+        1578787200000,
+        1578873600000,
+        1578873600000,
+        1578960000000,
+        1579046400000,
+        1579132800000,
+        1579132800000,
+        1579219200000,
+        1579305600000,
+        1579392000000,
+        1579392000000
+      ],
+      "seasonalities": [
+        {
+          "name": "weekly-active",
+          "mode": "additive",
+          "conditionName": "active"
+        }
+      ],
+      "events": [],
+      "regressors": [
+        {
+          "name": "promotion",
+          "priorScale": 10.0,
+          "standardization": "never",
+          "mode": "additive",
+          "transform": {
+            "mode": "identity",
+            "reason": "disabled"
+          },
+          "coefficient": 0.5128090503029502,
+          "center": 0.0
+        }
+      ],
+      "forecasts": [
+        {
+          "timestamp": 1579910400000,
+          "value": 17.080756631922682,
+          "trend": 16.262096052135046,
+          "additive": 0.8186605797876356,
+          "multiplicative": 0.0,
+          "seasonalities": [
+            {
+              "name": "weekly-active",
+              "mode": "additive",
+              "value": 0.30585152948468547
+            }
+          ],
+          "events": [],
+          "regressors": [
+            {
+              "name": "promotion",
+              "mode": "additive",
+              "value": 0.5128090503029502
+            }
+          ]
+        },
+        {
+          "timestamp": 1579996800000,
+          "value": 16.49810209417958,
+          "trend": 16.49810209417958,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [
+            {
+              "name": "weekly-active",
+              "mode": "additive",
+              "value": 0.0
+            }
+          ],
+          "events": [],
+          "regressors": [
+            {
+              "name": "promotion",
+              "mode": "additive",
+              "value": 0.0
+            }
+          ]
+        },
+        {
+          "timestamp": 1580083200000,
+          "value": 16.056191011721374,
+          "trend": 16.734108136224112,
+          "additive": -0.6779171245027368,
+          "multiplicative": 0.0,
+          "seasonalities": [
+            {
+              "name": "weekly-active",
+              "mode": "additive",
+              "value": -0.6779171245027368
+            }
+          ],
+          "events": [],
+          "regressors": [
+            {
+              "name": "promotion",
+              "mode": "additive",
+              "value": 0.0
+            }
+          ]
+        },
+        {
+          "timestamp": 1580169600000,
+          "value": 16.4231387918415,
+          "trend": 16.97011417826865,
+          "additive": -0.5469753864271495,
+          "multiplicative": 0.0,
+          "seasonalities": [
+            {
+              "name": "weekly-active",
+              "mode": "additive",
+              "value": -0.5469753864271495
+            }
+          ],
+          "events": [],
+          "regressors": [
+            {
+              "name": "promotion",
+              "mode": "additive",
+              "value": 0.0
+            }
+          ]
+        },
+        {
+          "timestamp": 1580256000000,
+          "value": 17.71477924450988,
+          "trend": 17.20612022031318,
+          "additive": 0.5086590241966981,
+          "multiplicative": 0.0,
+          "seasonalities": [
+            {
+              "name": "weekly-active",
+              "mode": "additive",
+              "value": -0.004150026106252125
+            }
+          ],
+          "events": [],
+          "regressors": [
+            {
+              "name": "promotion",
+              "mode": "additive",
+              "value": 0.5128090503029502
+            }
+          ]
+        },
+        {
+          "timestamp": 1580342400000,
+          "value": 17.442126262357714,
+          "trend": 17.442126262357714,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [
+            {
+              "name": "weekly-active",
+              "mode": "additive",
+              "value": 0.0
+            }
+          ],
+          "events": [],
+          "regressors": [
+            {
+              "name": "promotion",
+              "mode": "additive",
+              "value": 0.0
+            }
+          ]
+        },
+        {
+          "timestamp": 1580428800000,
+          "value": 18.357896364275184,
+          "trend": 17.67813230440225,
+          "additive": 0.679764059872934,
+          "multiplicative": 0.0,
+          "seasonalities": [
+            {
+              "name": "weekly-active",
+              "mode": "additive",
+              "value": 0.679764059872934
+            }
+          ],
+          "events": [],
+          "regressors": [
+            {
+              "name": "promotion",
+              "mode": "additive",
+              "value": 0.0
+            }
+          ]
+        },
+        {
+          "timestamp": 1580515200000,
+          "value": 18.219989875931052,
+          "trend": 17.91413834644678,
+          "additive": 0.30585152948427236,
+          "multiplicative": 0.0,
+          "seasonalities": [
+            {
+              "name": "weekly-active",
+              "mode": "additive",
+              "value": 0.30585152948427236
+            }
+          ],
+          "events": [],
+          "regressors": [
+            {
+              "name": "promotion",
+              "mode": "additive",
+              "value": 0.0
+            }
+          ]
+        }
+      ],
+      "persistenceMaximumAbsoluteError": 0.0,
+      "noiseScale": 0.06091540895033989,
+      "fitQuality": [
+        {
+          "name": "cmdstan-lp",
+          "value": 491.69317
+        }
+      ]
+    },
+    {
+      "caseId": "map-training-duplicate-features-auto",
+      "run": 1,
+      "status": "locally-passed",
+      "modelKind": "linear-piecewise-map",
+      "targetScaling": {
+        "mode": "absmax",
+        "scale": 17.2859498451,
+        "offset": 0.0
+      },
+      "changepointTimestamps": [
+        1577836800000,
+        1577923200000,
+        1578009600000,
+        1578096000000,
+        1578096000000,
+        1578182400000,
+        1578268800000,
+        1578355200000,
+        1578355200000,
+        1578441600000,
+        1578528000000,
+        1578614400000,
+        1578614400000,
+        1578700800000,
+        1578787200000,
+        1578873600000,
+        1578873600000,
+        1578960000000,
+        1579046400000,
+        1579132800000,
+        1579132800000,
+        1579219200000,
+        1579305600000,
+        1579392000000,
+        1579392000000
+      ],
+      "seasonalities": [
+        {
+          "name": "weekly-active",
+          "mode": "additive",
+          "conditionName": "active"
+        }
+      ],
+      "events": [],
+      "regressors": [
+        {
+          "name": "promotion",
+          "priorScale": 10.0,
+          "standardization": "never",
+          "mode": "additive",
+          "transform": {
+            "mode": "identity",
+            "reason": "disabled"
+          },
+          "coefficient": 0.5128090503029502,
+          "center": 0.0
+        }
+      ],
+      "forecasts": [
+        {
+          "timestamp": 1579910400000,
+          "value": 17.080756631922682,
+          "trend": 16.262096052135046,
+          "additive": 0.8186605797876356,
+          "multiplicative": 0.0,
+          "seasonalities": [
+            {
+              "name": "weekly-active",
+              "mode": "additive",
+              "value": 0.30585152948468547
+            }
+          ],
+          "events": [],
+          "regressors": [
+            {
+              "name": "promotion",
+              "mode": "additive",
+              "value": 0.5128090503029502
+            }
+          ]
+        },
+        {
+          "timestamp": 1579996800000,
+          "value": 16.49810209417958,
+          "trend": 16.49810209417958,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [
+            {
+              "name": "weekly-active",
+              "mode": "additive",
+              "value": 0.0
+            }
+          ],
+          "events": [],
+          "regressors": [
+            {
+              "name": "promotion",
+              "mode": "additive",
+              "value": 0.0
+            }
+          ]
+        },
+        {
+          "timestamp": 1580083200000,
+          "value": 16.056191011721374,
+          "trend": 16.734108136224112,
+          "additive": -0.6779171245027368,
+          "multiplicative": 0.0,
+          "seasonalities": [
+            {
+              "name": "weekly-active",
+              "mode": "additive",
+              "value": -0.6779171245027368
+            }
+          ],
+          "events": [],
+          "regressors": [
+            {
+              "name": "promotion",
+              "mode": "additive",
+              "value": 0.0
+            }
+          ]
+        },
+        {
+          "timestamp": 1580169600000,
+          "value": 16.4231387918415,
+          "trend": 16.97011417826865,
+          "additive": -0.5469753864271495,
+          "multiplicative": 0.0,
+          "seasonalities": [
+            {
+              "name": "weekly-active",
+              "mode": "additive",
+              "value": -0.5469753864271495
+            }
+          ],
+          "events": [],
+          "regressors": [
+            {
+              "name": "promotion",
+              "mode": "additive",
+              "value": 0.0
+            }
+          ]
+        },
+        {
+          "timestamp": 1580256000000,
+          "value": 17.71477924450988,
+          "trend": 17.20612022031318,
+          "additive": 0.5086590241966981,
+          "multiplicative": 0.0,
+          "seasonalities": [
+            {
+              "name": "weekly-active",
+              "mode": "additive",
+              "value": -0.004150026106252125
+            }
+          ],
+          "events": [],
+          "regressors": [
+            {
+              "name": "promotion",
+              "mode": "additive",
+              "value": 0.5128090503029502
+            }
+          ]
+        },
+        {
+          "timestamp": 1580342400000,
+          "value": 17.442126262357714,
+          "trend": 17.442126262357714,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [
+            {
+              "name": "weekly-active",
+              "mode": "additive",
+              "value": 0.0
+            }
+          ],
+          "events": [],
+          "regressors": [
+            {
+              "name": "promotion",
+              "mode": "additive",
+              "value": 0.0
+            }
+          ]
+        },
+        {
+          "timestamp": 1580428800000,
+          "value": 18.357896364275184,
+          "trend": 17.67813230440225,
+          "additive": 0.679764059872934,
+          "multiplicative": 0.0,
+          "seasonalities": [
+            {
+              "name": "weekly-active",
+              "mode": "additive",
+              "value": 0.679764059872934
+            }
+          ],
+          "events": [],
+          "regressors": [
+            {
+              "name": "promotion",
+              "mode": "additive",
+              "value": 0.0
+            }
+          ]
+        },
+        {
+          "timestamp": 1580515200000,
+          "value": 18.219989875931052,
+          "trend": 17.91413834644678,
+          "additive": 0.30585152948427236,
+          "multiplicative": 0.0,
+          "seasonalities": [
+            {
+              "name": "weekly-active",
+              "mode": "additive",
+              "value": 0.30585152948427236
+            }
+          ],
+          "events": [],
+          "regressors": [
+            {
+              "name": "promotion",
+              "mode": "additive",
+              "value": 0.0
+            }
+          ]
+        }
+      ],
+      "persistenceMaximumAbsoluteError": 0.0,
+      "noiseScale": 0.06091540895033989,
+      "fitQuality": [
+        {
+          "name": "cmdstan-lp",
+          "value": 491.69317
+        }
+      ]
+    },
+    {
+      "caseId": "uncertainty-training-duplicates-auto",
+      "run": 0,
+      "status": "locally-passed",
+      "modelKind": "linear-piecewise-map",
+      "targetScaling": {
+        "mode": "absmax",
+        "scale": 16.1035003066,
+        "offset": 0.0
+      },
+      "changepointTimestamps": [
+        1577836800000,
+        1577923200000,
+        1578009600000,
+        1578096000000,
+        1578096000000,
+        1578182400000,
+        1578268800000,
+        1578355200000,
+        1578355200000,
+        1578441600000,
+        1578528000000,
+        1578614400000,
+        1578614400000,
+        1578700800000,
+        1578787200000,
+        1578873600000,
+        1578873600000,
+        1578960000000,
+        1579046400000,
+        1579132800000,
+        1579132800000,
+        1579219200000,
+        1579305600000,
+        1579392000000,
+        1579392000000
+      ],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [
+        {
+          "timestamp": 1579910400000,
+          "value": 16.26040860764426,
+          "trend": 16.26040860764426,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1579996800000,
+          "value": 16.49519069409961,
+          "trend": 16.49519069409961,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1580083200000,
+          "value": 16.729972780554956,
+          "trend": 16.729972780554956,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1580169600000,
+          "value": 16.9647548670103,
+          "trend": 16.9647548670103,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1580256000000,
+          "value": 17.199536953465646,
+          "trend": 17.199536953465646,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1580342400000,
+          "value": 17.434319039920993,
+          "trend": 17.434319039920993,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1580428800000,
+          "value": 17.66910112637634,
+          "trend": 17.66910112637634,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1580515200000,
+          "value": 17.903883212831683,
+          "trend": 17.903883212831683,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        }
+      ],
+      "persistenceMaximumAbsoluteError": 0.0,
+      "uncertainty": {
+        "algorithm": "prophet-1.4.0-scalar-continuous-time",
+        "output": "samples",
+        "rows": 8,
+        "samples": 128,
+        "replay": "passed",
+        "reduction": "passed",
+        "finite": "passed"
+      },
+      "noiseScale": 0.0612486231300333,
+      "fitQuality": [
+        {
+          "name": "cmdstan-lp",
+          "value": 484.21806
+        }
+      ]
+    },
+    {
+      "caseId": "uncertainty-training-duplicates-auto",
+      "run": 1,
+      "status": "locally-passed",
+      "modelKind": "linear-piecewise-map",
+      "targetScaling": {
+        "mode": "absmax",
+        "scale": 16.1035003066,
+        "offset": 0.0
+      },
+      "changepointTimestamps": [
+        1577836800000,
+        1577923200000,
+        1578009600000,
+        1578096000000,
+        1578096000000,
+        1578182400000,
+        1578268800000,
+        1578355200000,
+        1578355200000,
+        1578441600000,
+        1578528000000,
+        1578614400000,
+        1578614400000,
+        1578700800000,
+        1578787200000,
+        1578873600000,
+        1578873600000,
+        1578960000000,
+        1579046400000,
+        1579132800000,
+        1579132800000,
+        1579219200000,
+        1579305600000,
+        1579392000000,
+        1579392000000
+      ],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [
+        {
+          "timestamp": 1579910400000,
+          "value": 16.26040860764426,
+          "trend": 16.26040860764426,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1579996800000,
+          "value": 16.49519069409961,
+          "trend": 16.49519069409961,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1580083200000,
+          "value": 16.729972780554956,
+          "trend": 16.729972780554956,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1580169600000,
+          "value": 16.9647548670103,
+          "trend": 16.9647548670103,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1580256000000,
+          "value": 17.199536953465646,
+          "trend": 17.199536953465646,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1580342400000,
+          "value": 17.434319039920993,
+          "trend": 17.434319039920993,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1580428800000,
+          "value": 17.66910112637634,
+          "trend": 17.66910112637634,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1580515200000,
+          "value": 17.903883212831683,
+          "trend": 17.903883212831683,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        }
+      ],
+      "persistenceMaximumAbsoluteError": 0.0,
+      "uncertainty": {
+        "algorithm": "prophet-1.4.0-scalar-continuous-time",
+        "output": "samples",
+        "rows": 8,
+        "samples": 128,
+        "replay": "passed",
+        "reduction": "passed",
+        "finite": "passed"
+      },
+      "noiseScale": 0.0612486231300333,
+      "fitQuality": [
+        {
+          "name": "cmdstan-lp",
+          "value": 484.21806
+        }
+      ]
+    },
+    {
+      "caseId": "map-training-zero-span-flat-varied",
+      "run": 0,
+      "status": "locally-passed",
+      "modelKind": "flat-map",
+      "targetScaling": {
+        "mode": "absmax",
+        "scale": 7.0,
+        "offset": 0.0
+      },
+      "changepointTimestamps": [],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [
+        {
+          "timestamp": 1577836800000,
+          "value": 4.3289142400000005,
+          "trend": 4.3289142400000005,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1577923200000,
+          "value": 4.3289142400000005,
+          "trend": 4.3289142400000005,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        }
+      ],
+      "persistenceMaximumAbsoluteError": 0.0,
+      "noiseScale": 1.9559104600000001,
+      "fitQuality": [
+        {
+          "name": "cmdstan-lp",
+          "value": 2.0058404
+        }
+      ]
+    },
+    {
+      "caseId": "map-training-zero-span-flat-varied",
+      "run": 1,
+      "status": "locally-passed",
+      "modelKind": "flat-map",
+      "targetScaling": {
+        "mode": "absmax",
+        "scale": 7.0,
+        "offset": 0.0
+      },
+      "changepointTimestamps": [],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [
+        {
+          "timestamp": 1577836800000,
+          "value": 4.3289142400000005,
+          "trend": 4.3289142400000005,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1577923200000,
+          "value": 4.3289142400000005,
+          "trend": 4.3289142400000005,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        }
+      ],
+      "persistenceMaximumAbsoluteError": 0.0,
+      "noiseScale": 1.9559104600000001,
+      "fitQuality": [
+        {
+          "name": "cmdstan-lp",
+          "value": 2.0058404
+        }
+      ]
+    },
+    {
+      "caseId": "map-training-zero-span-flat-constant",
+      "run": 0,
+      "status": "locally-passed",
+      "modelKind": "flat-map",
+      "targetScaling": {
+        "mode": "absmax",
+        "scale": 2.0,
+        "offset": 0.0
+      },
+      "changepointTimestamps": [],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [
+        {
+          "timestamp": 1577836800000,
+          "value": 2.0,
+          "trend": 2.0,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1577923200000,
+          "value": 2.0,
+          "trend": 2.0,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        }
+      ],
+      "persistenceMaximumAbsoluteError": 0.0,
+      "noiseScale": 2e-09,
+      "fitQuality": [
+        {
+          "name": "constant-target-shortcut-noise",
+          "value": 1e-09
+        }
+      ]
+    },
+    {
+      "caseId": "map-training-zero-span-flat-constant",
+      "run": 1,
+      "status": "locally-passed",
+      "modelKind": "flat-map",
+      "targetScaling": {
+        "mode": "absmax",
+        "scale": 2.0,
+        "offset": 0.0
+      },
+      "changepointTimestamps": [],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [
+        {
+          "timestamp": 1577836800000,
+          "value": 2.0,
+          "trend": 2.0,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        },
+        {
+          "timestamp": 1577923200000,
+          "value": 2.0,
+          "trend": 2.0,
+          "additive": 0.0,
+          "multiplicative": 0.0,
+          "seasonalities": [],
+          "events": [],
+          "regressors": []
+        }
+      ],
+      "persistenceMaximumAbsoluteError": 0.0,
+      "noiseScale": 2e-09,
+      "fitQuality": [
+        {
+          "name": "constant-target-shortcut-noise",
+          "value": 1e-09
+        }
+      ]
+    },
+    {
+      "caseId": "evaluation-training-duplicates",
+      "run": 0,
+      "status": "locally-passed",
+      "modelKind": "linear",
+      "changepointTimestamps": [],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [],
+      "evaluation": {
+        "cutoffs": [
+          1579305600000,
+          1579392000000
+        ],
+        "trainingRows": 148,
+        "assessmentRows": 24,
+        "rows": [
+          {
+            "cutoff": 1579305600000,
+            "timestamp": 1579392000000,
+            "actual": 14.8264968915,
+            "predicted": 14.748825626799698
+          },
+          {
+            "cutoff": 1579305600000,
+            "timestamp": 1579392000000,
+            "actual": 14.9419178683,
+            "predicted": 14.748825626799698
+          },
+          {
+            "cutoff": 1579305600000,
+            "timestamp": 1579392000000,
+            "actual": 14.9311372051,
+            "predicted": 14.748825626799698
+          },
+          {
+            "cutoff": 1579305600000,
+            "timestamp": 1579392000000,
+            "actual": 14.7975730252,
+            "predicted": 14.748825626799698
+          },
+          {
+            "cutoff": 1579305600000,
+            "timestamp": 1579478400000,
+            "actual": 15.0118515808,
+            "predicted": 14.91998114438032
+          },
+          {
+            "cutoff": 1579305600000,
+            "timestamp": 1579478400000,
+            "actual": 15.1111949106,
+            "predicted": 14.91998114438032
+          },
+          {
+            "cutoff": 1579305600000,
+            "timestamp": 1579478400000,
+            "actual": 15.1948057594,
+            "predicted": 14.91998114438032
+          },
+          {
+            "cutoff": 1579305600000,
+            "timestamp": 1579478400000,
+            "actual": 15.0931936382,
+            "predicted": 14.91998114438032
+          },
+          {
+            "cutoff": 1579305600000,
+            "timestamp": 1579564800000,
+            "actual": 15.2254646005,
+            "predicted": 15.091136661960936
+          },
+          {
+            "cutoff": 1579305600000,
+            "timestamp": 1579564800000,
+            "actual": 15.2440943768,
+            "predicted": 15.091136661960936
+          },
+          {
+            "cutoff": 1579305600000,
+            "timestamp": 1579564800000,
+            "actual": 15.3684964273,
+            "predicted": 15.091136661960936
+          },
+          {
+            "cutoff": 1579305600000,
+            "timestamp": 1579564800000,
+            "actual": 15.3270229572,
+            "predicted": 15.091136661960936
+          },
+          {
+            "cutoff": 1579392000000,
+            "timestamp": 1579478400000,
+            "actual": 15.0118515808,
+            "predicted": 15.073849432232045
+          },
+          {
+            "cutoff": 1579392000000,
+            "timestamp": 1579478400000,
+            "actual": 15.1111949106,
+            "predicted": 15.073849432232045
+          },
+          {
+            "cutoff": 1579392000000,
+            "timestamp": 1579478400000,
+            "actual": 15.1948057594,
+            "predicted": 15.073849432232045
+          },
+          {
+            "cutoff": 1579392000000,
+            "timestamp": 1579478400000,
+            "actual": 15.0931936382,
+            "predicted": 15.073849432232045
+          },
+          {
+            "cutoff": 1579392000000,
+            "timestamp": 1579564800000,
+            "actual": 15.2254646005,
+            "predicted": 15.297968424091726
+          },
+          {
+            "cutoff": 1579392000000,
+            "timestamp": 1579564800000,
+            "actual": 15.2440943768,
+            "predicted": 15.297968424091726
+          },
+          {
+            "cutoff": 1579392000000,
+            "timestamp": 1579564800000,
+            "actual": 15.3684964273,
+            "predicted": 15.297968424091726
+          },
+          {
+            "cutoff": 1579392000000,
+            "timestamp": 1579564800000,
+            "actual": 15.3270229572,
+            "predicted": 15.297968424091726
+          },
+          {
+            "cutoff": 1579392000000,
+            "timestamp": 1579651200000,
+            "actual": 15.5394038062,
+            "predicted": 15.522087415951406
+          },
+          {
+            "cutoff": 1579392000000,
+            "timestamp": 1579651200000,
+            "actual": 15.4659071722,
+            "predicted": 15.522087415951406
+          },
+          {
+            "cutoff": 1579392000000,
+            "timestamp": 1579651200000,
+            "actual": 15.5676424577,
+            "predicted": 15.522087415951406
+          },
+          {
+            "cutoff": 1579392000000,
+            "timestamp": 1579651200000,
+            "actual": 15.5810056149,
+            "predicted": 15.522087415951406
+          }
+        ],
+        "mae": 0.11154373554872017
+      }
+    },
+    {
+      "caseId": "evaluation-training-duplicates",
+      "run": 1,
+      "status": "locally-passed",
+      "modelKind": "linear",
+      "changepointTimestamps": [],
+      "seasonalities": [],
+      "events": [],
+      "regressors": [],
+      "forecasts": [],
+      "evaluation": {
+        "cutoffs": [
+          1579305600000,
+          1579392000000
+        ],
+        "trainingRows": 148,
+        "assessmentRows": 24,
+        "rows": [
+          {
+            "cutoff": 1579305600000,
+            "timestamp": 1579392000000,
+            "actual": 14.8264968915,
+            "predicted": 14.748825626799698
+          },
+          {
+            "cutoff": 1579305600000,
+            "timestamp": 1579392000000,
+            "actual": 14.9419178683,
+            "predicted": 14.748825626799698
+          },
+          {
+            "cutoff": 1579305600000,
+            "timestamp": 1579392000000,
+            "actual": 14.9311372051,
+            "predicted": 14.748825626799698
+          },
+          {
+            "cutoff": 1579305600000,
+            "timestamp": 1579392000000,
+            "actual": 14.7975730252,
+            "predicted": 14.748825626799698
+          },
+          {
+            "cutoff": 1579305600000,
+            "timestamp": 1579478400000,
+            "actual": 15.0118515808,
+            "predicted": 14.91998114438032
+          },
+          {
+            "cutoff": 1579305600000,
+            "timestamp": 1579478400000,
+            "actual": 15.1111949106,
+            "predicted": 14.91998114438032
+          },
+          {
+            "cutoff": 1579305600000,
+            "timestamp": 1579478400000,
+            "actual": 15.1948057594,
+            "predicted": 14.91998114438032
+          },
+          {
+            "cutoff": 1579305600000,
+            "timestamp": 1579478400000,
+            "actual": 15.0931936382,
+            "predicted": 14.91998114438032
+          },
+          {
+            "cutoff": 1579305600000,
+            "timestamp": 1579564800000,
+            "actual": 15.2254646005,
+            "predicted": 15.091136661960936
+          },
+          {
+            "cutoff": 1579305600000,
+            "timestamp": 1579564800000,
+            "actual": 15.2440943768,
+            "predicted": 15.091136661960936
+          },
+          {
+            "cutoff": 1579305600000,
+            "timestamp": 1579564800000,
+            "actual": 15.3684964273,
+            "predicted": 15.091136661960936
+          },
+          {
+            "cutoff": 1579305600000,
+            "timestamp": 1579564800000,
+            "actual": 15.3270229572,
+            "predicted": 15.091136661960936
+          },
+          {
+            "cutoff": 1579392000000,
+            "timestamp": 1579478400000,
+            "actual": 15.0118515808,
+            "predicted": 15.073849432232045
+          },
+          {
+            "cutoff": 1579392000000,
+            "timestamp": 1579478400000,
+            "actual": 15.1111949106,
+            "predicted": 15.073849432232045
+          },
+          {
+            "cutoff": 1579392000000,
+            "timestamp": 1579478400000,
+            "actual": 15.1948057594,
+            "predicted": 15.073849432232045
+          },
+          {
+            "cutoff": 1579392000000,
+            "timestamp": 1579478400000,
+            "actual": 15.0931936382,
+            "predicted": 15.073849432232045
+          },
+          {
+            "cutoff": 1579392000000,
+            "timestamp": 1579564800000,
+            "actual": 15.2254646005,
+            "predicted": 15.297968424091726
+          },
+          {
+            "cutoff": 1579392000000,
+            "timestamp": 1579564800000,
+            "actual": 15.2440943768,
+            "predicted": 15.297968424091726
+          },
+          {
+            "cutoff": 1579392000000,
+            "timestamp": 1579564800000,
+            "actual": 15.3684964273,
+            "predicted": 15.297968424091726
+          },
+          {
+            "cutoff": 1579392000000,
+            "timestamp": 1579564800000,
+            "actual": 15.3270229572,
+            "predicted": 15.297968424091726
+          },
+          {
+            "cutoff": 1579392000000,
+            "timestamp": 1579651200000,
+            "actual": 15.5394038062,
+            "predicted": 15.522087415951406
+          },
+          {
+            "cutoff": 1579392000000,
+            "timestamp": 1579651200000,
+            "actual": 15.4659071722,
+            "predicted": 15.522087415951406
+          },
+          {
+            "cutoff": 1579392000000,
+            "timestamp": 1579651200000,
+            "actual": 15.5676424577,
+            "predicted": 15.522087415951406
+          },
+          {
+            "cutoff": 1579392000000,
+            "timestamp": 1579651200000,
+            "actual": 15.5810056149,
+            "predicted": 15.522087415951406
+          }
+        ],
+        "mae": 0.11154373554872017
+      }
+    }
+  ]
+}

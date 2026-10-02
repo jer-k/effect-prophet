@@ -1,0 +1,244 @@
+{
+  "runId": "2026-10-02T043132-582Z-4d661a06",
+  "policy": "linear-stan-map-fit-quality-v3",
+  "selectedCases": 24,
+  "eligibleCases": 22,
+  "expectedUnusableCases": [
+    "map-training-zero-span-linear-constant-stan-v2",
+    "map-training-zero-span-linear-varied-stan-v2"
+  ],
+  "timingRows": 290,
+  "failureRecords": 8,
+  "stationarityDiagnosticRows": 36,
+  "preservedFixtureAndHistoricalFiles": 62,
+  "wasmSha256": "e4baec49d1c324473a5b7a3aa0c6c91ec241debe555316bb1625c1a88c0ae3d1",
+  "referenceExecutableSha256": "faff590e554b6dd4e8c232d2a51c63fe734ae018dd529ee7433a5cdcd86fc54e",
+  "maximumObjectiveAbsoluteDifference": 0.0012027647564423205,
+  "maximumNormalizedNoiseAbsoluteDifference": 7.892510892176016e-06,
+  "maximumForecastAbsoluteDifference": 0.006923703277443849,
+  "maximumStationarityAbsoluteDifference": 79.98369041439759,
+  "quantityDifferences": [
+    {
+      "caseId": "map-explicit-break-small-stan-v2",
+      "run": 0,
+      "objectiveAbsoluteDifference": 3.129230208287481e-11,
+      "normalizedNoiseAbsoluteDifference": 1.6375789613221059e-15
+    },
+    {
+      "caseId": "map-explicit-break-small-stan-v2",
+      "run": 1,
+      "objectiveAbsoluteDifference": 3.129230208287481e-11,
+      "normalizedNoiseAbsoluteDifference": 1.6375789613221059e-15
+    },
+    {
+      "caseId": "map-seasonal-breaks-irregular-medium-stan-v2",
+      "run": 0,
+      "objectiveAbsoluteDifference": 1.9656228005260346e-06,
+      "normalizedNoiseAbsoluteDifference": 1.5812336793055715e-07
+    },
+    {
+      "caseId": "map-seasonal-breaks-irregular-medium-stan-v2",
+      "run": 1,
+      "objectiveAbsoluteDifference": 1.9656228005260346e-06,
+      "normalizedNoiseAbsoluteDifference": 1.5812336793055715e-07
+    },
+    {
+      "caseId": "map-events-small-stan-v2",
+      "run": 0,
+      "objectiveAbsoluteDifference": 1.1198153515579179e-10,
+      "normalizedNoiseAbsoluteDifference": 1.1591422266477025e-14
+    },
+    {
+      "caseId": "map-events-small-stan-v2",
+      "run": 1,
+      "objectiveAbsoluteDifference": 1.1198153515579179e-10,
+      "normalizedNoiseAbsoluteDifference": 1.1591422266477025e-14
+    },
+    {
+      "caseId": "map-regressors-medium-stan-v2",
+      "run": 0,
+      "objectiveAbsoluteDifference": 2.488075847395521e-05,
+      "normalizedNoiseAbsoluteDifference": 4.3147091388640035e-06
+    },
+    {
+      "caseId": "map-regressors-medium-stan-v2",
+      "run": 1,
+      "objectiveAbsoluteDifference": 2.488075847395521e-05,
+      "normalizedNoiseAbsoluteDifference": 4.3147091388640035e-06
+    },
+    {
+      "caseId": "map-conditional-seasonalities-medium-stan-v2",
+      "run": 0,
+      "objectiveAbsoluteDifference": 6.92508447173168e-05,
+      "normalizedNoiseAbsoluteDifference": 2.204464886356415e-06
+    },
+    {
+      "caseId": "map-conditional-seasonalities-medium-stan-v2",
+      "run": 1,
+      "objectiveAbsoluteDifference": 6.92508447173168e-05,
+      "normalizedNoiseAbsoluteDifference": 2.204464886356415e-06
+    },
+    {
+      "caseId": "map-mixed-features-explicit-small-stan-v2",
+      "run": 0,
+      "objectiveAbsoluteDifference": 3.6493474908638746e-11,
+      "normalizedNoiseAbsoluteDifference": 5.1122300837036505e-15
+    },
+    {
+      "caseId": "map-mixed-features-explicit-small-stan-v2",
+      "run": 1,
+      "objectiveAbsoluteDifference": 3.6493474908638746e-11,
+      "normalizedNoiseAbsoluteDifference": 5.1122300837036505e-15
+    },
+    {
+      "caseId": "map-mixed-features-automatic-large-stan-v2",
+      "run": 0,
+      "objectiveAbsoluteDifference": 9.830835415414185e-05,
+      "normalizedNoiseAbsoluteDifference": 1.91142159894353e-06
+    },
+    {
+      "caseId": "map-mixed-features-automatic-large-stan-v2",
+      "run": 1,
+      "objectiveAbsoluteDifference": 9.830835415414185e-05,
+      "normalizedNoiseAbsoluteDifference": 1.91142159894353e-06
+    },
+    {
+      "caseId": "map-training-ordered-explicit-stan-v2",
+      "run": 0,
+      "objectiveAbsoluteDifference": 7.003109203651547e-11,
+      "normalizedNoiseAbsoluteDifference": 1.4203048459560108e-16
+    },
+    {
+      "caseId": "map-training-ordered-explicit-stan-v2",
+      "run": 1,
+      "objectiveAbsoluteDifference": 7.003109203651547e-11,
+      "normalizedNoiseAbsoluteDifference": 1.4203048459560108e-16
+    },
+    {
+      "caseId": "map-training-ordered-auto-stan-v2",
+      "run": 0,
+      "objectiveAbsoluteDifference": 1.9928793335566297e-06,
+      "normalizedNoiseAbsoluteDifference": 4.389869635336441e-10
+    },
+    {
+      "caseId": "map-training-ordered-auto-stan-v2",
+      "run": 1,
+      "objectiveAbsoluteDifference": 1.9928793335566297e-06,
+      "normalizedNoiseAbsoluteDifference": 4.389869635336441e-10
+    },
+    {
+      "caseId": "map-training-unsorted-explicit-stan-v2",
+      "run": 0,
+      "objectiveAbsoluteDifference": 7.003109203651547e-11,
+      "normalizedNoiseAbsoluteDifference": 1.4203048459560108e-16
+    },
+    {
+      "caseId": "map-training-unsorted-explicit-stan-v2",
+      "run": 1,
+      "objectiveAbsoluteDifference": 7.003109203651547e-11,
+      "normalizedNoiseAbsoluteDifference": 1.4203048459560108e-16
+    },
+    {
+      "caseId": "map-training-unsorted-auto-stan-v2",
+      "run": 0,
+      "objectiveAbsoluteDifference": 1.9928793335566297e-06,
+      "normalizedNoiseAbsoluteDifference": 4.389869635336441e-10
+    },
+    {
+      "caseId": "map-training-unsorted-auto-stan-v2",
+      "run": 1,
+      "objectiveAbsoluteDifference": 1.9928793335566297e-06,
+      "normalizedNoiseAbsoluteDifference": 4.389869635336441e-10
+    },
+    {
+      "caseId": "map-training-duplicates-explicit-stan-v2",
+      "run": 0,
+      "objectiveAbsoluteDifference": 2.1941559680271894e-11,
+      "normalizedNoiseAbsoluteDifference": 3.596081765699921e-15
+    },
+    {
+      "caseId": "map-training-duplicates-explicit-stan-v2",
+      "run": 1,
+      "objectiveAbsoluteDifference": 2.1941559680271894e-11,
+      "normalizedNoiseAbsoluteDifference": 3.596081765699921e-15
+    },
+    {
+      "caseId": "map-training-duplicates-auto-stan-v2",
+      "run": 0,
+      "objectiveAbsoluteDifference": 0.00013074239222987671,
+      "normalizedNoiseAbsoluteDifference": 7.892510892176016e-06
+    },
+    {
+      "caseId": "map-training-duplicates-auto-stan-v2",
+      "run": 1,
+      "objectiveAbsoluteDifference": 0.00013074239222987671,
+      "normalizedNoiseAbsoluteDifference": 7.892510892176016e-06
+    },
+    {
+      "caseId": "map-training-duplicate-features-auto-stan-v2",
+      "run": 0,
+      "objectiveAbsoluteDifference": 0.0012027647564423205,
+      "normalizedNoiseAbsoluteDifference": 6.9129767045969515e-06
+    },
+    {
+      "caseId": "map-training-duplicate-features-auto-stan-v2",
+      "run": 1,
+      "objectiveAbsoluteDifference": 0.0012027647564423205,
+      "normalizedNoiseAbsoluteDifference": 6.9129767045969515e-06
+    },
+    {
+      "caseId": "uncertainty-training-duplicates-auto-stan-v2",
+      "run": 0,
+      "objectiveAbsoluteDifference": 0.00013074239222987671,
+      "normalizedNoiseAbsoluteDifference": 7.892510892176016e-06
+    },
+    {
+      "caseId": "uncertainty-training-duplicates-auto-stan-v2",
+      "run": 1,
+      "objectiveAbsoluteDifference": 0.00013074239222987671,
+      "normalizedNoiseAbsoluteDifference": 7.892510892176016e-06
+    },
+    {
+      "caseId": "linear-offset-scaling-absmax-stan-v2",
+      "run": 0,
+      "objectiveAbsoluteDifference": 3.456079866737127e-11,
+      "normalizedNoiseAbsoluteDifference": 1.8865117801247777e-17
+    },
+    {
+      "caseId": "linear-offset-scaling-absmax-stan-v2",
+      "run": 1,
+      "objectiveAbsoluteDifference": 3.456079866737127e-11,
+      "normalizedNoiseAbsoluteDifference": 1.8865117801247777e-17
+    },
+    {
+      "caseId": "linear-offset-scaling-minmax-stan-v2",
+      "run": 0,
+      "objectiveAbsoluteDifference": 3.3281821743003093e-10,
+      "normalizedNoiseAbsoluteDifference": 4.407932352457067e-15
+    },
+    {
+      "caseId": "linear-offset-scaling-minmax-stan-v2",
+      "run": 1,
+      "objectiveAbsoluteDifference": 3.3281821743003093e-10,
+      "normalizedNoiseAbsoluteDifference": 4.407932352457067e-15
+    },
+    {
+      "caseId": "linear-mixed-components-stan-v2",
+      "run": 0,
+      "objectiveAbsoluteDifference": 1.4199486031429842e-10,
+      "normalizedNoiseAbsoluteDifference": 2.1884219696816087e-12
+    },
+    {
+      "caseId": "linear-mixed-components-stan-v2",
+      "run": 1,
+      "objectiveAbsoluteDifference": 1.4199486031429842e-10,
+      "normalizedNoiseAbsoluteDifference": 2.1884219696816087e-12
+    }
+  ],
+  "limitations": [
+    "Stationarity is diagnostic-only and remains unresolved under EP-097.",
+    "The snapshot has dirty-tree provenance, not a clean release source pin.",
+    "Timing overlapped local validation workloads and is descriptive only.",
+    "No stationarity, bitwise trajectory, distribution calibration or performance ranking claim."
+  ]
+}

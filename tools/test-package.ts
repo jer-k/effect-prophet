@@ -65,6 +65,7 @@ const expectedDeclarationFiles = [
   "dist/internal/additional-features.d.ts",
   "dist/internal/fitting-backend.d.ts",
   "dist/internal/prophet-fitting-backend.d.ts",
+  "dist/linear-optimizer.d.ts",
   "dist/logistic.d.ts",
   "dist/model-search.d.ts",
   "dist/model-serialization.d.ts",
@@ -78,12 +79,17 @@ const expectedDeclarationFiles = [
   "dist/uncertainty.d.ts",
 ];
 
+const thirdPartyRoot = new URL("rust/prophet-wasm/third-party/", projectRoot);
+
+const thirdPartyFiles = await collectFiles(thirdPartyRoot);
+
 const expectedWasmFiles = [
   "wasm/package.json",
   "wasm/prophet_wasm.d.ts",
   "wasm/prophet_wasm.js",
   "wasm/prophet_wasm_bg.wasm",
   "wasm/prophet_wasm_bg.wasm.d.ts",
+  ...thirdPartyFiles.map((filename) => `wasm/third-party/${filename}`),
 ];
 
 const pack = spawnSync("npm", ["pack", "--dry-run", "--json", "--ignore-scripts"], {
@@ -122,6 +128,14 @@ assert.deepEqual(
   expectedPackedFiles,
   "the npm artifact contains missing or stale files",
 );
+
+for (const filename of thirdPartyFiles) {
+  const source = await readFile(new URL(filename, thirdPartyRoot));
+
+  const shipped = await readFile(new URL(`wasm/third-party/${filename}`, projectRoot));
+
+  assert.deepEqual(shipped, source, `the npm artifact must preserve ${filename}`);
+}
 
 for (const declarationFile of expectedDeclarationFiles) {
   const declaration = await readFile(new URL(declarationFile, projectRoot), "utf8");

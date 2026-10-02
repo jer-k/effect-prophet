@@ -1,0 +1,2504 @@
+{
+  "id": "map-conditional-seasonalities-medium",
+  "recipe": "map-conditional-seasonalities-v1:piecewise+weekly-dense-order3+weekly-sparse-order3+bounded-noise:n=256:h=64",
+  "observations": [
+    {
+      "timestamp": "2020-01-01T00:00:00.000Z",
+      "value": 11.235,
+      "conditions": {
+        "dense": false,
+        "sparse": true
+      }
+    },
+    {
+      "timestamp": "2020-01-02T00:00:00.000Z",
+      "value": 13.3912918211,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-01-03T00:00:00.000Z",
+      "value": 13.6928952872,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-01-04T00:00:00.000Z",
+      "value": 13.9389479722,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-01-05T00:00:00.000Z",
+      "value": 13.4219920665,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-01-06T00:00:00.000Z",
+      "value": 12.653211009,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-01-07T00:00:00.000Z",
+      "value": 13.410246685,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-01-08T00:00:00.000Z",
+      "value": 15.2211116093,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-01-09T00:00:00.000Z",
+      "value": 15.402337859,
+      "conditions": {
+        "dense": false,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-01-10T00:00:00.000Z",
+      "value": 16.6162034436,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-01-11T00:00:00.000Z",
+      "value": 16.8408545279,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-01-12T00:00:00.000Z",
+      "value": 16.3284059634,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-01-13T00:00:00.000Z",
+      "value": 15.6399142619,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-01-14T00:00:00.000Z",
+      "value": 16.4275138085,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-01-15T00:00:00.000Z",
+      "value": 18.1989850749,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-01-16T00:00:00.000Z",
+      "value": 19.254457861,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-01-17T00:00:00.000Z",
+      "value": 18.7961179293,
+      "conditions": {
+        "dense": false,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-01-18T00:00:00.000Z",
+      "value": 19.8300122672,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-01-19T00:00:00.000Z",
+      "value": 19.2490898846,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-01-20T00:00:00.000Z",
+      "value": 18.9454266075,
+      "conditions": {
+        "dense": true,
+        "sparse": true
+      }
+    },
+    {
+      "timestamp": "2020-01-21T00:00:00.000Z",
+      "value": 19.3625758645,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-01-22T00:00:00.000Z",
+      "value": 21.0644933665,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-01-23T00:00:00.000Z",
+      "value": 22.0962983479,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-01-24T00:00:00.000Z",
+      "value": 22.5311048731,
+      "conditions": {
+        "dense": true,
+        "sparse": true
+      }
+    },
+    {
+      "timestamp": "2020-01-25T00:00:00.000Z",
+      "value": 21.9990469826,
+      "conditions": {
+        "dense": false,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-01-26T00:00:00.000Z",
+      "value": 22.1266743705,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-01-27T00:00:00.000Z",
+      "value": 21.497716615,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-01-28T00:00:00.000Z",
+      "value": 22.3632183251,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-01-29T00:00:00.000Z",
+      "value": 24.0540660168,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-01-30T00:00:00.000Z",
+      "value": 25.0661520578,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-01-31T00:00:00.000Z",
+      "value": 25.5691677072,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-02-01T00:00:00.000Z",
+      "value": 25.7715341465,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-02-02T00:00:00.000Z",
+      "value": 25.3917028698,
+      "conditions": {
+        "dense": false,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-02-03T00:00:00.000Z",
+      "value": 24.431066879,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-02-04T00:00:00.000Z",
+      "value": 25.3218624852,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-02-05T00:00:00.000Z",
+      "value": 26.9721261193,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-02-06T00:00:00.000Z",
+      "value": 27.9139930078,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-02-07T00:00:00.000Z",
+      "value": 28.4359210862,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-02-08T00:00:00.000Z",
+      "value": 29.6442582118,
+      "conditions": {
+        "dense": true,
+        "sparse": true
+      }
+    },
+    {
+      "timestamp": "2020-02-09T00:00:00.000Z",
+      "value": 27.9678647807,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-02-10T00:00:00.000Z",
+      "value": 28.7902442922,
+      "conditions": {
+        "dense": false,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-02-11T00:00:00.000Z",
+      "value": 28.2743624913,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-02-12T00:00:00.000Z",
+      "value": 29.9636944164,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-02-13T00:00:00.000Z",
+      "value": 30.875785246,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-02-14T00:00:00.000Z",
+      "value": 31.4207113799,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-02-15T00:00:00.000Z",
+      "value": 31.7218410055,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-02-16T00:00:00.000Z",
+      "value": 31.4568992867,
+      "conditions": {
+        "dense": true,
+        "sparse": true
+      }
+    },
+    {
+      "timestamp": "2020-02-17T00:00:00.000Z",
+      "value": 30.2548698779,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-02-18T00:00:00.000Z",
+      "value": 32.2526937022,
+      "conditions": {
+        "dense": false,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-02-19T00:00:00.000Z",
+      "value": 32.9298774714,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-02-20T00:00:00.000Z",
+      "value": 33.7667101614,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-02-21T00:00:00.000Z",
+      "value": 34.2732493751,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-02-22T00:00:00.000Z",
+      "value": 34.6166043768,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-02-23T00:00:00.000Z",
+      "value": 33.8752010162,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-02-24T00:00:00.000Z",
+      "value": 33.1085860996,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-02-25T00:00:00.000Z",
+      "value": 34.1287938644,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-02-26T00:00:00.000Z",
+      "value": 35.5477457574,
+      "conditions": {
+        "dense": false,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-02-27T00:00:00.000Z",
+      "value": 36.340603163,
+      "conditions": {
+        "dense": true,
+        "sparse": true
+      }
+    },
+    {
+      "timestamp": "2020-02-28T00:00:00.000Z",
+      "value": 37.2244200892,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-02-29T00:00:00.000Z",
+      "value": 37.6290550665,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-03-01T00:00:00.000Z",
+      "value": 36.917431005,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-03-02T00:00:00.000Z",
+      "value": 36.0929256459,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-03-03T00:00:00.000Z",
+      "value": 37.0891079854,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-03-04T00:00:00.000Z",
+      "value": 38.8874734771,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-03-05T00:00:00.000Z",
+      "value": 38.8216034704,
+      "conditions": {
+        "dense": false,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-03-06T00:00:00.000Z",
+      "value": 40.0968995366,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-03-07T00:00:00.000Z",
+      "value": 40.5063059635,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-03-08T00:00:00.000Z",
+      "value": 39.8252259026,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-03-09T00:00:00.000Z",
+      "value": 38.9602776087,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-03-10T00:00:00.000Z",
+      "value": 39.3305950402,
+      "conditions": {
+        "dense": true,
+        "sparse": true
+      }
+    },
+    {
+      "timestamp": "2020-03-11T00:00:00.000Z",
+      "value": 41.8067705362,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-03-12T00:00:00.000Z",
+      "value": 42.6424685471,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-03-13T00:00:00.000Z",
+      "value": 42.1775730252,
+      "conditions": {
+        "dense": false,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-03-14T00:00:00.000Z",
+      "value": 43.4700191227,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-03-15T00:00:00.000Z",
+      "value": 42.859478812,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-03-16T00:00:00.000Z",
+      "value": 41.9812442931,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-03-17T00:00:00.000Z",
+      "value": 42.2998507561,
+      "conditions": {
+        "dense": true,
+        "sparse": true
+      }
+    },
+    {
+      "timestamp": "2020-03-18T00:00:00.000Z",
+      "value": 44.7948057594,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-03-19T00:00:00.000Z",
+      "value": 45.6415103627,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-03-20T00:00:00.000Z",
+      "value": 45.9564259716,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-03-21T00:00:00.000Z",
+      "value": 45.6070229572,
+      "conditions": {
+        "dense": false,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-03-22T00:00:00.000Z",
+      "value": 45.766057371,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-03-23T00:00:00.000Z",
+      "value": 44.8788417784,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-03-24T00:00:00.000Z",
+      "value": 45.7493844946,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-03-25T00:00:00.000Z",
+      "value": 47.6610056149,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-03-26T00:00:00.000Z",
+      "value": 48.5779579098,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-03-27T00:00:00.000Z",
+      "value": 48.890481563,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-03-28T00:00:00.000Z",
+      "value": 49.2682857238,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-03-29T00:00:00.000Z",
+      "value": 49.0587572461,
+      "conditions": {
+        "dense": false,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-03-30T00:00:00.000Z",
+      "value": 47.9142526002,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-03-31T00:00:00.000Z",
+      "value": 48.7415619499,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-04-01T00:00:00.000Z",
+      "value": 50.638104238,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-04-02T00:00:00.000Z",
+      "value": 51.2034948519,
+      "conditions": {
+        "dense": true,
+        "sparse": true
+      }
+    },
+    {
+      "timestamp": "2020-04-03T00:00:00.000Z",
+      "value": 51.8757960334,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-04-04T00:00:00.000Z",
+      "value": 52.173056935,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-04-05T00:00:00.000Z",
+      "value": 52.1334028838,
+      "conditions": {
+        "dense": true,
+        "sparse": true
+      }
+    },
+    {
+      "timestamp": "2020-04-06T00:00:00.000Z",
+      "value": 52.3216378555,
+      "conditions": {
+        "dense": false,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-04-07T00:00:00.000Z",
+      "value": 51.6126998826,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-04-08T00:00:00.000Z",
+      "value": 53.2543709403,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-04-09T00:00:00.000Z",
+      "value": 54.0477586375,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-04-10T00:00:00.000Z",
+      "value": 54.1471326217,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-04-11T00:00:00.000Z",
+      "value": 54.1974920002,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-04-12T00:00:00.000Z",
+      "value": 53.4891508291,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-04-13T00:00:00.000Z",
+      "value": 52.5288631527,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-04-14T00:00:00.000Z",
+      "value": 54.1033785704,
+      "conditions": {
+        "dense": false,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-04-15T00:00:00.000Z",
+      "value": 54.688993522,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-04-16T00:00:00.000Z",
+      "value": 55.5109676442,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-04-17T00:00:00.000Z",
+      "value": 55.6336396036,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-04-18T00:00:00.000Z",
+      "value": 55.6162059649,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-04-19T00:00:00.000Z",
+      "value": 54.8556514647,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-04-20T00:00:00.000Z",
+      "value": 53.9191630421,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-04-21T00:00:00.000Z",
+      "value": 54.4618538262,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-04-22T00:00:00.000Z",
+      "value": 55.6450401927,
+      "conditions": {
+        "dense": false,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-04-23T00:00:00.000Z",
+      "value": 56.8240389884,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-04-24T00:00:00.000Z",
+      "value": 56.9893567489,
+      "conditions": {
+        "dense": true,
+        "sparse": true
+      }
+    },
+    {
+      "timestamp": "2020-04-25T00:00:00.000Z",
+      "value": 57.9469513641,
+      "conditions": {
+        "dense": true,
+        "sparse": true
+      }
+    },
+    {
+      "timestamp": "2020-04-26T00:00:00.000Z",
+      "value": 56.2054373898,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-04-27T00:00:00.000Z",
+      "value": 55.337596791,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-04-28T00:00:00.000Z",
+      "value": 55.9366901706,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-04-29T00:00:00.000Z",
+      "value": 57.4398578282,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-04-30T00:00:00.000Z",
+      "value": 57.4034072537,
+      "conditions": {
+        "dense": false,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-05-01T00:00:00.000Z",
+      "value": 58.4977523474,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-05-02T00:00:00.000Z",
+      "value": 58.4563505029,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-05-03T00:00:00.000Z",
+      "value": 57.60324638,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-05-04T00:00:00.000Z",
+      "value": 56.7272128112,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-05-05T00:00:00.000Z",
+      "value": 57.3447312243,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-05-06T00:00:00.000Z",
+      "value": 58.7894926681,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-05-07T00:00:00.000Z",
+      "value": 59.5628172062,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-05-08T00:00:00.000Z",
+      "value": 58.9847231752,
+      "conditions": {
+        "dense": false,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-05-09T00:00:00.000Z",
+      "value": 59.8269801199,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-05-10T00:00:00.000Z",
+      "value": 58.9397570745,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-05-11T00:00:00.000Z",
+      "value": 58.0856403519,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-05-12T00:00:00.000Z",
+      "value": 58.7860312843,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-05-13T00:00:00.000Z",
+      "value": 59.4442582461,
+      "conditions": {
+        "dense": true,
+        "sparse": true
+      }
+    },
+    {
+      "timestamp": "2020-05-14T00:00:00.000Z",
+      "value": 60.9877168457,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-05-15T00:00:00.000Z",
+      "value": 61.3032226446,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-05-16T00:00:00.000Z",
+      "value": 60.590698055,
+      "conditions": {
+        "dense": false,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-05-17T00:00:00.000Z",
+      "value": 60.386905557,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-05-18T00:00:00.000Z",
+      "value": 59.8565464511,
+      "conditions": {
+        "dense": true,
+        "sparse": true
+      }
+    },
+    {
+      "timestamp": "2020-05-19T00:00:00.000Z",
+      "value": 60.2063206898,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-05-20T00:00:00.000Z",
+      "value": 61.6470996893,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-05-21T00:00:00.000Z",
+      "value": 62.3122383733,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-05-22T00:00:00.000Z",
+      "value": 62.6184537891,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-05-23T00:00:00.000Z",
+      "value": 62.692537649,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-05-24T00:00:00.000Z",
+      "value": 62.0367279286,
+      "conditions": {
+        "dense": false,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-05-25T00:00:00.000Z",
+      "value": 60.8036303519,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-05-26T00:00:00.000Z",
+      "value": 61.5897850388,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-05-27T00:00:00.000Z",
+      "value": 63.0922880675,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-05-28T00:00:00.000Z",
+      "value": 63.7365717569,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-05-29T00:00:00.000Z",
+      "value": 64.0456526547,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-05-30T00:00:00.000Z",
+      "value": 64.1838767732,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-05-31T00:00:00.000Z",
+      "value": 63.2251871908,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-06-01T00:00:00.000Z",
+      "value": 64.0869099681,
+      "conditions": {
+        "dense": false,
+        "sparse": true
+      }
+    },
+    {
+      "timestamp": "2020-06-02T00:00:00.000Z",
+      "value": 63.008766788,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-06-03T00:00:00.000Z",
+      "value": 64.5320404871,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-06-04T00:00:00.000Z",
+      "value": 65.1158569948,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-06-05T00:00:00.000Z",
+      "value": 65.3621708225,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-06-06T00:00:00.000Z",
+      "value": 65.5282266303,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-06-07T00:00:00.000Z",
+      "value": 64.5884164571,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-06-08T00:00:00.000Z",
+      "value": 63.5462009698,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-06-09T00:00:00.000Z",
+      "value": 65.3526521007,
+      "conditions": {
+        "dense": false,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-06-10T00:00:00.000Z",
+      "value": 65.1393341727,
+      "conditions": {
+        "dense": true,
+        "sparse": true
+      }
+    },
+    {
+      "timestamp": "2020-06-11T00:00:00.000Z",
+      "value": 66.5421514569,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-06-12T00:00:00.000Z",
+      "value": 66.7645302478,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-06-13T00:00:00.000Z",
+      "value": 66.9777447848,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-06-14T00:00:00.000Z",
+      "value": 66.0922254405,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-06-15T00:00:00.000Z",
+      "value": 65.0100285032,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-06-16T00:00:00.000Z",
+      "value": 65.7582607866,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-06-17T00:00:00.000Z",
+      "value": 67.0388465141,
+      "conditions": {
+        "dense": false,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-06-18T00:00:00.000Z",
+      "value": 67.9787134552,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-06-19T00:00:00.000Z",
+      "value": 68.1184975775,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-06-20T00:00:00.000Z",
+      "value": 69.2740221383,
+      "conditions": {
+        "dense": true,
+        "sparse": true
+      }
+    },
+    {
+      "timestamp": "2020-06-21T00:00:00.000Z",
+      "value": 67.4601181389,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-06-22T00:00:00.000Z",
+      "value": 66.3521624314,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-06-23T00:00:00.000Z",
+      "value": 67.0594253001,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-06-24T00:00:00.000Z",
+      "value": 68.741381055,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-06-25T00:00:00.000Z",
+      "value": 68.5315096198,
+      "conditions": {
+        "dense": false,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-06-26T00:00:00.000Z",
+      "value": 69.5141964232,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-06-27T00:00:00.000Z",
+      "value": 69.7116309002,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-06-28T00:00:00.000Z",
+      "value": 68.9366636372,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-06-29T00:00:00.000Z",
+      "value": 68.1551119705,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-06-30T00:00:00.000Z",
+      "value": 69.1188005951,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-07-01T00:00:00.000Z",
+      "value": 71.1125842584,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-07-02T00:00:00.000Z",
+      "value": 72.1020144786,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-07-03T00:00:00.000Z",
+      "value": 71.6062593008,
+      "conditions": {
+        "dense": false,
+        "sparse": true
+      }
+    },
+    {
+      "timestamp": "2020-07-04T00:00:00.000Z",
+      "value": 72.9162770882,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-07-05T00:00:00.000Z",
+      "value": 72.4679124532,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-07-06T00:00:00.000Z",
+      "value": 71.6960913294,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-07-07T00:00:00.000Z",
+      "value": 72.6022473761,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-07-08T00:00:00.000Z",
+      "value": 74.5898920087,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-07-09T00:00:00.000Z",
+      "value": 75.2593210643,
+      "conditions": {
+        "dense": true,
+        "sparse": true
+      }
+    },
+    {
+      "timestamp": "2020-07-10T00:00:00.000Z",
+      "value": 76.0441715387,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-07-11T00:00:00.000Z",
+      "value": 75.7195209398,
+      "conditions": {
+        "dense": false,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-07-12T00:00:00.000Z",
+      "value": 76.0605660537,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-07-13T00:00:00.000Z",
+      "value": 75.3559536534,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-07-14T00:00:00.000Z",
+      "value": 76.2378353824,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-07-15T00:00:00.000Z",
+      "value": 78.1936747468,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-07-16T00:00:00.000Z",
+      "value": 79.2907281647,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-07-17T00:00:00.000Z",
+      "value": 79.682772877,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-07-18T00:00:00.000Z",
+      "value": 80.0166707986,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-07-19T00:00:00.000Z",
+      "value": 79.8916413289,
+      "conditions": {
+        "dense": false,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-07-20T00:00:00.000Z",
+      "value": 78.9126043133,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-07-21T00:00:00.000Z",
+      "value": 79.7599676952,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-07-22T00:00:00.000Z",
+      "value": 81.6596156611,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-07-23T00:00:00.000Z",
+      "value": 82.792664218,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-07-24T00:00:00.000Z",
+      "value": 83.2385246089,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-07-25T00:00:00.000Z",
+      "value": 83.5523637964,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-07-26T00:00:00.000Z",
+      "value": 83.6059516857,
+      "conditions": {
+        "dense": true,
+        "sparse": true
+      }
+    },
+    {
+      "timestamp": "2020-07-27T00:00:00.000Z",
+      "value": 84.0172806245,
+      "conditions": {
+        "dense": false,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-07-28T00:00:00.000Z",
+      "value": 82.8026871238,
+      "conditions": {
+        "dense": true,
+        "sparse": true
+      }
+    },
+    {
+      "timestamp": "2020-07-29T00:00:00.000Z",
+      "value": 85.2689176386,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-07-30T00:00:00.000Z",
+      "value": 86.4135933761,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-07-31T00:00:00.000Z",
+      "value": 86.9010465487,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-08-01T00:00:00.000Z",
+      "value": 87.1692337409,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-08-02T00:00:00.000Z",
+      "value": 86.6761752673,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-08-03T00:00:00.000Z",
+      "value": 86.0900542302,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-08-04T00:00:00.000Z",
+      "value": 87.9883905299,
+      "conditions": {
+        "dense": false,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-08-05T00:00:00.000Z",
+      "value": 88.7631597167,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-08-06T00:00:00.000Z",
+      "value": 89.8847109248,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-08-07T00:00:00.000Z",
+      "value": 90.4295359644,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-08-08T00:00:00.000Z",
+      "value": 90.7099242709,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-08-09T00:00:00.000Z",
+      "value": 90.1872214597,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-08-10T00:00:00.000Z",
+      "value": 89.648797701,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-08-11T00:00:00.000Z",
+      "value": 90.6060975006,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-08-12T00:00:00.000Z",
+      "value": 92.0357113913,
+      "conditions": {
+        "dense": false,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-08-13T00:00:00.000Z",
+      "value": 93.4856421298,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-08-14T00:00:00.000Z",
+      "value": 94.0793323453,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-08-15T00:00:00.000Z",
+      "value": 94.37210969,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-08-16T00:00:00.000Z",
+      "value": 94.2545273806,
+      "conditions": {
+        "dense": true,
+        "sparse": true
+      }
+    },
+    {
+      "timestamp": "2020-08-17T00:00:00.000Z",
+      "value": 93.2083236578,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-08-18T00:00:00.000Z",
+      "value": 93.583683704,
+      "conditions": {
+        "dense": true,
+        "sparse": true
+      }
+    },
+    {
+      "timestamp": "2020-08-19T00:00:00.000Z",
+      "value": 95.9313674772,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-08-20T00:00:00.000Z",
+      "value": 96.1014683837,
+      "conditions": {
+        "dense": false,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-08-21T00:00:00.000Z",
+      "value": 97.5750213031,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-08-22T00:00:00.000Z",
+      "value": 97.9112931379,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-08-23T00:00:00.000Z",
+      "value": 97.2888909061,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-08-24T00:00:00.000Z",
+      "value": 96.7152071928,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-08-25T00:00:00.000Z",
+      "value": 97.7764617432,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-08-26T00:00:00.000Z",
+      "value": 99.5565651416,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-08-27T00:00:00.000Z",
+      "value": 100.556444213,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-08-28T00:00:00.000Z",
+      "value": 100.336018564,
+      "conditions": {
+        "dense": false,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-08-29T00:00:00.000Z",
+      "value": 101.582963071,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-08-30T00:00:00.000Z",
+      "value": 100.929841814,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-08-31T00:00:00.000Z",
+      "value": 100.292420947,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-09-01T00:00:00.000Z",
+      "value": 101.364749353,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-09-02T00:00:00.000Z",
+      "value": 103.14938867,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-09-03T00:00:00.000Z",
+      "value": 104.074930673,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-09-04T00:00:00.000Z",
+      "value": 104.653449122,
+      "conditions": {
+        "dense": true,
+        "sparse": true
+      }
+    },
+    {
+      "timestamp": "2020-09-05T00:00:00.000Z",
+      "value": 104.367808355,
+      "conditions": {
+        "dense": false,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-09-06T00:00:00.000Z",
+      "value": 104.456475153,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-09-07T00:00:00.000Z",
+      "value": 103.778606027,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-09-08T00:00:00.000Z",
+      "value": 104.889507799,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-09-09T00:00:00.000Z",
+      "value": 106.750632781,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-09-10T00:00:00.000Z",
+      "value": 107.282705933,
+      "conditions": {
+        "dense": true,
+        "sparse": true
+      }
+    },
+    {
+      "timestamp": "2020-09-11T00:00:00.000Z",
+      "value": 108.254562437,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-09-12T00:00:00.000Z",
+      "value": 108.749935417,
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    }
+  ],
+  "predictionRows": [
+    {
+      "timestamp": "2020-09-13T00:00:00.000Z",
+      "conditions": {
+        "dense": false,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-09-14T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-09-15T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-09-16T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-09-17T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-09-18T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-09-19T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-09-20T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-09-21T00:00:00.000Z",
+      "conditions": {
+        "dense": false,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-09-22T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-09-23T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": true
+      }
+    },
+    {
+      "timestamp": "2020-09-24T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-09-25T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-09-26T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-09-27T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-09-28T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-09-29T00:00:00.000Z",
+      "conditions": {
+        "dense": false,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-09-30T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-10-01T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-10-02T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-10-03T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": true
+      }
+    },
+    {
+      "timestamp": "2020-10-04T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-10-05T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-10-06T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-10-07T00:00:00.000Z",
+      "conditions": {
+        "dense": false,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-10-08T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-10-09T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-10-10T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-10-11T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-10-12T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": true
+      }
+    },
+    {
+      "timestamp": "2020-10-13T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-10-14T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-10-15T00:00:00.000Z",
+      "conditions": {
+        "dense": false,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-10-16T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-10-17T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-10-18T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-10-19T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-10-20T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-10-21T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-10-22T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-10-23T00:00:00.000Z",
+      "conditions": {
+        "dense": false,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-10-24T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-10-25T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-10-26T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": true
+      }
+    },
+    {
+      "timestamp": "2020-10-27T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-10-28T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-10-29T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-10-30T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-10-31T00:00:00.000Z",
+      "conditions": {
+        "dense": false,
+        "sparse": true
+      }
+    },
+    {
+      "timestamp": "2020-11-01T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-11-02T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-11-03T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-11-04T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-11-05T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-11-06T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-11-07T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-11-08T00:00:00.000Z",
+      "conditions": {
+        "dense": false,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-11-09T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-11-10T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-11-11T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-11-12T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-11-13T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-11-14T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    },
+    {
+      "timestamp": "2020-11-15T00:00:00.000Z",
+      "conditions": {
+        "dense": true,
+        "sparse": false
+      }
+    }
+  ]
+}

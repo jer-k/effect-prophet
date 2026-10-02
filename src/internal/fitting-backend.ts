@@ -4,6 +4,7 @@ import type { FittingError } from "../errors";
 import type { EventCalendar } from "../event";
 import type { Parameters } from "../fitted-model";
 import type { LogisticTrainingBounds } from "../logistic";
+import type { LinearOptimizer } from "../linear-optimizer";
 import type { ChangepointSetting, MapOptimizerControls } from "../options";
 import type { ResolvedRegressor } from "../regressor";
 import type { TargetScalingMode } from "../target-scaling";
@@ -51,8 +52,8 @@ export interface LinearPiecewiseMapFitPlan {
   /** Positive Laplace scale for changepoint rate adjustments. */
   readonly changepointPriorScale: number;
 
-  /** Deterministic optimizer controls. */
-  readonly optimizer: MapOptimizerControls;
+  /** Parsed algorithm-specific linear controls. */
+  readonly optimizer: LinearOptimizer;
 
   /** Unconditional or condition-resolved masks aligned to training rows. */
   readonly seasonalityMasks: SeasonalityMaskMatrix;

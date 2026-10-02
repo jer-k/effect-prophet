@@ -618,7 +618,7 @@ fn validate_fit(
     .chain(capacities)
     .any(|value| !value.is_finite())
     || explicit_floors.is_some_and(|floors| floors.iter().any(|value| !value.is_finite()))
-    || timestamps.windows(2).any(|pair| pair[1] <= pair[0])
+    || timestamps.windows(2).any(|pair| pair[1] < pair[0])
   {
     return Err(PiecewiseMapError::InvalidObservation);
   }
@@ -626,9 +626,12 @@ fn validate_fit(
   let start = timestamps[0];
   let end = timestamps[timestamps.len() - 1];
 
-  if !((end - start).is_finite() && end > start)
-    || changepoints.iter().any(|value| !value.is_finite())
-    || changepoints.windows(2).any(|pair| pair[1] <= pair[0])
+  if !((end - start).is_finite() && end > start) {
+    return Err(PiecewiseMapError::ZeroTimeRange);
+  }
+
+  if changepoints.iter().any(|value| !value.is_finite())
+    || changepoints.windows(2).any(|pair| pair[1] < pair[0])
     || changepoints
       .iter()
       .any(|value| *value < start || *value > end)

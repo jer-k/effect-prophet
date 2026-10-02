@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "caseIds": [
+    "map-training-ordered-explicit",
+    "map-training-unsorted-explicit",
+    "map-training-duplicates-explicit",
+    "map-training-duplicates-auto",
+    "map-training-duplicate-features-auto",
+    "uncertainty-training-duplicates-auto",
+    "map-training-zero-span-flat-varied",
+    "map-training-zero-span-flat-constant",
+    "evaluation-training-duplicates"
+  ]
+}

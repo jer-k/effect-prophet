@@ -22,6 +22,7 @@ COPY tools/prophet/.python-version tools/prophet/pyproject.toml tools/prophet/uv
 
 RUN uv sync --project tools/prophet --frozen --no-dev --no-install-project
 
-COPY tools/prophet/generate.py tools/prophet/reference.json ./tools/prophet/
+COPY tools/prophet/generate.py tools/prophet/linear_optimizer_evidence.py tools/prophet/reference.json ./tools/prophet/
+COPY benchmark/data/generated/training-ordered.json benchmark/data/generated/training-unsorted.json ./benchmark/data/generated/
 
 ENTRYPOINT ["/opt/effect-prophet-reference/bin/python", "tools/prophet/generate.py"]

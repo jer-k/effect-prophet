@@ -2,6 +2,36 @@
   "schemaVersion": 1,
   "files": [
     {
+      "file": "training-ordered.json",
+      "recipe": "training-ordered-v1:n=96:h=8:stable-ascending-source:quadruplicate=false:bounded-row-noise",
+      "sha256": "26225e1a04e8d87fbc01f0cbcbe1053c72b87e0ef2c1d0efca3d15a1a448668c"
+    },
+    {
+      "file": "training-unsorted.json",
+      "recipe": "training-unsorted-v1:n=96:h=8:stable-reverse-source:quadruplicate=false:bounded-row-noise",
+      "sha256": "f7bd2722b293c4d2d94d63d48023d3788bc701bf2fb1b3d6b96a738cf74a05e9"
+    },
+    {
+      "file": "training-duplicates.json",
+      "recipe": "training-duplicates-v1:n=96:h=8:stable-reverse-source:quadruplicate=true:bounded-row-noise",
+      "sha256": "4cb336b1befb59c6e212152cf9f292da82dca61867da485e29840acad55a2926"
+    },
+    {
+      "file": "training-duplicate-features.json",
+      "recipe": "training-duplicate-features-v1:n=96:h=8:stable-reverse-source:quadruplicate=true:bounded-row-noise",
+      "sha256": "ce3a031ede4894710f5fd128a31ca6b69ef8eee8be461984e62b67b9b71cf98b"
+    },
+    {
+      "file": "training-zero-span-varied.json",
+      "recipe": "training-zero-span-varied-v1:n=3:h=2",
+      "sha256": "e307813127392e6c95ea82ca8a1c37e2689b01e18f42cb17ec0a882857617f8b"
+    },
+    {
+      "file": "training-zero-span-constant.json",
+      "recipe": "training-zero-span-constant-v1:n=3:h=2",
+      "sha256": "47f06ea5accdb781bc8381967f1d0df9452af3afd5216a95861961a9ee95a2ec"
+    },
+    {
       "file": "linear-small.json",
       "recipe": "deterministic-piecewise-weekly-v2:n=32:h=16",
       "sha256": "bd04fc739211e1968ad47cae0a56d6ce776b0e9ea93dd2d38d89047bac60a5c3"

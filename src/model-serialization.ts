@@ -16,6 +16,7 @@ import {
   parseLinearModel,
   parseLogisticMapModel,
   parsePiecewiseMapModel,
+  PiecewiseMapFitSummarySchema,
   type FittedFlatMapProphet,
   type FittedLinearProphet,
   type FittedLogisticMapProphet,
@@ -283,16 +284,7 @@ const EncodedPiecewiseMapModelSchema = Schema.Struct({
     }),
   ),
   noiseScale: Schema.Number,
-  fitSummary: Schema.Struct({
-    method: Schema.Literals(["piecewise-map-coordinate-v1", "mixed-piecewise-map-coordinate-v1"]),
-    termination: Schema.Literals(["converged", "constant-target-shortcut"]),
-    valueScale: Schema.Number,
-    observationCount: Schema.Number,
-    iterations: Schema.Number,
-    objective: Schema.Number,
-    stationarityResidual: Schema.Number,
-    changepointPriorScale: Schema.Number,
-  }),
+  fitSummary: PiecewiseMapFitSummarySchema,
 });
 
 const EncodedLogisticMapModelSchema = Schema.Struct({

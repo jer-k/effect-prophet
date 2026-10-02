@@ -1,0 +1,3144 @@
+{
+  "id": "map-regressors-medium",
+  "recipe": "map-regressors-v1:piecewise+binary-auto+numeric-auto+numeric-always+numeric-never+bounded-noise:n=256:h=64",
+  "observations": [
+    {
+      "timestamp": "2020-01-01T00:00:00.000Z",
+      "value": 10.521,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 0.3,
+        "numeric-always": 3,
+        "numeric-never": -1
+      }
+    },
+    {
+      "timestamp": "2020-01-02T00:00:00.000Z",
+      "value": 11.0628042039,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 0.498150449299,
+        "numeric-always": 3.0958706137,
+        "numeric-never": -0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-01-03T00:00:00.000Z",
+      "value": 11.4223040138,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 0.687344611244,
+        "numeric-always": 3.18351655846,
+        "numeric-never": -0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-01-04T00:00:00.000Z",
+      "value": 10.0415281737,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.859983303241,
+        "numeric-always": 3.26303986363,
+        "numeric-never": -0.5
+      }
+    },
+    {
+      "timestamp": "2020-01-05T00:00:00.000Z",
+      "value": 10.987706559,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 1.00908983571,
+        "numeric-always": 2.93460964155,
+        "numeric-never": -0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-01-06T00:00:00.000Z",
+      "value": 11.4669462694,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 1.12858847631,
+        "numeric-always": 2.99846069097,
+        "numeric-never": -0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-01-07T00:00:00.000Z",
+      "value": 11.8225500437,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 1.21354712446,
+        "numeric-always": 3.05489155786,
+        "numeric-never": 0
+      }
+    },
+    {
+      "timestamp": "2020-01-08T00:00:00.000Z",
+      "value": 12.3368540222,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 1.26037452006,
+        "numeric-always": 3.10426206978,
+        "numeric-never": 0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-01-09T00:00:00.000Z",
+      "value": 13.2987488925,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 1.26696412212,
+        "numeric-always": 2.74699036415,
+        "numeric-never": 0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-01-10T00:00:00.000Z",
+      "value": 15.5293680315,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 1.23277891901,
+        "numeric-always": 2.78354943497,
+        "numeric-never": 0.5
+      }
+    },
+    {
+      "timestamp": "2020-01-11T00:00:00.000Z",
+      "value": 15.9413538942,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 1.15887378632,
+        "numeric-always": 2.81446322645,
+        "numeric-never": 0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-01-12T00:00:00.000Z",
+      "value": 16.5419821508,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 1.04785449764,
+        "numeric-always": 2.84030230587,
+        "numeric-never": 0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-01-13T00:00:00.000Z",
+      "value": 15.6681086263,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.903775018793,
+        "numeric-always": 2.46167915141,
+        "numeric-never": 1
+      }
+    },
+    {
+      "timestamp": "2020-01-14T00:00:00.000Z",
+      "value": 14.650112391,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.731977175897,
+        "numeric-always": 2.47924309382,
+        "numeric-never": -1
+      }
+    },
+    {
+      "timestamp": "2020-01-15T00:00:00.000Z",
+      "value": 15.1276764401,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.538879084804,
+        "numeric-always": 2.49367495377,
+        "numeric-never": -0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-01-16T00:00:00.000Z",
+      "value": 15.745502291,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.331720771726,
+        "numeric-always": 2.50568141905,
+        "numeric-never": -0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-01-17T00:00:00.000Z",
+      "value": 16.5809208964,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.118277121194,
+        "numeric-always": 2.11598920827,
+        "numeric-never": -0.5
+      }
+    },
+    {
+      "timestamp": "2020-01-18T00:00:00.000Z",
+      "value": 16.9504444716,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.0934504102664,
+        "numeric-always": 2.12533906899,
+        "numeric-never": -0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-01-19T00:00:00.000Z",
+      "value": 19.2866977898,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -0.295551030133,
+        "numeric-always": 2.1344796601,
+        "numeric-never": -0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-01-20T00:00:00.000Z",
+      "value": 19.8697971777,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -0.48051815444,
+        "numeric-always": 2.1441613688,
+        "numeric-never": 0
+      }
+    },
+    {
+      "timestamp": "2020-01-21T00:00:00.000Z",
+      "value": 20.6303865896,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -0.641546767191,
+        "numeric-always": 1.75513011331,
+        "numeric-never": 0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-01-22T00:00:00.000Z",
+      "value": 19.2471146394,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.772802746446,
+        "numeric-always": 1.76812118254,
+        "numeric-never": 0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-01-23T00:00:00.000Z",
+      "value": 19.8511566375,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.869653426709,
+        "numeric-always": 1.78385316345,
+        "numeric-never": 0.5
+      }
+    },
+    {
+      "timestamp": "2020-01-24T00:00:00.000Z",
+      "value": 20.3931231077,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.928850212817,
+        "numeric-always": 1.80302200645,
+        "numeric-never": 0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-01-25T00:00:00.000Z",
+      "value": 21.1432091826,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.948655972294,
+        "numeric-always": 1.42629527769,
+        "numeric-never": 0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-01-26T00:00:00.000Z",
+      "value": 21.6587679894,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.928912134745,
+        "numeric-always": 1.45430664577,
+        "numeric-never": 1
+      }
+    },
+    {
+      "timestamp": "2020-01-27T00:00:00.000Z",
+      "value": 20.8895584901,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.87104283072,
+        "numeric-always": 1.48765064843,
+        "numeric-never": -1
+      }
+    },
+    {
+      "timestamp": "2020-01-28T00:00:00.000Z",
+      "value": 23.1700822506,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -0.777995912582,
+        "numeric-always": 1.52687778239,
+        "numeric-never": -0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-01-29T00:00:00.000Z",
+      "value": 23.9369969363,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -0.654123216327,
+        "numeric-always": 1.17248995694,
+        "numeric-never": -0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-01-30T00:00:00.000Z",
+      "value": 24.5177933104,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -0.505004845593,
+        "numeric-always": 1.22493634876,
+        "numeric-never": -0.5
+      }
+    },
+    {
+      "timestamp": "2020-01-31T00:00:00.000Z",
+      "value": 23.3013109877,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.337224490797,
+        "numeric-always": 1.28460969229,
+        "numeric-never": -0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-02-01T00:00:00.000Z",
+      "value": 23.6886875931,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.158104748391,
+        "numeric-always": 1.3518430362,
+        "numeric-never": -0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-02-02T00:00:00.000Z",
+      "value": 24.4704370162,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.0245870001335,
+        "numeric-always": 1.02690699287,
+        "numeric-never": 0
+      }
+    },
+    {
+      "timestamp": "2020-02-03T00:00:00.000Z",
+      "value": 25.0500001076,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.202950416229,
+        "numeric-always": 1.1100075034,
+        "numeric-never": 0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-02-04T00:00:00.000Z",
+      "value": 25.5177658506,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.369269300174,
+        "numeric-always": 1.20128413683,
+        "numeric-never": 0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-02-05T00:00:00.000Z",
+      "value": 25.8383566323,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.516321305861,
+        "numeric-always": 1.30080893747,
+        "numeric-never": 0.5
+      }
+    },
+    {
+      "timestamp": "2020-02-06T00:00:00.000Z",
+      "value": 28.4558037926,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 0.637667919883,
+        "numeric-always": 1.00858582988,
+        "numeric-never": 0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-02-07T00:00:00.000Z",
+      "value": 28.9982674106,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 0.727913137298,
+        "numeric-always": 1.12455058647,
+        "numeric-never": 0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-02-08T00:00:00.000Z",
+      "value": 29.3611054614,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 0.782920514595,
+        "numeric-always": 1.24857135795,
+        "numeric-never": 1
+      }
+    },
+    {
+      "timestamp": "2020-02-09T00:00:00.000Z",
+      "value": 26.4738966438,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.799979939946,
+        "numeric-always": 1.38044976223,
+        "numeric-never": -1
+      }
+    },
+    {
+      "timestamp": "2020-02-10T00:00:00.000Z",
+      "value": 27.3339974509,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.777917465715,
+        "numeric-always": 1.11992252281,
+        "numeric-never": -0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-02-11T00:00:00.000Z",
+      "value": 27.8031692431,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.71714381835,
+        "numeric-always": 1.26666364315,
+        "numeric-never": -0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-02-12T00:00:00.000Z",
+      "value": 28.0847927848,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.619639645813,
+        "numeric-always": 1.42028709895,
+        "numeric-never": -0.5
+      }
+    },
+    {
+      "timestamp": "2020-02-13T00:00:00.000Z",
+      "value": 28.4351534738,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.488878085077,
+        "numeric-always": 1.5803500263,
+        "numeric-never": -0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-02-14T00:00:00.000Z",
+      "value": 29.2856454422,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.32968773139,
+        "numeric-always": 1.34635637914,
+        "numeric-never": -0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-02-15T00:00:00.000Z",
+      "value": 31.4347415406,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 0.148061467335,
+        "numeric-always": 1.51776102599,
+        "numeric-never": 0
+      }
+    },
+    {
+      "timestamp": "2020-02-16T00:00:00.000Z",
+      "value": 31.6601619854,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -0.0490812315416,
+        "numeric-always": 1.69397425214,
+        "numeric-never": 0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-02-17T00:00:00.000Z",
+      "value": 32.039358891,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -0.254169042624,
+        "numeric-always": 1.87436662986,
+        "numeric-never": 0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-02-18T00:00:00.000Z",
+      "value": 31.0301333498,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.459279644249,
+        "numeric-always": 1.6582742168,
+        "numeric-never": 0.5
+      }
+    },
+    {
+      "timestamp": "2020-02-19T00:00:00.000Z",
+      "value": 31.2739326083,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.656454675441,
+        "numeric-always": 1.84500403927,
+        "numeric-never": 0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-02-20T00:00:00.000Z",
+      "value": 31.5170435917,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.83801625394,
+        "numeric-always": 2.0338398154,
+        "numeric-never": 0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-02-21T00:00:00.000Z",
+      "value": 31.9474072083,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.996872436574,
+        "numeric-always": 2.2240478707,
+        "numeric-never": 1
+      }
+    },
+    {
+      "timestamp": "2020-02-22T00:00:00.000Z",
+      "value": 31.279111648,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -1.12679944642,
+        "numeric-always": 2.01488319737,
+        "numeric-never": -1
+      }
+    },
+    {
+      "timestamp": "2020-02-23T00:00:00.000Z",
+      "value": 31.5042146294,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -1.222689417,
+        "numeric-always": 2.2055956071,
+        "numeric-never": -0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-02-24T00:00:00.000Z",
+      "value": 33.6509225773,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -1.28075377801,
+        "numeric-always": 2.39543592672,
+        "numeric-never": -0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-02-25T00:00:00.000Z",
+      "value": 34.1387371024,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -1.29867417521,
+        "numeric-always": 2.58366218546,
+        "numeric-never": -0.5
+      }
+    },
+    {
+      "timestamp": "2020-02-26T00:00:00.000Z",
+      "value": 34.8454045334,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -1.27569490796,
+        "numeric-always": 2.36954574272,
+        "numeric-never": -0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-02-27T00:00:00.000Z",
+      "value": 33.3196173253,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -1.21265319944,
+        "numeric-always": 2.55237730573,
+        "numeric-never": -0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-02-28T00:00:00.000Z",
+      "value": 33.7780866586,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -1.11194609207,
+        "numeric-always": 2.73147278744,
+        "numeric-never": 0
+      }
+    },
+    {
+      "timestamp": "2020-02-29T00:00:00.000Z",
+      "value": 34.2656531872,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.97743528708,
+        "numeric-always": 2.90617895625,
+        "numeric-never": 0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-03-01T00:00:00.000Z",
+      "value": 34.9305305337,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.814293720499,
+        "numeric-always": 2.67587883091,
+        "numeric-never": 0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-03-02T00:00:00.000Z",
+      "value": 35.271725147,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.62879999036,
+        "numeric-always": 2.839996776,
+        "numeric-never": 0.5
+      }
+    },
+    {
+      "timestamp": "2020-03-03T00:00:00.000Z",
+      "value": 35.7889478347,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.428088828305,
+        "numeric-always": 2.998003256,
+        "numeric-never": 0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-03-04T00:00:00.000Z",
+      "value": 38.0182787487,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -0.219867560839,
+        "numeric-always": 3.14941920857,
+        "numeric-never": 0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-03-05T00:00:00.000Z",
+      "value": 38.6657122862,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -0.0121098609224,
+        "numeric-always": 2.89382000106,
+        "numeric-never": 1
+      }
+    },
+    {
+      "timestamp": "2020-03-06T00:00:00.000Z",
+      "value": 37.6870414226,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 0.187261004487,
+        "numeric-always": 3.03083893741,
+        "numeric-never": -1
+      }
+    },
+    {
+      "timestamp": "2020-03-07T00:00:00.000Z",
+      "value": 36.4260865381,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.370686806922,
+        "numeric-always": 3.16017028665,
+        "numeric-never": -0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-03-08T00:00:00.000Z",
+      "value": 36.8046699181,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.531274329829,
+        "numeric-always": 3.28157180784,
+        "numeric-never": -0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-03-09T00:00:00.000Z",
+      "value": 37.5047183789,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.663068728597,
+        "numeric-always": 2.99486675068,
+        "numeric-never": -0.5
+      }
+    },
+    {
+      "timestamp": "2020-03-10T00:00:00.000Z",
+      "value": 38.038675198,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.761289384209,
+        "numeric-always": 3.09994531526,
+        "numeric-never": -0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-03-11T00:00:00.000Z",
+      "value": 38.5700504623,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.822518853126,
+        "numeric-always": 3.19676555886,
+        "numeric-never": -0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-03-12T00:00:00.000Z",
+      "value": 38.9267152133,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.844837386238,
+        "numeric-always": 3.28535374239,
+        "numeric-never": 0
+      }
+    },
+    {
+      "timestamp": "2020-03-13T00:00:00.000Z",
+      "value": 41.5160303756,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 0.82789766,
+        "numeric-always": 2.96580411342,
+        "numeric-never": 0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-03-14T00:00:00.000Z",
+      "value": 42.1061059663,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 0.772936746689,
+        "numeric-always": 3.03827812791,
+        "numeric-never": 0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-03-15T00:00:00.000Z",
+      "value": 42.5761420456,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 0.682724853066,
+        "numeric-always": 3.10300311671,
+        "numeric-never": 0.5
+      }
+    },
+    {
+      "timestamp": "2020-03-16T00:00:00.000Z",
+      "value": 41.1229612029,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.561452877782,
+        "numeric-always": 3.1602704081,
+        "numeric-never": 0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-03-17T00:00:00.000Z",
+      "value": 41.9852182685,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.414563277202,
+        "numeric-always": 2.81043292183,
+        "numeric-never": 0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-03-18T00:00:00.000Z",
+      "value": 42.5561174492,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.248530989588,
+        "numeric-always": 2.85390225434,
+        "numeric-never": 1
+      }
+    },
+    {
+      "timestamp": "2020-03-19T00:00:00.000Z",
+      "value": 41.5376365381,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.070603158802,
+        "numeric-always": 2.89114527958,
+        "numeric-never": -1
+      }
+    },
+    {
+      "timestamp": "2020-03-20T00:00:00.000Z",
+      "value": 41.9163936153,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.111491958708,
+        "numeric-always": 2.92268029312,
+        "numeric-never": -0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-03-21T00:00:00.000Z",
+      "value": 42.8447415304,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.289855291125,
+        "numeric-always": 2.54907273171,
+        "numeric-never": -0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-03-22T00:00:00.000Z",
+      "value": 45.1748508852,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -0.456734074549,
+        "numeric-always": 2.57093050348,
+        "numeric-never": -0.5
+      }
+    },
+    {
+      "timestamp": "2020-03-23T00:00:00.000Z",
+      "value": 45.5448386613,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -0.60483315197,
+        "numeric-always": 2.5888989673,
+        "numeric-never": -0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-03-24T00:00:00.000Z",
+      "value": 46.0265282609,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -0.727608029756,
+        "numeric-always": 2.603655603,
+        "numeric-never": -0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-03-25T00:00:00.000Z",
+      "value": 45.2183482804,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.819528000722,
+        "numeric-always": 2.21590441611,
+        "numeric-never": 0
+      }
+    },
+    {
+      "timestamp": "2020-03-26T00:00:00.000Z",
+      "value": 45.7170868193,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.876298836241,
+        "numeric-always": 2.22637012376,
+        "numeric-never": 0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-03-27T00:00:00.000Z",
+      "value": 46.1329565471,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.895036161741,
+        "numeric-always": 2.23579216928,
+        "numeric-never": 0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-03-28T00:00:00.000Z",
+      "value": 46.7290511408,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.874382596143,
+        "numeric-always": 2.24491861542,
+        "numeric-never": 0.5
+      }
+    },
+    {
+      "timestamp": "2020-03-29T00:00:00.000Z",
+      "value": 47.7252929325,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.814563977795,
+        "numeric-always": 1.85449996619,
+        "numeric-never": 0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-03-30T00:00:00.000Z",
+      "value": 48.1763313021,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.717382428082,
+        "numeric-always": 1.86528296865,
+        "numeric-never": 0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-03-31T00:00:00.000Z",
+      "value": 50.447100472,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -0.586146522066,
+        "numeric-always": 1.8780044457,
+        "numeric-never": 1
+      }
+    },
+    {
+      "timestamp": "2020-04-01T00:00:00.000Z",
+      "value": 49.6829925871,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -0.425541343077,
+        "numeric-always": 1.89338521081,
+        "numeric-never": -1
+      }
+    },
+    {
+      "timestamp": "2020-04-02T00:00:00.000Z",
+      "value": 50.601948705,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -0.241443594994,
+        "numeric-always": 1.512124115,
+        "numeric-never": -0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-04-03T00:00:00.000Z",
+      "value": 49.2016025652,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.0406891365512,
+        "numeric-always": 1.53489227518,
+        "numeric-never": -0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-04-04T00:00:00.000Z",
+      "value": 49.7233839751,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.169197800927,
+        "numeric-always": 1.56232753155,
+        "numeric-never": -0.5
+      }
+    },
+    {
+      "timestamp": "2020-04-05T00:00:00.000Z",
+      "value": 50.352242246,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.380302923185,
+        "numeric-always": 1.59502917983,
+        "numeric-never": -0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-04-06T00:00:00.000Z",
+      "value": 51.1732631013,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.584635823132,
+        "numeric-always": 1.23355302181,
+        "numeric-never": -0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-04-07T00:00:00.000Z",
+      "value": 51.5711475381,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.774447060615,
+        "numeric-always": 1.27840677509,
+        "numeric-never": 0
+      }
+    },
+    {
+      "timestamp": "2020-04-08T00:00:00.000Z",
+      "value": 51.92876727,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.942535735986,
+        "numeric-always": 1.33004587998,
+        "numeric-never": 0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-04-09T00:00:00.000Z",
+      "value": 54.0840313238,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 1.08253530022,
+        "numeric-always": 1.38886973812,
+        "numeric-never": 0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-04-10T00:00:00.000Z",
+      "value": 54.6105616038,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 1.18916621164,
+        "numeric-always": 1.05521841389,
+        "numeric-never": 0.5
+      }
+    },
+    {
+      "timestamp": "2020-04-11T00:00:00.000Z",
+      "value": 54.826524017,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 1.25844537058,
+        "numeric-always": 1.12936982595,
+        "numeric-never": 0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-04-12T00:00:00.000Z",
+      "value": 53.3974141237,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 1.28784398614,
+        "numeric-always": 1.21153745189,
+        "numeric-never": 0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-04-13T00:00:00.000Z",
+      "value": 53.6456005525,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 1.27638758461,
+        "numeric-always": 1.30186856524,
+        "numeric-never": 1
+      }
+    },
+    {
+      "timestamp": "2020-04-14T00:00:00.000Z",
+      "value": 52.6999431542,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 1.22469417525,
+        "numeric-always": 1.00044301913,
+        "numeric-never": -1
+      }
+    },
+    {
+      "timestamp": "2020-04-15T00:00:00.000Z",
+      "value": 52.9369754137,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 1.13494905433,
+        "numeric-always": 1.10727258682,
+        "numeric-never": -0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-04-16T00:00:00.000Z",
+      "value": 53.2385461512,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 1.01081725375,
+        "numeric-always": 1.22230086448,
+        "numeric-never": -0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-04-17T00:00:00.000Z",
+      "value": 53.3460775047,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.857297126288,
+        "numeric-always": 1.34540373696,
+        "numeric-never": -0.5
+      }
+    },
+    {
+      "timestamp": "2020-04-18T00:00:00.000Z",
+      "value": 55.5735685266,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 0.680520905372,
+        "numeric-always": 1.07639040291,
+        "numeric-never": -0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-04-19T00:00:00.000Z",
+      "value": 55.8147539552,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 0.487510191259,
+        "numeric-always": 1.21500495048,
+        "numeric-never": -0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-04-20T00:00:00.000Z",
+      "value": 56.01388755,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 0.285896111607,
+        "numeric-always": 1.36092847092,
+        "numeric-never": 0
+      }
+    },
+    {
+      "timestamp": "2020-04-21T00:00:00.000Z",
+      "value": 54.2338975798,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.0836153125066,
+        "numeric-always": 1.51378169232,
+        "numeric-never": 0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-04-22T00:00:00.000Z",
+      "value": 54.7025228265,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.11140610093,
+        "numeric-always": 1.27312811193,
+        "numeric-never": 0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-04-23T00:00:00.000Z",
+      "value": 54.9591055263,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.291568075328,
+        "numeric-always": 1.43847760117,
+        "numeric-never": 0.5
+      }
+    },
+    {
+      "timestamp": "2020-04-24T00:00:00.000Z",
+      "value": 55.0832075274,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.449898994409,
+        "numeric-always": 1.60929045348,
+        "numeric-never": 0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-04-25T00:00:00.000Z",
+      "value": 55.1091054371,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.580332885875,
+        "numeric-always": 1.7849818416,
+        "numeric-never": 0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-04-26T00:00:00.000Z",
+      "value": 55.6680884152,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.677950400984,
+        "numeric-always": 1.56492664757,
+        "numeric-never": 1
+      }
+    },
+    {
+      "timestamp": "2020-04-27T00:00:00.000Z",
+      "value": 56.310530351,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -0.739173962677,
+        "numeric-always": 1.74846462543,
+        "numeric-never": -1
+      }
+    },
+    {
+      "timestamp": "2020-04-28T00:00:00.000Z",
+      "value": 56.3782592245,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -0.761909305659,
+        "numeric-always": 1.934905854,
+        "numeric-never": -0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-04-29T00:00:00.000Z",
+      "value": 56.4558663712,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -0.745627769441,
+        "numeric-always": 2.12353643485,
+        "numeric-never": -0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-04-30T00:00:00.000Z",
+      "value": 55.2731789762,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.691386067738,
+        "numeric-always": 1.91362438815,
+        "numeric-never": -0.5
+      }
+    },
+    {
+      "timestamp": "2020-05-01T00:00:00.000Z",
+      "value": 55.4603142316,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.60178275058,
+        "numeric-always": 2.10442569799,
+        "numeric-never": -0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-05-02T00:00:00.000Z",
+      "value": 55.4857614687,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.480853099748,
+        "numeric-always": 2.29519045699,
+        "numeric-never": -0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-05-03T00:00:00.000Z",
+      "value": 55.6289644842,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.333906652928,
+        "numeric-always": 2.48516905966,
+        "numeric-never": 0
+      }
+    },
+    {
+      "timestamp": "2020-05-04T00:00:00.000Z",
+      "value": 56.2544645283,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.167313839537,
+        "numeric-always": 2.27361839317,
+        "numeric-never": 0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-05-05T00:00:00.000Z",
+      "value": 56.3650607908,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.0117497597922,
+        "numeric-always": 2.45980797459,
+        "numeric-never": 0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-05-06T00:00:00.000Z",
+      "value": 58.2092402421,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 0.195591328357,
+        "numeric-always": 2.64302598377,
+        "numeric-never": 0.5
+      }
+    },
+    {
+      "timestamp": "2020-05-07T00:00:00.000Z",
+      "value": 58.4406655898,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 0.376309418518,
+        "numeric-always": 2.8225851421,
+        "numeric-never": 0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-05-08T00:00:00.000Z",
+      "value": 59.0538776046,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 0.546110937065,
+        "numeric-always": 2.59782838857,
+        "numeric-never": 0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-05-09T00:00:00.000Z",
+      "value": 57.3304921907,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.697623866761,
+        "numeric-always": 2.76813430633,
+        "numeric-never": 1
+      }
+    },
+    {
+      "timestamp": "2020-05-10T00:00:00.000Z",
+      "value": 56.0514692915,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.824193249815,
+        "numeric-always": 2.93292225479,
+        "numeric-never": -1
+      }
+    },
+    {
+      "timestamp": "2020-05-11T00:00:00.000Z",
+      "value": 56.3571526702,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.920148626128,
+        "numeric-always": 3.09165716501,
+        "numeric-never": -0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-05-12T00:00:00.000Z",
+      "value": 56.9270333648,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.981032257054,
+        "numeric-always": 2.84385395873,
+        "numeric-never": -0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-05-13T00:00:00.000Z",
+      "value": 56.9995383305,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 1.00377902863,
+        "numeric-always": 2.9890815545,
+        "numeric-never": -0.5
+      }
+    },
+    {
+      "timestamp": "2020-05-14T00:00:00.000Z",
+      "value": 57.2148858444,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.986840854552,
+        "numeric-always": 3.12696642789,
+        "numeric-never": -0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-05-15T00:00:00.000Z",
+      "value": 59.3204688671,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 0.930250611675,
+        "numeric-always": 3.25719569634,
+        "numeric-never": -0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-05-16T00:00:00.000Z",
+      "value": 59.8094050883,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 0.835623051508,
+        "numeric-always": 2.97951970321,
+        "numeric-never": 0
+      }
+    },
+    {
+      "timestamp": "2020-05-17T00:00:00.000Z",
+      "value": 59.8980303923,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 0.70609264363,
+        "numeric-always": 3.09375407959,
+        "numeric-never": 0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-05-18T00:00:00.000Z",
+      "value": 58.3707308566,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.54619082137,
+        "numeric-always": 3.19978126701,
+        "numeric-never": 0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-05-19T00:00:00.000Z",
+      "value": 58.6230045581,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.361667515935,
+        "numeric-always": 3.29755148829,
+        "numeric-never": 0.5
+      }
+    },
+    {
+      "timestamp": "2020-05-20T00:00:00.000Z",
+      "value": 59.0611698702,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.15926408628,
+        "numeric-always": 2.98708315868,
+        "numeric-never": 0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-05-21T00:00:00.000Z",
+      "value": 59.2255467303,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.0535533101727,
+        "numeric-always": 3.06846273372,
+        "numeric-never": 0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-05-22T00:00:00.000Z",
+      "value": 59.5539530884,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.268889283668,
+        "numeric-always": 3.14184399528,
+        "numeric-never": 1
+      }
+    },
+    {
+      "timestamp": "2020-05-23T00:00:00.000Z",
+      "value": 58.3595057954,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.478731939026,
+        "numeric-always": 3.20744678145,
+        "numeric-never": -1
+      }
+    },
+    {
+      "timestamp": "2020-05-24T00:00:00.000Z",
+      "value": 60.6350291717,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -0.675270302942,
+        "numeric-always": 2.86555517101,
+        "numeric-never": -0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-05-25T00:00:00.000Z",
+      "value": 60.928541537,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -0.851203803702,
+        "numeric-always": 2.91651513724,
+        "numeric-never": -0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-05-26T00:00:00.000Z",
+      "value": 61.2962028464,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -1.00003147198,
+        "numeric-always": 2.96073169063,
+        "numeric-never": -0.5
+      }
+    },
+    {
+      "timestamp": "2020-05-27T00:00:00.000Z",
+      "value": 59.6928652995,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -1.11630933959,
+        "numeric-always": 2.99866553398,
+        "numeric-never": -0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-05-28T00:00:00.000Z",
+      "value": 60.256672746,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -1.19586578064,
+        "numeric-always": 2.63082925756,
+        "numeric-never": -0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-05-29T00:00:00.000Z",
+      "value": 60.6507575227,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -1.23596621603,
+        "numeric-always": 2.65778310575,
+        "numeric-never": 0
+      }
+    },
+    {
+      "timestamp": "2020-05-30T00:00:00.000Z",
+      "value": 60.9929603994,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -1.23542062049,
+        "numeric-always": 2.68013035012,
+        "numeric-never": 0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-05-31T00:00:00.000Z",
+      "value": 61.1722762912,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -1.19462955153,
+        "numeric-always": 2.6985123071,
+        "numeric-never": 0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-06-01T00:00:00.000Z",
+      "value": 61.8223245885,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -1.1155668701,
+        "numeric-always": 2.31360304156,
+        "numeric-never": 0.5
+      }
+    },
+    {
+      "timestamp": "2020-06-02T00:00:00.000Z",
+      "value": 64.0444828257,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -1.0016998464,
+        "numeric-always": 2.32610379982,
+        "numeric-never": 0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-06-03T00:00:00.000Z",
+      "value": 64.3177016766,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -0.857849840091,
+        "numeric-always": 2.33673721821,
+        "numeric-never": 0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-06-04T00:00:00.000Z",
+      "value": 64.5111244297,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -0.689999112969,
+        "numeric-always": 2.34624135501,
+        "numeric-never": 1
+      }
+    },
+    {
+      "timestamp": "2020-06-05T00:00:00.000Z",
+      "value": 62.0371630187,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.505051479182,
+        "numeric-always": 1.95536359497,
+        "numeric-never": -1
+      }
+    },
+    {
+      "timestamp": "2020-06-06T00:00:00.000Z",
+      "value": 62.4420422563,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.310556338136,
+        "numeric-always": 1.96485447685,
+        "numeric-never": -0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-06-07T00:00:00.000Z",
+      "value": 62.6658779833,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.114407094525,
+        "numeric-always": 1.97546149487,
+        "numeric-never": -0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-06-08T00:00:00.000Z",
+      "value": 62.9263798165,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.0754740093559,
+        "numeric-always": 1.98792292535,
+        "numeric-never": -0.5
+      }
+    },
+    {
+      "timestamp": "2020-06-09T00:00:00.000Z",
+      "value": 63.7234941275,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.251452082604,
+        "numeric-always": 1.60296172942,
+        "numeric-never": -0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-06-10T00:00:00.000Z",
+      "value": 64.0706273181,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.406484189321,
+        "numeric-always": 1.62127958228,
+        "numeric-never": -0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-06-11T00:00:00.000Z",
+      "value": 66.0667680611,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 0.534400222496,
+        "numeric-always": 1.64355107821,
+        "numeric-never": 0
+      }
+    },
+    {
+      "timestamp": "2020-06-12T00:00:00.000Z",
+      "value": 66.390530709,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 0.630148850253,
+        "numeric-always": 1.67041815925,
+        "numeric-never": 0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-06-13T00:00:00.000Z",
+      "value": 67.1660930493,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 0.689998729523,
+        "numeric-always": 1.30248481354,
+        "numeric-never": 0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-06-14T00:00:00.000Z",
+      "value": 65.5987860543,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.711686965927,
+        "numeric-always": 1.34031208714,
+        "numeric-never": 0.5
+      }
+    },
+    {
+      "timestamp": "2020-06-15T00:00:00.000Z",
+      "value": 65.7659833978,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.694508902302,
+        "numeric-always": 1.38441345046,
+        "numeric-never": 0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-06-16T00:00:00.000Z",
+      "value": 66.1010035362,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.639345657736,
+        "numeric-always": 1.43525055763,
+        "numeric-never": 0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-06-17T00:00:00.000Z",
+      "value": 66.7707754222,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.548628321143,
+        "numeric-always": 1.09322943379,
+        "numeric-never": 1
+      }
+    },
+    {
+      "timestamp": "2020-06-18T00:00:00.000Z",
+      "value": 65.4767194209,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.426240229216,
+        "numeric-always": 1.15869712187,
+        "numeric-never": -1
+      }
+    },
+    {
+      "timestamp": "2020-06-19T00:00:00.000Z",
+      "value": 65.6467949326,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.277361227397,
+        "numeric-always": 1.23193881636,
+        "numeric-never": -0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-06-20T00:00:00.000Z",
+      "value": 67.7684330729,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 0.10826012588,
+        "numeric-always": 1.31317550802,
+        "numeric-never": -0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-06-21T00:00:00.000Z",
+      "value": 68.3263764877,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -0.0739563716232,
+        "numeric-always": 1.00256215876,
+        "numeric-never": -0.5
+      }
+    },
+    {
+      "timestamp": "2020-06-22T00:00:00.000Z",
+      "value": 68.3991851932,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -0.261628252956,
+        "numeric-always": 1.10018642182,
+        "numeric-never": -0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-06-23T00:00:00.000Z",
+      "value": 66.828089073,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.446848946548,
+        "numeric-always": 1.20606791785,
+        "numeric-never": -0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-06-24T00:00:00.000Z",
+      "value": 67.1286249493,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.621782000547,
+        "numeric-always": 1.32015807294,
+        "numeric-never": 0
+      }
+    },
+    {
+      "timestamp": "2020-06-25T00:00:00.000Z",
+      "value": 67.608259478,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.778975061985,
+        "numeric-always": 1.04234051968,
+        "numeric-never": 0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-06-26T00:00:00.000Z",
+      "value": 67.7117008105,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.911658633195,
+        "numeric-always": 1.17243205829,
+        "numeric-never": 0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-06-27T00:00:00.000Z",
+      "value": 67.9969011072,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -1.01401768929,
+        "numeric-always": 1.31018416961,
+        "numeric-never": 0.5
+      }
+    },
+    {
+      "timestamp": "2020-06-28T00:00:00.000Z",
+      "value": 68.2329084274,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -1.08142532215,
+        "numeric-always": 1.45528506752,
+        "numeric-never": 0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-06-29T00:00:00.000Z",
+      "value": 70.7621296981,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -1.11062908997,
+        "numeric-always": 1.20736227398,
+        "numeric-never": 0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-06-30T00:00:00.000Z",
+      "value": 71.2235076589,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -1.09988263672,
+        "numeric-always": 1.36598569516,
+        "numeric-never": 1
+      }
+    },
+    {
+      "timestamp": "2020-07-01T00:00:00.000Z",
+      "value": 70.4090981229,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -1.04901732741,
+        "numeric-always": 1.53067117357,
+        "numeric-never": -1
+      }
+    },
+    {
+      "timestamp": "2020-07-02T00:00:00.000Z",
+      "value": 69.0541021976,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.959451036408,
+        "numeric-always": 1.70088448656,
+        "numeric-never": -0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-07-03T00:00:00.000Z",
+      "value": 69.7618298607,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.834133731265,
+        "numeric-always": 1.47604575833,
+        "numeric-never": -0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-07-04T00:00:00.000Z",
+      "value": 70.2811225048,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.677432014136,
+        "numeric-always": 1.65553424903,
+        "numeric-never": -0.5
+      }
+    },
+    {
+      "timestamp": "2020-07-05T00:00:00.000Z",
+      "value": 70.8394658437,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.494957216382,
+        "numeric-always": 1.8386934813,
+        "numeric-never": -0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-07-06T00:00:00.000Z",
+      "value": 71.2154563317,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.293343892104,
+        "numeric-always": 2.02483666195,
+        "numeric-never": -0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-07-07T00:00:00.000Z",
+      "value": 71.9768018593,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.0799875337897,
+        "numeric-always": 1.81325235403,
+        "numeric-never": 0
+      }
+    },
+    {
+      "timestamp": "2020-07-08T00:00:00.000Z",
+      "value": 74.3618057898,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 0.13724804115,
+        "numeric-always": 2.00321035246,
+        "numeric-never": 0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-07-09T00:00:00.000Z",
+      "value": 74.8734632795,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 0.350341975057,
+        "numeric-always": 2.19396771457,
+        "numeric-never": 0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-07-10T00:00:00.000Z",
+      "value": 75.2344718123,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 0.551433923665,
+        "numeric-always": 2.38477489596,
+        "numeric-never": 0.5
+      }
+    },
+    {
+      "timestamp": "2020-07-11T00:00:00.000Z",
+      "value": 74.2834367536,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.733135226488,
+        "numeric-always": 2.17488194075,
+        "numeric-never": 0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-07-12T00:00:00.000Z",
+      "value": 74.8841401243,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.888821296181,
+        "numeric-always": 2.36354467537,
+        "numeric-never": 0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-07-13T00:00:00.000Z",
+      "value": 75.3177257121,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 1.01289357775,
+        "numeric-always": 2.55003085445,
+        "numeric-never": 1
+      }
+    },
+    {
+      "timestamp": "2020-07-14T00:00:00.000Z",
+      "value": 74.2757719777,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 1.10100064151,
+        "numeric-always": 2.73362620829,
+        "numeric-never": -1
+      }
+    },
+    {
+      "timestamp": "2020-07-15T00:00:00.000Z",
+      "value": 75.1777569248,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 1.15020960287,
+        "numeric-always": 2.51364034189,
+        "numeric-never": -0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-07-16T00:00:00.000Z",
+      "value": 75.7157027113,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 1.15912104195,
+        "numeric-always": 2.68941243671,
+        "numeric-never": -0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-07-17T00:00:00.000Z",
+      "value": 77.8642641906,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 1.12792284867,
+        "numeric-always": 2.86031670824,
+        "numeric-never": -0.5
+      }
+    },
+    {
+      "timestamp": "2020-07-18T00:00:00.000Z",
+      "value": 78.2649370999,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 1.05838085322,
+        "numeric-always": 3.02576757424,
+        "numeric-never": -0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-07-19T00:00:00.000Z",
+      "value": 79.1910579484,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 0.953766622135,
+        "numeric-always": 2.78522449089,
+        "numeric-never": -0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-07-20T00:00:00.000Z",
+      "value": 77.851727173,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.818725304543,
+        "numeric-always": 2.93819641702,
+        "numeric-never": 0
+      }
+    },
+    {
+      "timestamp": "2020-07-21T00:00:00.000Z",
+      "value": 78.1876505082,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.659088803349,
+        "numeric-always": 3.08424586955,
+        "numeric-never": 0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-07-22T00:00:00.000Z",
+      "value": 78.6833860519,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.481641725118,
+        "numeric-always": 3.22299253653,
+        "numeric-never": 0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-07-23T00:00:00.000Z",
+      "value": 79.6339059231,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.29384944497,
+        "numeric-always": 2.95411641803,
+        "numeric-never": 0.5
+      }
+    },
+    {
+      "timestamp": "2020-07-24T00:00:00.000Z",
+      "value": 80.0600862252,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.103559132656,
+        "numeric-always": 3.07736046901,
+        "numeric-never": 0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-07-25T00:00:00.000Z",
+      "value": 80.4721113752,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.0813143363179,
+        "numeric-always": 3.19253272212,
+        "numeric-never": 0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-07-26T00:00:00.000Z",
+      "value": 82.8814179328,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -0.253105058507,
+        "numeric-always": 3.29950787319,
+        "numeric-never": 1
+      }
+    },
+    {
+      "timestamp": "2020-07-27T00:00:00.000Z",
+      "value": 82.4203108112,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -0.404702740383,
+        "numeric-always": 2.99822831602,
+        "numeric-never": -1
+      }
+    },
+    {
+      "timestamp": "2020-07-28T00:00:00.000Z",
+      "value": 82.8409487347,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -0.529837068021,
+        "numeric-always": 3.08870461819,
+        "numeric-never": -0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-07-29T00:00:00.000Z",
+      "value": 81.5568709986,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.62332846856,
+        "numeric-always": 3.17101543374,
+        "numeric-never": -0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-07-30T00:00:00.000Z",
+      "value": 82.2257463241,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.681295263659,
+        "numeric-always": 3.24530685364,
+        "numeric-never": -0.5
+      }
+    },
+    {
+      "timestamp": "2020-07-31T00:00:00.000Z",
+      "value": 83.1250363375,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.701308954112,
+        "numeric-always": 2.9117911992,
+        "numeric-never": -0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-08-01T00:00:00.000Z",
+      "value": 83.5664487751,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.682491443067,
+        "numeric-always": 2.97074526859,
+        "numeric-never": -0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-08-02T00:00:00.000Z",
+      "value": 84.1832910394,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.625550320448,
+        "numeric-always": 3.02250805082,
+        "numeric-never": 0
+      }
+    },
+    {
+      "timestamp": "2020-08-03T00:00:00.000Z",
+      "value": 84.8589799323,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.532750800962,
+        "numeric-always": 3.06747792609,
+        "numeric-never": 0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-08-04T00:00:00.000Z",
+      "value": 87.5206197064,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -0.407825433906,
+        "numeric-always": 2.70610937569,
+        "numeric-never": 0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-08-05T00:00:00.000Z",
+      "value": 88.0424423889,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -0.255825184309,
+        "numeric-always": 2.73890922853,
+        "numeric-never": 0.5
+      }
+    },
+    {
+      "timestamp": "2020-08-06T00:00:00.000Z",
+      "value": 88.7579894396,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -0.0829178227306,
+        "numeric-always": 2.76643247534,
+        "numeric-never": 0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-08-07T00:00:00.000Z",
+      "value": 87.6187413241,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.103858337888,
+        "numeric-always": 2.78927768515,
+        "numeric-never": 0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-08-08T00:00:00.000Z",
+      "value": 88.4893935624,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.296875539277,
+        "numeric-always": 2.40808206181,
+        "numeric-never": 1
+      }
+    },
+    {
+      "timestamp": "2020-08-09T00:00:00.000Z",
+      "value": 87.7170825086,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.488221300623,
+        "numeric-always": 2.42351618153,
+        "numeric-never": -1
+      }
+    },
+    {
+      "timestamp": "2020-08-10T00:00:00.000Z",
+      "value": 88.4801347775,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.670014616566,
+        "numeric-always": 2.43627845467,
+        "numeric-never": -0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-08-11T00:00:00.000Z",
+      "value": 89.0866303737,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.834721021996,
+        "numeric-always": 2.44708935778,
+        "numeric-never": -0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-08-12T00:00:00.000Z",
+      "value": 89.9767489315,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.975453959984,
+        "numeric-always": 2.05668548334,
+        "numeric-never": -0.5
+      }
+    },
+    {
+      "timestamp": "2020-08-13T00:00:00.000Z",
+      "value": 92.4797779525,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 1.08625043482,
+        "numeric-always": 2.06581345637,
+        "numeric-never": -0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-08-14T00:00:00.000Z",
+      "value": 93.1882004245,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 1.16230995694,
+        "numeric-always": 2.0752237683,
+        "numeric-never": -0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-08-15T00:00:00.000Z",
+      "value": 93.7001521215,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 1.20018724947,
+        "numeric-always": 2.08566457875,
+        "numeric-never": 0
+      }
+    },
+    {
+      "timestamp": "2020-08-16T00:00:00.000Z",
+      "value": 92.8039203944,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 1.19793102931,
+        "numeric-always": 1.69787553671,
+        "numeric-never": 0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-08-17T00:00:00.000Z",
+      "value": 93.5075390171,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 1.15516332493,
+        "numeric-always": 1.7125816719,
+        "numeric-never": 0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-08-18T00:00:00.000Z",
+      "value": 94.1033594595,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 1.07309616357,
+        "numeric-always": 1.73048740697,
+        "numeric-never": 0.5
+      }
+    },
+    {
+      "timestamp": "2020-08-19T00:00:00.000Z",
+      "value": 94.5521953396,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.954484956836,
+        "numeric-always": 1.75227073978,
+        "numeric-never": 0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-08-20T00:00:00.000Z",
+      "value": 95.4988376233,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.803520437332,
+        "numeric-always": 1.37857764399,
+        "numeric-never": 0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-08-21T00:00:00.000Z",
+      "value": 96.1765114653,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.625663448131,
+        "numeric-always": 1.41001673412,
+        "numeric-never": 1
+      }
+    },
+    {
+      "timestamp": "2020-08-22T00:00:00.000Z",
+      "value": 97.0712639049,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 0.427429165188,
+        "numeric-always": 1.44715423915,
+        "numeric-never": -1
+      }
+    },
+    {
+      "timestamp": "2020-08-23T00:00:00.000Z",
+      "value": 97.534140424,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 0.216129348329,
+        "numeric-always": 1.49050932612,
+        "numeric-never": -0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-08-24T00:00:00.000Z",
+      "value": 98.5405815734,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -0.000417110395134,
+        "numeric-always": 1.14054981248,
+        "numeric-never": -0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-08-25T00:00:00.000Z",
+      "value": 97.3639191197,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.214193808564,
+        "numeric-always": 1.19768830251,
+        "numeric-never": -0.5
+      }
+    },
+    {
+      "timestamp": "2020-08-26T00:00:00.000Z",
+      "value": 97.8037710585,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.417304289029,
+        "numeric-always": 1.26227877965,
+        "numeric-never": -0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-08-27T00:00:00.000Z",
+      "value": 98.3143689516,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.602284680779,
+        "numeric-always": 1.33461368312,
+        "numeric-never": -0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-08-28T00:00:00.000Z",
+      "value": 99.3311013329,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.762399068496,
+        "numeric-always": 1.01492149264,
+        "numeric-never": 0
+      }
+    },
+    {
+      "timestamp": "2020-08-29T00:00:00.000Z",
+      "value": 99.8523574309,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.89190582296,
+        "numeric-always": 1.10336484156,
+        "numeric-never": 0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-08-30T00:00:00.000Z",
+      "value": 100.250558166,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.98628428216,
+        "numeric-always": 1.20003917361,
+        "numeric-never": 0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-08-31T00:00:00.000Z",
+      "value": 102.603109256,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -1.04241275376,
+        "numeric-always": 1.30497195473,
+        "numeric-never": 0.5
+      }
+    },
+    {
+      "timestamp": "2020-09-01T00:00:00.000Z",
+      "value": 103.570809701,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -1.05869075018,
+        "numeric-always": 1.0181224462,
+        "numeric-never": 0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-09-02T00:00:00.000Z",
+      "value": 103.991399429,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -1.03510059085,
+        "numeric-always": 1.13938204112,
+        "numeric-never": 0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-09-03T00:00:00.000Z",
+      "value": 102.606112865,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.973205923401,
+        "numeric-always": 1.26857516131,
+        "numeric-never": 1
+      }
+    },
+    {
+      "timestamp": "2020-09-04T00:00:00.000Z",
+      "value": 101.79627075,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.876087230216,
+        "numeric-always": 1.40546070744,
+        "numeric-never": -1
+      }
+    },
+    {
+      "timestamp": "2020-09-05T00:00:00.000Z",
+      "value": 102.701595016,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.748216899062,
+        "numeric-always": 1.14973405016,
+        "numeric-never": -0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-09-06T00:00:00.000Z",
+      "value": 103.083220823,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.595278845592,
+        "numeric-always": 1.30102954601,
+        "numeric-never": -0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-09-07T00:00:00.000Z",
+      "value": 103.574954637,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.42393988602,
+        "numeric-always": 1.45892355716,
+        "numeric-never": -0.5
+      }
+    },
+    {
+      "timestamp": "2020-09-08T00:00:00.000Z",
+      "value": 104.199287245,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.241581981632,
+        "numeric-always": 1.62293795013,
+        "numeric-never": -0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-09-09T00:00:00.000Z",
+      "value": 106.832289083,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -0.0560060365018,
+        "numeric-always": 1.3925440446,
+        "numeric-never": -0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-09-10T00:00:00.000Z",
+      "value": 107.217246819,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 0.124880936323,
+        "numeric-always": 1.56716697967,
+        "numeric-never": 0
+      }
+    },
+    {
+      "timestamp": "2020-09-11T00:00:00.000Z",
+      "value": 107.7719559,
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 0.293382802134,
+        "numeric-always": 1.74619046148,
+        "numeric-never": 0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-09-12T00:00:00.000Z",
+      "value": 106.544733234,
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.442322801986,
+        "numeric-always": 1.92896185309,
+        "numeric-never": 0.333333333333
+      }
+    }
+  ],
+  "predictionRows": [
+    {
+      "timestamp": "2020-09-13T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.565331255629,
+        "numeric-always": 1.71479756437,
+        "numeric-never": 0.5
+      }
+    },
+    {
+      "timestamp": "2020-09-14T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.657100994634,
+        "numeric-always": 1.90298869771,
+        "numeric-never": 0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-09-15T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.713600337237,
+        "numeric-always": 2.09280690259,
+        "numeric-never": 0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-09-16T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.73223510944,
+        "numeric-always": 2.2835103909,
+        "numeric-never": 1
+      }
+    },
+    {
+      "timestamp": "2020-09-17T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.711953248635,
+        "numeric-always": 2.07435006313,
+        "numeric-never": -1
+      }
+    },
+    {
+      "timestamp": "2020-09-18T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 0.653287815447,
+        "numeric-always": 2.2645756951,
+        "numeric-never": -0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-09-19T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 0.558336695346,
+        "numeric-always": 2.45344213383,
+        "numeric-never": -0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-09-20T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 0.430679795968,
+        "numeric-always": 2.64021545161,
+        "numeric-never": -0.5
+      }
+    },
+    {
+      "timestamp": "2020-09-21T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.275237038338,
+        "numeric-always": 2.42417900734,
+        "numeric-never": -0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-09-22T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.0980728009898,
+        "numeric-always": 2.6046393651,
+        "numeric-never": -0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-09-23T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.0938453888647,
+        "numeric-always": 2.78093202111,
+        "numeric-never": 0
+      }
+    },
+    {
+      "timestamp": "2020-09-24T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.292924298469,
+        "numeric-always": 2.95242689166,
+        "numeric-never": 0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-09-25T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.491247507325,
+        "numeric-always": 2.71853351687,
+        "numeric-never": 0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-09-26T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.680890939923,
+        "numeric-always": 2.87870593716,
+        "numeric-never": 0.5
+      }
+    },
+    {
+      "timestamp": "2020-09-27T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -0.854238834357,
+        "numeric-always": 3.0324472022,
+        "numeric-never": 0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-09-28T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -1.00428754993,
+        "numeric-always": 3.17931347509,
+        "numeric-never": 0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-09-29T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -1.12492510124,
+        "numeric-always": 2.91891769795,
+        "numeric-never": 1
+      }
+    },
+    {
+      "timestamp": "2020-09-30T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -1.21117527353,
+        "numeric-always": 3.0509327885,
+        "numeric-never": -1
+      }
+    },
+    {
+      "timestamp": "2020-10-01T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -1.25939658555,
+        "numeric-always": 3.1750943414,
+        "numeric-never": -0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-10-02T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -1.26742816602,
+        "numeric-always": 3.29120281186,
+        "numeric-never": -0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-10-03T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -1.23467672555,
+        "numeric-always": 2.99912516371,
+        "numeric-never": -0.5
+      }
+    },
+    {
+      "timestamp": "2020-10-04T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -1.16214115392,
+        "numeric-always": 3.09879596803,
+        "numeric-never": -0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-10-05T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -1.05237375881,
+        "numeric-always": 3.19021794358,
+        "numeric-never": -0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-10-06T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -0.909379687596,
+        "numeric-always": 3.27346193431,
+        "numeric-never": 0
+      }
+    },
+    {
+      "timestamp": "2020-10-07T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -0.738458537876,
+        "numeric-always": 2.94866632429,
+        "numeric-never": 0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-10-08T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -0.545994466842,
+        "numeric-always": 3.01603589482,
+        "numeric-never": 0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-10-09T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.339203162276,
+        "numeric-always": 3.07584013321,
+        "numeric-never": 0.5
+      }
+    },
+    {
+      "timestamp": "2020-10-10T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.125845757575,
+        "numeric-always": 3.12841100711,
+        "numeric-never": 0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-10-11T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.0860789094135,
+        "numeric-always": 2.77414022287,
+        "numeric-never": 0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-10-12T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.288651430823,
+        "numeric-always": 2.81347599058,
+        "numeric-never": 1
+      }
+    },
+    {
+      "timestamp": "2020-10-13T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.474345719401,
+        "numeric-always": 2.84691932233,
+        "numeric-never": -1
+      }
+    },
+    {
+      "timestamp": "2020-10-14T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.636327147849,
+        "numeric-always": 2.8750198945,
+        "numeric-never": -0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-10-15T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 0.768723057565,
+        "numeric-always": 2.49837150813,
+        "numeric-never": -0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-10-16T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 0.866854859271,
+        "numeric-always": 2.5176071848,
+        "numeric-never": -0.5
+      }
+    },
+    {
+      "timestamp": "2020-10-17T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 0.927422479398,
+        "numeric-always": 2.53339393869,
+        "numeric-never": -0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-10-18T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.948633806113,
+        "numeric-always": 2.54642726786,
+        "numeric-never": -0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-10-19T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.930273981707,
+        "numeric-always": 2.15742541027,
+        "numeric-never": 0
+      }
+    },
+    {
+      "timestamp": "2020-10-20T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.873711786329,
+        "numeric-always": 2.167123412,
+        "numeric-never": 0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-10-21T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.781842866098,
+        "numeric-always": 2.17626705675,
+        "numeric-never": 0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-10-22T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.658972076555,
+        "numeric-always": 2.18560670647,
+        "numeric-never": 0.5
+      }
+    },
+    {
+      "timestamp": "2020-10-23T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.510639639695,
+        "numeric-always": 1.79589110439,
+        "numeric-never": 0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-10-24T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 0.343398052849,
+        "numeric-always": 1.80786119127,
+        "numeric-never": 0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-10-25T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 0.164548651023,
+        "numeric-always": 1.82224398613,
+        "numeric-never": 1
+      }
+    },
+    {
+      "timestamp": "2020-10-26T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -0.0181516672186,
+        "numeric-always": 1.83974658201,
+        "numeric-never": -1
+      }
+    },
+    {
+      "timestamp": "2020-10-27T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.196801850839,
+        "numeric-always": 1.46105030621,
+        "numeric-never": -0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-10-28T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.363673821898,
+        "numeric-always": 1.48680509337,
+        "numeric-never": -0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-10-29T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.511522665422,
+        "numeric-always": 1.51762411782,
+        "numeric-never": -0.5
+      }
+    },
+    {
+      "timestamp": "2020-10-30T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.633877510046,
+        "numeric-always": 1.55407872952,
+        "numeric-never": -0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-10-31T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.725301495825,
+        "numeric-always": 1.19669373536,
+        "numeric-never": -0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-11-01T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.78161045824,
+        "numeric-always": 1.24594306496,
+        "numeric-never": 0
+      }
+    },
+    {
+      "timestamp": "2020-11-02T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -0.800041603459,
+        "numeric-always": 1.30224585659,
+        "numeric-never": 0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-11-03T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -0.779365443847,
+        "numeric-always": 1.36596299553,
+        "numeric-never": 0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-11-04T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": -0.719936525013,
+        "numeric-always": 1.03739413369,
+        "numeric-never": 0.5
+      }
+    },
+    {
+      "timestamp": "2020-11-05T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.623680916156,
+        "numeric-always": 1.1167752148,
+        "numeric-never": 0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-11-06T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.494020956793,
+        "numeric-always": 1.20427652583,
+        "numeric-never": 0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-11-07T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.335740254692,
+        "numeric-always": 1.3000012906,
+        "numeric-never": 1
+      }
+    },
+    {
+      "timestamp": "2020-11-08T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": -0.154794312137,
+        "numeric-always": 1.00398481731,
+        "numeric-never": -1
+      }
+    },
+    {
+      "timestamp": "2020-11-09T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.041925674343,
+        "numeric-always": 1.11619420692,
+        "numeric-never": -0.833333333333
+      }
+    },
+    {
+      "timestamp": "2020-11-10T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.246866428477,
+        "numeric-always": 1.23652862486,
+        "numeric-never": -0.666666666667
+      }
+    },
+    {
+      "timestamp": "2020-11-11T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 0.452112718693,
+        "numeric-always": 1.36482013379,
+        "numeric-never": -0.5
+      }
+    },
+    {
+      "timestamp": "2020-11-12T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 0.64970203094,
+        "numeric-always": 1.10083508057,
+        "numeric-never": -0.333333333333
+      }
+    },
+    {
+      "timestamp": "2020-11-13T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 1,
+        "numeric-auto": 0.83194124795,
+        "numeric-always": 1.24427602595,
+        "numeric-never": -0.166666666667
+      }
+    },
+    {
+      "timestamp": "2020-11-14T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 0.991712712545,
+        "numeric-always": 1.39478420104,
+        "numeric-never": 0
+      }
+    },
+    {
+      "timestamp": "2020-11-15T00:00:00.000Z",
+      "regressors": {
+        "binary-auto": 0,
+        "numeric-auto": 1.12275747543,
+        "numeric-always": 1.55194247031,
+        "numeric-never": 0.166666666667
+      }
+    }
+  ]
+}

@@ -8,4 +8,11 @@ publish = false
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+nalgebra = { version = "=0.34.1", default-features = false, features = ["std"] }
 wasm-bindgen = "=0.2.128"
+
+[dev-dependencies]
+serde_json = { version = "=1.0.151", features = ["float_roundtrip"] }
+
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+wasm-bindgen-test = "=0.3.78"

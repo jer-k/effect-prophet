@@ -1,0 +1,3991 @@
+{
+  "schemaVersion": 1,
+  "run": {
+    "schemaVersion": 1,
+    "runId": "2026-10-02T043132-582Z-4d661a06",
+    "createdAt": "2026-10-02T04:31:45.245Z",
+    "gitRevision": "4d661a06a7e2f588f4b466cdcd4905753e3cce6b",
+    "gitDirty": true,
+    "hostPlatform": "darwin",
+    "hostRelease": "25.5.0",
+    "hostArchitecture": "arm64",
+    "hostProcessor": "Apple M4 Pro",
+    "containerPlatform": "linux/arm64",
+    "emulated": false,
+    "selectedCases": [
+      "fixed-linear-prediction-medium-stan-v2",
+      "map-explicit-break-small-stan-v2",
+      "map-seasonal-breaks-irregular-medium-stan-v2",
+      "map-events-small-stan-v2",
+      "map-regressors-medium-stan-v2",
+      "map-conditional-seasonalities-medium-stan-v2",
+      "map-mixed-features-explicit-small-stan-v2",
+      "map-mixed-features-automatic-large-stan-v2",
+      "map-training-ordered-explicit-stan-v2",
+      "map-training-ordered-auto-stan-v2",
+      "map-training-unsorted-explicit-stan-v2",
+      "map-training-unsorted-auto-stan-v2",
+      "map-training-duplicates-explicit-stan-v2",
+      "map-training-duplicates-auto-stan-v2",
+      "map-training-duplicate-features-auto-stan-v2",
+      "uncertainty-training-duplicates-auto-stan-v2",
+      "map-training-zero-span-linear-varied-stan-v2",
+      "map-training-zero-span-flat-varied-stan-v2",
+      "map-training-zero-span-linear-constant-stan-v2",
+      "map-training-zero-span-flat-constant-stan-v2",
+      "evaluation-training-duplicates-stan-v2",
+      "linear-offset-scaling-absmax-stan-v2",
+      "linear-offset-scaling-minmax-stan-v2",
+      "linear-mixed-components-stan-v2"
+    ],
+    "commands": [
+      "BENCHMARK_STAGE=correctness BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/compose.yaml run --rm effect-prophet-benchmark",
+      "BENCHMARK_STAGE=correctness BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/compose.yaml run --rm python-prophet-benchmark",
+      "BENCHMARK_REPORT_MODE=eligibility BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/compose.yaml run --rm benchmark-report",
+      "BENCHMARK_STAGE=timing BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/compose.yaml run --rm effect-prophet-benchmark",
+      "BENCHMARK_STAGE=timing BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/compose.yaml run --rm python-prophet-benchmark",
+      "BENCHMARK_REPORT_MODE=final BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/compose.yaml run --rm benchmark-report"
+    ],
+    "inputHashes": [
+      {
+        "name": "benchmark/cases/linear-growth/public-api.json",
+        "value": "a88e1eec32763e9a310799af5ec6bd8821eb1ce655a383e4952a90e0a25f3cc0"
+      },
+      {
+        "name": "benchmark/cases/linear-growth/scenarios.json",
+        "value": "57ccb7c7bf02d9d17ebe80f961634bc011bb1237af3cfe250e1659c2aa03bb78"
+      },
+      {
+        "name": "benchmark/cases/linear-growth/edge-cases.ts",
+        "value": "c2ce3ed8536f878af3a2a26a252539b5e320fad222a47c266208e7d9c837f57f"
+      },
+      {
+        "name": "benchmark/cases/linear-growth/stan-aligned.ts",
+        "value": "938b38eb4513597c0095255687461208efcded4923bc731963e773f800afc3b6"
+      },
+      {
+        "name": "tools/prophet/linear_optimizer_evidence.py",
+        "value": "0832bd2626e26334a82afee1ea504de429e06ac79930d5b88adf51f5fb3912aa"
+      },
+      {
+        "name": "benchmark/cases/growth-scaling-and-mixed-map.ts",
+        "value": "eb01214b72e234cb05acc2795caa5adf87a4d4638dfc66542feb081dc3d450e7"
+      },
+      {
+        "name": "benchmark/cases/uncertainty.ts",
+        "value": "2d14b373d815482563daa87ea3a2e210b0607b7f102f1773356243023c4c5523"
+      },
+      {
+        "name": "benchmark/cases/evaluation.ts",
+        "value": "6109ac468a89df0988b00f16bf259eff7f1c0c7b8f998f8ae018b7ae518b11b9"
+      },
+      {
+        "name": "benchmark/evaluation.ts",
+        "value": "47509542661e3ee05417fd457e8244067febb89f6aa232d380bb877a3e593c6c"
+      },
+      {
+        "name": "benchmark/adapters/evaluation.py",
+        "value": "025bcf9f3210e9a2a91c2e70ac43b23cb385952d180603287d4c9d087561c278"
+      },
+      {
+        "name": "benchmark/results/runs/2026-10-02T043132-582Z-4d661a06/cases.json",
+        "value": "6a36325779bc52545f3a79f900c875277fcd6f4ec0a3297e45e7e9c4d240e3b2"
+      },
+      {
+        "name": "benchmark/evidence/comparisons.json",
+        "value": "b5d6b64891fdf12c847be36919d3a6014e9610bfedac4ce365a5db72b776df62"
+      },
+      {
+        "name": "benchmark/python/uv.lock",
+        "value": "c90f2464e1d50dbe489bdcdaf8350f04c162f6c617559cfb75d6977b0f430ab1"
+      },
+      {
+        "name": "benchmark/data/generated/manifest.json",
+        "value": "99c273c95fc5a1bf8c8d0e3b3d106355572f5e8a49b323dd37aa3ad9827594d7"
+      },
+      {
+        "name": "package-lock.json",
+        "value": "99bda82607c5764a965fc84c4f1c3aeb518b7a1604975e958b3ad63e4887d936"
+      },
+      {
+        "name": "benchmark/data/generated/linear-medium.json",
+        "value": "5f69f47c9189c3587fe9c4d72a1c885d2b16d5bd72fa693b49c46ca5ad6381fc"
+      },
+      {
+        "name": "benchmark/data/generated/linear-small.json",
+        "value": "bd04fc739211e1968ad47cae0a56d6ce776b0e9ea93dd2d38d89047bac60a5c3"
+      },
+      {
+        "name": "benchmark/data/generated/map-irregular-medium.json",
+        "value": "62f195edf2bc788b67f26471e00eee77ec55c61670a7c61be3c23230664418a1"
+      },
+      {
+        "name": "benchmark/data/generated/map-events-small.json",
+        "value": "124c5aa9e78f09a3c2bb549106cf57f4a4b30793e52f044b2dd384b9eaded665"
+      },
+      {
+        "name": "benchmark/data/generated/map-regressors-medium.json",
+        "value": "804afd5985e47268a8ddae3301fffcdaaf9a2afca3f3cdbdab8e3d028286f525"
+      },
+      {
+        "name": "benchmark/data/generated/map-conditional-seasonalities-medium.json",
+        "value": "301d2619b93f949d41e43a8ea36bbd74007f10d3151944668dc92b8235fbf968"
+      },
+      {
+        "name": "benchmark/data/generated/map-mixed-features-explicit-small.json",
+        "value": "c02bbf7954cf0b048e5413f5d00a2f23a664882225bb8c18a4996d68921a63ed"
+      },
+      {
+        "name": "benchmark/data/generated/map-mixed-features-automatic-large.json",
+        "value": "7a24d6ad1f87032a320eed898a00a41bc90a4b0c7febb7c42801715c86c664b5"
+      },
+      {
+        "name": "benchmark/data/generated/training-ordered.json",
+        "value": "26225e1a04e8d87fbc01f0cbcbe1053c72b87e0ef2c1d0efca3d15a1a448668c"
+      },
+      {
+        "name": "benchmark/data/generated/training-unsorted.json",
+        "value": "f7bd2722b293c4d2d94d63d48023d3788bc701bf2fb1b3d6b96a738cf74a05e9"
+      },
+      {
+        "name": "benchmark/data/generated/training-duplicates.json",
+        "value": "4cb336b1befb59c6e212152cf9f292da82dca61867da485e29840acad55a2926"
+      },
+      {
+        "name": "benchmark/data/generated/training-duplicate-features.json",
+        "value": "ce3a031ede4894710f5fd128a31ca6b69ef8eee8be461984e62b67b9b71cf98b"
+      },
+      {
+        "name": "benchmark/data/generated/training-zero-span-varied.json",
+        "value": "e307813127392e6c95ea82ca8a1c37e2689b01e18f42cb17ec0a882857617f8b"
+      },
+      {
+        "name": "benchmark/data/generated/training-zero-span-constant.json",
+        "value": "47f06ea5accdb781bc8381967f1d0df9452af3afd5216a95861961a9ee95a2ec"
+      },
+      {
+        "name": "benchmark/data/generated/linear-offset-scaling.json",
+        "value": "bfea515181446ef72eeed2acaef46db63d6fcee5cd1d6af177ad886a6c973b5e"
+      },
+      {
+        "name": "benchmark/data/generated/linear-mixed-components.json",
+        "value": "48c87b33c9ffb95217c18f0dc10baf441141cf937b79d1081d16f29057cd6b1c"
+      }
+    ],
+    "containerImages": [
+      {
+        "name": "effect-prophet/benchmark-effect:local",
+        "value": "sha256:e259bf2342f35bf3f6622e4c3f90454cf7d6b1747a669b0a8bb62c6c4970ed9e"
+      },
+      {
+        "name": "effect-prophet/benchmark-python:1.4.0",
+        "value": "sha256:2dbc806622d42e7c5744f57782c623ba488a6b81b0e69d2f4e6ae46b0d466efa"
+      }
+    ]
+  },
+  "generatedAt": "2026-10-02T04:40:24.074Z",
+  "purpose": "Descriptive public API timing and correctness evidence; this report presents absolute measurements without ranking implementations.",
+  "correctness": [
+    {
+      "caseId": "fixed-linear-prediction-medium-stan-v2",
+      "status": "passed",
+      "comparison": "equivalent-equation",
+      "maximumDifferences": {
+        "trend": 1.4210854715202004e-14,
+        "component": 0,
+        "additive": 0,
+        "forecast": 1.4210854715202004e-14,
+        "noiseScale": 0
+      },
+      "note": "Verified equivalent behavior for this configuration under evidence fixed-linear-equation-v1."
+    },
+    {
+      "caseId": "map-explicit-break-small-stan-v2",
+      "status": "passed",
+      "comparison": "equivalent-objective",
+      "maximumDifferences": {
+        "trend": 1.0174971976084635e-11,
+        "component": 0,
+        "additive": 0,
+        "forecast": 1.0174971976084635e-11,
+        "noiseScale": 4.04121180963557e-14
+      },
+      "note": "Verified equivalent behavior for this configuration under evidence linear-stan-map-fit-quality-v3. Stationarity is diagnostic-only; near-stationarity acceptance is deferred to EP-097."
+    },
+    {
+      "caseId": "map-seasonal-breaks-irregular-medium-stan-v2",
+      "status": "passed",
+      "comparison": "equivalent-objective",
+      "maximumDifferences": {
+        "trend": 0.00006300727419272789,
+        "component": 0.000016859610674241354,
+        "additive": 0.000016859610674241354,
+        "forecast": 0.0000687734862481193,
+        "noiseScale": 0.000013441197232344493
+      },
+      "note": "Verified equivalent behavior for this configuration under evidence linear-stan-map-fit-quality-v3. Stationarity is diagnostic-only; near-stationarity acceptance is deferred to EP-097."
+    },
+    {
+      "caseId": "map-events-small-stan-v2",
+      "status": "passed",
+      "comparison": "equivalent-objective",
+      "maximumDifferences": {
+        "trend": 7.297273896256229e-12,
+        "component": 2.3350210653916292e-12,
+        "additive": 2.3350210653916292e-12,
+        "forecast": 7.297273896256229e-12,
+        "noiseScale": 5.524469770534779e-13
+      },
+      "note": "Verified equivalent behavior for this configuration under evidence linear-stan-map-fit-quality-v3. Stationarity is diagnostic-only; near-stationarity acceptance is deferred to EP-097."
+    },
+    {
+      "caseId": "map-regressors-medium-stan-v2",
+      "status": "passed",
+      "comparison": "equivalent-objective",
+      "maximumDifferences": {
+        "trend": 0.0030860627504694094,
+        "component": 0.00010539296451295144,
+        "additive": 0.00019068384514819847,
+        "forecast": 0.003130393635387918,
+        "noiseScale": 0.0004650046430350052
+      },
+      "note": "Verified equivalent behavior for this configuration under evidence linear-stan-map-fit-quality-v3. Stationarity is diagnostic-only; near-stationarity acceptance is deferred to EP-097."
+    },
+    {
+      "caseId": "map-conditional-seasonalities-medium-stan-v2",
+      "status": "passed",
+      "comparison": "equivalent-objective",
+      "maximumDifferences": {
+        "trend": 0.002682219021465926,
+        "component": 0.0007940957994194697,
+        "additive": 0.0007454303744815621,
+        "forecast": 0.0027215353505880557,
+        "noiseScale": 0.0002397354140202257
+      },
+      "note": "Verified equivalent behavior for this configuration under evidence linear-stan-map-fit-quality-v3. Stationarity is diagnostic-only; near-stationarity acceptance is deferred to EP-097."
+    },
+    {
+      "caseId": "map-mixed-features-explicit-small-stan-v2",
+      "status": "passed",
+      "comparison": "equivalent-objective",
+      "maximumDifferences": {
+        "trend": 8.135714324453147e-13,
+        "component": 1.2150280781497713e-12,
+        "additive": 1.2816414596272807e-12,
+        "forecast": 1.0480505352461478e-12,
+        "noiseScale": 1.1035616864774056e-13
+      },
+      "note": "Verified equivalent behavior for this configuration under evidence linear-stan-map-fit-quality-v3. Stationarity is diagnostic-only; near-stationarity acceptance is deferred to EP-097."
+    },
+    {
+      "caseId": "map-mixed-features-automatic-large-stan-v2",
+      "status": "passed",
+      "comparison": "equivalent-objective",
+      "maximumDifferences": {
+        "trend": 0.005158415123339921,
+        "component": 0.0017751305212416746,
+        "additive": 0.0029887109405990486,
+        "forecast": 0.006923703277443849,
+        "noiseScale": 0.00010308829356286964
+      },
+      "note": "Verified equivalent behavior for this configuration under evidence linear-stan-map-fit-quality-v3. Stationarity is diagnostic-only; near-stationarity acceptance is deferred to EP-097."
+    },
+    {
+      "caseId": "map-training-ordered-explicit-stan-v2",
+      "status": "passed",
+      "comparison": "equivalent-objective",
+      "maximumDifferences": {
+        "trend": 3.268496584496461e-12,
+        "component": 0,
+        "additive": 0,
+        "forecast": 3.268496584496461e-12,
+        "noiseScale": 4.6351811278100286e-15
+      },
+      "note": "Verified equivalent behavior for this configuration under evidence linear-stan-map-fit-quality-v3. Stationarity is diagnostic-only; near-stationarity acceptance is deferred to EP-097."
+    },
+    {
+      "caseId": "map-training-ordered-auto-stan-v2",
+      "status": "passed",
+      "comparison": "equivalent-objective",
+      "maximumDifferences": {
+        "trend": 1.0642359882240271e-8,
+        "component": 0,
+        "additive": 0,
+        "forecast": 1.0642359882240271e-8,
+        "noiseScale": 1.4323617320011195e-8
+      },
+      "note": "Verified equivalent behavior for this configuration under evidence linear-stan-map-fit-quality-v3. Stationarity is diagnostic-only; near-stationarity acceptance is deferred to EP-097."
+    },
+    {
+      "caseId": "map-training-unsorted-explicit-stan-v2",
+      "status": "passed",
+      "comparison": "equivalent-objective",
+      "maximumDifferences": {
+        "trend": 3.268496584496461e-12,
+        "component": 0,
+        "additive": 0,
+        "forecast": 3.268496584496461e-12,
+        "noiseScale": 4.6351811278100286e-15
+      },
+      "note": "Verified equivalent behavior for this configuration under evidence linear-stan-map-fit-quality-v3. Stationarity is diagnostic-only; near-stationarity acceptance is deferred to EP-097."
+    },
+    {
+      "caseId": "map-training-unsorted-auto-stan-v2",
+      "status": "passed",
+      "comparison": "equivalent-objective",
+      "maximumDifferences": {
+        "trend": 1.0642359882240271e-8,
+        "component": 0,
+        "additive": 0,
+        "forecast": 1.0642359882240271e-8,
+        "noiseScale": 1.4323617320011195e-8
+      },
+      "note": "Verified equivalent behavior for this configuration under evidence linear-stan-map-fit-quality-v3. Stationarity is diagnostic-only; near-stationarity acceptance is deferred to EP-097."
+    },
+    {
+      "caseId": "map-training-duplicates-explicit-stan-v2",
+      "status": "passed",
+      "comparison": "equivalent-objective",
+      "maximumDifferences": {
+        "trend": 1.6907364397411584e-11,
+        "component": 0,
+        "additive": 0,
+        "forecast": 1.6907364397411584e-11,
+        "noiseScale": 5.791200852200973e-14
+      },
+      "note": "Verified equivalent behavior for this configuration under evidence linear-stan-map-fit-quality-v3. Stationarity is diagnostic-only; near-stationarity acceptance is deferred to EP-097."
+    },
+    {
+      "caseId": "map-training-duplicates-auto-stan-v2",
+      "status": "passed",
+      "comparison": "equivalent-objective",
+      "maximumDifferences": {
+        "trend": 0.000039992774496511174,
+        "component": 0,
+        "additive": 0,
+        "forecast": 0.000039992774496511174,
+        "noiseScale": 0.0001270970515719963
+      },
+      "note": "Verified equivalent behavior for this configuration under evidence linear-stan-map-fit-quality-v3. Stationarity is diagnostic-only; near-stationarity acceptance is deferred to EP-097."
+    },
+    {
+      "caseId": "map-training-duplicate-features-auto-stan-v2",
+      "status": "passed",
+      "comparison": "equivalent-objective",
+      "maximumDifferences": {
+        "trend": 0.0008029600678085558,
+        "component": 0.0000981829481486729,
+        "additive": 0.0000981829481486729,
+        "forecast": 0.000779642927138724,
+        "noiseScale": 0.00011949736859600407
+      },
+      "note": "Verified equivalent behavior for this configuration under evidence linear-stan-map-fit-quality-v3. Stationarity is diagnostic-only; near-stationarity acceptance is deferred to EP-097."
+    },
+    {
+      "caseId": "uncertainty-training-duplicates-auto-stan-v2",
+      "status": "passed",
+      "comparison": "scalar-process-different-public-work",
+      "maximumDifferences": {
+        "trend": 0.000039992774496511174,
+        "component": 0,
+        "additive": 0,
+        "forecast": 0.000039992774496511174,
+        "noiseScale": 0.0001270970515719963
+      },
+      "note": "Verified fitted point behavior under linear-stan-map-fit-quality-v3; scalar simulation gated by docs/validation/uncertainty.md. Public output work differs. Stationarity is diagnostic-only; near-stationarity acceptance is deferred to EP-097."
+    },
+    {
+      "caseId": "map-training-zero-span-linear-varied-stan-v2",
+      "status": "failed",
+      "comparison": "equivalent-objective",
+      "note": "At least one implementation run failed before correctness eligibility was established."
+    },
+    {
+      "caseId": "map-training-zero-span-flat-varied-stan-v2",
+      "status": "passed",
+      "comparison": "equivalent-objective",
+      "maximumDifferences": {
+        "trend": 0.00008557424916677547,
+        "component": 0,
+        "additive": 0,
+        "forecast": 0.00008557424916677547,
+        "noiseScale": 0.00033379059483107376
+      },
+      "note": "Verified equivalent behavior for this configuration under evidence training-row-map-v1."
+    },
+    {
+      "caseId": "map-training-zero-span-linear-constant-stan-v2",
+      "status": "failed",
+      "comparison": "equivalent-objective",
+      "note": "At least one implementation run failed before correctness eligibility was established."
+    },
+    {
+      "caseId": "map-training-zero-span-flat-constant-stan-v2",
+      "status": "passed",
+      "comparison": "equivalent-objective",
+      "maximumDifferences": {
+        "trend": 0,
+        "component": 0,
+        "additive": 0,
+        "forecast": 0,
+        "noiseScale": 0
+      },
+      "note": "Verified equivalent behavior for this configuration under evidence training-row-map-v1."
+    },
+    {
+      "caseId": "evaluation-training-duplicates-stan-v2",
+      "status": "passed",
+      "comparison": "different-public-work",
+      "maximumDifferences": {
+        "trend": 0,
+        "component": 0,
+        "additive": 0,
+        "forecast": 1.2091661005797505e-11,
+        "noiseScale": 0
+      },
+      "note": "Aligned folds, rows, targets and point forecasts passed; public evaluation/uncertainty/metric/report work differs. Absolute times only."
+    },
+    {
+      "caseId": "linear-offset-scaling-absmax-stan-v2",
+      "status": "passed",
+      "comparison": "equivalent-objective",
+      "maximumDifferences": {
+        "trend": 1.226396761921933e-11,
+        "component": 1.5002712613898517e-13,
+        "additive": 1.5002712613898517e-13,
+        "forecast": 1.2363443602225743e-11,
+        "noiseScale": 2.0816681711721685e-15
+      },
+      "note": "Verified equivalent behavior for this configuration under evidence linear-stan-map-fit-quality-v3. Stationarity is diagnostic-only; near-stationarity acceptance is deferred to EP-097."
+    },
+    {
+      "caseId": "linear-offset-scaling-minmax-stan-v2",
+      "status": "passed",
+      "comparison": "equivalent-objective",
+      "maximumDifferences": {
+        "trend": 6.110667527536862e-13,
+        "component": 2.911321357601526e-13,
+        "additive": 2.911321357601526e-13,
+        "forecast": 8.384404281969182e-13,
+        "noiseScale": 4.4651782271643015e-14
+      },
+      "note": "Verified equivalent behavior for this configuration under evidence linear-stan-map-fit-quality-v3. Stationarity is diagnostic-only; near-stationarity acceptance is deferred to EP-097."
+    },
+    {
+      "caseId": "linear-mixed-components-stan-v2",
+      "status": "passed",
+      "comparison": "equivalent-objective",
+      "maximumDifferences": {
+        "trend": 1.24835253245692e-10,
+        "component": 2.4705570922378683e-11,
+        "additive": 0,
+        "forecast": 1.4455281416303478e-10,
+        "noiseScale": 1.2983447650327662e-10
+      },
+      "note": "Verified equivalent behavior for this configuration under evidence linear-stan-map-fit-quality-v3. Stationarity is diagnostic-only; near-stationarity acceptance is deferred to EP-097."
+    }
+  ],
+  "timings": [
+    {
+      "caseId": "evaluation-training-duplicates-stan-v2",
+      "phase": "evaluation-baseline",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 163520512,
+      "sampleCount": 4,
+      "medianNanoseconds": 1498708,
+      "p90Nanoseconds": 1512542,
+      "minimumNanoseconds": 1319458,
+      "maximumNanoseconds": 1512542
+    },
+    {
+      "caseId": "evaluation-training-duplicates-stan-v2",
+      "phase": "evaluation-baseline",
+      "implementation": "python-prophet",
+      "peakRssBytes": 123396096,
+      "sampleCount": 4,
+      "medianNanoseconds": 1441375,
+      "p90Nanoseconds": 1543666,
+      "minimumNanoseconds": 1404792,
+      "maximumNanoseconds": 1543666
+    },
+    {
+      "caseId": "evaluation-training-duplicates-stan-v2",
+      "phase": "evaluation-holdout",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 165486592,
+      "sampleCount": 4,
+      "medianNanoseconds": 3943750,
+      "p90Nanoseconds": 4228958,
+      "minimumNanoseconds": 3738166,
+      "maximumNanoseconds": 4228958
+    },
+    {
+      "caseId": "evaluation-training-duplicates-stan-v2",
+      "phase": "evaluation-holdout",
+      "implementation": "python-prophet",
+      "peakRssBytes": 123813888,
+      "sampleCount": 4,
+      "medianNanoseconds": 22129584,
+      "p90Nanoseconds": 23465167,
+      "minimumNanoseconds": 22044542,
+      "maximumNanoseconds": 23465167
+    },
+    {
+      "caseId": "evaluation-training-duplicates-stan-v2",
+      "phase": "evaluation-plan",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 140976128,
+      "sampleCount": 4,
+      "medianNanoseconds": 854875,
+      "p90Nanoseconds": 1008334,
+      "minimumNanoseconds": 602833,
+      "maximumNanoseconds": 1008334
+    },
+    {
+      "caseId": "evaluation-training-duplicates-stan-v2",
+      "phase": "evaluation-plan",
+      "implementation": "python-prophet",
+      "peakRssBytes": 121442304,
+      "sampleCount": 4,
+      "medianNanoseconds": 939083,
+      "p90Nanoseconds": 1057042,
+      "minimumNanoseconds": 925375,
+      "maximumNanoseconds": 1057042
+    },
+    {
+      "caseId": "evaluation-training-duplicates-stan-v2",
+      "phase": "evaluation-point",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 163389440,
+      "sampleCount": 4,
+      "medianNanoseconds": 7468250,
+      "p90Nanoseconds": 8540792,
+      "minimumNanoseconds": 7303333,
+      "maximumNanoseconds": 8540792
+    },
+    {
+      "caseId": "evaluation-training-duplicates-stan-v2",
+      "phase": "evaluation-point",
+      "implementation": "python-prophet",
+      "peakRssBytes": 123396096,
+      "sampleCount": 4,
+      "medianNanoseconds": 55319125,
+      "p90Nanoseconds": 62383500,
+      "minimumNanoseconds": 53029250,
+      "maximumNanoseconds": 62383500
+    },
+    {
+      "caseId": "evaluation-training-duplicates-stan-v2",
+      "phase": "evaluation-report-decode",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 168325120,
+      "sampleCount": 4,
+      "medianNanoseconds": 265959,
+      "p90Nanoseconds": 287292,
+      "minimumNanoseconds": 251125,
+      "maximumNanoseconds": 287292
+    },
+    {
+      "caseId": "evaluation-training-duplicates-stan-v2",
+      "phase": "evaluation-report-decode",
+      "implementation": "python-prophet",
+      "peakRssBytes": 123813888,
+      "sampleCount": 4,
+      "medianNanoseconds": 5125,
+      "p90Nanoseconds": 6458,
+      "minimumNanoseconds": 4125,
+      "maximumNanoseconds": 6458
+    },
+    {
+      "caseId": "evaluation-training-duplicates-stan-v2",
+      "phase": "evaluation-report-encode",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 168062976,
+      "sampleCount": 4,
+      "medianNanoseconds": 329125,
+      "p90Nanoseconds": 532833,
+      "minimumNanoseconds": 284208,
+      "maximumNanoseconds": 532833
+    },
+    {
+      "caseId": "evaluation-training-duplicates-stan-v2",
+      "phase": "evaluation-report-encode",
+      "implementation": "python-prophet",
+      "peakRssBytes": 123813888,
+      "sampleCount": 4,
+      "medianNanoseconds": 8250,
+      "p90Nanoseconds": 10875,
+      "minimumNanoseconds": 8084,
+      "maximumNanoseconds": 10875
+    },
+    {
+      "caseId": "evaluation-training-duplicates-stan-v2",
+      "phase": "evaluation-search",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 164569088,
+      "sampleCount": 4,
+      "medianNanoseconds": 6287791,
+      "p90Nanoseconds": 7523083,
+      "minimumNanoseconds": 6198500,
+      "maximumNanoseconds": 7523083
+    },
+    {
+      "caseId": "evaluation-training-duplicates-stan-v2",
+      "phase": "evaluation-search",
+      "implementation": "python-prophet",
+      "peakRssBytes": 123813888,
+      "sampleCount": 4,
+      "medianNanoseconds": 54665708,
+      "p90Nanoseconds": 58970416,
+      "minimumNanoseconds": 54038375,
+      "maximumNanoseconds": 58970416
+    },
+    {
+      "caseId": "fixed-linear-prediction-medium-stan-v2",
+      "phase": "adapter-input-conversion",
+      "implementation": "effect-prophet",
+      "sampleCount": 30,
+      "medianNanoseconds": 22333,
+      "p90Nanoseconds": 41917,
+      "minimumNanoseconds": 6125,
+      "maximumNanoseconds": 48000
+    },
+    {
+      "caseId": "fixed-linear-prediction-medium-stan-v2",
+      "phase": "adapter-input-conversion",
+      "implementation": "python-prophet",
+      "sampleCount": 30,
+      "medianNanoseconds": 592584,
+      "p90Nanoseconds": 719333,
+      "minimumNanoseconds": 562750,
+      "maximumNanoseconds": 1028250
+    },
+    {
+      "caseId": "fixed-linear-prediction-medium-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 30,
+      "medianNanoseconds": 533792,
+      "p90Nanoseconds": 675792,
+      "minimumNanoseconds": 380834,
+      "maximumNanoseconds": 930250
+    },
+    {
+      "caseId": "fixed-linear-prediction-medium-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 30,
+      "medianNanoseconds": 3504417,
+      "p90Nanoseconds": 8198125,
+      "minimumNanoseconds": 2803458,
+      "maximumNanoseconds": 12018250
+    },
+    {
+      "caseId": "linear-mixed-components-stan-v2",
+      "phase": "adapter-input-conversion",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 71042,
+      "p90Nanoseconds": 74792,
+      "minimumNanoseconds": 54916,
+      "maximumNanoseconds": 74792
+    },
+    {
+      "caseId": "linear-mixed-components-stan-v2",
+      "phase": "adapter-input-conversion",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 598542,
+      "p90Nanoseconds": 663125,
+      "minimumNanoseconds": 584958,
+      "maximumNanoseconds": 663125
+    },
+    {
+      "caseId": "linear-mixed-components-stan-v2",
+      "phase": "cold-first-forecast",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 187987458,
+      "p90Nanoseconds": 196960792,
+      "minimumNanoseconds": 187579126,
+      "maximumNanoseconds": 196960792
+    },
+    {
+      "caseId": "linear-mixed-components-stan-v2",
+      "phase": "cold-first-forecast",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 1523685792,
+      "p90Nanoseconds": 1725646001,
+      "minimumNanoseconds": 1461018334,
+      "maximumNanoseconds": 1725646001
+    },
+    {
+      "caseId": "linear-mixed-components-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 166576292,
+      "p90Nanoseconds": 168069459,
+      "minimumNanoseconds": 166379958,
+      "maximumNanoseconds": 168069459
+    },
+    {
+      "caseId": "linear-mixed-components-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 1517153793,
+      "p90Nanoseconds": 1622363125,
+      "minimumNanoseconds": 1434384875,
+      "maximumNanoseconds": 1622363125
+    },
+    {
+      "caseId": "linear-mixed-components-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 150833,
+      "p90Nanoseconds": 164750,
+      "minimumNanoseconds": 145750,
+      "maximumNanoseconds": 164750
+    },
+    {
+      "caseId": "linear-mixed-components-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 3735333,
+      "p90Nanoseconds": 4454000,
+      "minimumNanoseconds": 3609042,
+      "maximumNanoseconds": 4454000
+    },
+    {
+      "caseId": "linear-mixed-components-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 79042,
+      "p90Nanoseconds": 97625,
+      "minimumNanoseconds": 64875,
+      "maximumNanoseconds": 97625
+    },
+    {
+      "caseId": "linear-mixed-components-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 697625,
+      "p90Nanoseconds": 849375,
+      "minimumNanoseconds": 656042,
+      "maximumNanoseconds": 849375
+    },
+    {
+      "caseId": "linear-mixed-components-stan-v2",
+      "phase": "warm-fit-predict-with-conversion",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 5053042,
+      "p90Nanoseconds": 5250625,
+      "minimumNanoseconds": 4936458,
+      "maximumNanoseconds": 5250625
+    },
+    {
+      "caseId": "linear-mixed-components-stan-v2",
+      "phase": "warm-fit-predict-with-conversion",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 30693292,
+      "p90Nanoseconds": 32159708,
+      "minimumNanoseconds": 29607375,
+      "maximumNanoseconds": 32159708
+    },
+    {
+      "caseId": "linear-mixed-components-stan-v2",
+      "phase": "warm-fit-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 4915125,
+      "p90Nanoseconds": 5197166,
+      "minimumNanoseconds": 4898542,
+      "maximumNanoseconds": 5197166
+    },
+    {
+      "caseId": "linear-mixed-components-stan-v2",
+      "phase": "warm-fit-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 29402458,
+      "p90Nanoseconds": 31976208,
+      "minimumNanoseconds": 29220958,
+      "maximumNanoseconds": 31976208
+    },
+    {
+      "caseId": "linear-mixed-components-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 5723125,
+      "p90Nanoseconds": 5954292,
+      "minimumNanoseconds": 5543125,
+      "maximumNanoseconds": 5954292
+    },
+    {
+      "caseId": "linear-mixed-components-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 24491041,
+      "p90Nanoseconds": 28316625,
+      "minimumNanoseconds": 23871459,
+      "maximumNanoseconds": 28316625
+    },
+    {
+      "caseId": "linear-mixed-components-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 563875,
+      "p90Nanoseconds": 914416,
+      "minimumNanoseconds": 500625,
+      "maximumNanoseconds": 914416
+    },
+    {
+      "caseId": "linear-mixed-components-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 5017834,
+      "p90Nanoseconds": 5169041,
+      "minimumNanoseconds": 4937292,
+      "maximumNanoseconds": 5169041
+    },
+    {
+      "caseId": "linear-offset-scaling-absmax-stan-v2",
+      "phase": "adapter-input-conversion",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 12583,
+      "p90Nanoseconds": 13750,
+      "minimumNanoseconds": 12416,
+      "maximumNanoseconds": 13750
+    },
+    {
+      "caseId": "linear-offset-scaling-absmax-stan-v2",
+      "phase": "adapter-input-conversion",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 490667,
+      "p90Nanoseconds": 547125,
+      "minimumNanoseconds": 481125,
+      "maximumNanoseconds": 547125
+    },
+    {
+      "caseId": "linear-offset-scaling-absmax-stan-v2",
+      "phase": "cold-first-forecast",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 196837583,
+      "p90Nanoseconds": 209411416,
+      "minimumNanoseconds": 189329708,
+      "maximumNanoseconds": 209411416
+    },
+    {
+      "caseId": "linear-offset-scaling-absmax-stan-v2",
+      "phase": "cold-first-forecast",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 1521955625,
+      "p90Nanoseconds": 1535078293,
+      "minimumNanoseconds": 1454119084,
+      "maximumNanoseconds": 1535078293
+    },
+    {
+      "caseId": "linear-offset-scaling-absmax-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 165461791,
+      "p90Nanoseconds": 176312126,
+      "minimumNanoseconds": 163519834,
+      "maximumNanoseconds": 176312126
+    },
+    {
+      "caseId": "linear-offset-scaling-absmax-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 1480654751,
+      "p90Nanoseconds": 1499155126,
+      "minimumNanoseconds": 1450369626,
+      "maximumNanoseconds": 1499155126
+    },
+    {
+      "caseId": "linear-offset-scaling-absmax-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 149708,
+      "p90Nanoseconds": 320291,
+      "minimumNanoseconds": 125500,
+      "maximumNanoseconds": 320291
+    },
+    {
+      "caseId": "linear-offset-scaling-absmax-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 2254333,
+      "p90Nanoseconds": 2276958,
+      "minimumNanoseconds": 2200125,
+      "maximumNanoseconds": 2276958
+    },
+    {
+      "caseId": "linear-offset-scaling-absmax-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 61208,
+      "p90Nanoseconds": 68875,
+      "minimumNanoseconds": 55875,
+      "maximumNanoseconds": 68875
+    },
+    {
+      "caseId": "linear-offset-scaling-absmax-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 451167,
+      "p90Nanoseconds": 492375,
+      "minimumNanoseconds": 443250,
+      "maximumNanoseconds": 492375
+    },
+    {
+      "caseId": "linear-offset-scaling-absmax-stan-v2",
+      "phase": "warm-fit-predict-with-conversion",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 4453375,
+      "p90Nanoseconds": 4709583,
+      "minimumNanoseconds": 4227834,
+      "maximumNanoseconds": 4709583
+    },
+    {
+      "caseId": "linear-offset-scaling-absmax-stan-v2",
+      "phase": "warm-fit-predict-with-conversion",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 29389042,
+      "p90Nanoseconds": 29822708,
+      "minimumNanoseconds": 28492750,
+      "maximumNanoseconds": 29822708
+    },
+    {
+      "caseId": "linear-offset-scaling-absmax-stan-v2",
+      "phase": "warm-fit-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 4661208,
+      "p90Nanoseconds": 5111292,
+      "minimumNanoseconds": 4569000,
+      "maximumNanoseconds": 5111292
+    },
+    {
+      "caseId": "linear-offset-scaling-absmax-stan-v2",
+      "phase": "warm-fit-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 27391875,
+      "p90Nanoseconds": 30863125,
+      "minimumNanoseconds": 26833000,
+      "maximumNanoseconds": 30863125
+    },
+    {
+      "caseId": "linear-offset-scaling-absmax-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 5699333,
+      "p90Nanoseconds": 5805292,
+      "minimumNanoseconds": 5551541,
+      "maximumNanoseconds": 5805292
+    },
+    {
+      "caseId": "linear-offset-scaling-absmax-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 25656625,
+      "p90Nanoseconds": 28972834,
+      "minimumNanoseconds": 25069167,
+      "maximumNanoseconds": 28972834
+    },
+    {
+      "caseId": "linear-offset-scaling-absmax-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 477500,
+      "p90Nanoseconds": 529791,
+      "minimumNanoseconds": 337208,
+      "maximumNanoseconds": 529791
+    },
+    {
+      "caseId": "linear-offset-scaling-absmax-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 3160542,
+      "p90Nanoseconds": 3232500,
+      "minimumNanoseconds": 3119417,
+      "maximumNanoseconds": 3232500
+    },
+    {
+      "caseId": "linear-offset-scaling-minmax-stan-v2",
+      "phase": "adapter-input-conversion",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 14042,
+      "p90Nanoseconds": 24708,
+      "minimumNanoseconds": 13250,
+      "maximumNanoseconds": 24708
+    },
+    {
+      "caseId": "linear-offset-scaling-minmax-stan-v2",
+      "phase": "adapter-input-conversion",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 479833,
+      "p90Nanoseconds": 532917,
+      "minimumNanoseconds": 473708,
+      "maximumNanoseconds": 532917
+    },
+    {
+      "caseId": "linear-offset-scaling-minmax-stan-v2",
+      "phase": "cold-first-forecast",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 185982375,
+      "p90Nanoseconds": 196400459,
+      "minimumNanoseconds": 181867667,
+      "maximumNanoseconds": 196400459
+    },
+    {
+      "caseId": "linear-offset-scaling-minmax-stan-v2",
+      "phase": "cold-first-forecast",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 1502971126,
+      "p90Nanoseconds": 1615525917,
+      "minimumNanoseconds": 1484921793,
+      "maximumNanoseconds": 1615525917
+    },
+    {
+      "caseId": "linear-offset-scaling-minmax-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 167905708,
+      "p90Nanoseconds": 172292958,
+      "minimumNanoseconds": 165566875,
+      "maximumNanoseconds": 172292958
+    },
+    {
+      "caseId": "linear-offset-scaling-minmax-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 1486505542,
+      "p90Nanoseconds": 1554118084,
+      "minimumNanoseconds": 1415224667,
+      "maximumNanoseconds": 1554118084
+    },
+    {
+      "caseId": "linear-offset-scaling-minmax-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 95667,
+      "p90Nanoseconds": 122042,
+      "minimumNanoseconds": 88083,
+      "maximumNanoseconds": 122042
+    },
+    {
+      "caseId": "linear-offset-scaling-minmax-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 2333250,
+      "p90Nanoseconds": 2440084,
+      "minimumNanoseconds": 2257583,
+      "maximumNanoseconds": 2440084
+    },
+    {
+      "caseId": "linear-offset-scaling-minmax-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 50375,
+      "p90Nanoseconds": 78958,
+      "minimumNanoseconds": 47333,
+      "maximumNanoseconds": 78958
+    },
+    {
+      "caseId": "linear-offset-scaling-minmax-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 495667,
+      "p90Nanoseconds": 758167,
+      "minimumNanoseconds": 440625,
+      "maximumNanoseconds": 758167
+    },
+    {
+      "caseId": "linear-offset-scaling-minmax-stan-v2",
+      "phase": "warm-fit-predict-with-conversion",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 4391667,
+      "p90Nanoseconds": 4472042,
+      "minimumNanoseconds": 4367708,
+      "maximumNanoseconds": 4472042
+    },
+    {
+      "caseId": "linear-offset-scaling-minmax-stan-v2",
+      "phase": "warm-fit-predict-with-conversion",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 27858000,
+      "p90Nanoseconds": 28690500,
+      "minimumNanoseconds": 27084417,
+      "maximumNanoseconds": 28690500
+    },
+    {
+      "caseId": "linear-offset-scaling-minmax-stan-v2",
+      "phase": "warm-fit-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 4564333,
+      "p90Nanoseconds": 4717458,
+      "minimumNanoseconds": 4478542,
+      "maximumNanoseconds": 4717458
+    },
+    {
+      "caseId": "linear-offset-scaling-minmax-stan-v2",
+      "phase": "warm-fit-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 26883500,
+      "p90Nanoseconds": 28924834,
+      "minimumNanoseconds": 26554791,
+      "maximumNanoseconds": 28924834
+    },
+    {
+      "caseId": "linear-offset-scaling-minmax-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 5077375,
+      "p90Nanoseconds": 5383125,
+      "minimumNanoseconds": 4815542,
+      "maximumNanoseconds": 5383125
+    },
+    {
+      "caseId": "linear-offset-scaling-minmax-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 24985291,
+      "p90Nanoseconds": 25852209,
+      "minimumNanoseconds": 24504541,
+      "maximumNanoseconds": 25852209
+    },
+    {
+      "caseId": "linear-offset-scaling-minmax-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 332708,
+      "p90Nanoseconds": 358458,
+      "minimumNanoseconds": 308125,
+      "maximumNanoseconds": 358458
+    },
+    {
+      "caseId": "linear-offset-scaling-minmax-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 3254083,
+      "p90Nanoseconds": 3371083,
+      "minimumNanoseconds": 3121500,
+      "maximumNanoseconds": 3371083
+    },
+    {
+      "caseId": "map-conditional-seasonalities-medium-stan-v2",
+      "phase": "adapter-input-conversion",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 109375,
+      "p90Nanoseconds": 129500,
+      "minimumNanoseconds": 99541,
+      "maximumNanoseconds": 129500
+    },
+    {
+      "caseId": "map-conditional-seasonalities-medium-stan-v2",
+      "phase": "adapter-input-conversion",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 662750,
+      "p90Nanoseconds": 706250,
+      "minimumNanoseconds": 624834,
+      "maximumNanoseconds": 706250
+    },
+    {
+      "caseId": "map-conditional-seasonalities-medium-stan-v2",
+      "phase": "cold-first-forecast",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 167866292,
+      "p90Nanoseconds": 181539834,
+      "minimumNanoseconds": 165349833,
+      "maximumNanoseconds": 181539834
+    },
+    {
+      "caseId": "map-conditional-seasonalities-medium-stan-v2",
+      "phase": "cold-first-forecast",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 1546430667,
+      "p90Nanoseconds": 1706065876,
+      "minimumNanoseconds": 1474194042,
+      "maximumNanoseconds": 1706065876
+    },
+    {
+      "caseId": "map-conditional-seasonalities-medium-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 161743250,
+      "p90Nanoseconds": 206611250,
+      "minimumNanoseconds": 156540667,
+      "maximumNanoseconds": 206611250
+    },
+    {
+      "caseId": "map-conditional-seasonalities-medium-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 1504541959,
+      "p90Nanoseconds": 1519947459,
+      "minimumNanoseconds": 1456591793,
+      "maximumNanoseconds": 1519947459
+    },
+    {
+      "caseId": "map-conditional-seasonalities-medium-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 119250,
+      "p90Nanoseconds": 237833,
+      "minimumNanoseconds": 100333,
+      "maximumNanoseconds": 237833
+    },
+    {
+      "caseId": "map-conditional-seasonalities-medium-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 2898791,
+      "p90Nanoseconds": 3070292,
+      "minimumNanoseconds": 2790625,
+      "maximumNanoseconds": 3070292
+    },
+    {
+      "caseId": "map-conditional-seasonalities-medium-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 52500,
+      "p90Nanoseconds": 63584,
+      "minimumNanoseconds": 48750,
+      "maximumNanoseconds": 63584
+    },
+    {
+      "caseId": "map-conditional-seasonalities-medium-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 655625,
+      "p90Nanoseconds": 690541,
+      "minimumNanoseconds": 637416,
+      "maximumNanoseconds": 690541
+    },
+    {
+      "caseId": "map-conditional-seasonalities-medium-stan-v2",
+      "phase": "warm-fit-predict-with-conversion",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 2714000,
+      "p90Nanoseconds": 3513291,
+      "minimumNanoseconds": 2681792,
+      "maximumNanoseconds": 3513291
+    },
+    {
+      "caseId": "map-conditional-seasonalities-medium-stan-v2",
+      "phase": "warm-fit-predict-with-conversion",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 18896292,
+      "p90Nanoseconds": 19782000,
+      "minimumNanoseconds": 18318667,
+      "maximumNanoseconds": 19782000
+    },
+    {
+      "caseId": "map-conditional-seasonalities-medium-stan-v2",
+      "phase": "warm-fit-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 3332750,
+      "p90Nanoseconds": 3427208,
+      "minimumNanoseconds": 2869625,
+      "maximumNanoseconds": 3427208
+    },
+    {
+      "caseId": "map-conditional-seasonalities-medium-stan-v2",
+      "phase": "warm-fit-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 17494625,
+      "p90Nanoseconds": 18624458,
+      "minimumNanoseconds": 17271500,
+      "maximumNanoseconds": 18624458
+    },
+    {
+      "caseId": "map-conditional-seasonalities-medium-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 2901208,
+      "p90Nanoseconds": 3102875,
+      "minimumNanoseconds": 2728625,
+      "maximumNanoseconds": 3102875
+    },
+    {
+      "caseId": "map-conditional-seasonalities-medium-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 13654959,
+      "p90Nanoseconds": 14426458,
+      "minimumNanoseconds": 12830875,
+      "maximumNanoseconds": 14426458
+    },
+    {
+      "caseId": "map-conditional-seasonalities-medium-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 478291,
+      "p90Nanoseconds": 502708,
+      "minimumNanoseconds": 466958,
+      "maximumNanoseconds": 502708
+    },
+    {
+      "caseId": "map-conditional-seasonalities-medium-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 4121083,
+      "p90Nanoseconds": 4557209,
+      "minimumNanoseconds": 3944833,
+      "maximumNanoseconds": 4557209
+    },
+    {
+      "caseId": "map-events-small-stan-v2",
+      "phase": "adapter-input-conversion",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 15916,
+      "p90Nanoseconds": 19208,
+      "minimumNanoseconds": 12541,
+      "maximumNanoseconds": 19208
+    },
+    {
+      "caseId": "map-events-small-stan-v2",
+      "phase": "adapter-input-conversion",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 504375,
+      "p90Nanoseconds": 547209,
+      "minimumNanoseconds": 495375,
+      "maximumNanoseconds": 547209
+    },
+    {
+      "caseId": "map-events-small-stan-v2",
+      "phase": "cold-first-forecast",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 181194250,
+      "p90Nanoseconds": 186920417,
+      "minimumNanoseconds": 177628834,
+      "maximumNanoseconds": 186920417
+    },
+    {
+      "caseId": "map-events-small-stan-v2",
+      "phase": "cold-first-forecast",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 1673776625,
+      "p90Nanoseconds": 1755913168,
+      "minimumNanoseconds": 1557408335,
+      "maximumNanoseconds": 1755913168
+    },
+    {
+      "caseId": "map-events-small-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 162929584,
+      "p90Nanoseconds": 167422375,
+      "minimumNanoseconds": 161919959,
+      "maximumNanoseconds": 167422375
+    },
+    {
+      "caseId": "map-events-small-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 1573296042,
+      "p90Nanoseconds": 1717882334,
+      "minimumNanoseconds": 1452458250,
+      "maximumNanoseconds": 1717882334
+    },
+    {
+      "caseId": "map-events-small-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 200875,
+      "p90Nanoseconds": 231916,
+      "minimumNanoseconds": 146417,
+      "maximumNanoseconds": 231916
+    },
+    {
+      "caseId": "map-events-small-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 3441750,
+      "p90Nanoseconds": 4272333,
+      "minimumNanoseconds": 3318625,
+      "maximumNanoseconds": 4272333
+    },
+    {
+      "caseId": "map-events-small-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 88875,
+      "p90Nanoseconds": 106375,
+      "minimumNanoseconds": 79583,
+      "maximumNanoseconds": 106375
+    },
+    {
+      "caseId": "map-events-small-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 661041,
+      "p90Nanoseconds": 709375,
+      "minimumNanoseconds": 643541,
+      "maximumNanoseconds": 709375
+    },
+    {
+      "caseId": "map-events-small-stan-v2",
+      "phase": "warm-fit-predict-with-conversion",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 6781083,
+      "p90Nanoseconds": 7025458,
+      "minimumNanoseconds": 6614291,
+      "maximumNanoseconds": 7025458
+    },
+    {
+      "caseId": "map-events-small-stan-v2",
+      "phase": "warm-fit-predict-with-conversion",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 39094834,
+      "p90Nanoseconds": 42243125,
+      "minimumNanoseconds": 38010125,
+      "maximumNanoseconds": 42243125
+    },
+    {
+      "caseId": "map-events-small-stan-v2",
+      "phase": "warm-fit-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 7100833,
+      "p90Nanoseconds": 7554667,
+      "minimumNanoseconds": 6688291,
+      "maximumNanoseconds": 7554667
+    },
+    {
+      "caseId": "map-events-small-stan-v2",
+      "phase": "warm-fit-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 37750375,
+      "p90Nanoseconds": 39096750,
+      "minimumNanoseconds": 35900209,
+      "maximumNanoseconds": 39096750
+    },
+    {
+      "caseId": "map-events-small-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 7512750,
+      "p90Nanoseconds": 9808125,
+      "minimumNanoseconds": 6778250,
+      "maximumNanoseconds": 9808125
+    },
+    {
+      "caseId": "map-events-small-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 32750333,
+      "p90Nanoseconds": 34990500,
+      "minimumNanoseconds": 32219792,
+      "maximumNanoseconds": 34990500
+    },
+    {
+      "caseId": "map-events-small-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 373709,
+      "p90Nanoseconds": 518417,
+      "minimumNanoseconds": 319584,
+      "maximumNanoseconds": 518417
+    },
+    {
+      "caseId": "map-events-small-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 4687250,
+      "p90Nanoseconds": 5663958,
+      "minimumNanoseconds": 4531250,
+      "maximumNanoseconds": 5663958
+    },
+    {
+      "caseId": "map-explicit-break-small-stan-v2",
+      "phase": "adapter-input-conversion",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 4500,
+      "p90Nanoseconds": 5959,
+      "minimumNanoseconds": 4375,
+      "maximumNanoseconds": 5959
+    },
+    {
+      "caseId": "map-explicit-break-small-stan-v2",
+      "phase": "adapter-input-conversion",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 499000,
+      "p90Nanoseconds": 1172209,
+      "minimumNanoseconds": 453583,
+      "maximumNanoseconds": 1172209
+    },
+    {
+      "caseId": "map-explicit-break-small-stan-v2",
+      "phase": "cold-first-forecast",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 179750584,
+      "p90Nanoseconds": 186935459,
+      "minimumNanoseconds": 163514084,
+      "maximumNanoseconds": 186935459
+    },
+    {
+      "caseId": "map-explicit-break-small-stan-v2",
+      "phase": "cold-first-forecast",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 1587901126,
+      "p90Nanoseconds": 1889072084,
+      "minimumNanoseconds": 1552993709,
+      "maximumNanoseconds": 1889072084
+    },
+    {
+      "caseId": "map-explicit-break-small-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 159483959,
+      "p90Nanoseconds": 164452583,
+      "minimumNanoseconds": 154257708,
+      "maximumNanoseconds": 164452583
+    },
+    {
+      "caseId": "map-explicit-break-small-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 1600894459,
+      "p90Nanoseconds": 1736259459,
+      "minimumNanoseconds": 1579794334,
+      "maximumNanoseconds": 1736259459
+    },
+    {
+      "caseId": "map-explicit-break-small-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 75625,
+      "p90Nanoseconds": 86708,
+      "minimumNanoseconds": 72209,
+      "maximumNanoseconds": 86708
+    },
+    {
+      "caseId": "map-explicit-break-small-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 2070500,
+      "p90Nanoseconds": 2302292,
+      "minimumNanoseconds": 2031584,
+      "maximumNanoseconds": 2302292
+    },
+    {
+      "caseId": "map-explicit-break-small-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 38125,
+      "p90Nanoseconds": 140042,
+      "minimumNanoseconds": 34708,
+      "maximumNanoseconds": 140042
+    },
+    {
+      "caseId": "map-explicit-break-small-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 440125,
+      "p90Nanoseconds": 478625,
+      "minimumNanoseconds": 399208,
+      "maximumNanoseconds": 478625
+    },
+    {
+      "caseId": "map-explicit-break-small-stan-v2",
+      "phase": "warm-fit-predict-with-conversion",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 1442208,
+      "p90Nanoseconds": 1578542,
+      "minimumNanoseconds": 1401167,
+      "maximumNanoseconds": 1578542
+    },
+    {
+      "caseId": "map-explicit-break-small-stan-v2",
+      "phase": "warm-fit-predict-with-conversion",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 15728000,
+      "p90Nanoseconds": 28986667,
+      "minimumNanoseconds": 15294375,
+      "maximumNanoseconds": 28986667
+    },
+    {
+      "caseId": "map-explicit-break-small-stan-v2",
+      "phase": "warm-fit-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 1720083,
+      "p90Nanoseconds": 1973500,
+      "minimumNanoseconds": 1589958,
+      "maximumNanoseconds": 1973500
+    },
+    {
+      "caseId": "map-explicit-break-small-stan-v2",
+      "phase": "warm-fit-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 15745000,
+      "p90Nanoseconds": 31990042,
+      "minimumNanoseconds": 14785292,
+      "maximumNanoseconds": 31990042
+    },
+    {
+      "caseId": "map-explicit-break-small-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 2056583,
+      "p90Nanoseconds": 2094750,
+      "minimumNanoseconds": 2029042,
+      "maximumNanoseconds": 2094750
+    },
+    {
+      "caseId": "map-explicit-break-small-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 12705750,
+      "p90Nanoseconds": 52116292,
+      "minimumNanoseconds": 12218459,
+      "maximumNanoseconds": 52116292
+    },
+    {
+      "caseId": "map-explicit-break-small-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 280042,
+      "p90Nanoseconds": 312667,
+      "minimumNanoseconds": 253958,
+      "maximumNanoseconds": 312667
+    },
+    {
+      "caseId": "map-explicit-break-small-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 3162125,
+      "p90Nanoseconds": 14519167,
+      "minimumNanoseconds": 2944625,
+      "maximumNanoseconds": 14519167
+    },
+    {
+      "caseId": "map-mixed-features-automatic-large-stan-v2",
+      "phase": "adapter-input-conversion",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 205583,
+      "p90Nanoseconds": 221833,
+      "minimumNanoseconds": 204666,
+      "maximumNanoseconds": 221833
+    },
+    {
+      "caseId": "map-mixed-features-automatic-large-stan-v2",
+      "phase": "adapter-input-conversion",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 1298792,
+      "p90Nanoseconds": 1340541,
+      "minimumNanoseconds": 1284708,
+      "maximumNanoseconds": 1340541
+    },
+    {
+      "caseId": "map-mixed-features-automatic-large-stan-v2",
+      "phase": "cold-first-forecast",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 202630042,
+      "p90Nanoseconds": 225236459,
+      "minimumNanoseconds": 195884083,
+      "maximumNanoseconds": 225236459
+    },
+    {
+      "caseId": "map-mixed-features-automatic-large-stan-v2",
+      "phase": "cold-first-forecast",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 1549499543,
+      "p90Nanoseconds": 1655199001,
+      "minimumNanoseconds": 1547489751,
+      "maximumNanoseconds": 1655199001
+    },
+    {
+      "caseId": "map-mixed-features-automatic-large-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 171509875,
+      "p90Nanoseconds": 179886583,
+      "minimumNanoseconds": 170172625,
+      "maximumNanoseconds": 179886583
+    },
+    {
+      "caseId": "map-mixed-features-automatic-large-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 1585323876,
+      "p90Nanoseconds": 1632349876,
+      "minimumNanoseconds": 1569077917,
+      "maximumNanoseconds": 1632349876
+    },
+    {
+      "caseId": "map-mixed-features-automatic-large-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 241458,
+      "p90Nanoseconds": 261792,
+      "minimumNanoseconds": 232583,
+      "maximumNanoseconds": 261792
+    },
+    {
+      "caseId": "map-mixed-features-automatic-large-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 5915708,
+      "p90Nanoseconds": 6777041,
+      "minimumNanoseconds": 5907209,
+      "maximumNanoseconds": 6777041
+    },
+    {
+      "caseId": "map-mixed-features-automatic-large-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 116417,
+      "p90Nanoseconds": 156000,
+      "minimumNanoseconds": 109833,
+      "maximumNanoseconds": 156000
+    },
+    {
+      "caseId": "map-mixed-features-automatic-large-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 1823375,
+      "p90Nanoseconds": 1860917,
+      "minimumNanoseconds": 1747917,
+      "maximumNanoseconds": 1860917
+    },
+    {
+      "caseId": "map-mixed-features-automatic-large-stan-v2",
+      "phase": "warm-fit-predict-with-conversion",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 23141375,
+      "p90Nanoseconds": 23889708,
+      "minimumNanoseconds": 21652334,
+      "maximumNanoseconds": 23889708
+    },
+    {
+      "caseId": "map-mixed-features-automatic-large-stan-v2",
+      "phase": "warm-fit-predict-with-conversion",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 49641584,
+      "p90Nanoseconds": 50994417,
+      "minimumNanoseconds": 48922958,
+      "maximumNanoseconds": 50994417
+    },
+    {
+      "caseId": "map-mixed-features-automatic-large-stan-v2",
+      "phase": "warm-fit-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 22396208,
+      "p90Nanoseconds": 27087500,
+      "minimumNanoseconds": 22110166,
+      "maximumNanoseconds": 27087500
+    },
+    {
+      "caseId": "map-mixed-features-automatic-large-stan-v2",
+      "phase": "warm-fit-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 45086958,
+      "p90Nanoseconds": 48663959,
+      "minimumNanoseconds": 44233875,
+      "maximumNanoseconds": 48663959
+    },
+    {
+      "caseId": "map-mixed-features-automatic-large-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 22708958,
+      "p90Nanoseconds": 23982167,
+      "minimumNanoseconds": 22618208,
+      "maximumNanoseconds": 23982167
+    },
+    {
+      "caseId": "map-mixed-features-automatic-large-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 38669583,
+      "p90Nanoseconds": 42096416,
+      "minimumNanoseconds": 38033333,
+      "maximumNanoseconds": 42096416
+    },
+    {
+      "caseId": "map-mixed-features-automatic-large-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 1236625,
+      "p90Nanoseconds": 2329875,
+      "minimumNanoseconds": 1063500,
+      "maximumNanoseconds": 2329875
+    },
+    {
+      "caseId": "map-mixed-features-automatic-large-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 6387417,
+      "p90Nanoseconds": 8142459,
+      "minimumNanoseconds": 6224292,
+      "maximumNanoseconds": 8142459
+    },
+    {
+      "caseId": "map-mixed-features-explicit-small-stan-v2",
+      "phase": "adapter-input-conversion",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 10375,
+      "p90Nanoseconds": 17500,
+      "minimumNanoseconds": 8541,
+      "maximumNanoseconds": 17500
+    },
+    {
+      "caseId": "map-mixed-features-explicit-small-stan-v2",
+      "phase": "adapter-input-conversion",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 530084,
+      "p90Nanoseconds": 582042,
+      "minimumNanoseconds": 495334,
+      "maximumNanoseconds": 582042
+    },
+    {
+      "caseId": "map-mixed-features-explicit-small-stan-v2",
+      "phase": "cold-first-forecast",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 180157667,
+      "p90Nanoseconds": 201986001,
+      "minimumNanoseconds": 175706334,
+      "maximumNanoseconds": 201986001
+    },
+    {
+      "caseId": "map-mixed-features-explicit-small-stan-v2",
+      "phase": "cold-first-forecast",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 1469050959,
+      "p90Nanoseconds": 1524076084,
+      "minimumNanoseconds": 1445772084,
+      "maximumNanoseconds": 1524076084
+    },
+    {
+      "caseId": "map-mixed-features-explicit-small-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 162804500,
+      "p90Nanoseconds": 184004583,
+      "minimumNanoseconds": 158583709,
+      "maximumNanoseconds": 184004583
+    },
+    {
+      "caseId": "map-mixed-features-explicit-small-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 1510327251,
+      "p90Nanoseconds": 1518045876,
+      "minimumNanoseconds": 1478964167,
+      "maximumNanoseconds": 1518045876
+    },
+    {
+      "caseId": "map-mixed-features-explicit-small-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 149083,
+      "p90Nanoseconds": 202625,
+      "minimumNanoseconds": 119834,
+      "maximumNanoseconds": 202625
+    },
+    {
+      "caseId": "map-mixed-features-explicit-small-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 3673584,
+      "p90Nanoseconds": 3999625,
+      "minimumNanoseconds": 3647583,
+      "maximumNanoseconds": 3999625
+    },
+    {
+      "caseId": "map-mixed-features-explicit-small-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 108084,
+      "p90Nanoseconds": 145750,
+      "minimumNanoseconds": 97250,
+      "maximumNanoseconds": 145750
+    },
+    {
+      "caseId": "map-mixed-features-explicit-small-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 611084,
+      "p90Nanoseconds": 631625,
+      "minimumNanoseconds": 593458,
+      "maximumNanoseconds": 631625
+    },
+    {
+      "caseId": "map-mixed-features-explicit-small-stan-v2",
+      "phase": "warm-fit-predict-with-conversion",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 1510625,
+      "p90Nanoseconds": 1850500,
+      "minimumNanoseconds": 1481334,
+      "maximumNanoseconds": 1850500
+    },
+    {
+      "caseId": "map-mixed-features-explicit-small-stan-v2",
+      "phase": "warm-fit-predict-with-conversion",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 18340167,
+      "p90Nanoseconds": 19665333,
+      "minimumNanoseconds": 17914209,
+      "maximumNanoseconds": 19665333
+    },
+    {
+      "caseId": "map-mixed-features-explicit-small-stan-v2",
+      "phase": "warm-fit-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 2123167,
+      "p90Nanoseconds": 3415459,
+      "minimumNanoseconds": 1572458,
+      "maximumNanoseconds": 3415459
+    },
+    {
+      "caseId": "map-mixed-features-explicit-small-stan-v2",
+      "phase": "warm-fit-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 17798750,
+      "p90Nanoseconds": 17989084,
+      "minimumNanoseconds": 17768167,
+      "maximumNanoseconds": 17989084
+    },
+    {
+      "caseId": "map-mixed-features-explicit-small-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 2159250,
+      "p90Nanoseconds": 3019708,
+      "minimumNanoseconds": 2130666,
+      "maximumNanoseconds": 3019708
+    },
+    {
+      "caseId": "map-mixed-features-explicit-small-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 12185792,
+      "p90Nanoseconds": 12789042,
+      "minimumNanoseconds": 12083083,
+      "maximumNanoseconds": 12789042
+    },
+    {
+      "caseId": "map-mixed-features-explicit-small-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 282417,
+      "p90Nanoseconds": 443250,
+      "minimumNanoseconds": 268375,
+      "maximumNanoseconds": 443250
+    },
+    {
+      "caseId": "map-mixed-features-explicit-small-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 5071333,
+      "p90Nanoseconds": 5786791,
+      "minimumNanoseconds": 4893959,
+      "maximumNanoseconds": 5786791
+    },
+    {
+      "caseId": "map-regressors-medium-stan-v2",
+      "phase": "adapter-input-conversion",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 144042,
+      "p90Nanoseconds": 182166,
+      "minimumNanoseconds": 130833,
+      "maximumNanoseconds": 182166
+    },
+    {
+      "caseId": "map-regressors-medium-stan-v2",
+      "phase": "adapter-input-conversion",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 795500,
+      "p90Nanoseconds": 840750,
+      "minimumNanoseconds": 784458,
+      "maximumNanoseconds": 840750
+    },
+    {
+      "caseId": "map-regressors-medium-stan-v2",
+      "phase": "cold-first-forecast",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 168063959,
+      "p90Nanoseconds": 171278875,
+      "minimumNanoseconds": 165433000,
+      "maximumNanoseconds": 171278875
+    },
+    {
+      "caseId": "map-regressors-medium-stan-v2",
+      "phase": "cold-first-forecast",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 1643354834,
+      "p90Nanoseconds": 1999553376,
+      "minimumNanoseconds": 1532928959,
+      "maximumNanoseconds": 1999553376
+    },
+    {
+      "caseId": "map-regressors-medium-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 155397625,
+      "p90Nanoseconds": 168954416,
+      "minimumNanoseconds": 152236791,
+      "maximumNanoseconds": 168954416
+    },
+    {
+      "caseId": "map-regressors-medium-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 1619800459,
+      "p90Nanoseconds": 2015231251,
+      "minimumNanoseconds": 1577356084,
+      "maximumNanoseconds": 2015231251
+    },
+    {
+      "caseId": "map-regressors-medium-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 184750,
+      "p90Nanoseconds": 246875,
+      "minimumNanoseconds": 168917,
+      "maximumNanoseconds": 246875
+    },
+    {
+      "caseId": "map-regressors-medium-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 3534041,
+      "p90Nanoseconds": 4001833,
+      "minimumNanoseconds": 3328000,
+      "maximumNanoseconds": 4001833
+    },
+    {
+      "caseId": "map-regressors-medium-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 86333,
+      "p90Nanoseconds": 111791,
+      "minimumNanoseconds": 76750,
+      "maximumNanoseconds": 111791
+    },
+    {
+      "caseId": "map-regressors-medium-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 803834,
+      "p90Nanoseconds": 1002083,
+      "minimumNanoseconds": 768042,
+      "maximumNanoseconds": 1002083
+    },
+    {
+      "caseId": "map-regressors-medium-stan-v2",
+      "phase": "warm-fit-predict-with-conversion",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 2779792,
+      "p90Nanoseconds": 3170250,
+      "minimumNanoseconds": 2682625,
+      "maximumNanoseconds": 3170250
+    },
+    {
+      "caseId": "map-regressors-medium-stan-v2",
+      "phase": "warm-fit-predict-with-conversion",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 17602333,
+      "p90Nanoseconds": 18233750,
+      "minimumNanoseconds": 17346125,
+      "maximumNanoseconds": 18233750
+    },
+    {
+      "caseId": "map-regressors-medium-stan-v2",
+      "phase": "warm-fit-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 2948708,
+      "p90Nanoseconds": 3475458,
+      "minimumNanoseconds": 2638125,
+      "maximumNanoseconds": 3475458
+    },
+    {
+      "caseId": "map-regressors-medium-stan-v2",
+      "phase": "warm-fit-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 15672042,
+      "p90Nanoseconds": 16599667,
+      "minimumNanoseconds": 15065000,
+      "maximumNanoseconds": 16599667
+    },
+    {
+      "caseId": "map-regressors-medium-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 2715625,
+      "p90Nanoseconds": 3573541,
+      "minimumNanoseconds": 2523875,
+      "maximumNanoseconds": 3573541
+    },
+    {
+      "caseId": "map-regressors-medium-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 12211500,
+      "p90Nanoseconds": 12719500,
+      "minimumNanoseconds": 11909000,
+      "maximumNanoseconds": 12719500
+    },
+    {
+      "caseId": "map-regressors-medium-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 551125,
+      "p90Nanoseconds": 1370417,
+      "minimumNanoseconds": 519625,
+      "maximumNanoseconds": 1370417
+    },
+    {
+      "caseId": "map-regressors-medium-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 3931500,
+      "p90Nanoseconds": 4459625,
+      "minimumNanoseconds": 3723666,
+      "maximumNanoseconds": 4459625
+    },
+    {
+      "caseId": "map-seasonal-breaks-irregular-medium-stan-v2",
+      "phase": "adapter-input-conversion",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 33916,
+      "p90Nanoseconds": 50584,
+      "minimumNanoseconds": 27292,
+      "maximumNanoseconds": 50584
+    },
+    {
+      "caseId": "map-seasonal-breaks-irregular-medium-stan-v2",
+      "phase": "adapter-input-conversion",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 559959,
+      "p90Nanoseconds": 714667,
+      "minimumNanoseconds": 537792,
+      "maximumNanoseconds": 714667
+    },
+    {
+      "caseId": "map-seasonal-breaks-irregular-medium-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 165196584,
+      "p90Nanoseconds": 172403709,
+      "minimumNanoseconds": 160678876,
+      "maximumNanoseconds": 172403709
+    },
+    {
+      "caseId": "map-seasonal-breaks-irregular-medium-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 1534726334,
+      "p90Nanoseconds": 1648137918,
+      "minimumNanoseconds": 1520381042,
+      "maximumNanoseconds": 1648137918
+    },
+    {
+      "caseId": "map-seasonal-breaks-irregular-medium-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 112334,
+      "p90Nanoseconds": 198792,
+      "minimumNanoseconds": 98833,
+      "maximumNanoseconds": 198792
+    },
+    {
+      "caseId": "map-seasonal-breaks-irregular-medium-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 2339125,
+      "p90Nanoseconds": 2482916,
+      "minimumNanoseconds": 2308500,
+      "maximumNanoseconds": 2482916
+    },
+    {
+      "caseId": "map-seasonal-breaks-irregular-medium-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 45375,
+      "p90Nanoseconds": 56625,
+      "minimumNanoseconds": 40959,
+      "maximumNanoseconds": 56625
+    },
+    {
+      "caseId": "map-seasonal-breaks-irregular-medium-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 551083,
+      "p90Nanoseconds": 584750,
+      "minimumNanoseconds": 524750,
+      "maximumNanoseconds": 584750
+    },
+    {
+      "caseId": "map-seasonal-breaks-irregular-medium-stan-v2",
+      "phase": "warm-fit-predict-with-conversion",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 1923708,
+      "p90Nanoseconds": 2016917,
+      "minimumNanoseconds": 1484625,
+      "maximumNanoseconds": 2016917
+    },
+    {
+      "caseId": "map-seasonal-breaks-irregular-medium-stan-v2",
+      "phase": "warm-fit-predict-with-conversion",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 13184458,
+      "p90Nanoseconds": 15174041,
+      "minimumNanoseconds": 12671042,
+      "maximumNanoseconds": 15174041
+    },
+    {
+      "caseId": "map-seasonal-breaks-irregular-medium-stan-v2",
+      "phase": "warm-fit-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 1738792,
+      "p90Nanoseconds": 2437000,
+      "minimumNanoseconds": 1563584,
+      "maximumNanoseconds": 2437000
+    },
+    {
+      "caseId": "map-seasonal-breaks-irregular-medium-stan-v2",
+      "phase": "warm-fit-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 12111042,
+      "p90Nanoseconds": 14836250,
+      "minimumNanoseconds": 11813459,
+      "maximumNanoseconds": 14836250
+    },
+    {
+      "caseId": "map-seasonal-breaks-irregular-medium-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 2261750,
+      "p90Nanoseconds": 4094584,
+      "minimumNanoseconds": 1669333,
+      "maximumNanoseconds": 4094584
+    },
+    {
+      "caseId": "map-seasonal-breaks-irregular-medium-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 9549291,
+      "p90Nanoseconds": 9935917,
+      "minimumNanoseconds": 9247375,
+      "maximumNanoseconds": 9935917
+    },
+    {
+      "caseId": "map-seasonal-breaks-irregular-medium-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 312708,
+      "p90Nanoseconds": 324375,
+      "minimumNanoseconds": 291083,
+      "maximumNanoseconds": 324375
+    },
+    {
+      "caseId": "map-seasonal-breaks-irregular-medium-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 6,
+      "medianNanoseconds": 3283875,
+      "p90Nanoseconds": 3425625,
+      "minimumNanoseconds": 3242916,
+      "maximumNanoseconds": 3425625
+    },
+    {
+      "caseId": "map-training-duplicate-features-auto-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 161831584,
+      "p90Nanoseconds": 168681250,
+      "minimumNanoseconds": 153773750,
+      "maximumNanoseconds": 168681250
+    },
+    {
+      "caseId": "map-training-duplicate-features-auto-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 1567314043,
+      "p90Nanoseconds": 1631884293,
+      "minimumNanoseconds": 1559850543,
+      "maximumNanoseconds": 1631884293
+    },
+    {
+      "caseId": "map-training-duplicate-features-auto-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 157667,
+      "p90Nanoseconds": 170667,
+      "minimumNanoseconds": 155500,
+      "maximumNanoseconds": 170667
+    },
+    {
+      "caseId": "map-training-duplicate-features-auto-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 2929625,
+      "p90Nanoseconds": 3155959,
+      "minimumNanoseconds": 2669625,
+      "maximumNanoseconds": 3155959
+    },
+    {
+      "caseId": "map-training-duplicate-features-auto-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 80583,
+      "p90Nanoseconds": 89416,
+      "minimumNanoseconds": 69208,
+      "maximumNanoseconds": 89416
+    },
+    {
+      "caseId": "map-training-duplicate-features-auto-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 644584,
+      "p90Nanoseconds": 929083,
+      "minimumNanoseconds": 548000,
+      "maximumNanoseconds": 929083
+    },
+    {
+      "caseId": "map-training-duplicate-features-auto-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 86822292,
+      "p90Nanoseconds": 89213625,
+      "minimumNanoseconds": 86781417,
+      "maximumNanoseconds": 89213625
+    },
+    {
+      "caseId": "map-training-duplicate-features-auto-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 116096541,
+      "p90Nanoseconds": 153435542,
+      "minimumNanoseconds": 115996500,
+      "maximumNanoseconds": 153435542
+    },
+    {
+      "caseId": "map-training-duplicate-features-auto-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 363500,
+      "p90Nanoseconds": 395500,
+      "minimumNanoseconds": 355791,
+      "maximumNanoseconds": 395500
+    },
+    {
+      "caseId": "map-training-duplicate-features-auto-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 4456166,
+      "p90Nanoseconds": 6982000,
+      "minimumNanoseconds": 4187000,
+      "maximumNanoseconds": 6982000
+    },
+    {
+      "caseId": "map-training-duplicates-auto-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 157122083,
+      "p90Nanoseconds": 161710042,
+      "minimumNanoseconds": 156592167,
+      "maximumNanoseconds": 161710042
+    },
+    {
+      "caseId": "map-training-duplicates-auto-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 1534766876,
+      "p90Nanoseconds": 1594631417,
+      "minimumNanoseconds": 1522942667,
+      "maximumNanoseconds": 1594631417
+    },
+    {
+      "caseId": "map-training-duplicates-auto-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 157917,
+      "p90Nanoseconds": 2014792,
+      "minimumNanoseconds": 140125,
+      "maximumNanoseconds": 2014792
+    },
+    {
+      "caseId": "map-training-duplicates-auto-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 2208750,
+      "p90Nanoseconds": 2249583,
+      "minimumNanoseconds": 2094500,
+      "maximumNanoseconds": 2249583
+    },
+    {
+      "caseId": "map-training-duplicates-auto-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 83208,
+      "p90Nanoseconds": 111708,
+      "minimumNanoseconds": 78458,
+      "maximumNanoseconds": 111708
+    },
+    {
+      "caseId": "map-training-duplicates-auto-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 461333,
+      "p90Nanoseconds": 467750,
+      "minimumNanoseconds": 435542,
+      "maximumNanoseconds": 467750
+    },
+    {
+      "caseId": "map-training-duplicates-auto-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 58012500,
+      "p90Nanoseconds": 60963834,
+      "minimumNanoseconds": 57660125,
+      "maximumNanoseconds": 60963834
+    },
+    {
+      "caseId": "map-training-duplicates-auto-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 89615958,
+      "p90Nanoseconds": 91239000,
+      "minimumNanoseconds": 89104625,
+      "maximumNanoseconds": 91239000
+    },
+    {
+      "caseId": "map-training-duplicates-auto-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 286917,
+      "p90Nanoseconds": 342250,
+      "minimumNanoseconds": 286792,
+      "maximumNanoseconds": 342250
+    },
+    {
+      "caseId": "map-training-duplicates-auto-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 2910500,
+      "p90Nanoseconds": 2975334,
+      "minimumNanoseconds": 2834041,
+      "maximumNanoseconds": 2975334
+    },
+    {
+      "caseId": "map-training-duplicates-explicit-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 164620334,
+      "p90Nanoseconds": 172251125,
+      "minimumNanoseconds": 156576500,
+      "maximumNanoseconds": 172251125
+    },
+    {
+      "caseId": "map-training-duplicates-explicit-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 1478074750,
+      "p90Nanoseconds": 1512895084,
+      "minimumNanoseconds": 1455466209,
+      "maximumNanoseconds": 1512895084
+    },
+    {
+      "caseId": "map-training-duplicates-explicit-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 145125,
+      "p90Nanoseconds": 206375,
+      "minimumNanoseconds": 124250,
+      "maximumNanoseconds": 206375
+    },
+    {
+      "caseId": "map-training-duplicates-explicit-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 2144875,
+      "p90Nanoseconds": 2244458,
+      "minimumNanoseconds": 2091917,
+      "maximumNanoseconds": 2244458
+    },
+    {
+      "caseId": "map-training-duplicates-explicit-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 66500,
+      "p90Nanoseconds": 88375,
+      "minimumNanoseconds": 55792,
+      "maximumNanoseconds": 88375
+    },
+    {
+      "caseId": "map-training-duplicates-explicit-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 436208,
+      "p90Nanoseconds": 465708,
+      "minimumNanoseconds": 429458,
+      "maximumNanoseconds": 465708
+    },
+    {
+      "caseId": "map-training-duplicates-explicit-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 3157792,
+      "p90Nanoseconds": 3213916,
+      "minimumNanoseconds": 2869750,
+      "maximumNanoseconds": 3213916
+    },
+    {
+      "caseId": "map-training-duplicates-explicit-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 21250333,
+      "p90Nanoseconds": 22595791,
+      "minimumNanoseconds": 20867041,
+      "maximumNanoseconds": 22595791
+    },
+    {
+      "caseId": "map-training-duplicates-explicit-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 272959,
+      "p90Nanoseconds": 299459,
+      "minimumNanoseconds": 212500,
+      "maximumNanoseconds": 299459
+    },
+    {
+      "caseId": "map-training-duplicates-explicit-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 2874291,
+      "p90Nanoseconds": 2973750,
+      "minimumNanoseconds": 2785042,
+      "maximumNanoseconds": 2973750
+    },
+    {
+      "caseId": "map-training-ordered-auto-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 162058917,
+      "p90Nanoseconds": 167957667,
+      "minimumNanoseconds": 153419125,
+      "maximumNanoseconds": 167957667
+    },
+    {
+      "caseId": "map-training-ordered-auto-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 1583751501,
+      "p90Nanoseconds": 1597058626,
+      "minimumNanoseconds": 1559378542,
+      "maximumNanoseconds": 1597058626
+    },
+    {
+      "caseId": "map-training-ordered-auto-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 157417,
+      "p90Nanoseconds": 2697709,
+      "minimumNanoseconds": 135291,
+      "maximumNanoseconds": 2697709
+    },
+    {
+      "caseId": "map-training-ordered-auto-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 2259709,
+      "p90Nanoseconds": 2645458,
+      "minimumNanoseconds": 2198083,
+      "maximumNanoseconds": 2645458
+    },
+    {
+      "caseId": "map-training-ordered-auto-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 75208,
+      "p90Nanoseconds": 100125,
+      "minimumNanoseconds": 73375,
+      "maximumNanoseconds": 100125
+    },
+    {
+      "caseId": "map-training-ordered-auto-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 496459,
+      "p90Nanoseconds": 579583,
+      "minimumNanoseconds": 474291,
+      "maximumNanoseconds": 579583
+    },
+    {
+      "caseId": "map-training-ordered-auto-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 72532916,
+      "p90Nanoseconds": 75962500,
+      "minimumNanoseconds": 68808708,
+      "maximumNanoseconds": 75962500
+    },
+    {
+      "caseId": "map-training-ordered-auto-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 112112250,
+      "p90Nanoseconds": 114059709,
+      "minimumNanoseconds": 111740834,
+      "maximumNanoseconds": 114059709
+    },
+    {
+      "caseId": "map-training-ordered-auto-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 266375,
+      "p90Nanoseconds": 459541,
+      "minimumNanoseconds": 245083,
+      "maximumNanoseconds": 459541
+    },
+    {
+      "caseId": "map-training-ordered-auto-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 3435833,
+      "p90Nanoseconds": 3711792,
+      "minimumNanoseconds": 2884959,
+      "maximumNanoseconds": 3711792
+    },
+    {
+      "caseId": "map-training-ordered-explicit-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 156210083,
+      "p90Nanoseconds": 157802375,
+      "minimumNanoseconds": 150824709,
+      "maximumNanoseconds": 157802375
+    },
+    {
+      "caseId": "map-training-ordered-explicit-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 1563899376,
+      "p90Nanoseconds": 1606321126,
+      "minimumNanoseconds": 1563366584,
+      "maximumNanoseconds": 1606321126
+    },
+    {
+      "caseId": "map-training-ordered-explicit-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 141416,
+      "p90Nanoseconds": 182042,
+      "minimumNanoseconds": 135291,
+      "maximumNanoseconds": 182042
+    },
+    {
+      "caseId": "map-training-ordered-explicit-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 2273083,
+      "p90Nanoseconds": 5246333,
+      "minimumNanoseconds": 2250708,
+      "maximumNanoseconds": 5246333
+    },
+    {
+      "caseId": "map-training-ordered-explicit-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 57667,
+      "p90Nanoseconds": 67250,
+      "minimumNanoseconds": 53625,
+      "maximumNanoseconds": 67250
+    },
+    {
+      "caseId": "map-training-ordered-explicit-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 437542,
+      "p90Nanoseconds": 446958,
+      "minimumNanoseconds": 433625,
+      "maximumNanoseconds": 446958
+    },
+    {
+      "caseId": "map-training-ordered-explicit-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 3104542,
+      "p90Nanoseconds": 3154458,
+      "minimumNanoseconds": 3065208,
+      "maximumNanoseconds": 3154458
+    },
+    {
+      "caseId": "map-training-ordered-explicit-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 23163416,
+      "p90Nanoseconds": 24480583,
+      "minimumNanoseconds": 21709875,
+      "maximumNanoseconds": 24480583
+    },
+    {
+      "caseId": "map-training-ordered-explicit-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 244458,
+      "p90Nanoseconds": 479542,
+      "minimumNanoseconds": 237833,
+      "maximumNanoseconds": 479542
+    },
+    {
+      "caseId": "map-training-ordered-explicit-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 2951625,
+      "p90Nanoseconds": 3056542,
+      "minimumNanoseconds": 2821750,
+      "maximumNanoseconds": 3056542
+    },
+    {
+      "caseId": "map-training-unsorted-auto-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 163609958,
+      "p90Nanoseconds": 177118917,
+      "minimumNanoseconds": 159950583,
+      "maximumNanoseconds": 177118917
+    },
+    {
+      "caseId": "map-training-unsorted-auto-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 1498628126,
+      "p90Nanoseconds": 1529899876,
+      "minimumNanoseconds": 1436108375,
+      "maximumNanoseconds": 1529899876
+    },
+    {
+      "caseId": "map-training-unsorted-auto-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 177709,
+      "p90Nanoseconds": 2229792,
+      "minimumNanoseconds": 146500,
+      "maximumNanoseconds": 2229792
+    },
+    {
+      "caseId": "map-training-unsorted-auto-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 2281042,
+      "p90Nanoseconds": 2398708,
+      "minimumNanoseconds": 2236667,
+      "maximumNanoseconds": 2398708
+    },
+    {
+      "caseId": "map-training-unsorted-auto-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 111584,
+      "p90Nanoseconds": 134875,
+      "minimumNanoseconds": 74041,
+      "maximumNanoseconds": 134875
+    },
+    {
+      "caseId": "map-training-unsorted-auto-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 469625,
+      "p90Nanoseconds": 517375,
+      "minimumNanoseconds": 454625,
+      "maximumNanoseconds": 517375
+    },
+    {
+      "caseId": "map-training-unsorted-auto-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 73530625,
+      "p90Nanoseconds": 78852375,
+      "minimumNanoseconds": 72005666,
+      "maximumNanoseconds": 78852375
+    },
+    {
+      "caseId": "map-training-unsorted-auto-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 113992125,
+      "p90Nanoseconds": 114430583,
+      "minimumNanoseconds": 113303417,
+      "maximumNanoseconds": 114430583
+    },
+    {
+      "caseId": "map-training-unsorted-auto-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 264542,
+      "p90Nanoseconds": 367375,
+      "minimumNanoseconds": 257042,
+      "maximumNanoseconds": 367375
+    },
+    {
+      "caseId": "map-training-unsorted-auto-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 2938958,
+      "p90Nanoseconds": 3026625,
+      "minimumNanoseconds": 2844083,
+      "maximumNanoseconds": 3026625
+    },
+    {
+      "caseId": "map-training-unsorted-explicit-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 168791500,
+      "p90Nanoseconds": 240104709,
+      "minimumNanoseconds": 163232292,
+      "maximumNanoseconds": 240104709
+    },
+    {
+      "caseId": "map-training-unsorted-explicit-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 1547087917,
+      "p90Nanoseconds": 1591111667,
+      "minimumNanoseconds": 1545927084,
+      "maximumNanoseconds": 1591111667
+    },
+    {
+      "caseId": "map-training-unsorted-explicit-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 148167,
+      "p90Nanoseconds": 181584,
+      "minimumNanoseconds": 138709,
+      "maximumNanoseconds": 181584
+    },
+    {
+      "caseId": "map-training-unsorted-explicit-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 2381458,
+      "p90Nanoseconds": 2663834,
+      "minimumNanoseconds": 2205250,
+      "maximumNanoseconds": 2663834
+    },
+    {
+      "caseId": "map-training-unsorted-explicit-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 54916,
+      "p90Nanoseconds": 90041,
+      "minimumNanoseconds": 51000,
+      "maximumNanoseconds": 90041
+    },
+    {
+      "caseId": "map-training-unsorted-explicit-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 462000,
+      "p90Nanoseconds": 636875,
+      "minimumNanoseconds": 442583,
+      "maximumNanoseconds": 636875
+    },
+    {
+      "caseId": "map-training-unsorted-explicit-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 3332750,
+      "p90Nanoseconds": 5807125,
+      "minimumNanoseconds": 3315584,
+      "maximumNanoseconds": 5807125
+    },
+    {
+      "caseId": "map-training-unsorted-explicit-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 23627333,
+      "p90Nanoseconds": 23937750,
+      "minimumNanoseconds": 22933667,
+      "maximumNanoseconds": 23937750
+    },
+    {
+      "caseId": "map-training-unsorted-explicit-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 292250,
+      "p90Nanoseconds": 400958,
+      "minimumNanoseconds": 288208,
+      "maximumNanoseconds": 400958
+    },
+    {
+      "caseId": "map-training-unsorted-explicit-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 2954667,
+      "p90Nanoseconds": 3752750,
+      "minimumNanoseconds": 2891250,
+      "maximumNanoseconds": 3752750
+    },
+    {
+      "caseId": "map-training-zero-span-flat-constant-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 171077750,
+      "p90Nanoseconds": 183457833,
+      "minimumNanoseconds": 166509666,
+      "maximumNanoseconds": 183457833
+    },
+    {
+      "caseId": "map-training-zero-span-flat-constant-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 1443352709,
+      "p90Nanoseconds": 1455772375,
+      "minimumNanoseconds": 1430786584,
+      "maximumNanoseconds": 1455772375
+    },
+    {
+      "caseId": "map-training-zero-span-flat-constant-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 110708,
+      "p90Nanoseconds": 155958,
+      "minimumNanoseconds": 109083,
+      "maximumNanoseconds": 155958
+    },
+    {
+      "caseId": "map-training-zero-span-flat-constant-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 1941792,
+      "p90Nanoseconds": 2076791,
+      "minimumNanoseconds": 1871625,
+      "maximumNanoseconds": 2076791
+    },
+    {
+      "caseId": "map-training-zero-span-flat-constant-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 44250,
+      "p90Nanoseconds": 45292,
+      "minimumNanoseconds": 37917,
+      "maximumNanoseconds": 45292
+    },
+    {
+      "caseId": "map-training-zero-span-flat-constant-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 332250,
+      "p90Nanoseconds": 339333,
+      "minimumNanoseconds": 327208,
+      "maximumNanoseconds": 339333
+    },
+    {
+      "caseId": "map-training-zero-span-flat-constant-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 482834,
+      "p90Nanoseconds": 526125,
+      "minimumNanoseconds": 473583,
+      "maximumNanoseconds": 526125
+    },
+    {
+      "caseId": "map-training-zero-span-flat-constant-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 2991250,
+      "p90Nanoseconds": 3212292,
+      "minimumNanoseconds": 2888250,
+      "maximumNanoseconds": 3212292
+    },
+    {
+      "caseId": "map-training-zero-span-flat-constant-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 180417,
+      "p90Nanoseconds": 230750,
+      "minimumNanoseconds": 166667,
+      "maximumNanoseconds": 230750
+    },
+    {
+      "caseId": "map-training-zero-span-flat-constant-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 2686750,
+      "p90Nanoseconds": 3172333,
+      "minimumNanoseconds": 2631209,
+      "maximumNanoseconds": 3172333
+    },
+    {
+      "caseId": "map-training-zero-span-flat-varied-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 177633792,
+      "p90Nanoseconds": 192112875,
+      "minimumNanoseconds": 168739792,
+      "maximumNanoseconds": 192112875
+    },
+    {
+      "caseId": "map-training-zero-span-flat-varied-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 1444293376,
+      "p90Nanoseconds": 1520889125,
+      "minimumNanoseconds": 1442998334,
+      "maximumNanoseconds": 1520889125
+    },
+    {
+      "caseId": "map-training-zero-span-flat-varied-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 104916,
+      "p90Nanoseconds": 132958,
+      "minimumNanoseconds": 101750,
+      "maximumNanoseconds": 132958
+    },
+    {
+      "caseId": "map-training-zero-span-flat-varied-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 2015750,
+      "p90Nanoseconds": 2060666,
+      "minimumNanoseconds": 2009625,
+      "maximumNanoseconds": 2060666
+    },
+    {
+      "caseId": "map-training-zero-span-flat-varied-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 39542,
+      "p90Nanoseconds": 42333,
+      "minimumNanoseconds": 39541,
+      "maximumNanoseconds": 42333
+    },
+    {
+      "caseId": "map-training-zero-span-flat-varied-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 344250,
+      "p90Nanoseconds": 366250,
+      "minimumNanoseconds": 342125,
+      "maximumNanoseconds": 366250
+    },
+    {
+      "caseId": "map-training-zero-span-flat-varied-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 550250,
+      "p90Nanoseconds": 554750,
+      "minimumNanoseconds": 484334,
+      "maximumNanoseconds": 554750
+    },
+    {
+      "caseId": "map-training-zero-span-flat-varied-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 6175708,
+      "p90Nanoseconds": 6734416,
+      "minimumNanoseconds": 6042250,
+      "maximumNanoseconds": 6734416
+    },
+    {
+      "caseId": "map-training-zero-span-flat-varied-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 159542,
+      "p90Nanoseconds": 159917,
+      "minimumNanoseconds": 156334,
+      "maximumNanoseconds": 159917
+    },
+    {
+      "caseId": "map-training-zero-span-flat-varied-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 2885250,
+      "p90Nanoseconds": 3021208,
+      "minimumNanoseconds": 2854750,
+      "maximumNanoseconds": 3021208
+    },
+    {
+      "caseId": "uncertainty-training-duplicates-auto-stan-v2",
+      "phase": "fresh-process-restored-uncertainty",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 187492501,
+      "p90Nanoseconds": 189102917,
+      "minimumNanoseconds": 175648291,
+      "maximumNanoseconds": 189102917
+    },
+    {
+      "caseId": "uncertainty-training-duplicates-auto-stan-v2",
+      "phase": "fresh-process-restored-uncertainty",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 1519939793,
+      "p90Nanoseconds": 1525278834,
+      "minimumNanoseconds": 1478391042,
+      "maximumNanoseconds": 1525278834
+    },
+    {
+      "caseId": "uncertainty-training-duplicates-auto-stan-v2",
+      "phase": "warm-uncertainty",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 144642048,
+      "sampleCount": 4,
+      "medianNanoseconds": 731417,
+      "p90Nanoseconds": 1130875,
+      "minimumNanoseconds": 592542,
+      "maximumNanoseconds": 1130875
+    },
+    {
+      "caseId": "uncertainty-training-duplicates-auto-stan-v2",
+      "phase": "warm-uncertainty",
+      "implementation": "python-prophet",
+      "peakRssBytes": 123645952,
+      "sampleCount": 4,
+      "medianNanoseconds": 18014666,
+      "p90Nanoseconds": 19016084,
+      "minimumNanoseconds": 17717292,
+      "maximumNanoseconds": 19016084
+    }
+  ],
+  "stationarity": [
+    {
+      "caseId": "map-explicit-break-small-stan-v2",
+      "run": 0,
+      "effectResidual": 0.030707962385813053,
+      "pythonResidual": 0.030707962442757464,
+      "absoluteDifference": 5.694441099213243e-11,
+      "policy": "diagnostic-only",
+      "followUp": "EP-097"
+    },
+    {
+      "caseId": "map-explicit-break-small-stan-v2",
+      "run": 1,
+      "effectResidual": 0.030707962385813053,
+      "pythonResidual": 0.030707962442757464,
+      "absoluteDifference": 5.694441099213243e-11,
+      "policy": "diagnostic-only",
+      "followUp": "EP-097"
+    },
+    {
+      "caseId": "map-seasonal-breaks-irregular-medium-stan-v2",
+      "run": 0,
+      "effectResidual": 12.012791597488636,
+      "pythonResidual": 12.517006324788353,
+      "absoluteDifference": 0.5042147272997166,
+      "policy": "diagnostic-only",
+      "followUp": "EP-097"
+    },
+    {
+      "caseId": "map-seasonal-breaks-irregular-medium-stan-v2",
+      "run": 1,
+      "effectResidual": 12.012791597488636,
+      "pythonResidual": 12.517006324788353,
+      "absoluteDifference": 0.5042147272997166,
+      "policy": "diagnostic-only",
+      "followUp": "EP-097"
+    },
+    {
+      "caseId": "map-events-small-stan-v2",
+      "run": 0,
+      "effectResidual": 0.16626523251532319,
+      "pythonResidual": 0.16626522888489756,
+      "absoluteDifference": 3.6304256267882806e-9,
+      "policy": "diagnostic-only",
+      "followUp": "EP-097"
+    },
+    {
+      "caseId": "map-events-small-stan-v2",
+      "run": 1,
+      "effectResidual": 0.16626523251532319,
+      "pythonResidual": 0.16626522888489756,
+      "absoluteDifference": 3.6304256267882806e-9,
+      "policy": "diagnostic-only",
+      "followUp": "EP-097"
+    },
+    {
+      "caseId": "map-regressors-medium-stan-v2",
+      "run": 0,
+      "effectResidual": 22.68413586476203,
+      "pythonResidual": 35.24344636648108,
+      "absoluteDifference": 12.55931050171905,
+      "policy": "diagnostic-only",
+      "followUp": "EP-097"
+    },
+    {
+      "caseId": "map-regressors-medium-stan-v2",
+      "run": 1,
+      "effectResidual": 22.68413586476203,
+      "pythonResidual": 35.24344636648108,
+      "absoluteDifference": 12.55931050171905,
+      "policy": "diagnostic-only",
+      "followUp": "EP-097"
+    },
+    {
+      "caseId": "map-conditional-seasonalities-medium-stan-v2",
+      "run": 0,
+      "effectResidual": 20.98280971219437,
+      "pythonResidual": 6.11129975157155,
+      "absoluteDifference": 14.87150996062282,
+      "policy": "diagnostic-only",
+      "followUp": "EP-097"
+    },
+    {
+      "caseId": "map-conditional-seasonalities-medium-stan-v2",
+      "run": 1,
+      "effectResidual": 20.98280971219437,
+      "pythonResidual": 6.11129975157155,
+      "absoluteDifference": 14.87150996062282,
+      "policy": "diagnostic-only",
+      "followUp": "EP-097"
+    },
+    {
+      "caseId": "map-mixed-features-explicit-small-stan-v2",
+      "run": 0,
+      "effectResidual": 2.5472034702342086,
+      "pythonResidual": 2.54720346832,
+      "absoluteDifference": 1.914208347386648e-9,
+      "policy": "diagnostic-only",
+      "followUp": "EP-097"
+    },
+    {
+      "caseId": "map-mixed-features-explicit-small-stan-v2",
+      "run": 1,
+      "effectResidual": 2.5472034702342086,
+      "pythonResidual": 2.54720346832,
+      "absoluteDifference": 1.914208347386648e-9,
+      "policy": "diagnostic-only",
+      "followUp": "EP-097"
+    },
+    {
+      "caseId": "map-mixed-features-automatic-large-stan-v2",
+      "run": 0,
+      "effectResidual": 176.1730863384182,
+      "pythonResidual": 173.4560359621238,
+      "absoluteDifference": 2.717050376294395,
+      "policy": "diagnostic-only",
+      "followUp": "EP-097"
+    },
+    {
+      "caseId": "map-mixed-features-automatic-large-stan-v2",
+      "run": 1,
+      "effectResidual": 176.1730863384182,
+      "pythonResidual": 173.4560359621238,
+      "absoluteDifference": 2.717050376294395,
+      "policy": "diagnostic-only",
+      "followUp": "EP-097"
+    },
+    {
+      "caseId": "map-training-ordered-explicit-stan-v2",
+      "run": 0,
+      "effectResidual": 2.1410869217324087,
+      "pythonResidual": 2.141086922661989,
+      "absoluteDifference": 9.295804126452367e-10,
+      "policy": "diagnostic-only",
+      "followUp": "EP-097"
+    },
+    {
+      "caseId": "map-training-ordered-explicit-stan-v2",
+      "run": 1,
+      "effectResidual": 2.1410869217324087,
+      "pythonResidual": 2.141086922661989,
+      "absoluteDifference": 9.295804126452367e-10,
+      "policy": "diagnostic-only",
+      "followUp": "EP-097"
+    },
+    {
+      "caseId": "map-training-ordered-auto-stan-v2",
+      "run": 0,
+      "effectResidual": 161.28721960319604,
+      "pythonResidual": 161.26635220242238,
+      "absoluteDifference": 0.020867400773653344,
+      "policy": "diagnostic-only",
+      "followUp": "EP-097"
+    },
+    {
+      "caseId": "map-training-ordered-auto-stan-v2",
+      "run": 1,
+      "effectResidual": 161.28721960319604,
+      "pythonResidual": 161.26635220242238,
+      "absoluteDifference": 0.020867400773653344,
+      "policy": "diagnostic-only",
+      "followUp": "EP-097"
+    },
+    {
+      "caseId": "map-training-unsorted-explicit-stan-v2",
+      "run": 0,
+      "effectResidual": 2.1410869217324087,
+      "pythonResidual": 2.141086922661989,
+      "absoluteDifference": 9.295804126452367e-10,
+      "policy": "diagnostic-only",
+      "followUp": "EP-097"
+    },
+    {
+      "caseId": "map-training-unsorted-explicit-stan-v2",
+      "run": 1,
+      "effectResidual": 2.1410869217324087,
+      "pythonResidual": 2.141086922661989,
+      "absoluteDifference": 9.295804126452367e-10,
+      "policy": "diagnostic-only",
+      "followUp": "EP-097"
+    },
+    {
+      "caseId": "map-training-unsorted-auto-stan-v2",
+      "run": 0,
+      "effectResidual": 161.28721960319604,
+      "pythonResidual": 161.26635220242238,
+      "absoluteDifference": 0.020867400773653344,
+      "policy": "diagnostic-only",
+      "followUp": "EP-097"
+    },
+    {
+      "caseId": "map-training-unsorted-auto-stan-v2",
+      "run": 1,
+      "effectResidual": 161.28721960319604,
+      "pythonResidual": 161.26635220242238,
+      "absoluteDifference": 0.020867400773653344,
+      "policy": "diagnostic-only",
+      "followUp": "EP-097"
+    },
+    {
+      "caseId": "map-training-duplicates-explicit-stan-v2",
+      "run": 0,
+      "effectResidual": 1.0440636703857054,
+      "pythonResidual": 1.0440636201797155,
+      "absoluteDifference": 5.020598980998159e-8,
+      "policy": "diagnostic-only",
+      "followUp": "EP-097"
+    },
+    {
+      "caseId": "map-training-duplicates-explicit-stan-v2",
+      "run": 1,
+      "effectResidual": 1.0440636703857054,
+      "pythonResidual": 1.0440636201797155,
+      "absoluteDifference": 5.020598980998159e-8,
+      "policy": "diagnostic-only",
+      "followUp": "EP-097"
+    },
+    {
+      "caseId": "map-training-duplicates-auto-stan-v2",
+      "run": 0,
+      "effectResidual": 27.246047642201034,
+      "pythonResidual": 107.22973805659862,
+      "absoluteDifference": 79.98369041439759,
+      "policy": "diagnostic-only",
+      "followUp": "EP-097"
+    },
+    {
+      "caseId": "map-training-duplicates-auto-stan-v2",
+      "run": 1,
+      "effectResidual": 27.246047642201034,
+      "pythonResidual": 107.22973805659862,
+      "absoluteDifference": 79.98369041439759,
+      "policy": "diagnostic-only",
+      "followUp": "EP-097"
+    },
+    {
+      "caseId": "map-training-duplicate-features-auto-stan-v2",
+      "run": 0,
+      "effectResidual": 29.074995626119495,
+      "pythonResidual": 107.58109325933385,
+      "absoluteDifference": 78.50609763321435,
+      "policy": "diagnostic-only",
+      "followUp": "EP-097"
+    },
+    {
+      "caseId": "map-training-duplicate-features-auto-stan-v2",
+      "run": 1,
+      "effectResidual": 29.074995626119495,
+      "pythonResidual": 107.58109325933385,
+      "absoluteDifference": 78.50609763321435,
+      "policy": "diagnostic-only",
+      "followUp": "EP-097"
+    },
+    {
+      "caseId": "uncertainty-training-duplicates-auto-stan-v2",
+      "run": 0,
+      "effectResidual": 27.246047642201034,
+      "pythonResidual": 107.22973805659862,
+      "absoluteDifference": 79.98369041439759,
+      "policy": "diagnostic-only",
+      "followUp": "EP-097"
+    },
+    {
+      "caseId": "uncertainty-training-duplicates-auto-stan-v2",
+      "run": 1,
+      "effectResidual": 27.246047642201034,
+      "pythonResidual": 107.22973805659862,
+      "absoluteDifference": 79.98369041439759,
+      "policy": "diagnostic-only",
+      "followUp": "EP-097"
+    },
+    {
+      "caseId": "linear-offset-scaling-absmax-stan-v2",
+      "run": 0,
+      "effectResidual": 5.840638354447039,
+      "pythonResidual": 5.84063833174957,
+      "absoluteDifference": 2.2697468793353437e-8,
+      "policy": "diagnostic-only",
+      "followUp": "EP-097"
+    },
+    {
+      "caseId": "linear-offset-scaling-absmax-stan-v2",
+      "run": 1,
+      "effectResidual": 5.840638354447039,
+      "pythonResidual": 5.84063833174957,
+      "absoluteDifference": 2.2697468793353437e-8,
+      "policy": "diagnostic-only",
+      "followUp": "EP-097"
+    },
+    {
+      "caseId": "linear-offset-scaling-minmax-stan-v2",
+      "run": 0,
+      "effectResidual": 0.44433572132523935,
+      "pythonResidual": 0.44433569892504005,
+      "absoluteDifference": 2.240019930654924e-8,
+      "policy": "diagnostic-only",
+      "followUp": "EP-097"
+    },
+    {
+      "caseId": "linear-offset-scaling-minmax-stan-v2",
+      "run": 1,
+      "effectResidual": 0.44433572132523935,
+      "pythonResidual": 0.44433569892504005,
+      "absoluteDifference": 2.240019930654924e-8,
+      "policy": "diagnostic-only",
+      "followUp": "EP-097"
+    },
+    {
+      "caseId": "linear-mixed-components-stan-v2",
+      "run": 0,
+      "effectResidual": 3.489483919136166,
+      "pythonResidual": 3.489839321098171,
+      "absoluteDifference": 0.0003554019620048976,
+      "policy": "diagnostic-only",
+      "followUp": "EP-097"
+    },
+    {
+      "caseId": "linear-mixed-components-stan-v2",
+      "run": 1,
+      "effectResidual": 3.489483919136166,
+      "pythonResidual": 3.489839321098171,
+      "absoluteDifference": 0.0003554019620048976,
+      "policy": "diagnostic-only",
+      "followUp": "EP-097"
+    }
+  ],
+  "workloads": [
+    {
+      "id": "uncertainty-training-duplicates-auto-stan-v2",
+      "dataset": "generated/training-duplicates.json",
+      "identity": {
+        "recipe": "training-duplicates-v1:n=96:h=8:stable-reverse-source:quadruplicate=true:bounded-row-noise",
+        "sha256": "4cb336b1befb59c6e212152cf9f292da82dca61867da485e29840acad55a2926",
+        "trainingRows": 96,
+        "predictionRows": 8,
+        "futureRows": 8,
+        "horizonDays": 8
+      },
+      "samples": 128,
+      "output": "samples",
+      "evidence": "docs/validation/uncertainty.md",
+      "samplerMemoryLimitBytes": 33554432,
+      "featureColumns": 0,
+      "changepoints": 25
+    }
+  ],
+  "evaluations": [
+    {
+      "id": "evaluation-training-duplicates-stan-v2",
+      "dataset": "generated/training-duplicates.json",
+      "identity": {
+        "recipe": "training-duplicates-v1:n=96:h=8:stable-reverse-source:quadruplicate=true:bounded-row-noise",
+        "sha256": "4cb336b1befb59c6e212152cf9f292da82dca61867da485e29840acad55a2926",
+        "trainingRows": 96,
+        "predictionRows": 8,
+        "futureRows": 8,
+        "horizonDays": 8
+      },
+      "growth": "linear",
+      "foldCount": 2,
+      "trainingRows": 148,
+      "assessmentRows": 24,
+      "candidates": 1,
+      "samples": 0,
+      "metricAggregation": "overall",
+      "mapeZeroActual": "exclude",
+      "candidateOptionsHashes": [
+        "bb5b9efec3c622df6564bc5d4595789a6c4a12fc424a13f2d1e6bc9a64aa6790"
+      ],
+      "featureColumns": 0,
+      "changepoints": 1
+    }
+  ],
+  "failures": [
+    {
+      "caseId": "map-training-zero-span-linear-varied-stan-v2",
+      "implementation": "effect-prophet",
+      "run": 0,
+      "stage": "correctness",
+      "message": "FittingError: Linear MAP fitting requires a positive training time range [reason=degenerate-observations]"
+    },
+    {
+      "caseId": "map-training-zero-span-linear-varied-stan-v2",
+      "implementation": "effect-prophet",
+      "run": 1,
+      "stage": "correctness",
+      "message": "FittingError: Linear MAP fitting requires a positive training time range [reason=degenerate-observations]"
+    },
+    {
+      "caseId": "map-training-zero-span-linear-constant-stan-v2",
+      "implementation": "effect-prophet",
+      "run": 0,
+      "stage": "correctness",
+      "message": "FittingError: Linear MAP fitting requires a positive training time range [reason=degenerate-observations]"
+    },
+    {
+      "caseId": "map-training-zero-span-linear-constant-stan-v2",
+      "implementation": "effect-prophet",
+      "run": 1,
+      "stage": "correctness",
+      "message": "FittingError: Linear MAP fitting requires a positive training time range [reason=degenerate-observations]"
+    },
+    {
+      "caseId": "map-training-zero-span-linear-varied-stan-v2",
+      "implementation": "python-prophet",
+      "run": 0,
+      "stage": "correctness",
+      "message": "Importing plotly failed. Interactive plots will not work.\n04:33:54 - cmdstanpy - INFO - Chain [1] start processing\n04:33:54 - cmdstanpy - INFO - Chain [1] done processing\n04:33:54 - cmdstanpy - ERROR - Chain [1] error: code '1' Operation not permitted\nRuntimeError: Error during optimization! Command '/opt/effect-prophet-benchmark/lib/python3.12/site-packages/prophet/stan_model/prophet_model.bin random seed=41416 data file=/tmp/tmpy3q6e1bn/32qoruun.json init=/tmp/tmpy3q6e1bn/pd25x2xo.json output file=/tmp/tmpy3q6e1bn/prophet_modelblvs85ki/prophet_model-20261002043354.csv sig_figs=12 method=optimize algorithm=newton iter=10000' failed: console log output:\n\nmethod = optimize\n  optimize\n    algorithm = newton\n      newton\n    jacobian = false (Default)\n    iter = 10000\n    save_iterations = false (Default)\nid = 1 (Default)\ndata\n  file = /tmp/tmpy3q6e1bn/32qoruun.json\ninit = /tmp/tmpy3q6e1bn/pd25x2xo.json\nrandom\n  seed = 41416\noutput\n  file = /tmp/tmpy3q6e1bn/prophet_modelblvs85ki/prophet_model-20261002043354.csv\n  diagnostic_file =  (Default)\n  refresh = 100 (Default)\n  sig_figs = 12\n  profile_file = profile.csv (Default)\n  save_cmdstan_config = false (Default)\nnum_threads = 1 (Default)\n\nRejecting initial value:\n  Error evaluating the log probability at the initial value.\nException: normal_lpdf: Random variable is nan, but must be not nan! (in 'prophet.stan', line 130, column 2 to column 19)\n\nUser-specified initialization failed.\n Try specifying new initial values, using partially specialized initialization, reducing the range of constrained values, or reparameterizing the model.\nInitialization failed.\n\nTraceback (most recent call last):\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 1131, in <module>\n    main()\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 1108, in main\n    f\"{json.dumps(run_worker(sys.argv[2], int(sys.argv[3]), stage))}\"\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 875, in run_worker\n    else correctness_projection(benchmark_case, dataset, run))\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 671, in correctness_projection\n    model = setup_model(training, benchmark_case)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 254, in setup_model\n    return fit_model(training, benchmark_case)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 211, in fit_model\n    return model.fit(\n           ^^^^^^^^^^\n  File \"/opt/effect-prophet-benchmark/lib/python3.12/site-packages/prophet/forecaster.py\", line 1442, in fit\n    self.params = stan_backend.fit(stan_init, dat, **kwargs)\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/effect-prophet-benchmark/lib/python3.12/site-packages/prophet/models.py\", line 169, in fit\n    raise e\n  File \"/opt/effect-prophet-benchmark/lib/python3.12/site-packages/prophet/models.py\", line 165, in fit\n    self.stan_fit = self.model.optimize(**args)\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/effect-prophet-benchmark/lib/python3.12/site-packages/cmdstanpy/model.py\", line 658, in optimize\n    raise RuntimeError(msg)\nRuntimeError: Error during optimization! Command '/opt/effect-prophet-benchmark/lib/python3.12/site-packages/prophet/stan_model/prophet_model.bin random seed=41416 data file=/tmp/tmpy3q6e1bn/32qoruun.json init=/tmp/tmpy3q6e1bn/pd25x2xo.json output file=/tmp/tmpy3q6e1bn/prophet_modelblvs85ki/prophet_model-20261002043354.csv sig_figs=12 method=optimize algorithm=newton iter=10000' failed: console log output:\n\nmethod = optimize\n  optimize\n    algorithm = newton\n      newton\n    jacobian = false (Default)\n    iter = 10000\n    save_iterations = false (Default)\nid = 1 (Default)\ndata\n  file = /tmp/tmpy3q6e1bn/32qoruun.json\ninit = /tmp/tmpy3q6e"
+    },
+    {
+      "caseId": "map-training-zero-span-linear-varied-stan-v2",
+      "implementation": "python-prophet",
+      "run": 1,
+      "stage": "correctness",
+      "message": "Importing plotly failed. Interactive plots will not work.\n04:33:55 - cmdstanpy - INFO - Chain [1] start processing\n04:33:55 - cmdstanpy - INFO - Chain [1] done processing\n04:33:55 - cmdstanpy - ERROR - Chain [1] error: code '1' Operation not permitted\nRuntimeError: Error during optimization! Command '/opt/effect-prophet-benchmark/lib/python3.12/site-packages/prophet/stan_model/prophet_model.bin random seed=6164 data file=/tmp/tmp_7gpgwj8/xdl3w10b.json init=/tmp/tmp_7gpgwj8/r85hg14b.json output file=/tmp/tmp_7gpgwj8/prophet_modelur8uvz65/prophet_model-20261002043355.csv sig_figs=12 method=optimize algorithm=newton iter=10000' failed: console log output:\n\nmethod = optimize\n  optimize\n    algorithm = newton\n      newton\n    jacobian = false (Default)\n    iter = 10000\n    save_iterations = false (Default)\nid = 1 (Default)\ndata\n  file = /tmp/tmp_7gpgwj8/xdl3w10b.json\ninit = /tmp/tmp_7gpgwj8/r85hg14b.json\nrandom\n  seed = 6164\noutput\n  file = /tmp/tmp_7gpgwj8/prophet_modelur8uvz65/prophet_model-20261002043355.csv\n  diagnostic_file =  (Default)\n  refresh = 100 (Default)\n  sig_figs = 12\n  profile_file = profile.csv (Default)\n  save_cmdstan_config = false (Default)\nnum_threads = 1 (Default)\n\nRejecting initial value:\n  Error evaluating the log probability at the initial value.\nException: normal_lpdf: Random variable is nan, but must be not nan! (in 'prophet.stan', line 130, column 2 to column 19)\n\nUser-specified initialization failed.\n Try specifying new initial values, using partially specialized initialization, reducing the range of constrained values, or reparameterizing the model.\nInitialization failed.\n\nTraceback (most recent call last):\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 1131, in <module>\n    main()\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 1108, in main\n    f\"{json.dumps(run_worker(sys.argv[2], int(sys.argv[3]), stage))}\"\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 875, in run_worker\n    else correctness_projection(benchmark_case, dataset, run))\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 671, in correctness_projection\n    model = setup_model(training, benchmark_case)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 254, in setup_model\n    return fit_model(training, benchmark_case)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 211, in fit_model\n    return model.fit(\n           ^^^^^^^^^^\n  File \"/opt/effect-prophet-benchmark/lib/python3.12/site-packages/prophet/forecaster.py\", line 1442, in fit\n    self.params = stan_backend.fit(stan_init, dat, **kwargs)\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/effect-prophet-benchmark/lib/python3.12/site-packages/prophet/models.py\", line 169, in fit\n    raise e\n  File \"/opt/effect-prophet-benchmark/lib/python3.12/site-packages/prophet/models.py\", line 165, in fit\n    self.stan_fit = self.model.optimize(**args)\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/effect-prophet-benchmark/lib/python3.12/site-packages/cmdstanpy/model.py\", line 658, in optimize\n    raise RuntimeError(msg)\nRuntimeError: Error during optimization! Command '/opt/effect-prophet-benchmark/lib/python3.12/site-packages/prophet/stan_model/prophet_model.bin random seed=6164 data file=/tmp/tmp_7gpgwj8/xdl3w10b.json init=/tmp/tmp_7gpgwj8/r85hg14b.json output file=/tmp/tmp_7gpgwj8/prophet_modelur8uvz65/prophet_model-20261002043355.csv sig_figs=12 method=optimize algorithm=newton iter=10000' failed: console log output:\n\nmethod = optimize\n  optimize\n    algorithm = newton\n      newton\n    jacobian = false (Default)\n    iter = 10000\n    save_iterations = false (Default)\nid = 1 (Default)\ndata\n  file = /tmp/tmp_7gpgwj8/xdl3w10b.json\ninit = /tmp/tmp_7gpgwj8"
+    },
+    {
+      "caseId": "map-training-zero-span-linear-constant-stan-v2",
+      "implementation": "python-prophet",
+      "run": 0,
+      "stage": "correctness",
+      "message": "Importing plotly failed. Interactive plots will not work.\n/opt/effect-prophet-benchmark/lib/python3.12/site-packages/prophet/forecaster.py:1619: RuntimeWarning: Mean of empty slice\n  k = np.nanmean(self.params['k'])\n/opt/effect-prophet-benchmark/lib/python3.12/site-packages/prophet/forecaster.py:1620: RuntimeWarning: Mean of empty slice\n  m = np.nanmean(self.params['m'])\nValueError: Prophet prediction returned a non-finite value\nTraceback (most recent call last):\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 1131, in <module>\n    main()\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 1108, in main\n    f\"{json.dumps(run_worker(sys.argv[2], int(sys.argv[3]), stage))}\"\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 875, in run_worker\n    else correctness_projection(benchmark_case, dataset, run))\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 674, in correctness_projection\n    assert_forecasts(benchmark_case, dataset, projections)\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 342, in assert_forecasts\n    raise ValueError(\"Prophet prediction returned a non-finite value\")\nValueError: Prophet prediction returned a non-finite value"
+    },
+    {
+      "caseId": "map-training-zero-span-linear-constant-stan-v2",
+      "implementation": "python-prophet",
+      "run": 1,
+      "stage": "correctness",
+      "message": "Importing plotly failed. Interactive plots will not work.\n/opt/effect-prophet-benchmark/lib/python3.12/site-packages/prophet/forecaster.py:1619: RuntimeWarning: Mean of empty slice\n  k = np.nanmean(self.params['k'])\n/opt/effect-prophet-benchmark/lib/python3.12/site-packages/prophet/forecaster.py:1620: RuntimeWarning: Mean of empty slice\n  m = np.nanmean(self.params['m'])\nValueError: Prophet prediction returned a non-finite value\nTraceback (most recent call last):\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 1131, in <module>\n    main()\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 1108, in main\n    f\"{json.dumps(run_worker(sys.argv[2], int(sys.argv[3]), stage))}\"\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 875, in run_worker\n    else correctness_projection(benchmark_case, dataset, run))\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 674, in correctness_projection\n    assert_forecasts(benchmark_case, dataset, projections)\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 342, in assert_forecasts\n    raise ValueError(\"Prophet prediction returned a non-finite value\")\nValueError: Prophet prediction returned a non-finite value"
+    }
+  ],
+  "environments": [
+    {
+      "implementation": "effect-prophet",
+      "environment": {
+        "runtime": "node",
+        "runtimeVersion": "v26.7.0",
+        "operatingSystem": "linux 7.0.12-linuxkit",
+        "architecture": "arm64",
+        "processor": "unknown",
+        "containerPlatform": "linux/arm64",
+        "versions": [
+          {
+            "name": "effect-prophet",
+            "value": "0.0.0"
+          },
+          {
+            "name": "effect",
+            "value": "4.0.0-beta.107"
+          },
+          {
+            "name": "rustc",
+            "value": "rustc 1.98.1 (48a229cea 2026-09-01)"
+          },
+          {
+            "name": "wasm-pack",
+            "value": "wasm-pack 0.15.0"
+          },
+          {
+            "name": "wasm-build-profile",
+            "value": "release"
+          }
+        ],
+        "artifactHashes": [
+          {
+            "name": "wasm/prophet_wasm_bg.wasm",
+            "value": "e4baec49d1c324473a5b7a3aa0c6c91ec241debe555316bb1625c1a88c0ae3d1"
+          },
+          {
+            "name": "package-lock.json",
+            "value": "99bda82607c5764a965fc84c4f1c3aeb518b7a1604975e958b3ad63e4887d936"
+          }
+        ],
+        "numericalThreads": [
+          {
+            "name": "OMP_NUM_THREADS",
+            "value": "1"
+          },
+          {
+            "name": "OPENBLAS_NUM_THREADS",
+            "value": "1"
+          },
+          {
+            "name": "MKL_NUM_THREADS",
+            "value": "1"
+          }
+        ],
+        "resources": [
+          {
+            "name": "logical-cpu-count",
+            "value": "4"
+          },
+          {
+            "name": "runtime-total-memory-bytes",
+            "value": "8320299008"
+          },
+          {
+            "name": "cgroup-memory-max",
+            "value": "max"
+          },
+          {
+            "name": "collection-method",
+            "value": "node:os and cgroup-v2"
+          }
+        ],
+        "memoryMeasurement": "warm-uncertainty/evaluation: worker high-water RSS via process.resourceUsage.maxRSS (Linux KiB); includes imports and previous operations; excludes subprocess peaks; heap/WASM-only peaks unavailable; Effect tracing disabled"
+      }
+    },
+    {
+      "implementation": "python-prophet",
+      "environment": {
+        "runtime": "python",
+        "runtimeVersion": "3.12.11",
+        "operatingSystem": "Linux 7.0.12-linuxkit",
+        "architecture": "aarch64",
+        "processor": "unavailable",
+        "containerPlatform": "linux/arm64",
+        "versions": [
+          {
+            "name": "cmdstanpy",
+            "value": "1.3.0"
+          },
+          {
+            "name": "holidays",
+            "value": "0.104"
+          },
+          {
+            "name": "numpy",
+            "value": "2.5.3"
+          },
+          {
+            "name": "pandas",
+            "value": "3.0.5"
+          },
+          {
+            "name": "prophet",
+            "value": "1.4.0"
+          }
+        ],
+        "artifactHashes": [
+          {
+            "name": "benchmark/python/uv.lock",
+            "value": "c90f2464e1d50dbe489bdcdaf8350f04c162f6c617559cfb75d6977b0f430ab1"
+          },
+          {
+            "name": "prophet/stan_model/prophet_model.bin",
+            "value": "faff590e554b6dd4e8c232d2a51c63fe734ae018dd529ee7433a5cdcd86fc54e"
+          }
+        ],
+        "numericalThreads": [
+          {
+            "name": "OMP_NUM_THREADS",
+            "value": "1"
+          },
+          {
+            "name": "OPENBLAS_NUM_THREADS",
+            "value": "1"
+          },
+          {
+            "name": "MKL_NUM_THREADS",
+            "value": "1"
+          }
+        ],
+        "resources": [
+          {
+            "name": "logical-cpu-count",
+            "value": "4"
+          },
+          {
+            "name": "runtime-total-memory-bytes",
+            "value": "8320299008"
+          },
+          {
+            "name": "cgroup-memory-max",
+            "value": "max"
+          },
+          {
+            "name": "collection-method",
+            "value": "python-os and cgroup-v2"
+          }
+        ],
+        "memoryMeasurement": "warm-uncertainty/evaluation: worker high-water RSS via resource.RUSAGE_SELF.ru_maxrss (Linux KiB); includes imports and previous operations; excludes CmdStan fit child and cold subprocesses; heap-only peaks unavailable"
+      }
+    }
+  ]
+}

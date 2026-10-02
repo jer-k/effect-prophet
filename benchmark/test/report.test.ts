@@ -1,7 +1,9 @@
 import { Effect } from "effect";
 import { describe, expect, it } from "vitest";
 
-import { parseBenchmarkCases } from "../case.ts";
+import { parseBenchmarkCases, type BenchmarkCase } from "../case.ts";
+import { linearGrowthEdgeCases } from "../cases/linear-growth/edge-cases.ts";
+import { stanAlignedCases } from "../cases/linear-growth/stan-aligned.ts";
 import { uncertaintyCases } from "../cases/uncertainty.ts";
 import { buildBenchmarkReport, renderBenchmarkMarkdown } from "../report.ts";
 import { parseImplementationResult, parseRunManifest } from "../result.ts";
@@ -107,6 +109,211 @@ const manifestInput = {
   inputHashes: [],
   containerImages: [],
 };
+
+const optimizerCase = stanAlignedCases(linearGrowthEdgeCases).find(
+  (benchmarkCase) => benchmarkCase.id === "map-training-ordered-auto-stan-v2",
+);
+
+const optimizerQualityEntries = [
+  { name: "objective", value: -550.96916 },
+  { name: "stationarity-residual", value: 161.287 },
+  { name: "normalized-noise", value: 0.00182925 },
+];
+
+const optimizerResultInput = (
+  implementation: "effect-prophet" | "python-prophet",
+  fitQuality: ReadonlyArray<{ readonly name: string; readonly value: number }>,
+) => ({
+  ...makeResultInput(implementation, 100),
+  correctness: [{ ...correctness, modelKind: "linear-piecewise-map", noiseScale: 0.2, fitQuality }],
+  measurements: [
+    {
+      ...makeResultInput(implementation, 100).measurements[0],
+      comparison: "equivalent-objective",
+      evidenceId: "linear-stan-map-fit-quality-v3",
+    },
+  ],
+});
+
+const optimizerReport = async (
+  left: ReadonlyArray<{ readonly name: string; readonly value: number }>,
+  right: ReadonlyArray<{ readonly name: string; readonly value: number }>,
+  quality?: BenchmarkCase["optimizerQuality"],
+) => {
+  if (optimizerCase === undefined) throw new Error("Expected frozen automatic linear case");
+
+  const [cases, manifest, effectResult, pythonResult] = await Promise.all([
+    Effect.runPromise(
+      parseBenchmarkCases([
+        {
+          ...optimizerCase,
+          id: "fixed",
+          independentRuns: 1,
+          measuredIterations: 3,
+          phases: ["warm-predict"],
+          optimizerQuality: quality ?? optimizerCase.optimizerQuality,
+        },
+      ]),
+    ),
+    Effect.runPromise(parseRunManifest(manifestInput)),
+    Effect.runPromise(parseImplementationResult(optimizerResultInput("effect-prophet", left))),
+    Effect.runPromise(parseImplementationResult(optimizerResultInput("python-prophet", right))),
+  ]);
+
+  return buildBenchmarkReport(
+    manifest,
+    cases,
+    effectResult,
+    pythonResult,
+    new Set(["linear-stan-map-fit-quality-v3"]),
+  );
+};
+
+describe("linear fit-quality acceptance with deferred stationarity", () => {
+  it("retains unequal residuals in JSON and Markdown without claiming stationarity", async () => {
+    const report = await optimizerReport(
+      optimizerQualityEntries,
+      optimizerQualityEntries.map((entry) =>
+        entry.name === "stationarity-residual" ? { ...entry, value: 161.266 } : entry,
+      ),
+    );
+
+    expect(report.correctness[0]?.status).toBe("passed");
+    expect(report.correctness[0]?.note).toContain(
+      "near-stationarity acceptance is deferred to EP-097",
+    );
+    expect(report.timings).toHaveLength(2);
+    expect(report.stationarity[0]).toMatchObject({
+      effectResidual: 161.287,
+      pythonResidual: 161.266,
+      policy: "diagnostic-only",
+      followUp: "EP-097",
+    });
+    expect(report.stationarity[0]?.absoluteDifference).toBeCloseTo(0.021, 12);
+    expect(renderBenchmarkMarkdown(report)).toContain("## Stationarity diagnostics");
+    expect(renderBenchmarkMarkdown(report)).toContain("diagnostic-only | EP-097");
+  });
+
+  it("still applies the original equality gate to historical case declarations", async () => {
+    const report = await optimizerReport(
+      optimizerQualityEntries,
+      optimizerQualityEntries.map((entry) =>
+        entry.name === "stationarity-residual" ? { ...entry, value: 161.266 } : entry,
+      ),
+      { objectiveAbsolute: 0.01, normalizedNoiseAbsolute: 0.0002, stationarityAbsolute: 0.01 },
+    );
+
+    expect(report.correctness[0]?.status).toBe("failed");
+    expect(report.correctness[0]?.note).toContain("stationarity-residual");
+    expect(report.stationarity[0]?.policy).toBe("equality-gate");
+    expect(report.timings).toEqual([]);
+  });
+
+  it.each([
+    { name: "objective", value: -550.99 },
+    { name: "normalized-noise", value: 0.0021 },
+    { name: "normalized-noise", value: 0 },
+    { name: "stationarity-residual", value: -1 },
+  ])("withholds timing for invalid or out-of-bound $name=$value", async ({ name, value }) => {
+    const report = await optimizerReport(
+      optimizerQualityEntries,
+      optimizerQualityEntries.map((entry) => (entry.name === name ? { ...entry, value } : entry)),
+    );
+
+    expect(report.correctness[0]?.status).toBe("failed");
+    expect(report.timings).toEqual([]);
+  });
+
+  it.each(["objective", "stationarity-residual", "normalized-noise"])(
+    "requires exactly one %s diagnostic from each implementation",
+    async (name) => {
+      const missing = optimizerQualityEntries.filter((entry) => entry.name !== name);
+      const entry = optimizerQualityEntries.find((item) => item.name === name);
+
+      if (entry === undefined) throw new Error("Expected named diagnostic");
+
+      for (const malformed of [missing, [...optimizerQualityEntries, entry]]) {
+        for (const [left, right] of [
+          [malformed, optimizerQualityEntries],
+          [optimizerQualityEntries, malformed],
+        ]) {
+          const report = await optimizerReport(left ?? [], right ?? []);
+
+          expect(report.correctness[0]?.status).toBe("failed");
+          expect(report.timings).toEqual([]);
+        }
+      }
+    },
+  );
+
+  it("rejects nonfinite diagnostic payloads at the result boundary", async () => {
+    for (const value of [Number.NaN, Number.POSITIVE_INFINITY]) {
+      const failure = await Effect.runPromise(
+        Effect.flip(
+          parseImplementationResult(
+            optimizerResultInput(
+              "effect-prophet",
+              optimizerQualityEntries.map((entry) =>
+                entry.name === "stationarity-residual" ? { ...entry, value } : entry,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(failure._tag).toBe("BenchmarkResultError");
+    }
+  });
+
+  it("does not bypass forecasts, metadata or persistence when stationarity is deferred", async () => {
+    if (optimizerCase === undefined) throw new Error("Expected frozen automatic linear case");
+
+    const cases = await Effect.runPromise(
+      parseBenchmarkCases([
+        {
+          ...optimizerCase,
+          id: "fixed",
+          independentRuns: 1,
+          measuredIterations: 3,
+          phases: ["warm-predict"],
+        },
+      ]),
+    );
+
+    const manifest = await Effect.runPromise(parseRunManifest(manifestInput));
+
+    const effectResult = await Effect.runPromise(
+      parseImplementationResult(optimizerResultInput("effect-prophet", optimizerQualityEntries)),
+    );
+
+    for (const mismatch of [
+      { forecasts: [{ ...forecast, value: 20, trend: 20 }] },
+      { modelKind: "unexpected" },
+      { persistenceMaximumAbsoluteError: 1 },
+      { run: 1 },
+    ]) {
+      const input = optimizerResultInput("python-prophet", optimizerQualityEntries);
+
+      const pythonResult = await Effect.runPromise(
+        parseImplementationResult({
+          ...input,
+          correctness: [{ ...input.correctness[0], ...mismatch }],
+        }),
+      );
+
+      const report = buildBenchmarkReport(
+        manifest,
+        cases,
+        effectResult,
+        pythonResult,
+        new Set(["linear-stan-map-fit-quality-v3"]),
+      );
+
+      expect(report.correctness[0]?.status).toBe("failed");
+      expect(report.timings).toEqual([]);
+    }
+  });
+});
 
 describe("benchmark reporting", () => {
   it("reports accepted absolute timings and native provenance without rankings", async () => {

@@ -13,6 +13,12 @@ import { PositiveFinite, PositiveFourierOrder } from "./internal/numeric-schemas
 import { TimestampSchema } from "./internal/timestamp";
 import type { Observations } from "./observation";
 import {
+  decodeLinearOptimizer,
+  defaultLinearOptimizer,
+  type EncodedLinearOptimizer,
+  type LinearOptimizer,
+} from "./linear-optimizer";
+import {
   parseRegressorDefinitions,
   type EncodedRegressorDefinition,
   type InvalidRegressors,
@@ -88,6 +94,11 @@ export type EncodedChangepointSetting =
 export interface EncodedMapOptions {
   readonly changepoints?: EncodedChangepointSetting;
   readonly changepointPriorScale?: number;
+  readonly optimizer?: EncodedLinearOptimizer;
+}
+
+/** Logistic controls retain their separate coordinate/objective-change policy. */
+export interface EncodedLogisticMapOptions extends Omit<EncodedMapOptions, "optimizer"> {
   readonly optimizer?: {
     readonly maxIterations?: number;
     readonly relativeTolerance?: number;
@@ -148,7 +159,7 @@ export const checkExplicitChangepointBounds = (
   return Effect.void;
 };
 
-/** Parsed deterministic optimizer controls. */
+/** Parsed coordinate controls for flat/logistic fitting, not linear Stan fitting. */
 export interface MapOptimizerControls {
   readonly maxIterations: number;
   readonly relativeTolerance: number;
@@ -156,10 +167,10 @@ export interface MapOptimizerControls {
 }
 
 /** Parsed linear piecewise MAP configuration. */
-export interface MapOptions {
+export interface MapOptions<Optimizer = LinearOptimizer> {
   readonly changepoints: ChangepointSetting;
   readonly changepointPriorScale: number;
-  readonly optimizer: MapOptimizerControls;
+  readonly optimizer: Optimizer;
 }
 
 /** Public linear-growth options without configured custom seasonalities. */
@@ -192,7 +203,7 @@ export interface EncodedFlatAdditiveOptions extends EncodedBuiltInOptions {
 export interface EncodedLogisticOptions extends EncodedBuiltInOptions {
   readonly growth: "logistic";
   readonly seasonalities?: ReadonlyArray<EncodedSeasonality>;
-  readonly map?: EncodedMapOptions;
+  readonly map?: EncodedLogisticMapOptions;
 }
 
 /** Supported configurations accepted by the public fitting operation. */
@@ -242,7 +253,7 @@ export interface FlatAdditiveOptions extends ParsedBuiltInOptions {
 export interface LogisticOptions extends ParsedBuiltInOptions {
   readonly growth: "logistic";
   readonly seasonalities: ReadonlyArray<SeasonalityDefinition>;
-  readonly map: MapOptions;
+  readonly map: MapOptions<MapOptimizerControls>;
 }
 
 /** Validated and defaulted public fitting configuration awaiting fit-time resolution. */
@@ -279,11 +290,14 @@ const defaultBuiltInSeasonalities: BuiltInSeasonalities = Object.freeze({
 export const defaultAutomaticMapOptions: MapOptions = Object.freeze({
   changepoints: Object.freeze({ mode: "auto", count: 25, range: 0.8 }),
   changepointPriorScale: 0.05,
-  optimizer: Object.freeze({
-    maxIterations: 10_000,
-    relativeTolerance: 1e-10,
-    absoluteTolerance: 1e-12,
-  }),
+  optimizer: defaultLinearOptimizer,
+});
+
+/** Flat-only coordinate controls; unrelated to linear Stan stopping criteria. */
+export const defaultFlatOptimizerControls: MapOptimizerControls = Object.freeze({
+  maxIterations: 10_000,
+  relativeTolerance: 1e-10,
+  absoluteTolerance: 1e-12,
 });
 
 const defaultLogisticOptimizerControls: MapOptimizerControls = Object.freeze({
@@ -366,22 +380,7 @@ const MapOptionsSchema = Schema.Struct({
     Schema.withDecodingDefaultKey(Effect.succeed({ mode: "explicit", timestamps: [] } as const)),
   ),
   changepointPriorScale: PositiveFinite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(0.05))),
-  optimizer: Schema.Struct({
-    maxIterations: Schema.Int.check(
-      Schema.isGreaterThan(0),
-      Schema.isLessThanOrEqualTo(4_294_967_295),
-    ).pipe(Schema.withDecodingDefaultKey(Effect.succeed(10_000))),
-    relativeTolerance: PositiveFinite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(1e-10))),
-    absoluteTolerance: PositiveFinite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(1e-12))),
-  }).pipe(
-    Schema.withDecodingDefaultKey(
-      Effect.succeed({
-        maxIterations: 10_000,
-        relativeTolerance: 1e-10,
-        absoluteTolerance: 1e-12,
-      }),
-    ),
-  ),
+  optimizer: Schema.Unknown.pipe(Schema.withDecodingDefaultKey(Effect.succeed({}))),
 });
 
 const ProphetOptionsSyntaxSchema = Schema.Struct({
@@ -421,7 +420,9 @@ const freezeBuiltInSeasonalities = (seasonalities: BuiltInSeasonalities): BuiltI
     yearly: freezeBuiltInSetting(seasonalities.yearly),
   });
 
-const freezeMapOptions = (options: MapOptions): MapOptions => {
+const freezeMapOptions = <Optimizer extends object>(
+  options: MapOptions<Optimizer>,
+): MapOptions<Optimizer> => {
   const changepoints: ChangepointSetting =
     options.changepoints.mode === "explicit"
       ? Object.freeze({
@@ -444,10 +445,13 @@ interface OptimizerControlPresence {
 }
 
 const logisticMapOptions = (
-  options: MapOptions | undefined,
+  options: MapOptions<MapOptimizerControls> | undefined,
   supplied: OptimizerControlPresence,
-): MapOptions => {
-  const resolved = options ?? defaultAutomaticMapOptions;
+): MapOptions<MapOptimizerControls> => {
+  const resolved = options ?? {
+    ...defaultAutomaticMapOptions,
+    optimizer: defaultLogisticOptimizerControls,
+  };
 
   return Object.freeze({
     ...resolved,
@@ -640,7 +644,50 @@ export const decodeOptions = Effect.fn("decodeOptions")(function* (
   }
 
   const builtInSeasonalities = freezeBuiltInSeasonalities(syntax.builtInSeasonalities);
-  const map = syntax.map === undefined ? undefined : freezeMapOptions(syntax.map);
+
+  const decodeLogisticControls = Schema.decodeUnknownEffect(
+    Schema.Struct({
+      maxIterations: Schema.Int.check(
+        Schema.isGreaterThan(0),
+        Schema.isLessThanOrEqualTo(4_294_967_295),
+      ).pipe(
+        Schema.withDecodingDefaultKey(
+          Effect.succeed(defaultLogisticOptimizerControls.maxIterations),
+        ),
+      ),
+      relativeTolerance: PositiveFinite.pipe(
+        Schema.withDecodingDefaultKey(
+          Effect.succeed(defaultLogisticOptimizerControls.relativeTolerance),
+        ),
+      ),
+      absoluteTolerance: PositiveFinite.pipe(
+        Schema.withDecodingDefaultKey(
+          Effect.succeed(defaultLogisticOptimizerControls.absoluteTolerance),
+        ),
+      ),
+    }),
+    { errors: "all", onExcessProperty: "error" },
+  );
+
+  const linearMap =
+    syntax.growth !== "logistic" && syntax.map !== undefined
+      ? freezeMapOptions({
+          ...syntax.map,
+          optimizer: yield* decodeLinearOptimizer(syntax.map.optimizer),
+        })
+      : undefined;
+
+  const logisticMap =
+    syntax.growth === "logistic" && syntax.map !== undefined
+      ? freezeMapOptions({
+          ...syntax.map,
+          optimizer: yield* decodeLogisticControls(syntax.map.optimizer).pipe(
+            Effect.mapError((error) => inputValidationErrorFromIssue("options", error.issue)),
+          ),
+        })
+      : undefined;
+
+  const map = linearMap;
   const scaling = syntax.scaling === undefined ? {} : { scaling: syntax.scaling };
 
   const resolvedModes = {
@@ -658,7 +705,7 @@ export const decodeOptions = Effect.fn("decodeOptions")(function* (
       builtInSeasonalities,
       events,
       regressors,
-      map: logisticMapOptions(map, optimizerControlPresence),
+      map: logisticMapOptions(logisticMap, optimizerControlPresence),
       ...scaling,
     };
   }

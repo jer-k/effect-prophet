@@ -110,9 +110,7 @@ export interface ProphetWasmNodeBindings {
     fourierOrders: Float64Array,
     priorScales: Float64Array,
     changepointPriorScale: number,
-    maxIterations: number,
-    relativeTolerance: number,
-    absoluteTolerance: number,
+    optimizer: Float64Array,
   ) => Float64Array;
   readonly fit_piecewise_map_with_scaling: (...args: ReadonlyArray<unknown>) => Float64Array;
   readonly predict_piecewise_map: (

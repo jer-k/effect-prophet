@@ -141,11 +141,22 @@ const ModelSchema = Schema.Union([
       method: Schema.Literals([
         "flat-map-coordinate-v1",
         "mixed-flat-map-coordinate-v1",
-        "piecewise-map-coordinate-v1",
-        "mixed-piecewise-map-coordinate-v1",
+        "piecewise-map-stan-v2",
+        "mixed-piecewise-map-stan-v2",
         "logistic-piecewise-map-proximal-v1",
       ]),
-      termination: Schema.Literals(["converged", "constant-target-shortcut"]),
+      termination: Schema.Literals([
+        "converged",
+        "constant-target-shortcut",
+        "objective-change",
+        "no-progress",
+        "absolute-objective",
+        "relative-objective",
+        "absolute-gradient",
+        "relative-gradient",
+        "parameter-change",
+        "iteration-limit",
+      ]),
       observationCount: Schema.Int.check(Schema.isGreaterThanOrEqualTo(2)),
       iterations: Schema.Natural,
       objective: Schema.Finite,
@@ -387,7 +398,7 @@ const reportConsistency = (
               report.model.fitSummary.method,
             )) ||
           (report.model.kind === "linear-piecewise-map" &&
-            !["piecewise-map-coordinate-v1", "mixed-piecewise-map-coordinate-v1"].includes(
+            !["piecewise-map-stan-v2", "mixed-piecewise-map-stan-v2"].includes(
               report.model.fitSummary.method,
             ))))
     ) {
@@ -438,7 +449,7 @@ const reportConsistency = (
       const interval = report.kind === "intervals" ? report.forecasts[index] : undefined;
 
       if (
-        row.timestamp <= previous ||
+        row.timestamp < previous ||
         (report.kind === "intervals" && (interval === undefined || interval.lower > interval.upper))
       ) {
         return yield* Effect.fail(

@@ -355,13 +355,13 @@ mod tests {
   fn accepts_empty_batches_and_layouts() {
     let empty = make_fourier_features(&[], &[]).expect("an empty matrix is valid");
 
-    assert_eq!(empty.values(), &[]);
+    assert!(empty.values().is_empty());
 
     let rows = make_fourier_features(&[0.0, 1.0], &[]).expect("zero columns are valid");
     let components = evaluate_seasonal_components(&rows, &[], &[]).expect("zero components");
 
     assert_eq!(components.row_count(), 2);
-    assert_eq!(components.values(), &[]);
+    assert!(components.values().is_empty());
   }
 
   #[test]

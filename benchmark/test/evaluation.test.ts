@@ -5,6 +5,8 @@ import { describe, expect, it } from "vitest";
 
 import { parseBenchmarkCases, parseBenchmarkDataset } from "../case.ts";
 import { evaluationCases } from "../cases/evaluation.ts";
+import { linearGrowthEdgeCases } from "../cases/linear-growth/edge-cases.ts";
+import { stanAlignedCases } from "../cases/linear-growth/stan-aligned.ts";
 import {
   evaluationCorrectness,
   evaluationOperation,
@@ -13,7 +15,9 @@ import {
 import { buildBenchmarkReport } from "../report.ts";
 import type { CorrectnessProjection, ImplementationResult, RunManifest } from "../result.ts";
 
-const base = evaluationCases.find((item) => item.id === "evaluation-linear-point");
+const base = stanAlignedCases(evaluationCases).find(
+  (item) => item.id === "evaluation-linear-point-stan-v2",
+);
 
 if (base === undefined) throw new Error("Missing evaluation test case");
 
@@ -90,6 +94,28 @@ const report = (left: CorrectnessProjection, right: CorrectnessProjection) =>
   );
 
 describe("evaluation public benchmark", () => {
+  it("checks duplicate assessment targets by stable row instance, never first timestamp match", async () => {
+    const declaration = stanAlignedCases(linearGrowthEdgeCases).find(
+      (item) => item.id === "evaluation-training-duplicates-stan-v2",
+    );
+
+    if (declaration === undefined) throw new Error("Missing duplicate evaluation case");
+
+    const dataset = await Effect.runPromise(
+      parseBenchmarkDataset(
+        JSON.parse(
+          readFileSync(new URL(`../data/${declaration.dataset}`, import.meta.url), "utf8"),
+        ),
+      ),
+    );
+
+    const projection = evaluationCorrectness(declaration, dataset, 0);
+
+    expect(projection.evaluation?.trainingRows).toBe(148);
+    expect(projection.evaluation?.assessmentRows).toBe(24);
+    expect(new Set(projection.evaluation?.rows.map((row) => row.actual)).size).toBeGreaterThan(6);
+    expect(evaluationOperation(declaration, dataset, "evaluation-baseline")).toBeDefined();
+  });
   it("parses declarations and rejects missing simulation controls or duplicate candidate labels", async () => {
     expect(await Effect.runPromise(parseBenchmarkCases(evaluationCases))).toHaveLength(
       evaluationCases.length,
@@ -151,7 +177,9 @@ describe("evaluation public benchmark", () => {
   });
 
   it("records one expected candidate failure and keeps report encode/decode separate from search", async () => {
-    const case_ = evaluationCases.find((item) => item.id === "evaluation-linear-failure-search");
+    const case_ = stanAlignedCases(evaluationCases).find(
+      (item) => item.id === "evaluation-linear-failure-search-stan-v2",
+    );
 
     if (case_ === undefined) throw new Error("Missing failure workload");
 

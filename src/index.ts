@@ -137,6 +137,17 @@ export {
 } from "./options";
 
 export {
+  LinearOptimizerSchema,
+  decodeLinearOptimizer,
+  defaultLinearOptimizer,
+  defaultLbfgsSettings,
+  type EncodedLinearOptimizer,
+  type LinearOptimizer,
+  type EncodedLbfgsSettings,
+  type LbfgsSettings,
+} from "./linear-optimizer";
+
+export {
   type FittedFlatMapProphet,
   type FittedLinearProphet,
   type FittedLogisticMapProphet,

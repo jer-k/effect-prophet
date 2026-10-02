@@ -43,8 +43,14 @@ describe("Prophet 1.4.0 fixed piecewise-linear compatibility", () => {
           coefficients: referenceCase.parameters.seasonalCoefficients,
           noiseScale: 1,
           fitSummary: {
-            method: "piecewise-map-coordinate-v1",
-            termination: "converged",
+            method: "piecewise-map-stan-v2",
+            termination: "objective-change",
+            optimization: {
+              algorithm: "newton",
+              attemptCount: 1,
+              failedAttemptIterations: null,
+              hessianResets: 0,
+            },
             valueScale: 1,
             observationCount: referenceCase.observations.length,
             iterations: 1,

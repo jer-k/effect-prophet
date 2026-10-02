@@ -1,4 +1,4 @@
-import { Effect, Schema, type SchemaIssue } from "effect";
+import { Effect, Match, Schema, type SchemaIssue } from "effect";
 
 import {
   ValidationIssueSchema,
@@ -195,16 +195,85 @@ const consistentFlatMapParameters = Schema.makeFilter<FlatMapParametersFields>((
 
 const FlatMapParametersSchema = FlatMapParametersFieldsSchema.check(consistentFlatMapParameters);
 
-const PiecewiseMapFitSummarySchema = Schema.Struct({
-  method: Schema.Literals(["piecewise-map-coordinate-v1", "mixed-piecewise-map-coordinate-v1"]),
-  termination: Schema.Literals(["converged", "constant-target-shortcut"]),
+/** Version-two linear MAP diagnostics with algorithm-consistent completion and attempt evidence. */
+export const PiecewiseMapFitSummarySchema = Schema.Struct({
+  method: Schema.Literals(["piecewise-map-stan-v2", "mixed-piecewise-map-stan-v2"]),
+  termination: Schema.Literals([
+    "constant-target-shortcut",
+    "objective-change",
+    "no-progress",
+    "absolute-objective",
+    "relative-objective",
+    "absolute-gradient",
+    "relative-gradient",
+    "parameter-change",
+    "iteration-limit",
+  ]),
+  optimization: Schema.Union([
+    Schema.Struct({
+      algorithm: Schema.Literal("none"),
+      attemptCount: Schema.Literal(0),
+      failedAttemptIterations: Schema.Null,
+      hessianResets: Schema.Literal(0),
+    }),
+    Schema.Struct({
+      algorithm: Schema.Literal("newton"),
+      attemptCount: Schema.Literal(1),
+      failedAttemptIterations: Schema.Null,
+      hessianResets: Schema.Literal(0),
+    }),
+    Schema.Struct({
+      algorithm: Schema.Literal("newton"),
+      attemptCount: Schema.Literal(2),
+      failedAttemptIterations: Schema.NullOr(Schema.Natural),
+      hessianResets: Schema.Literal(0),
+    }),
+    Schema.Struct({
+      algorithm: Schema.Literal("lbfgs"),
+      attemptCount: Schema.Literal(1),
+      failedAttemptIterations: Schema.Null,
+      hessianResets: Schema.Natural,
+    }),
+  ]),
   valueScale: PositiveFinite,
   observationCount: Schema.Int.check(Schema.isGreaterThanOrEqualTo(2)),
   iterations: Schema.Natural,
   objective: Schema.Finite,
   stationarityResidual: Schema.Finite.check(Schema.isGreaterThanOrEqualTo(0)),
   changepointPriorScale: PositiveFinite,
-});
+}).check(
+  Schema.makeFilter((summary) => {
+    const algorithm = summary.optimization.algorithm;
+
+    const valid = Match.value(algorithm).pipe(
+      Match.when(
+        "none",
+        () => summary.termination === "constant-target-shortcut" && summary.iterations === 0,
+      ),
+      Match.when("newton", () =>
+        ["objective-change", "no-progress", "iteration-limit"].includes(summary.termination),
+      ),
+      Match.when("lbfgs", () =>
+        [
+          "absolute-objective",
+          "relative-objective",
+          "absolute-gradient",
+          "relative-gradient",
+          "parameter-change",
+          "iteration-limit",
+        ].includes(summary.termination),
+      ),
+      Match.exhaustive,
+    );
+
+    return valid
+      ? undefined
+      : {
+          path: ["optimization"],
+          issue: "Linear optimization completion does not match its actual algorithm",
+        };
+  }),
+);
 
 const PiecewiseMapParametersFieldsSchema = Schema.Struct({
   model: PiecewiseMapModel,
@@ -293,18 +362,18 @@ const consistentPiecewiseMapParameters = Schema.makeFilter<PiecewiseMapParameter
         !Number.isSafeInteger(changepoint) ||
         changepoint < parameters.timeOrigin ||
         changepoint > end ||
-        (previous !== undefined && changepoint <= previous)
+        (previous !== undefined && changepoint < previous)
       ) {
         issues.push({
           path: ["changepointTimestamps", index],
-          issue: "Changepoints must be safe, strictly increasing timestamps in training bounds",
+          issue: "Changepoints must be safe, nondecreasing timestamps in training bounds",
         });
       }
     }
 
     const mixed = hasMultiplicativeComponents(parameters);
 
-    if (mixed !== (parameters.fitSummary.method === "mixed-piecewise-map-coordinate-v1")) {
+    if (mixed !== (parameters.fitSummary.method === "mixed-piecewise-map-stan-v2")) {
       issues.push({
         path: ["fitSummary", "method"],
         issue: "Linear MAP method identity must match its resolved component modes",
@@ -430,11 +499,11 @@ const consistentLogisticMapParameters = Schema.makeFilter<LogisticMapParametersF
         !Number.isSafeInteger(changepoint) ||
         changepoint < parameters.timeOrigin ||
         changepoint > end ||
-        (previous !== undefined && changepoint <= previous)
+        (previous !== undefined && changepoint < previous)
       ) {
         issues.push({
           path: ["changepointTimestamps", index],
-          issue: "Changepoints must be safe, strictly increasing timestamps in training bounds",
+          issue: "Changepoints must be safe, nondecreasing timestamps in training bounds",
         });
       }
     }

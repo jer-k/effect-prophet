@@ -1,0 +1,11 @@
+# Opt-in benchmark-only builder; see benchmark/README.md.
+# GC targets reclaimable cache, not live builds or images loaded into Docker Engine.
+[worker.oci]
+gc = true
+reservedSpace = "2GB"
+maxUsedSpace = "8GB"
+minFreeSpace = "10GB"
+
+[history]
+maxAge = 172800
+maxEntries = 20

@@ -14,7 +14,7 @@
     },
     {
       "path": "changepoint-resolution.json",
-      "sha256": "2f4b18dd716c12cab68ad1657eac4bd005ee88f7ea836dfba2c688c4b24e7749"
+      "sha256": "f9f8c3081ac3650dae62598d37412aea19833d3127273738f8d092275f810df9"
     },
     {
       "path": "evaluation-cutoffs.json",
@@ -26,7 +26,7 @@
     },
     {
       "path": "linear-map-fit.json",
-      "sha256": "4929f2b0ea584709305a6ca153c2828965c549183755a5c393fc4f48bd403755"
+      "sha256": "d196d82071e1812c6695bf478ddda2f79d3c75bb9a4a18a2341a820b1f2caeef"
     },
     {
       "path": "seasonality-resolution.json",
@@ -38,7 +38,7 @@
     },
     {
       "path": "conditional-map-fit.json",
-      "sha256": "cf11893e607aba22a0294cde8d384f8ec2ffc3f96bdfc5f544281ae51daa2f0b"
+      "sha256": "7b11da2d961414d5f59fb45e20002a9789eb3501e51e7bc9b19d986c61bc20c2"
     },
     {
       "path": "target-scaling.json",
@@ -55,6 +55,10 @@
     {
       "path": "map-uncertainty.json",
       "sha256": "1b8eb6b3758f48592111ad0fffc9de144e833bf61c0b80b2430bfa7373c76b65"
+    },
+    {
+      "path": "stan-linear-optimizer.json",
+      "sha256": "49f53c3a23dc3b50a6d29bc5852193f235e56c0519a28f656384de2ed867d259"
     }
   ],
   "backendArtifacts": [
@@ -70,7 +74,7 @@
     "platform": "linux/amd64",
     "uvVersion": "0.8.15"
   },
-  "generatorRevision": "4de4d5d14ac0aa603dd000db1f3bd3b6c289918de7208f9aa60ae86dabe39f3b",
+  "generatorRevision": "7d26fbe51bed90b344a24206be050ad79d02422bb61bfbf0e42817ff4a59329a",
   "numericalEnvironment": [
     {
       "name": "cmdstanpy",

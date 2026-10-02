@@ -12,6 +12,14 @@ import {
   type PiecewiseMapParameters,
 } from "../fitted-model";
 import type { ChangepointSetting, MapOptimizerControls } from "../options";
+import type { LinearOptimizer } from "../linear-optimizer";
+import {
+  encodeLinearOptimizer,
+  decodeLinearCompletion,
+  annotateLinearCompletion,
+  annotateLinearRequest,
+  linearOptimizerFailure,
+} from "./linear-map-protocol";
 import type { ResolvedRegressor } from "../regressor";
 import type { SeasonalityLayout } from "../seasonality";
 import { targetScalingModeCode, type TargetScalingMode } from "../target-scaling";
@@ -113,6 +121,10 @@ const fittingFailure = (
   const status = readWasmStatus(packed);
   const label = model === "flat" ? "Mixed flat MAP" : "Mixed linear MAP";
 
+  if (status === 11 && model === "linear") {
+    return linearOptimizerFailure(packed, observationCount);
+  }
+
   if (status === undefined || packed.length !== 1) {
     return failWasmFitting(observationCount, {
       reason: "backend-failure",
@@ -191,9 +203,10 @@ const decodeLinearFit = (
   }
 
   const expectedLength =
-    16 + changepointCount * 2 + seasonalities.coefficientCount + additionalCount;
+    20 + changepointCount * 2 + seasonalities.coefficientCount + additionalCount;
 
-  const termination = terminationFrom(packed[15]);
+  const completion = decodeLinearCompletion(packed);
+  const termination = completion.termination;
 
   if (
     packed.length !== expectedLength ||
@@ -204,7 +217,7 @@ const decodeLinearFit = (
     return fittingFailure(new Float64Array(), observationCount, "linear");
   }
 
-  const changepointStart = 16;
+  const changepointStart = 20;
   const deltaStart = changepointStart + changepointCount;
   const coefficientStart = deltaStart + changepointCount;
   const eventStart = coefficientStart + seasonalities.coefficientCount;
@@ -226,8 +239,8 @@ const decodeLinearFit = (
     regressors: fittedRegressors(regressors, packed, regressorStart),
     noiseScale: packed[10],
     fitSummary: {
-      method: "mixed-piecewise-map-coordinate-v1",
-      termination,
+      method: "mixed-piecewise-map-stan-v2",
+      ...completion,
       valueScale: packed[9],
       observationCount: packed[11],
       iterations: packed[12],
@@ -388,7 +401,7 @@ export const fitMixedLinearMapWithWasm = (
   seasonalities: SeasonalityLayout,
   changepoints: ChangepointSetting,
   changepointPriorScale: number,
-  optimizer: MapOptimizerControls,
+  optimizer: LinearOptimizer,
   masks: SeasonalityMaskMatrix,
   features: KnownAdditiveFeatures,
   events: EventCalendar,
@@ -400,6 +413,7 @@ export const fitMixedLinearMapWithWasm = (
   const coefficientCount = seasonalities.coefficientCount + features.layout.coefficientCount;
 
   return Effect.gen(function* () {
+    yield* annotateLinearRequest(optimizer);
     yield* Effect.annotateCurrentSpan({ "effect_prophet.component.mode": "mixed" });
 
     const module = yield* attemptWasmFitting(defaultLoader, observationCount, {
@@ -432,9 +446,7 @@ export const fitMixedLinearMapWithWasm = (
           additional.counts,
           modes,
           changepointPriorScale,
-          optimizer.maxIterations,
-          optimizer.relativeTolerance,
-          optimizer.absoluteTolerance,
+          encodeLinearOptimizer(optimizer),
         ),
       observationCount,
       { phase: "execute", message: "Failed to execute the WASM mixed linear MAP fitting backend" },
@@ -450,6 +462,7 @@ export const fitMixedLinearMapWithWasm = (
       changepointPriorScale,
     );
   }).pipe(
+    Effect.tap((model) => annotateLinearCompletion(model.fitSummary)),
     Effect.withSpan(
       "effect-prophet.wasm.fit",
       wasmFitSpanOptions(

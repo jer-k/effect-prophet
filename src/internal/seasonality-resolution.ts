@@ -220,7 +220,7 @@ const settingFor = (
  * Custom definitions retain caller order. Enabled built-ins are appended in the fixed order
  * yearly, weekly, daily. Prediction timestamps and persisted models never enter this operation.
  *
- * @param observations - Parsed, strictly increasing training observations.
+ * @param observations - Parsed, stably sorted nondecreasing training observations.
  * @param input - Parsed custom definitions and fully defaulted built-in controls.
  * @returns The concrete coefficient layout and consistent built-in decisions.
  */

@@ -116,8 +116,8 @@ describe("Prophet fixture loader", () => {
       "inclusive-endpoint-changepoints",
       "no-changepoint-linear-reduction",
     ]);
-    expect(bundle.changepointResolution.cases).toHaveLength(7);
-    expect(bundle.linearMapFit.cases).toHaveLength(1);
+    expect(bundle.changepointResolution.cases).toHaveLength(8);
+    expect(bundle.linearMapFit.cases).toHaveLength(3);
     expect(bundle.mixedMap.independentCases).toHaveLength(1);
     expect(bundle.mixedMap.fittedCases.map((referenceCase) => referenceCase.growth)).toEqual([
       "linear",

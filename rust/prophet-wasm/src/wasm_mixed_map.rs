@@ -4,7 +4,8 @@ use crate::additional_features::{
   AdditionalFeatureLayoutView, FeatureMatrixView, SeasonalityMaskView,
 };
 use crate::mixed_map::{
-  ComponentMode, MixedTrendInput, MixedTrendModel, fit_mixed_map, predict_mixed_map,
+  ComponentMode, MixedMapControls, MixedTrendInput, MixedTrendModel, fit_mixed_map,
+  predict_mixed_map,
 };
 use crate::piecewise_linear::PiecewiseTrend;
 use crate::piecewise_map::{MapControls, resolve_automatic_changepoints};
@@ -13,7 +14,9 @@ use crate::target_scaling::{ScalingMode, TargetScaling};
 use crate::wasm_map::{
   PiecewiseMapFitStatus, PiecewiseMapPredictionStatus, prediction_error_frame, status_for_fit_error,
 };
-use crate::wasm_protocol::{parse_nonnegative_integer, parse_positive_integer};
+use crate::wasm_protocol::{
+  parse_explicit_changepoints, parse_nonnegative_integer, parse_positive_integer,
+};
 
 pub(crate) struct ParsedMetadata {
   pub(crate) masks: Vec<u8>,
@@ -44,9 +47,7 @@ pub fn fit_mixed_linear_map(
   additional_component_counts: &[f64],
   column_modes: &[f64],
   changepoint_prior_scale: f64,
-  max_iterations: f64,
-  relative_tolerance: f64,
-  absolute_tolerance: f64,
+  optimizer: &[f64],
 ) -> Vec<f64> {
   let Some(scaling) = ScalingMode::from_code(scaling_mode) else {
     return fit_error(PiecewiseMapFitStatus::InvalidConfiguration);
@@ -56,8 +57,7 @@ pub fn fit_mixed_linear_map(
   else {
     return fit_error(PiecewiseMapFitStatus::InvalidConfiguration);
   };
-  let Some(controls) = parse_controls(max_iterations, relative_tolerance, absolute_tolerance)
-  else {
+  let Some(controls) = crate::wasm_protocol::parse_linear_optimizer(optimizer) else {
     return fit_error(PiecewiseMapFitStatus::InvalidConfiguration);
   };
   let Ok(changepoints) = parse_changepoints(
@@ -100,11 +100,11 @@ pub fn fit_mixed_linear_map(
     layout_view(additional_prior_scales, &metadata.offsets, &metadata.counts),
     &modes,
     changepoint_prior_scale,
-    controls,
+    MixedMapControls::Linear(controls),
     scaling,
   ) {
     Ok(model) => pack_linear_fit(model),
-    Err(error) => fit_error(status_for_fit_error(error)),
+    Err(error) => crate::wasm_map::fit_error_frame(error),
   }
 }
 
@@ -171,7 +171,7 @@ pub fn fit_mixed_flat_map(
     layout_view(additional_prior_scales, &metadata.offsets, &metadata.counts),
     &modes,
     0.05,
-    controls,
+    MixedMapControls::Flat(controls),
     scaling,
   ) {
     Ok(model) => pack_flat_fit(model),
@@ -346,7 +346,7 @@ fn pack_linear_fit(model: crate::mixed_map::MixedMapModel) -> Vec<f64> {
   };
   let changepoint_count = trend.changepoint_timestamps.len();
   let mut packed = Vec::with_capacity(
-    16 + changepoint_count * 2 + model.coefficients.len() + model.additional_coefficients.len(),
+    20 + changepoint_count * 2 + model.coefficients.len() + model.additional_coefficients.len(),
   );
   let termination = termination_code(model.summary.termination);
 
@@ -368,6 +368,9 @@ fn pack_linear_fit(model: crate::mixed_map::MixedMapModel) -> Vec<f64> {
     model.summary.stationarity_residual,
     termination,
   ]);
+  packed.extend_from_slice(&crate::wasm_protocol::linear_summary_frame(
+    model.summary.termination,
+  ));
   packed.extend_from_slice(&trend.changepoint_timestamps);
   packed.extend_from_slice(&trend.deltas);
   packed.extend_from_slice(&model.coefficients);
@@ -402,10 +405,7 @@ fn pack_flat_fit(model: crate::mixed_map::MixedMapModel) -> Vec<f64> {
 }
 
 pub(crate) fn termination_code(termination: crate::piecewise_map::MapTermination) -> f64 {
-  match termination {
-    crate::piecewise_map::MapTermination::Converged => 0.0,
-    crate::piecewise_map::MapTermination::ConstantTargetShortcut => 1.0,
-  }
+  crate::wasm_protocol::map_termination_code(termination)
 }
 
 pub(crate) fn parse_modes(values: &[f64]) -> Result<Vec<ComponentMode>, ()> {
@@ -520,7 +520,7 @@ pub(crate) fn parse_changepoints(
       return Err(());
     }
 
-    return Ok(explicit.to_vec());
+    return parse_explicit_changepoints(explicit).ok_or(());
   }
 
   if mode != 1.0 || !explicit.is_empty() {

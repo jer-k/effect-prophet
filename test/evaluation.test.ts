@@ -33,6 +33,30 @@ const failure = (days: ReadonlyArray<number>, input: Parameters<typeof planRolli
   Effect.runPromise(Effect.flip(planRollingOrigin(history(days), {}, input)));
 
 describe("planRollingOrigin", () => {
+  it("preserves duplicate training and assessment rows across public rolling-origin fits", async () => {
+    const rows = [5, 1, 0, 1, 2, 3, 3, 4].map((day, index) => ({
+      timestamp: at(day),
+      value: day + 1 + index * 0.1,
+    }));
+
+    const plan = {
+      horizonMs: 2 * dayMs,
+      cutoffs: { mode: "explicit", timestamps: [at(1), at(3)] },
+    } as const;
+
+    const result = await Effect.runPromise(
+      crossValidate(rows, {}, plan).pipe(Effect.provide(prophetFittingBackendLayer)),
+    );
+
+    expect(
+      result.folds.map(({ trainingCount, assessmentCount }) => [trainingCount, assessmentCount]),
+    ).toEqual([
+      [3, 3],
+      [6, 2],
+    ]);
+    expect(result.rows.map((row) => row.actual)).toEqual([3.4, 4.5, 4.6, 5.7, 6]);
+    expect(result.rows.every((row) => Number.isFinite(row.predicted))).toBe(true);
+  });
   it("matches release backwards cutoff generation and exact fold endpoints", async () => {
     const plan = await run(
       Array.from({ length: 12 }, (_, index) => index),
