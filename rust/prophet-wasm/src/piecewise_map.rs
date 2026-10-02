@@ -40,7 +40,7 @@ pub enum MapTermination {
   ConstantTargetShortcut,
 
   /// Finite Stan completion with actual algorithm and attempt evidence.
-  Stan(crate::stan_linear_optimizer::LinearOptimizationSummary),
+  Stan(crate::stan::linear_optimizer::LinearOptimizationSummary),
 }
 
 /// Finite diagnostics for a successful linear piecewise MAP fit.
@@ -128,7 +128,7 @@ pub enum PiecewiseMapError {
   /// The deterministic optimizer budget was exhausted.
   NonConvergence,
   /// Linear optimization failed, retaining both failures if fallback failed.
-  Optimizer(crate::stan_linear_optimizer::LinearOptimizationError),
+  Optimizer(crate::stan::linear_optimizer::LinearOptimizationError),
 }
 
 /// Expected failures from linear piecewise prediction.
@@ -190,7 +190,7 @@ pub fn fit_piecewise_map(
   changepoint_timestamps: &[f64],
   seasonalities: &[SeasonalitySpec],
   changepoint_prior_scale: f64,
-  controls: crate::stan_linear_optimizer::LinearOptimizerOptions,
+  controls: crate::stan::linear_optimizer::LinearOptimizerOptions,
 ) -> Result<PiecewiseMapModel, PiecewiseMapError> {
   fit_piecewise_map_with_scaling(
     timestamps,
@@ -211,7 +211,7 @@ pub fn fit_piecewise_map_with_scaling(
   changepoint_timestamps: &[f64],
   seasonalities: &[SeasonalitySpec],
   changepoint_prior_scale: f64,
-  controls: crate::stan_linear_optimizer::LinearOptimizerOptions,
+  controls: crate::stan::linear_optimizer::LinearOptimizerOptions,
   scaling_mode: ScalingMode,
 ) -> Result<PiecewiseMapModel, PiecewiseMapError> {
   let masks =
@@ -254,7 +254,7 @@ pub fn fit_piecewise_map_with_features(
   additional_features: FeatureMatrixView<'_>,
   additional_layout: AdditionalFeatureLayoutView<'_>,
   changepoint_prior_scale: f64,
-  controls: crate::stan_linear_optimizer::LinearOptimizerOptions,
+  controls: crate::stan::linear_optimizer::LinearOptimizerOptions,
 ) -> Result<PiecewiseMapModel, PiecewiseMapError> {
   fit_piecewise_map_with_features_and_scaling(
     timestamps,
@@ -281,7 +281,7 @@ pub fn fit_piecewise_map_with_features_and_scaling(
   additional_features: FeatureMatrixView<'_>,
   additional_layout: AdditionalFeatureLayoutView<'_>,
   changepoint_prior_scale: f64,
-  controls: crate::stan_linear_optimizer::LinearOptimizerOptions,
+  controls: crate::stan::linear_optimizer::LinearOptimizerOptions,
   scaling_mode: ScalingMode,
 ) -> Result<PiecewiseMapModel, PiecewiseMapError> {
   if timestamps.len() != values.len() {
@@ -799,10 +799,10 @@ mod tests {
   use crate::seasonality::SeasonalitySpec;
   use crate::target_scaling::ScalingMode;
 
-  const CONTROLS: crate::stan_linear_optimizer::LinearOptimizerOptions =
-    match crate::stan_linear_optimizer::LinearOptimizerOptions::parse(
+  const CONTROLS: crate::stan::linear_optimizer::LinearOptimizerOptions =
+    match crate::stan::linear_optimizer::LinearOptimizerOptions::parse(
       2_000,
-      crate::stan_linear_optimizer::LinearOptimizerChoice::Newton,
+      crate::stan::linear_optimizer::LinearOptimizerChoice::Newton,
     ) {
       Ok(controls) => controls,
       Err(_) => panic!("valid test controls"),
@@ -845,7 +845,7 @@ mod tests {
       &[origin + 4.0 * day],
       &[],
       0.2,
-      crate::stan_linear_optimizer::LinearOptimizerOptions::default(),
+      crate::stan::linear_optimizer::LinearOptimizerOptions::default(),
     )
     .unwrap();
 

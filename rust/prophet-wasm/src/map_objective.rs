@@ -1,6 +1,6 @@
 use crate::fourier::checked_element_count;
 use crate::mixed_map::ComponentMode;
-use crate::stan_optimizer::{LogDensityEvaluation, NewtonError, NewtonResult, optimize_newton};
+use crate::stan::optimizer::{LogDensityEvaluation, NewtonError, NewtonResult, optimize_newton};
 
 const TREND_PRIOR_VARIANCE: f64 = 25.0;
 const NOISE_PRIOR_VARIANCE: f64 = 0.25;
@@ -252,12 +252,12 @@ impl<'a> StanLinearObjective<'a> {
   /// Fit with Prophet's parsed selection/override/fallback policy.
   pub fn fit_stan(
     &self,
-    options: crate::stan_linear_optimizer::LinearOptimizerOptions,
+    options: crate::stan::linear_optimizer::LinearOptimizerOptions,
   ) -> Result<
-    crate::stan_linear_optimizer::LinearOptimizationResult,
-    crate::stan_linear_optimizer::LinearOptimizationError,
+    crate::stan::linear_optimizer::LinearOptimizationResult,
+    crate::stan::linear_optimizer::LinearOptimizationError,
   > {
-    crate::stan_linear_optimizer::optimize_linear(self, options)
+    crate::stan::linear_optimizer::optimize_linear(self, options)
   }
 
   /// Prophet's endpoint initialization with normalized sigma equal to one.
@@ -309,7 +309,7 @@ impl<'a> StanLinearObjective<'a> {
 
     let sigma_index = self.sigma_index();
     let beta_start = sigma_index + 1;
-    let sigma = crate::stan_math::exp(parameters[sigma_index]);
+    let sigma = crate::stan::math::exp(parameters[sigma_index]);
     let variance = sigma * sigma;
 
     if !variance.is_finite() || variance <= 0.0 {
@@ -365,7 +365,7 @@ impl<'a> StanLinearObjective<'a> {
     // its changepoint or feature value. Do not distribute the offset product
     // into per-observation hinge derivatives: that changes floating arithmetic.
     let count = self.target.len();
-    let scaled_sum_squares = crate::stan_reductions::sum(count, |row| squared_residuals[row]);
+    let scaled_sum_squares = crate::stan::reductions::sum(count, |row| squared_residuals[row]);
     // Transformed parameters are constructed before the priors. On the reverse
     // tape the prior adjoints reach k/m before the trend's scalar broadcasts.
     gradient[0] = -(parameters[0] * 0.2) * 0.2;
@@ -376,7 +376,7 @@ impl<'a> StanLinearObjective<'a> {
     }
     for delta in 0..self.effective_changepoint_count() {
       let point = self.changepoint_times.get(delta).copied().unwrap_or(0.0);
-      let rate_adjoint = crate::stan_reductions::matrix_row_sum(count, |row| {
+      let rate_adjoint = crate::stan::reductions::matrix_row_sum(count, |row| {
         let time = self.design[row * self.column_count + 1];
         if time >= point {
           time * trend_scores[row]
@@ -384,7 +384,7 @@ impl<'a> StanLinearObjective<'a> {
           0.0
         }
       });
-      let offset_adjoint = crate::stan_reductions::matrix_row_sum(count, |row| {
+      let offset_adjoint = crate::stan::reductions::matrix_row_sum(count, |row| {
         if self.design[row * self.column_count + 1] >= point {
           trend_scores[row]
         } else {
@@ -404,7 +404,7 @@ impl<'a> StanLinearObjective<'a> {
       gradient[2 + delta] += -point * offset_adjoint;
     }
     for (column, mode) in self.modes.iter().enumerate() {
-      gradient[beta_start + column] = crate::stan_reductions::matrix_row_sum(count, |row| {
+      gradient[beta_start + column] = crate::stan::reductions::matrix_row_sum(count, |row| {
         let adjoint = match mode {
           ComponentMode::Additive => scores[row],
           ComponentMode::Multiplicative => trends[row] * scores[row],
@@ -421,7 +421,7 @@ impl<'a> StanLinearObjective<'a> {
     }
 
     let inverse_delta_prior = 1.0 / self.changepoint_prior;
-    value -= crate::stan_reductions::sum(self.effective_changepoint_count(), |index| {
+    value -= crate::stan::reductions::sum(self.effective_changepoint_count(), |index| {
       parameters[2 + index].abs() * inverse_delta_prior
     });
     value -= 0.5 * (sigma * 2.0) * (sigma * 2.0);
@@ -434,7 +434,7 @@ impl<'a> StanLinearObjective<'a> {
       gradient[index] -= standardized * inverse;
     }
     value -= 0.5
-      * crate::stan_reductions::sum(self.feature_priors.len().max(1), |column| {
+      * crate::stan::reductions::sum(self.feature_priors.len().max(1), |column| {
         let prior = self.feature_priors.get(column).copied().unwrap_or(1.0);
         let standardized = parameters[beta_start + column] * (1.0 / prior);
         standardized * standardized
@@ -458,7 +458,7 @@ impl<'a> StanLinearObjective<'a> {
       return Err(NewtonError::InvalidConfiguration);
     }
 
-    crate::stan_optimizer::check_workspace(self.parameter_count())?;
+    crate::stan::optimizer::check_workspace(self.parameter_count())?;
     let initial = self.initial_parameters();
     let density = self.evaluate(&initial).map_err(NewtonError::Objective)?;
     optimize_newton(
@@ -472,10 +472,10 @@ impl<'a> StanLinearObjective<'a> {
   /// Fit and diagnose the internal state before folding any private parameters.
   pub fn fit_model(
     &self,
-    options: crate::stan_linear_optimizer::LinearOptimizerOptions,
-  ) -> Result<NormalizedLinearMapFit, crate::stan_linear_optimizer::LinearOptimizationError> {
-    use crate::stan_linear_optimizer::LinearOptimizationError;
-    use crate::stan_optimizer::StanOptimizerError;
+    options: crate::stan::linear_optimizer::LinearOptimizerOptions,
+  ) -> Result<NormalizedLinearMapFit, crate::stan::linear_optimizer::LinearOptimizationError> {
+    use crate::stan::linear_optimizer::LinearOptimizationError;
+    use crate::stan::optimizer::StanOptimizerError;
 
     let fit = self.fit_stan(options)?;
     let (coefficients, noise_scale) = self
@@ -527,7 +527,7 @@ impl<'a> StanLinearObjective<'a> {
       .copy_from_slice(&parameters[beta_start..beta_start + self.feature_priors.len()]);
     Ok((
       coefficients,
-      crate::stan_math::exp(parameters[self.sigma_index()]),
+      crate::stan::math::exp(parameters[self.sigma_index()]),
     ))
   }
 }
@@ -539,20 +539,20 @@ pub struct NormalizedLinearMapFit {
   pub noise_scale: f64,
   pub objective: f64,
   pub stationarity_residual: f64,
-  pub optimization: crate::stan_linear_optimizer::LinearOptimizationSummary,
+  pub optimization: crate::stan::linear_optimizer::LinearOptimizationSummary,
 }
 
 #[cfg(test)]
 mod tests {
   use super::{StanLinearObjective, evaluate_map_objective};
   use crate::mixed_map::ComponentMode;
-  use crate::stan_optimizer::{NewtonTermination, finite_difference_hessian};
+  use crate::stan::optimizer::{NewtonTermination, finite_difference_hessian};
 
   fn termination_name(
-    attempts: &crate::stan_linear_optimizer::LinearOptimizationAttempts,
+    attempts: &crate::stan::linear_optimizer::LinearOptimizationAttempts,
   ) -> &'static str {
-    use crate::stan_lbfgs::LbfgsTermination as L;
-    use crate::stan_linear_optimizer::LinearOptimizationAttempts as A;
+    use crate::stan::lbfgs::LbfgsTermination as L;
+    use crate::stan::linear_optimizer::LinearOptimizationAttempts as A;
     match attempts {
       A::Newton { termination, .. } | A::NewtonFallback { termination, .. } => match termination {
         NewtonTermination::ObjectiveChange => "objective-change",
@@ -573,13 +573,13 @@ mod tests {
   #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
   #[cfg_attr(not(target_arch = "wasm32"), test)]
   fn linear_policy_and_lbfgs_match_the_frozen_executable() {
-    use crate::stan_lbfgs::{LbfgsControls, LbfgsSettings};
-    use crate::stan_linear_optimizer::NewtonFallback;
-    use crate::stan_linear_optimizer::{
+    use crate::stan::lbfgs::{LbfgsControls, LbfgsSettings};
+    use crate::stan::linear_optimizer::NewtonFallback;
+    use crate::stan::linear_optimizer::{
       LinearOptimizationAttempts as A, LinearOptimizationError, LinearOptimizerChoice as C,
       LinearOptimizerOptions,
     };
-    use crate::stan_optimizer::StanOptimizerError;
+    use crate::stan::optimizer::StanOptimizerError;
     let fixture = reference();
     let tolerances = &fixture["tolerances"];
     let mut termination_mismatches = Vec::new();

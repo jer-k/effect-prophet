@@ -14,20 +14,15 @@ pub mod piecewise_linear;
 pub mod piecewise_map;
 pub mod seasonality;
 mod simulation_rng;
-pub mod stan_lbfgs;
-pub mod stan_linear_optimizer;
-mod stan_math;
-pub mod stan_optimizer;
-mod stan_reductions;
+pub mod stan;
 mod symmetric_eigen;
 pub mod target_scaling;
-mod wasm_additive_features;
-mod wasm_flat_map;
-mod wasm_logistic_map;
-mod wasm_map;
-mod wasm_map_uncertainty;
-mod wasm_mixed_map;
-mod wasm_protocol;
+mod wasm;
+
+// Preserve the original public Rust module paths.
+pub use stan::{
+  lbfgs as stan_lbfgs, linear_optimizer as stan_linear_optimizer, optimizer as stan_optimizer,
+};
 
 use linear_trend::{LinearTrend, LinearTrendError, fit_linear_trend as fit_linear_trend_kernel};
 

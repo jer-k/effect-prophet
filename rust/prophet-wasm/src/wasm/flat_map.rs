@@ -6,7 +6,7 @@ use crate::flat_map::{
 };
 use crate::seasonality::SeasonalitySpec;
 use crate::target_scaling::{ScalingMode, TargetScaling};
-use crate::wasm_protocol::parse_positive_integer;
+use crate::wasm::protocol::parse_positive_integer;
 
 /// Status at index zero of a packed flat MAP fit result.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

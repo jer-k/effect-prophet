@@ -97,7 +97,7 @@ struct MixedEvaluation {
 /// Legal optimizer controls for the selected trend family.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum MixedMapControls {
-  Linear(crate::stan_linear_optimizer::LinearOptimizerOptions),
+  Linear(crate::stan::linear_optimizer::LinearOptimizerOptions),
   Flat(MapControls),
 }
 
@@ -1313,7 +1313,7 @@ mod tests {
       &[ComponentMode::Additive, ComponentMode::Multiplicative],
       0.05,
       super::MixedMapControls::Linear(
-        crate::stan_linear_optimizer::LinearOptimizerOptions::default(),
+        crate::stan::linear_optimizer::LinearOptimizerOptions::default(),
       ),
       ScalingMode::AbsMax,
     )

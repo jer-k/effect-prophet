@@ -3,14 +3,14 @@ use wasm_bindgen::prelude::wasm_bindgen;
 use crate::logistic_map::{LogisticParameters, fit_logistic_map, predict_logistic_map};
 use crate::piecewise_map::resolve_automatic_changepoints;
 use crate::target_scaling::{LogisticFloorPolicy, LogisticScaling, ScalingMode};
-use crate::wasm_map::{
+use crate::wasm::map::{
   PiecewiseMapFitStatus, PiecewiseMapPredictionStatus, prediction_error_frame, status_for_fit_error,
 };
-use crate::wasm_mixed_map::{
+use crate::wasm::mixed_map::{
   layout_view, mask_view, matrix_view, parse_controls, parse_metadata, parse_modes,
   parse_seasonalities, termination_code,
 };
-use crate::wasm_protocol::{parse_explicit_changepoints, parse_nonnegative_integer};
+use crate::wasm::protocol::{parse_explicit_changepoints, parse_nonnegative_integer};
 
 /// Fit a floor-aware logistic MAP model through one checked WASM call.
 #[must_use]

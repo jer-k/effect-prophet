@@ -8,7 +8,7 @@ use crate::piecewise_map::{
 };
 use crate::seasonality::SeasonalitySpec;
 use crate::target_scaling::{ScalingMode, TargetScaling};
-use crate::wasm_protocol::{
+use crate::wasm::protocol::{
   parse_explicit_changepoints, parse_nonnegative_integer, parse_positive_integer,
 };
 
@@ -162,7 +162,7 @@ fn fit_piecewise_map_protocol(
     Ok(value) => value,
     Err(status) => return fit_status_frame(status),
   };
-  let Some(controls) = crate::wasm_protocol::parse_linear_optimizer(optimizer) else {
+  let Some(controls) = crate::wasm::protocol::parse_linear_optimizer(optimizer) else {
     return fit_status_frame(PiecewiseMapFitStatus::InvalidConfiguration);
   };
   let changepoints = if changepoint_mode == 0.0 {
@@ -212,7 +212,7 @@ fn fit_piecewise_map_protocol(
       else {
         return fit_status_frame(PiecewiseMapFitStatus::SizeOverflow);
       };
-      let termination = crate::wasm_protocol::map_termination_code(model.summary.termination);
+      let termination = crate::wasm::protocol::map_termination_code(model.summary.termination);
       let mut packed = Vec::with_capacity(capacity);
 
       packed.push(f64::from(PiecewiseMapFitStatus::Success as u32));
@@ -239,7 +239,7 @@ fn fit_piecewise_map_protocol(
         model.summary.stationarity_residual,
         termination,
       ]);
-      packed.extend_from_slice(&crate::wasm_protocol::linear_summary_frame(
+      packed.extend_from_slice(&crate::wasm::protocol::linear_summary_frame(
         model.summary.termination,
       ));
       packed.extend_from_slice(&model.trend.changepoint_timestamps);
@@ -349,8 +349,8 @@ pub fn predict_piecewise_map_with_scaling(
 }
 
 pub(crate) fn fit_error_frame(error: PiecewiseMapError) -> Vec<f64> {
-  use crate::stan_linear_optimizer::LinearOptimizationError as E;
-  use crate::stan_optimizer::StanOptimizerError as O;
+  use crate::stan::linear_optimizer::LinearOptimizationError as E;
+  use crate::stan::optimizer::StanOptimizerError as O;
 
   fn failure(error: O) -> [f64; 2] {
     match error {
@@ -456,8 +456,8 @@ pub(crate) fn status_for_fit_error(error: PiecewiseMapError) -> PiecewiseMapFitS
     PiecewiseMapError::NoiseCollapse => PiecewiseMapFitStatus::NoiseCollapse,
     PiecewiseMapError::NonConvergence => PiecewiseMapFitStatus::NonConvergence,
     PiecewiseMapError::Optimizer(error) => {
-      use crate::stan_linear_optimizer::LinearOptimizationError as E;
-      use crate::stan_optimizer::StanOptimizerError as O;
+      use crate::stan::linear_optimizer::LinearOptimizationError as E;
+      use crate::stan::optimizer::StanOptimizerError as O;
       match error {
         E::Optimizer(O::SizeOverflow) => PiecewiseMapFitStatus::SizeOverflow,
         E::Optimizer(O::InvalidConfiguration) => PiecewiseMapFitStatus::InvalidConfiguration,
