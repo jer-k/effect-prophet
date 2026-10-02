@@ -18,7 +18,10 @@ c_j = u(changepoint_j)
 `scale` must be positive. Explicit changepoints are canonical UTC timestamps represented at the
 numerical boundary as integer epoch milliseconds. They are strictly increasing, unique, and
 inside the inclusive training interval `[origin, end]`. They do not need to coincide with an
-observation.
+observation. Training observations are stably sorted and may repeat. Automatic changepoints
+are selected by sorted history row index and may therefore repeat; every candidate and aligned
+delta is retained in fitted, prediction, uncertainty and serialized state. Only explicit user
+options require uniqueness.
 
 For output-unit intercept `m`, slope `k`, and aligned output-unit rate adjustments `delta_j`, the
 continuous trend is
@@ -111,16 +114,44 @@ No TypeScript trend evaluator, objective evaluator, or optimizer is part of this
 
 ## MAP fitting
 
-The accepted [`piecewise-map-coordinate-v1` decision](../decisions/map-optimizer.md) extends the
-fixed trend with Prophet's normal trend/feature priors, exact Laplace changepoint prior, positive
-observation noise, and normal likelihood. Rust uses deterministic proximal coordinate updates and
-the exact conditional noise update; there is no fallback to another fitting objective or smoothed absolute value.
+Linear MAP now uses the Rust/WASM implementation of the pinned Stan Newton and L-BFGS
+algorithms described in the [alignment plan](../decisions/linear-map-stan-alignment-plan.md).
+The objective retains the exact Laplace kink, normal trend/feature priors, positive observation
+noise, and normal likelihood. No smoothing or alternate fitting objective is used.
+Local benchmark acceptance and validation pass under the [approved fit-quality policy](../decisions/linear-map-benchmark-acceptance.md). Stationarity remains diagnostic-only under EP-097; this is not a small-KKT-residual or blanket compatibility claim. Final review/merge remains pending.
 
-The implementation uses a true empty changepoint design rather than Prophet's private dummy-delta
-fit parameterization. No-point fixed evaluation remains identical, but no-point fitted objective
-or parameter parity is not claimed. Exact constant histories use an explicit
-`constant-target-shortcut`; nonconstant residual collapse and iteration exhaustion are typed
-failures rather than successful models.
+The default selects Newton below 100 retained observations and L-BFGS otherwise. Duplicates
+count independently. Each attempt has a 10,000-iteration budget. A qualifying L-BFGS numerical
+failure retries Newton from the original initialization with a fresh full budget; a finite
+iteration-limit result does not trigger fallback and is not called convergence.
+
+```ts
+map: {
+  optimizer: {
+    algorithm: "auto", // "newton" or "lbfgs" also supported
+    maxIterations: 10_000,
+    fallback: "newton", // "none" disables retry; inapplicable to explicit Newton
+    lbfgs: { historySize: 5, initAlpha: 0.001 },
+  },
+}
+```
+
+L-BFGS defaults are `tolObj: 1e-12`, `tolRelObj: 1e4`, `tolGrad: 1e-8`,
+`tolRelGrad: 1e7`, and `tolParam: 1e-8`; relative thresholds use Stan's machine-epsilon
+formulas. Explicit Newton accepts only its algorithm and iteration budget. Obsolete linear
+`relativeTolerance`/`absoluteTolerance` controls, excess fields, and inapplicable settings fail
+validation rather than being ignored. Flat/logistic controls and featureless-default OLS are unchanged.
+
+Methods are `piecewise-map-stan-v2` and `mixed-piecewise-map-stan-v2`. Summaries retain the
+actual algorithm, termination, iterations, attempt count, known failed-attempt work, and Hessian
+resets. Unknown work remains null. The old linear coordinate-model identities are rejected;
+there is no migration shim. New models restore without fitting and retain prediction/uncertainty state.
+
+No-public-changepoint fitting uses Prophet's private zero-time delta and private zero-design
+feature where applicable. The delta is folded into public slope. Objective and stationarity
+are calculated before folding, so public slope alone cannot reconstruct those diagnostics.
+Constant histories retain the explicit `constant-target-shortcut`. Neither Stan completion
+nor a small objective change guarantees a KKT certificate at a Laplace kink.
 
 ## Rust/WASM protocol
 
@@ -128,22 +159,30 @@ The coarse fit export accepts training timestamps/values, explicit or automatic 
 controls, ordered seasonality metadata, the changepoint prior, and deterministic optimizer
 controls. Rust resolves automatic candidates and returns their timestamps with fitted deltas.
 
-The preserved legacy absmax fit success has exact width `13 + 2*C + K`. Production uses
-the explicit scaled export with width `16 + 2*C + K`:
+Linear controls use version-2 packed frames: Newton `[2, 1, maxIterations]`, or
+`[2, algorithm, maxIterations, fallback, historySize, initAlpha, tolObj, tolRelObj, tolGrad, tolRelGrad, tolParam]`.
+Algorithm codes are auto 0, Newton 1, L-BFGS 2; fallback codes are disabled 0, enabled 1.
+Linear absmax fit success has width `17 + 2*C + K`; the scaled export has width `20 + 2*C + K`:
 
 ```text
 [
   0, mode, targetOffset, targetScale,
   C, intercept, slope, timeOrigin, timeScale, valueScale, noiseScale,
   observationCount, iterations, objective, stationarityResidual, termination,
+  actualAlgorithm, attemptCount, failedAttemptIterations, hessianResets,
   ...C changepointTimestamps, ...C deltas, ...K seasonalCoefficients
 ]
 ```
 
-Termination is zero for convergence and one for the constant-target shortcut. Fit status codes
-preserve insufficient history, malformed alignment/observations/configuration, zero time range,
-size overflow, non-finite results, noise collapse, non-convergence, and unrepresentable target
-scaling. See the [target-scaling contract](target-scaling.md) for mode codes and projection rules.
+Linear completion codes are shortcut 1, Newton objective change 2, no progress 3,
+absolute objective 4, relative objective 5, absolute gradient 6, relative gradient 7,
+parameter change 8, and iteration limit 9. `failedAttemptIterations` is -1 when absent or
+unknown. Flat framing/coordinate completion remains separate.
+
+Typed status failures preserve validation, zero time range, resource limits, non-finite state,
+and unrepresentable scaling. Optimizer failure uses a bounded five-number frame retaining first
+and retry failure categories/work, without error payloads. See the
+[target-scaling contract](target-scaling.md) for mode codes and projection rules.
 
 Prediction accepts complete stored model state and returns exact width `1 + N*(3+S)` with rows
 `[trend, additive, value, ...SComponents]`. Indexed timestamp and non-finite failures identify the

@@ -10,7 +10,7 @@ use crate::wasm_mixed_map::{
   layout_view, mask_view, matrix_view, parse_controls, parse_metadata, parse_modes,
   parse_seasonalities, termination_code,
 };
-use crate::wasm_protocol::parse_nonnegative_integer;
+use crate::wasm_protocol::{parse_explicit_changepoints, parse_nonnegative_integer};
 
 /// Fit a floor-aware logistic MAP model through one checked WASM call.
 #[must_use]
@@ -63,7 +63,11 @@ pub fn fit_logistic_map_with_features(
     if automatic_count != 0.0 || automatic_range != 0.0 {
       return fit_error(PiecewiseMapFitStatus::InvalidConfiguration);
     }
-    explicit_changepoints.to_vec()
+    let Some(points) = parse_explicit_changepoints(explicit_changepoints) else {
+      return fit_error(PiecewiseMapFitStatus::InvalidConfiguration);
+    };
+
+    points
   } else if changepoint_mode == 1.0 && explicit_changepoints.is_empty() {
     let Some(count) = parse_nonnegative_integer(automatic_count) else {
       return fit_error(PiecewiseMapFitStatus::InvalidConfiguration);

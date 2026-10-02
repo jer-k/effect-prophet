@@ -95,6 +95,238 @@
         "forecastAbsolute": 0.002,
         "noiseAbsolute": 0.002
       }
+    },
+    {
+      "changepointTimestamps": [
+        "2020-01-05T00:00:00.000Z"
+      ],
+      "expected": {
+        "deltas": [
+          -5.684705019
+        ],
+        "intercept": 0.967310064,
+        "noiseScale": 0.02911794441,
+        "slope": 7.8602772,
+        "trend": [
+          0.967310064,
+          1.84067419733,
+          2.71403833067,
+          3.587402464,
+          4.46076659733,
+          4.70249683967,
+          4.944227082,
+          5.18595732433,
+          5.42768756667,
+          5.669417809,
+          6.394608536
+        ]
+      },
+      "id": "training-unsorted-explicit-break",
+      "kind": "fitted-linear-map",
+      "observations": [
+        {
+          "timestamp": "2020-01-10T00:00:00.000Z",
+          "value": 5.7
+        },
+        {
+          "timestamp": "2020-01-09T00:00:00.000Z",
+          "value": 5.4
+        },
+        {
+          "timestamp": "2020-01-08T00:00:00.000Z",
+          "value": 5.2
+        },
+        {
+          "timestamp": "2020-01-07T00:00:00.000Z",
+          "value": 4.9
+        },
+        {
+          "timestamp": "2020-01-06T00:00:00.000Z",
+          "value": 4.7
+        },
+        {
+          "timestamp": "2020-01-05T00:00:00.000Z",
+          "value": 4.5
+        },
+        {
+          "timestamp": "2020-01-04T00:00:00.000Z",
+          "value": 3.6
+        },
+        {
+          "timestamp": "2020-01-03T00:00:00.000Z",
+          "value": 2.7
+        },
+        {
+          "timestamp": "2020-01-02T00:00:00.000Z",
+          "value": 1.8
+        },
+        {
+          "timestamp": "2020-01-01T00:00:00.000Z",
+          "value": 1.0
+        }
+      ],
+      "predictionTimestamps": [
+        "2020-01-01T00:00:00.000Z",
+        "2020-01-02T00:00:00.000Z",
+        "2020-01-03T00:00:00.000Z",
+        "2020-01-04T00:00:00.000Z",
+        "2020-01-05T00:00:00.000Z",
+        "2020-01-06T00:00:00.000Z",
+        "2020-01-07T00:00:00.000Z",
+        "2020-01-08T00:00:00.000Z",
+        "2020-01-09T00:00:00.000Z",
+        "2020-01-10T00:00:00.000Z",
+        "2020-01-13T00:00:00.000Z"
+      ],
+      "settings": {
+        "algorithm": "Newton",
+        "changepointPriorScale": 0.2,
+        "densityConvention": "constrained-parameter MAP without transform Jacobian",
+        "timeOrigin": 1577836800000,
+        "timeScale": 777600000,
+        "valueScale": 5.7
+      },
+      "tolerance": {
+        "coefficientAbsolute": 0.002,
+        "forecastAbsolute": 0.002,
+        "noiseAbsolute": 0.002
+      }
+    },
+    {
+      "changepointTimestamps": [
+        "2020-01-05T00:00:00.000Z"
+      ],
+      "expected": {
+        "deltas": [
+          -3.0512160525
+        ],
+        "intercept": 1.1414334525,
+        "noiseScale": 0.647297145,
+        "slope": 6.84918498,
+        "trend": [
+          1.1414334525,
+          1.90245400583,
+          2.66347455917,
+          3.4244951125,
+          4.18551566583,
+          4.60751221333,
+          5.02950876083,
+          5.45150530833,
+          5.87350185583,
+          6.29549840333,
+          7.56148804583
+        ]
+      },
+      "id": "training-duplicates-explicit-break",
+      "kind": "fitted-linear-map",
+      "observations": [
+        {
+          "timestamp": "2020-01-01T00:00:00.000Z",
+          "value": 1.0
+        },
+        {
+          "timestamp": "2020-01-02T00:00:00.000Z",
+          "value": 1.8
+        },
+        {
+          "timestamp": "2020-01-03T00:00:00.000Z",
+          "value": 2.7
+        },
+        {
+          "timestamp": "2020-01-04T00:00:00.000Z",
+          "value": 3.6
+        },
+        {
+          "timestamp": "2020-01-05T00:00:00.000Z",
+          "value": 4.5
+        },
+        {
+          "timestamp": "2020-01-06T00:00:00.000Z",
+          "value": 4.7
+        },
+        {
+          "timestamp": "2020-01-07T00:00:00.000Z",
+          "value": 4.9
+        },
+        {
+          "timestamp": "2020-01-08T00:00:00.000Z",
+          "value": 5.2
+        },
+        {
+          "timestamp": "2020-01-09T00:00:00.000Z",
+          "value": 5.4
+        },
+        {
+          "timestamp": "2020-01-10T00:00:00.000Z",
+          "value": 5.7
+        },
+        {
+          "timestamp": "2020-01-10T00:00:00.000Z",
+          "value": 5.3500000000000005
+        },
+        {
+          "timestamp": "2020-01-09T00:00:00.000Z",
+          "value": 8.25
+        },
+        {
+          "timestamp": "2020-01-08T00:00:00.000Z",
+          "value": 5.2
+        },
+        {
+          "timestamp": "2020-01-07T00:00:00.000Z",
+          "value": 4.550000000000001
+        },
+        {
+          "timestamp": "2020-01-06T00:00:00.000Z",
+          "value": 5.05
+        },
+        {
+          "timestamp": "2020-01-05T00:00:00.000Z",
+          "value": 4.5
+        },
+        {
+          "timestamp": "2020-01-04T00:00:00.000Z",
+          "value": 3.25
+        },
+        {
+          "timestamp": "2020-01-03T00:00:00.000Z",
+          "value": 3.0500000000000003
+        },
+        {
+          "timestamp": "2020-01-02T00:00:00.000Z",
+          "value": 1.8
+        },
+        {
+          "timestamp": "2020-01-01T00:00:00.000Z",
+          "value": 0.65
+        }
+      ],
+      "predictionTimestamps": [
+        "2020-01-01T00:00:00.000Z",
+        "2020-01-02T00:00:00.000Z",
+        "2020-01-03T00:00:00.000Z",
+        "2020-01-04T00:00:00.000Z",
+        "2020-01-05T00:00:00.000Z",
+        "2020-01-06T00:00:00.000Z",
+        "2020-01-07T00:00:00.000Z",
+        "2020-01-08T00:00:00.000Z",
+        "2020-01-09T00:00:00.000Z",
+        "2020-01-10T00:00:00.000Z",
+        "2020-01-13T00:00:00.000Z"
+      ],
+      "settings": {
+        "algorithm": "Newton",
+        "changepointPriorScale": 0.2,
+        "densityConvention": "constrained-parameter MAP without transform Jacobian",
+        "timeOrigin": 1577836800000,
+        "timeScale": 777600000,
+        "valueScale": 8.25
+      },
+      "tolerance": {
+        "coefficientAbsolute": 0.002,
+        "forecastAbsolute": 0.002,
+        "noiseAbsolute": 0.002
+      }
     }
   ]
 }

@@ -89,9 +89,7 @@ describe("generated target-scaling bindings", () => {
       empty,
       empty,
       0.2,
-      2_000,
-      1e-10,
-      1e-12,
+      new Float64Array([2, 1, 2_000]),
     );
 
     assert.equal(fit[0], wasm.PiecewiseMapFitStatus.Success);
@@ -100,6 +98,6 @@ describe("generated target-scaling bindings", () => {
     assert.equal(fit[3], 5);
     assert.equal(fit[4], 1);
     assert.equal(fit[9], 5);
-    assert.equal(fit.length, 18);
+    assert.equal(fit.length, 22);
   });
 });

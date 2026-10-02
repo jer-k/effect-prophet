@@ -1,0 +1,26 @@
+{
+  "id": "training-zero-span-varied",
+  "recipe": "training-zero-span-varied-v1:n=3:h=2",
+  "observations": [
+    {
+      "timestamp": "2020-01-01T00:00:00.000Z",
+      "value": 2
+    },
+    {
+      "timestamp": "2020-01-01T00:00:00.000Z",
+      "value": 4
+    },
+    {
+      "timestamp": "2020-01-01T00:00:00.000Z",
+      "value": 7
+    }
+  ],
+  "predictionRows": [
+    {
+      "timestamp": "2020-01-01T00:00:00.000Z"
+    },
+    {
+      "timestamp": "2020-01-02T00:00:00.000Z"
+    }
+  ]
+}

@@ -28,7 +28,10 @@ import evaluation as evaluation_work
 PROTOCOL_PREFIX = "EFFECT_PROPHET_BENCHMARK_RESULT="
 ADAPTER_PATH = Path(__file__).resolve()
 BENCHMARK_ROOT = ADAPTER_PATH.parent.parent
-DEFAULT_CASES_PATH = BENCHMARK_ROOT / "cases" / "public-api.json"
+sys.path.insert(0, str(BENCHMARK_ROOT.parent / "tools" / "prophet"))
+from linear_optimizer_evidence import linear_optimizer_evidence
+
+DEFAULT_CASES_PATH = BENCHMARK_ROOT / "cases" / "linear-growth" / "public-api.json"
 DEFAULT_DATA_ROOT = BENCHMARK_ROOT / "data"
 DEFAULT_OUTPUT_PATH = BENCHMARK_ROOT / "results" / "runs" / "python-prophet.json"
 MEASUREMENT_SINK: Any = None
@@ -207,8 +210,9 @@ def fit_model(training: pd.DataFrame, benchmark_case: dict[str, Any]) -> Prophet
     optimizer = workload["pythonOptimizer"]
     return model.fit(
         training,
-        algorithm=optimizer["algorithm"],
+        **({} if optimizer["algorithm"] == "Auto" else {"algorithm": optimizer["algorithm"]}),
         iter=optimizer["maxIterations"],
+        **({"sig_figs": optimizer["sigFigs"]} if "sigFigs" in optimizer else {}),
     )
 
 
@@ -702,13 +706,31 @@ def correctness_projection(
     if benchmark_case["workload"]["kind"] in ("linear-map", "stage-f-map"):
         if sigma is None or model.y_scale is None:
             raise ValueError("Prophet MAP fit omitted its noise scale")
-        result["noiseScale"] = float(sigma[0][0] * model.y_scale)
+        result["noiseScale"] = float(np.asarray(sigma).reshape(-1)[0] * model.y_scale)
         stan_fit = model.stan_fit
         optimized = None if stan_fit is None else stan_fit.optimized_params_dict
         objective = None if optimized is None else optimized.get("lp__")
-        if objective is None or not math.isfinite(float(objective)):
-            raise ValueError("Prophet MAP fit did not retain a finite optimizer objective")
-        result["fitQuality"] = [{"name": "cmdstan-lp", "value": float(objective)}]
+        if objective is None:
+            # Prophet's exact-constant shortcut intentionally never invokes CmdStan.
+            # Record verified shortcut noise, not a fabricated optimizer objective.
+            shortcut = (model.growth in ("linear", "flat")
+                        and model.history["y"].min() == model.history["y"].max()
+                        and all(np.isfinite(value).all() for value in model.params.values()))
+            normalized_noise = float(np.asarray(sigma).reshape(-1)[0])
+            if not shortcut or normalized_noise != 1e-9:
+                raise ValueError("Prophet MAP fit omitted optimizer or constant-shortcut evidence")
+            result["fitQuality"] = [{"name": "constant-target-shortcut-noise", "value": normalized_noise}]
+        else:
+            if not math.isfinite(float(objective)):
+                raise ValueError("Prophet MAP fit did not retain a finite optimizer objective")
+            result["fitQuality"] = [{"name": "cmdstan-lp", "value": float(objective)}]
+            if model.growth == "linear" and benchmark_case.get("optimizerQuality") is not None:
+                evidence = linear_optimizer_evidence(model)
+                result["fitQuality"].extend([
+                    {"name": "objective", "value": evidence["objective"]},
+                    {"name": "stationarity-residual", "value": evidence["stationarityResidual"]},
+                    {"name": "normalized-noise", "value": float(np.asarray(sigma).reshape(-1)[0])},
+                ])
     return result
 
 

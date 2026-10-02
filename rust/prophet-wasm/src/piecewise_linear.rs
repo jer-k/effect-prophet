@@ -13,7 +13,7 @@ pub struct PiecewiseTrend {
   /// Positive full training range in milliseconds.
   pub time_scale: f64,
 
-  /// Strictly increasing changepoint timestamps in inclusive training bounds.
+  /// Nondecreasing changepoint timestamps in inclusive training bounds.
   pub changepoint_timestamps: Vec<f64>,
 
   /// Output-unit slope adjustments aligned with changepoints.
@@ -59,7 +59,7 @@ impl PiecewiseTrend {
         || !delta.is_finite()
         || changepoint < self.time_origin
         || changepoint > training_end
-        || previous.is_some_and(|value| changepoint <= value)
+        || previous.is_some_and(|value| changepoint < value)
       {
         return Err(PiecewiseTrendError::InvalidModel);
       }

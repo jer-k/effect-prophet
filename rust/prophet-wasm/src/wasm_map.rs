@@ -2,13 +2,15 @@ use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::piecewise_linear::PiecewiseTrend;
 use crate::piecewise_map::{
-  MapControls, MapTermination, PiecewiseMapError, PiecewiseMapPredictionError,
+  PiecewiseMapError, PiecewiseMapPredictionError,
   fit_piecewise_map_with_scaling as fit_kernel_with_scaling,
   predict_piecewise_map as predict_kernel, resolve_automatic_changepoints,
 };
 use crate::seasonality::SeasonalitySpec;
 use crate::target_scaling::{ScalingMode, TargetScaling};
-use crate::wasm_protocol::{parse_nonnegative_integer, parse_positive_integer};
+use crate::wasm_protocol::{
+  parse_explicit_changepoints, parse_nonnegative_integer, parse_positive_integer,
+};
 
 /// Status at index zero of a packed linear piecewise MAP fit result.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -37,6 +39,8 @@ pub enum PiecewiseMapFitStatus {
   NonConvergence = 9,
   /// Finite targets produced an unrepresentable scaling domain.
   NonRepresentableScaling = 10,
+  /// Linear solver failure details follow, preserving a failed retry.
+  OptimizerFailure = 11,
 }
 
 /// Status at index zero of a packed linear piecewise prediction result.
@@ -78,9 +82,7 @@ pub fn fit_piecewise_map(
   fourier_orders: &[f64],
   prior_scales: &[f64],
   changepoint_prior_scale: f64,
-  max_iterations: f64,
-  relative_tolerance: f64,
-  absolute_tolerance: f64,
+  optimizer: &[f64],
 ) -> Vec<f64> {
   fit_piecewise_map_protocol(
     timestamps,
@@ -93,9 +95,7 @@ pub fn fit_piecewise_map(
     fourier_orders,
     prior_scales,
     changepoint_prior_scale,
-    max_iterations,
-    relative_tolerance,
-    absolute_tolerance,
+    optimizer,
     ScalingMode::AbsMax,
     false,
   )
@@ -119,9 +119,7 @@ pub fn fit_piecewise_map_with_scaling(
   fourier_orders: &[f64],
   prior_scales: &[f64],
   changepoint_prior_scale: f64,
-  max_iterations: f64,
-  relative_tolerance: f64,
-  absolute_tolerance: f64,
+  optimizer: &[f64],
 ) -> Vec<f64> {
   let Some(scaling_mode) = ScalingMode::from_code(scaling_mode) else {
     return fit_status_frame(PiecewiseMapFitStatus::InvalidConfiguration);
@@ -138,9 +136,7 @@ pub fn fit_piecewise_map_with_scaling(
     fourier_orders,
     prior_scales,
     changepoint_prior_scale,
-    max_iterations,
-    relative_tolerance,
-    absolute_tolerance,
+    optimizer,
     scaling_mode,
     true,
   )
@@ -158,9 +154,7 @@ fn fit_piecewise_map_protocol(
   fourier_orders: &[f64],
   prior_scales: &[f64],
   changepoint_prior_scale: f64,
-  max_iterations: f64,
-  relative_tolerance: f64,
-  absolute_tolerance: f64,
+  optimizer: &[f64],
   scaling_mode: ScalingMode,
   include_scaling: bool,
 ) -> Vec<f64> {
@@ -168,16 +162,19 @@ fn fit_piecewise_map_protocol(
     Ok(value) => value,
     Err(status) => return fit_status_frame(status),
   };
-  let controls = match parse_controls(max_iterations, relative_tolerance, absolute_tolerance) {
-    Ok(value) => value,
-    Err(status) => return fit_status_frame(status),
+  let Some(controls) = crate::wasm_protocol::parse_linear_optimizer(optimizer) else {
+    return fit_status_frame(PiecewiseMapFitStatus::InvalidConfiguration);
   };
   let changepoints = if changepoint_mode == 0.0 {
     if automatic_count != 0.0 || automatic_range != 0.0 {
       return fit_status_frame(PiecewiseMapFitStatus::InvalidConfiguration);
     }
 
-    explicit_changepoints.to_vec()
+    let Some(points) = parse_explicit_changepoints(explicit_changepoints) else {
+      return fit_status_frame(PiecewiseMapFitStatus::InvalidConfiguration);
+    };
+
+    points
   } else if changepoint_mode == 1.0 {
     if !explicit_changepoints.is_empty() {
       return fit_status_frame(PiecewiseMapFitStatus::InvalidConfiguration);
@@ -211,14 +208,11 @@ fn fit_piecewise_map_protocol(
       let Some(capacity) = changepoint_count
         .checked_mul(2)
         .and_then(|count| count.checked_add(model.coefficients.len()))
-        .and_then(|count| count.checked_add(13 + metadata_width))
+        .and_then(|count| count.checked_add(17 + metadata_width))
       else {
         return fit_status_frame(PiecewiseMapFitStatus::SizeOverflow);
       };
-      let termination = match model.summary.termination {
-        MapTermination::Converged => 0.0,
-        MapTermination::ConstantTargetShortcut => 1.0,
-      };
+      let termination = crate::wasm_protocol::map_termination_code(model.summary.termination);
       let mut packed = Vec::with_capacity(capacity);
 
       packed.push(f64::from(PiecewiseMapFitStatus::Success as u32));
@@ -245,13 +239,16 @@ fn fit_piecewise_map_protocol(
         model.summary.stationarity_residual,
         termination,
       ]);
+      packed.extend_from_slice(&crate::wasm_protocol::linear_summary_frame(
+        model.summary.termination,
+      ));
       packed.extend_from_slice(&model.trend.changepoint_timestamps);
       packed.extend_from_slice(&model.trend.deltas);
       packed.extend_from_slice(&model.coefficients);
 
       packed
     }
-    Err(error) => fit_status_frame(status_for_fit_error(error)),
+    Err(error) => fit_error_frame(error),
   }
 }
 
@@ -351,27 +348,37 @@ pub fn predict_piecewise_map_with_scaling(
   )
 }
 
-fn parse_controls(
-  max_iterations: f64,
-  relative_tolerance: f64,
-  absolute_tolerance: f64,
-) -> Result<MapControls, PiecewiseMapFitStatus> {
-  let max_iterations =
-    parse_positive_integer(max_iterations).ok_or(PiecewiseMapFitStatus::InvalidConfiguration)?;
+pub(crate) fn fit_error_frame(error: PiecewiseMapError) -> Vec<f64> {
+  use crate::stan_linear_optimizer::LinearOptimizationError as E;
+  use crate::stan_optimizer::StanOptimizerError as O;
 
-  if !relative_tolerance.is_finite()
-    || relative_tolerance <= 0.0
-    || !absolute_tolerance.is_finite()
-    || absolute_tolerance <= 0.0
-  {
-    return Err(PiecewiseMapFitStatus::InvalidConfiguration);
+  fn failure(error: O) -> [f64; 2] {
+    match error {
+      O::InvalidConfiguration => [1.0, -1.0],
+      O::SizeOverflow => [2.0, -1.0],
+      O::Objective(_) => [3.0, -1.0],
+      O::CurvatureFailure => [4.0, -1.0],
+      O::NonFiniteResult => [5.0, -1.0],
+      O::LineSearchFailure { iterations } => [6.0, iterations as f64],
+    }
   }
 
-  Ok(MapControls {
-    max_iterations,
-    relative_tolerance,
-    absolute_tolerance,
-  })
+  if let PiecewiseMapError::Optimizer(error) = error {
+    let mut frame = vec![11.0];
+    match error {
+      E::Optimizer(error) => {
+        frame.extend_from_slice(&failure(error));
+        frame.extend_from_slice(&[0.0, -1.0]);
+      }
+      E::Fallback { lbfgs, newton } => {
+        frame.extend_from_slice(&failure(lbfgs));
+        frame.extend_from_slice(&failure(newton));
+      }
+    }
+    frame
+  } else {
+    fit_status_frame(status_for_fit_error(error))
+  }
 }
 
 fn parse_seasonalities(
@@ -448,6 +455,15 @@ pub(crate) fn status_for_fit_error(error: PiecewiseMapError) -> PiecewiseMapFitS
     PiecewiseMapError::NonRepresentableScaling => PiecewiseMapFitStatus::NonRepresentableScaling,
     PiecewiseMapError::NoiseCollapse => PiecewiseMapFitStatus::NoiseCollapse,
     PiecewiseMapError::NonConvergence => PiecewiseMapFitStatus::NonConvergence,
+    PiecewiseMapError::Optimizer(error) => {
+      use crate::stan_linear_optimizer::LinearOptimizationError as E;
+      use crate::stan_optimizer::StanOptimizerError as O;
+      match error {
+        E::Optimizer(O::SizeOverflow) => PiecewiseMapFitStatus::SizeOverflow,
+        E::Optimizer(O::InvalidConfiguration) => PiecewiseMapFitStatus::InvalidConfiguration,
+        _ => PiecewiseMapFitStatus::NonFiniteResult,
+      }
+    }
   }
 }
 
@@ -500,9 +516,7 @@ mod tests {
       &[],
       &[],
       0.5,
-      2_000.0,
-      1e-10,
-      1e-12,
+      &[2.0, 1.0, 2_000.0],
     );
 
     assert_eq!(
@@ -510,7 +524,7 @@ mod tests {
       f64::from(PiecewiseMapFitStatus::Success as u32)
     );
     assert_eq!(explicit[1], 1.0);
-    assert_eq!(explicit.len(), 15);
+    assert_eq!(explicit.len(), 19);
 
     let automatic = fit_piecewise_map(
       &[0.0, 1.0, 2.0, 3.0, 4.0, 5.0],
@@ -523,9 +537,7 @@ mod tests {
       &[],
       &[],
       0.5,
-      2_000.0,
-      1e-10,
-      1e-12,
+      &[2.0, 1.0, 2_000.0],
     );
 
     assert_eq!(

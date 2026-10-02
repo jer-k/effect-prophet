@@ -19,8 +19,9 @@ def metric_window(case):
 def partition(dataset, case, records_frame):
     config = case["workload"]
     count = config.get("holdoutRows", 0)
-    development = dataset["observations"][:-count] if count else dataset["observations"]
-    holdout = dataset["observations"][-count:] if count else []
+    ordered = sorted(dataset["observations"], key=lambda row: row["timestamp"])
+    development = ordered[:-count] if count else ordered
+    holdout = ordered[-count:] if count else []
     return records_frame(development, include_value=True), records_frame(holdout, include_value=True)
 
 

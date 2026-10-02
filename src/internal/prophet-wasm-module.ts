@@ -36,9 +36,7 @@ export interface AdditiveFeatureWasmBindings {
     additionalComponentOffsets: Float64Array,
     additionalComponentCounts: Float64Array,
     changepointPriorScale: number,
-    maxIterations: number,
-    relativeTolerance: number,
-    absoluteTolerance: number,
+    optimizer: Float64Array,
   ) => Float64Array;
 
   readonly fit_piecewise_map_with_features_and_scaling: (
@@ -59,9 +57,7 @@ export interface AdditiveFeatureWasmBindings {
     additionalComponentOffsets: Float64Array,
     additionalComponentCounts: Float64Array,
     changepointPriorScale: number,
-    maxIterations: number,
-    relativeTolerance: number,
-    absoluteTolerance: number,
+    optimizer: Float64Array,
   ) => Float64Array;
 
   readonly predict_piecewise_map_with_features: (
@@ -167,9 +163,7 @@ export interface PiecewiseMapWasmBindings {
     fourierOrders: Float64Array,
     priorScales: Float64Array,
     changepointPriorScale: number,
-    maxIterations: number,
-    relativeTolerance: number,
-    absoluteTolerance: number,
+    optimizer: Float64Array,
   ) => Float64Array;
 
   /** Fit one scaled explicit or automatic linear piecewise MAP model. */
@@ -185,9 +179,7 @@ export interface PiecewiseMapWasmBindings {
     fourierOrders: Float64Array,
     priorScales: Float64Array,
     changepointPriorScale: number,
-    maxIterations: number,
-    relativeTolerance: number,
-    absoluteTolerance: number,
+    optimizer: Float64Array,
   ) => Float64Array;
 
   /** Evaluate one complete linear piecewise MAP prediction batch. */

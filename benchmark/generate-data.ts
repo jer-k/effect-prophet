@@ -46,6 +46,7 @@ type DatasetRecipe = {
   readonly irregular?: boolean;
   readonly noiseMultiplier?: number;
   readonly trend?: (index: number, observationCount: number) => number;
+  readonly trainingTimestamp?: (index: number) => string;
   readonly covariates: (index: number) => Covariates;
   readonly additive: (index: number, covariates: Covariates) => number;
 };
@@ -61,7 +62,7 @@ const makeDataset = (recipe: DatasetRecipe): BenchmarkDataset => {
     );
 
     return {
-      timestamp: timestampAt(index, recipe.irregular),
+      timestamp: recipe.trainingTimestamp?.(index) ?? timestampAt(index, recipe.irregular),
       value,
       ...covariates,
     };
@@ -130,6 +131,54 @@ const automaticMixedEventIndexes = {
 } as const;
 
 const datasets: ReadonlyArray<BenchmarkDataset> = [
+  ...(["ordered", "unsorted", "duplicates", "duplicate-features"] as const).map((variant) => {
+    const duplicates = variant === "duplicates" || variant === "duplicate-features";
+    const timeIndex = (index: number) => (duplicates ? Math.floor(index / 4) : index);
+
+    const dataset = makeDataset({
+      id: `training-${variant}`,
+      observationCount: 96,
+      predictionCount: 8,
+      recipe: `training-${variant}-v1:n=96:h=8:${variant === "ordered" ? "stable-ascending-source" : "stable-reverse-source"}:quadruplicate=${duplicates}:bounded-row-noise`,
+      trainingTimestamp: (index) => timestampAt(timeIndex(index)),
+      trend: (index) => 12 + timeIndex(index) * 0.15 + Math.max(0, timeIndex(index) - 16) * 0.08,
+      covariates: (index) =>
+        variant === "duplicate-features"
+          ? {
+              regressors: { promotion: index % 4 === 0 ? 1 : 0 },
+              conditions: { active: index % 4 !== 1 },
+            }
+          : {},
+      additive: (index, covariates) =>
+        variant === "duplicate-features"
+          ? (covariates.conditions?.active === true
+              ? 0.7 * Math.sin((2 * Math.PI * timeIndex(index)) / 7)
+              : 0) +
+            0.5 * (covariates.regressors?.promotion ?? 0)
+          : 0,
+    });
+
+    const lastDay = duplicates ? 23 : 95;
+
+    return {
+      ...dataset,
+      observations:
+        variant === "ordered" ? dataset.observations : [...dataset.observations].reverse(),
+      predictionRows: dataset.predictionRows.map((row, index) => ({
+        ...row,
+        timestamp: timestampAt(lastDay + index + 1),
+      })),
+    };
+  }),
+  ...(["varied", "constant"] as const).map((variant) => ({
+    id: `training-zero-span-${variant}`,
+    recipe: `training-zero-span-${variant}-v1:n=3:h=2`,
+    observations: (variant === "constant" ? [2, 2, 2] : [2, 4, 7]).map((value) => ({
+      timestamp: timestampAt(0),
+      value,
+    })),
+    predictionRows: [{ timestamp: timestampAt(0) }, { timestamp: timestampAt(1) }],
+  })),
   makeDataset({
     id: "linear-small",
     observationCount: 32,

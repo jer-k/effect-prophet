@@ -1,0 +1,1581 @@
+{
+  "schemaVersion": 1,
+  "run": {
+    "schemaVersion": 1,
+    "runId": "2026-10-01T224335-779Z-4d661a06",
+    "createdAt": "2026-10-01T22:43:52.623Z",
+    "gitRevision": "4d661a06a7e2f588f4b466cdcd4905753e3cce6b",
+    "gitDirty": true,
+    "hostPlatform": "darwin",
+    "hostRelease": "25.5.0",
+    "hostArchitecture": "arm64",
+    "hostProcessor": "Apple M4 Pro",
+    "containerPlatform": "linux/arm64",
+    "emulated": false,
+    "selectedCases": [
+      "map-training-ordered-explicit-stan-v2",
+      "map-training-ordered-auto-stan-v2",
+      "map-training-unsorted-explicit-stan-v2",
+      "map-training-unsorted-auto-stan-v2",
+      "map-training-duplicates-explicit-stan-v2",
+      "map-training-duplicates-auto-stan-v2",
+      "map-training-duplicate-features-auto-stan-v2",
+      "uncertainty-training-duplicates-auto-stan-v2",
+      "map-training-zero-span-linear-varied-stan-v2",
+      "map-training-zero-span-flat-varied-stan-v2",
+      "map-training-zero-span-linear-constant-stan-v2",
+      "map-training-zero-span-flat-constant-stan-v2",
+      "evaluation-training-duplicates-stan-v2",
+      "map-mixed-features-automatic-large-stan-v2",
+      "linear-mixed-components-stan-v2",
+      "linear-offset-scaling-minmax-stan-v2"
+    ],
+    "commands": [
+      "BENCHMARK_STAGE=correctness BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/compose.yaml run --rm effect-prophet-benchmark",
+      "BENCHMARK_STAGE=correctness BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/compose.yaml run --rm python-prophet-benchmark",
+      "BENCHMARK_REPORT_MODE=eligibility BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/compose.yaml run --rm benchmark-report",
+      "BENCHMARK_STAGE=timing BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/compose.yaml run --rm effect-prophet-benchmark",
+      "BENCHMARK_STAGE=timing BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/compose.yaml run --rm python-prophet-benchmark",
+      "BENCHMARK_REPORT_MODE=final BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/compose.yaml run --rm benchmark-report"
+    ],
+    "inputHashes": [
+      {
+        "name": "benchmark/cases/linear-growth/public-api.json",
+        "value": "a88e1eec32763e9a310799af5ec6bd8821eb1ce655a383e4952a90e0a25f3cc0"
+      },
+      {
+        "name": "benchmark/cases/linear-growth/scenarios.json",
+        "value": "57ccb7c7bf02d9d17ebe80f961634bc011bb1237af3cfe250e1659c2aa03bb78"
+      },
+      {
+        "name": "benchmark/cases/linear-growth/edge-cases.ts",
+        "value": "c2ce3ed8536f878af3a2a26a252539b5e320fad222a47c266208e7d9c837f57f"
+      },
+      {
+        "name": "benchmark/cases/linear-growth/stan-aligned.ts",
+        "value": "590e5fedbf8f23854efab094e278674bbfa05168ef289e1b9a075f9c43ea21ba"
+      },
+      {
+        "name": "tools/prophet/linear_optimizer_evidence.py",
+        "value": "0832bd2626e26334a82afee1ea504de429e06ac79930d5b88adf51f5fb3912aa"
+      },
+      {
+        "name": "benchmark/cases/growth-scaling-and-mixed-map.ts",
+        "value": "eb01214b72e234cb05acc2795caa5adf87a4d4638dfc66542feb081dc3d450e7"
+      },
+      {
+        "name": "benchmark/cases/uncertainty.ts",
+        "value": "2d14b373d815482563daa87ea3a2e210b0607b7f102f1773356243023c4c5523"
+      },
+      {
+        "name": "benchmark/cases/evaluation.ts",
+        "value": "6109ac468a89df0988b00f16bf259eff7f1c0c7b8f998f8ae018b7ae518b11b9"
+      },
+      {
+        "name": "benchmark/evaluation.ts",
+        "value": "47509542661e3ee05417fd457e8244067febb89f6aa232d380bb877a3e593c6c"
+      },
+      {
+        "name": "benchmark/adapters/evaluation.py",
+        "value": "025bcf9f3210e9a2a91c2e70ac43b23cb385952d180603287d4c9d087561c278"
+      },
+      {
+        "name": "benchmark/results/runs/2026-10-01T224335-779Z-4d661a06/cases.json",
+        "value": "60f4c1c547e2dd68dfdaa7a73eb1e3fec25533d641cac7b6cfea00c123b2b14c"
+      },
+      {
+        "name": "benchmark/evidence/comparisons.json",
+        "value": "217349e63060992a5ca5ee574e7e3029436015aaa46c9a943eb7487e511448c4"
+      },
+      {
+        "name": "benchmark/python/uv.lock",
+        "value": "c90f2464e1d50dbe489bdcdaf8350f04c162f6c617559cfb75d6977b0f430ab1"
+      },
+      {
+        "name": "benchmark/data/generated/manifest.json",
+        "value": "99c273c95fc5a1bf8c8d0e3b3d106355572f5e8a49b323dd37aa3ad9827594d7"
+      },
+      {
+        "name": "package-lock.json",
+        "value": "99bda82607c5764a965fc84c4f1c3aeb518b7a1604975e958b3ad63e4887d936"
+      },
+      {
+        "name": "benchmark/data/generated/map-mixed-features-automatic-large.json",
+        "value": "7a24d6ad1f87032a320eed898a00a41bc90a4b0c7febb7c42801715c86c664b5"
+      },
+      {
+        "name": "benchmark/data/generated/training-ordered.json",
+        "value": "26225e1a04e8d87fbc01f0cbcbe1053c72b87e0ef2c1d0efca3d15a1a448668c"
+      },
+      {
+        "name": "benchmark/data/generated/training-unsorted.json",
+        "value": "f7bd2722b293c4d2d94d63d48023d3788bc701bf2fb1b3d6b96a738cf74a05e9"
+      },
+      {
+        "name": "benchmark/data/generated/training-duplicates.json",
+        "value": "4cb336b1befb59c6e212152cf9f292da82dca61867da485e29840acad55a2926"
+      },
+      {
+        "name": "benchmark/data/generated/training-duplicate-features.json",
+        "value": "ce3a031ede4894710f5fd128a31ca6b69ef8eee8be461984e62b67b9b71cf98b"
+      },
+      {
+        "name": "benchmark/data/generated/training-zero-span-varied.json",
+        "value": "e307813127392e6c95ea82ca8a1c37e2689b01e18f42cb17ec0a882857617f8b"
+      },
+      {
+        "name": "benchmark/data/generated/training-zero-span-constant.json",
+        "value": "47f06ea5accdb781bc8381967f1d0df9452af3afd5216a95861961a9ee95a2ec"
+      },
+      {
+        "name": "benchmark/data/generated/linear-offset-scaling.json",
+        "value": "bfea515181446ef72eeed2acaef46db63d6fcee5cd1d6af177ad886a6c973b5e"
+      },
+      {
+        "name": "benchmark/data/generated/linear-mixed-components.json",
+        "value": "48c87b33c9ffb95217c18f0dc10baf441141cf937b79d1081d16f29057cd6b1c"
+      }
+    ],
+    "containerImages": [
+      {
+        "name": "effect-prophet/benchmark-effect:local",
+        "value": "sha256:129f26d3fba75d933c3b89fe1ba44056724aec000540b6553a588a71c01fb4ad"
+      },
+      {
+        "name": "effect-prophet/benchmark-python:1.4.0",
+        "value": "sha256:b9ad12f275b26869435cccffa90aabcb55f680b4cf53a0ce59936e4ce3cf7cb8"
+      }
+    ]
+  },
+  "generatedAt": "2026-10-01T22:47:25.402Z",
+  "purpose": "Descriptive public API timing and correctness evidence; this report presents absolute measurements without ranking implementations.",
+  "correctness": [
+    {
+      "caseId": "map-mixed-features-automatic-large-stan-v2",
+      "status": "failed",
+      "comparison": "equivalent-objective",
+      "note": "Independent linear optimizer stationarity-residual evidence is missing or exceeds its declared tolerance."
+    },
+    {
+      "caseId": "map-training-ordered-explicit-stan-v2",
+      "status": "passed",
+      "comparison": "equivalent-objective",
+      "maximumDifferences": {
+        "trend": 3.268496584496461e-12,
+        "component": 0,
+        "additive": 0,
+        "forecast": 3.268496584496461e-12,
+        "noiseScale": 4.6351811278100286e-15
+      },
+      "note": "Verified equivalent behavior for this configuration under evidence linear-stan-map-v2."
+    },
+    {
+      "caseId": "map-training-ordered-auto-stan-v2",
+      "status": "failed",
+      "comparison": "equivalent-objective",
+      "note": "Independent linear optimizer stationarity-residual evidence is missing or exceeds its declared tolerance."
+    },
+    {
+      "caseId": "map-training-unsorted-explicit-stan-v2",
+      "status": "passed",
+      "comparison": "equivalent-objective",
+      "maximumDifferences": {
+        "trend": 3.268496584496461e-12,
+        "component": 0,
+        "additive": 0,
+        "forecast": 3.268496584496461e-12,
+        "noiseScale": 4.6351811278100286e-15
+      },
+      "note": "Verified equivalent behavior for this configuration under evidence linear-stan-map-v2."
+    },
+    {
+      "caseId": "map-training-unsorted-auto-stan-v2",
+      "status": "failed",
+      "comparison": "equivalent-objective",
+      "note": "Independent linear optimizer stationarity-residual evidence is missing or exceeds its declared tolerance."
+    },
+    {
+      "caseId": "map-training-duplicates-explicit-stan-v2",
+      "status": "passed",
+      "comparison": "equivalent-objective",
+      "maximumDifferences": {
+        "trend": 1.6907364397411584e-11,
+        "component": 0,
+        "additive": 0,
+        "forecast": 1.6907364397411584e-11,
+        "noiseScale": 5.791200852200973e-14
+      },
+      "note": "Verified equivalent behavior for this configuration under evidence linear-stan-map-v2."
+    },
+    {
+      "caseId": "map-training-duplicates-auto-stan-v2",
+      "status": "failed",
+      "comparison": "equivalent-objective",
+      "note": "Independent linear optimizer stationarity-residual evidence is missing or exceeds its declared tolerance."
+    },
+    {
+      "caseId": "map-training-duplicate-features-auto-stan-v2",
+      "status": "failed",
+      "comparison": "equivalent-objective",
+      "note": "Independent linear optimizer stationarity-residual evidence is missing or exceeds its declared tolerance."
+    },
+    {
+      "caseId": "uncertainty-training-duplicates-auto-stan-v2",
+      "status": "failed",
+      "comparison": "scalar-process-different-public-work",
+      "note": "Independent linear optimizer stationarity-residual evidence is missing or exceeds its declared tolerance."
+    },
+    {
+      "caseId": "map-training-zero-span-linear-varied-stan-v2",
+      "status": "failed",
+      "comparison": "equivalent-objective",
+      "note": "At least one implementation run failed before correctness eligibility was established."
+    },
+    {
+      "caseId": "map-training-zero-span-flat-varied-stan-v2",
+      "status": "passed",
+      "comparison": "equivalent-objective",
+      "maximumDifferences": {
+        "trend": 0.00008557424916677547,
+        "component": 0,
+        "additive": 0,
+        "forecast": 0.00008557424916677547,
+        "noiseScale": 0.00033379059483107376
+      },
+      "note": "Verified equivalent behavior for this configuration under evidence training-row-map-v1."
+    },
+    {
+      "caseId": "map-training-zero-span-linear-constant-stan-v2",
+      "status": "failed",
+      "comparison": "equivalent-objective",
+      "note": "At least one implementation run failed before correctness eligibility was established."
+    },
+    {
+      "caseId": "map-training-zero-span-flat-constant-stan-v2",
+      "status": "passed",
+      "comparison": "equivalent-objective",
+      "maximumDifferences": {
+        "trend": 0,
+        "component": 0,
+        "additive": 0,
+        "forecast": 0,
+        "noiseScale": 0
+      },
+      "note": "Verified equivalent behavior for this configuration under evidence training-row-map-v1."
+    },
+    {
+      "caseId": "evaluation-training-duplicates-stan-v2",
+      "status": "passed",
+      "comparison": "different-public-work",
+      "maximumDifferences": {
+        "trend": 0,
+        "component": 0,
+        "additive": 0,
+        "forecast": 1.2091661005797505e-11,
+        "noiseScale": 0
+      },
+      "note": "Aligned folds, rows, targets and point forecasts passed; public evaluation/uncertainty/metric/report work differs. Absolute times only."
+    },
+    {
+      "caseId": "linear-offset-scaling-minmax-stan-v2",
+      "status": "passed",
+      "comparison": "equivalent-objective",
+      "maximumDifferences": {
+        "trend": 6.110667527536862e-13,
+        "component": 2.911321357601526e-13,
+        "additive": 2.911321357601526e-13,
+        "forecast": 8.384404281969182e-13,
+        "noiseScale": 4.4651782271643015e-14
+      },
+      "note": "Verified equivalent behavior for this configuration under evidence linear-stan-map-v2."
+    },
+    {
+      "caseId": "linear-mixed-components-stan-v2",
+      "status": "passed",
+      "comparison": "equivalent-objective",
+      "maximumDifferences": {
+        "trend": 1.24835253245692e-10,
+        "component": 2.4705570922378683e-11,
+        "additive": 0,
+        "forecast": 1.4455281416303478e-10,
+        "noiseScale": 1.2983447650327662e-10
+      },
+      "note": "Verified equivalent behavior for this configuration under evidence linear-stan-map-v2."
+    }
+  ],
+  "timings": [
+    {
+      "caseId": "evaluation-training-duplicates-stan-v2",
+      "phase": "evaluation-baseline",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 160542720,
+      "sampleCount": 4,
+      "medianNanoseconds": 1329625,
+      "p90Nanoseconds": 1667709,
+      "minimumNanoseconds": 1277042,
+      "maximumNanoseconds": 1667709
+    },
+    {
+      "caseId": "evaluation-training-duplicates-stan-v2",
+      "phase": "evaluation-baseline",
+      "implementation": "python-prophet",
+      "peakRssBytes": 123248640,
+      "sampleCount": 4,
+      "medianNanoseconds": 1476625,
+      "p90Nanoseconds": 1674625,
+      "minimumNanoseconds": 1465458,
+      "maximumNanoseconds": 1674625
+    },
+    {
+      "caseId": "evaluation-training-duplicates-stan-v2",
+      "phase": "evaluation-holdout",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 160542720,
+      "sampleCount": 4,
+      "medianNanoseconds": 4244459,
+      "p90Nanoseconds": 4340750,
+      "minimumNanoseconds": 3790917,
+      "maximumNanoseconds": 4340750
+    },
+    {
+      "caseId": "evaluation-training-duplicates-stan-v2",
+      "phase": "evaluation-holdout",
+      "implementation": "python-prophet",
+      "peakRssBytes": 123666432,
+      "sampleCount": 4,
+      "medianNanoseconds": 24449125,
+      "p90Nanoseconds": 25095208,
+      "minimumNanoseconds": 24154792,
+      "maximumNanoseconds": 25095208
+    },
+    {
+      "caseId": "evaluation-training-duplicates-stan-v2",
+      "phase": "evaluation-plan",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 139833344,
+      "sampleCount": 4,
+      "medianNanoseconds": 820917,
+      "p90Nanoseconds": 938625,
+      "minimumNanoseconds": 801166,
+      "maximumNanoseconds": 938625
+    },
+    {
+      "caseId": "evaluation-training-duplicates-stan-v2",
+      "phase": "evaluation-plan",
+      "implementation": "python-prophet",
+      "peakRssBytes": 120573952,
+      "sampleCount": 4,
+      "medianNanoseconds": 956750,
+      "p90Nanoseconds": 1092084,
+      "minimumNanoseconds": 954250,
+      "maximumNanoseconds": 1092084
+    },
+    {
+      "caseId": "evaluation-training-duplicates-stan-v2",
+      "phase": "evaluation-point",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 160542720,
+      "sampleCount": 4,
+      "medianNanoseconds": 7444375,
+      "p90Nanoseconds": 7596916,
+      "minimumNanoseconds": 7159417,
+      "maximumNanoseconds": 7596916
+    },
+    {
+      "caseId": "evaluation-training-duplicates-stan-v2",
+      "phase": "evaluation-point",
+      "implementation": "python-prophet",
+      "peakRssBytes": 123248640,
+      "sampleCount": 4,
+      "medianNanoseconds": 56709459,
+      "p90Nanoseconds": 59361000,
+      "minimumNanoseconds": 55775959,
+      "maximumNanoseconds": 59361000
+    },
+    {
+      "caseId": "evaluation-training-duplicates-stan-v2",
+      "phase": "evaluation-report-decode",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 160542720,
+      "sampleCount": 4,
+      "medianNanoseconds": 243500,
+      "p90Nanoseconds": 261708,
+      "minimumNanoseconds": 243125,
+      "maximumNanoseconds": 261708
+    },
+    {
+      "caseId": "evaluation-training-duplicates-stan-v2",
+      "phase": "evaluation-report-decode",
+      "implementation": "python-prophet",
+      "peakRssBytes": 123666432,
+      "sampleCount": 4,
+      "medianNanoseconds": 4042,
+      "p90Nanoseconds": 5500,
+      "minimumNanoseconds": 4000,
+      "maximumNanoseconds": 5500
+    },
+    {
+      "caseId": "evaluation-training-duplicates-stan-v2",
+      "phase": "evaluation-report-encode",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 160542720,
+      "sampleCount": 4,
+      "medianNanoseconds": 305584,
+      "p90Nanoseconds": 562125,
+      "minimumNanoseconds": 284708,
+      "maximumNanoseconds": 562125
+    },
+    {
+      "caseId": "evaluation-training-duplicates-stan-v2",
+      "phase": "evaluation-report-encode",
+      "implementation": "python-prophet",
+      "peakRssBytes": 123666432,
+      "sampleCount": 4,
+      "medianNanoseconds": 10125,
+      "p90Nanoseconds": 10833,
+      "minimumNanoseconds": 8250,
+      "maximumNanoseconds": 10833
+    },
+    {
+      "caseId": "evaluation-training-duplicates-stan-v2",
+      "phase": "evaluation-search",
+      "implementation": "effect-prophet",
+      "peakRssBytes": 160542720,
+      "sampleCount": 4,
+      "medianNanoseconds": 6113750,
+      "p90Nanoseconds": 7955125,
+      "minimumNanoseconds": 6081042,
+      "maximumNanoseconds": 7955125
+    },
+    {
+      "caseId": "evaluation-training-duplicates-stan-v2",
+      "phase": "evaluation-search",
+      "implementation": "python-prophet",
+      "peakRssBytes": 123666432,
+      "sampleCount": 4,
+      "medianNanoseconds": 61878750,
+      "p90Nanoseconds": 64622250,
+      "minimumNanoseconds": 58274958,
+      "maximumNanoseconds": 64622250
+    },
+    {
+      "caseId": "linear-mixed-components-stan-v2",
+      "phase": "adapter-input-conversion",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 52167,
+      "p90Nanoseconds": 75625,
+      "minimumNanoseconds": 50667,
+      "maximumNanoseconds": 75625
+    },
+    {
+      "caseId": "linear-mixed-components-stan-v2",
+      "phase": "adapter-input-conversion",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 577958,
+      "p90Nanoseconds": 645083,
+      "minimumNanoseconds": 563375,
+      "maximumNanoseconds": 645083
+    },
+    {
+      "caseId": "linear-mixed-components-stan-v2",
+      "phase": "cold-first-forecast",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 201624750,
+      "p90Nanoseconds": 237956667,
+      "minimumNanoseconds": 198596417,
+      "maximumNanoseconds": 237956667
+    },
+    {
+      "caseId": "linear-mixed-components-stan-v2",
+      "phase": "cold-first-forecast",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 1477922334,
+      "p90Nanoseconds": 1542621709,
+      "minimumNanoseconds": 1468592668,
+      "maximumNanoseconds": 1542621709
+    },
+    {
+      "caseId": "linear-mixed-components-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 172630125,
+      "p90Nanoseconds": 177415833,
+      "minimumNanoseconds": 172327959,
+      "maximumNanoseconds": 177415833
+    },
+    {
+      "caseId": "linear-mixed-components-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 1524945710,
+      "p90Nanoseconds": 1628186918,
+      "minimumNanoseconds": 1523525668,
+      "maximumNanoseconds": 1628186918
+    },
+    {
+      "caseId": "linear-mixed-components-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 157791,
+      "p90Nanoseconds": 588375,
+      "minimumNanoseconds": 136292,
+      "maximumNanoseconds": 588375
+    },
+    {
+      "caseId": "linear-mixed-components-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 3896250,
+      "p90Nanoseconds": 3999333,
+      "minimumNanoseconds": 3704250,
+      "maximumNanoseconds": 3999333
+    },
+    {
+      "caseId": "linear-mixed-components-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 74250,
+      "p90Nanoseconds": 134833,
+      "minimumNanoseconds": 71625,
+      "maximumNanoseconds": 134833
+    },
+    {
+      "caseId": "linear-mixed-components-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 696375,
+      "p90Nanoseconds": 739333,
+      "minimumNanoseconds": 683416,
+      "maximumNanoseconds": 739333
+    },
+    {
+      "caseId": "linear-mixed-components-stan-v2",
+      "phase": "warm-fit-predict-with-conversion",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 4814500,
+      "p90Nanoseconds": 5087625,
+      "minimumNanoseconds": 4706000,
+      "maximumNanoseconds": 5087625
+    },
+    {
+      "caseId": "linear-mixed-components-stan-v2",
+      "phase": "warm-fit-predict-with-conversion",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 28498875,
+      "p90Nanoseconds": 31262292,
+      "minimumNanoseconds": 28342333,
+      "maximumNanoseconds": 31262292
+    },
+    {
+      "caseId": "linear-mixed-components-stan-v2",
+      "phase": "warm-fit-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 5440333,
+      "p90Nanoseconds": 6190500,
+      "minimumNanoseconds": 5048792,
+      "maximumNanoseconds": 6190500
+    },
+    {
+      "caseId": "linear-mixed-components-stan-v2",
+      "phase": "warm-fit-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 29471000,
+      "p90Nanoseconds": 29637917,
+      "minimumNanoseconds": 28580083,
+      "maximumNanoseconds": 29637917
+    },
+    {
+      "caseId": "linear-mixed-components-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 5744208,
+      "p90Nanoseconds": 6102334,
+      "minimumNanoseconds": 5628125,
+      "maximumNanoseconds": 6102334
+    },
+    {
+      "caseId": "linear-mixed-components-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 23899125,
+      "p90Nanoseconds": 24950459,
+      "minimumNanoseconds": 22996416,
+      "maximumNanoseconds": 24950459
+    },
+    {
+      "caseId": "linear-mixed-components-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 378792,
+      "p90Nanoseconds": 456542,
+      "minimumNanoseconds": 376500,
+      "maximumNanoseconds": 456542
+    },
+    {
+      "caseId": "linear-mixed-components-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 4912250,
+      "p90Nanoseconds": 5015417,
+      "minimumNanoseconds": 4837042,
+      "maximumNanoseconds": 5015417
+    },
+    {
+      "caseId": "linear-offset-scaling-minmax-stan-v2",
+      "phase": "adapter-input-conversion",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 12916,
+      "p90Nanoseconds": 24042,
+      "minimumNanoseconds": 12000,
+      "maximumNanoseconds": 24042
+    },
+    {
+      "caseId": "linear-offset-scaling-minmax-stan-v2",
+      "phase": "adapter-input-conversion",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 508209,
+      "p90Nanoseconds": 526292,
+      "minimumNanoseconds": 486375,
+      "maximumNanoseconds": 526292
+    },
+    {
+      "caseId": "linear-offset-scaling-minmax-stan-v2",
+      "phase": "cold-first-forecast",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 185252458,
+      "p90Nanoseconds": 206966958,
+      "minimumNanoseconds": 184999125,
+      "maximumNanoseconds": 206966958
+    },
+    {
+      "caseId": "linear-offset-scaling-minmax-stan-v2",
+      "phase": "cold-first-forecast",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 1548553251,
+      "p90Nanoseconds": 1731403334,
+      "minimumNanoseconds": 1541202126,
+      "maximumNanoseconds": 1731403334
+    },
+    {
+      "caseId": "linear-offset-scaling-minmax-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 168247708,
+      "p90Nanoseconds": 183887541,
+      "minimumNanoseconds": 168188875,
+      "maximumNanoseconds": 183887541
+    },
+    {
+      "caseId": "linear-offset-scaling-minmax-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 1533129459,
+      "p90Nanoseconds": 1574325626,
+      "minimumNanoseconds": 1514372001,
+      "maximumNanoseconds": 1574325626
+    },
+    {
+      "caseId": "linear-offset-scaling-minmax-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 111833,
+      "p90Nanoseconds": 857958,
+      "minimumNanoseconds": 98250,
+      "maximumNanoseconds": 857958
+    },
+    {
+      "caseId": "linear-offset-scaling-minmax-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 2284167,
+      "p90Nanoseconds": 2756750,
+      "minimumNanoseconds": 2234625,
+      "maximumNanoseconds": 2756750
+    },
+    {
+      "caseId": "linear-offset-scaling-minmax-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 68208,
+      "p90Nanoseconds": 79833,
+      "minimumNanoseconds": 60083,
+      "maximumNanoseconds": 79833
+    },
+    {
+      "caseId": "linear-offset-scaling-minmax-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 458417,
+      "p90Nanoseconds": 494750,
+      "minimumNanoseconds": 432208,
+      "maximumNanoseconds": 494750
+    },
+    {
+      "caseId": "linear-offset-scaling-minmax-stan-v2",
+      "phase": "warm-fit-predict-with-conversion",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 4576458,
+      "p90Nanoseconds": 5193417,
+      "minimumNanoseconds": 4543875,
+      "maximumNanoseconds": 5193417
+    },
+    {
+      "caseId": "linear-offset-scaling-minmax-stan-v2",
+      "phase": "warm-fit-predict-with-conversion",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 29255000,
+      "p90Nanoseconds": 30851459,
+      "minimumNanoseconds": 28159708,
+      "maximumNanoseconds": 30851459
+    },
+    {
+      "caseId": "linear-offset-scaling-minmax-stan-v2",
+      "phase": "warm-fit-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 5250542,
+      "p90Nanoseconds": 5415917,
+      "minimumNanoseconds": 5228666,
+      "maximumNanoseconds": 5415917
+    },
+    {
+      "caseId": "linear-offset-scaling-minmax-stan-v2",
+      "phase": "warm-fit-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 27533875,
+      "p90Nanoseconds": 28620791,
+      "minimumNanoseconds": 27358375,
+      "maximumNanoseconds": 28620791
+    },
+    {
+      "caseId": "linear-offset-scaling-minmax-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 4904375,
+      "p90Nanoseconds": 5686792,
+      "minimumNanoseconds": 4581542,
+      "maximumNanoseconds": 5686792
+    },
+    {
+      "caseId": "linear-offset-scaling-minmax-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 24787166,
+      "p90Nanoseconds": 26158584,
+      "minimumNanoseconds": 24660833,
+      "maximumNanoseconds": 26158584
+    },
+    {
+      "caseId": "linear-offset-scaling-minmax-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 320541,
+      "p90Nanoseconds": 338042,
+      "minimumNanoseconds": 315500,
+      "maximumNanoseconds": 338042
+    },
+    {
+      "caseId": "linear-offset-scaling-minmax-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 3157750,
+      "p90Nanoseconds": 3241750,
+      "minimumNanoseconds": 3095666,
+      "maximumNanoseconds": 3241750
+    },
+    {
+      "caseId": "map-training-duplicates-explicit-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 164568709,
+      "p90Nanoseconds": 173076834,
+      "minimumNanoseconds": 161392542,
+      "maximumNanoseconds": 173076834
+    },
+    {
+      "caseId": "map-training-duplicates-explicit-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 1540230501,
+      "p90Nanoseconds": 1700770334,
+      "minimumNanoseconds": 1498668668,
+      "maximumNanoseconds": 1700770334
+    },
+    {
+      "caseId": "map-training-duplicates-explicit-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 146541,
+      "p90Nanoseconds": 210792,
+      "minimumNanoseconds": 142042,
+      "maximumNanoseconds": 210792
+    },
+    {
+      "caseId": "map-training-duplicates-explicit-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 2237541,
+      "p90Nanoseconds": 2730916,
+      "minimumNanoseconds": 2203208,
+      "maximumNanoseconds": 2730916
+    },
+    {
+      "caseId": "map-training-duplicates-explicit-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 59625,
+      "p90Nanoseconds": 76917,
+      "minimumNanoseconds": 59459,
+      "maximumNanoseconds": 76917
+    },
+    {
+      "caseId": "map-training-duplicates-explicit-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 483791,
+      "p90Nanoseconds": 2266333,
+      "minimumNanoseconds": 458917,
+      "maximumNanoseconds": 2266333
+    },
+    {
+      "caseId": "map-training-duplicates-explicit-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 3355250,
+      "p90Nanoseconds": 3469500,
+      "minimumNanoseconds": 3162625,
+      "maximumNanoseconds": 3469500
+    },
+    {
+      "caseId": "map-training-duplicates-explicit-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 21768625,
+      "p90Nanoseconds": 24086958,
+      "minimumNanoseconds": 20494292,
+      "maximumNanoseconds": 24086958
+    },
+    {
+      "caseId": "map-training-duplicates-explicit-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 231375,
+      "p90Nanoseconds": 290208,
+      "minimumNanoseconds": 222250,
+      "maximumNanoseconds": 290208
+    },
+    {
+      "caseId": "map-training-duplicates-explicit-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 3060875,
+      "p90Nanoseconds": 3374459,
+      "minimumNanoseconds": 2964208,
+      "maximumNanoseconds": 3374459
+    },
+    {
+      "caseId": "map-training-ordered-explicit-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 173309167,
+      "p90Nanoseconds": 180825833,
+      "minimumNanoseconds": 167857458,
+      "maximumNanoseconds": 180825833
+    },
+    {
+      "caseId": "map-training-ordered-explicit-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 1637425751,
+      "p90Nanoseconds": 1924845543,
+      "minimumNanoseconds": 1601067251,
+      "maximumNanoseconds": 1924845543
+    },
+    {
+      "caseId": "map-training-ordered-explicit-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 147166,
+      "p90Nanoseconds": 267000,
+      "minimumNanoseconds": 130625,
+      "maximumNanoseconds": 267000
+    },
+    {
+      "caseId": "map-training-ordered-explicit-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 2116500,
+      "p90Nanoseconds": 2242250,
+      "minimumNanoseconds": 2101458,
+      "maximumNanoseconds": 2242250
+    },
+    {
+      "caseId": "map-training-ordered-explicit-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 73708,
+      "p90Nanoseconds": 101625,
+      "minimumNanoseconds": 60750,
+      "maximumNanoseconds": 101625
+    },
+    {
+      "caseId": "map-training-ordered-explicit-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 460542,
+      "p90Nanoseconds": 814833,
+      "minimumNanoseconds": 419708,
+      "maximumNanoseconds": 814833
+    },
+    {
+      "caseId": "map-training-ordered-explicit-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 3532208,
+      "p90Nanoseconds": 4383708,
+      "minimumNanoseconds": 3137375,
+      "maximumNanoseconds": 4383708
+    },
+    {
+      "caseId": "map-training-ordered-explicit-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 22973375,
+      "p90Nanoseconds": 24399416,
+      "minimumNanoseconds": 22431750,
+      "maximumNanoseconds": 24399416
+    },
+    {
+      "caseId": "map-training-ordered-explicit-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 280208,
+      "p90Nanoseconds": 542041,
+      "minimumNanoseconds": 232542,
+      "maximumNanoseconds": 542041
+    },
+    {
+      "caseId": "map-training-ordered-explicit-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 2902167,
+      "p90Nanoseconds": 3608417,
+      "minimumNanoseconds": 2801958,
+      "maximumNanoseconds": 3608417
+    },
+    {
+      "caseId": "map-training-unsorted-explicit-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 172276166,
+      "p90Nanoseconds": 178769625,
+      "minimumNanoseconds": 167164167,
+      "maximumNanoseconds": 178769625
+    },
+    {
+      "caseId": "map-training-unsorted-explicit-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 1556165709,
+      "p90Nanoseconds": 1603767959,
+      "minimumNanoseconds": 1543702751,
+      "maximumNanoseconds": 1603767959
+    },
+    {
+      "caseId": "map-training-unsorted-explicit-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 193833,
+      "p90Nanoseconds": 251208,
+      "minimumNanoseconds": 192125,
+      "maximumNanoseconds": 251208
+    },
+    {
+      "caseId": "map-training-unsorted-explicit-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 2175209,
+      "p90Nanoseconds": 2267084,
+      "minimumNanoseconds": 2153500,
+      "maximumNanoseconds": 2267084
+    },
+    {
+      "caseId": "map-training-unsorted-explicit-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 70875,
+      "p90Nanoseconds": 72250,
+      "minimumNanoseconds": 59166,
+      "maximumNanoseconds": 72250
+    },
+    {
+      "caseId": "map-training-unsorted-explicit-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 442333,
+      "p90Nanoseconds": 526625,
+      "minimumNanoseconds": 438291,
+      "maximumNanoseconds": 526625
+    },
+    {
+      "caseId": "map-training-unsorted-explicit-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 3550459,
+      "p90Nanoseconds": 3867625,
+      "minimumNanoseconds": 3513667,
+      "maximumNanoseconds": 3867625
+    },
+    {
+      "caseId": "map-training-unsorted-explicit-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 23632500,
+      "p90Nanoseconds": 25021041,
+      "minimumNanoseconds": 21934792,
+      "maximumNanoseconds": 25021041
+    },
+    {
+      "caseId": "map-training-unsorted-explicit-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 267917,
+      "p90Nanoseconds": 509792,
+      "minimumNanoseconds": 249875,
+      "maximumNanoseconds": 509792
+    },
+    {
+      "caseId": "map-training-unsorted-explicit-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 2884125,
+      "p90Nanoseconds": 3555250,
+      "minimumNanoseconds": 2787500,
+      "maximumNanoseconds": 3555250
+    },
+    {
+      "caseId": "map-training-zero-span-flat-constant-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 173060833,
+      "p90Nanoseconds": 179518708,
+      "minimumNanoseconds": 170762000,
+      "maximumNanoseconds": 179518708
+    },
+    {
+      "caseId": "map-training-zero-span-flat-constant-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 1579429293,
+      "p90Nanoseconds": 1611066959,
+      "minimumNanoseconds": 1570816084,
+      "maximumNanoseconds": 1611066959
+    },
+    {
+      "caseId": "map-training-zero-span-flat-constant-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 109833,
+      "p90Nanoseconds": 190667,
+      "minimumNanoseconds": 104084,
+      "maximumNanoseconds": 190667
+    },
+    {
+      "caseId": "map-training-zero-span-flat-constant-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 2333208,
+      "p90Nanoseconds": 2835666,
+      "minimumNanoseconds": 2290875,
+      "maximumNanoseconds": 2835666
+    },
+    {
+      "caseId": "map-training-zero-span-flat-constant-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 44958,
+      "p90Nanoseconds": 74834,
+      "minimumNanoseconds": 38041,
+      "maximumNanoseconds": 74834
+    },
+    {
+      "caseId": "map-training-zero-span-flat-constant-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 336958,
+      "p90Nanoseconds": 369709,
+      "minimumNanoseconds": 325625,
+      "maximumNanoseconds": 369709
+    },
+    {
+      "caseId": "map-training-zero-span-flat-constant-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 698750,
+      "p90Nanoseconds": 897375,
+      "minimumNanoseconds": 672208,
+      "maximumNanoseconds": 897375
+    },
+    {
+      "caseId": "map-training-zero-span-flat-constant-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 3293375,
+      "p90Nanoseconds": 4002500,
+      "minimumNanoseconds": 3055833,
+      "maximumNanoseconds": 4002500
+    },
+    {
+      "caseId": "map-training-zero-span-flat-constant-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 165000,
+      "p90Nanoseconds": 196667,
+      "minimumNanoseconds": 160125,
+      "maximumNanoseconds": 196667
+    },
+    {
+      "caseId": "map-training-zero-span-flat-constant-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 2909417,
+      "p90Nanoseconds": 3852542,
+      "minimumNanoseconds": 2709000,
+      "maximumNanoseconds": 3852542
+    },
+    {
+      "caseId": "map-training-zero-span-flat-varied-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 167273375,
+      "p90Nanoseconds": 174589625,
+      "minimumNanoseconds": 162568333,
+      "maximumNanoseconds": 174589625
+    },
+    {
+      "caseId": "map-training-zero-span-flat-varied-stan-v2",
+      "phase": "fresh-process-restored-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 1494959501,
+      "p90Nanoseconds": 1577538501,
+      "minimumNanoseconds": 1422282126,
+      "maximumNanoseconds": 1577538501
+    },
+    {
+      "caseId": "map-training-zero-span-flat-varied-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 122250,
+      "p90Nanoseconds": 158000,
+      "minimumNanoseconds": 120916,
+      "maximumNanoseconds": 158000
+    },
+    {
+      "caseId": "map-training-zero-span-flat-varied-stan-v2",
+      "phase": "model-json-decode",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 1997083,
+      "p90Nanoseconds": 2086833,
+      "minimumNanoseconds": 1906667,
+      "maximumNanoseconds": 2086833
+    },
+    {
+      "caseId": "map-training-zero-span-flat-varied-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 41458,
+      "p90Nanoseconds": 89875,
+      "minimumNanoseconds": 38917,
+      "maximumNanoseconds": 89875
+    },
+    {
+      "caseId": "map-training-zero-span-flat-varied-stan-v2",
+      "phase": "model-json-encode",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 334333,
+      "p90Nanoseconds": 356708,
+      "minimumNanoseconds": 328333,
+      "maximumNanoseconds": 356708
+    },
+    {
+      "caseId": "map-training-zero-span-flat-varied-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 519833,
+      "p90Nanoseconds": 836291,
+      "minimumNanoseconds": 485166,
+      "maximumNanoseconds": 836291
+    },
+    {
+      "caseId": "map-training-zero-span-flat-varied-stan-v2",
+      "phase": "warm-fit",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 5500167,
+      "p90Nanoseconds": 6792667,
+      "minimumNanoseconds": 5412666,
+      "maximumNanoseconds": 6792667
+    },
+    {
+      "caseId": "map-training-zero-span-flat-varied-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "effect-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 186583,
+      "p90Nanoseconds": 207167,
+      "minimumNanoseconds": 140208,
+      "maximumNanoseconds": 207167
+    },
+    {
+      "caseId": "map-training-zero-span-flat-varied-stan-v2",
+      "phase": "warm-predict",
+      "implementation": "python-prophet",
+      "sampleCount": 4,
+      "medianNanoseconds": 2799333,
+      "p90Nanoseconds": 3131208,
+      "minimumNanoseconds": 2696750,
+      "maximumNanoseconds": 3131208
+    }
+  ],
+  "workloads": [
+    {
+      "id": "uncertainty-training-duplicates-auto-stan-v2",
+      "dataset": "generated/training-duplicates.json",
+      "identity": {
+        "recipe": "training-duplicates-v1:n=96:h=8:stable-reverse-source:quadruplicate=true:bounded-row-noise",
+        "sha256": "4cb336b1befb59c6e212152cf9f292da82dca61867da485e29840acad55a2926",
+        "trainingRows": 96,
+        "predictionRows": 8,
+        "futureRows": 8,
+        "horizonDays": 8
+      },
+      "samples": 128,
+      "output": "samples",
+      "evidence": "docs/validation/uncertainty.md",
+      "samplerMemoryLimitBytes": 33554432,
+      "featureColumns": 0,
+      "changepoints": 25
+    }
+  ],
+  "evaluations": [
+    {
+      "id": "evaluation-training-duplicates-stan-v2",
+      "dataset": "generated/training-duplicates.json",
+      "identity": {
+        "recipe": "training-duplicates-v1:n=96:h=8:stable-reverse-source:quadruplicate=true:bounded-row-noise",
+        "sha256": "4cb336b1befb59c6e212152cf9f292da82dca61867da485e29840acad55a2926",
+        "trainingRows": 96,
+        "predictionRows": 8,
+        "futureRows": 8,
+        "horizonDays": 8
+      },
+      "growth": "linear",
+      "foldCount": 2,
+      "trainingRows": 148,
+      "assessmentRows": 24,
+      "candidates": 1,
+      "samples": 0,
+      "metricAggregation": "overall",
+      "mapeZeroActual": "exclude",
+      "candidateOptionsHashes": [
+        "bb5b9efec3c622df6564bc5d4595789a6c4a12fc424a13f2d1e6bc9a64aa6790"
+      ],
+      "featureColumns": 0,
+      "changepoints": 1
+    }
+  ],
+  "failures": [
+    {
+      "caseId": "map-training-zero-span-linear-varied-stan-v2",
+      "implementation": "effect-prophet",
+      "run": 0,
+      "stage": "correctness",
+      "message": "FittingError: Linear MAP fitting requires a positive training time range [reason=degenerate-observations]"
+    },
+    {
+      "caseId": "map-training-zero-span-linear-varied-stan-v2",
+      "implementation": "effect-prophet",
+      "run": 1,
+      "stage": "correctness",
+      "message": "FittingError: Linear MAP fitting requires a positive training time range [reason=degenerate-observations]"
+    },
+    {
+      "caseId": "map-training-zero-span-linear-constant-stan-v2",
+      "implementation": "effect-prophet",
+      "run": 0,
+      "stage": "correctness",
+      "message": "FittingError: Linear MAP fitting requires a positive training time range [reason=degenerate-observations]"
+    },
+    {
+      "caseId": "map-training-zero-span-linear-constant-stan-v2",
+      "implementation": "effect-prophet",
+      "run": 1,
+      "stage": "correctness",
+      "message": "FittingError: Linear MAP fitting requires a positive training time range [reason=degenerate-observations]"
+    },
+    {
+      "caseId": "map-training-zero-span-linear-varied-stan-v2",
+      "implementation": "python-prophet",
+      "run": 0,
+      "stage": "correctness",
+      "message": "Importing plotly failed. Interactive plots will not work.\n22:45:11 - cmdstanpy - INFO - Chain [1] start processing\n22:45:11 - cmdstanpy - INFO - Chain [1] done processing\n22:45:11 - cmdstanpy - ERROR - Chain [1] error: code '1' Operation not permitted\nRuntimeError: Error during optimization! Command '/opt/effect-prophet-benchmark/lib/python3.12/site-packages/prophet/stan_model/prophet_model.bin random seed=19889 data file=/tmp/tmp3wijwd9n/e_8ym6dm.json init=/tmp/tmp3wijwd9n/l6ekkeu5.json output file=/tmp/tmp3wijwd9n/prophet_model2bics4ba/prophet_model-20261001224511.csv sig_figs=12 method=optimize algorithm=newton iter=10000' failed: console log output:\n\nmethod = optimize\n  optimize\n    algorithm = newton\n      newton\n    jacobian = false (Default)\n    iter = 10000\n    save_iterations = false (Default)\nid = 1 (Default)\ndata\n  file = /tmp/tmp3wijwd9n/e_8ym6dm.json\ninit = /tmp/tmp3wijwd9n/l6ekkeu5.json\nrandom\n  seed = 19889\noutput\n  file = /tmp/tmp3wijwd9n/prophet_model2bics4ba/prophet_model-20261001224511.csv\n  diagnostic_file =  (Default)\n  refresh = 100 (Default)\n  sig_figs = 12\n  profile_file = profile.csv (Default)\n  save_cmdstan_config = false (Default)\nnum_threads = 1 (Default)\n\nRejecting initial value:\n  Error evaluating the log probability at the initial value.\nException: normal_lpdf: Random variable is nan, but must be not nan! (in 'prophet.stan', line 130, column 2 to column 19)\n\nUser-specified initialization failed.\n Try specifying new initial values, using partially specialized initialization, reducing the range of constrained values, or reparameterizing the model.\nInitialization failed.\n\nTraceback (most recent call last):\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 1131, in <module>\n    main()\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 1108, in main\n    f\"{json.dumps(run_worker(sys.argv[2], int(sys.argv[3]), stage))}\"\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 875, in run_worker\n    else correctness_projection(benchmark_case, dataset, run))\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 671, in correctness_projection\n    model = setup_model(training, benchmark_case)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 254, in setup_model\n    return fit_model(training, benchmark_case)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 211, in fit_model\n    return model.fit(\n           ^^^^^^^^^^\n  File \"/opt/effect-prophet-benchmark/lib/python3.12/site-packages/prophet/forecaster.py\", line 1442, in fit\n    self.params = stan_backend.fit(stan_init, dat, **kwargs)\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/effect-prophet-benchmark/lib/python3.12/site-packages/prophet/models.py\", line 169, in fit\n    raise e\n  File \"/opt/effect-prophet-benchmark/lib/python3.12/site-packages/prophet/models.py\", line 165, in fit\n    self.stan_fit = self.model.optimize(**args)\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/effect-prophet-benchmark/lib/python3.12/site-packages/cmdstanpy/model.py\", line 658, in optimize\n    raise RuntimeError(msg)\nRuntimeError: Error during optimization! Command '/opt/effect-prophet-benchmark/lib/python3.12/site-packages/prophet/stan_model/prophet_model.bin random seed=19889 data file=/tmp/tmp3wijwd9n/e_8ym6dm.json init=/tmp/tmp3wijwd9n/l6ekkeu5.json output file=/tmp/tmp3wijwd9n/prophet_model2bics4ba/prophet_model-20261001224511.csv sig_figs=12 method=optimize algorithm=newton iter=10000' failed: console log output:\n\nmethod = optimize\n  optimize\n    algorithm = newton\n      newton\n    jacobian = false (Default)\n    iter = 10000\n    save_iterations = false (Default)\nid = 1 (Default)\ndata\n  file = /tmp/tmp3wijwd9n/e_8ym6dm.json\ninit = /tmp/tmp3wijw"
+    },
+    {
+      "caseId": "map-training-zero-span-linear-varied-stan-v2",
+      "implementation": "python-prophet",
+      "run": 1,
+      "stage": "correctness",
+      "message": "Importing plotly failed. Interactive plots will not work.\n22:45:13 - cmdstanpy - INFO - Chain [1] start processing\n22:45:13 - cmdstanpy - INFO - Chain [1] done processing\n22:45:13 - cmdstanpy - ERROR - Chain [1] error: code '1' Operation not permitted\nRuntimeError: Error during optimization! Command '/opt/effect-prophet-benchmark/lib/python3.12/site-packages/prophet/stan_model/prophet_model.bin random seed=47685 data file=/tmp/tmpe58syjp2/cdzfxd37.json init=/tmp/tmpe58syjp2/0d_ompbl.json output file=/tmp/tmpe58syjp2/prophet_modelgkq90o2p/prophet_model-20261001224513.csv sig_figs=12 method=optimize algorithm=newton iter=10000' failed: console log output:\n\nmethod = optimize\n  optimize\n    algorithm = newton\n      newton\n    jacobian = false (Default)\n    iter = 10000\n    save_iterations = false (Default)\nid = 1 (Default)\ndata\n  file = /tmp/tmpe58syjp2/cdzfxd37.json\ninit = /tmp/tmpe58syjp2/0d_ompbl.json\nrandom\n  seed = 47685\noutput\n  file = /tmp/tmpe58syjp2/prophet_modelgkq90o2p/prophet_model-20261001224513.csv\n  diagnostic_file =  (Default)\n  refresh = 100 (Default)\n  sig_figs = 12\n  profile_file = profile.csv (Default)\n  save_cmdstan_config = false (Default)\nnum_threads = 1 (Default)\n\nRejecting initial value:\n  Error evaluating the log probability at the initial value.\nException: normal_lpdf: Random variable is nan, but must be not nan! (in 'prophet.stan', line 130, column 2 to column 19)\n\nUser-specified initialization failed.\n Try specifying new initial values, using partially specialized initialization, reducing the range of constrained values, or reparameterizing the model.\nInitialization failed.\n\nTraceback (most recent call last):\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 1131, in <module>\n    main()\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 1108, in main\n    f\"{json.dumps(run_worker(sys.argv[2], int(sys.argv[3]), stage))}\"\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 875, in run_worker\n    else correctness_projection(benchmark_case, dataset, run))\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 671, in correctness_projection\n    model = setup_model(training, benchmark_case)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 254, in setup_model\n    return fit_model(training, benchmark_case)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 211, in fit_model\n    return model.fit(\n           ^^^^^^^^^^\n  File \"/opt/effect-prophet-benchmark/lib/python3.12/site-packages/prophet/forecaster.py\", line 1442, in fit\n    self.params = stan_backend.fit(stan_init, dat, **kwargs)\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/effect-prophet-benchmark/lib/python3.12/site-packages/prophet/models.py\", line 169, in fit\n    raise e\n  File \"/opt/effect-prophet-benchmark/lib/python3.12/site-packages/prophet/models.py\", line 165, in fit\n    self.stan_fit = self.model.optimize(**args)\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/effect-prophet-benchmark/lib/python3.12/site-packages/cmdstanpy/model.py\", line 658, in optimize\n    raise RuntimeError(msg)\nRuntimeError: Error during optimization! Command '/opt/effect-prophet-benchmark/lib/python3.12/site-packages/prophet/stan_model/prophet_model.bin random seed=47685 data file=/tmp/tmpe58syjp2/cdzfxd37.json init=/tmp/tmpe58syjp2/0d_ompbl.json output file=/tmp/tmpe58syjp2/prophet_modelgkq90o2p/prophet_model-20261001224513.csv sig_figs=12 method=optimize algorithm=newton iter=10000' failed: console log output:\n\nmethod = optimize\n  optimize\n    algorithm = newton\n      newton\n    jacobian = false (Default)\n    iter = 10000\n    save_iterations = false (Default)\nid = 1 (Default)\ndata\n  file = /tmp/tmpe58syjp2/cdzfxd37.json\ninit = /tmp/tmpe58sy"
+    },
+    {
+      "caseId": "map-training-zero-span-linear-constant-stan-v2",
+      "implementation": "python-prophet",
+      "run": 0,
+      "stage": "correctness",
+      "message": "Importing plotly failed. Interactive plots will not work.\n/opt/effect-prophet-benchmark/lib/python3.12/site-packages/prophet/forecaster.py:1619: RuntimeWarning: Mean of empty slice\n  k = np.nanmean(self.params['k'])\n/opt/effect-prophet-benchmark/lib/python3.12/site-packages/prophet/forecaster.py:1620: RuntimeWarning: Mean of empty slice\n  m = np.nanmean(self.params['m'])\nValueError: Prophet prediction returned a non-finite value\nTraceback (most recent call last):\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 1131, in <module>\n    main()\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 1108, in main\n    f\"{json.dumps(run_worker(sys.argv[2], int(sys.argv[3]), stage))}\"\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 875, in run_worker\n    else correctness_projection(benchmark_case, dataset, run))\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 674, in correctness_projection\n    assert_forecasts(benchmark_case, dataset, projections)\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 342, in assert_forecasts\n    raise ValueError(\"Prophet prediction returned a non-finite value\")\nValueError: Prophet prediction returned a non-finite value"
+    },
+    {
+      "caseId": "map-training-zero-span-linear-constant-stan-v2",
+      "implementation": "python-prophet",
+      "run": 1,
+      "stage": "correctness",
+      "message": "Importing plotly failed. Interactive plots will not work.\n/opt/effect-prophet-benchmark/lib/python3.12/site-packages/prophet/forecaster.py:1619: RuntimeWarning: Mean of empty slice\n  k = np.nanmean(self.params['k'])\n/opt/effect-prophet-benchmark/lib/python3.12/site-packages/prophet/forecaster.py:1620: RuntimeWarning: Mean of empty slice\n  m = np.nanmean(self.params['m'])\nValueError: Prophet prediction returned a non-finite value\nTraceback (most recent call last):\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 1131, in <module>\n    main()\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 1108, in main\n    f\"{json.dumps(run_worker(sys.argv[2], int(sys.argv[3]), stage))}\"\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 875, in run_worker\n    else correctness_projection(benchmark_case, dataset, run))\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 674, in correctness_projection\n    assert_forecasts(benchmark_case, dataset, projections)\n  File \"/workspace/benchmark/adapters/python-prophet.py\", line 342, in assert_forecasts\n    raise ValueError(\"Prophet prediction returned a non-finite value\")\nValueError: Prophet prediction returned a non-finite value"
+    }
+  ],
+  "environments": [
+    {
+      "implementation": "effect-prophet",
+      "environment": {
+        "runtime": "node",
+        "runtimeVersion": "v26.7.0",
+        "operatingSystem": "linux 7.0.12-linuxkit",
+        "architecture": "arm64",
+        "processor": "unknown",
+        "containerPlatform": "linux/arm64",
+        "versions": [
+          {
+            "name": "effect-prophet",
+            "value": "0.0.0"
+          },
+          {
+            "name": "effect",
+            "value": "4.0.0-beta.107"
+          },
+          {
+            "name": "rustc",
+            "value": "rustc 1.98.1 (48a229cea 2026-09-01)"
+          },
+          {
+            "name": "wasm-pack",
+            "value": "wasm-pack 0.15.0"
+          },
+          {
+            "name": "wasm-build-profile",
+            "value": "release"
+          }
+        ],
+        "artifactHashes": [
+          {
+            "name": "wasm/prophet_wasm_bg.wasm",
+            "value": "e4baec49d1c324473a5b7a3aa0c6c91ec241debe555316bb1625c1a88c0ae3d1"
+          },
+          {
+            "name": "package-lock.json",
+            "value": "99bda82607c5764a965fc84c4f1c3aeb518b7a1604975e958b3ad63e4887d936"
+          }
+        ],
+        "numericalThreads": [
+          {
+            "name": "OMP_NUM_THREADS",
+            "value": "1"
+          },
+          {
+            "name": "OPENBLAS_NUM_THREADS",
+            "value": "1"
+          },
+          {
+            "name": "MKL_NUM_THREADS",
+            "value": "1"
+          }
+        ],
+        "resources": [
+          {
+            "name": "logical-cpu-count",
+            "value": "4"
+          },
+          {
+            "name": "runtime-total-memory-bytes",
+            "value": "8320299008"
+          },
+          {
+            "name": "cgroup-memory-max",
+            "value": "max"
+          },
+          {
+            "name": "collection-method",
+            "value": "node:os and cgroup-v2"
+          }
+        ],
+        "memoryMeasurement": "warm-uncertainty/evaluation: worker high-water RSS via process.resourceUsage.maxRSS (Linux KiB); includes imports and previous operations; excludes subprocess peaks; heap/WASM-only peaks unavailable; Effect tracing disabled"
+      }
+    },
+    {
+      "implementation": "python-prophet",
+      "environment": {
+        "runtime": "python",
+        "runtimeVersion": "3.12.11",
+        "operatingSystem": "Linux 7.0.12-linuxkit",
+        "architecture": "aarch64",
+        "processor": "unavailable",
+        "containerPlatform": "linux/arm64",
+        "versions": [
+          {
+            "name": "cmdstanpy",
+            "value": "1.3.0"
+          },
+          {
+            "name": "holidays",
+            "value": "0.104"
+          },
+          {
+            "name": "numpy",
+            "value": "2.5.3"
+          },
+          {
+            "name": "pandas",
+            "value": "3.0.5"
+          },
+          {
+            "name": "prophet",
+            "value": "1.4.0"
+          }
+        ],
+        "artifactHashes": [
+          {
+            "name": "benchmark/python/uv.lock",
+            "value": "c90f2464e1d50dbe489bdcdaf8350f04c162f6c617559cfb75d6977b0f430ab1"
+          },
+          {
+            "name": "prophet/stan_model/prophet_model.bin",
+            "value": "faff590e554b6dd4e8c232d2a51c63fe734ae018dd529ee7433a5cdcd86fc54e"
+          }
+        ],
+        "numericalThreads": [
+          {
+            "name": "OMP_NUM_THREADS",
+            "value": "1"
+          },
+          {
+            "name": "OPENBLAS_NUM_THREADS",
+            "value": "1"
+          },
+          {
+            "name": "MKL_NUM_THREADS",
+            "value": "1"
+          }
+        ],
+        "resources": [
+          {
+            "name": "logical-cpu-count",
+            "value": "4"
+          },
+          {
+            "name": "runtime-total-memory-bytes",
+            "value": "8320299008"
+          },
+          {
+            "name": "cgroup-memory-max",
+            "value": "max"
+          },
+          {
+            "name": "collection-method",
+            "value": "python-os and cgroup-v2"
+          }
+        ],
+        "memoryMeasurement": "warm-uncertainty/evaluation: worker high-water RSS via resource.RUSAGE_SELF.ru_maxrss (Linux KiB); includes imports and previous operations; excludes CmdStan fit child and cold subprocesses; heap-only peaks unavailable"
+      }
+    }
+  ]
+}

@@ -70,7 +70,7 @@ describe("mixed component public lifecycle", () => {
       throw new Error("Expected linear MAP state");
     }
 
-    expect(model.fitSummary.method).toBe("mixed-piecewise-map-coordinate-v1");
+    expect(model.fitSummary.method).toBe("mixed-piecewise-map-stan-v2");
     expect(model.seasonalities.components[0]?.definition.mode).toBe("multiplicative");
     expect(model.events.mode).toBe("additive");
     expect(model.regressors[0]?.definition.mode).toBe("additive");
@@ -129,7 +129,7 @@ describe("mixed component public lifecycle", () => {
 
     const invalidMethod = {
       ...encoded,
-      fitSummary: { ...encoded.fitSummary, method: "piecewise-map-coordinate-v1" as const },
+      fitSummary: { ...encoded.fitSummary, method: "piecewise-map-stan-v2" as const },
     };
 
     const modeError = await Effect.runPromise(Effect.flip(decodeFittedModel(invalidMode)));

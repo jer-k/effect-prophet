@@ -654,6 +654,10 @@ const ConditionalMapPredictionRowSchema = Schema.Struct({
 const ConditionalMapFitReferenceCaseSchema = Schema.Struct({
   id: Schema.NonEmptyString,
   kind: Schema.Literal("conditional-map-fit"),
+  optimizerEvidence: Schema.Struct({
+    objective: Schema.Finite,
+    stationarityResidual: NonNegativeFinite,
+  }),
   observations: Schema.NonEmptyArray(ConditionalMapObservationSchema),
   predictionRows: Schema.NonEmptyArray(ConditionalMapPredictionRowSchema),
   seasonalities: Schema.NonEmptyArray(ConditionalSeasonalityDefinitionSchema),
@@ -1268,6 +1272,7 @@ const FixtureManifestSchema = Schema.Struct({
       "mixed-map.json",
       "logistic-map.json",
       "map-uncertainty.json",
+      "stan-linear-optimizer.json",
     ]) {
       if (!paths.has(requiredPath)) {
         return {

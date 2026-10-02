@@ -49,7 +49,9 @@ const protocolPrefix = "EFFECT_PROPHET_BENCHMARK_RESULT=";
 
 const adapterPath = fileURLToPath(import.meta.url);
 
-const defaultCasesPath = fileURLToPath(new URL("../cases/public-api.json", import.meta.url));
+const defaultCasesPath = fileURLToPath(
+  new URL("../cases/linear-growth/public-api.json", import.meta.url),
+);
 
 const defaultDataRoot = fileURLToPath(new URL("../data/", import.meta.url));
 
@@ -868,6 +870,7 @@ const correctnessProjection = (
       fitQuality: [
         { name: "objective", value: model.fitSummary.objective },
         { name: "stationarity-residual", value: model.fitSummary.stationarityResidual },
+        { name: "normalized-noise", value: model.noiseScale / model.targetScaling.scale },
         { name: "iterations", value: model.fitSummary.iterations },
       ],
     };
@@ -1209,6 +1212,13 @@ const collectEnvironment = async (): Promise<BenchmarkEnvironment> => {
   const lockPath = resolve(process.cwd(), "package-lock.json");
   const cpu = cpus()[0]?.model ?? "unavailable";
 
+  // Slim runtime images retain build provenance without retaining the Rust toolchain.
+  const rustcVersion = await readResource(resolve(process.cwd(), "build-tools/rustc-version.txt"));
+
+  const wasmPackVersion = await readResource(
+    resolve(process.cwd(), "build-tools/wasm-pack-version.txt"),
+  );
+
   return {
     runtime: "node",
     runtimeVersion: process.version,
@@ -1225,8 +1235,18 @@ const collectEnvironment = async (): Promise<BenchmarkEnvironment> => {
           "require('./node_modules/effect/package.json').version",
         ]),
       },
-      { name: "rustc", value: commandVersion("rustc", ["--version"]) },
-      { name: "wasm-pack", value: commandVersion("wasm-pack", ["--version"]) },
+      {
+        name: "rustc",
+        value:
+          rustcVersion === "unavailable" ? commandVersion("rustc", ["--version"]) : rustcVersion,
+      },
+      {
+        name: "wasm-pack",
+        value:
+          wasmPackVersion === "unavailable"
+            ? commandVersion("wasm-pack", ["--version"])
+            : wasmPackVersion,
+      },
       { name: "wasm-build-profile", value: "release" },
     ],
     artifactHashes: [

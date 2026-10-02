@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 1,
+  "runId": "2026-10-01T225338-666Z-4d661a06",
+  "createdAt": "2026-10-01T22:56:46.907Z",
+  "gitRevision": "4d661a06a7e2f588f4b466cdcd4905753e3cce6b",
+  "gitDirty": true,
+  "hostPlatform": "darwin",
+  "hostRelease": "25.5.0",
+  "hostArchitecture": "arm64",
+  "hostProcessor": "Apple M4 Pro",
+  "containerPlatform": "linux/amd64",
+  "emulated": true,
+  "selectedCases": [
+    "map-training-ordered-auto-stan-v2",
+    "map-training-unsorted-auto-stan-v2",
+    "map-training-duplicates-auto-stan-v2",
+    "map-mixed-features-automatic-large-stan-v2"
+  ],
+  "commands": [
+    "BENCHMARK_STAGE=correctness BENCHMARK_CONTAINER_PLATFORM=linux/amd64 docker compose -f benchmark/compose.yaml run --rm effect-prophet-benchmark",
+    "BENCHMARK_STAGE=correctness BENCHMARK_CONTAINER_PLATFORM=linux/amd64 docker compose -f benchmark/compose.yaml run --rm python-prophet-benchmark",
+    "BENCHMARK_REPORT_MODE=eligibility BENCHMARK_CONTAINER_PLATFORM=linux/amd64 docker compose -f benchmark/compose.yaml run --rm benchmark-report",
+    "BENCHMARK_STAGE=timing BENCHMARK_CONTAINER_PLATFORM=linux/amd64 docker compose -f benchmark/compose.yaml run --rm effect-prophet-benchmark",
+    "BENCHMARK_STAGE=timing BENCHMARK_CONTAINER_PLATFORM=linux/amd64 docker compose -f benchmark/compose.yaml run --rm python-prophet-benchmark",
+    "BENCHMARK_REPORT_MODE=final BENCHMARK_CONTAINER_PLATFORM=linux/amd64 docker compose -f benchmark/compose.yaml run --rm benchmark-report"
+  ],
+  "inputHashes": [
+    {
+      "name": "benchmark/cases/linear-growth/public-api.json",
+      "value": "a88e1eec32763e9a310799af5ec6bd8821eb1ce655a383e4952a90e0a25f3cc0"
+    },
+    {
+      "name": "benchmark/cases/linear-growth/scenarios.json",
+      "value": "57ccb7c7bf02d9d17ebe80f961634bc011bb1237af3cfe250e1659c2aa03bb78"
+    },
+    {
+      "name": "benchmark/cases/linear-growth/edge-cases.ts",
+      "value": "c2ce3ed8536f878af3a2a26a252539b5e320fad222a47c266208e7d9c837f57f"
+    },
+    {
+      "name": "benchmark/cases/linear-growth/stan-aligned.ts",
+      "value": "5d8e3a86d7e43e361ec88a6b7d1fff975b458c506fa3de85af642ce53453a980"
+    },
+    {
+      "name": "tools/prophet/linear_optimizer_evidence.py",
+      "value": "0832bd2626e26334a82afee1ea504de429e06ac79930d5b88adf51f5fb3912aa"
+    },
+    {
+      "name": "benchmark/cases/growth-scaling-and-mixed-map.ts",
+      "value": "eb01214b72e234cb05acc2795caa5adf87a4d4638dfc66542feb081dc3d450e7"
+    },
+    {
+      "name": "benchmark/cases/uncertainty.ts",
+      "value": "2d14b373d815482563daa87ea3a2e210b0607b7f102f1773356243023c4c5523"
+    },
+    {
+      "name": "benchmark/cases/evaluation.ts",
+      "value": "6109ac468a89df0988b00f16bf259eff7f1c0c7b8f998f8ae018b7ae518b11b9"
+    },
+    {
+      "name": "benchmark/evaluation.ts",
+      "value": "47509542661e3ee05417fd457e8244067febb89f6aa232d380bb877a3e593c6c"
+    },
+    {
+      "name": "benchmark/adapters/evaluation.py",
+      "value": "025bcf9f3210e9a2a91c2e70ac43b23cb385952d180603287d4c9d087561c278"
+    },
+    {
+      "name": "benchmark/results/runs/2026-10-01T225338-666Z-4d661a06/cases.json",
+      "value": "60f4c1c547e2dd68dfdaa7a73eb1e3fec25533d641cac7b6cfea00c123b2b14c"
+    },
+    {
+      "name": "benchmark/evidence/comparisons.json",
+      "value": "217349e63060992a5ca5ee574e7e3029436015aaa46c9a943eb7487e511448c4"
+    },
+    {
+      "name": "benchmark/python/uv.lock",
+      "value": "c90f2464e1d50dbe489bdcdaf8350f04c162f6c617559cfb75d6977b0f430ab1"
+    },
+    {
+      "name": "benchmark/data/generated/manifest.json",
+      "value": "99c273c95fc5a1bf8c8d0e3b3d106355572f5e8a49b323dd37aa3ad9827594d7"
+    },
+    {
+      "name": "package-lock.json",
+      "value": "99bda82607c5764a965fc84c4f1c3aeb518b7a1604975e958b3ad63e4887d936"
+    },
+    {
+      "name": "benchmark/data/generated/map-mixed-features-automatic-large.json",
+      "value": "7a24d6ad1f87032a320eed898a00a41bc90a4b0c7febb7c42801715c86c664b5"
+    },
+    {
+      "name": "benchmark/data/generated/training-ordered.json",
+      "value": "26225e1a04e8d87fbc01f0cbcbe1053c72b87e0ef2c1d0efca3d15a1a448668c"
+    },
+    {
+      "name": "benchmark/data/generated/training-unsorted.json",
+      "value": "f7bd2722b293c4d2d94d63d48023d3788bc701bf2fb1b3d6b96a738cf74a05e9"
+    },
+    {
+      "name": "benchmark/data/generated/training-duplicates.json",
+      "value": "4cb336b1befb59c6e212152cf9f292da82dca61867da485e29840acad55a2926"
+    }
+  ],
+  "containerImages": [
+    {
+      "name": "effect-prophet/benchmark-effect:local",
+      "value": "sha256:15f4e5dc42cccd62668e3f30c1e13ab5eb1f855dcecb4b3a0c34be89d6f58777"
+    },
+    {
+      "name": "effect-prophet/benchmark-python:1.4.0",
+      "value": "sha256:a87eb00bcd99d24241bc78ea3e326ef02c5cd1c3a6090dc243fbcef0a58b41e8"
+    }
+  ]
+}

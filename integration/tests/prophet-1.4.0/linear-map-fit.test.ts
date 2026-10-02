@@ -27,6 +27,40 @@ describe("Prophet 1.4.0 fitted linear MAP compatibility", () => {
         continue;
       }
 
+      expect(model.fitSummary.observationCount).toBe(referenceCase.observations.length);
+
+      if (referenceCase.id === "training-duplicates-explicit-break") {
+        const unique = referenceCase.observations.filter(
+          (row, index, rows) =>
+            rows.findIndex((candidate) => candidate.timestamp === row.timestamp) === index,
+        );
+
+        const deduplicated = await Effect.runPromise(
+          fit(unique, {
+            map: {
+              changepoints: { mode: "explicit", timestamps: referenceCase.changepointTimestamps },
+              changepointPriorScale: referenceCase.settings.changepointPriorScale,
+            },
+          }).pipe(Effect.provide(prophetFittingBackendLayer)),
+        );
+
+        const original = await Effect.runPromise(
+          predict(model, referenceCase.predictionTimestamps),
+        );
+
+        const dropped = await Effect.runPromise(
+          predict(deduplicated, referenceCase.predictionTimestamps),
+        );
+
+        expect(
+          original.some(
+            (row, index) =>
+              Math.abs(row.value - (dropped[index]?.value ?? row.value)) >
+              referenceCase.tolerance.forecastAbsolute,
+          ),
+        ).toBe(true);
+      }
+
       expect(Math.abs(model.intercept - referenceCase.expected.intercept)).toBeLessThanOrEqual(
         referenceCase.tolerance.coefficientAbsolute,
       );

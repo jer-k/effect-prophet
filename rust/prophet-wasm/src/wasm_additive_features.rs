@@ -5,7 +5,7 @@ use crate::additional_features::{
 };
 use crate::piecewise_linear::PiecewiseTrend;
 use crate::piecewise_map::{
-  MapControls, fit_piecewise_map_with_features_and_scaling as fit_map_kernel,
+  fit_piecewise_map_with_features_and_scaling as fit_map_kernel,
   predict_piecewise_map_with_features as predict_map_kernel, resolve_automatic_changepoints,
 };
 use crate::seasonality::SeasonalitySpec;
@@ -13,7 +13,9 @@ use crate::target_scaling::{ScalingMode, TargetScaling};
 use crate::wasm_map::{
   PiecewiseMapFitStatus, PiecewiseMapPredictionStatus, prediction_error_frame, status_for_fit_error,
 };
-use crate::wasm_protocol::{parse_nonnegative_integer, parse_positive_integer};
+use crate::wasm_protocol::{
+  parse_explicit_changepoints, parse_nonnegative_integer, parse_positive_integer,
+};
 
 #[derive(Debug)]
 struct ParsedFeatureMetadata {
@@ -43,9 +45,7 @@ pub fn fit_piecewise_map_with_features(
   additional_component_offsets: &[f64],
   additional_component_counts: &[f64],
   changepoint_prior_scale: f64,
-  max_iterations: f64,
-  relative_tolerance: f64,
-  absolute_tolerance: f64,
+  optimizer: &[f64],
 ) -> Vec<f64> {
   fit_piecewise_map_with_features_protocol(
     timestamps,
@@ -64,9 +64,7 @@ pub fn fit_piecewise_map_with_features(
     additional_component_offsets,
     additional_component_counts,
     changepoint_prior_scale,
-    max_iterations,
-    relative_tolerance,
-    absolute_tolerance,
+    optimizer,
     ScalingMode::AbsMax,
     false,
   )
@@ -94,9 +92,7 @@ pub fn fit_piecewise_map_with_features_and_scaling(
   additional_component_offsets: &[f64],
   additional_component_counts: &[f64],
   changepoint_prior_scale: f64,
-  max_iterations: f64,
-  relative_tolerance: f64,
-  absolute_tolerance: f64,
+  optimizer: &[f64],
 ) -> Vec<f64> {
   let Some(scaling_mode) = ScalingMode::from_code(scaling_mode) else {
     return vec![f64::from(
@@ -121,9 +117,7 @@ pub fn fit_piecewise_map_with_features_and_scaling(
     additional_component_offsets,
     additional_component_counts,
     changepoint_prior_scale,
-    max_iterations,
-    relative_tolerance,
-    absolute_tolerance,
+    optimizer,
     scaling_mode,
     true,
   )
@@ -147,9 +141,7 @@ fn fit_piecewise_map_with_features_protocol(
   additional_component_offsets: &[f64],
   additional_component_counts: &[f64],
   changepoint_prior_scale: f64,
-  max_iterations: f64,
-  relative_tolerance: f64,
-  absolute_tolerance: f64,
+  optimizer: &[f64],
   scaling_mode: ScalingMode,
   include_scaling: bool,
 ) -> Vec<f64> {
@@ -162,7 +154,7 @@ fn fit_piecewise_map_with_features_protocol(
         )];
       }
     };
-  let controls = match parse_controls(max_iterations, relative_tolerance, absolute_tolerance) {
+  let controls = match crate::wasm_protocol::parse_linear_optimizer(optimizer) {
     Some(value) => value,
     None => {
       return vec![f64::from(
@@ -225,14 +217,11 @@ fn fit_piecewise_map_with_features_protocol(
         .checked_mul(2)
         .and_then(|count| count.checked_add(model.coefficients.len()))
         .and_then(|count| count.checked_add(model.additional_coefficients.len()))
-        .and_then(|count| count.checked_add(13 + metadata_width))
+        .and_then(|count| count.checked_add(17 + metadata_width))
       else {
         return vec![f64::from(PiecewiseMapFitStatus::SizeOverflow as u32)];
       };
-      let termination = match model.summary.termination {
-        crate::piecewise_map::MapTermination::Converged => 0.0,
-        crate::piecewise_map::MapTermination::ConstantTargetShortcut => 1.0,
-      };
+      let termination = crate::wasm_protocol::map_termination_code(model.summary.termination);
       let mut packed = Vec::with_capacity(capacity);
 
       packed.push(f64::from(PiecewiseMapFitStatus::Success as u32));
@@ -259,6 +248,9 @@ fn fit_piecewise_map_with_features_protocol(
         model.summary.stationarity_residual,
         termination,
       ]);
+      packed.extend_from_slice(&crate::wasm_protocol::linear_summary_frame(
+        model.summary.termination,
+      ));
       packed.extend_from_slice(&model.trend.changepoint_timestamps);
       packed.extend_from_slice(&model.trend.deltas);
       packed.extend_from_slice(&model.coefficients);
@@ -266,7 +258,7 @@ fn fit_piecewise_map_with_features_protocol(
 
       packed
     }
-    Err(error) => vec![f64::from(status_for_fit_error(error) as u32)],
+    Err(error) => crate::wasm_map::fit_error_frame(error),
   }
 }
 
@@ -518,18 +510,6 @@ fn parse_seasonalities(
     .collect()
 }
 
-fn parse_controls(max_iterations: f64, relative: f64, absolute: f64) -> Option<MapControls> {
-  if !relative.is_finite() || relative <= 0.0 || !absolute.is_finite() || absolute <= 0.0 {
-    return None;
-  }
-
-  Some(MapControls {
-    max_iterations: parse_positive_integer(max_iterations)?,
-    relative_tolerance: relative,
-    absolute_tolerance: absolute,
-  })
-}
-
 fn parse_changepoints(
   timestamps: &[f64],
   mode: f64,
@@ -542,7 +522,8 @@ fn parse_changepoints(
       return Err(PiecewiseMapFitStatus::InvalidConfiguration);
     }
 
-    return Ok(explicit.to_vec());
+    return parse_explicit_changepoints(explicit)
+      .ok_or(PiecewiseMapFitStatus::InvalidConfiguration);
   }
 
   if mode != 1.0 || !explicit.is_empty() {

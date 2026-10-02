@@ -91,11 +91,17 @@ impl MixedMapPredictionBatch {
 
 struct MixedEvaluation {
   objective: f64,
-  residual_sum_squares: f64,
   stationarity_residual: f64,
 }
 
-/// Fit Prophet's mixed additive/multiplicative objective with deterministic block coordinates.
+/// Legal optimizer controls for the selected trend family.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum MixedMapControls {
+  Linear(crate::stan_linear_optimizer::LinearOptimizerOptions),
+  Flat(MapControls),
+}
+
+/// Fit mixed linear state with Stan optimization; flat retains its coordinate policy.
 #[allow(clippy::too_many_arguments)]
 pub fn fit_mixed_map(
   timestamps: &[f64],
@@ -107,7 +113,7 @@ pub fn fit_mixed_map(
   additional_layout: AdditionalFeatureLayoutView<'_>,
   column_modes: &[ComponentMode],
   changepoint_prior_scale: f64,
-  controls: MapControls,
+  controls: MixedMapControls,
   scaling_mode: ScalingMode,
 ) -> Result<MixedMapModel, PiecewiseMapError> {
   validate_common(
@@ -195,6 +201,61 @@ pub fn fit_mixed_map(
       },
     });
   }
+
+  let controls = match (trend_input, controls) {
+    (MixedTrendInput::Linear { changepoints }, MixedMapControls::Linear(options)) => {
+      let column_count = trend_count
+        .checked_add(feature_count)
+        .ok_or(PiecewiseMapError::SizeOverflow)?;
+      let count =
+        checked_element_count(values.len(), column_count).map_err(map_fourier_fit_error)?;
+      let mut design = vec![0.0; count];
+      for row in 0..values.len() {
+        let start = row * column_count;
+        design[start..start + trend_count]
+          .copy_from_slice(&trend_design[row * trend_count..(row + 1) * trend_count]);
+        design[start + trend_count..start + column_count]
+          .copy_from_slice(&feature_values[row * feature_count..(row + 1) * feature_count]);
+      }
+      let origin = timestamps[0];
+      let time_scale = timestamps[timestamps.len() - 1] - origin;
+      let points: Vec<f64> = changepoints
+        .iter()
+        .map(|point| (point - origin) / time_scale)
+        .collect();
+      let objective = crate::map_objective::StanLinearObjective::new(
+        &design,
+        &target,
+        &points,
+        &feature_priors,
+        column_modes,
+        changepoint_prior_scale,
+      )
+      .map_err(crate::piecewise_map::map_objective_error)?;
+      let fit = objective
+        .fit_model(options)
+        .map_err(PiecewiseMapError::Optimizer)?;
+
+      return finish_model(
+        timestamps,
+        values.len(),
+        trend_input,
+        seasonalities,
+        seasonal_count,
+        column_modes,
+        target_scaling,
+        fit.coefficients[..trend_count].to_vec(),
+        fit.coefficients[trend_count..].to_vec(),
+        fit.noise_scale,
+        fit.optimization.iterations,
+        fit.objective,
+        fit.stationarity_residual,
+        MapTermination::Stan(fit.optimization),
+      );
+    }
+    (MixedTrendInput::Flat, MixedMapControls::Flat(controls)) => controls,
+    _ => return Err(PiecewiseMapError::InvalidConfiguration),
+  };
 
   let mut trend_coefficients = vec![0.0; trend_count];
 
@@ -380,7 +441,9 @@ pub fn fit_mixed_map(
         beta,
         noise_scale,
         iteration,
-        evaluation,
+        evaluation.objective,
+        evaluation.stationarity_residual,
+        MapTermination::Converged,
       );
     }
   }
@@ -551,7 +614,7 @@ fn validate_common(
   layout: AdditionalFeatureLayoutView<'_>,
   modes: &[ComponentMode],
   changepoint_prior_scale: f64,
-  controls: MapControls,
+  controls: MixedMapControls,
 ) -> Result<(), PiecewiseMapError> {
   if timestamps.len() != values.len() {
     return Err(PiecewiseMapError::LengthMismatch);
@@ -565,19 +628,24 @@ fn validate_common(
     .iter()
     .chain(values)
     .any(|value| !value.is_finite())
-    || timestamps.windows(2).any(|pair| pair[1] <= pair[0])
+    || timestamps.windows(2).any(|pair| pair[1] < pair[0])
   {
     return Err(PiecewiseMapError::InvalidObservation);
   }
 
-  if !changepoint_prior_scale.is_finite()
-    || changepoint_prior_scale <= 0.0
-    || controls.max_iterations == 0
-    || !controls.relative_tolerance.is_finite()
-    || controls.relative_tolerance <= 0.0
-    || !controls.absolute_tolerance.is_finite()
-    || controls.absolute_tolerance <= 0.0
-  {
+  let valid_controls = match (trend_input, controls) {
+    (MixedTrendInput::Linear { .. }, MixedMapControls::Linear(_)) => true,
+    (MixedTrendInput::Flat, MixedMapControls::Flat(controls)) => {
+      controls.max_iterations > 0
+        && controls.relative_tolerance.is_finite()
+        && controls.relative_tolerance > 0.0
+        && controls.absolute_tolerance.is_finite()
+        && controls.absolute_tolerance > 0.0
+    }
+    _ => false,
+  };
+
+  if !changepoint_prior_scale.is_finite() || changepoint_prior_scale <= 0.0 || !valid_controls {
     return Err(PiecewiseMapError::InvalidConfiguration);
   }
 
@@ -585,9 +653,12 @@ fn validate_common(
     let start = timestamps[0];
     let end = timestamps[timestamps.len() - 1];
 
-    if !((end - start).is_finite() && end > start)
-      || changepoints.iter().any(|value| !value.is_finite())
-      || changepoints.windows(2).any(|pair| pair[1] <= pair[0])
+    if !((end - start).is_finite() && end > start) {
+      return Err(PiecewiseMapError::ZeroTimeRange);
+    }
+
+    if changepoints.iter().any(|value| !value.is_finite())
+      || changepoints.windows(2).any(|pair| pair[1] < pair[0])
       || changepoints
         .iter()
         .any(|value| *value < start || *value > end)
@@ -978,7 +1049,6 @@ fn evaluate_mixed(
 
   Ok(MixedEvaluation {
     objective,
-    residual_sum_squares,
     stationarity_residual,
   })
 }
@@ -996,12 +1066,10 @@ fn finish_model(
   beta: Vec<f64>,
   noise_scale: f64,
   iterations: usize,
-  evaluation: MixedEvaluation,
+  objective: f64,
+  stationarity_residual: f64,
+  termination: MapTermination,
 ) -> Result<MixedMapModel, PiecewiseMapError> {
-  if evaluation.residual_sum_squares <= 0.0 {
-    return Err(PiecewiseMapError::NoiseCollapse);
-  }
-
   let value_scale = target_scaling.scale;
   let output_trend: Vec<f64> = trend_coefficients
     .iter()
@@ -1057,9 +1125,9 @@ fn finish_model(
       value_scale,
       observation_count,
       iterations,
-      objective: evaluation.objective,
-      stationarity_residual: evaluation.stationarity_residual,
-      termination: MapTermination::Converged,
+      objective,
+      stationarity_residual,
+      termination,
     },
   })
 }
@@ -1142,11 +1210,11 @@ mod tests {
   use crate::seasonality::SeasonalitySpec;
   use crate::target_scaling::ScalingMode;
 
-  const CONTROLS: MapControls = MapControls {
+  const CONTROLS: super::MixedMapControls = super::MixedMapControls::Flat(MapControls {
     max_iterations: 10_000,
     relative_tolerance: 1e-10,
     absolute_tolerance: 1e-12,
-  };
+  });
 
   #[test]
   fn fits_and_predicts_flat_mixed_components() {
@@ -1244,7 +1312,9 @@ mod tests {
       },
       &[ComponentMode::Additive, ComponentMode::Multiplicative],
       0.05,
-      CONTROLS,
+      super::MixedMapControls::Linear(
+        crate::stan_linear_optimizer::LinearOptimizerOptions::default(),
+      ),
       ScalingMode::AbsMax,
     )
     .expect("mixed linear fit should converge");

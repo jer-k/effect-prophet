@@ -29,7 +29,8 @@ if (runDirectory === undefined) {
   throw new Error("BENCHMARK_RUN_DIRECTORY is required");
 }
 
-const casesPath = process.env.BENCHMARK_CASES_PATH ?? "/workspace/benchmark/cases/public-api.json";
+const casesPath =
+  process.env.BENCHMARK_CASES_PATH ?? "/workspace/benchmark/cases/linear-growth/public-api.json";
 
 const evidencePath =
   process.env.BENCHMARK_EVIDENCE_PATH ?? "/workspace/benchmark/evidence/comparisons.json";

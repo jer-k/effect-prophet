@@ -204,13 +204,17 @@ describe("conditional seasonality public lifecycle", () => {
     }
 
     expect(model.coefficients).toHaveLength(4);
-    expect(model.coefficients).toEqual([0, 0, 0, 0]);
+
+    // Joint Newton preserves its actual fitted prior-only parameters rather
+    // than snapping inactive coefficients to coordinate descent's exact zeros.
+    for (const coefficient of model.coefficients) {
+      expect(coefficient).toBeCloseTo(0, 10);
+    }
 
     const forecasts = await Effect.runPromise(predict(model, predictionRows));
 
-    expect(forecasts.every((forecast) => additiveValue(forecast.seasonalities[0]) === 0)).toBe(
-      true,
-    );
+    expect(additiveValue(forecasts[0]?.seasonalities[0])).toBe(0);
+    expect(additiveValue(forecasts[1]?.seasonalities[0]) ?? Number.NaN).toBeCloseTo(0, 10);
   });
 
   it("fits conditional seasonalities with an event and regressor through linear MAP", async () => {

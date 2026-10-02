@@ -12,11 +12,15 @@ ENV MPLCONFIGDIR=/tmp/matplotlib \
 
 COPY --from=uv /uv /uvx /usr/local/bin/
 
+LABEL org.effect-prophet.benchmark=true
+
 WORKDIR /workspace
 
 COPY benchmark/python/.python-version benchmark/python/pyproject.toml benchmark/python/uv.lock ./benchmark/python/
-RUN uv sync --project benchmark/python --frozen --no-dev --no-install-project
+RUN uv sync --project benchmark/python --frozen --no-dev --no-install-project --no-cache
 
-COPY benchmark ./benchmark
+# Cases, datasets, evidence, and results are bind mounts, not image/build-cache inputs.
+COPY benchmark/adapters/python-prophet.py benchmark/adapters/evaluation.py ./benchmark/adapters/
+COPY tools/prophet/linear_optimizer_evidence.py ./tools/prophet/
 
 CMD ["/opt/effect-prophet-benchmark/bin/python", "benchmark/adapters/python-prophet.py"]

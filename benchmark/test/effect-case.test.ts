@@ -8,7 +8,7 @@ import { effectOptionsForCase } from "../effect-case.ts";
 
 const cases = async () => {
   const input: unknown = JSON.parse(
-    await readFile(new URL("../cases/public-api.json", import.meta.url), "utf8"),
+    await readFile(new URL("../cases/linear-growth/public-api.json", import.meta.url), "utf8"),
   );
 
   return Effect.runPromise(parseBenchmarkCases(input));

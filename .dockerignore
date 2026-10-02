@@ -10,7 +10,9 @@ rust/prophet-wasm/pkg
 rust/prophet-wasm/target
 wasm
 benchmark/adapters/__pycache__
-benchmark/data/generated
+benchmark/data/generated/*
+!benchmark/data/generated/training-ordered.json
+!benchmark/data/generated/training-unsorted.json
 benchmark/results
 *.tsbuildinfo
 .DS_Store

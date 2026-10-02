@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "caseIds": [
+    "map-training-ordered-explicit-stan-v2",
+    "map-training-unsorted-explicit-stan-v2",
+    "map-training-duplicates-explicit-stan-v2",
+    "map-training-zero-span-flat-varied-stan-v2",
+    "map-training-zero-span-flat-constant-stan-v2",
+    "evaluation-training-duplicates-stan-v2",
+    "linear-offset-scaling-minmax-stan-v2",
+    "linear-mixed-components-stan-v2"
+  ]
+}

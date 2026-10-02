@@ -89,6 +89,31 @@ const run = (request: HoldoutEvaluationInput) =>
   evaluateHoldout(request).pipe(Effect.provide(prophetFittingBackendLayer));
 
 describe("evaluateHoldout", () => {
+  it("stably orders duplicate holdout rows and roundtrips every assessment independently", async () => {
+    const search = await find();
+    const request = input(search);
+
+    const report = await Effect.runPromise(
+      run({
+        ...request,
+        development: [observations[0], ...observations.slice(1).reverse()],
+        holdout: [
+          { timestamp: timestamp(19), value: 22 },
+          holdout[0],
+          { timestamp: timestamp(18), value: 30 },
+        ],
+      }),
+    );
+
+    expect(report.holdout.rowCount).toBe(3);
+    expect(report.forecasts.map((row) => row.timestamp)).toEqual(
+      [18, 18, 19].map((day) => epoch + day * 86400000),
+    );
+    const encoded = await Effect.runPromise(encodeEvaluationReport(report));
+    expect(
+      await Effect.runPromise(decodeEvaluationReport(JSON.parse(JSON.stringify(encoded)))),
+    ).toEqual(report);
+  });
   it("fits the selected MAP option only on development and roundtrips a strict report", async () => {
     const search = await find();
     const report = await Effect.runPromise(run(input(search)));
@@ -186,7 +211,7 @@ describe("evaluateHoldout", () => {
         ...input(search),
         holdout: [
           { timestamp: timestamp(20), value: 2 },
-          { timestamp: timestamp(19), value: 3 },
+          { timestamp: timestamp(19), value: Number.NaN },
         ],
       },
     ];

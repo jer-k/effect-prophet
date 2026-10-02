@@ -7,9 +7,11 @@ import { fileURLToPath } from "node:url";
 
 import { Effect } from "effect";
 
-import { parseBenchmarkCases, parseBenchmarkDataset } from "./case.ts";
+import { parseBenchmarkCases, parseBenchmarkDataset, type BenchmarkDataset } from "./case.ts";
 import { growthScalingAndMixedMapCases } from "./cases/growth-scaling-and-mixed-map.ts";
 import { evaluationCases } from "./cases/evaluation.ts";
+import { linearGrowthEdgeCases } from "./cases/linear-growth/edge-cases.ts";
+import { stanAlignedCases } from "./cases/linear-growth/stan-aligned.ts";
 import { uncertaintyCases } from "./cases/uncertainty.ts";
 import { resolveContainerPlatform } from "./container-platform.ts";
 import { generateBenchmarkData } from "./generate-data.ts";
@@ -21,7 +23,7 @@ const benchmarkRoot = fileURLToPath(new URL("./", import.meta.url));
 
 const composePath = resolve(benchmarkRoot, "compose.yaml");
 
-const casesPath = resolve(benchmarkRoot, "cases/public-api.json");
+const casesPath = resolve(benchmarkRoot, "cases/linear-growth/public-api.json");
 
 const evidencePath = resolve(benchmarkRoot, "evidence/comparisons.json");
 
@@ -113,7 +115,13 @@ const main = async (): Promise<void> => {
   const declarations = await Effect.runPromise(
     parseBenchmarkCases([
       ...originalCases,
+      ...linearGrowthEdgeCases,
       ...growthScalingAndMixedMapCases,
+      ...stanAlignedCases([
+        ...originalCases,
+        ...linearGrowthEdgeCases,
+        ...growthScalingAndMixedMapCases,
+      ]),
       ...uncertaintyCases,
       ...evaluationCases,
     ]),
@@ -137,7 +145,13 @@ const main = async (): Promise<void> => {
               .filter((_, index) => index % selection.stride === 0)
               .slice(0, selection.future);
 
-      const lastTraining = dataset.observations.at(-1);
+      const lastTraining = dataset.observations.reduce<
+        BenchmarkDataset["observations"][number] | undefined
+      >(
+        (latest, row) => (latest === undefined || row.timestamp > latest.timestamp ? row : latest),
+        undefined,
+      );
+
       const lastFuture = futureRows.at(-1);
 
       if (
@@ -207,6 +221,10 @@ const main = async (): Promise<void> => {
   const inputPaths = Array.from(
     new Set([
       casesPath,
+      resolve(benchmarkRoot, "cases/linear-growth/scenarios.json"),
+      resolve(benchmarkRoot, "cases/linear-growth/edge-cases.ts"),
+      resolve(benchmarkRoot, "cases/linear-growth/stan-aligned.ts"),
+      resolve(projectRoot, "tools/prophet/linear_optimizer_evidence.py"),
       resolve(benchmarkRoot, "cases/growth-scaling-and-mixed-map.ts"),
       resolve(benchmarkRoot, "cases/uncertainty.ts"),
       resolve(benchmarkRoot, "cases/evaluation.ts"),

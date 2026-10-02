@@ -1,0 +1,30 @@
+Stan Newton numerical strategy
+------------------------------
+Stan 2.37.0, commit 1357c136bf22e3f0d25ed3529fea55fe76842eac.
+Copyright (c) 2011--2020, Stan Developers and their Assignees.
+The Rust port retains the actual finite-difference stencil, joint spectral
+modification, backtracking and service stopping semantics. BSD-3-Clause terms
+are reproduced in stan-license.txt.
+
+Symmetric spectral decomposition
+--------------------------------
+nalgebra 0.34.1, https://github.com/dimforge/nalgebra/tree/v0.34.1.
+Copyright the nalgebra authors, including Sebastien Crozet.
+Apache-2.0 terms are reproduced in nalgebra-license.txt.
+The symmetric QR iteration in symmetric_eigen.rs is adapted from nalgebra's
+symmetric_eigen.rs, simplified to f64, with a stable terminal 2-by-2 atan2
+rotation. Its Householder tridiagonalization reuses the pinned nalgebra crate.
+This is not a bitwise port of Eigen. Frozen-reference and spectral residual
+comparisons are required before adopting it in public linear MAP fitting.
+
+Reference-aligned exponential
+-----------------------------
+Arm optimized-routines, commit 375f32ed2f7098090f41795ad363822752a25a65.
+https://github.com/ARM-software/optimized-routines
+Copyright (c) 2018-2025 Arm Limited.
+stan_math.rs and stan_math_data.rs adapt math/exp.c and math/exp_data.c to
+pure Rust, exact IEEE-754 table bits, explicit fused arithmetic and nearest
+rounding. errno/fenv behavior and C ABI aliases are not included. This fixes
+host-libm-dependent optimizer trajectories without native or C dependencies.
+The MIT license is selected; the upstream license options are reproduced in
+arm-optimized-routines-license.txt.

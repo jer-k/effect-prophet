@@ -130,6 +130,8 @@ const baselineValues = (
       }
     }
 
+    // Baselines are package/application policies, not Prophet fitting operations.
+    // Stable input order makes both last-observation and exact-lag ties last-row-wins.
     const trainingByTimestamp = new Map<number, number>();
 
     if (baseline.kind === "seasonal-naive") {

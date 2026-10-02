@@ -1,4 +1,5 @@
 import { Effect, Schema } from "effect";
+import { LinearOptimizerSchema } from "effect-prophet";
 
 const NonEmptyString = Schema.String.check(Schema.isMinLength(1));
 
@@ -132,15 +133,20 @@ const LinearMapWorkloadSchema = Schema.Struct({
     events: Schema.Array(BenchmarkEventSchema),
     regressors: Schema.Array(BenchmarkRegressorSchema),
   }),
-  effectOptimizer: Schema.Struct({
-    maxIterations: PositiveInteger,
-    relativeTolerance: PositiveFinite,
-    absoluteTolerance: PositiveFinite,
-  }),
+  effectOptimizer: Schema.Union([
+    // Original case snapshots remain readable diagnostic evidence, not public control shims.
+    Schema.Struct({
+      maxIterations: PositiveInteger,
+      relativeTolerance: PositiveFinite,
+      absoluteTolerance: PositiveFinite,
+    }),
+    LinearOptimizerSchema,
+  ]),
   pythonOptimizer: Schema.Struct({
-    algorithm: Schema.Literals(["Newton", "LBFGS"]),
+    algorithm: Schema.Literals(["Newton", "LBFGS", "Auto"]),
     maxIterations: PositiveInteger,
     newtonFallback: Schema.Boolean,
+    sigFigs: Schema.optionalKey(PositiveInteger.check(Schema.isLessThanOrEqualTo(12))),
   }),
 });
 
@@ -246,6 +252,24 @@ export const BenchmarkCaseSchema = Schema.Struct({
   independentRuns: PositiveInteger,
   timeoutSeconds: PositiveInteger,
   correctnessTolerances: CorrectnessTolerancesSchema,
+  optimizerQuality: Schema.optionalKey(
+    Schema.Union([
+      // Retained diagnostic snapshots keep their original equality gate.
+      Schema.Struct({
+        objectiveAbsolute: NonNegativeFinite,
+        stationarityAbsolute: NonNegativeFinite,
+        normalizedNoiseAbsolute: NonNegativeFinite,
+      }),
+      Schema.Struct({
+        objectiveAbsolute: NonNegativeFinite,
+        normalizedNoiseAbsolute: NonNegativeFinite,
+        stationarity: Schema.Struct({
+          kind: Schema.Literal("diagnostic-only"),
+          followUp: Schema.Literal("EP-097"),
+        }),
+      }),
+    ]),
+  ),
   rowSelection: Schema.optionalKey(
     Schema.Struct({
       historical: NonNegativeInteger,
@@ -543,22 +567,8 @@ const validateDatasetRelationships = (
     );
   }
 
-  let previousTimestamp = Number.NEGATIVE_INFINITY;
-
-  for (const observation of dataset.observations) {
-    const timestamp = Date.parse(observation.timestamp);
-
-    if (timestamp <= previousTimestamp) {
-      return Effect.fail(
-        new BenchmarkInputError({
-          input: "dataset",
-          message: `Dataset ${dataset.id} observations must be strictly ordered and unique`,
-        }),
-      );
-    }
-
-    previousTimestamp = timestamp;
-  }
+  // Preserve shared source order and duplicate rows so the public fit boundaries,
+  // not the benchmark parser, exercise Prophet-compatible history preparation.
 
   return Effect.succeed(dataset);
 };

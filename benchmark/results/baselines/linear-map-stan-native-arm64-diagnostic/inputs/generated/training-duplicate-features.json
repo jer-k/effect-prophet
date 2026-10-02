@@ -1,0 +1,1040 @@
+{
+  "id": "training-duplicate-features",
+  "recipe": "training-duplicate-features-v1:n=96:h=8:stable-reverse-source:quadruplicate=true:bounded-row-noise",
+  "observations": [
+    {
+      "timestamp": "2020-01-24T00:00:00.000Z",
+      "value": 16.7512483623,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-24T00:00:00.000Z",
+      "value": 16.646624556,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-24T00:00:00.000Z",
+      "value": 15.9712216426,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": false
+      }
+    },
+    {
+      "timestamp": "2020-01-24T00:00:00.000Z",
+      "value": 17.2859498451,
+      "regressors": {
+        "promotion": 1
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-23T00:00:00.000Z",
+      "value": 16.3953862758,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-23T00:00:00.000Z",
+      "value": 16.2849240935,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-23T00:00:00.000Z",
+      "value": 15.7995051986,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": false
+      }
+    },
+    {
+      "timestamp": "2020-01-23T00:00:00.000Z",
+      "value": 16.9260392838,
+      "regressors": {
+        "promotion": 1
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-22T00:00:00.000Z",
+      "value": 15.5394038062,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-22T00:00:00.000Z",
+      "value": 15.4659071722,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-22T00:00:00.000Z",
+      "value": 15.5676424577,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": false
+      }
+    },
+    {
+      "timestamp": "2020-01-22T00:00:00.000Z",
+      "value": 16.0810056149,
+      "regressors": {
+        "promotion": 1
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-21T00:00:00.000Z",
+      "value": 14.6781825627,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-21T00:00:00.000Z",
+      "value": 14.696812339,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-21T00:00:00.000Z",
+      "value": 15.3684964273,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": false
+      }
+    },
+    {
+      "timestamp": "2020-01-21T00:00:00.000Z",
+      "value": 15.2797409195,
+      "regressors": {
+        "promotion": 1
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-20T00:00:00.000Z",
+      "value": 14.3294020422,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-20T00:00:00.000Z",
+      "value": 14.4287453721,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-20T00:00:00.000Z",
+      "value": 15.1948057594,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": false
+      }
+    },
+    {
+      "timestamp": "2020-01-20T00:00:00.000Z",
+      "value": 14.9107440996,
+      "regressors": {
+        "promotion": 1
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-19T00:00:00.000Z",
+      "value": 14.5227782741,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-19T00:00:00.000Z",
+      "value": 14.6381992509,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-19T00:00:00.000Z",
+      "value": 14.9311372051,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": false
+      }
+    },
+    {
+      "timestamp": "2020-01-19T00:00:00.000Z",
+      "value": 14.9938544078,
+      "regressors": {
+        "promotion": 1
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-18T00:00:00.000Z",
+      "value": 14.8958717125,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-18T00:00:00.000Z",
+      "value": 14.9904891536,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-18T00:00:00.000Z",
+      "value": 14.6039379223,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": false
+      }
+    },
+    {
+      "timestamp": "2020-01-18T00:00:00.000Z",
+      "value": 15.3192488245,
+      "regressors": {
+        "promotion": 1
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-17T00:00:00.000Z",
+      "value": 15.0701144974,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-17T00:00:00.000Z",
+      "value": 15.1298735844,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-17T00:00:00.000Z",
+      "value": 14.3423251457,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": false
+      }
+    },
+    {
+      "timestamp": "2020-01-17T00:00:00.000Z",
+      "value": 15.524053009,
+      "regressors": {
+        "promotion": 1
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-16T00:00:00.000Z",
+      "value": 14.8747555148,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-16T00:00:00.000Z",
+      "value": 14.8624701289,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-16T00:00:00.000Z",
+      "value": 14.2081782443,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": false
+      }
+    },
+    {
+      "timestamp": "2020-01-16T00:00:00.000Z",
+      "value": 15.317152099,
+      "regressors": {
+        "promotion": 1
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-15T00:00:00.000Z",
+      "value": 14.2101731489,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-15T00:00:00.000Z",
+      "value": 14.1098456984,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-15T00:00:00.000Z",
+      "value": 14.0306086177,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": false
+      }
+    },
+    {
+      "timestamp": "2020-01-15T00:00:00.000Z",
+      "value": 14.6277457574,
+      "regressors": {
+        "promotion": 1
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-14T00:00:00.000Z",
+      "value": 13.4475919326,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-14T00:00:00.000Z",
+      "value": 13.3165566603,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-14T00:00:00.000Z",
+      "value": 13.8676400724,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": false
+      }
+    },
+    {
+      "timestamp": "2020-01-14T00:00:00.000Z",
+      "value": 13.9404404214,
+      "regressors": {
+        "promotion": 1
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-13T00:00:00.000Z",
+      "value": 13.1162254457,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-13T00:00:00.000Z",
+      "value": 13.0239451708,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-13T00:00:00.000Z",
+      "value": 13.7998774714,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": false
+      }
+    },
+    {
+      "timestamp": "2020-01-13T00:00:00.000Z",
+      "value": 13.7102441637,
+      "regressors": {
+        "promotion": 1
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-12T00:00:00.000Z",
+      "value": 13.3464038589,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-12T00:00:00.000Z",
+      "value": 13.3085766094,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-12T00:00:00.000Z",
+      "value": 13.732959088,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": false
+      }
+    },
+    {
+      "timestamp": "2020-01-12T00:00:00.000Z",
+      "value": 13.9324183716,
+      "regressors": {
+        "promotion": 1
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-11T00:00:00.000Z",
+      "value": 13.7591884113,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-11T00:00:00.000Z",
+      "value": 13.7774130338,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-11T00:00:00.000Z",
+      "value": 13.5704425971,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": false
+      }
+    },
+    {
+      "timestamp": "2020-01-11T00:00:00.000Z",
+      "value": 14.2939629096,
+      "regressors": {
+        "promotion": 1
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-10T00:00:00.000Z",
+      "value": 13.9227533755,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-10T00:00:00.000Z",
+      "value": 14.0133187603,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-10T00:00:00.000Z",
+      "value": 13.3913466953,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": false
+      }
+    },
+    {
+      "timestamp": "2020-01-10T00:00:00.000Z",
+      "value": 14.4661270943,
+      "regressors": {
+        "promotion": 1
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-09T00:00:00.000Z",
+      "value": 13.669408157,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-09T00:00:00.000Z",
+      "value": 13.8052246288,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-09T00:00:00.000Z",
+      "value": 13.2563194774,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": false
+      }
+    },
+    {
+      "timestamp": "2020-01-09T00:00:00.000Z",
+      "value": 14.1989849075,
+      "regressors": {
+        "promotion": 1
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-08T00:00:00.000Z",
+      "value": 13.0626522289,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-08T00:00:00.000Z",
+      "value": 13.1645933164,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-08T00:00:00.000Z",
+      "value": 13.0758366058,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": false
+      }
+    },
+    {
+      "timestamp": "2020-01-08T00:00:00.000Z",
+      "value": 13.4940660168,
+      "regressors": {
+        "promotion": 1
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-07T00:00:00.000Z",
+      "value": 12.3920163932,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-07T00:00:00.000Z",
+      "value": 12.4156871757,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-07T00:00:00.000Z",
+      "value": 12.8291134268,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": false
+      }
+    },
+    {
+      "timestamp": "2020-01-07T00:00:00.000Z",
+      "value": 12.7717649448,
+      "regressors": {
+        "promotion": 1
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-06T00:00:00.000Z",
+      "value": 12.1015220672,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-06T00:00:00.000Z",
+      "value": 12.0635333573,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-06T00:00:00.000Z",
+      "value": 12.6444933665,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": false
+      }
+    },
+    {
+      "timestamp": "2020-01-06T00:00:00.000Z",
+      "value": 12.5462064318,
+      "regressors": {
+        "promotion": 1
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-05T00:00:00.000Z",
+      "value": 12.3734859708,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-05T00:00:00.000Z",
+      "value": 12.2878103235,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-05T00:00:00.000Z",
+      "value": 12.5511303496,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": false
+      }
+    },
+    {
+      "timestamp": "2020-01-05T00:00:00.000Z",
+      "value": 12.8723993119,
+      "regressors": {
+        "promotion": 1
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-04T00:00:00.000Z",
+      "value": 12.8478610263,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-04T00:00:00.000Z",
+      "value": 12.7227036923,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-04T00:00:00.000Z",
+      "value": 12.4335939143,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": false
+      }
+    },
+    {
+      "timestamp": "2020-01-04T00:00:00.000Z",
+      "value": 13.3388854777,
+      "regressors": {
+        "promotion": 1
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-03T00:00:00.000Z",
+      "value": 12.9932945582,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-03T00:00:00.000Z",
+      "value": 12.8844221489,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-03T00:00:00.000Z",
+      "value": 12.2816290527,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": false
+      }
+    },
+    {
+      "timestamp": "2020-01-03T00:00:00.000Z",
+      "value": 13.5247873975,
+      "regressors": {
+        "promotion": 1
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-02T00:00:00.000Z",
+      "value": 12.628393647,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-02T00:00:00.000Z",
+      "value": 12.6036088286,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-02T00:00:00.000Z",
+      "value": 12.1884636074,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": false
+      }
+    },
+    {
+      "timestamp": "2020-01-02T00:00:00.000Z",
+      "value": 13.2417131605,
+      "regressors": {
+        "promotion": 1
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-01T00:00:00.000Z",
+      "value": 11.9400660546,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-01T00:00:00.000Z",
+      "value": 11.9983208963,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-01T00:00:00.000Z",
+      "value": 12.110976369,
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": false
+      }
+    },
+    {
+      "timestamp": "2020-01-01T00:00:00.000Z",
+      "value": 12.535,
+      "regressors": {
+        "promotion": 1
+      },
+      "conditions": {
+        "active": true
+      }
+    }
+  ],
+  "predictionRows": [
+    {
+      "timestamp": "2020-01-25T00:00:00.000Z",
+      "regressors": {
+        "promotion": 1
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-26T00:00:00.000Z",
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": false
+      }
+    },
+    {
+      "timestamp": "2020-01-27T00:00:00.000Z",
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-28T00:00:00.000Z",
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-29T00:00:00.000Z",
+      "regressors": {
+        "promotion": 1
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-01-30T00:00:00.000Z",
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": false
+      }
+    },
+    {
+      "timestamp": "2020-01-31T00:00:00.000Z",
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    },
+    {
+      "timestamp": "2020-02-01T00:00:00.000Z",
+      "regressors": {
+        "promotion": 0
+      },
+      "conditions": {
+        "active": true
+      }
+    }
+  ]
+}

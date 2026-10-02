@@ -32,12 +32,13 @@ const inputs = (benchmarkCase: BenchmarkCase, dataset: BenchmarkDataset) => {
     throw new Error("Expected an evaluation workload");
   }
 
-  const development = dataset.observations.slice(
-    0,
-    dataset.observations.length - (workload.holdoutRows ?? 0),
+  // This application-owned temporal split must not leak late source rows into training.
+  const ordered = [...dataset.observations].sort((left, right) =>
+    left.timestamp.localeCompare(right.timestamp),
   );
 
-  const holdout = dataset.observations.slice(development.length);
+  const development = ordered.slice(0, ordered.length - (workload.holdoutRows ?? 0));
+  const holdout = ordered.slice(development.length);
   const options = effectOptionsForCase(benchmarkCase);
 
   if (options === undefined) {
@@ -73,10 +74,13 @@ const candidateOptions = (
   if (options.growth === "flat") return options;
 
   if (growth === "logistic" && options.growth === "linear") {
+    // A caller-owned growth change must not carry algorithm-specific linear controls.
+    const { optimizer: _optimizer, ...map } = options.map ?? {};
+
     return {
       ...options,
       growth: "logistic",
-      map: { ...options.map, changepointPriorScale: prior },
+      map: { ...map, changepointPriorScale: prior },
     };
   }
 
@@ -153,17 +157,31 @@ export const evaluationCorrectness = (
     predicted: row.predicted,
   }));
 
-  const expected = summary.folds.reduce((count, fold) => count + fold.assessmentCount, 0);
+  const expectedRows = summary.folds.flatMap((fold) =>
+    development
+      .filter((row) => {
+        const timestamp = Date.parse(row.timestamp);
 
-  if (result.rows.length !== expected || result.folds.length !== summary.folds.length) {
+        return timestamp > fold.cutoff && timestamp <= fold.cutoff + summary.horizonMs;
+      })
+      .map((row) => ({
+        cutoff: fold.cutoff,
+        timestamp: Date.parse(row.timestamp),
+        actual: row.value,
+      })),
+  );
+
+  if (result.rows.length !== expectedRows.length || result.folds.length !== summary.folds.length) {
     throw new Error("Evaluation fold/row counts disagree with the public plan");
   }
 
   for (const [index, row] of result.rows.entries()) {
-    const actual = development.find((item) => Date.parse(item.timestamp) === row.timestamp);
+    const expected = expectedRows[index];
 
     if (
-      actual?.value !== row.actual ||
+      expected?.actual !== row.actual ||
+      expected.timestamp !== row.timestamp ||
+      expected.cutoff !== row.cutoff ||
       !Number.isFinite(row.predicted) ||
       row.horizonMs !== row.timestamp - row.cutoff ||
       (index > 0 && row.fold < (result.rows[index - 1]?.fold ?? 0))
@@ -240,7 +258,7 @@ export const evaluationCorrectness = (
     evaluation: {
       cutoffs: Array.from(summary.cutoffs),
       trainingRows: summary.folds.reduce((count, fold) => count + fold.trainingCount, 0),
-      assessmentRows: expected,
+      assessmentRows: expectedRows.length,
       rows,
       mae,
     },

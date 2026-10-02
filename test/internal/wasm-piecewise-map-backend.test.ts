@@ -18,11 +18,7 @@ const seasonalities = Effect.runSync(
   Seasonality.parseSeasonalities([]).pipe(Effect.flatMap(Seasonality.makeSeasonalityLayout)),
 );
 
-const optimizer = {
-  maxIterations: 2_000,
-  relativeTolerance: 1e-10,
-  absoluteTolerance: 1e-12,
-} as const;
+const optimizer = { algorithm: "newton", maxIterations: 2_000 } as const;
 
 const moduleReturning = (fitResult: ReadonlyArray<number>): PiecewiseMapWasmBindings => ({
   fit_piecewise_map: () => new Float64Array(fitResult),
@@ -144,7 +140,7 @@ describe("linear piecewise MAP tracing", () => {
     expect(wasmSpans[1]?.parent.pipe(Option.getOrUndefined)?.spanId).toBe(publicPredict.spanId);
   });
 
-  it("marks non-convergence as a failed WASM boundary without replacing the typed error", async () => {
+  it("ends a finite iteration-limit fit successfully without claiming convergence", async () => {
     const spans: Array<Tracer.Span> = [];
 
     const tracer = Tracer.make({
@@ -161,29 +157,39 @@ describe("linear piecewise MAP tracing", () => {
       value: 1 + index * 0.4 + (index >= 4 ? 0.8 : 0) + (index % 2) * 0.05,
     }));
 
-    const error = await Effect.runPromise(
-      Effect.flip(
-        fit(observations, {
-          map: {
-            changepoints: { mode: "auto", count: 2, range: 0.8 },
-            optimizer: { maxIterations: 1 },
-          },
-        }).pipe(Effect.provide(prophetFittingBackendLayer), Effect.withTracer(tracer)),
-      ),
+    const model = await Effect.runPromise(
+      fit(observations, {
+        map: {
+          changepoints: { mode: "auto", count: 2, range: 0.8 },
+          optimizer: { algorithm: "newton", maxIterations: 1 },
+        },
+      }).pipe(Effect.provide(prophetFittingBackendLayer), Effect.withTracer(tracer)),
     );
 
     const wasmFit = spans.find((span) => span.name === "effect-prophet.wasm.fit");
 
-    expect(error).toBeInstanceOf(FittingError);
+    expect(model.model).toBe("linear-piecewise-map");
 
-    if (error instanceof FittingError) {
-      expect(error.reason).toBe("non-convergence");
+    if (model.model === "linear-piecewise-map") {
+      expect(model.fitSummary.termination).toBe("iteration-limit");
+      expect(model.fitSummary.iterations).toBe(1);
+      expect(model.fitSummary.optimization.algorithm).toBe("newton");
     }
 
     expect(wasmFit).toBeDefined();
 
     if (wasmFit !== undefined) {
-      expect(Exit.isFailure(requireEnded(wasmFit).exit)).toBe(true);
+      expect(Exit.isSuccess(requireEnded(wasmFit).exit)).toBe(true);
+      expect(Object.fromEntries(wasmFit.attributes)).toMatchObject({
+        "effect_prophet.optimizer.requested_algorithm": "newton",
+        "effect_prophet.optimizer.max_iterations": 1,
+        "effect_prophet.optimizer.fallback": "none",
+        "effect_prophet.optimizer.algorithm": "newton",
+        "effect_prophet.optimizer.termination": "iteration-limit",
+        "effect_prophet.optimizer.iteration.count": 1,
+        "effect_prophet.optimizer.attempt.count": 1,
+        "effect_prophet.optimizer.hessian_reset.count": 0,
+      });
     }
   });
 

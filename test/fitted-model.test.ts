@@ -68,8 +68,14 @@ const validPiecewiseMapParameters = async (): Promise<PiecewiseMapParameters> =>
     regressors: [],
     noiseScale: 0.1,
     fitSummary: {
-      method: "piecewise-map-coordinate-v1",
-      termination: "converged",
+      method: "piecewise-map-stan-v2",
+      termination: "objective-change",
+      optimization: {
+        algorithm: "newton",
+        attemptCount: 1,
+        failedAttemptIterations: null,
+        hessianResets: 0,
+      },
       valueScale: 3,
       observationCount: 4,
       iterations: 20,

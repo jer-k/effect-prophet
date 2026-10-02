@@ -53,6 +53,15 @@ export interface BenchmarkReport {
   readonly purpose: string;
   readonly correctness: ReadonlyArray<CaseCorrectnessSummary>;
   readonly timings: ReadonlyArray<TimingSummary>;
+  readonly stationarity: ReadonlyArray<{
+    readonly caseId: string;
+    readonly run: number;
+    readonly effectResidual: number;
+    readonly pythonResidual: number;
+    readonly absoluteDifference: number;
+    readonly policy: "equality-gate" | "diagnostic-only";
+    readonly followUp: "EP-097" | undefined;
+  }>;
   readonly workloads: ReadonlyArray<{
     readonly id: string;
     readonly dataset: string;
@@ -587,8 +596,60 @@ const correctnessForCase = (
       caseId: benchmarkCase.id,
       status: "failed",
       comparison,
-      note: "Equivalent-objective timing requires finite optimizer evidence.",
+      note: "Equivalent-objective timing requires finite fit evidence (optimizer or verified constant-target shortcut).",
     };
+  }
+
+  const optimizerQuality = benchmarkCase.optimizerQuality;
+
+  if (optimizerQuality !== undefined) {
+    const gates = [
+      { name: "objective", tolerance: optimizerQuality.objectiveAbsolute },
+      {
+        name: "stationarity-residual",
+        tolerance:
+          "stationarityAbsolute" in optimizerQuality
+            ? optimizerQuality.stationarityAbsolute
+            : undefined,
+      },
+      { name: "normalized-noise", tolerance: optimizerQuality.normalizedNoiseAbsolute },
+    ];
+
+    for (const [index, effectProjection] of effectProjections.entries()) {
+      const pythonProjection = pythonProjections[index];
+
+      for (const gate of gates) {
+        const effectEntries = effectProjection.fitQuality?.filter(
+          (entry) => entry.name === gate.name,
+        );
+
+        const pythonEntries = pythonProjection?.fitQuality?.filter(
+          (entry) => entry.name === gate.name,
+        );
+
+        const effectValue = effectEntries?.[0]?.value;
+        const pythonValue = pythonEntries?.[0]?.value;
+
+        if (
+          effectEntries?.length !== 1 ||
+          pythonEntries?.length !== 1 ||
+          effectValue === undefined ||
+          pythonValue === undefined ||
+          !Number.isFinite(effectValue) ||
+          !Number.isFinite(pythonValue) ||
+          (gate.name === "stationarity-residual" && (effectValue < 0 || pythonValue < 0)) ||
+          (gate.name === "normalized-noise" && (effectValue <= 0 || pythonValue <= 0)) ||
+          (gate.tolerance !== undefined && Math.abs(effectValue - pythonValue) > gate.tolerance)
+        ) {
+          return {
+            caseId: benchmarkCase.id,
+            status: "failed",
+            comparison,
+            note: `Independent linear optimizer ${gate.name} evidence is missing or exceeds its declared tolerance.`,
+          };
+        }
+      }
+    }
   }
 
   const evidenceId = benchmarkCase.workload.comparison.evidenceId;
@@ -687,15 +748,22 @@ const correctnessForCase = (
 
   const passed = failedQuantities.length === 0;
 
+  const stationarityNotice =
+    optimizerQuality !== undefined && "stationarity" in optimizerQuality
+      ? ` Stationarity is diagnostic-only; near-stationarity acceptance is deferred to ${optimizerQuality.stationarity.followUp}.`
+      : "";
+
   return {
     caseId: benchmarkCase.id,
     status: passed ? "passed" : "failed",
     comparison,
     maximumDifferences: maximum,
     note: passed
-      ? controls === undefined
-        ? `Verified equivalent behavior for this configuration under evidence ${evidenceId}.`
-        : `Verified fitted point behavior under ${evidenceId}; scalar simulation gated by ${controls.evidence}. Public output work differs.`
+      ? `${
+          controls === undefined
+            ? `Verified equivalent behavior for this configuration under evidence ${evidenceId}.`
+            : `Verified fitted point behavior under ${evidenceId}; scalar simulation gated by ${controls.evidence}. Public output work differs.`
+        }${stationarityNotice}`
       : `Cross-language quantities exceeded tolerance: ${failedQuantities.join(", ")}.`,
   };
 };
@@ -745,6 +813,40 @@ export const buildBenchmarkReport = (
       "Descriptive public API timing and correctness evidence; this report presents absolute measurements without ranking implementations.",
     correctness,
     timings: summarizeMeasurements(acceptedMeasurements),
+    stationarity: cases.flatMap((benchmarkCase) => {
+      const quality = benchmarkCase.optimizerQuality;
+
+      if (quality === undefined) return [];
+
+      return projectionsForCase(effectResult.correctness, benchmarkCase.id).flatMap((effect) => {
+        const python = pythonResult.correctness.find(
+          (projection) => projection.caseId === benchmarkCase.id && projection.run === effect.run,
+        );
+
+        const effectResidual = effect.fitQuality?.find(
+          (entry) => entry.name === "stationarity-residual",
+        )?.value;
+
+        const pythonResidual = python?.fitQuality?.find(
+          (entry) => entry.name === "stationarity-residual",
+        )?.value;
+
+        if (effectResidual === undefined || pythonResidual === undefined) return [];
+
+        return [
+          {
+            caseId: benchmarkCase.id,
+            run: effect.run,
+            effectResidual,
+            pythonResidual,
+            absoluteDifference: Math.abs(effectResidual - pythonResidual),
+            policy:
+              "stationarity" in quality ? ("diagnostic-only" as const) : ("equality-gate" as const),
+            followUp: "stationarity" in quality ? quality.stationarity.followUp : undefined,
+          },
+        ];
+      });
+    }),
     workloads: cases.flatMap((benchmarkCase) => {
       const uncertainty =
         benchmarkCase.workload.kind === "stage-f-map"
@@ -867,6 +969,22 @@ export const renderBenchmarkMarkdown = (report: BenchmarkReport): string => {
 
     lines.push(
       `| ${escapeTableCell(summary.caseId)} | ${summary.comparison} | ${summary.status} | ${differences?.trend.toExponential(3) ?? "n/a"} | ${differences?.component.toExponential(3) ?? "n/a"} | ${differences?.additive.toExponential(3) ?? "n/a"} | ${differences?.forecast.toExponential(3) ?? "n/a"} | ${differences?.noiseScale.toExponential(3) ?? "n/a"} | ${escapeTableCell(summary.note)} |`,
+    );
+  }
+
+  if (report.stationarity.length > 0) {
+    lines.push(
+      "",
+      "## Stationarity diagnostics",
+      "",
+      "Constrained normalized infinity-norm residuals at independently fitted endpoints, not a same-point gradient comparison. Diagnostic-only rows do not certify near-stationarity; EP-097 owns that deferred requirement. Density, normalized-noise, forecast, component, metadata, persistence and applicable uncertainty gates still apply.",
+      "",
+      "| Case | Run | Effect residual | Python residual | Absolute difference | Policy | Follow-up |",
+      "| --- | ---: | ---: | ---: | ---: | --- | --- |",
+      ...report.stationarity.map(
+        (row) =>
+          `| ${escapeTableCell(row.caseId)} | ${row.run} | ${row.effectResidual.toExponential(6)} | ${row.pythonResidual.toExponential(6)} | ${row.absoluteDifference.toExponential(6)} | ${row.policy} | ${row.followUp ?? "n/a"} |`,
+      ),
     );
   }
 

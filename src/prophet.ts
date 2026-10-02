@@ -62,6 +62,7 @@ import {
   checkExplicitChangepointBounds,
   decodeOptions,
   defaultAutomaticMapOptions,
+  defaultFlatOptimizerControls,
   optionsValidationErrorFromSeasonality,
   type EncodedProphetOptions,
   type ProphetOptions,
@@ -237,7 +238,7 @@ const makeFitPlan = (
     return FitPlan.FlatMixedMap({
       scaling: options.scaling ?? defaultTargetScalingMode,
       seasonalities: layout,
-      optimizer: defaultAutomaticMapOptions.optimizer,
+      optimizer: defaultFlatOptimizerControls,
       seasonalityMasks: masks,
       additionalFeatures,
       events: options.events,
@@ -1025,7 +1026,7 @@ const predictLogisticMapForecasts = (
 
 const isMixedModel = (model: FittedFlatMapProphet | FittedPiecewiseMapProphet): boolean =>
   model.fitSummary.method === "mixed-flat-map-coordinate-v1" ||
-  model.fitSummary.method === "mixed-piecewise-map-coordinate-v1";
+  model.fitSummary.method === "mixed-piecewise-map-stan-v2";
 
 const predictFittedSeasonalModel = (
   model: FittedFlatMapProphet | FittedPiecewiseMapProphet,

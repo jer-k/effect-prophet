@@ -1,6 +1,8 @@
 # Linear piecewise MAP optimizer
 
-**Status:** Accepted for the Stage C Rust/WASM implementation
+**Status:** Historical Stage C linear policy. The current linear implementation follows the
+[Stan alignment plan](linear-map-stan-alignment-plan.md) and [approved fit-quality acceptance](linear-map-benchmark-acceptance.md). Local closeout checks pass; near-stationarity remains deferred to EP-097 and final review/merge is pending.
+Flat/logistic policies remain separate and unchanged.
 
 ## Context
 

@@ -2,6 +2,7 @@ import { Effect } from "effect";
 import { describe, expect, it } from "vitest";
 
 import { emptyEventCalendar } from "../src/event";
+import { defaultLinearOptimizer } from "../src/linear-optimizer";
 import {
   InputValidationError,
   decodeOptions,
@@ -186,11 +187,7 @@ describe("decodeOptions", () => {
     expect(defaultAutomaticMapOptions).toEqual({
       changepoints: { mode: "auto", count: 25, range: 0.8 },
       changepointPriorScale: 0.05,
-      optimizer: {
-        maxIterations: 10_000,
-        relativeTolerance: 1e-10,
-        absoluteTolerance: 1e-12,
-      },
+      optimizer: defaultLinearOptimizer,
     });
     expect(Object.isFrozen(defaultAutomaticMapOptions)).toBe(true);
   });
@@ -312,11 +309,7 @@ describe("decodeOptions", () => {
       map: {
         changepoints: { mode: "explicit", timestamps: [1_704_153_600_000] },
         changepointPriorScale: 0.05,
-        optimizer: {
-          maxIterations: 10_000,
-          relativeTolerance: 1e-10,
-          absoluteTolerance: 1e-12,
-        },
+        optimizer: defaultLinearOptimizer,
       },
     });
     expect(automatic).toMatchObject({

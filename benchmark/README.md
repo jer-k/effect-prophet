@@ -4,15 +4,20 @@ This suite records **correctness-gated absolute timing evidence** for the built 
 package and Python `prophet==1.4.0`. It is not a race: reports contain no speedup, winner, RAM
 comparison, or cross-machine threshold.
 
-Every accepted case represents the same MAP objective and feature matrix in both implementations.
-The old OLS-versus-MAP and true-empty-versus-dummy cases were removed because they did not perform
-equivalent fitting work.
+Matched-fit cases compare the same MAP objective and feature matrix in both implementations.
+Fixed-equation, scalar-uncertainty and evaluation workloads retain their separately declared
+comparison contracts. Historical OLS-versus-MAP and true-empty-versus-dummy cases did not perform
+equivalent fitting work; default featureless OLS remains outside matched-fit comparisons.
 
 ## Workloads
 
 Generated inputs are explicit, deterministic JSON records shared by both adapters. Training rows
 contain every observation, regressor, and condition. Future rows contain every timestamp,
 regressor, and condition; neither implementation invents future covariates or calendars.
+
+The canonical linear-growth scenario inventory is in [`cases/linear-growth/`](cases/linear-growth/).
+MAP controls are declared in `cases/linear-growth/public-api.json`; migration edge cases are in `cases/linear-growth/edge-cases.ts` (including diagnostic failures, which never admit timings). Compatibility scenarios that
+are intentionally not timing-eligible are listed in `cases/linear-growth/scenarios.json`.
 
 | Case                                   | Shape                              | Capability                                                                                                     |
 | -------------------------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------- |
@@ -46,8 +51,9 @@ prediction and nonempty explicit-MAP controls remain as calibration cases.
 
 `generate-data.ts` creates bounded-noise targets from known piecewise trends and named seasonal,
 event, and regressor terms. The mixed automatic case uses smaller slope breaks and a larger but
-bounded deterministic perturbation so the public default 10,000-iteration coordinate optimizer
-converges at `N=768`; this preserves the required size and omitted-`map` path. Every generated
+bounded deterministic perturbation originally selected for the coordinate policy at `N=768`.
+The Stan cutover preserves that recipe, the required size, omitted-`map` path and 10,000-step
+per-attempt budget; returned stopping states are not near-stationarity certificates. Every generated
 file's versioned recipe and SHA-256 appears in `data/generated/manifest.json`; the recipe is analytic and seedless (no random generator). Selected data hashes are
 also captured in each run manifest.
 
@@ -77,6 +83,22 @@ resolved changepoints, optimizer evidence, and encode/stringify/parse/decode pre
 equivalence, including a separate fresh-process restoration check. The report then compares both languages using committed per-quantity trend,
 component, additive, forecast, noise, and persistence tolerances. Fitted scaling mode/floor policy and train-only scale/offset are checked too. Any local or cross-language
 failure suppresses that case's timing summary.
+
+## Linear Stan fit-quality acceptance
+
+Current versioned linear counterparts come from `cases/linear-growth/stan-aligned.ts`, retaining
+`-stan-v2` solver case IDs and evidence `linear-stan-map-fit-quality-v3`. Under the
+[approved EP-096 policy](../docs/decisions/linear-map-benchmark-acceptance.md), independent objective
+and normalized-noise differences must remain within `0.01` and `0.0002` absolute respectively;
+all other quantity/lifecycle gates remain unchanged. Both endpoints must supply exactly one
+finite, nonnegative stationarity diagnostic. JSON and Markdown retain those values, but equality
+and near-stationarity are explicitly deferred to EP-097.
+
+Historical `linear-stan-map-v2` snapshots keep their `stationarityAbsolute: 0.01` gate and failed
+records. They are not rewritten or requalified. The [native-arm64 closeout](results/baselines/linear-map-stan-fit-quality-native-arm64/README.md)
+qualifies 22 of 24 cases, retaining the two unusable zero-span linear comparisons without timing.
+Its dirty-tree provenance and descriptive timing limits are explicit; passing does not certify
+small residuals, global optima, bitwise trajectories or calibration.
 
 ## Run
 
@@ -113,6 +135,76 @@ BENCHMARK_CONTAINER_PLATFORM=linux/amd64 npm run benchmark -- --case map-events-
 
 Such a run is recorded as emulated on an ARM host and is not eligible for native baseline
 promotion. Docker startup remains outside measured cold-process boundaries.
+
+## Docker storage containment
+
+`run --rm` removes run containers, **not images or BuildKit cache**. Results are host bind mounts
+under `benchmark/results/runs/`; this suite creates no persistent runtime volumes. Rebuilding a
+fixed image tag can leave older images dangling. `--no-cache` is not a cleanup mechanism.
+
+The Effect image uses a separate build stage: Rust, dev dependencies, and Cargo compilation
+output are not shipped in the runtime image. Cargo target/registry state lives in reusable,
+architecture-scoped BuildKit cache mounts instead of a new image layer for every source edit.
+Only package build inputs invalidate the WASM build; adapter edits do not. Both runtime images
+copy only their required code, while cases, datasets, and evidence are mounted. Build-tool
+versions are captured during the Effect build and retained for report provenance.
+
+### Recommended: isolated, budgeted benchmark builder
+
+Create this builder once (requires recent Docker Buildx/BuildKit with `default-load` and GC
+space-budget support):
+
+```sh
+npm run benchmark:builder
+npm run benchmark:contained -- --case map-events-small
+npm run benchmark:contained -- --no-build --case map-events-small
+```
+
+`benchmark:contained` is the same runner with `BUILDX_BUILDER=effect-prophet-benchmark`.
+The builder is **not** made globally selected, so other projects keep their existing builder.
+[`docker/buildkitd.toml`](docker/buildkitd.toml) enables GC with an **8 GB cache target**, a
+2 GB retention floor, and a 10 GB free-space target. GC is periodic: this is not a filesystem
+quota, and live builds can exceed it. Loaded/tagged images live separately in Docker Engine,
+so prune obsolete images periodically too. `npm run benchmark` still uses your usual builder
+and does not apply this benchmark-specific budget.
+
+Inspect and clean the isolated builder/image storage when no benchmark build or run is active:
+
+```sh
+docker system df -v
+docker buildx du --builder effect-prophet-benchmark
+docker buildx prune --builder effect-prophet-benchmark --max-used-space 8GB
+# Remove only dangling images carrying the benchmark label (from these updated Dockerfiles).
+docker image prune --filter label=org.effect-prophet.benchmark=true
+```
+
+These cleanup commands prompt for confirmation. They do not delete run artifacts or Docker
+application volumes. Pruning cache may require compilation/downloads next time. To discard
+all isolated build state deliberately, use `docker buildx rm effect-prophet-benchmark`
+(without `--keep-state`), then recreate it with `npm run benchmark:builder`.
+
+### Existing storage from older runs
+
+The isolated builder does **not** reclaim builds made on your old builder. Identify that
+builder with `docker buildx ls`, inspect it with `docker buildx du --builder <name>`, and, only
+if acceptable to other projects sharing it, run:
+
+```sh
+docker buildx prune --builder <name> --all --max-used-space 8GB
+```
+
+Old images do not carry the new benchmark label. Inspect `docker image ls --filter dangling=true`
+and `docker image history <image-id>` before removing confirmed obsolete benchmark images with
+`docker image rm <image-id>`. Avoid blanket `docker system prune --volumes`: unrelated application
+data may be deleted, and it is unnecessary for this suite.
+
+For ordinary runs using the default `docker` driver, you can also merge
+`"builder": { "gc": { "enabled": true, "defaultKeepStorage": "8GB" } }` into Docker Desktop's
+**Settings → Docker Engine** configuration. This is global to that builder, not benchmark-only.
+See [Docker's GC documentation](https://docs.docker.com/build/cache/garbage-collection/) for the
+difference between cache targets and total Docker disk usage. Docker Desktop's sparse VM disk
+may not immediately shrink on the host after pruning; use supported Desktop disk-reclamation
+controls, never delete its backing disk manually.
 
 ## Measurement boundaries
 

@@ -2,6 +2,20 @@
   "schemaVersion": 1,
   "evidence": [
     {
+      "id": "training-row-map-v1",
+      "classification": "equivalent-objective",
+      "statement": "Shared complete histories exercise stable sorting, independently weighted duplicate rows, row-index automatic candidates (including repeats), and zero-span numerical outcomes. Only finite comparable results passing the existing quantity tolerances admit timings; failures and NaN forecasts are migration findings, not parity successes.",
+      "prerequisiteFixtures": ["linear-map-fit.json", "changepoint-resolution.json"],
+      "checks": [
+        "resolved changepoints",
+        "row-aligned features",
+        "trend",
+        "forecast",
+        "noise scale",
+        "persistence equivalence"
+      ]
+    },
+    {
       "id": "stage-h-evaluation-v1",
       "classification": "different-public-work",
       "statement": "Explicit shared rolling-origin folds use public evaluation entrypoints but differ in fitted-model setup, uncertainty algorithm, metrics policy, and report shape; absolute timings only.",
@@ -187,6 +201,49 @@
         "named component units",
         "forecast",
         "persistence equivalence"
+      ]
+    },
+    {
+      "id": "linear-stan-map-v2",
+      "classification": "equivalent-objective",
+      "statement": "Versioned linear MAP counterparts retain the original rows, priors, scaling and forecast gates at a 10000-step per-attempt budget. Both select Newton below 100 retained rows and L-BFGS otherwise with original-initialization Newton fallback. Independent executable proportional density, constrained KKT residual and normalized noise gates qualify timings; literal stopping is not a KKT certificate.",
+      "prerequisiteFixtures": [
+        "stan-linear-optimizer.json",
+        "linear-map-fit.json",
+        "mixed-map.json",
+        "conditional-map-fit.json"
+      ],
+      "checks": [
+        "independent density",
+        "independent stationarity",
+        "normalized noise",
+        "forecast",
+        "components",
+        "persistence",
+        "independent duplicate rows",
+        "actual algorithm and termination"
+      ]
+    },
+    {
+      "id": "linear-stan-map-fit-quality-v3",
+      "classification": "equivalent-objective",
+      "statement": "Jeremy-approved EP-096 closeout retains the v2 solver, datasets, priors, controls, 10000-step per-attempt budget and existing forecast/component/persistence gates. Independent proportional density differs by at most 0.01 and normalized noise by at most 0.0002. Finite nonnegative constrained stationarity residuals remain mandatory reported diagnostics, but their cross-endpoint equality and near-stationarity certification are deferred to EP-097. Same-point objective/gradient fidelity has separate frozen numerical evidence. No optimum or bitwise trajectory claim is made; archived v2 equality-gate failures remain unchanged.",
+      "prerequisiteFixtures": [
+        "stan-linear-optimizer.json",
+        "linear-map-fit.json",
+        "mixed-map.json",
+        "conditional-map-fit.json"
+      ],
+      "checks": [
+        "independent density",
+        "normalized noise",
+        "finite reported stationarity with EP-097 deferral",
+        "forecast",
+        "components",
+        "metadata",
+        "persistence",
+        "independent duplicate rows",
+        "actual algorithm and termination"
       ]
     }
   ]

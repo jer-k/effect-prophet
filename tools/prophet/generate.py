@@ -10,6 +10,7 @@ import importlib.metadata
 import json
 import os
 import platform
+import re
 import subprocess
 import sys
 import tempfile
@@ -23,6 +24,8 @@ import pandas as pd
 import prophet
 from prophet import Prophet
 from prophet.diagnostics import generate_cutoffs, performance_metrics
+
+from linear_optimizer_evidence import linear_optimizer_evidence
 
 
 EXPECTED_PROPHET_VERSION = "1.4.0"
@@ -44,6 +47,7 @@ TARGET_SCALING_FILENAME = "target-scaling.json"
 MIXED_MAP_FILENAME = "mixed-map.json"
 LOGISTIC_MAP_FILENAME = "logistic-map.json"
 MAP_UNCERTAINTY_FILENAME = "map-uncertainty.json"
+STAN_LINEAR_OPTIMIZER_FILENAME = "stan-linear-optimizer.json"
 MANIFEST_FILENAME = "manifest.json"
 ROOT = Path(__file__).resolve().parents[2]
 REFERENCE_PATH = ROOT / "tools" / "prophet" / "reference.json"
@@ -408,6 +412,9 @@ DAY_MILLISECONDS = 86_400_000
 
 
 CHANGEPOINT_RESOLUTION_CASES = (
+    ChangepointResolutionCaseSpec(
+        "duplicate-generated-candidates", tuple((index // 4) * DAY_MILLISECONDS for index in range(96)), 25, 0.8
+    ),
     ChangepointResolutionCaseSpec(
         "ties-to-even-six-rows", tuple(index * DAY_MILLISECONDS for index in range(6)), 2, 1.0
     ),
@@ -1254,8 +1261,8 @@ def make_seasonality_resolution_case(spec: SeasonalityResolutionCaseSpec) -> dic
     }
 
 
-def make_linear_map_fit_fixture() -> dict[str, Any]:
-    """Fit one explicit nonempty-changepoint MAP case through pinned CmdStan."""
+def make_linear_map_fit_fixture(history_variant: str = "ordered") -> dict[str, Any]:
+    """Fit shared explicit MAP controls, including stable sorting and retained duplicates."""
 
     timestamps = [timestamp_from_offset(index * DAY_MILLISECONDS) for index in range(10)]
     values = (1.0, 1.8, 2.7, 3.6, 4.5, 4.7, 4.9, 5.2, 5.4, 5.7)
@@ -1275,6 +1282,16 @@ def make_linear_map_fit_fixture() -> dict[str, Any]:
             "y": values,
         }
     )
+    if history_variant == "unsorted":
+        training = training.iloc[::-1].reset_index(drop=True)
+    elif history_variant == "duplicates":
+        repeated = training.copy()
+        repeated["y"] = repeated["y"] + np.asarray([0.35 * ((index % 3) - 1) for index in range(10)])
+        repeated.loc[8, "y"] += 2.5
+        training = pd.concat([training, repeated.iloc[::-1]], ignore_index=True)
+    elif history_variant != "ordered":
+        fail(f"Unknown training history variant: {history_variant}")
+
     model.fit(training, algorithm="Newton")
     prediction_timestamps = timestamps + [timestamp_from_offset(12 * DAY_MILLISECONDS)]
     prediction = model.predict(
@@ -1305,11 +1322,11 @@ def make_linear_map_fit_fixture() -> dict[str, Any]:
             "slope": canonical_fitted_float(model.params["k"][0][0] * model.y_scale),
             "trend": [canonical_fitted_float(value) for value in prediction["trend"]],
         },
-        "id": "one-explicit-break-no-seasonality",
+        "id": "one-explicit-break-no-seasonality" if history_variant == "ordered" else f"training-{history_variant}-explicit-break",
         "kind": "fitted-linear-map",
         "observations": [
-            {"timestamp": timestamp, "value": value}
-            for timestamp, value in zip(timestamps, values, strict=True)
+            {"timestamp": pd.Timestamp(row.ds).tz_localize("UTC").isoformat(timespec="milliseconds").replace("+00:00", "Z"), "value": float(row.y)}
+            for row in training.itertuples(index=False)
         ],
         "predictionTimestamps": prediction_timestamps,
         "settings": {
@@ -1455,6 +1472,7 @@ def make_conditional_map_fit_fixture() -> dict[str, Any]:
 
         training = pd.DataFrame(training_values)
         model.fit(training, algorithm="Newton")
+        optimizer_evidence = linear_optimizer_evidence(model)
         prediction_indexes = (23, 24, 30)
         prediction_timestamps = [
             timestamp_from_offset(index * DAY_MILLISECONDS) for index in prediction_indexes
@@ -1546,6 +1564,7 @@ def make_conditional_map_fit_fixture() -> dict[str, Any]:
                     ],
                 },
                 "id": identifier,
+                "optimizerEvidence": {key: canonical_fitted_float(value, zero_threshold=0.0) for key, value in optimizer_evidence.items()},
                 "kind": "conditional-map-fit",
                 "observations": observations,
                 "predictionRows": prediction_rows,
@@ -2474,6 +2493,292 @@ def make_map_uncertainty_fixture() -> dict[str, Any]:
     }
 
 
+def make_stan_linear_optimizer_fixture() -> dict[str, Any]:
+    """Record frozen executable value/gradient, curvature and Newton behavior."""
+
+    cases = []
+
+    for identifier, count, points, mixed, budget in (
+        ("newton-one-step", 6, 1, False, 1),
+        ("newton-converged", 12, 3, False, 10000),
+        ("newton-no-candidates", 12, 0, False, 10000),
+        ("newton-mixed", 12, 3, True, 10000),
+        ("newton-correlated-automatic", 96, 25, False, 10000),
+        ("newton-migration-ordered", 96, 25, False, 10000),
+        ("newton-migration-unsorted", 96, 25, False, 10000),
+        ("lbfgs-one-step", 6, 1, False, 1),
+        ("auto-99", 99, 25, False, 10000),
+        ("auto-100", 100, 25, False, 10000),
+        ("auto-101", 101, 25, False, 10000),
+        ("auto-duplicate-100", 100, 25, False, 10000),
+        ("override-newton-101", 101, 25, False, 10000),
+        ("override-lbfgs-99", 99, 25, False, 10000),
+        ("lbfgs-mixed", 102, 25, True, 10000),
+        ("lbfgs-no-candidates", 100, 0, False, 10000),
+        ("lbfgs-control-overrides", 100, 25, False, 10000),
+        ("lbfgs-fallback-enabled", 100, 25, False, 10000),
+        ("lbfgs-fallback-disabled", 100, 25, False, 10000),
+        ("lbfgs-budget-no-fallback", 100, 25, False, 1),
+        ("lbfgs-stop-objective", 6, 1, False, 4),
+        ("lbfgs-stop-gradient", 6, 1, False, 4),
+        ("lbfgs-stop-parameter", 6, 1, False, 4),
+        ("lbfgs-stop-relative-objective", 6, 1, False, 4),
+        ("lbfgs-stop-relative-gradient", 6, 1, False, 4),
+        ("lbfgs-budget-precedence", 6, 1, False, 1),
+    ):
+        print(f"Recording Stan optimizer oracle: {identifier}", file=sys.stderr, flush=True)
+        dates = pd.date_range("2020-01-01", periods=count, freq="D")
+        index = np.arange(count, dtype=np.float64)
+        values = 12.0 + 0.15 * index + 0.08 * np.maximum(index - 15.0, 0.0)
+        values += 0.06 * np.sin(index * 1.7) + 0.035 * np.cos(index * 0.9)
+        frame = pd.DataFrame({"ds": dates, "y": values})
+        source_dataset = None
+
+        if identifier.startswith("newton-migration-"):
+            variant = identifier.removeprefix("newton-migration-")
+            source_dataset = ROOT / "benchmark" / "data" / "generated" / f"training-{variant}.json"
+            observations = json.loads(source_dataset.read_text())["observations"]
+            frame = pd.DataFrame({
+                "ds": pd.to_datetime([row["timestamp"] for row in observations], utc=True).tz_localize(None),
+                "y": [row["value"] for row in observations],
+            })
+
+        model = Prophet(
+            growth="linear", n_changepoints=points, changepoint_range=0.8,
+            changepoint_prior_scale=1e-8 if "fallback-" in identifier else 0.05, yearly_seasonality=False,
+            weekly_seasonality=False, daily_seasonality=False,
+            uncertainty_samples=0,
+        )
+
+        if mixed:
+            frame["known_additive"] = np.sin(index * 0.7)
+            frame["known_multiplicative"] = np.cos(index * 0.4)
+            model.add_regressor("known_additive", mode="additive", standardize=False, prior_scale=2.0)
+            model.add_regressor("known_multiplicative", mode="multiplicative", standardize=False, prior_scale=3.0)
+
+        if identifier == "auto-duplicate-100":
+            unique = frame.iloc[:50].copy()
+            repeated = unique.copy()
+            repeated["y"] += 0.025 * np.sin(np.arange(50) * 0.3)
+            frame = pd.concat([unique, repeated], ignore_index=True)
+
+        inputs = model.preprocess(frame)
+        initial = model.calculate_initial_params(inputs.K)
+        stan_init, stan_data = model.stan_backend.prepare_data(
+            initial.__dict__, inputs.__dict__
+        )
+        requested_algorithm = "auto" if identifier.startswith("auto-") else (
+            "Newton" if identifier.startswith(("newton-", "override-newton-")) else "LBFGS"
+        )
+        selected_algorithm = ("Newton" if count < 100 else "LBFGS") if requested_algorithm == "auto" else requested_algorithm
+        fallback_enabled = not identifier.endswith("fallback-disabled") and identifier != "lbfgs-control-overrides"
+        controls = {}
+
+        if identifier == "lbfgs-control-overrides":
+            controls = dict(history_size=2, init_alpha=0.003, tol_obj=1e-10,
+                            tol_rel_obj=1e3, tol_grad=1e-7, tol_rel_grad=1e6, tol_param=1e-7)
+        if identifier.startswith("lbfgs-stop-") or identifier == "lbfgs-budget-precedence":
+            controls = dict(tol_obj=1e-100, tol_grad=1e-100, tol_param=1e-100, tol_rel_obj=1e-100, tol_rel_grad=1e-100)
+            criterion = {"objective": "tol_obj", "gradient": "tol_grad", "parameter": "tol_param",
+                         "relative-objective": "tol_rel_obj", "relative-gradient": "tol_rel_grad"}
+            if identifier.startswith("lbfgs-stop-"):
+                controls[criterion[identifier.removeprefix("lbfgs-stop-")]] = 1e100
+            else:
+                controls["tol_rel_obj"] = 1e100
+
+        public_features = inputs.K if mixed else 0
+        feature_priors = inputs.sigmas if mixed else []
+        feature_modes = ["multiplicative" if mode else "additive" for mode in inputs.s_m] if mixed else []
+        times = np.asarray(inputs.t, dtype=np.float64)
+        hinges = np.maximum(times[:, None] - model.changepoints_t[None, :], 0.0) if points else np.empty((count, 0))
+        features = inputs.X.to_numpy() if mixed else np.empty((count, 0))
+        design = np.column_stack([np.ones(count), times, hinges, features])
+        sigma_index = 2 + inputs.S
+
+        def density(parameters: Sequence[float]) -> tuple[float, list[float]]:
+            """Use the actual frozen executable's diagnostic command, no Jacobian."""
+
+            constrained = {
+                "k": parameters[0], "m": parameters[1],
+                "delta": list(parameters[2:sigma_index]),
+                "sigma_obs": float(np.exp(parameters[sigma_index])),
+                "beta": list(parameters[sigma_index + 1:]),
+            }
+            result = model.stan_backend.model.log_prob(
+                params=constrained, data=stan_data, jacobian=False, sig_figs=12
+            ).iloc[0]
+            return float(result.iloc[0]), [float(value) for value in result.iloc[1:]]
+
+        parameters = [initial.k, initial.m, *initial.delta, 0.0, *initial.beta]
+        probes = []
+
+        # Small authored problems verify exact/near-zero kink conventions and the
+        # literal pinned Hessian stencil. The large case is a fit-quality control.
+        if count <= 12 and identifier.startswith("newton-"):
+            for delta in (0.0, 0.0005, -0.0005, 0.003):
+                probe = list(parameters)
+                probe[2] = delta
+                value, gradient = density(probe)
+                dimension = len(probe)
+                curvature = np.zeros((dimension, dimension))
+
+                for column in range(dimension):
+                    for perturbation, weight in zip(
+                        (-0.002, -0.001, 0.001, 0.002),
+                        (1.0 / 12.0, -2.0 / 3.0, 2.0 / 3.0, -1.0 / 12.0),
+                    ):
+                        trial = list(probe)
+                        trial[column] += perturbation
+                        _, trial_gradient = density(trial)
+
+                        for row, derivative in enumerate(trial_gradient):
+                            increment = 0.0005 * weight * derivative
+                            curvature[column, row] += increment
+                            curvature[row, column] += increment
+
+                probes.append({
+                    "parameters": [canonical_fitted_float(v, zero_threshold=0.0) for v in probe],
+                    "logDensity": canonical_fitted_float(value, zero_threshold=0.0),
+                    "gradient": [canonical_fitted_float(v, zero_threshold=0.0) for v in gradient],
+                    "curvature": [canonical_fitted_float(v, zero_threshold=0.0) for v in curvature.ravel()],
+                })
+
+        attempts = []
+        returned_algorithm = selected_algorithm
+        fit = None
+
+        with tempfile.TemporaryDirectory(prefix="prophet-optimizer-oracle-") as directory:
+            try:
+                fit = model.stan_backend.model.optimize(
+                    data=stan_data, inits=stan_init, algorithm=selected_algorithm, iter=budget,
+                    seed=2831, sig_figs=12, save_iterations=True, refresh=1,
+                    output_dir=directory, **controls,
+                )
+            except RuntimeError:
+                stdout_files = list(Path(directory).glob("*-stdout.txt"))
+                if len(stdout_files) != 1:
+                    fail("Failed optimization must retain exactly one stdout oracle")
+                failed_stdout = stdout_files[0].read_text()
+                if "Line search failed" not in failed_stdout:
+                    fail("Oracle failure was not the expected numerical line-search failure")
+                lines = [line for line in failed_stdout.splitlines() if re.match(r"^\s*\d+\s+[-\d.]", line)]
+                failed_iterations = int(lines[-1].split()[0])
+                attempts.append({"algorithm": selected_algorithm, "iterations": failed_iterations,
+                                 "termination": "line-search-failure"})
+                if fallback_enabled:
+                    returned_algorithm = "Newton"
+                    # Prophet changes only algorithm: Newton has a fresh full budget
+                    # and exactly the same original initialization, not a failed CSV row.
+                    fit = model.stan_backend.model.optimize(
+                        data=stan_data, inits=stan_init, algorithm="Newton", iter=budget,
+                        seed=2831, sig_figs=12, save_iterations=True, refresh=1,
+                        output_dir=directory, **controls,
+                    )
+            if fit is not None:
+                stdout = Path(fit.runset.stdout_files[0]).read_text()
+                fitted = fit.optimized_params_dict
+                trajectory_rows = pd.read_csv(fit.runset.csv_files[0], comment="#").head(2001 if identifier == "auto-100" else 9) if selected_algorithm == "LBFGS" and returned_algorithm == "LBFGS" else None
+
+        trajectory = []
+        if fit is not None and trajectory_rows is not None:
+            for _, row in trajectory_rows.iterrows():
+                snapshot = [row["k"], row["m"], *[row[f"delta.{j + 1}"] for j in range(inputs.S)],
+                            np.log(row["sigma_obs"]), *[row[f"beta.{j + 1}"] for j in range(inputs.K)]]
+                trajectory.append([canonical_fitted_float(v, zero_threshold=0.0) for v in snapshot])
+
+        gradient_probes = []
+        if identifier == "auto-100":
+            for iteration in (0, 1, 8, 20, 41, 50, 70, 100):
+                snapshot = trajectory[iteration]
+                probe_value, probe_gradient = density(snapshot)
+                gradient_probes.append({"iteration": iteration, "parameters": snapshot,
+                    "logDensity": canonical_fitted_float(probe_value, zero_threshold=0.0),
+                    "gradient": [canonical_fitted_float(v, zero_threshold=0.0) for v in probe_gradient]})
+
+        case = {
+            "id": identifier, "rowCount": count, "changepointCount": points,
+            "changepointTimes": [float(v) for v in model.changepoints_t] if points else [],
+            "sourceDatasetSha256": sha256_file(source_dataset) if source_dataset else None,
+            "featureCount": public_features,
+            # These are inputs, not optimizer output. Retain the executable's exact
+            # normalized problem; rounding it before Rust optimization changes
+            # nonsmooth trajectories. Fitted values below remain capped at 12 digits.
+            "design": [float(v) for v in design.ravel()],
+            "target": [float(v) for v in inputs.y], "featurePriors": list(feature_priors),
+            "featureModes": feature_modes, "changepointPrior": inputs.tau,
+            "initialParameters": [canonical_fitted_float(v, zero_threshold=0.0) for v in parameters],
+            "probes": probes, "maxIterations": budget,
+            "requestedAlgorithm": requested_algorithm, "selectedAlgorithm": selected_algorithm,
+            "returnedAlgorithm": returned_algorithm if fit is not None else None,
+            "newtonFallback": fallback_enabled, "lbfgsControls": controls,
+            "attempts": attempts, "trajectory": trajectory, "gradientProbes": gradient_probes,
+        }
+        if fit is None:
+            case["expected"] = {"failure": "line-search-failure"}
+            cases.append(case)
+            continue
+
+        state = [fitted["k"], fitted["m"], *[fitted[f"delta[{j + 1}]"] for j in range(inputs.S)],
+                 np.log(fitted["sigma_obs"]), *[fitted[f"beta[{j + 1}]"] for j in range(inputs.K)]]
+        if returned_algorithm == "Newton":
+            iterations = sum(line.startswith("Iteration ") for line in stdout.splitlines())
+            termination = "iteration-limit" if iterations == budget else "objective-change"
+        else:
+            lines = [line for line in stdout.splitlines() if re.match(r"^\s*\d+\s+[-\d.]", line)]
+            iterations = int(lines[-1].split()[0])
+            descriptions = {
+                "absolute change in objective": "absolute-objective",
+                "relative change in objective": "relative-objective",
+                "gradient norm is below": "absolute-gradient",
+                "relative gradient magnitude": "relative-gradient",
+                "absolute parameter change": "parameter-change",
+                "Maximum number of iterations": "iteration-limit",
+            }
+            termination = next((label for text, label in descriptions.items() if text in stdout), None)
+            if termination is None:
+                fail("Unrecognized frozen L-BFGS completion")
+        attempts.append({"algorithm": returned_algorithm, "iterations": iterations, "termination": termination})
+        fitted_density, _ = density(state)
+        prediction = np.asarray([fitted[f"trend[{j + 1}]"] for j in range(count)])
+
+        if mixed:
+            beta = np.asarray(state[sigma_index + 1:])
+            additive = features[:, np.asarray(inputs.s_a, dtype=bool)] @ beta[np.asarray(inputs.s_a, dtype=bool)]
+            multiplicative = features[:, np.asarray(inputs.s_m, dtype=bool)] @ beta[np.asarray(inputs.s_m, dtype=bool)]
+            prediction = prediction * (1.0 + multiplicative) + additive
+
+        case["expected"] = {
+                "iterations": iterations,
+                "termination": termination,
+                "iterationLimit": termination == "iteration-limit",
+                "parameters": [canonical_fitted_float(v) for v in state],
+                "logDensity": canonical_fitted_float(fitted_density, zero_threshold=0.0),
+                "predictions": [canonical_fitted_float(v, zero_threshold=0.0) for v in prediction],
+                "noise": canonical_fitted_float(fitted["sigma_obs"], zero_threshold=0.0),
+            }
+        cases.append(case)
+
+    executable_info = subprocess.run(
+        [str(find_prophet_model()), "info"], check=True, capture_output=True, text=True
+    ).stdout
+
+    for expected in ("stan_version_major = 2", "stan_version_minor = 37", "stan_version_patch = 0"):
+        if expected not in executable_info.splitlines():
+            fail(f"Frozen Prophet executable does not report {expected}")
+
+    return {
+        "stanVersion": "2.37.0",
+        "stanSourceCommit": "1357c136bf22e3f0d25ed3529fea55fe76842eac",
+        "stanMathSourceCommit": "58ad15b0847485d523aadd22cbae7add0a61b0e3",
+        "cases": cases,
+        "tolerances": {
+            "valueAbsolute": 1e-7, "gradientAbsolute": 1e-7, "curvatureAbsolute": 2e-12,
+            "fitLogDensityAbsolute": 0.01, "predictionAbsolute": 0.002,
+            "noiseAbsolute": 0.0002, "oneStepParameterAbsolute": 1e-7,
+        },
+    }
+
+
 def find_prophet_model() -> Path:
     """Locate the model binary bundled in the installed Prophet distribution."""
 
@@ -2526,7 +2831,9 @@ def write_outputs(output: Path, execution: dict[str, str], reference: dict[str, 
     evaluation_metrics_path = output / EVALUATION_METRICS_FILENAME
     evaluation_metrics_path.write_bytes(stable_json(make_evaluation_metrics_fixture()))
     linear_map_fit_path = output / LINEAR_MAP_FIT_FILENAME
-    linear_map_fit_path.write_bytes(stable_json({"cases": [make_linear_map_fit_fixture()]}))
+    linear_map_fit_path.write_bytes(stable_json({"cases": [
+        make_linear_map_fit_fixture(variant) for variant in ("ordered", "unsorted", "duplicates")
+    ]}))
     seasonality_resolution_path = output / SEASONALITY_RESOLUTION_FILENAME
     seasonality_resolution_path.write_bytes(
         stable_json(
@@ -2559,6 +2866,8 @@ def write_outputs(output: Path, execution: dict[str, str], reference: dict[str, 
     logistic_map_path.write_bytes(stable_json(make_logistic_map_fixture()))
     map_uncertainty_path = output / MAP_UNCERTAINTY_FILENAME
     map_uncertainty_path.write_bytes(stable_json(make_map_uncertainty_fixture()))
+    stan_optimizer_path = output / STAN_LINEAR_OPTIMIZER_FILENAME
+    stan_optimizer_path.write_bytes(stable_json(make_stan_linear_optimizer_fixture()))
 
     model_path = find_prophet_model()
     manifest = {
@@ -2619,6 +2928,10 @@ def write_outputs(output: Path, execution: dict[str, str], reference: dict[str, 
                 "path": MAP_UNCERTAINTY_FILENAME,
                 "sha256": sha256_file(map_uncertainty_path),
             },
+            {
+                "path": STAN_LINEAR_OPTIMIZER_FILENAME,
+                "sha256": sha256_file(stan_optimizer_path),
+            },
         ],
         "backendArtifacts": [
             {
@@ -2658,6 +2971,7 @@ def compare_outputs(generated: Path, committed: Path) -> None:
         MIXED_MAP_FILENAME,
         LOGISTIC_MAP_FILENAME,
         MAP_UNCERTAINTY_FILENAME,
+        STAN_LINEAR_OPTIMIZER_FILENAME,
         MANIFEST_FILENAME,
     ):
         generated_path = generated / filename
