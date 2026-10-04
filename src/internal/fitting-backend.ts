@@ -5,6 +5,7 @@ import type { EventCalendar } from "../event";
 import type { Parameters } from "../fitted-model";
 import type { LogisticTrainingBounds } from "../logistic";
 import type { LinearOptimizer } from "../linear-optimizer";
+import type { LogisticOptimizer } from "../logistic-optimizer";
 import type { ChangepointSetting, MapOptimizerControls } from "../options";
 import type { ResolvedRegressor } from "../regressor";
 import type { TargetScalingMode } from "../target-scaling";
@@ -110,7 +111,7 @@ export interface LogisticPiecewiseMapFitPlan {
   readonly seasonalities: SeasonalityLayout;
   readonly changepoints: ChangepointSetting;
   readonly changepointPriorScale: number;
-  readonly optimizer: MapOptimizerControls;
+  readonly optimizer: LogisticOptimizer;
   readonly seasonalityMasks: SeasonalityMaskMatrix;
   readonly additionalFeatures: KnownAdditiveFeatures;
   readonly events: EventCalendar;

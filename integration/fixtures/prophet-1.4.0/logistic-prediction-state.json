@@ -1,0 +1,1236 @@
+{
+  "cases": [
+    {
+      "capacities": [
+        100.0,
+        101.0,
+        102.0,
+        103.0,
+        104.0,
+        105.0,
+        106.0
+      ],
+      "expected": [
+        {
+          "kind": "finite",
+          "trend": 17.4873267805
+        },
+        {
+          "kind": "finite",
+          "trend": 28.207692241
+        },
+        {
+          "kind": "finite",
+          "trend": 41.109093218
+        },
+        {
+          "kind": "finite",
+          "trend": 55.0573207138
+        },
+        {
+          "kind": "finite",
+          "trend": 68.496091622
+        },
+        {
+          "kind": "finite",
+          "trend": 80.1164142261
+        },
+        {
+          "kind": "finite",
+          "trend": 95.2269471751
+        }
+      ],
+      "floors": [
+        -5.0,
+        -4.5,
+        -4.0,
+        -3.5,
+        -3.0,
+        -2.5,
+        -2.0
+      ],
+      "id": "empty-nonzero-absmax",
+      "parameters": {
+        "changepoints": [],
+        "deltas": [],
+        "offset": 0.4,
+        "rate": 2.0
+      },
+      "scale": 85.0,
+      "scaling": "absmax",
+      "times": [
+        -0.25,
+        0.0,
+        0.25,
+        0.5,
+        0.75,
+        1.0,
+        1.5
+      ]
+    },
+    {
+      "capacities": [
+        100.0,
+        101.0,
+        102.0,
+        103.0,
+        104.0,
+        105.0,
+        106.0
+      ],
+      "expected": [
+        {
+          "kind": "finite",
+          "trend": 47.5
+        },
+        {
+          "kind": "non-finite"
+        },
+        {
+          "kind": "non-finite"
+        },
+        {
+          "kind": "non-finite"
+        },
+        {
+          "kind": "non-finite"
+        },
+        {
+          "kind": "non-finite"
+        },
+        {
+          "kind": "non-finite"
+        }
+      ],
+      "floors": [
+        -5.0,
+        -4.5,
+        -4.0,
+        -3.5,
+        -3.0,
+        -2.5,
+        -2.0
+      ],
+      "id": "empty-zero-absmax",
+      "parameters": {
+        "changepoints": [],
+        "deltas": [],
+        "offset": 0.4,
+        "rate": 0.0
+      },
+      "scale": 85.0,
+      "scaling": "absmax",
+      "times": [
+        -0.25,
+        0.0,
+        0.25,
+        0.5,
+        0.75,
+        1.0,
+        1.5
+      ]
+    },
+    {
+      "capacities": [
+        100.0,
+        101.0,
+        102.0,
+        103.0,
+        104.0,
+        105.0,
+        106.0
+      ],
+      "expected": [
+        {
+          "kind": "finite",
+          "trend": 47.5
+        },
+        {
+          "kind": "finite",
+          "trend": 48.25
+        },
+        {
+          "kind": "finite",
+          "trend": 49.0
+        },
+        {
+          "kind": "finite",
+          "trend": 49.75
+        },
+        {
+          "kind": "finite",
+          "trend": 63.6031484386
+        },
+        {
+          "kind": "finite",
+          "trend": 76.0887972027
+        },
+        {
+          "kind": "finite",
+          "trend": 93.1260844216
+        }
+      ],
+      "floors": [
+        -5.0,
+        -4.5,
+        -4.0,
+        -3.5,
+        -3.0,
+        -2.5,
+        -2.0
+      ],
+      "id": "zero-base-nonzero-segment-absmax",
+      "parameters": {
+        "changepoints": [
+          0.5
+        ],
+        "deltas": [
+          2.0
+        ],
+        "offset": 0.4,
+        "rate": 0.0
+      },
+      "scale": 85.0,
+      "scaling": "absmax",
+      "times": [
+        -0.25,
+        0.0,
+        0.25,
+        0.5,
+        0.75,
+        1.0,
+        1.5
+      ]
+    },
+    {
+      "capacities": [
+        100.0,
+        101.0,
+        102.0,
+        103.0,
+        104.0,
+        105.0,
+        106.0
+      ],
+      "expected": [
+        {
+          "kind": "finite",
+          "trend": 17.4873267805
+        },
+        {
+          "kind": "finite",
+          "trend": 28.207692241
+        },
+        {
+          "kind": "finite",
+          "trend": 41.109093218
+        },
+        {
+          "kind": "non-finite"
+        },
+        {
+          "kind": "non-finite"
+        },
+        {
+          "kind": "non-finite"
+        },
+        {
+          "kind": "non-finite"
+        }
+      ],
+      "floors": [
+        -5.0,
+        -4.5,
+        -4.0,
+        -3.5,
+        -3.0,
+        -2.5,
+        -2.0
+      ],
+      "id": "zero-segment-absmax",
+      "parameters": {
+        "changepoints": [
+          0.5
+        ],
+        "deltas": [
+          -2.0
+        ],
+        "offset": 0.4,
+        "rate": 2.0
+      },
+      "scale": 85.0,
+      "scaling": "absmax",
+      "times": [
+        -0.25,
+        0.0,
+        0.25,
+        0.5,
+        0.75,
+        1.0,
+        1.5
+      ]
+    },
+    {
+      "capacities": [
+        100.0,
+        101.0,
+        102.0,
+        103.0,
+        104.0,
+        105.0,
+        106.0
+      ],
+      "expected": [
+        {
+          "kind": "finite",
+          "trend": 14.1546799997
+        },
+        {
+          "kind": "finite",
+          "trend": 23.8733199545
+        },
+        {
+          "kind": "finite",
+          "trend": 36.0193108926
+        },
+        {
+          "kind": "non-finite"
+        },
+        {
+          "kind": "non-finite"
+        },
+        {
+          "kind": "non-finite"
+        },
+        {
+          "kind": "non-finite"
+        }
+      ],
+      "floors": [
+        -5.0,
+        -4.5,
+        -4.0,
+        -3.5,
+        -3.0,
+        -2.5,
+        -2.0
+      ],
+      "id": "zero-segment-at-offset-absmax",
+      "parameters": {
+        "changepoints": [
+          0.5
+        ],
+        "deltas": [
+          -2.0
+        ],
+        "offset": 0.5,
+        "rate": 2.0
+      },
+      "scale": 85.0,
+      "scaling": "absmax",
+      "times": [
+        -0.25,
+        0.0,
+        0.25,
+        0.5,
+        0.75,
+        1.0,
+        1.5
+      ]
+    },
+    {
+      "capacities": [
+        100.0,
+        101.0,
+        102.0,
+        103.0,
+        104.0,
+        105.0,
+        106.0
+      ],
+      "expected": [
+        {
+          "kind": "finite",
+          "trend": 17.4873267805
+        },
+        {
+          "kind": "finite",
+          "trend": 28.207692241
+        },
+        {
+          "kind": "non-finite"
+        },
+        {
+          "kind": "non-finite"
+        },
+        {
+          "kind": "non-finite"
+        },
+        {
+          "kind": "non-finite"
+        },
+        {
+          "kind": "non-finite"
+        }
+      ],
+      "floors": [
+        -5.0,
+        -4.5,
+        -4.0,
+        -3.5,
+        -3.0,
+        -2.5,
+        -2.0
+      ],
+      "id": "zero-segment-then-recovery-absmax",
+      "parameters": {
+        "changepoints": [
+          0.25,
+          0.75
+        ],
+        "deltas": [
+          -2.0,
+          3.0
+        ],
+        "offset": 0.4,
+        "rate": 2.0
+      },
+      "scale": 85.0,
+      "scaling": "absmax",
+      "times": [
+        -0.25,
+        0.0,
+        0.25,
+        0.5,
+        0.75,
+        1.0,
+        1.5
+      ]
+    },
+    {
+      "capacities": [
+        100.0,
+        101.0,
+        102.0,
+        103.0,
+        104.0,
+        105.0,
+        106.0
+      ],
+      "expected": [
+        {
+          "kind": "finite",
+          "trend": 17.4873267805
+        },
+        {
+          "kind": "finite",
+          "trend": 28.207692241
+        },
+        {
+          "kind": "finite",
+          "trend": 41.109093218
+        },
+        {
+          "kind": "finite",
+          "trend": 55.0573207138
+        },
+        {
+          "kind": "finite",
+          "trend": 42.5346507012
+        },
+        {
+          "kind": "finite",
+          "trend": 30.8277432788
+        },
+        {
+          "kind": "finite",
+          "trend": 13.3199150093
+        }
+      ],
+      "floors": [
+        -5.0,
+        -4.5,
+        -4.0,
+        -3.5,
+        -3.0,
+        -2.5,
+        -2.0
+      ],
+      "id": "nonzero-sign-crossing-absmax",
+      "parameters": {
+        "changepoints": [
+          0.5
+        ],
+        "deltas": [
+          -4.0
+        ],
+        "offset": 0.4,
+        "rate": 2.0
+      },
+      "scale": 85.0,
+      "scaling": "absmax",
+      "times": [
+        -0.25,
+        0.0,
+        0.25,
+        0.5,
+        0.75,
+        1.0,
+        1.5
+      ]
+    },
+    {
+      "capacities": [
+        100.0,
+        101.0,
+        102.0,
+        103.0,
+        104.0,
+        105.0,
+        106.0
+      ],
+      "expected": [
+        {
+          "kind": "finite",
+          "trend": 17.4873267805
+        },
+        {
+          "kind": "non-finite"
+        },
+        {
+          "kind": "non-finite"
+        },
+        {
+          "kind": "non-finite"
+        },
+        {
+          "kind": "non-finite"
+        },
+        {
+          "kind": "non-finite"
+        },
+        {
+          "kind": "non-finite"
+        }
+      ],
+      "floors": [
+        -5.0,
+        -4.5,
+        -4.0,
+        -3.5,
+        -3.0,
+        -2.5,
+        -2.0
+      ],
+      "id": "zero-segment-at-origin-absmax",
+      "parameters": {
+        "changepoints": [
+          0.0
+        ],
+        "deltas": [
+          -2.0
+        ],
+        "offset": 0.4,
+        "rate": 2.0
+      },
+      "scale": 85.0,
+      "scaling": "absmax",
+      "times": [
+        -0.25,
+        0.0,
+        0.25,
+        0.5,
+        0.75,
+        1.0,
+        1.5
+      ]
+    },
+    {
+      "capacities": [
+        100.0,
+        101.0,
+        102.0,
+        103.0,
+        104.0,
+        105.0,
+        106.0
+      ],
+      "expected": [
+        {
+          "kind": "finite",
+          "trend": 17.4873267805
+        },
+        {
+          "kind": "finite",
+          "trend": 28.207692241
+        },
+        {
+          "kind": "finite",
+          "trend": 41.109093218
+        },
+        {
+          "kind": "finite",
+          "trend": 55.0573207138
+        },
+        {
+          "kind": "finite",
+          "trend": 68.496091622
+        },
+        {
+          "kind": "non-finite"
+        },
+        {
+          "kind": "non-finite"
+        }
+      ],
+      "floors": [
+        -5.0,
+        -4.5,
+        -4.0,
+        -3.5,
+        -3.0,
+        -2.5,
+        -2.0
+      ],
+      "id": "zero-segment-at-endpoint-absmax",
+      "parameters": {
+        "changepoints": [
+          1.0
+        ],
+        "deltas": [
+          -2.0
+        ],
+        "offset": 0.4,
+        "rate": 2.0
+      },
+      "scale": 85.0,
+      "scaling": "absmax",
+      "times": [
+        -0.25,
+        0.0,
+        0.25,
+        0.5,
+        0.75,
+        1.0,
+        1.5
+      ]
+    },
+    {
+      "capacities": [
+        100.0,
+        101.0,
+        102.0,
+        103.0,
+        104.0,
+        105.0,
+        106.0
+      ],
+      "expected": [
+        {
+          "kind": "finite",
+          "trend": 17.4873267805
+        },
+        {
+          "kind": "finite",
+          "trend": 28.207692241
+        },
+        {
+          "kind": "finite",
+          "trend": 41.109093218
+        },
+        {
+          "kind": "finite",
+          "trend": 55.0573207138
+        },
+        {
+          "kind": "finite",
+          "trend": 68.496091622
+        },
+        {
+          "kind": "finite",
+          "trend": 80.1164142261
+        },
+        {
+          "kind": "finite",
+          "trend": 95.2269471751
+        }
+      ],
+      "floors": [
+        -5.0,
+        -4.5,
+        -4.0,
+        -3.5,
+        -3.0,
+        -2.5,
+        -2.0
+      ],
+      "id": "empty-nonzero-minmax",
+      "parameters": {
+        "changepoints": [],
+        "deltas": [],
+        "offset": 0.4,
+        "rate": 2.0
+      },
+      "scale": 105.0,
+      "scaling": "minmax",
+      "times": [
+        -0.25,
+        0.0,
+        0.25,
+        0.5,
+        0.75,
+        1.0,
+        1.5
+      ]
+    },
+    {
+      "capacities": [
+        100.0,
+        101.0,
+        102.0,
+        103.0,
+        104.0,
+        105.0,
+        106.0
+      ],
+      "expected": [
+        {
+          "kind": "finite",
+          "trend": 47.5
+        },
+        {
+          "kind": "non-finite"
+        },
+        {
+          "kind": "non-finite"
+        },
+        {
+          "kind": "non-finite"
+        },
+        {
+          "kind": "non-finite"
+        },
+        {
+          "kind": "non-finite"
+        },
+        {
+          "kind": "non-finite"
+        }
+      ],
+      "floors": [
+        -5.0,
+        -4.5,
+        -4.0,
+        -3.5,
+        -3.0,
+        -2.5,
+        -2.0
+      ],
+      "id": "empty-zero-minmax",
+      "parameters": {
+        "changepoints": [],
+        "deltas": [],
+        "offset": 0.4,
+        "rate": 0.0
+      },
+      "scale": 105.0,
+      "scaling": "minmax",
+      "times": [
+        -0.25,
+        0.0,
+        0.25,
+        0.5,
+        0.75,
+        1.0,
+        1.5
+      ]
+    },
+    {
+      "capacities": [
+        100.0,
+        101.0,
+        102.0,
+        103.0,
+        104.0,
+        105.0,
+        106.0
+      ],
+      "expected": [
+        {
+          "kind": "finite",
+          "trend": 47.5
+        },
+        {
+          "kind": "finite",
+          "trend": 48.25
+        },
+        {
+          "kind": "finite",
+          "trend": 49.0
+        },
+        {
+          "kind": "finite",
+          "trend": 49.75
+        },
+        {
+          "kind": "finite",
+          "trend": 63.6031484386
+        },
+        {
+          "kind": "finite",
+          "trend": 76.0887972027
+        },
+        {
+          "kind": "finite",
+          "trend": 93.1260844216
+        }
+      ],
+      "floors": [
+        -5.0,
+        -4.5,
+        -4.0,
+        -3.5,
+        -3.0,
+        -2.5,
+        -2.0
+      ],
+      "id": "zero-base-nonzero-segment-minmax",
+      "parameters": {
+        "changepoints": [
+          0.5
+        ],
+        "deltas": [
+          2.0
+        ],
+        "offset": 0.4,
+        "rate": 0.0
+      },
+      "scale": 105.0,
+      "scaling": "minmax",
+      "times": [
+        -0.25,
+        0.0,
+        0.25,
+        0.5,
+        0.75,
+        1.0,
+        1.5
+      ]
+    },
+    {
+      "capacities": [
+        100.0,
+        101.0,
+        102.0,
+        103.0,
+        104.0,
+        105.0,
+        106.0
+      ],
+      "expected": [
+        {
+          "kind": "finite",
+          "trend": 17.4873267805
+        },
+        {
+          "kind": "finite",
+          "trend": 28.207692241
+        },
+        {
+          "kind": "finite",
+          "trend": 41.109093218
+        },
+        {
+          "kind": "non-finite"
+        },
+        {
+          "kind": "non-finite"
+        },
+        {
+          "kind": "non-finite"
+        },
+        {
+          "kind": "non-finite"
+        }
+      ],
+      "floors": [
+        -5.0,
+        -4.5,
+        -4.0,
+        -3.5,
+        -3.0,
+        -2.5,
+        -2.0
+      ],
+      "id": "zero-segment-minmax",
+      "parameters": {
+        "changepoints": [
+          0.5
+        ],
+        "deltas": [
+          -2.0
+        ],
+        "offset": 0.4,
+        "rate": 2.0
+      },
+      "scale": 105.0,
+      "scaling": "minmax",
+      "times": [
+        -0.25,
+        0.0,
+        0.25,
+        0.5,
+        0.75,
+        1.0,
+        1.5
+      ]
+    },
+    {
+      "capacities": [
+        100.0,
+        101.0,
+        102.0,
+        103.0,
+        104.0,
+        105.0,
+        106.0
+      ],
+      "expected": [
+        {
+          "kind": "finite",
+          "trend": 14.1546799997
+        },
+        {
+          "kind": "finite",
+          "trend": 23.8733199545
+        },
+        {
+          "kind": "finite",
+          "trend": 36.0193108926
+        },
+        {
+          "kind": "non-finite"
+        },
+        {
+          "kind": "non-finite"
+        },
+        {
+          "kind": "non-finite"
+        },
+        {
+          "kind": "non-finite"
+        }
+      ],
+      "floors": [
+        -5.0,
+        -4.5,
+        -4.0,
+        -3.5,
+        -3.0,
+        -2.5,
+        -2.0
+      ],
+      "id": "zero-segment-at-offset-minmax",
+      "parameters": {
+        "changepoints": [
+          0.5
+        ],
+        "deltas": [
+          -2.0
+        ],
+        "offset": 0.5,
+        "rate": 2.0
+      },
+      "scale": 105.0,
+      "scaling": "minmax",
+      "times": [
+        -0.25,
+        0.0,
+        0.25,
+        0.5,
+        0.75,
+        1.0,
+        1.5
+      ]
+    },
+    {
+      "capacities": [
+        100.0,
+        101.0,
+        102.0,
+        103.0,
+        104.0,
+        105.0,
+        106.0
+      ],
+      "expected": [
+        {
+          "kind": "finite",
+          "trend": 17.4873267805
+        },
+        {
+          "kind": "finite",
+          "trend": 28.207692241
+        },
+        {
+          "kind": "non-finite"
+        },
+        {
+          "kind": "non-finite"
+        },
+        {
+          "kind": "non-finite"
+        },
+        {
+          "kind": "non-finite"
+        },
+        {
+          "kind": "non-finite"
+        }
+      ],
+      "floors": [
+        -5.0,
+        -4.5,
+        -4.0,
+        -3.5,
+        -3.0,
+        -2.5,
+        -2.0
+      ],
+      "id": "zero-segment-then-recovery-minmax",
+      "parameters": {
+        "changepoints": [
+          0.25,
+          0.75
+        ],
+        "deltas": [
+          -2.0,
+          3.0
+        ],
+        "offset": 0.4,
+        "rate": 2.0
+      },
+      "scale": 105.0,
+      "scaling": "minmax",
+      "times": [
+        -0.25,
+        0.0,
+        0.25,
+        0.5,
+        0.75,
+        1.0,
+        1.5
+      ]
+    },
+    {
+      "capacities": [
+        100.0,
+        101.0,
+        102.0,
+        103.0,
+        104.0,
+        105.0,
+        106.0
+      ],
+      "expected": [
+        {
+          "kind": "finite",
+          "trend": 17.4873267805
+        },
+        {
+          "kind": "finite",
+          "trend": 28.207692241
+        },
+        {
+          "kind": "finite",
+          "trend": 41.109093218
+        },
+        {
+          "kind": "finite",
+          "trend": 55.0573207138
+        },
+        {
+          "kind": "finite",
+          "trend": 42.5346507012
+        },
+        {
+          "kind": "finite",
+          "trend": 30.8277432788
+        },
+        {
+          "kind": "finite",
+          "trend": 13.3199150093
+        }
+      ],
+      "floors": [
+        -5.0,
+        -4.5,
+        -4.0,
+        -3.5,
+        -3.0,
+        -2.5,
+        -2.0
+      ],
+      "id": "nonzero-sign-crossing-minmax",
+      "parameters": {
+        "changepoints": [
+          0.5
+        ],
+        "deltas": [
+          -4.0
+        ],
+        "offset": 0.4,
+        "rate": 2.0
+      },
+      "scale": 105.0,
+      "scaling": "minmax",
+      "times": [
+        -0.25,
+        0.0,
+        0.25,
+        0.5,
+        0.75,
+        1.0,
+        1.5
+      ]
+    },
+    {
+      "capacities": [
+        100.0,
+        101.0,
+        102.0,
+        103.0,
+        104.0,
+        105.0,
+        106.0
+      ],
+      "expected": [
+        {
+          "kind": "finite",
+          "trend": 17.4873267805
+        },
+        {
+          "kind": "non-finite"
+        },
+        {
+          "kind": "non-finite"
+        },
+        {
+          "kind": "non-finite"
+        },
+        {
+          "kind": "non-finite"
+        },
+        {
+          "kind": "non-finite"
+        },
+        {
+          "kind": "non-finite"
+        }
+      ],
+      "floors": [
+        -5.0,
+        -4.5,
+        -4.0,
+        -3.5,
+        -3.0,
+        -2.5,
+        -2.0
+      ],
+      "id": "zero-segment-at-origin-minmax",
+      "parameters": {
+        "changepoints": [
+          0.0
+        ],
+        "deltas": [
+          -2.0
+        ],
+        "offset": 0.4,
+        "rate": 2.0
+      },
+      "scale": 105.0,
+      "scaling": "minmax",
+      "times": [
+        -0.25,
+        0.0,
+        0.25,
+        0.5,
+        0.75,
+        1.0,
+        1.5
+      ]
+    },
+    {
+      "capacities": [
+        100.0,
+        101.0,
+        102.0,
+        103.0,
+        104.0,
+        105.0,
+        106.0
+      ],
+      "expected": [
+        {
+          "kind": "finite",
+          "trend": 17.4873267805
+        },
+        {
+          "kind": "finite",
+          "trend": 28.207692241
+        },
+        {
+          "kind": "finite",
+          "trend": 41.109093218
+        },
+        {
+          "kind": "finite",
+          "trend": 55.0573207138
+        },
+        {
+          "kind": "finite",
+          "trend": 68.496091622
+        },
+        {
+          "kind": "non-finite"
+        },
+        {
+          "kind": "non-finite"
+        }
+      ],
+      "floors": [
+        -5.0,
+        -4.5,
+        -4.0,
+        -3.5,
+        -3.0,
+        -2.5,
+        -2.0
+      ],
+      "id": "zero-segment-at-endpoint-minmax",
+      "parameters": {
+        "changepoints": [
+          1.0
+        ],
+        "deltas": [
+          -2.0
+        ],
+        "offset": 0.4,
+        "rate": 2.0
+      },
+      "scale": 105.0,
+      "scaling": "minmax",
+      "times": [
+        -0.25,
+        0.0,
+        0.25,
+        0.5,
+        0.75,
+        1.0,
+        1.5
+      ]
+    }
+  ],
+  "sourceMethod": "Unmodified Prophet 1.4.0 setup_dataframe and predict_trend with authored public parameters",
+  "toleranceAbsolute": 1e-09
+}

@@ -123,6 +123,7 @@ export {
   type EncodedLinearAdditiveOptions,
   type EncodedLinearTrendOptions,
   type EncodedLogisticOptions,
+  type EncodedLogisticMapOptions,
   type EncodedMapOptions,
   type EncodedChangepointSetting,
   type EncodedProphetOptions,
@@ -148,6 +149,13 @@ export {
   type EncodedLbfgsSettings,
   type LbfgsSettings,
 } from "./linear-optimizer";
+
+export {
+  decodeLogisticOptimizer,
+  type EncodedLogisticOptimizer,
+  type EncodedProximalLogisticOptimizer,
+  type LogisticOptimizer,
+} from "./logistic-optimizer";
 
 export {
   type FittedFlatMapProphet,

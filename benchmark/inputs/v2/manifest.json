@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "files": [
+    {
+      "file": "logistic-basic-96.json",
+      "recipe": "logistic-reconciliation-v1:basic:n=96:h=24:bounded-deterministic-noise:changing-capacity",
+      "sha256": "8ecc67fda9a300c74a9a18aecb8d39a6468ac378c72e413084f90ae2cd61db1c"
+    },
+    {
+      "file": "logistic-basic-99.json",
+      "recipe": "logistic-reconciliation-v1:basic:n=99:h=24:bounded-deterministic-noise:changing-capacity",
+      "sha256": "42372ce4d1c22348c7f09f5dea6bf41e00cbe03aa3c9024c5b4806bb9be52a2b"
+    },
+    {
+      "file": "logistic-basic-100.json",
+      "recipe": "logistic-reconciliation-v1:basic:n=100:h=24:bounded-deterministic-noise:changing-capacity",
+      "sha256": "b96e6e9d39e6d8f0d9df618c973698c81b60a2e36f91cc25784d8a305c9488cc"
+    },
+    {
+      "file": "logistic-basic-256.json",
+      "recipe": "logistic-reconciliation-v1:basic:n=256:h=24:bounded-deterministic-noise:changing-capacity",
+      "sha256": "f5b94d2ca42a607b6e1b9001b8e640fe13ff435ff9c4209ad40f51868d93d7f5"
+    },
+    {
+      "file": "logistic-weekly-96.json",
+      "recipe": "logistic-reconciliation-v1:weekly:n=96:h=24:bounded-deterministic-noise:changing-capacity",
+      "sha256": "46215a2026d6c61ebe4d60064f44f24a7f406116f8528906e9480b935e51c822"
+    },
+    {
+      "file": "logistic-weekly-256.json",
+      "recipe": "logistic-reconciliation-v1:weekly:n=256:h=24:bounded-deterministic-noise:changing-capacity",
+      "sha256": "3110b94b54122792796675c0cf8be7017ca80a7147eb66663d0163c46ab2072c"
+    },
+    {
+      "file": "logistic-floor-96.json",
+      "recipe": "logistic-reconciliation-v1:floor:n=96:h=24:bounded-deterministic-noise:changing-capacity",
+      "sha256": "feebcb38a088775d51240a2984edaa8c68466c438f7ff3905d06f06667d1d772"
+    },
+    {
+      "file": "logistic-regressor-additive-96.json",
+      "recipe": "logistic-reconciliation-v1:regressor-additive:n=96:h=24:bounded-deterministic-noise:changing-capacity",
+      "sha256": "b1f011841d259a1a746b2ebe5b0764dff2da86d0bc208d6e6ec04f28e1402b64"
+    },
+    {
+      "file": "logistic-regressor-multiplicative-96.json",
+      "recipe": "logistic-reconciliation-v1:regressor-multiplicative:n=96:h=24:bounded-deterministic-noise:changing-capacity",
+      "sha256": "948eb69533977d164db6e410eaa2c7974dad66076046e7b9782183bbcbcb2f23"
+    },
+    {
+      "file": "logistic-conditional-96.json",
+      "recipe": "logistic-reconciliation-v1:conditional:n=96:h=24:bounded-deterministic-noise:changing-capacity",
+      "sha256": "2cbe9ef267c1b56d0518382fa4acba99dd41c130b37d0287357f3b90f7e6a436"
+    },
+    {
+      "file": "logistic-event-96.json",
+      "recipe": "logistic-reconciliation-v1:event:n=96:h=24:bounded-deterministic-noise:changing-capacity",
+      "sha256": "92c0c72ddbcc79923fd870820dc0f5fa2cdd4886071ccde25c8aecb39a92ff75"
+    },
+    {
+      "file": "logistic-mixed-96.json",
+      "recipe": "logistic-reconciliation-v1:mixed:n=96:h=24:bounded-deterministic-noise:changing-capacity",
+      "sha256": "82c972c9734dc7d822b3a9fdef7a0208ed5cdc3717f2c3a07a27bd64b80e570b"
+    },
+    {
+      "file": "logistic-unsorted-96.json",
+      "recipe": "logistic-reconciliation-v1:unsorted:n=96:h=24:bounded-deterministic-noise:changing-capacity",
+      "sha256": "fb90bfa78249357a4f43b5fab98a6be34640880a89aa37de45e6fdb356a042af"
+    },
+    {
+      "file": "logistic-duplicates-96.json",
+      "recipe": "logistic-reconciliation-v1:duplicates:n=96:h=24:bounded-deterministic-noise:changing-capacity",
+      "sha256": "c85a5f74694bd71fdb6c4b63e371728b194a6b4b31baa5b0c8f37809d797aba5"
+    },
+    {
+      "file": "logistic-declining-96.json",
+      "recipe": "logistic-reconciliation-v1:declining:n=96:h=24:bounded-deterministic-noise:changing-capacity",
+      "sha256": "e702d016d810f731cd5d316512749bb592a8c3774eb215d9045830df2bef4103"
+    },
+    {
+      "file": "logistic-saturated-96.json",
+      "recipe": "logistic-reconciliation-v1:saturated:n=96:h=24:bounded-deterministic-noise:changing-capacity",
+      "sha256": "2b47fdb8535aa9e526665a20ec64a73f988d1492ac5e01be97184783fb1e96a5"
+    },
+    {
+      "file": "logistic-constant-96.json",
+      "recipe": "logistic-reconciliation-v1:constant:n=96:h=24:bounded-deterministic-noise:changing-capacity",
+      "sha256": "ae0c3edc68a5accc05bf55c736b563e0eb26ae38d79e92b06d6e780b4c2527b7"
+    },
+    {
+      "file": "logistic-out-of-bounds-96.json",
+      "recipe": "logistic-reconciliation-v1:out-of-bounds:n=96:h=24:bounded-deterministic-noise:changing-capacity",
+      "sha256": "2d0d5492a1229160cb677bf6369c04a3d131484aec09e82d5b267a34dffbe00b"
+    }
+  ]
+}

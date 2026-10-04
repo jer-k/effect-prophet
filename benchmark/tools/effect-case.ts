@@ -12,6 +12,10 @@ export const effectOptionsForCase = (
     return undefined;
   }
 
+  if (workload.kind === "stage-f-map" && workload.fitRequest === "growth-only") {
+    return { growth: "logistic" };
+  }
+
   const configuration = workload.configuration;
 
   const firstSeasonality = configuration.seasonalities[0];
@@ -45,15 +49,15 @@ export const effectOptionsForCase = (
         : { ...options, growth: "flat", seasonalities };
     }
 
-    if (workload.effectOptimizer === undefined) {
-      throw new Error(`Stage F case ${benchmarkCase.id} has no numerical optimizer controls`);
-    }
-
-    const map = {
+    const mapConfiguration = {
       changepoints: workload.configuration.changepoints,
       changepointPriorScale: workload.configuration.changepointPriorScale,
-      optimizer: workload.effectOptimizer,
     };
+
+    const map =
+      workload.effectOptimizer === undefined
+        ? mapConfiguration
+        : { ...mapConfiguration, optimizer: workload.effectOptimizer };
 
     if (workload.configuration.growth === "logistic") {
       return { ...options, growth: "logistic", seasonalities: configuration.seasonalities, map };

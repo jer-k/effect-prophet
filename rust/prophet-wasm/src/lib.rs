@@ -19,6 +19,9 @@ mod symmetric_eigen;
 pub mod target_scaling;
 mod wasm;
 
+#[cfg(test)]
+mod reference_fixtures;
+
 // Preserve the original public Rust module paths.
 pub use stan::{
   lbfgs as stan_lbfgs, linear_optimizer as stan_linear_optimizer, optimizer as stan_optimizer,

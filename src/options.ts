@@ -1,4 +1,4 @@
-import { Effect, Predicate, Schema } from "effect";
+import { Effect, Schema } from "effect";
 
 import { ComponentModeSchema, type ComponentMode } from "./component-mode";
 import { InputValidationError, inputValidationErrorFromIssue } from "./errors";
@@ -18,6 +18,11 @@ import {
   type EncodedLinearOptimizer,
   type LinearOptimizer,
 } from "./linear-optimizer";
+import {
+  decodeLogisticOptimizer,
+  type EncodedLogisticOptimizer,
+  type LogisticOptimizer,
+} from "./logistic-optimizer";
 import {
   parseRegressorDefinitions,
   type EncodedRegressorDefinition,
@@ -97,13 +102,9 @@ export interface EncodedMapOptions {
   readonly optimizer?: EncodedLinearOptimizer;
 }
 
-/** Logistic controls retain their separate coordinate/objective-change policy. */
+/** Logistic MAP controls with shared Stan defaults and explicit historical-policy opt-in. */
 export interface EncodedLogisticMapOptions extends Omit<EncodedMapOptions, "optimizer"> {
-  readonly optimizer?: {
-    readonly maxIterations?: number;
-    readonly relativeTolerance?: number;
-    readonly absoluteTolerance?: number;
-  };
+  readonly optimizer?: EncodedLogisticOptimizer;
 }
 
 /** Parsed explicit or automatic changepoint request. */
@@ -253,7 +254,7 @@ export interface FlatAdditiveOptions extends ParsedBuiltInOptions {
 export interface LogisticOptions extends ParsedBuiltInOptions {
   readonly growth: "logistic";
   readonly seasonalities: ReadonlyArray<SeasonalityDefinition>;
-  readonly map: MapOptions<MapOptimizerControls>;
+  readonly map: MapOptions<LogisticOptimizer>;
 }
 
 /** Validated and defaulted public fitting configuration awaiting fit-time resolution. */
@@ -281,9 +282,9 @@ const emptySeasonalities: readonly [] = Object.freeze([]);
 const emptyRegressors: readonly [] = Object.freeze([]);
 
 const defaultBuiltInSeasonalities: BuiltInSeasonalities = Object.freeze({
-  daily: "off",
-  weekly: "off",
-  yearly: "off",
+  daily: "auto",
+  weekly: "auto",
+  yearly: "auto",
 });
 
 /** Default automatic changepoint controls for additive linear requests. */
@@ -300,17 +301,11 @@ export const defaultFlatOptimizerControls: MapOptimizerControls = Object.freeze(
   absoluteTolerance: 1e-12,
 });
 
-const defaultLogisticOptimizerControls: MapOptimizerControls = Object.freeze({
-  maxIterations: 10_000,
-  relativeTolerance: 1e-7,
-  absoluteTolerance: 1e-9,
-});
-
 /**
  * Central defaults for public fitting configuration.
  *
- * Linear growth matches Prophet's default. Built-in seasonalities deliberately default to off;
- * callers opt into training-history-based resolution with `"auto"`.
+ * Linear growth and automatic built-in seasonality requests match Prophet's defaults.
+ * Training history resolves automatic requests; callers may explicitly opt out with `"off"`.
  */
 export const defaultProphetOptions: LinearTrendOptions = Object.freeze({
   growth: "linear",
@@ -339,9 +334,9 @@ const builtInSettingSchema = (defaultOrder: number) =>
   ]);
 
 const BuiltInSeasonalitiesSchema = Schema.Struct({
-  daily: builtInSettingSchema(4).pipe(Schema.withDecodingDefaultKey(Effect.succeed("off"))),
-  weekly: builtInSettingSchema(3).pipe(Schema.withDecodingDefaultKey(Effect.succeed("off"))),
-  yearly: builtInSettingSchema(10).pipe(Schema.withDecodingDefaultKey(Effect.succeed("off"))),
+  daily: builtInSettingSchema(4).pipe(Schema.withDecodingDefaultKey(Effect.succeed("auto"))),
+  weekly: builtInSettingSchema(3).pipe(Schema.withDecodingDefaultKey(Effect.succeed("auto"))),
+  yearly: builtInSettingSchema(10).pipe(Schema.withDecodingDefaultKey(Effect.succeed("auto"))),
 });
 
 const ExplicitChangepointTimestampsSchema = Schema.Array(TimestampSchema).check(
@@ -438,37 +433,6 @@ const freezeMapOptions = <Optimizer extends object>(
   });
 };
 
-interface OptimizerControlPresence {
-  readonly maxIterations: boolean;
-  readonly relativeTolerance: boolean;
-  readonly absoluteTolerance: boolean;
-}
-
-const logisticMapOptions = (
-  options: MapOptions<MapOptimizerControls> | undefined,
-  supplied: OptimizerControlPresence,
-): MapOptions<MapOptimizerControls> => {
-  const resolved = options ?? {
-    ...defaultAutomaticMapOptions,
-    optimizer: defaultLogisticOptimizerControls,
-  };
-
-  return Object.freeze({
-    ...resolved,
-    optimizer: Object.freeze({
-      maxIterations: supplied.maxIterations
-        ? resolved.optimizer.maxIterations
-        : defaultLogisticOptimizerControls.maxIterations,
-      relativeTolerance: supplied.relativeTolerance
-        ? resolved.optimizer.relativeTolerance
-        : defaultLogisticOptimizerControls.relativeTolerance,
-      absoluteTolerance: supplied.absoluteTolerance
-        ? resolved.optimizer.absoluteTolerance
-        : defaultLogisticOptimizerControls.absoluteTolerance,
-    }),
-  });
-};
-
 /**
  * Translate seasonality-domain issues at the public options boundary.
  *
@@ -516,28 +480,6 @@ export const decodeOptions = Effect.fn("decodeOptions")(function* (
   const syntax = yield* decodeProphetOptionsSyntax(encoded).pipe(
     Effect.mapError((error) => inputValidationErrorFromIssue("options", error.issue)),
   );
-
-  const encodedMap =
-    Predicate.isObjectKeyword(encoded) && Predicate.hasProperty(encoded, "map")
-      ? encoded.map
-      : undefined;
-
-  const encodedOptimizer =
-    Predicate.isObjectKeyword(encodedMap) && Predicate.hasProperty(encodedMap, "optimizer")
-      ? encodedMap.optimizer
-      : undefined;
-
-  const optimizerControlPresence: OptimizerControlPresence = {
-    maxIterations:
-      Predicate.isObjectKeyword(encodedOptimizer) &&
-      Predicate.hasProperty(encodedOptimizer, "maxIterations"),
-    relativeTolerance:
-      Predicate.isObjectKeyword(encodedOptimizer) &&
-      Predicate.hasProperty(encodedOptimizer, "relativeTolerance"),
-    absoluteTolerance:
-      Predicate.isObjectKeyword(encodedOptimizer) &&
-      Predicate.hasProperty(encodedOptimizer, "absoluteTolerance"),
-  };
 
   const seasonalities = yield* parseSeasonalities(
     syntax.seasonalities,
@@ -637,37 +579,18 @@ export const decodeOptions = Effect.fn("decodeOptions")(function* (
     return yield* Effect.fail(
       new InputValidationError({
         input: "options",
-        issues: [{ path: ["map"], message: "Linear MAP options require linear growth" }],
+        issues: [
+          {
+            path: ["map"],
+            message: "Linear MAP options require linear growth",
+          },
+        ],
         message: "Linear MAP options require linear growth",
       }),
     );
   }
 
   const builtInSeasonalities = freezeBuiltInSeasonalities(syntax.builtInSeasonalities);
-
-  const decodeLogisticControls = Schema.decodeUnknownEffect(
-    Schema.Struct({
-      maxIterations: Schema.Int.check(
-        Schema.isGreaterThan(0),
-        Schema.isLessThanOrEqualTo(4_294_967_295),
-      ).pipe(
-        Schema.withDecodingDefaultKey(
-          Effect.succeed(defaultLogisticOptimizerControls.maxIterations),
-        ),
-      ),
-      relativeTolerance: PositiveFinite.pipe(
-        Schema.withDecodingDefaultKey(
-          Effect.succeed(defaultLogisticOptimizerControls.relativeTolerance),
-        ),
-      ),
-      absoluteTolerance: PositiveFinite.pipe(
-        Schema.withDecodingDefaultKey(
-          Effect.succeed(defaultLogisticOptimizerControls.absoluteTolerance),
-        ),
-      ),
-    }),
-    { errors: "all", onExcessProperty: "error" },
-  );
 
   const linearMap =
     syntax.growth !== "logistic" && syntax.map !== undefined
@@ -681,9 +604,7 @@ export const decodeOptions = Effect.fn("decodeOptions")(function* (
     syntax.growth === "logistic" && syntax.map !== undefined
       ? freezeMapOptions({
           ...syntax.map,
-          optimizer: yield* decodeLogisticControls(syntax.map.optimizer).pipe(
-            Effect.mapError((error) => inputValidationErrorFromIssue("options", error.issue)),
-          ),
+          optimizer: yield* decodeLogisticOptimizer(syntax.map.optimizer),
         })
       : undefined;
 
@@ -705,7 +626,7 @@ export const decodeOptions = Effect.fn("decodeOptions")(function* (
       builtInSeasonalities,
       events,
       regressors,
-      map: logisticMapOptions(logisticMap, optimizerControlPresence),
+      map: logisticMap ?? defaultAutomaticMapOptions,
       ...scaling,
     };
   }

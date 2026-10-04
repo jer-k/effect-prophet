@@ -7,8 +7,10 @@ not another source of case declarations or current pass counts.
 ## Correctness before timing
 
 Shared deterministic rows include every regressor, condition, bound and future timestamp.
-Adapters disable built-in seasonalities for matched fits and use the declared priors, scaling,
-changepoints and optimizer settings. Python numeric target/capacity/floor/regressor columns are
+Configured-feature adapters disable built-in seasonalities and use the declared priors, scaling,
+changepoints and optimizer settings. Logistic growth-only probes instead leave actual fitting and
+built-in seasonality defaults untouched; their resolved metadata is checked against Python.
+See the [logistic reconciliation inventory](../cases/growth/logistic/README.md). Python numeric target/capacity/floor/regressor columns are
 explicit float64, matching JavaScript numbers without changing source values; masks stay boolean.
 Events map to Prophet holiday DataFrames, regressor standardization maps to False/auto/True,
 and conditional seasonalities retain their names, modes and masks.

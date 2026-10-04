@@ -2,7 +2,7 @@
 
 use wasm_bindgen::prelude::wasm_bindgen;
 
-use crate::logistic_map::{LogisticParameters, predict_logistic_map};
+use crate::logistic_map::{LogisticParameters, LogisticPredictionPolicy, predict_logistic_map};
 use crate::map_uncertainty::{
   PredictiveSamples, SimulationError, SimulationOptions, SimulationRows, SimulationTrend,
   checked_cells, reduce_intervals, simulate_map,
@@ -248,6 +248,7 @@ pub fn simulate_logistic_map_with_features(
   additional_component_offsets: &[f64],
   additional_component_counts: &[f64],
   column_modes: &[f64],
+  prediction_policy: f64,
   seed: f64,
   sample_count: f64,
   interval_width: f64,
@@ -273,6 +274,9 @@ pub fn simulate_logistic_map_with_features(
   if changepoint_timestamps.len() > 10_000 || deltas.len() > 10_000 {
     return vec![RESOURCE_LIMIT];
   }
+  let Some(policy) = LogisticPredictionPolicy::from_code(prediction_policy) else {
+    return vec![INVALID_REQUEST];
+  };
   let Ok(scaling) =
     LogisticScaling::parse(scaling_mode, target_scale, floor_policy, implicit_floor)
   else {
@@ -340,6 +344,7 @@ pub fn simulate_logistic_map_with_features(
     layout_view(&placeholder_priors, &metadata.offsets, &metadata.counts),
     additional_coefficients,
     &modes,
+    policy,
   ) {
     Ok(fixed) => fixed,
     Err(error) => return prediction_error(error),
@@ -364,6 +369,7 @@ pub fn simulate_logistic_map_with_features(
       time_origin,
       time_scale,
       changepoints: changepoint_timestamps,
+      policy,
     },
     noise_scale,
     SimulationRows {

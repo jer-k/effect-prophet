@@ -2,10 +2,10 @@ import { Effect, Match } from "effect";
 
 import { FittingError } from "../errors";
 import type { LinearOptimizer } from "../linear-optimizer";
-import type { PiecewiseMapFitSummarySchema } from "../fitted-model";
+import type { StanMapFitSummarySchema } from "../fitted-model";
 
 /** Annotate bounded controls within the existing complete WASM fit boundary. */
-export const annotateLinearRequest = (optimizer: LinearOptimizer) =>
+export const annotateStanRequest = (optimizer: LinearOptimizer) =>
   Effect.annotateCurrentSpan({
     "effect_prophet.optimizer.requested_algorithm": optimizer.algorithm,
     "effect_prophet.optimizer.max_iterations": optimizer.maxIterations,
@@ -13,8 +13,8 @@ export const annotateLinearRequest = (optimizer: LinearOptimizer) =>
       optimizer.algorithm === "newton" ? "none" : optimizer.fallback,
   });
 
-/** Annotate a completed linear fit within its existing WASM boundary span. */
-export const annotateLinearCompletion = (summary: typeof PiecewiseMapFitSummarySchema.Type) => {
+/** Annotate a completed Stan fit within its existing WASM boundary span. */
+export const annotateStanCompletion = (summary: typeof StanMapFitSummarySchema.Type) => {
   const attributes = {
     "effect_prophet.optimizer.algorithm": summary.optimization.algorithm,
     "effect_prophet.optimizer.termination": summary.termination,
@@ -35,9 +35,10 @@ export const annotateLinearCompletion = (summary: typeof PiecewiseMapFitSummaryS
 };
 
 /** Decode bounded failure evidence without losing either failed optimization attempt. */
-export const linearOptimizerFailure = (
+export const stanOptimizerFailure = (
   packed: Float64Array,
   observationCount: number,
+  growth: "linear" | "logistic" = "linear",
 ): Effect.Effect<never, FittingError> => {
   const reasons = [
     "invalid-configuration",
@@ -69,17 +70,23 @@ export const linearOptimizerFailure = (
         observationCount,
         backendPhase: valid ? "execute" : "protocol",
         message: valid
-          ? "Linear MAP optimizer failed"
-          : "WASM linear optimizer returned malformed failure evidence",
+          ? `${growth === "linear" ? "Linear" : "Logistic"} MAP optimizer failed`
+          : `WASM ${growth} optimizer returned malformed failure evidence`,
       },
       valid
         ? {
             cause: {
-              first: { reason: first, iterations: packed[2] === -1 ? null : packed[2] },
+              first: {
+                reason: first,
+                iterations: packed[2] === -1 ? null : packed[2],
+              },
               fallback:
                 second === null
                   ? null
-                  : { reason: second, iterations: packed[4] === -1 ? null : packed[4] },
+                  : {
+                      reason: second,
+                      iterations: packed[4] === -1 ? null : packed[4],
+                    },
             },
           }
         : undefined,
@@ -87,8 +94,8 @@ export const linearOptimizerFailure = (
   );
 };
 
-/** Linear control wire version two, with no inapplicable Newton fields. */
-export const encodeLinearOptimizer = (optimizer: LinearOptimizer): Float64Array => {
+/** Shared Stan control wire version two, with no inapplicable Newton fields. */
+export const encodeStanOptimizer = (optimizer: LinearOptimizer): Float64Array => {
   if (optimizer.algorithm === "newton") {
     return new Float64Array([2, 1, optimizer.maxIterations]);
   }
@@ -122,18 +129,18 @@ const terminations = [
   "iteration-limit",
 ] as const;
 
-/** Project the version-two completion fields; model parsing owns semantic checks. */
-export const decodeLinearCompletion = (packed: Float64Array) => ({
-  termination: terminations[(packed[15] ?? Number.NaN) - 1],
+/** Project shared completion fields; model parsing owns semantic checks. */
+export const decodeStanCompletion = (packed: Float64Array, offset = 15) => ({
+  termination: terminations[(packed[offset] ?? Number.NaN) - 1],
   optimization: {
-    algorithm: Match.value(packed[16]).pipe(
+    algorithm: Match.value(packed[offset + 1]).pipe(
       Match.when(0, () => "none" as const),
       Match.when(1, () => "newton" as const),
       Match.when(2, () => "lbfgs" as const),
       Match.orElse(() => undefined),
     ),
-    attemptCount: packed[17],
-    failedAttemptIterations: packed[18] === -1 ? null : packed[18],
-    hessianResets: packed[19],
+    attemptCount: packed[offset + 2],
+    failedAttemptIterations: packed[offset + 3] === -1 ? null : packed[offset + 3],
+    hessianResets: packed[offset + 4],
   },
 });

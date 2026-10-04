@@ -29,7 +29,7 @@ PROTOCOL_PREFIX = "EFFECT_PROPHET_BENCHMARK_RESULT="
 ADAPTER_PATH = Path(__file__).resolve()
 BENCHMARK_ROOT = ADAPTER_PATH.parent.parent.parent
 sys.path.insert(0, str(BENCHMARK_ROOT.parent / "tools" / "prophet"))
-from linear_optimizer_evidence import linear_optimizer_evidence
+from linear_optimizer_evidence import linear_optimizer_evidence, map_optimizer_evidence
 
 DEFAULT_CASES_PATH = BENCHMARK_ROOT / "cases" / "growth" / "linear" / "public-api.json"
 DEFAULT_DATA_ROOT = BENCHMARK_ROOT / "inputs"
@@ -154,6 +154,10 @@ def configure_model(benchmark_case: dict[str, Any]) -> Prophet:
     workload = benchmark_case["workload"]
     if workload["kind"] not in ("linear-map", "stage-f-map", "evaluation"):
         raise ValueError(f"Case {benchmark_case['id']} is not a fitting workload")
+    if workload.get("fitRequest") == "growth-only":
+        # Point output only: leave every fitting/seasonality default with Prophet.
+        return Prophet(growth="logistic", uncertainty_samples=0)
+
     configuration = workload["configuration"]
     changepoints = configuration["changepoints"]
     stage_f = workload["kind"] in ("stage-f-map", "evaluation")
@@ -210,6 +214,9 @@ def fit_model(training: pd.DataFrame, benchmark_case: dict[str, Any]) -> Prophet
     workload = benchmark_case["workload"]
     model = configure_model(benchmark_case)
     optimizer = workload["pythonOptimizer"]
+    if workload.get("fitRequest") == "growth-only":
+        # Output precision is not a solver tolerance; no algorithm/budget override.
+        return model.fit(training, sig_figs=12)
     return model.fit(
         training,
         **({} if optimizer["algorithm"] == "Auto" else {"algorithm": optimizer["algorithm"]}),
@@ -726,8 +733,9 @@ def correctness_projection(
             if not math.isfinite(float(objective)):
                 raise ValueError("Prophet MAP fit did not retain a finite optimizer objective")
             result["fitQuality"] = [{"name": "cmdstan-lp", "value": float(objective)}]
-            if model.growth == "linear" and benchmark_case.get("optimizerQuality") is not None:
-                evidence = linear_optimizer_evidence(model)
+            if model.growth in ("linear", "logistic") and benchmark_case.get("optimizerQuality") is not None:
+                evidence = (linear_optimizer_evidence(model) if model.growth == "linear"
+                            else map_optimizer_evidence(model))
                 result["fitQuality"].extend([
                     {"name": "objective", "value": evidence["objective"]},
                     {"name": "stationarity-residual", "value": evidence["stationarityResidual"]},

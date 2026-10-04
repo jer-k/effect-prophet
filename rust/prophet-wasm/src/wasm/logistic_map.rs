@@ -1,14 +1,17 @@
 use wasm_bindgen::prelude::wasm_bindgen;
 
-use crate::logistic_map::{LogisticParameters, fit_logistic_map, predict_logistic_map};
+use crate::logistic_map::{
+  LogisticMapControls, LogisticParameters, LogisticPredictionPolicy, fit_logistic_map,
+  predict_logistic_map,
+};
 use crate::piecewise_map::resolve_automatic_changepoints;
 use crate::target_scaling::{LogisticFloorPolicy, LogisticScaling, ScalingMode};
 use crate::wasm::map::{
-  PiecewiseMapFitStatus, PiecewiseMapPredictionStatus, prediction_error_frame, status_for_fit_error,
+  PiecewiseMapFitStatus, PiecewiseMapPredictionStatus, fit_error_frame, prediction_error_frame,
 };
 use crate::wasm::mixed_map::{
   layout_view, mask_view, matrix_view, parse_controls, parse_metadata, parse_modes,
-  parse_seasonalities, termination_code,
+  parse_seasonalities,
 };
 use crate::wasm::protocol::{parse_explicit_changepoints, parse_nonnegative_integer};
 
@@ -38,9 +41,7 @@ pub fn fit_logistic_map_with_features(
   additional_component_counts: &[f64],
   column_modes: &[f64],
   changepoint_prior_scale: f64,
-  max_iterations: f64,
-  relative_tolerance: f64,
-  absolute_tolerance: f64,
+  optimizer: &[f64],
 ) -> Vec<f64> {
   let Some(scaling) = ScalingMode::from_code(scaling_mode) else {
     return fit_error(PiecewiseMapFitStatus::InvalidConfiguration);
@@ -55,8 +56,12 @@ pub fn fit_logistic_map_with_features(
   else {
     return fit_error(PiecewiseMapFitStatus::InvalidConfiguration);
   };
-  let Some(controls) = parse_controls(max_iterations, relative_tolerance, absolute_tolerance)
-  else {
+  let controls = if let [1.0, budget, relative, absolute] = optimizer {
+    parse_controls(*budget, *relative, *absolute).map(LogisticMapControls::Proximal)
+  } else {
+    crate::wasm::protocol::parse_linear_optimizer(optimizer).map(LogisticMapControls::Stan)
+  };
+  let Some(controls) = controls else {
     return fit_error(PiecewiseMapFitStatus::InvalidConfiguration);
   };
   let changepoints = if changepoint_mode == 0.0 {
@@ -116,7 +121,7 @@ pub fn fit_logistic_map_with_features(
     Ok(model) => {
       let changepoint_count = model.changepoint_timestamps.len();
       let mut packed = Vec::with_capacity(
-        16 + changepoint_count * 2 + model.coefficients.len() + model.additional_coefficients.len(),
+        20 + changepoint_count * 2 + model.coefficients.len() + model.additional_coefficients.len(),
       );
       let (floor_code, implicit_floor) = match model.scaling.floor_policy {
         LogisticFloorPolicy::Implicit(floor) => (0.0, floor),
@@ -139,15 +144,18 @@ pub fn fit_logistic_map_with_features(
         model.summary.iterations as f64,
         model.summary.objective,
         model.summary.stationarity_residual,
-        termination_code(model.summary.termination),
+        crate::wasm::protocol::map_termination_code(model.summary.termination),
       ]);
+      packed.extend_from_slice(&crate::wasm::protocol::linear_summary_frame(
+        model.summary.termination,
+      ));
       packed.extend_from_slice(&model.changepoint_timestamps);
       packed.extend_from_slice(&model.parameters.deltas);
       packed.extend_from_slice(&model.coefficients);
       packed.extend_from_slice(&model.additional_coefficients);
       packed
     }
-    Err(error) => fit_error(status_for_fit_error(error)),
+    Err(error) => fit_error_frame(error),
   }
 }
 
@@ -180,7 +188,11 @@ pub fn predict_logistic_map_with_features(
   additional_component_offsets: &[f64],
   additional_component_counts: &[f64],
   column_modes: &[f64],
+  prediction_policy: f64,
 ) -> Vec<f64> {
+  let Some(policy) = LogisticPredictionPolicy::from_code(prediction_policy) else {
+    return prediction_error(PiecewiseMapPredictionStatus::InvalidConfiguration);
+  };
   let Ok(scaling) =
     LogisticScaling::parse(scaling_mode, target_scale, floor_policy, implicit_floor)
   else {
@@ -235,6 +247,7 @@ pub fn predict_logistic_map_with_features(
     layout_view(&placeholder_priors, &metadata.offsets, &metadata.counts),
     additional_coefficients,
     &modes,
+    policy,
   ) {
     Ok(batch) => success_frame(batch.values()),
     Err(error) => prediction_error_frame(error),
@@ -284,13 +297,13 @@ mod tests {
       &[],
       &[],
       0.05,
-      10_000.0,
-      1e-7,
-      1e-9,
+      &[2.0, 1.0, 10_000.0],
     );
 
     assert_eq!(fit[0], 0.0);
-    assert_eq!(fit.len(), 16);
+    assert_eq!(fit.len(), 20);
+    assert_eq!(fit[16], 1.0);
+    assert_eq!(fit[17], 1.0);
 
     let prediction = predict_logistic_map_with_features(
       &[6.0],
@@ -317,6 +330,7 @@ mod tests {
       &[],
       &[],
       &[],
+      0.0,
     );
 
     assert_eq!(prediction[0], 0.0);

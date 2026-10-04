@@ -17,6 +17,7 @@ import {
   parseLogisticMapModel,
   parsePiecewiseMapModel,
   PiecewiseMapFitSummarySchema,
+  LogisticMapFitSummarySchema,
   type FittedFlatMapProphet,
   type FittedLinearProphet,
   type FittedLogisticMapProphet,
@@ -323,16 +324,7 @@ const EncodedLogisticMapModelSchema = Schema.Struct({
     }),
   ),
   noiseScale: Schema.Number,
-  fitSummary: Schema.Struct({
-    method: Schema.Literal("logistic-piecewise-map-proximal-v1"),
-    termination: Schema.Literal("converged"),
-    valueScale: Schema.Number,
-    observationCount: Schema.Number,
-    iterations: Schema.Number,
-    objective: Schema.Number,
-    stationarityResidual: Schema.Number,
-    changepointPriorScale: Schema.Number,
-  }),
+  fitSummary: LogisticMapFitSummarySchema,
 });
 
 const EncodedModelDiscriminantSchema = Schema.Struct({
@@ -843,7 +835,12 @@ export const encodeFittedModel = Effect.fn("Prophet.encodeFittedModel")(function
   return yield* Effect.fail(
     new ModelSerializationError({
       operation: "encode",
-      issues: [{ path: ["model"], message: "Expected a serializable fitted model kind" }],
+      issues: [
+        {
+          path: ["model"],
+          message: "Expected a serializable fitted model kind",
+        },
+      ],
       message: "The fitted model kind cannot be serialized",
     }),
   );

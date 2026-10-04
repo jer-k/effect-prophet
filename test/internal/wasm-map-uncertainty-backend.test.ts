@@ -227,6 +227,7 @@ describe("MAP uncertainty WASM adapter", () => {
       "effect_prophet.operation": "simulate",
       "effect_prophet.backend.type": "rust-wasm",
       "effect_prophet.model.type": "logistic-piecewise-map",
+      "effect_prophet.logistic.prediction.policy": "stan",
       "effect_prophet.output.kind": "samples",
       "effect_prophet.prediction.count": 2,
       "effect_prophet.sample.count": 2,

@@ -144,6 +144,7 @@ const ModelSchema = Schema.Union([
         "piecewise-map-stan-v2",
         "mixed-piecewise-map-stan-v2",
         "logistic-piecewise-map-proximal-v1",
+        "logistic-piecewise-map-stan-v2",
       ]),
       termination: Schema.Literals([
         "converged",
@@ -264,7 +265,9 @@ export interface HoldoutEvaluationInput {
   readonly holdout: EncodedObservations;
   readonly search: ModelSearchResult;
   readonly selectedCandidate: SelectedCandidateReceipt;
-  readonly metrics: MetricOptions & { readonly aggregation: { readonly kind: "overall" } };
+  readonly metrics: MetricOptions & {
+    readonly aggregation: { readonly kind: "overall" };
+  };
   readonly baselines?: ReadonlyArray<BaselineDefinition>;
   readonly uncertainty?: EncodedUncertaintyOptions;
   readonly provenance: EvaluationProvenance;
@@ -276,13 +279,22 @@ export type HoldoutEvaluationReport = typeof ReportSchema.Type & {
 };
 
 const invalid = (path: ReadonlyArray<PropertyKey>, message: string): InputValidationError =>
-  new InputValidationError({ input: "evaluation-holdout", issues: [{ path, message }], message });
+  new InputValidationError({
+    input: "evaluation-holdout",
+    issues: [{ path, message }],
+    message,
+  });
 
 const reportError = (
   operation: "encode" | "decode",
   path: ReadonlyArray<PropertyKey>,
   message: string,
-) => new EvaluationReportError({ operation, issues: [{ path, message }], message });
+) =>
+  new EvaluationReportError({
+    operation,
+    issues: [{ path, message }],
+    message,
+  });
 
 const decodeReportSchema = Schema.decodeUnknownEffect(ReportSchema, {
   errors: "all",
@@ -293,7 +305,9 @@ const decodeProvenance = Schema.decodeUnknownEffect(ProvenanceSchema, {
   onExcessProperty: "error",
 });
 
-const decodeBaseline = Schema.decodeUnknownEffect(BaselineSchema, { onExcessProperty: "error" });
+const decodeBaseline = Schema.decodeUnknownEffect(BaselineSchema, {
+  onExcessProperty: "error",
+});
 
 const decodeMetricPolicy = Schema.decodeUnknownEffect(MetricOptionsSchema, {
   onExcessProperty: "error",
@@ -392,7 +406,9 @@ const reportConsistency = (
       (report.model.kind !== "linear-trend" &&
         (report.model.fitSummary.observationCount !== development.rowCount ||
           (report.model.kind === "logistic-piecewise-map" &&
-            report.model.fitSummary.method !== "logistic-piecewise-map-proximal-v1") ||
+            !["logistic-piecewise-map-proximal-v1", "logistic-piecewise-map-stan-v2"].includes(
+              report.model.fitSummary.method,
+            )) ||
           (report.model.kind === "flat-map" &&
             !["flat-map-coordinate-v1", "mixed-flat-map-coordinate-v1"].includes(
               report.model.fitSummary.method,
@@ -499,7 +515,10 @@ const reportConsistency = (
         );
       }
 
-      const policy: MetricOptions = { ...metricPolicy, metrics: [first, ...pointMetrics.slice(1)] };
+      const policy: MetricOptions = {
+        ...metricPolicy,
+        metrics: [first, ...pointMetrics.slice(1)],
+      };
 
       const baseRows = forecasts.map((row, rowIndex) => ({
         fold: 0,
@@ -707,7 +726,9 @@ export const evaluateHoldout = Effect.fn("Prophet.evaluateHoldout")(function* (
       Effect.mapError((cause) => failure("fit", "operation-failed", cause)),
     );
 
-    yield* Effect.annotateCurrentSpan({ "effect_prophet.model.type": model.model });
+    yield* Effect.annotateCurrentSpan({
+      "effect_prophet.model.type": model.model,
+    });
 
     const future = holdout.map(({ value: _actual, timestamp, ...known }) => ({
       ...known,
@@ -772,7 +793,11 @@ export const evaluateHoldout = Effect.fn("Prophet.evaluateHoldout")(function* (
           return yield* Effect.fail(failure("result", "result-mismatch", undefined, index));
         }
 
-        withIntervals.push({ ...point, lower: interval.value.lower, upper: interval.value.upper });
+        withIntervals.push({
+          ...point,
+          lower: interval.value.lower,
+          upper: interval.value.upper,
+        });
       }
 
       rows = withIntervals;
@@ -826,7 +851,11 @@ export const evaluateHoldout = Effect.fn("Prophet.evaluateHoldout")(function* (
         baselinePolicy,
       );
 
-      baselines.push({ definition, forecasts: values, metrics: baselineMetrics });
+      baselines.push({
+        definition,
+        forecasts: values,
+        metrics: baselineMetrics,
+      });
     }
 
     const summary = modelSummary(model);
@@ -867,7 +896,11 @@ export const evaluateHoldout = Effect.fn("Prophet.evaluateHoldout")(function* (
       provenance,
       forecasts: rows.map((row) =>
         uncertainty === undefined
-          ? { timestamp: row.timestamp, actual: row.actual, predicted: row.predicted }
+          ? {
+              timestamp: row.timestamp,
+              actual: row.actual,
+              predicted: row.predicted,
+            }
           : {
               timestamp: row.timestamp,
               actual: row.actual,

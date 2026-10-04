@@ -87,6 +87,7 @@ describe("Prophet 1.4.0 fixed-state scalar predictive distributions", () => {
                 new Float64Array(
                   reference.additionalModes.map((mode) => (mode === "additive" ? 0 : 1)),
                 ),
+                0,
                 seed,
                 reference.wasmSamplesPerSeed,
                 0.8,

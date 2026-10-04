@@ -10,12 +10,12 @@ import {
 import type { ChangepointSetting } from "../options";
 import type { LinearOptimizer } from "../linear-optimizer";
 import {
-  encodeLinearOptimizer,
-  decodeLinearCompletion,
-  annotateLinearCompletion,
-  annotateLinearRequest,
-  linearOptimizerFailure,
-} from "./linear-map-protocol";
+  encodeStanOptimizer as encodeLinearOptimizer,
+  decodeStanCompletion as decodeLinearCompletion,
+  annotateStanCompletion as annotateLinearCompletion,
+  annotateStanRequest as annotateLinearRequest,
+  stanOptimizerFailure as linearOptimizerFailure,
+} from "./stan-map-protocol";
 import type { ResolvedRegressor } from "../regressor";
 import type { SeasonalityLayout } from "../seasonality";
 import { targetScalingModeCode, type TargetScalingMode } from "../target-scaling";
@@ -489,7 +489,11 @@ export const makeWasmPiecewiseMapAdapter = (
     const componentCount = model.seasonalities.components.length;
 
     if (firstTimestamp === undefined) {
-      return Effect.succeed({ rowCount: 0, componentCount, values: new Float64Array() });
+      return Effect.succeed({
+        rowCount: 0,
+        componentCount,
+        values: new Float64Array(),
+      });
     }
 
     return Effect.gen(function* () {
@@ -560,7 +564,11 @@ export const makeWasmPiecewiseMapAdapter = (
       model.regressors.length;
 
     if (firstTimestamp === undefined) {
-      return Effect.succeed({ rowCount: 0, componentCount, values: new Float64Array() });
+      return Effect.succeed({
+        rowCount: 0,
+        componentCount,
+        values: new Float64Array(),
+      });
     }
 
     return Effect.gen(function* () {

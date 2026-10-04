@@ -67,6 +67,7 @@ const expectedDeclarationFiles = [
   "dist/internal/fitting-backend.d.ts",
   "dist/internal/prophet-fitting-backend.d.ts",
   "dist/linear-optimizer.d.ts",
+  "dist/logistic-optimizer.d.ts",
   "dist/logistic.d.ts",
   "dist/model-search.d.ts",
   "dist/model-serialization.d.ts",
@@ -203,7 +204,8 @@ const evaluated = await Effect.runPromise(
       { timestamp: "2024-01-02T00:00:00.000Z", value: 3 },
       { timestamp: "2024-01-03T00:00:00.000Z", value: 4 },
     ],
-    {},
+    // This smoke check exercises explicit featureless OLS, not automatic MAP CV.
+    { builtInSeasonalities: { yearly: "off", weekly: "off", daily: "off" } },
     {
       horizonMs: 86_400_000,
       cutoffs: { mode: "explicit", timestamps: ["2024-01-02T00:00:00.000Z"] },

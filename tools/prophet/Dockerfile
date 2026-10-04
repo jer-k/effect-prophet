@@ -25,5 +25,7 @@ RUN uv sync --project tools/prophet --frozen --no-dev --no-install-project
 COPY tools/prophet/generate.py tools/prophet/linear_optimizer_evidence.py tools/prophet/reference.json ./tools/prophet/
 # Preserve the fixture generator's image-local paths and generatorRevision without changing fixtures.
 COPY benchmark/inputs/v1/training-ordered.json benchmark/inputs/v1/training-unsorted.json ./benchmark/data/generated/
+# Logistic fitting oracles consume the frozen red-checkpoint inputs verbatim.
+COPY benchmark/inputs/v2/logistic-basic-96.json benchmark/inputs/v2/logistic-weekly-256.json ./benchmark/inputs/v2/
 
 ENTRYPOINT ["/opt/effect-prophet-reference/bin/python", "tools/prophet/generate.py"]

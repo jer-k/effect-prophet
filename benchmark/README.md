@@ -113,7 +113,8 @@ require a new version and updated case references. Commit inputs before retainin
 runs. Cases have one primary capability owner; mixed-feature cases reuse declarations and
 lifecycle serialization phases instead of being copied into every feature folder.
 
-See the [flat coverage gaps](cases/growth/flat/README.md),
+See the [Python-default logistic reconciliation](cases/growth/logistic/README.md),
+[flat coverage gaps](cases/growth/flat/README.md),
 [linear input-policy cases](cases/growth/linear/README.md),
 [measurement contracts](tools/MEASUREMENTS.md), and accepted
 [linear fit-quality](../docs/decisions/linear-map-benchmark-acceptance.md) /

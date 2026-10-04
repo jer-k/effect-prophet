@@ -27,7 +27,12 @@ const future = ["2025-01-08T00:00:00.000Z", "2025-01-03T00:00:00.000Z", "2025-01
 const linearModel = () =>
   Effect.runPromise(
     fit(history, {
-      map: { changepoints: { mode: "explicit", timestamps: ["2025-01-03T00:00:00.000Z"] } },
+      map: {
+        changepoints: {
+          mode: "explicit",
+          timestamps: ["2025-01-03T00:00:00.000Z"],
+        },
+      },
     }).pipe(Effect.provide(prophetFittingBackendLayer)),
   );
 
@@ -167,7 +172,11 @@ describe("predictUncertainty", () => {
     );
 
     const samples = await Effect.runPromise(
-      predictUncertainty(model, future, { seed: 0, samples: 1, output: "samples" }),
+      predictUncertainty(model, future, {
+        seed: 0,
+        samples: 1,
+        output: "samples",
+      }),
     );
 
     const bands = await Effect.runPromise(
@@ -293,7 +302,11 @@ describe("predictUncertainty", () => {
     ];
 
     const result = await Effect.runPromise(
-      predictUncertainty(model, rows, { seed: 11, samples: 16, output: "samples" }),
+      predictUncertainty(model, rows, {
+        seed: 11,
+        samples: 16,
+        output: "samples",
+      }),
     );
 
     if (result.kind !== "samples") {
@@ -306,7 +319,9 @@ describe("predictUncertainty", () => {
 
     const missing = await Effect.runPromise(
       Effect.flip(
-        predictUncertainty(model, [{ timestamp: "2025-01-22T00:00:00.000Z" }], { seed: 11 }),
+        predictUncertainty(model, [{ timestamp: "2025-01-22T00:00:00.000Z" }], {
+          seed: 11,
+        }),
       ),
     );
 
@@ -317,7 +332,12 @@ describe("predictUncertainty", () => {
     }));
 
     const alignment = await Effect.runPromise(
-      Effect.flip(predictUncertainty(model, incompleteOversizedRows, { seed: 11, samples: 2048 })),
+      Effect.flip(
+        predictUncertainty(model, incompleteOversizedRows, {
+          seed: 11,
+          samples: 2048,
+        }),
+      ),
     );
 
     expect(alignment).toBeInstanceOf(InputValidationError);
@@ -333,7 +353,12 @@ describe("predictUncertainty", () => {
     const model = await Effect.runPromise(
       fit(observations, {
         growth: "logistic",
-        map: { changepoints: { mode: "explicit", timestamps: ["2024-01-03T00:00:00.000Z"] } },
+        map: {
+          changepoints: {
+            mode: "explicit",
+            timestamps: ["2024-01-03T00:00:00.000Z"],
+          },
+        },
       }).pipe(Effect.provide(prophetFittingBackendLayer)),
     );
 
@@ -409,7 +434,9 @@ describe("predictUncertainty", () => {
 
     const missing = await Effect.runPromise(
       Effect.flip(
-        predictUncertainty(model, [{ timestamp: "2024-01-08T00:00:00.000Z" }], { seed: 9 }),
+        predictUncertainty(model, [{ timestamp: "2024-01-08T00:00:00.000Z" }], {
+          seed: 9,
+        }),
       ).pipe(Effect.withTracer(tracer)),
     );
 
@@ -428,7 +455,12 @@ describe("predictUncertainty", () => {
     const model = await Effect.runPromise(
       fit(observations, {
         growth: "logistic",
-        map: { changepoints: { mode: "explicit", timestamps: ["2024-01-03T00:00:00.000Z"] } },
+        map: {
+          changepoints: {
+            mode: "explicit",
+            timestamps: ["2024-01-03T00:00:00.000Z"],
+          },
+        },
       }).pipe(Effect.provide(prophetFittingBackendLayer)),
     );
 
@@ -582,17 +614,34 @@ describe("predictUncertainty", () => {
       fit(observations, {
         growth: "logistic",
         scaling: "minmax",
-        seasonalities: [{ name: "weekly-custom", periodDays: 7, fourierOrder: 2, priorScale: 10 }],
+        builtInSeasonalities: { daily: "off", weekly: "off", yearly: "off" },
+        seasonalities: [
+          {
+            name: "weekly-custom",
+            periodDays: 7,
+            fourierOrder: 2,
+            priorScale: 10,
+          },
+        ],
         map: {
           changepoints: { mode: "explicit", timestamps: [timestamp(40)] },
           changepointPriorScale: 0.2,
-          optimizer: { maxIterations: 10_000, relativeTolerance: 1e-7, absoluteTolerance: 1e-9 },
+          optimizer: {
+            algorithm: "proximal",
+            maxIterations: 10_000,
+            relativeTolerance: 1e-7,
+            absoluteTolerance: 1e-9,
+          },
         },
       }).pipe(Effect.provide(prophetFittingBackendLayer)),
     );
 
     const samples = await Effect.runPromise(
-      predictUncertainty(model, rows, { seed: 19, samples: 128, output: "samples" }),
+      predictUncertainty(model, rows, {
+        seed: 19,
+        samples: 128,
+        output: "samples",
+      }),
     );
 
     const intervals = await Effect.runPromise(
@@ -752,7 +801,11 @@ describe("predictUncertainty", () => {
 
         const rows = holdout.map((row) =>
           scenario === "logistic-mixed"
-            ? { timestamp: row.timestamp, capacity: 100, regressors: { promotion: row.promotion } }
+            ? {
+                timestamp: row.timestamp,
+                capacity: 100,
+                regressors: { promotion: row.promotion },
+              }
             : { timestamp: row.timestamp },
         );
 
@@ -765,19 +818,31 @@ describe("predictUncertainty", () => {
 
         const weekly = [{ name: "weekly-wave", periodDays: 7, fourierOrder: 1 }] as const;
 
+        // These retained replicate receipts describe the historical custom-only policies.
+        const customOnly = {
+          builtInSeasonalities: { daily: "off", weekly: "off", yearly: "off" },
+        } as const;
+
         const fitEffect = Match.value(scenario).pipe(
-          Match.when("flat", () => fit(training, { growth: "flat", seasonalities: weekly })),
+          Match.when("flat", () =>
+            fit(training, {
+              ...customOnly,
+              growth: "flat",
+              seasonalities: weekly,
+            }),
+          ),
           Match.when("logistic-mixed", () =>
             fit(training, {
+              ...customOnly,
               growth: "logistic",
               scaling: "minmax",
               regressors: [{ name: "promotion", standardization: "never" }],
-              map,
+              map: { ...map, optimizer: { algorithm: "proximal" } },
             }),
           ),
-          Match.when("changing", () => fit(training, { map })),
-          Match.when("shock", () => fit(training, { map, seasonalities: weekly })),
-          Match.when("stable", () => fit(training, { map, seasonalities: weekly })),
+          Match.when("changing", () => fit(training, { ...customOnly, map })),
+          Match.when("shock", () => fit(training, { ...customOnly, map, seasonalities: weekly })),
+          Match.when("stable", () => fit(training, { ...customOnly, map, seasonalities: weekly })),
           Match.exhaustive,
         );
 
@@ -858,11 +923,41 @@ describe("predictUncertainty", () => {
     }
 
     const recorded = [
-      { case: "stable", coverage: 0.375, coverageSE: 0.125, width: 0.5083, widthSE: 0.0188 },
-      { case: "changing", coverage: 0.375, coverageSE: 0.125, width: 0.5587, widthSE: 0.0106 },
-      { case: "flat", coverage: 0.5, coverageSE: 0.2041, width: 0.5221, widthSE: 0.0318 },
-      { case: "logistic-mixed", coverage: 1, coverageSE: 0, width: 3.6851, widthSE: 0.0731 },
-      { case: "shock", coverage: 0, coverageSE: 0, width: 0.5083, widthSE: 0.0188 },
+      {
+        case: "stable",
+        coverage: 0.375,
+        coverageSE: 0.125,
+        width: 0.5083,
+        widthSE: 0.0188,
+      },
+      {
+        case: "changing",
+        coverage: 0.375,
+        coverageSE: 0.125,
+        width: 0.5587,
+        widthSE: 0.0106,
+      },
+      {
+        case: "flat",
+        coverage: 0.5,
+        coverageSE: 0.2041,
+        width: 0.5221,
+        widthSE: 0.0318,
+      },
+      {
+        case: "logistic-mixed",
+        coverage: 1,
+        coverageSE: 0,
+        width: 3.6851,
+        widthSE: 0.0731,
+      },
+      {
+        case: "shock",
+        coverage: 0,
+        coverageSE: 0,
+        width: 0.5083,
+        widthSE: 0.0188,
+      },
     ];
 
     expect(summary).toHaveLength(recorded.length);
@@ -943,7 +1038,12 @@ describe("predictUncertainty", () => {
       Effect.flip(
         predictUncertainty(
           invalidModel,
-          [{ timestamp: "2025-01-08T00:00:00.000Z", regressors: { absent: 1 } }],
+          [
+            {
+              timestamp: "2025-01-08T00:00:00.000Z",
+              regressors: { absent: 1 },
+            },
+          ],
           { seed: 1 },
         ),
       ),
@@ -1053,10 +1153,9 @@ describe("predictUncertainty", () => {
 
     if (model.model === "linear-piecewise-map") {
       await Effect.runPromise(
-        predictUncertainty({ ...model, noiseScale: -1 }, future, { seed: 1 }).pipe(
-          Effect.withTracer(tracer),
-          Effect.exit,
-        ),
+        predictUncertainty({ ...model, noiseScale: -1 }, future, {
+          seed: 1,
+        }).pipe(Effect.withTracer(tracer), Effect.exit),
       );
     }
 

@@ -7,6 +7,7 @@ import { flatGrowthCases } from "../cases/growth/flat/public-api.ts";
 import { linearGrowthEdgeCases } from "../cases/growth/linear/edge-cases.ts";
 import { stanAlignedCases } from "../cases/growth/linear/stan-aligned.ts";
 import { growthScalingAndMixedMapCases } from "../cases/growth/mixed-map.ts";
+import { logisticReconciliationCases } from "../cases/growth/logistic/public-api.ts";
 import { uncertaintyCases } from "../cases/uncertainty/public-api.ts";
 import { BenchmarkArtifactError, readJson } from "./artifacts.ts";
 import { parseBenchmarkCases, type BenchmarkCase } from "./case.ts";
@@ -39,6 +40,7 @@ export const loadCaseCatalog = Effect.fn("benchmark.catalog.load")(function* () 
     ...uncertaintyCases,
     ...currentEvaluationCases,
     ...flatGrowthCases,
+    ...logisticReconciliationCases,
   ]);
 });
 

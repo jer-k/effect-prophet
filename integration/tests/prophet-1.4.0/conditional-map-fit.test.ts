@@ -15,6 +15,7 @@ describe("Prophet 1.4.0 fitted conditional MAP evidence", () => {
     for (const referenceCase of conditionalMapFit.cases) {
       const model = await Effect.runPromise(
         fit(referenceCase.observations, {
+          builtInSeasonalities: { daily: "off", weekly: "off", yearly: "off" },
           seasonalities: referenceCase.seasonalities,
           events: referenceCase.events,
           regressors: referenceCase.regressors,

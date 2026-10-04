@@ -12,10 +12,13 @@ nalgebra 0.34.1, https://github.com/dimforge/nalgebra/tree/v0.34.1.
 Copyright the nalgebra authors, including Sebastien Crozet.
 Apache-2.0 terms are reproduced in nalgebra-license.txt.
 The symmetric QR iteration in symmetric_eigen.rs is adapted from nalgebra's
-symmetric_eigen.rs, simplified to f64, with a stable terminal 2-by-2 atan2
-rotation. Its Householder tridiagonalization reuses the pinned nalgebra crate.
-This is not a bitwise port of Eigen. Frozen-reference and spectral residual
-comparisons are required before adopting it in public linear MAP fitting.
+symmetric_eigen.rs, simplified to f64. Its Householder tridiagonalization
+reuses the pinned nalgebra crate.
+The QR iteration now follows Eigen 3.4.0's dynamic SelfAdjointEigenSolver
+and real JacobiRotation arithmetic, including its scaled deflation criterion.
+Householder tridiagonalization still comes from nalgebra, so this is not a
+bitwise port of Eigen. Frozen-reference and spectral residual comparisons
+remain required; no linear diagnostic waiver applies to logistic fitting.
 
 Reference-aligned exponential
 -----------------------------
@@ -28,3 +31,17 @@ rounding. errno/fenv behavior and C ABI aliases are not included. This fixes
 host-libm-dependent optimizer trajectories without native or C dependencies.
 The MIT license is selected; the upstream license options are reproduced in
 arm-optimized-routines-license.txt.
+
+Reference Eigen arithmetic
+--------------------------
+Eigen 3.4.0, vendored by Stan Math commit
+58ad15b0847485d523aadd22cbae7add0a61b0e3.
+https://github.com/stan-dev/math/tree/58ad15b0847485d523aadd22cbae7add0a61b0e3/lib/eigen_3.4.0
+Copyright Julien Pommier (2007), Pedro Gonnet (2014), Gael Guennebaud
+(2008-2019), Jitse Niesen (2010), and Benoit Jacob (2009).
+src/stan/eigen_math.rs adapts GenericPacketMathFunctions.h's double packet
+exponential to deterministic software lanes without an Eigen ABI or CPU SIMD
+requirement. src/symmetric_eigen.rs adapts the QR iteration and deflation from
+SelfAdjointEigenSolver.h and real rotations from Jacobi.h. Their modified
+source remains available in this repository under MPL-2.0; the terms are
+reproduced in eigen-license.txt. No full Eigen eigensolver parity is claimed.

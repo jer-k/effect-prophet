@@ -8,8 +8,10 @@ use crate::mixed_map::{
 };
 use crate::piecewise_map::{
   MapControls, MapFitSummary, MapTermination, PiecewiseMapError, PiecewiseMapPredictionError,
+  map_objective_error,
 };
 use crate::seasonality::SeasonalitySpec;
+use crate::stan::linear_optimizer::LinearOptimizerOptions;
 use crate::target_scaling::{
   LogisticScaling, ScalingMode, TargetScalingError, resolve_logistic_scaling,
 };
@@ -21,7 +23,27 @@ const MAX_BACKTRACKS: usize = 40;
 const BACKTRACK_FACTOR: f64 = 0.5;
 const MIN_STEP: f64 = 9.094_947_017_729_282e-13;
 
-/// Dimensionless parameters of a continuous piecewise-logistic trend.
+/// Prediction semantics persisted by the fitted method identity.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum LogisticPredictionPolicy {
+  /// Prophet's public gamma-offset recurrence, including singular states.
+  Stan,
+  /// Historical continuous hinge extension for explicitly proximal models.
+  Continuous,
+}
+
+impl LogisticPredictionPolicy {
+  /// Decode the shared prediction/simulation wire policy without a default.
+  pub(crate) fn from_code(code: f64) -> Option<Self> {
+    match code {
+      0.0 => Some(Self::Stan),
+      1.0 => Some(Self::Continuous),
+      _ => None,
+    }
+  }
+}
+
+/// Dimensionless parameters of a piecewise-logistic trend.
 #[derive(Clone, Debug, PartialEq)]
 pub struct LogisticParameters {
   /// Base dimensionless growth rate.
@@ -85,24 +107,93 @@ impl LogisticPredictionBatch {
   }
 }
 
+/// Explicit numerical policy: Prophet defaults or the historical proximal path.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum LogisticMapControls {
+  /// Shared Stan algorithm selection, budgets and fallback.
+  Stan(LinearOptimizerOptions),
+  /// Historical coordinate-change stopping, explicitly selected by its controls.
+  Proximal(MapControls),
+}
+
+impl Default for LogisticMapControls {
+  fn default() -> Self {
+    Self::Stan(LinearOptimizerOptions::default())
+  }
+}
+
+impl From<MapControls> for LogisticMapControls {
+  fn from(controls: MapControls) -> Self {
+    Self::Proximal(controls)
+  }
+}
+
+#[derive(Clone, Copy)]
+enum ObjectiveArithmetic<'a> {
+  Proximal,
+  Stan(&'a [f64]),
+}
+
+struct StanLogisticSegments {
+  rates: Vec<f64>,
+  gamma: Vec<f64>,
+  previous_offsets: Vec<f64>,
+}
+
+fn stan_logistic_segments(
+  rate: f64,
+  offset: f64,
+  points: &[f64],
+  deltas: &[f64],
+) -> Result<StanLogisticSegments, PiecewiseMapError> {
+  let mut rates = vec![rate];
+  let mut cumulative_delta = 0.0;
+  for delta in deltas {
+    cumulative_delta += delta;
+    rates.push(rate + cumulative_delta);
+  }
+  let mut gamma = Vec::with_capacity(points.len());
+  let mut previous_offsets = Vec::with_capacity(points.len());
+  let mut previous = offset;
+  for (column, point) in points.iter().enumerate() {
+    previous_offsets.push(previous);
+    let adjustment = (point - previous) * (1.0 - rates[column] / rates[column + 1]);
+    if !adjustment.is_finite() {
+      return Err(PiecewiseMapError::NonFiniteResult);
+    }
+    gamma.push(adjustment);
+    previous += adjustment;
+  }
+  Ok(StanLogisticSegments {
+    rates,
+    gamma,
+    previous_offsets,
+  })
+}
+
 struct Evaluation {
   objective: f64,
   residual_sum_squares: f64,
   stationarity_residual: f64,
   gradient_rate: f64,
   gradient_offset: f64,
+  // Smooth proximal derivatives, or complete Stan Laplace derivatives.
   gradient_deltas: Vec<f64>,
   curvature_rate: f64,
   curvature_offset: f64,
   curvature_deltas: Vec<f64>,
+  feature_gradients: Vec<f64>,
+  noise_derivative: f64,
 }
 
 struct LogisticState {
   trend: Vec<f64>,
   residuals: Vec<f64>,
+  stan_segments: Option<StanLogisticSegments>,
+  probabilities: Vec<f64>,
 }
 
-/// Fit Prophet's floor-aware logistic MAP objective with deterministic block updates.
+/// Fit floor-aware logistic MAP state with an explicit numerical policy.
 #[allow(clippy::too_many_arguments)]
 pub fn fit_logistic_map(
   timestamps: &[f64],
@@ -116,9 +207,10 @@ pub fn fit_logistic_map(
   additional_layout: AdditionalFeatureLayoutView<'_>,
   column_modes: &[ComponentMode],
   changepoint_prior_scale: f64,
-  controls: MapControls,
+  controls: impl Into<LogisticMapControls>,
   scaling_mode: ScalingMode,
 ) -> Result<LogisticMapModel, PiecewiseMapError> {
+  let controls = controls.into();
   validate_fit(
     timestamps,
     values,
@@ -139,7 +231,11 @@ pub fn fit_logistic_map(
   let row_floors = row_floors(scaling, explicit_floors, values.len())?;
   let target = scale_rows(values, &row_floors, scaling.scale)?;
   let scaled_capacities = scale_capacities(capacities, &row_floors, scaling.scale)?;
-  let (times, hinges) = normalized_time_and_hinges(timestamps, changepoints)?;
+  let hinge_points = match controls {
+    LogisticMapControls::Proximal(_) => changepoints,
+    LogisticMapControls::Stan(_) => &[],
+  };
+  let (times, hinges) = normalized_time_and_hinges(timestamps, hinge_points)?;
   let seasonal_count = seasonalities
     .iter()
     .try_fold(0_usize, |total, seasonality| {
@@ -159,12 +255,55 @@ pub fn fit_logistic_map(
     additional_features,
   )?;
   let priors = feature_priors(seasonalities, additional_layout, seasonal_count)?;
-  let (mut rate, mut offset) = initialize_logistic(
-    target[0],
-    target[target.len() - 1],
-    scaled_capacities[0],
-    scaled_capacities[scaled_capacities.len() - 1],
-  )?;
+
+  let controls = match controls {
+    LogisticMapControls::Proximal(controls) => controls,
+    LogisticMapControls::Stan(options) => {
+      let origin = timestamps[0];
+      let scale = timestamps[timestamps.len() - 1] - origin;
+      let points: Vec<f64> = changepoints
+        .iter()
+        .map(|point| (*point - origin) / scale)
+        .collect();
+      let objective = StanLogisticObjective::new(
+        &target,
+        &scaled_capacities,
+        &times,
+        &points,
+        &features,
+        &priors,
+        column_modes,
+        changepoint_prior_scale,
+      )
+      .map_err(map_objective_error)?;
+      let fit = objective
+        .fit_model(options)
+        .map_err(PiecewiseMapError::Optimizer)?;
+      return finish_model(
+        timestamps,
+        changepoints,
+        seasonalities,
+        seasonal_count,
+        column_modes,
+        scaling,
+        fit.parameters.rate,
+        fit.parameters.offset,
+        fit.parameters.deltas,
+        fit.coefficients,
+        fit.noise_scale,
+        MapFitSummary {
+          value_scale: scaling.scale,
+          observation_count: timestamps.len(),
+          iterations: fit.optimization.iterations,
+          objective: fit.objective,
+          stationarity_residual: fit.stationarity_residual,
+          termination: MapTermination::Stan(fit.optimization),
+        },
+      );
+    }
+  };
+
+  let (mut rate, mut offset) = initialize_logistic(&target, &scaled_capacities, &times)?;
   let mut deltas = vec![0.0; changepoints.len()];
   let mut beta = vec![0.0; feature_count];
   let mut noise_scale = 1.0;
@@ -179,6 +318,7 @@ pub fn fit_logistic_map(
     let previous_noise = noise_scale;
 
     let mut state = logistic_state(
+      ObjectiveArithmetic::Proximal,
       &target,
       &scaled_capacities,
       &times,
@@ -233,6 +373,7 @@ pub fn fit_logistic_map(
     }
 
     let current = evaluate(
+      ObjectiveArithmetic::Proximal,
       &target,
       &scaled_capacities,
       &times,
@@ -271,6 +412,7 @@ pub fn fit_logistic_map(
         && candidate_deltas.iter().all(|value| value.is_finite())
       {
         let candidate = evaluate(
+          ObjectiveArithmetic::Proximal,
           &target,
           &scaled_capacities,
           &times,
@@ -313,6 +455,7 @@ pub fn fit_logistic_map(
     deltas = next_deltas;
 
     let evaluation = evaluate(
+      ObjectiveArithmetic::Proximal,
       &target,
       &scaled_capacities,
       &times,
@@ -364,6 +507,7 @@ pub fn fit_logistic_map(
     let threshold = controls.absolute_tolerance + controls.relative_tolerance * maximum_magnitude;
 
     let final_evaluation = evaluate(
+      ObjectiveArithmetic::Proximal,
       &target,
       &scaled_capacities,
       &times,
@@ -398,8 +542,14 @@ pub fn fit_logistic_map(
         deltas,
         beta,
         noise_scale,
-        iteration,
-        final_evaluation,
+        MapFitSummary {
+          value_scale: scaling.scale,
+          observation_count: timestamps.len(),
+          iterations: iteration,
+          objective: final_evaluation.objective,
+          stationarity_residual: final_evaluation.stationarity_residual,
+          termination: MapTermination::Converged,
+        },
       );
     }
 
@@ -428,6 +578,7 @@ pub fn predict_logistic_map(
   additional_layout: AdditionalFeatureLayoutView<'_>,
   additional_coefficients: &[f64],
   column_modes: &[ComponentMode],
+  policy: LogisticPredictionPolicy,
 ) -> Result<LogisticPredictionBatch, PiecewiseMapPredictionError> {
   use PiecewiseMapPredictionError as Error;
 
@@ -497,6 +648,13 @@ pub fn predict_logistic_map(
   let output_count =
     checked_element_count(timestamps.len(), row_width).map_err(map_prediction_fourier_error)?;
   let mut output = vec![0.0; output_count];
+  let trend_state = LogisticPredictionTrend::new(
+    policy,
+    parameters,
+    time_origin,
+    time_scale,
+    changepoint_timestamps,
+  );
 
   for row in 0..timestamps.len() {
     let timestamp = timestamps[row];
@@ -520,16 +678,9 @@ pub fn predict_logistic_map(
       return Err(Error::NonFiniteResult { row });
     }
 
-    let eta = logistic_eta(
-      time,
-      time_origin,
-      time_scale,
-      changepoint_timestamps,
-      parameters.rate,
-      parameters.offset,
-      &parameters.deltas,
-    )
-    .map_err(|_| Error::NonFiniteResult { row })?;
+    let eta = trend_state
+      .eta(time)
+      .map_err(|_| Error::NonFiniteResult { row })?;
     let trend = floor + (capacity - floor) * stable_sigmoid(eta);
     let mut additive = 0.0;
     let mut multiplicative = 0.0;
@@ -599,7 +750,7 @@ fn validate_fit(
   layout: AdditionalFeatureLayoutView<'_>,
   modes: &[ComponentMode],
   changepoint_prior_scale: f64,
-  controls: MapControls,
+  controls: LogisticMapControls,
 ) -> Result<(), PiecewiseMapError> {
   if timestamps.len() != values.len()
     || capacities.len() != values.len()
@@ -637,11 +788,16 @@ fn validate_fit(
       .any(|value| *value < start || *value > end)
     || !changepoint_prior_scale.is_finite()
     || changepoint_prior_scale <= 0.0
-    || controls.max_iterations == 0
-    || !controls.relative_tolerance.is_finite()
-    || controls.relative_tolerance <= 0.0
-    || !controls.absolute_tolerance.is_finite()
-    || controls.absolute_tolerance <= 0.0
+    || match controls {
+      LogisticMapControls::Stan(_) => false, // Parsed algorithm-specific settings.
+      LogisticMapControls::Proximal(controls) => {
+        controls.max_iterations == 0
+          || !controls.relative_tolerance.is_finite()
+          || controls.relative_tolerance <= 0.0
+          || !controls.absolute_tolerance.is_finite()
+          || controls.absolute_tolerance <= 0.0
+      }
+    }
   {
     return Err(PiecewiseMapError::InvalidConfiguration);
   }
@@ -767,15 +923,21 @@ fn normalized_time_and_hinges(
 }
 
 fn initialize_logistic(
-  first_target: f64,
-  last_target: f64,
-  first_capacity: f64,
-  last_capacity: f64,
+  target: &[f64],
+  capacities: &[f64],
+  times: &[f64],
 ) -> Result<(f64, f64), PiecewiseMapError> {
-  let first_ratio = (first_target / first_capacity).clamp(0.01, 0.99);
-  let last_ratio = (last_target / last_capacity).clamp(0.01, 0.99);
-  let mut first_inverse = 1.0 / first_ratio;
-  let last_inverse = 1.0 / last_ratio;
+  // Validated times are sorted. Python's idxmax selects the first tied final
+  // timestamp; later instances still participate in the full fitting objective.
+  let last = times.partition_point(|time| *time < times[times.len() - 1]);
+  let first_target = target[0]
+    .min(0.99 * capacities[0])
+    .max(0.01 * capacities[0]);
+  let last_target = target[last]
+    .min(0.99 * capacities[last])
+    .max(0.01 * capacities[last]);
+  let mut first_inverse = capacities[0] / first_target;
+  let last_inverse = capacities[last] / last_target;
 
   if (first_inverse - last_inverse).abs() <= 0.01 {
     first_inverse *= 1.05;
@@ -824,6 +986,121 @@ fn eta_from_hinges(
   }
 }
 
+/// Prepared public trend arithmetic shared by point prediction and simulation.
+/// Callers validate aligned parameters and the time scale before construction.
+pub(crate) enum LogisticPredictionTrend<'a> {
+  Continuous {
+    parameters: &'a LogisticParameters,
+    origin: f64,
+    scale: f64,
+    points: &'a [f64],
+  },
+  Stan {
+    parameters: &'a LogisticParameters,
+    points: Vec<f64>,
+    deltas: Vec<f64>,
+    gammas: Vec<f64>,
+  },
+}
+
+impl<'a> LogisticPredictionTrend<'a> {
+  pub(crate) fn new(
+    policy: LogisticPredictionPolicy,
+    parameters: &'a LogisticParameters,
+    origin: f64,
+    scale: f64,
+    points: &'a [f64],
+  ) -> Self {
+    if policy == LogisticPredictionPolicy::Continuous {
+      return Self::Continuous {
+        parameters,
+        origin,
+        scale,
+        points,
+      };
+    }
+
+    let points: Vec<f64> = if points.is_empty() {
+      vec![0.0]
+    } else {
+      points
+        .iter()
+        .map(|point| (*point - origin) / scale)
+        .collect()
+    };
+    let deltas = if parameters.deltas.is_empty() {
+      vec![0.0]
+    } else {
+      parameters.deltas.clone()
+    };
+    let mut gammas = Vec::with_capacity(points.len());
+    let mut cumulative_delta = 0.0;
+    let mut old_rate = parameters.rate;
+
+    for (&point, &delta) in points.iter().zip(&deltas) {
+      cumulative_delta += delta;
+      let new_rate = parameters.rate + cumulative_delta;
+      // Python sums gamma before subtracting from the point. Stan's fitting
+      // recurrence uses its own grouping; keep the two actual protocols distinct.
+      let adjustment =
+        (point - parameters.offset - gammas.iter().sum::<f64>()) * (1.0 - old_rate / new_rate);
+      gammas.push(adjustment);
+      old_rate = new_rate;
+    }
+
+    // A singular future segment must not poison rows preceding it. Retain the
+    // nonfinite gamma here and translate only if an evaluated row activates it.
+    Self::Stan {
+      parameters,
+      points,
+      deltas,
+      gammas,
+    }
+  }
+
+  pub(crate) fn eta(&self, time: f64) -> Result<f64, PiecewiseMapError> {
+    match self {
+      Self::Continuous {
+        parameters,
+        origin,
+        scale,
+        points,
+      } => logistic_eta(
+        time,
+        *origin,
+        *scale,
+        points,
+        parameters.rate,
+        parameters.offset,
+        &parameters.deltas,
+      ),
+      Self::Stan {
+        parameters,
+        points,
+        deltas,
+        gammas,
+      } => {
+        let mut rate = parameters.rate;
+        let mut offset = parameters.offset;
+
+        for ((&point, &delta), &gamma) in points.iter().zip(deltas).zip(gammas) {
+          if time >= point {
+            rate += delta;
+            offset += gamma;
+          }
+        }
+
+        let eta = rate * (time - offset);
+        if eta.is_finite() {
+          Ok(eta)
+        } else {
+          Err(PiecewiseMapError::NonFiniteResult)
+        }
+      }
+    }
+  }
+}
+
 pub(crate) fn logistic_eta(
   time: f64,
   origin: f64,
@@ -842,6 +1119,7 @@ pub(crate) fn logistic_eta(
 
 #[allow(clippy::too_many_arguments)]
 fn logistic_state(
+  arithmetic: ObjectiveArithmetic<'_>,
   target: &[f64],
   capacities: &[f64],
   times: &[f64],
@@ -856,17 +1134,61 @@ fn logistic_state(
 ) -> Result<LogisticState, PiecewiseMapError> {
   let mut trend = vec![0.0; target.len()];
   let mut residuals = vec![0.0; target.len()];
+  let mut probabilities = vec![
+    0.0;
+    if matches!(arithmetic, ObjectiveArithmetic::Stan(_)) {
+      target.len()
+    } else {
+      0
+    }
+  ];
+  let stan_segments = match arithmetic {
+    ObjectiveArithmetic::Proximal => None,
+    ObjectiveArithmetic::Stan(points) => {
+      Some(stan_logistic_segments(rate, offset, points, deltas)?)
+    }
+  };
 
   for row in 0..target.len() {
     let hinge_start = row * deltas.len();
-    let eta = eta_from_hinges(
-      times[row],
-      &hinges[hinge_start..(hinge_start + deltas.len())],
-      rate,
-      offset,
-      deltas,
-    )?;
-    trend[row] = capacities[row] * stable_sigmoid(eta);
+    let eta = match (arithmetic, &stan_segments) {
+      (ObjectiveArithmetic::Stan(points), Some(segments)) => {
+        let change =
+          crate::stan::reductions::matrix_column_sum(target.len(), points.len(), |column| {
+            if times[row] >= points[column] {
+              deltas[column]
+            } else {
+              0.0
+            }
+          });
+        let adjustment =
+          crate::stan::reductions::matrix_column_sum(target.len(), points.len(), |column| {
+            if times[row] >= points[column] {
+              segments.gamma[column]
+            } else {
+              0.0
+            }
+          });
+        (rate + change) * (times[row] - (offset + adjustment))
+      }
+      _ => eta_from_hinges(
+        times[row],
+        &hinges[hinge_start..hinge_start + deltas.len()],
+        rate,
+        offset,
+        deltas,
+      )?,
+    };
+    let probability = match arithmetic {
+      ObjectiveArithmetic::Proximal => stable_sigmoid(eta),
+      // Stan's matrix-of-var value view is not packet-accessible. Eigen's
+      // logistic functor therefore uses scalar exp in fitting, on every row.
+      ObjectiveArithmetic::Stan(_) => 1.0 / (1.0 + crate::stan::math::exp(-eta)),
+    };
+    if !probabilities.is_empty() {
+      probabilities[row] = probability;
+    }
+    trend[row] = capacities[row] * probability;
     let mut additive = 0.0;
     let mut factor = 0.0;
 
@@ -878,7 +1200,10 @@ fn logistic_state(
       }
     }
 
-    residuals[row] = trend[row] * (1.0 + factor) + additive - target[row];
+    residuals[row] = match arithmetic {
+      ObjectiveArithmetic::Proximal => trend[row] * (1.0 + factor) + additive - target[row],
+      ObjectiveArithmetic::Stan(_) => -(target[row] - additive - trend[row] * (1.0 + factor)),
+    };
   }
 
   if trend
@@ -889,11 +1214,17 @@ fn logistic_state(
     return Err(PiecewiseMapError::NonFiniteResult);
   }
 
-  Ok(LogisticState { trend, residuals })
+  Ok(LogisticState {
+    trend,
+    residuals,
+    stan_segments,
+    probabilities,
+  })
 }
 
 #[allow(clippy::too_many_arguments)]
 fn evaluate(
+  arithmetic: ObjectiveArithmetic<'_>,
   target: &[f64],
   capacities: &[f64],
   times: &[f64],
@@ -910,6 +1241,7 @@ fn evaluate(
   noise_scale: f64,
 ) -> Result<Evaluation, PiecewiseMapError> {
   let state = logistic_state(
+    arithmetic,
     target,
     capacities,
     times,
@@ -928,18 +1260,48 @@ fn evaluate(
     .map(|value| value * value)
     .sum::<f64>();
   let noise_variance = noise_scale * noise_scale;
-  let mut smooth_objective = target.len() as f64 * noise_scale.ln()
-    + residual_sum_squares / (2.0 * noise_variance)
-    + (rate * rate + offset * offset) / (2.0 * TREND_PRIOR_SCALE * TREND_PRIOR_SCALE)
-    + noise_variance / (2.0 * NOISE_PRIOR_SCALE * NOISE_PRIOR_SCALE);
+  let inverse_noise = 1.0 / noise_scale;
+  let scaled_sum_squares = crate::stan::reductions::sum(target.len(), |row| {
+    let residual = state.residuals[row] * inverse_noise;
+    residual * residual
+  });
+  let mut smooth_objective = match arithmetic {
+    ObjectiveArithmetic::Proximal => {
+      target.len() as f64 * noise_scale.ln()
+        + residual_sum_squares / (2.0 * noise_variance)
+        + (rate * rate + offset * offset) / (2.0 * TREND_PRIOR_SCALE * TREND_PRIOR_SCALE)
+        + noise_variance / (2.0 * NOISE_PRIOR_SCALE * NOISE_PRIOR_SCALE)
+    }
+    ObjectiveArithmetic::Stan(_) => 0.0,
+  };
   let prior_curvature = 1.0 / (TREND_PRIOR_SCALE * TREND_PRIOR_SCALE);
-  let mut gradient_rate = rate * prior_curvature;
-  let mut gradient_offset = offset * prior_curvature;
-  let mut gradient_deltas = vec![0.0; deltas.len()];
+  let (mut gradient_rate, mut gradient_offset) = match arithmetic {
+    ObjectiveArithmetic::Proximal => (rate * prior_curvature, offset * prior_curvature),
+    ObjectiveArithmetic::Stan(_) => ((rate * 0.2) * 0.2, (offset * 0.2) * 0.2),
+  };
+  let mut gradient_deltas: Vec<f64> = deltas
+    .iter()
+    .map(|delta| {
+      if matches!(arithmetic, ObjectiveArithmetic::Stan(_)) && *delta != 0.0 {
+        delta.signum() / changepoint_prior_scale
+      } else {
+        0.0
+      }
+    })
+    .collect();
   let mut curvature_rate = prior_curvature;
   let mut curvature_offset = prior_curvature;
   let mut curvature_deltas = vec![f64::EPSILON; deltas.len()];
   let mut feature_gradients = vec![0.0; feature_count];
+  let mut row_rate_adjoints = vec![
+    0.0;
+    if state.stan_segments.is_some() {
+      target.len()
+    } else {
+      0
+    }
+  ];
+  let mut row_offset_adjoints = vec![0.0; row_rate_adjoints.len()];
 
   for row in 0..target.len() {
     let mut factor = 1.0;
@@ -949,38 +1311,139 @@ fn evaluate(
       }
     }
 
-    let sigmoid = state.trend[row] / capacities[row];
+    let sigmoid = match arithmetic {
+      ObjectiveArithmetic::Proximal => state.trend[row] / capacities[row],
+      ObjectiveArithmetic::Stan(_) => state.probabilities[row],
+    };
     let mean_eta_derivative = factor * capacities[row] * sigmoid * (1.0 - sigmoid);
-    let scaled_residual = state.residuals[row] / noise_variance;
+    let scaled_residual = match arithmetic {
+      ObjectiveArithmetic::Proximal => state.residuals[row] / noise_variance,
+      ObjectiveArithmetic::Stan(_) => (state.residuals[row] * inverse_noise) * inverse_noise,
+    };
     let rate_derivative = mean_eta_derivative * (times[row] - offset);
     let offset_derivative = -mean_eta_derivative * rate;
-    gradient_rate += scaled_residual * rate_derivative;
-    gradient_offset += scaled_residual * offset_derivative;
+    match (arithmetic, &state.stan_segments) {
+      (ObjectiveArithmetic::Stan(points), Some(segments)) => {
+        let mean_adjoint = scaled_residual * factor;
+        let eta_adjoint = (mean_adjoint * capacities[row]) * sigmoid * (1.0 - sigmoid);
+        let change =
+          crate::stan::reductions::matrix_column_sum(target.len(), points.len(), |column| {
+            if times[row] >= points[column] {
+              deltas[column]
+            } else {
+              0.0
+            }
+          });
+        let adjustment =
+          crate::stan::reductions::matrix_column_sum(target.len(), points.len(), |column| {
+            if times[row] >= points[column] {
+              segments.gamma[column]
+            } else {
+              0.0
+            }
+          });
+        row_rate_adjoints[row] = eta_adjoint * (times[row] - (offset + adjustment));
+        row_offset_adjoints[row] = -(rate + change) * eta_adjoint;
+        gradient_rate += row_rate_adjoints[row];
+        gradient_offset += row_offset_adjoints[row];
+      }
+      _ => {
+        gradient_rate += scaled_residual * rate_derivative;
+        gradient_offset += scaled_residual * offset_derivative;
+      }
+    }
     curvature_rate += rate_derivative * rate_derivative / noise_variance;
     curvature_offset += offset_derivative * offset_derivative / noise_variance;
 
     for column in 0..deltas.len() {
       let derivative = mean_eta_derivative * hinges[row * deltas.len() + column];
-      gradient_deltas[column] += scaled_residual * derivative;
+      if matches!(arithmetic, ObjectiveArithmetic::Proximal) {
+        gradient_deltas[column] += scaled_residual * derivative;
+      }
       curvature_deltas[column] += derivative * derivative / noise_variance;
     }
 
     for column in 0..feature_count {
-      let feature = features[row * feature_count + column];
-      let derivative = match modes[column] {
-        ComponentMode::Additive => feature,
-        ComponentMode::Multiplicative => state.trend[row] * feature,
-      };
-      feature_gradients[column] += scaled_residual * derivative;
+      if matches!(arithmetic, ObjectiveArithmetic::Proximal)
+        || modes[column] == ComponentMode::Multiplicative
+      {
+        let feature = features[row * feature_count + column];
+        let derivative = match modes[column] {
+          ComponentMode::Additive => feature,
+          ComponentMode::Multiplicative => state.trend[row] * feature,
+        };
+        feature_gradients[column] += scaled_residual * derivative;
+      }
+    }
+  }
+
+  if let (ObjectiveArithmetic::Stan(points), Some(segments)) = (arithmetic, &state.stan_segments) {
+    // Reverse the literal gamma recurrence and matrix products rather than
+    // cancelling them into hinges. Scalar division follows Math 58ad15b0's
+    // operator_division.hpp; cumulative-sum adjoints flow from last to first.
+    let mut rate_adjoints = vec![0.0; segments.rates.len()];
+    let mut offset_adjoint = 0.0;
+    for column in (0..points.len()).rev() {
+      gradient_deltas[column] += crate::stan::reductions::matrix_adjoint_sum(target.len(), |row| {
+        if times[row] >= points[column] {
+          row_rate_adjoints[row]
+        } else {
+          0.0
+        }
+      });
+      let gamma_adjoint = offset_adjoint
+        + crate::stan::reductions::matrix_adjoint_sum(target.len(), |row| {
+          if times[row] >= points[column] {
+            row_offset_adjoints[row]
+          } else {
+            0.0
+          }
+        });
+      let old_rate = segments.rates[column];
+      let new_rate = segments.rates[column + 1];
+      offset_adjoint -= gamma_adjoint * (1.0 - old_rate / new_rate);
+      let ratio_adjoint = -gamma_adjoint * (points[column] - segments.previous_offsets[column]);
+      rate_adjoints[column] += ratio_adjoint / new_rate;
+      rate_adjoints[column + 1] -= ratio_adjoint * old_rate / (new_rate * new_rate);
+    }
+    gradient_offset += offset_adjoint;
+    gradient_rate += rate_adjoints[0];
+    for rate_adjoint in &rate_adjoints[1..] {
+      gradient_rate += rate_adjoint;
+    }
+    let mut cumulative_adjoint = 0.0;
+    for column in (0..points.len()).rev() {
+      cumulative_adjoint += rate_adjoints[column + 1];
+      gradient_deltas[column] += cumulative_adjoint;
     }
   }
 
   let mut stationarity_residual = gradient_rate.abs().max(gradient_offset.abs());
 
   for column in 0..feature_count {
+    if matches!(arithmetic, ObjectiveArithmetic::Stan(_))
+      && modes[column] == ComponentMode::Additive
+    {
+      // The GLM's double-valued mu.transpose() * X uses row-major packets.
+      // X_sm's variable-adjoint reverse product retains scalar accumulation;
+      // the pinned cancellation probes distinguish these two paths.
+      feature_gradients[column] = crate::stan::reductions::matrix_row_sum(target.len(), |row| {
+        let scaled_residual = (state.residuals[row] * inverse_noise) * inverse_noise;
+        scaled_residual * features[row * feature_count + column]
+      });
+    }
+
     let variance = priors[column] * priors[column];
-    smooth_objective += beta[column] * beta[column] / (2.0 * variance);
-    feature_gradients[column] += beta[column] / variance;
+    match arithmetic {
+      ObjectiveArithmetic::Proximal => {
+        smooth_objective += beta[column] * beta[column] / (2.0 * variance);
+        feature_gradients[column] += beta[column] / variance;
+      }
+      ObjectiveArithmetic::Stan(_) => {
+        let inverse = 1.0 / priors[column];
+        feature_gradients[column] += (beta[column] * inverse) * inverse;
+      }
+    }
     stationarity_residual = stationarity_residual.max(feature_gradients[column].abs());
   }
 
@@ -989,20 +1452,49 @@ fn evaluate(
     objective += delta.abs() / changepoint_prior_scale;
     let residual = if delta == 0.0 {
       (gradient_deltas[index].abs() - 1.0 / changepoint_prior_scale).max(0.0)
+    } else if matches!(arithmetic, ObjectiveArithmetic::Stan(_)) {
+      gradient_deltas[index].abs()
     } else {
       (gradient_deltas[index] + delta.signum() / changepoint_prior_scale).abs()
     };
     stationarity_residual = stationarity_residual.max(residual);
   }
 
-  let noise_derivative = target.len() as f64 / noise_scale
-    - residual_sum_squares / (noise_scale * noise_variance)
-    + noise_scale / (NOISE_PRIOR_SCALE * NOISE_PRIOR_SCALE);
+  let noise_derivative = match arithmetic {
+    ObjectiveArithmetic::Proximal => {
+      target.len() as f64 / noise_scale - residual_sum_squares / (noise_scale * noise_variance)
+        + noise_scale / (NOISE_PRIOR_SCALE * NOISE_PRIOR_SCALE)
+    }
+    ObjectiveArithmetic::Stan(_) => {
+      (target.len() as f64 - scaled_sum_squares) * inverse_noise
+        + noise_scale / (NOISE_PRIOR_SCALE * NOISE_PRIOR_SCALE)
+    }
+  };
+  if matches!(arithmetic, ObjectiveArithmetic::Stan(_)) {
+    // Preserve normal_id_glm's residual scaling and the model's prior-first
+    // accumulation. Equivalent RSS/variance arithmetic changes nonsmooth stops.
+    let mut density = 0.0;
+    for parameter in [rate, offset] {
+      let standardized = parameter * 0.2;
+      density -= 0.5 * standardized * standardized;
+    }
+    density -= crate::stan::reductions::sum(deltas.len(), |column| {
+      deltas[column].abs() * (1.0 / changepoint_prior_scale)
+    });
+    density -= 0.5 * (noise_scale * 2.0) * (noise_scale * 2.0);
+    density -= 0.5
+      * crate::stan::reductions::sum(feature_count, |column| {
+        let standardized = beta[column] * (1.0 / priors[column]);
+        standardized * standardized
+      });
+    density += -(target.len() as f64) * noise_scale.ln() - 0.5 * scaled_sum_squares;
+    objective = -density;
+  }
   stationarity_residual = stationarity_residual.max(noise_derivative.abs());
 
   if !objective.is_finite()
     || !smooth_objective.is_finite()
-    || !residual_sum_squares.is_finite()
+    || (matches!(arithmetic, ObjectiveArithmetic::Proximal) && !residual_sum_squares.is_finite())
     || !stationarity_residual.is_finite()
     || !gradient_rate.is_finite()
     || !gradient_offset.is_finite()
@@ -1021,6 +1513,8 @@ fn evaluate(
     curvature_rate,
     curvature_offset,
     curvature_deltas,
+    feature_gradients,
+    noise_derivative,
   })
 }
 
@@ -1064,8 +1558,7 @@ fn finish_model(
   deltas: Vec<f64>,
   beta: Vec<f64>,
   noise_scale: f64,
-  iterations: usize,
-  evaluation: Evaluation,
+  summary: MapFitSummary,
 ) -> Result<LogisticMapModel, PiecewiseMapError> {
   let output_beta: Vec<f64> = beta
     .iter()
@@ -1099,14 +1592,7 @@ fn finish_model(
     additional_coefficients: output_beta[seasonal_count..].to_vec(),
     column_modes: modes.to_vec(),
     noise_scale: output_noise,
-    summary: MapFitSummary {
-      value_scale: scaling.scale,
-      observation_count: timestamps.len(),
-      iterations,
-      objective: evaluation.objective,
-      stationarity_residual: evaluation.stationarity_residual,
-      termination: MapTermination::Converged,
-    },
+    summary,
   })
 }
 
@@ -1144,9 +1630,28 @@ fn map_fit_to_prediction(error: PiecewiseMapError) -> PiecewiseMapPredictionErro
   }
 }
 
+#[path = "logistic_objective.rs"]
+mod stan_objective;
+pub use stan_objective::{NormalizedLogisticMapFit, StanLogisticObjective};
+
+#[cfg(test)]
+#[path = "logistic_objective_fixtures.rs"]
+mod objective_fixtures;
+
+#[cfg(test)]
+#[path = "logistic_newton_trajectory.rs"]
+mod newton_trajectory;
+
+#[cfg(test)]
+#[path = "logistic_prediction_fixtures.rs"]
+mod prediction_fixtures;
+
 #[cfg(test)]
 mod tests {
-  use super::{LogisticParameters, fit_logistic_map, predict_logistic_map, stable_sigmoid};
+  use super::{
+    LogisticParameters, LogisticPredictionPolicy, fit_logistic_map, predict_logistic_map,
+    stable_sigmoid,
+  };
   use crate::additional_features::{
     AdditionalFeatureLayoutView, FeatureMatrixView, SeasonalityMaskView,
   };
@@ -1206,6 +1711,7 @@ mod tests {
       },
       &[],
       &[],
+      LogisticPredictionPolicy::Stan,
     )
     .unwrap();
 

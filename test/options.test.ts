@@ -31,7 +31,7 @@ describe("decodeOptions", () => {
       seasonalityMode: "additive",
       holidaysMode: "additive",
       seasonalities: [],
-      builtInSeasonalities: { daily: "off", weekly: "off", yearly: "off" },
+      builtInSeasonalities: { daily: "auto", weekly: "auto", yearly: "auto" },
       events: emptyEventCalendar,
       regressors: [],
     });
@@ -53,7 +53,7 @@ describe("decodeOptions", () => {
         seasonalityMode: "additive",
         holidaysMode: "additive",
         seasonalities: [],
-        builtInSeasonalities: { daily: "off", weekly: "off", yearly: "off" },
+        builtInSeasonalities: { daily: "auto", weekly: "auto", yearly: "auto" },
         events: emptyEventCalendar,
         regressors: [],
       });
@@ -97,7 +97,7 @@ describe("decodeOptions", () => {
           mode: "additive",
         },
       ],
-      builtInSeasonalities: { daily: "off", weekly: "off", yearly: "off" },
+      builtInSeasonalities: { daily: "auto", weekly: "auto", yearly: "auto" },
       events: emptyEventCalendar,
       regressors: [],
     });
@@ -108,7 +108,12 @@ describe("decodeOptions", () => {
       decodeOptions({
         seasonalities: [
           { name: "work-week", periodDays: 7, fourierOrder: 3 },
-          { name: "quarter", periodDays: 91.25, fourierOrder: 2, priorScale: 4 },
+          {
+            name: "quarter",
+            periodDays: 91.25,
+            fourierOrder: 2,
+            priorScale: 4,
+          },
         ],
       }),
     );
@@ -133,7 +138,7 @@ describe("decodeOptions", () => {
           mode: "additive",
         },
       ],
-      builtInSeasonalities: { daily: "off", weekly: "off", yearly: "off" },
+      builtInSeasonalities: { daily: "auto", weekly: "auto", yearly: "auto" },
       events: emptyEventCalendar,
       regressors: [],
     });
@@ -147,7 +152,12 @@ describe("decodeOptions", () => {
         holidaysMode: "additive",
         seasonalities: [
           { name: "inherited", periodDays: 7, fourierOrder: 1 },
-          { name: "override", periodDays: 3, fourierOrder: 1, mode: "additive" },
+          {
+            name: "override",
+            periodDays: 3,
+            fourierOrder: 1,
+            mode: "additive",
+          },
         ],
         events: [{ name: "launch", date: "2025-01-01" }],
         regressors: [
@@ -273,8 +283,18 @@ describe("decodeOptions", () => {
     );
 
     expect(options.regressors).toEqual([
-      { name: "price", priorScale: 10, standardization: "auto", mode: "additive" },
-      { name: "promotion", priorScale: 3, standardization: "never", mode: "additive" },
+      {
+        name: "price",
+        priorScale: 10,
+        standardization: "auto",
+        mode: "additive",
+      },
+      {
+        name: "promotion",
+        priorScale: 3,
+        standardization: "never",
+        mode: "additive",
+      },
     ]);
     expect(Object.isFrozen(options.regressors)).toBe(true);
 
@@ -321,7 +341,10 @@ describe("decodeOptions", () => {
   it.each([
     [
       "duplicate explicit points",
-      { mode: "explicit", timestamps: ["2024-01-02T00:00:00.000Z", "2024-01-02T00:00:00.000Z"] },
+      {
+        mode: "explicit",
+        timestamps: ["2024-01-02T00:00:00.000Z", "2024-01-02T00:00:00.000Z"],
+      },
     ],
     ["invalid automatic count", { mode: "auto", count: -1 }],
     ["invalid automatic range", { mode: "auto", range: 0 }],
@@ -331,7 +354,7 @@ describe("decodeOptions", () => {
     expect(error.issues.some((issue) => issue.path?.includes("changepoints"))).toBe(true);
   });
 
-  it("uses convergence controls suitable for nonlinear logistic MAP fits", async () => {
+  it("uses shared Stan controls for logistic MAP fits", async () => {
     const defaults = await Effect.runPromise(decodeOptions({ growth: "logistic" }));
 
     const partial = await Effect.runPromise(
@@ -347,15 +370,10 @@ describe("decodeOptions", () => {
       throw new Error("Expected logistic options");
     }
 
-    expect(defaults.map.optimizer).toEqual({
-      maxIterations: 10_000,
-      relativeTolerance: 1e-7,
-      absoluteTolerance: 1e-9,
-    });
+    expect(defaults.map.optimizer).toEqual(defaultLinearOptimizer);
     expect(partial.map.optimizer).toEqual({
+      ...defaultLinearOptimizer,
       maxIterations: 250,
-      relativeTolerance: 1e-7,
-      absoluteTolerance: 1e-9,
     });
   });
 

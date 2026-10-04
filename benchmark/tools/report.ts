@@ -645,7 +645,7 @@ const correctnessForCase = (
             caseId: benchmarkCase.id,
             status: "failed",
             comparison,
-            note: `Independent linear optimizer ${gate.name} evidence is missing or exceeds its declared tolerance.`,
+            note: `Independent optimizer ${gate.name} evidence is missing or exceeds its declared tolerance.`,
           };
         }
       }

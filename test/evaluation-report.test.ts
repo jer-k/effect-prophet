@@ -58,9 +58,16 @@ const find = async (): Promise<ModelSearchResult> =>
       ],
       plan: {
         horizonMs: 2 * day,
-        cutoffs: { mode: "explicit", timestamps: [timestamp(11), timestamp(14)] },
+        cutoffs: {
+          mode: "explicit",
+          timestamps: [timestamp(11), timestamp(14)],
+        },
       },
-      objective: { metric: "mae", aggregation: { kind: "overall" }, direction: "minimize" },
+      objective: {
+        metric: "mae",
+        aggregation: { kind: "overall" },
+        direction: "minimize",
+      },
       failurePolicy: "record",
     }).pipe(Effect.provide(prophetFittingBackendLayer)),
   );
@@ -125,9 +132,16 @@ describe("evaluateHoldout", () => {
         candidates: [{ id: "flat", options: { growth: "flat", scaling: "minmax" } }],
         plan: {
           horizonMs: 2 * day,
-          cutoffs: { mode: "explicit", timestamps: [timestamp(11), timestamp(14)] },
+          cutoffs: {
+            mode: "explicit",
+            timestamps: [timestamp(11), timestamp(14)],
+          },
         },
-        objective: { metric: "mae", aggregation: { kind: "overall" }, direction: "minimize" },
+        objective: {
+          metric: "mae",
+          aggregation: { kind: "overall" },
+          direction: "minimize",
+        },
         failurePolicy: "record",
         mode,
       }).pipe(Effect.provide(prophetFittingBackendLayer)),
@@ -247,12 +261,21 @@ describe("evaluateHoldout", () => {
 
     const bad: ReadonlyArray<HoldoutEvaluationInput> = [
       { ...input(search), holdout: [{ timestamp: timestamp(17), value: 99 }] },
-      { ...input(search), selectedCandidate: { ...input(search).selectedCandidate, score: -1 } },
       {
         ...input(search),
-        selectedCandidate: { ...input(search).selectedCandidate, options: { growth: "flat" } },
+        selectedCandidate: { ...input(search).selectedCandidate, score: -1 },
       },
-      { ...input(search), metrics: { metrics: ["coverage"], aggregation: { kind: "overall" } } },
+      {
+        ...input(search),
+        selectedCandidate: {
+          ...input(search).selectedCandidate,
+          options: { growth: "flat" },
+        },
+      },
+      {
+        ...input(search),
+        metrics: { metrics: ["coverage"], aggregation: { kind: "overall" } },
+      },
       {
         ...input(search),
         holdout: [
@@ -277,12 +300,30 @@ describe("evaluateHoldout", () => {
   it("rejects OLS intervals before entering the holdout/WASM boundary", async () => {
     const search = await Effect.runPromise(
       searchModels(observations, {
-        candidates: [{ id: "ols", options: {} }],
+        candidates: [
+          {
+            id: "ols",
+            options: {
+              builtInSeasonalities: {
+                daily: "off",
+                weekly: "off",
+                yearly: "off",
+              },
+            },
+          },
+        ],
         plan: {
           horizonMs: 2 * day,
-          cutoffs: { mode: "explicit", timestamps: [timestamp(11), timestamp(14)] },
+          cutoffs: {
+            mode: "explicit",
+            timestamps: [timestamp(11), timestamp(14)],
+          },
         },
-        objective: { metric: "mae", aggregation: { kind: "overall" }, direction: "minimize" },
+        objective: {
+          metric: "mae",
+          aggregation: { kind: "overall" },
+          direction: "minimize",
+        },
         failurePolicy: "record",
       }).pipe(Effect.provide(prophetFittingBackendLayer)),
     );
@@ -315,9 +356,10 @@ describe("evaluateHoldout", () => {
   it("reports missing known future regressors after fit but before prediction WASM", async () => {
     const development: EncodedObservations = [
       { ...observations[0], regressors: { promotion: 0 } },
-      ...observations
-        .slice(1)
-        .map((row, index) => ({ ...row, regressors: { promotion: (index + 1) % 3 } })),
+      ...observations.slice(1).map((row, index) => ({
+        ...row,
+        regressors: { promotion: (index + 1) % 3 },
+      })),
     ];
 
     const search = await Effect.runPromise(
@@ -334,9 +376,16 @@ describe("evaluateHoldout", () => {
         ],
         plan: {
           horizonMs: 2 * day,
-          cutoffs: { mode: "explicit", timestamps: [timestamp(11), timestamp(14)] },
+          cutoffs: {
+            mode: "explicit",
+            timestamps: [timestamp(11), timestamp(14)],
+          },
         },
-        objective: { metric: "mae", aggregation: { kind: "overall" }, direction: "minimize" },
+        objective: {
+          metric: "mae",
+          aggregation: { kind: "overall" },
+          direction: "minimize",
+        },
         failurePolicy: "record",
       }).pipe(Effect.provide(prophetFittingBackendLayer)),
     );
@@ -361,7 +410,10 @@ describe("evaluateHoldout", () => {
       ),
     );
 
-    expect(failure).toMatchObject({ step: "predict", reason: "operation-failed" });
+    expect(failure).toMatchObject({
+      step: "predict",
+      reason: "operation-failed",
+    });
     expect(failure.cause).toMatchObject({ input: "prediction-rows" });
     expect(spans.some((span) => span.name === "effect-prophet.wasm.fit")).toBe(true);
     expect(spans.some((span) => span.name === "effect-prophet.wasm.predict")).toBe(false);
@@ -371,7 +423,12 @@ describe("evaluateHoldout", () => {
     const search = await find();
 
     const unavailable = await Effect.runPromise(
-      Effect.result(run({ ...input(search), baselines: [{ kind: "seasonal-naive", lagMs: day }] })),
+      Effect.result(
+        run({
+          ...input(search),
+          baselines: [{ kind: "seasonal-naive", lagMs: day }],
+        }),
+      ),
     );
 
     expect(unavailable._tag).toBe("Failure");
@@ -389,15 +446,24 @@ describe("evaluateHoldout", () => {
       { ...report, holdout: { ...report.holdout, rowCount: 4 } },
       {
         ...report,
-        metrics: { ...report.metrics, bucket: { ...report.metrics.bucket, rowCount: 1 } },
+        metrics: {
+          ...report.metrics,
+          bucket: { ...report.metrics.bucket, rowCount: 1 },
+        },
       },
-      { ...report, selected: { ...report.selected, options: { growth: "invalid" } } },
+      {
+        ...report,
+        selected: { ...report.selected, options: { growth: "invalid" } },
+      },
       { ...report, candidates: report.candidates.slice(1) },
       {
         ...report,
         baselines: report.baselines.map((baseline, index) =>
           index === 0
-            ? { ...baseline, forecasts: baseline.forecasts.map((value) => value + 1) }
+            ? {
+                ...baseline,
+                forecasts: baseline.forecasts.map((value) => value + 1),
+              }
             : baseline,
         ),
       },

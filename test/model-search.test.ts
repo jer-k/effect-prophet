@@ -41,7 +41,10 @@ const objective = {
   direction: "minimize",
 } as const;
 
-const firstOption = { growth: "linear" as const, map: { changepointPriorScale: 0.01 } };
+const firstOption = {
+  growth: "linear" as const,
+  map: { changepointPriorScale: 0.01 },
+};
 
 const options = [
   {
@@ -97,7 +100,10 @@ describe("searchModels", () => {
       );
 
       const report = await Effect.runPromise(
-        performanceMetrics(cv, { metrics: ["mae"], aggregation: { kind: "overall" } }),
+        performanceMetrics(cv, {
+          metrics: ["mae"],
+          aggregation: { kind: "overall" },
+        }),
       );
 
       expect(report.kind).toBe("overall");
@@ -191,7 +197,11 @@ describe("searchModels", () => {
   });
 
   it("copies options and retains CV detail only when requested", async () => {
-    const original = { id: "owned", options: { map: { changepointPriorScale: 0.1 } } };
+    const original = {
+      id: "owned",
+      options: { map: { changepointPriorScale: 0.1 } },
+    };
+
     const candidates = [original];
 
     const result = await Effect.runPromise(
@@ -210,7 +220,9 @@ describe("searchModels", () => {
     expect(winner?.kind).toBe("success");
 
     if (winner?.kind === "success") {
-      expect(winner.options).toMatchObject({ map: { changepointPriorScale: 0.1 } });
+      expect(winner.options).toMatchObject({
+        map: { changepointPriorScale: 0.1 },
+      });
       expect(winner.crossValidation?.rows.length).toBe(4);
       expect(Object.isFrozen(winner.options)).toBe(true);
     }
@@ -219,8 +231,24 @@ describe("searchModels", () => {
   it("rejects different Python-style generated schedules before executing candidates", async () => {
     const input: ModelSearchInput = {
       candidates: [
-        { id: "base", options: { growth: "linear" } },
-        { id: "weekly", options: { growth: "linear", builtInSeasonalities: { weekly: "auto" } } },
+        {
+          id: "base",
+          options: {
+            growth: "linear",
+            builtInSeasonalities: {
+              daily: "off",
+              weekly: "off",
+              yearly: "off",
+            },
+          },
+        },
+        {
+          id: "weekly",
+          options: {
+            growth: "linear",
+            builtInSeasonalities: { weekly: { mode: "on" } },
+          },
+        },
       ],
       plan: { horizonMs: 2 * dayMs, cutoffs: { mode: "generated" } },
       objective,
@@ -248,7 +276,12 @@ describe("searchModels", () => {
         objective,
         failurePolicy: "record",
       },
-      { candidates: [{ id: "bad id", options: {} }], plan, objective, failurePolicy: "record" },
+      {
+        candidates: [{ id: "bad id", options: {} }],
+        plan,
+        objective,
+        failurePolicy: "record",
+      },
       {
         candidates: [{ id: "bad", options: { map: { changepointPriorScale: -1 } } }],
         plan,
@@ -256,7 +289,10 @@ describe("searchModels", () => {
         failurePolicy: "record",
       },
       {
-        candidates: Array.from({ length: 33 }, (_, index) => ({ id: `${index}`, options: {} })),
+        candidates: Array.from({ length: 33 }, (_, index) => ({
+          id: `${index}`,
+          options: {},
+        })),
         plan,
         objective,
         failurePolicy: "record",
@@ -309,7 +345,10 @@ describe("searchModels", () => {
     const result = await Effect.runPromise(
       Effect.result(
         searchModels(history, {
-          candidates: Array.from({ length: 32 }, (_, index) => ({ id: `${index}`, options: {} })),
+          candidates: Array.from({ length: 32 }, (_, index) => ({
+            id: `${index}`,
+            options: {},
+          })),
           plan: {
             horizonMs: dayMs,
             cutoffs: {
@@ -347,7 +386,10 @@ describe("searchModels", () => {
 
     const poisoned = await Effect.runPromise(
       searchModels(
-        rows.map((row, day) => ({ ...row, value: day === 8 ? -999 : row.value })),
+        rows.map((row, day) => ({
+          ...row,
+          value: day === 8 ? -999 : row.value,
+        })),
         input,
       ).pipe(Effect.provide(prophetFittingBackendLayer)),
     );
@@ -389,7 +431,11 @@ describe("searchModels", () => {
           {
             candidates: [{ id: "overflow", options: {} }],
             plan,
-            objective: { metric: "mse", aggregation: { kind: "overall" }, direction: "minimize" },
+            objective: {
+              metric: "mse",
+              aggregation: { kind: "overall" },
+              direction: "minimize",
+            },
             failurePolicy: "record",
           },
         ).pipe(Effect.provide(backend.layer)),
@@ -403,7 +449,13 @@ describe("searchModels", () => {
       expect(result.failure).toMatchObject({
         reason: "no-success",
         outcomes: [
-          { failure: { tag: "EvaluationMetricError", reason: "non-finite", metric: "mse" } },
+          {
+            failure: {
+              tag: "EvaluationMetricError",
+              reason: "non-finite",
+              metric: "mse",
+            },
+          },
         ],
       });
     }
@@ -413,7 +465,16 @@ describe("searchModels", () => {
     const result = await Effect.runPromise(
       search({
         candidates: [
-          { id: "ols", options: {} },
+          {
+            id: "ols",
+            options: {
+              builtInSeasonalities: {
+                daily: "off",
+                weekly: "off",
+                yearly: "off",
+              },
+            },
+          },
           { id: "map", options: firstOption },
         ],
         plan,
@@ -436,7 +497,11 @@ describe("searchModels", () => {
         search({
           candidates: [{ id: "one", options: {} }],
           plan,
-          objective: { metric: "mape", aggregation: { kind: "overall" }, direction: "minimize" },
+          objective: {
+            metric: "mape",
+            aggregation: { kind: "overall" },
+            direction: "minimize",
+          },
           failurePolicy: "record",
         }),
       ),
@@ -523,7 +588,10 @@ describe("searchModels", () => {
       { id: "second", options: firstOption },
     ];
 
-    const mode = { mode: "intervals", uncertainty: { seed: 19, samples: 16 } } as const;
+    const mode = {
+      mode: "intervals",
+      uncertainty: { seed: 19, samples: 16 },
+    } as const;
 
     const run = (candidates: typeof tied) =>
       Effect.runPromise(
@@ -546,7 +614,9 @@ describe("searchModels", () => {
       const second = reordered.candidates.find((candidate) => candidate.id === id);
       const again = replay.candidates.find((candidate) => candidate.id === id);
       expect(first?.kind).toBe("success");
-      expect(first).toMatchObject({ score: second?.kind === "success" ? second.score : undefined });
+      expect(first).toMatchObject({
+        score: second?.kind === "success" ? second.score : undefined,
+      });
 
       if (first?.kind === "success" && second?.kind === "success" && again?.kind === "success") {
         expect(first.crossValidation).toEqual(second.crossValidation);

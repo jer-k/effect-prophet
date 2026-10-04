@@ -12,6 +12,7 @@ import { simulationIdentity } from "../uncertainty";
 import { targetScalingModeCode } from "../target-scaling";
 import type { KnownAdditiveFeatures, SeasonalityMaskMatrix } from "./additional-features";
 import { modesFor } from "./wasm-mixed-map-backend";
+import { logisticPredictionPolicyCode } from "./wasm-logistic-map-backend";
 import { loadProphetWasmModule, type MapUncertaintyWasmBindings } from "./prophet-wasm-module";
 import {
   attemptWasmPrediction,
@@ -67,6 +68,13 @@ export const simulateMapWithWasm = (
       return yield* Effect.fail(protocolFailure(0));
     }
 
+    if (model.model === "logistic-piecewise-map") {
+      yield* Effect.annotateCurrentSpan({
+        "effect_prophet.logistic.prediction.policy":
+          logisticPredictionPolicyCode(model) === 0 ? "stan" : "continuous",
+      });
+    }
+
     const seasonal = packSeasonalitiesForPrediction(model.seasonalities);
     const additional = packKnownAdditiveFeatures(masks, features);
 
@@ -110,6 +118,7 @@ export const simulateMapWithWasm = (
               additional.offsets,
               additional.counts,
               modesFor(model.seasonalities, features),
+              logisticPredictionPolicyCode(model),
               options.seed,
               options.samples,
               options.intervalWidth,

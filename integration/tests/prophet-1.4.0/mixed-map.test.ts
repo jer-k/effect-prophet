@@ -214,6 +214,7 @@ describe("Prophet 1.4.0 mixed MAP evidence", () => {
       }));
 
       const commonOptions = {
+        builtInSeasonalities: { daily: "off", weekly: "off", yearly: "off" } as const,
         scaling: referenceCase.scaling,
         seasonalityMode: "additive" as const,
         holidaysMode: "additive" as const,

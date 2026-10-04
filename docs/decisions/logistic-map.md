@@ -1,6 +1,18 @@
 # Logistic piecewise MAP numerical policy
 
-**Status:** Accepted for the combined Stage F logistic implementation
+**Status:** Historical Stage F proximal policy, superseded as the public default by shared Stan fitting.
+
+The historical decision below is retained for explicit proximal selection and old saved models.
+Public defaults now select the shared Newton/L-BFGS policy, retain Python's private no-point fit,
+score before folding, and perform the actual public `k += delta[0]` fold with `m` unchanged.
+Built-in seasonalities default to automatic. Explicit legacy tolerance overrides still identify
+historical proximal requests; omission or a budget-only override does not.
+
+The release direction targets unmodified Python Prophet 1.4.0 defaults. Improved edge behavior
+requires an explicit opt-in, not a default-parity exemption. See the [current model contract](../modeling/logistic-map.md)
+and [reconciliation evidence](../validation/logistic-reconciliation.md): six frozen public cases
+and two numerical regressions remain red. Fixed singular public states now have bounded oracle
+coverage; Stan prediction uses public gamma arithmetic while proximal retains this extension.
 
 ## Context
 
@@ -81,7 +93,8 @@ optimum is claimed for this nonconvex objective.
 
 The package uses a genuine empty changepoint design. Prophet's private zero-time dummy delta and
 post-fit `k` folding are not retained because that fold does not preserve logistic predictions for
-general `m`. Empty-point fitted objective/parameter parity is therefore excluded.
+general `m`. This is a current mismatch to reconcile, including the release's actual public post-fit folding
+behavior; it is not a permanent default-parity exclusion.
 
 Prophet's constant-target shortcut applies only to linear and flat growth. Logistic histories are
 optimized normally and can return noise-collapse when no reliable finite interior optimum exists.

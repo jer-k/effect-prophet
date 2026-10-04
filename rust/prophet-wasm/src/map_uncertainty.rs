@@ -1,6 +1,8 @@
 //! Seeded scalar-path MAP predictive simulation. No Effect, WASM or global RNG state.
 
-use crate::logistic_map::{LogisticParameters, logistic_eta, stable_sigmoid};
+use crate::logistic_map::{
+  LogisticParameters, LogisticPredictionPolicy, LogisticPredictionTrend, stable_sigmoid,
+};
 use crate::piecewise_linear::PiecewiseTrend;
 use crate::simulation_rng::{SamplerError, SimulationRng};
 use crate::target_scaling::{LogisticScaling, TargetScaling};
@@ -22,7 +24,7 @@ pub enum SimulationTrend<'a> {
   },
   /// Constant output-unit level relative to the target offset.
   Flat { level: f64, scaling: TargetScaling },
-  /// Continuous dimensionless logit path with explicit row capacities and floor policy.
+  /// Method-specific public trend with explicit row capacities and floor policy.
   Logistic {
     parameters: &'a LogisticParameters,
     scaling: LogisticScaling,
@@ -31,6 +33,7 @@ pub enum SimulationTrend<'a> {
     time_origin: f64,
     time_scale: f64,
     changepoints: &'a [f64],
+    policy: LogisticPredictionPolicy,
   },
 }
 
@@ -164,6 +167,7 @@ pub fn simulate_map(
       time_origin,
       time_scale,
       changepoints,
+      ..
     } => {
       let training_end = time_origin + time_scale;
       if !scaling.scale.is_finite()
@@ -192,6 +196,24 @@ pub fn simulate_map(
     }
   }
 
+  let logistic_trend = match model {
+    SimulationTrend::Logistic {
+      parameters,
+      time_origin,
+      time_scale,
+      changepoints,
+      policy,
+      ..
+    } => Some(LogisticPredictionTrend::new(
+      policy,
+      parameters,
+      time_origin,
+      time_scale,
+      changepoints,
+    )),
+    _ => None,
+  };
+
   let mut baseline = Vec::new();
   baseline
     .try_reserve_exact(count)
@@ -216,13 +238,12 @@ pub fn simulate_map(
       }
       SimulationTrend::Flat { level, .. } => level,
       SimulationTrend::Logistic {
-        parameters,
         scaling,
         capacities,
         floors,
         time_origin,
         time_scale,
-        changepoints,
+        ..
       } => {
         let floor = scaling
           .row_floor(floors, row)
@@ -232,16 +253,11 @@ pub fn simulate_map(
         }
         let t = (timestamp - time_origin) / time_scale;
         horizon = horizon.max(t - 1.0);
-        logistic_eta(
-          t,
-          time_origin,
-          time_scale,
-          changepoints,
-          parameters.rate,
-          parameters.offset,
-          &parameters.deltas,
-        )
-        .map_err(|_| SimulationError::NonFiniteResult { row, sample: 0 })?
+        logistic_trend
+          .as_ref()
+          .ok_or(SimulationError::InvalidModel)?
+          .eta(t)
+          .map_err(|_| SimulationError::NonFiniteResult { row, sample: 0 })?
       }
     };
     let fixed = match model {
@@ -626,6 +642,7 @@ mod tests {
       time_origin: 0.0,
       time_scale: 10.0,
       changepoints: &[5.0],
+      policy: LogisticPredictionPolicy::Stan,
     };
     let draws = simulate_map(
       model,
@@ -649,7 +666,9 @@ mod tests {
   fn forced_logistic_rate_crossing_and_zero_rate_keep_the_latent_logit_continuous() {
     let points = [5.0, 15.0];
     let deltas = [-1.0, 0.5];
-    let eta = |time: f64| logistic_eta(time, 0.0, 10.0, &points, 0.5, 0.4, &deltas).unwrap();
+    let eta = |time: f64| {
+      crate::logistic_map::logistic_eta(time, 0.0, 10.0, &points, 0.5, 0.4, &deltas).unwrap()
+    };
 
     for (time, expected) in [(5.0, 0.05), (10.0, -0.2), (15.0, -0.45), (20.0, -0.45)] {
       assert!((eta(time / 10.0) - expected).abs() < 1e-14);
@@ -696,6 +715,7 @@ mod tests {
           time_origin: 0.0,
           time_scale: 10.0,
           changepoints: &[5.0],
+          policy: LogisticPredictionPolicy::Continuous,
         },
         0.2,
         rows(&[20.0, 30.0], &[0.0; 2], &[0.0; 2]),
