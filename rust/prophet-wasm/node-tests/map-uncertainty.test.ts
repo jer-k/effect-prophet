@@ -61,7 +61,6 @@ const logisticRequest = () =>
     new Float64Array(),
     new Float64Array(),
     new Float64Array(),
-    0,
     42,
     16,
     0.8,
@@ -132,10 +131,8 @@ describe("seeded MAP simulation generated WASM boundary", () => {
     assert.deepEqual(invalid(0, new Float64Array([Number.NaN, 20])), [1]);
     assert.deepEqual(invalid(1, new Float64Array([0, 20])), [1]);
     assert.deepEqual(invalid(5, 1), [1]);
-    assert.deepEqual(invalid(24, 2), [1]);
-    assert.deepEqual(invalid(24, Number.NaN), [1]);
-    assert.deepEqual(invalid(25, 2 ** 32), [1]);
-    assert.deepEqual(invalid(26, 2_049), [3]);
+    assert.deepEqual(invalid(24, 2 ** 32), [1]);
+    assert.deepEqual(invalid(25, 2_049), [3]);
 
     const explicit: Array<number | Float64Array> = [...args];
     explicit[2] = new Float64Array([2, 3]);
@@ -189,8 +186,8 @@ describe("seeded MAP simulation generated WASM boundary", () => {
     assert.deepEqual(withExplicitChange(6, 1), [2]);
     assert.deepEqual(invalid(2, new Float64Array([2, 3])), [1]);
     assert.deepEqual(invalid(1, new Float64Array([10])), [1]);
-    assert.deepEqual(invalid(27, 0), [1]);
-    assert.deepEqual(invalid(28, 2), [1]);
+    assert.deepEqual(invalid(26, 0), [1]);
+    assert.deepEqual(invalid(27, 2), [1]);
   });
 
   it("reduces the same seeded saturated logistic samples to ordered finite intervals", () => {
@@ -198,8 +195,8 @@ describe("seeded MAP simulation generated WASM boundary", () => {
     args[0] = Float64Array.from({ length: 64 }, (_, index) => 20 + index);
     args[1] = Float64Array.from({ length: 64 }, (_, index) => 90 + index * 0.12);
     args[8] = 15;
-    args[25] = 19;
-    args[26] = 128;
+    args[24] = 19;
+    args[25] = 128;
 
     const samples = wasm.simulate_logistic_map_with_features(...args);
     const bands = wasm.simulate_logistic_map_with_features(...args.slice(0, -1), 0);

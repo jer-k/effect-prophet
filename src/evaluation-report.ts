@@ -143,7 +143,6 @@ const ModelSchema = Schema.Union([
         "mixed-flat-map-coordinate-v1",
         "piecewise-map-stan-v2",
         "mixed-piecewise-map-stan-v2",
-        "logistic-piecewise-map-proximal-v1",
         "logistic-piecewise-map-stan-v2",
       ]),
       termination: Schema.Literals([
@@ -406,9 +405,7 @@ const reportConsistency = (
       (report.model.kind !== "linear-trend" &&
         (report.model.fitSummary.observationCount !== development.rowCount ||
           (report.model.kind === "logistic-piecewise-map" &&
-            !["logistic-piecewise-map-proximal-v1", "logistic-piecewise-map-stan-v2"].includes(
-              report.model.fitSummary.method,
-            )) ||
+            report.model.fitSummary.method !== "logistic-piecewise-map-stan-v2") ||
           (report.model.kind === "flat-map" &&
             !["flat-map-coordinate-v1", "mixed-flat-map-coordinate-v1"].includes(
               report.model.fitSummary.method,

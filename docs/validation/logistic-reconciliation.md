@@ -558,10 +558,10 @@ Run `2026-10-04T015306-934Z-61e11737` repeats the same 32 cases on native `linux
 correctness repetitions: **all 28 investigation cases and four controls pass**, and timings are
 admitted. Both repetitions are identical.
 
-| Flag                        |        Effect |        Python | Effect - Python | Explanation                                                                                                                                                                                                              |
-| --------------------------- | ------------: | ------------: | --------------: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `defaults-256` objective    | `-1786.02978` | `-1786.06100` |        `0.0312` | Open: L-BFGS trajectory divergence after accepted step 39 in the controlled oracle. Pinned Python on `linux/amd64` returns `-1786.03076`, within `0.001` of Effect; Python's own cross-CPU spread exceeds the threshold. |
-| `defaults-256` stationarity |     `8818.19` |     `1349.28` |          `7469` | Open: the noise coordinate dominates both residuals, so neither endpoint is near-stationary; same trajectory divergence.                                                                                                 |
+| Flag                        |        Effect |        Python | Effect - Python | Explanation                                                                                                                   |
+| --------------------------- | ------------: | ------------: | --------------: | ----------------------------------------------------------------------------------------------------------------------------- |
+| `defaults-256` objective    | `-1786.02978` | `-1786.06100` |        `0.0312` | Explained: Python itself splits across CPUs at the same step; see [cross-CPU check](#defaults-256-cross-cpu-check).           |
+| `defaults-256` stationarity |     `8818.19` |     `1349.28` |          `7469` | Explained: the noise coordinate dominates both residuals, so neither endpoint is near-stationary; same cross-CPU sensitivity. |
 
 The defaults-256 maximum differences are `0.00113` for trend, `0.00112` for forecast and
 `1.27e-5` for components, all inside the unchanged `0.01` and `0.002` gates.
@@ -577,6 +577,32 @@ The defaults-256 maximum differences are `0.00113` for trend, `0.00112` for fore
 
 This is local dirty-tree evidence on top of checkpoint commit `61e1173`, not a retained baseline.
 
+### defaults-256 cross-CPU check
+
+The controlled defaults-256 problem was built once in the canonical `linux/amd64` reference image
+(`data.json` SHA-256 `5b99d6ca85155c07eee92eb9f693a3d6934893a47eca7f0a0505e8113b6ec3c8`, `inits.json`
+`cc7036c06fb716ad651a108f70a9928c61e04d12f1033f9fb653706b4532a08f`). Unmodified Prophet 1.4.0 and
+its bundled executable then optimized those identical bytes with default L-BFGS controls, the
+10,000-step budget and `sig_figs=18` output, on `linux/amd64` and on a `linux/arm64` build of the
+same pinned Dockerfile:
+
+| Run                                     | Iterations |        Final density |
+| --------------------------------------- | ---------: | -------------------: |
+| Python `linux/amd64` (repeat identical) |        975 | `1786.0568063418507` |
+| Python `linux/arm64`                    |       1271 | `1786.0285726503103` |
+| Effect native/WASM                      |       1249 | `1786.0280819588352` |
+
+The amd64 trajectory reproduces the frozen fixture within `6.5e-12`. The two Python runs start
+identically, differ by `1.1e-19` after step 1, and grow roughly tenfold every few steps: `8.2e-12` at
+step 10, `6.9e-8` at step 38 and **`7.3e-7` at step 39**, the first step beyond `1e-7`. Effect's
+trajectory against the amd64 oracle also first exceeds `1e-7` at step 39. Python's own final densities
+differ by `0.028`, beyond the `0.01` investigation threshold.
+
+**Conclusion:** the defaults-256 divergence is last-bit rounding amplified by this nonsmooth L-BFGS
+problem, indistinguishable from Python's own cross-CPU behaviour. It is not evidence of an Effect
+arithmetic bug, and no further trajectory-parity work is planned for it. Same-input tests remain
+the guard against real arithmetic differences.
+
 ### Output-first numerical tests
 
 Frozen-fixture tests split into two kinds. **Same-input tests** feed Python's frozen internal values
@@ -590,25 +616,50 @@ output-first policy:
   initialization and accepted steps 1-8 within `1e-7`. It prints the first divergence (step 39) and
   the final density (`1786.0280819588352` versus `1786.05680634`) and noise against their thresholds.
 - `fitting_empty_point_histories_matches_frozen_public_fold_and_forecasts` still asserts the public
-  fold and fitted forecasts. Objective, stationarity and normalized noise are printed as
-  `investigate` lines when beyond threshold; only the 12-row default-prior stationarity
-  (`66.78563065905489` versus `66.8126860857`) is.
+  fold and fitted forecasts. Objective and normalized noise are printed as
+  `investigate` lines when their absolute difference exceeds the threshold; stationarity, as in the
+  benchmark, only when Effect's residual exceeds Python's. None is printed: the 12-row default-prior
+  residual (`66.78563065905489` versus `66.8126860857`) is lower than Python's; see the
+  [12-row cross-CPU check](#12-row-cross-cpu-check).
+
+### 12-row cross-CPU check
+
+The `implicit-empty-default` public Newton problem was built once on `linux/amd64` (`data12.json`
+SHA-256 `4b69417c9cac0f365fa19eafe12b2a9e8f9d1f91258a1ae3f3c83264c9ea94b3`, `inits12.json`
+`45204c8d775e7482cad3934a380d95fb2858417e41c96feb6234e9286599e1a8`) and optimized with unmodified
+Prophet 1.4.0 Newton on `linux/amd64` and `linux/arm64`. Effect's native Newton path was recorded
+with a temporary, since-removed test that reran the production optimizer with budgets 1, 2, 3, ...
+Every endpoint was scored by the same pinned `linux/amd64` executable, which reproduces Effect's
+reported residual exactly.
+
+| Run                                     | Newton steps |        Objective |  Stationarity |
+| --------------------------------------- | -----------: | ---------------: | ------------: |
+| Python `linux/amd64` (repeat identical) |           38 | `-82.7699986481` | `66.81268614` |
+| Python `linux/arm64`                    |           39 | `-82.7699991219` | `66.81895596` |
+| Effect                                  |           43 | `-82.7699992767` | `66.78563066` |
+
+The noise coordinate sets every residual. All three paths agree to four decimals of the residual
+through step 35 (`66.8361`). The two Python runs differ from step 1 (`4.4e-16`) and pass `1e-7` at
+step 38; Effect passes `1e-7` against both at step 36, where it takes a slightly different backtracking
+step. Earlier per-step differences between Effect and Python are within a few times Python's own
+cross-CPU differences. Each run then creeps toward the same limit until an objective change falls
+below `1e-8`. Effect stops last, with the **lowest objective and lowest residual** of the three.
+
+**Conclusion:** the 12-row stationarity gap reflects Effect stopping later on the same descent, not
+an arithmetic bug. Under the one-sided stationarity rule shared by the benchmark and this test, it is not flagged.
 
 Native Rust: **114 passed / 0 failed**. WASM optimizer: **30 passed / 0 failed**. Strict Clippy and
 formatting pass.
 
 ## Remaining TDD increments
 
-1. Explain or resolve the defaults-256 investigation flags. Continue raw same-state evaluation and controlled line-search diagnosis;
-   identical-vector history updates and the six operation probes do not establish full parity.
-   Reuse the shared solver and pinned executable probes. Note that pinned Python itself differs
-   across CPUs on this case (`-1786.03076` on `linux/amd64` versus `-1786.06100` on
-   `linux/arm64`), more than the `0.01` objective gate.
+1. ~~Explain the defaults-256 investigation flags.~~ Explained by the
+   [cross-CPU check](#defaults-256-cross-cpu-check).
 2. Extend the bounded fixed-state/input coverage where further oracle evidence exposes gaps,
    especially extreme arithmetic, malformed/minimal Python preprocessing and sampled future
    singular states. Existing same-state and lifecycle regressions are not universal parity evidence.
-3. Explain the 12-row default-prior stationarity gap printed by the fit-endpoint test. Same-input
-   numerical tests remain exact assertions.
+3. ~~Explain the 12-row default-prior stationarity gap.~~ Explained by the
+   [12-row cross-CPU check](#12-row-cross-cpu-check).
 4. Rerun unchanged comparisons after each focused fix. Review/commit the complete working tree
    before using the established retention workflow; no baseline promotion is claimed here.
 

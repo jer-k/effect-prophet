@@ -8,7 +8,8 @@ import { fit, predict, predictUncertainty } from "../src/prophet";
 import { crossValidate } from "../src/evaluation";
 import { decodeFittedModel, encodeFittedModel } from "../src/model-serialization";
 import { prophetFittingBackendLayer } from "../src/internal/prophet-fitting-backend";
-import { type EncodedLogisticOptimizer } from "../src/logistic-optimizer";
+import { type EncodedLinearOptimizer } from "../src/linear-optimizer";
+import { decodeOptions } from "../src/options";
 import { builtInSeasonalitiesOff } from "./helpers/built-in-seasonalities";
 import { requireEndedSpan } from "./internal/tracing-test-helpers";
 
@@ -159,7 +160,7 @@ describe("public logistic Stan optimizer lifecycle", () => {
 
       if (duplicate && last !== undefined) observations.push({ ...last, value: last.value + 0.03 });
 
-      const optimizer: EncodedLogisticOptimizer =
+      const optimizer: EncodedLinearOptimizer =
         algorithm === "newton"
           ? { algorithm, maxIterations: 1 }
           : { algorithm, maxIterations: 1, fallback: "none" };
@@ -206,27 +207,41 @@ describe("public logistic Stan optimizer lifecycle", () => {
     },
   );
 
-  it("restores historical proximal models without pretending they used Stan", async () => {
+  it.each([{ algorithm: "proximal" }, { relativeTolerance: 1e-7 }, { absoluteTolerance: 1e-9 }])(
+    "rejects removed proximal controls through public option parsing: %j",
+    async (optimizer) => {
+      const failure = await Effect.runPromise(
+        Effect.flip(decodeOptions({ ...options, map: { optimizer } })),
+      );
+
+      expect(failure).toBeInstanceOf(InputValidationError);
+      expect(failure.input).toBe("options");
+    },
+  );
+
+  it("rejects the removed proximal model identity instead of restoring it", async () => {
     const model = await Effect.runPromise(
-      fit(rows(12), {
-        ...options,
-        map: { ...options.map, optimizer: { algorithm: "proximal" } },
-      }).pipe(Effect.provide(prophetFittingBackendLayer)),
+      fit(rows(12), options).pipe(Effect.provide(prophetFittingBackendLayer)),
     );
 
-    if (model.model !== "logistic-piecewise-map") throw new Error("Expected logistic MAP");
-    expect(model.fitSummary.method).toBe("logistic-piecewise-map-proximal-v1");
-    expect(model.fitSummary).not.toHaveProperty("optimization");
+    const encoded = await Effect.runPromise(encodeFittedModel(model));
 
-    const restored = await Effect.runPromise(
-      encodeFittedModel(model).pipe(Effect.flatMap(decodeFittedModel)),
+    if (encoded.modelKind !== "logistic-piecewise-map") throw new Error("Expected logistic MAP");
+
+    const failure = await Effect.runPromise(
+      Effect.flip(
+        decodeFittedModel({
+          ...encoded,
+          fitSummary: {
+            ...encoded.fitSummary,
+            method: "logistic-piecewise-map-proximal-v1",
+            termination: "converged",
+          },
+        }),
+      ),
     );
 
-    expect(restored).toEqual(model);
-    const future = [{ timestamp: new Date(epoch + 13 * day).toISOString(), capacity: 100 }];
-    expect(await Effect.runPromise(predict(restored, future))).toEqual(
-      await Effect.runPromise(predict(model, future)),
-    );
+    expect(failure).toBeInstanceOf(ModelSerializationError);
   });
 
   it.each(["newton", "lbfgs"] as const)(
@@ -234,7 +249,7 @@ describe("public logistic Stan optimizer lifecycle", () => {
     async (algorithm) => {
       const observations = rows(24);
 
-      const optimizer: EncodedLogisticOptimizer =
+      const optimizer: EncodedLinearOptimizer =
         algorithm === "newton"
           ? { algorithm, maxIterations: 1 }
           : { algorithm, maxIterations: 1, fallback: "none" };
@@ -398,7 +413,7 @@ describe("public logistic Stan optimizer lifecycle", () => {
       const parent = spans.find((span) => span.name === "Prophet.fit");
       const boundary = spans.find((span) => span.name === "effect-prophet.wasm.fit");
       const optionsSpan = spans.find((span) => span.name === "decodeOptions");
-      const optimizerSpan = spans.find((span) => span.name === "decodeLogisticOptimizer");
+      const optimizerSpan = spans.find((span) => span.name === "decodeLinearOptimizer");
 
       if (optionsSpan === undefined || optimizerSpan === undefined)
         throw new Error("Missing optimizer parsing spans");

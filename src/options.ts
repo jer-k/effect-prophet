@@ -19,11 +19,6 @@ import {
   type LinearOptimizer,
 } from "./linear-optimizer";
 import {
-  decodeLogisticOptimizer,
-  type EncodedLogisticOptimizer,
-  type LogisticOptimizer,
-} from "./logistic-optimizer";
-import {
   parseRegressorDefinitions,
   type EncodedRegressorDefinition,
   type InvalidRegressors,
@@ -100,11 +95,6 @@ export interface EncodedMapOptions {
   readonly changepoints?: EncodedChangepointSetting;
   readonly changepointPriorScale?: number;
   readonly optimizer?: EncodedLinearOptimizer;
-}
-
-/** Logistic MAP controls with shared Stan defaults and explicit historical-policy opt-in. */
-export interface EncodedLogisticMapOptions extends Omit<EncodedMapOptions, "optimizer"> {
-  readonly optimizer?: EncodedLogisticOptimizer;
 }
 
 /** Parsed explicit or automatic changepoint request. */
@@ -204,7 +194,7 @@ export interface EncodedFlatAdditiveOptions extends EncodedBuiltInOptions {
 export interface EncodedLogisticOptions extends EncodedBuiltInOptions {
   readonly growth: "logistic";
   readonly seasonalities?: ReadonlyArray<EncodedSeasonality>;
-  readonly map?: EncodedLogisticMapOptions;
+  readonly map?: EncodedMapOptions;
 }
 
 /** Supported configurations accepted by the public fitting operation. */
@@ -254,7 +244,7 @@ export interface FlatAdditiveOptions extends ParsedBuiltInOptions {
 export interface LogisticOptions extends ParsedBuiltInOptions {
   readonly growth: "logistic";
   readonly seasonalities: ReadonlyArray<SeasonalityDefinition>;
-  readonly map: MapOptions<LogisticOptimizer>;
+  readonly map: MapOptions<LinearOptimizer>;
 }
 
 /** Validated and defaulted public fitting configuration awaiting fit-time resolution. */
@@ -604,7 +594,7 @@ export const decodeOptions = Effect.fn("decodeOptions")(function* (
     syntax.growth === "logistic" && syntax.map !== undefined
       ? freezeMapOptions({
           ...syntax.map,
-          optimizer: yield* decodeLogisticOptimizer(syntax.map.optimizer),
+          optimizer: yield* decodeLinearOptimizer(syntax.map.optimizer),
         })
       : undefined;
 

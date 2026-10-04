@@ -315,7 +315,6 @@ describe("logistic MAP forecasting", () => {
           "effect_prophet.backend.type": "rust-wasm",
           "effect_prophet.model.type": "logistic-piecewise-map",
           "effect_prophet.prediction.count": index === 0 ? 1 : 2,
-          "effect_prophet.logistic.prediction.policy": "stan",
           ...(boundaryName.endsWith("simulate")
             ? { "effect_prophet.output.kind": "intervals", "effect_prophet.sample.count": 2 }
             : { "effect_prophet.scaling.mode": "absmax", "effect_prophet.seasonality.count": 0 }),

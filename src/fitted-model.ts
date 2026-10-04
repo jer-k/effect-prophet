@@ -290,7 +290,8 @@ export const PiecewiseMapFitSummarySchema = Schema.Struct({
   method: Schema.Literals(["piecewise-map-stan-v2", "mixed-piecewise-map-stan-v2"]),
 }).check(consistentStanMapCompletion);
 
-const StanLogisticMapFitSummarySchema = Schema.Struct({
+/** Logistic completion evidence from the shared Stan optimizer policy. */
+export const LogisticMapFitSummarySchema = Schema.Struct({
   ...StanMapFitSummaryFieldsSchema.fields,
   method: Schema.Literal("logistic-piecewise-map-stan-v2"),
 }).check(
@@ -304,7 +305,7 @@ const StanLogisticMapFitSummarySchema = Schema.Struct({
 /** Shared Stan diagnostics used by the complete adapter tracing boundary. */
 export const StanMapFitSummarySchema = Schema.Union([
   PiecewiseMapFitSummarySchema,
-  StanLogisticMapFitSummarySchema,
+  LogisticMapFitSummarySchema,
 ]);
 
 const PiecewiseMapParametersFieldsSchema = Schema.Struct({
@@ -451,23 +452,6 @@ const consistentPiecewiseMapParameters = Schema.makeFilter<PiecewiseMapParameter
 const PiecewiseMapParametersSchema = PiecewiseMapParametersFieldsSchema.check(
   consistentPiecewiseMapParameters,
 );
-
-const ProximalLogisticMapFitSummarySchema = Schema.Struct({
-  method: Schema.Literal("logistic-piecewise-map-proximal-v1"),
-  termination: Schema.Literal("converged"),
-  valueScale: PositiveFinite,
-  observationCount: Schema.Int.check(Schema.isGreaterThanOrEqualTo(2)),
-  iterations: Schema.Int.check(Schema.isGreaterThan(0)),
-  objective: Schema.Finite,
-  stationarityResidual: Schema.Finite.check(Schema.isGreaterThanOrEqualTo(0)),
-  changepointPriorScale: PositiveFinite,
-});
-
-/** Logistic completion evidence, including restorable historical proximal models. */
-export const LogisticMapFitSummarySchema = Schema.Union([
-  ProximalLogisticMapFitSummarySchema,
-  StanLogisticMapFitSummarySchema,
-]);
 
 const LogisticMapParametersFieldsSchema = Schema.Struct({
   model: LogisticMapModel,

@@ -2,8 +2,8 @@
 //! The block optimizer's diagonal approximations are not asserted to be Hessians.
 
 use super::{
-  LogisticMapControls, LogisticParameters, LogisticPredictionPolicy, StanLogisticObjective,
-  fit_logistic_map, initialize_logistic, predict_logistic_map, stable_sigmoid,
+  LogisticParameters, StanLogisticObjective, fit_logistic_map, initialize_logistic,
+  predict_logistic_map, stable_sigmoid,
 };
 use crate::additional_features::{
   AdditionalFeatureLayoutView, FeatureMatrixView, SeasonalityMaskView,
@@ -209,7 +209,6 @@ fn frozen_private_fit_score_and_actual_public_empty_point_forecasts_are_distinct
       },
       &[],
       &[],
-      LogisticPredictionPolicy::Stan,
     )
     .unwrap();
     let expected_trend = numbers(&fitted["trend"]);
@@ -275,7 +274,7 @@ fn fitting_empty_point_histories_matches_frozen_public_fold_and_forecasts() {
       },
       &[],
       case["changepointPrior"].as_f64().unwrap(),
-      LogisticMapControls::default(),
+      crate::stan::linear_optimizer::LinearOptimizerOptions::default(),
       scaling_mode(&case["scaling"]),
     )
     .unwrap();
@@ -284,30 +283,39 @@ fn fitting_empty_point_histories_matches_frozen_public_fold_and_forecasts() {
     assert!(model.coefficients.is_empty() && model.additional_coefficients.is_empty());
 
     // Output-first: independently fitted internal evidence is reported, not asserted. Same-state
-    // density, gradient and one-step checks above remain exact regressions.
-    for (name, actual, expected, threshold) in [
+    // density, gradient and one-step checks above remain exact regressions. As in the benchmark,
+    // stationarity is flagged only when Effect's residual exceeds Python's.
+    for (name, actual, expected, threshold, one_sided) in [
       (
         "objective",
         model.summary.objective,
         &fitted["objective"],
         &fixture["tolerances"]["fitObjectiveAbsolute"],
+        false,
       ),
       (
         "stationarity",
         model.summary.stationarity_residual,
         &fitted["stationarityResidual"],
         &fixture["tolerances"]["stationarityAbsolute"],
+        true,
       ),
       (
         "normalized-noise",
         model.noise_scale / model.scaling.scale,
         &fitted["normalizedNoise"],
         &fixture["tolerances"]["normalizedNoiseAbsolute"],
+        false,
       ),
     ] {
       let difference = actual - expected.as_f64().unwrap();
+      let excess = if one_sided {
+        difference
+      } else {
+        difference.abs()
+      };
 
-      if difference.abs() > threshold.as_f64().unwrap() {
+      if excess > threshold.as_f64().unwrap() {
         println!(
           "investigate {} {name}: {actual} versus {expected}; iterations={}, termination={:?}",
           case["id"], model.summary.iterations, model.summary.termination

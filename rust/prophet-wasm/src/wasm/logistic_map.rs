@@ -1,17 +1,13 @@
 use wasm_bindgen::prelude::wasm_bindgen;
 
-use crate::logistic_map::{
-  LogisticMapControls, LogisticParameters, LogisticPredictionPolicy, fit_logistic_map,
-  predict_logistic_map,
-};
+use crate::logistic_map::{LogisticParameters, fit_logistic_map, predict_logistic_map};
 use crate::piecewise_map::resolve_automatic_changepoints;
 use crate::target_scaling::{LogisticFloorPolicy, LogisticScaling, ScalingMode};
 use crate::wasm::map::{
   PiecewiseMapFitStatus, PiecewiseMapPredictionStatus, fit_error_frame, prediction_error_frame,
 };
 use crate::wasm::mixed_map::{
-  layout_view, mask_view, matrix_view, parse_controls, parse_metadata, parse_modes,
-  parse_seasonalities,
+  layout_view, mask_view, matrix_view, parse_metadata, parse_modes, parse_seasonalities,
 };
 use crate::wasm::protocol::{parse_explicit_changepoints, parse_nonnegative_integer};
 
@@ -56,12 +52,7 @@ pub fn fit_logistic_map_with_features(
   else {
     return fit_error(PiecewiseMapFitStatus::InvalidConfiguration);
   };
-  let controls = if let [1.0, budget, relative, absolute] = optimizer {
-    parse_controls(*budget, *relative, *absolute).map(LogisticMapControls::Proximal)
-  } else {
-    crate::wasm::protocol::parse_linear_optimizer(optimizer).map(LogisticMapControls::Stan)
-  };
-  let Some(controls) = controls else {
+  let Some(options) = crate::wasm::protocol::parse_linear_optimizer(optimizer) else {
     return fit_error(PiecewiseMapFitStatus::InvalidConfiguration);
   };
   let changepoints = if changepoint_mode == 0.0 {
@@ -115,7 +106,7 @@ pub fn fit_logistic_map_with_features(
     layout_view(additional_prior_scales, &metadata.offsets, &metadata.counts),
     &modes,
     changepoint_prior_scale,
-    controls,
+    options,
     scaling,
   ) {
     Ok(model) => {
@@ -188,11 +179,7 @@ pub fn predict_logistic_map_with_features(
   additional_component_offsets: &[f64],
   additional_component_counts: &[f64],
   column_modes: &[f64],
-  prediction_policy: f64,
 ) -> Vec<f64> {
-  let Some(policy) = LogisticPredictionPolicy::from_code(prediction_policy) else {
-    return prediction_error(PiecewiseMapPredictionStatus::InvalidConfiguration);
-  };
   let Ok(scaling) =
     LogisticScaling::parse(scaling_mode, target_scale, floor_policy, implicit_floor)
   else {
@@ -247,7 +234,6 @@ pub fn predict_logistic_map_with_features(
     layout_view(&placeholder_priors, &metadata.offsets, &metadata.counts),
     additional_coefficients,
     &modes,
-    policy,
   ) {
     Ok(batch) => success_frame(batch.values()),
     Err(error) => prediction_error_frame(error),
@@ -330,7 +316,6 @@ mod tests {
       &[],
       &[],
       &[],
-      0.0,
     );
 
     assert_eq!(prediction[0], 0.0);

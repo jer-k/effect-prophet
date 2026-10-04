@@ -626,12 +626,6 @@ describe("predictUncertainty", () => {
         map: {
           changepoints: { mode: "explicit", timestamps: [timestamp(40)] },
           changepointPriorScale: 0.2,
-          optimizer: {
-            algorithm: "proximal",
-            maxIterations: 10_000,
-            relativeTolerance: 1e-7,
-            absoluteTolerance: 1e-9,
-          },
         },
       }).pipe(Effect.provide(prophetFittingBackendLayer)),
     );
@@ -837,7 +831,7 @@ describe("predictUncertainty", () => {
               growth: "logistic",
               scaling: "minmax",
               regressors: [{ name: "promotion", standardization: "never" }],
-              map: { ...map, optimizer: { algorithm: "proximal" } },
+              map,
             }),
           ),
           Match.when("changing", () => fit(training, { ...customOnly, map })),

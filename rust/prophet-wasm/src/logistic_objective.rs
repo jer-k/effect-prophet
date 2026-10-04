@@ -1,10 +1,7 @@
 //! Parsed logistic MAP state for the existing Stan numerical strategies.
 //! The public no-point fold deliberately leaves m unchanged, matching Prophet.
 
-use super::{
-  LogisticParameters, ObjectiveArithmetic, evaluate, initialize_logistic,
-  normalized_time_and_hinges,
-};
+use super::{LogisticParameters, evaluate, initialize_logistic};
 use crate::fourier::checked_element_count;
 use crate::map_objective::{
   MapObjectiveError, constrained_stationarity_residual, stan_log_density_constant,
@@ -21,7 +18,6 @@ pub struct StanLogisticObjective<'a> {
   target: &'a [f64],
   capacities: &'a [f64],
   times: &'a [f64],
-  hinges: Vec<f64>,
   changepoint_times: Vec<f64>,
   changepoint_count: usize,
   features: &'a [f64],
@@ -90,8 +86,6 @@ impl<'a> StanLogisticObjective<'a> {
       .checked_add(1)
       .and_then(|count| count.checked_add(priors.len().max(1)))
       .ok_or(MapObjectiveError::SizeOverflow)?;
-    let (_, hinges) = normalized_time_and_hinges(times, internal_points)
-      .map_err(|_| MapObjectiveError::SizeOverflow)?;
     let initial = initialize_logistic(target, capacities, times)
       .map_err(|_| MapObjectiveError::NonFiniteResult)?;
 
@@ -99,7 +93,6 @@ impl<'a> StanLogisticObjective<'a> {
       target,
       capacities,
       times,
-      hinges,
       changepoint_times: internal_points.to_vec(),
       changepoint_count: changepoints.len(),
       features,
@@ -165,11 +158,10 @@ impl<'a> StanLogisticObjective<'a> {
     let beta_start = self.sigma_index + 1;
     let beta = &parameters[beta_start..beta_start + self.priors.len()];
     let evaluation = evaluate(
-      ObjectiveArithmetic::Stan(&self.changepoint_times),
+      &self.changepoint_times,
       self.target,
       self.capacities,
       self.times,
-      &self.hinges,
       parameters[0],
       parameters[1],
       deltas,

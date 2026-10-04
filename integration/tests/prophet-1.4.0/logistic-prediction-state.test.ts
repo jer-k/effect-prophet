@@ -53,10 +53,7 @@ const span = 4 * 86_400_000;
 
 const timestamp = (time: number) => new Date(origin + time * span).toISOString();
 
-const makeModel = (
-  reference: (typeof FixtureSchema.Type)["cases"][number],
-  policy: "stan" | "proximal",
-) =>
+const makeModel = (reference: (typeof FixtureSchema.Type)["cases"][number]) =>
   parseLogisticMapModel({
     model: "logistic-piecewise-map",
     targetScaling: {
@@ -77,18 +74,14 @@ const makeModel = (
     regressors: [],
     noiseScale: 1,
     fitSummary: {
-      ...(policy === "proximal"
-        ? { method: "logistic-piecewise-map-proximal-v1", termination: "converged" }
-        : {
-            method: "logistic-piecewise-map-stan-v2",
-            termination: "iteration-limit",
-            optimization: {
-              algorithm: "newton",
-              attemptCount: 1,
-              failedAttemptIterations: null,
-              hessianResets: 0,
-            },
-          }),
+      method: "logistic-piecewise-map-stan-v2",
+      termination: "iteration-limit",
+      optimization: {
+        algorithm: "newton",
+        attemptCount: 1,
+        failedAttemptIterations: null,
+        hessianResets: 0,
+      },
       valueScale: reference.scale,
       observationCount: 2,
       iterations: 1,
@@ -102,7 +95,7 @@ describe("Prophet 1.4.0 fixed public logistic prediction states", () => {
   it.each(fixture.cases)(
     "matches finite rows and reports nonfinite rows for $id",
     async (reference) => {
-      const model = await Effect.runPromise(makeModel(reference, "stan"));
+      const model = await Effect.runPromise(makeModel(reference));
 
       const restored = await Effect.runPromise(
         encodeFittedModel(model).pipe(Effect.flatMap(decodeFittedModel)),
@@ -167,31 +160,4 @@ describe("Prophet 1.4.0 fixed public logistic prediction states", () => {
       }
     },
   );
-
-  it.each(
-    fixture.cases.filter((reference) =>
-      reference.expected.some((expected) => expected.kind === "non-finite"),
-    ),
-  )("retains the continuous extension for historical proximal state $id", async (reference) => {
-    const model = await Effect.runPromise(makeModel(reference, "proximal"));
-
-    const restored = await Effect.runPromise(
-      encodeFittedModel(model).pipe(Effect.flatMap(decodeFittedModel)),
-    );
-
-    const rows = reference.times.map((time, row) => ({
-      timestamp: timestamp(time),
-      capacity: reference.capacities[row],
-      floor: reference.floors[row],
-    }));
-
-    const forecasts = await Effect.runPromise(predict(model, rows));
-
-    expect(forecasts).toHaveLength(rows.length);
-    expect(forecasts.every((forecast) => Number.isFinite(forecast.trend))).toBe(true);
-    expect(await Effect.runPromise(predict(restored, rows))).toEqual(forecasts);
-    expect(
-      await Effect.runPromise(predictUncertainty(restored, rows, { seed: 19, samples: 2 })),
-    ).toEqual(await Effect.runPromise(predictUncertainty(model, rows, { seed: 19, samples: 2 })));
-  });
 });

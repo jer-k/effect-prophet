@@ -67,7 +67,6 @@ const expectedDeclarationFiles = [
   "dist/internal/fitting-backend.d.ts",
   "dist/internal/prophet-fitting-backend.d.ts",
   "dist/linear-optimizer.d.ts",
-  "dist/logistic-optimizer.d.ts",
   "dist/logistic.d.ts",
   "dist/model-search.d.ts",
   "dist/model-serialization.d.ts",

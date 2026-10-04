@@ -1,9 +1,9 @@
 # Logistic piecewise MAP model
 
 The release target is unmodified Python Prophet 1.4.0 behavior by default. Public fitting now
-uses the shared Stan-style Newton/L-BFGS policy. This is not a full parity declaration: see the
-[current reconciliation evidence](../validation/logistic-reconciliation.md) for the remaining
-failed gates and the bounded fixed-state prediction evidence.
+uses the shared Stan-style Newton/L-BFGS policy; it is the only logistic fitting policy. This is
+not a full parity declaration: see the [current reconciliation evidence](../validation/logistic-reconciliation.md)
+for the output-first comparison results and the bounded fixed-state prediction evidence.
 
 ## Rows and scaling
 
@@ -35,16 +35,10 @@ are rejected before WASM. Budget exhaustion returns a finite fit with `"iteratio
 not a convergence claim. Method `logistic-piecewise-map-stan-v2` records the actual algorithm,
 termination, attempts, failed-attempt iterations when known, and Hessian-reset count.
 
-The historical policy remains an explicit opt-in:
-
-```ts
-{ growth: "logistic", map: { optimizer: { algorithm: "proximal", relativeTolerance: 1e-7, absoluteTolerance: 1e-9 } } }
-```
-
-For backward compatibility, an untagged **explicit tolerance override** also selects proximal;
-a budget-only override selects Stan. Proximal uses its historical 10,000-iteration default and
-retains `logistic-piecewise-map-proximal-v1` diagnostics. It cannot accept Stan-only controls.
-Previously saved proximal models remain restorable without being relabeled as Stan.
+The earlier proximal policy has been removed, as linear's coordinate policy was. Its
+`algorithm: "proximal"`, `relativeTolerance` and `absoluteTolerance` controls fail option
+parsing, and saved `logistic-piecewise-map-proximal-v1` models fail decoding; there is no
+migration shim.
 
 ## Objective and private state
 
@@ -61,30 +55,22 @@ dummy coordinates are omitted from public deltas/coefficients and serialized sta
 Python's actual fold, even though it changes general logistic forecasts. Do not rescore the
 folded public state and present it as the private optimizer evidence.
 
-The historical proximal path instead uses a true-empty design and continuous hinge exponent.
-Its smoother singular-rate handling is not evidence of Python-default compatibility.
-
 ## Prediction and lifecycle
 
-Stan-fitted models evaluate Python's public gamma-offset recurrence. Empty logical changepoints
+Prediction evaluates Python's public gamma-offset recurrence. Empty logical changepoints
 retain its zero-time, zero-delta prediction dummy. A zero post-change rate can produce nonfinite
 gamma/forecast values; these become `PredictionError` with reason `"non-finite-forecast"`, not
 successful NaN output or a silently substituted continuous curve. Rows before the singular
 changepoint remain evaluable, and the complete batch fails at its first affected input row.
 
-Historical proximal models retain the continuous hinge representation:
-
 ```text
-eta = rate*(t-offset) + sum(delta_j*max(0,t-c_j))
 trend = floor + (capacity-floor)*sigmoid(eta)
 additive = X_a*beta_additive
 multiplicative = X_m*beta_multiplicative
 value = trend*(1+multiplicative)+additive
 ```
 
-Away from singular segment rates, the hinge representation is algebraically equivalent to
-Python's gamma-offset trend. Stable sigmoid remains shared; compensated hinge accumulation is
-specific to historical proximal prediction. The generated `logistic-prediction-state.json`
+`eta` follows the gamma-offset recurrence above. The generated `logistic-prediction-state.json`
 checks zero base/segment rates, later recovery, endpoint changes and nonzero sign crossings in
 both scalings. This does not claim bitwise parity or cover every extreme floating-point state.
 
@@ -92,14 +78,14 @@ Named additive components use output units. Multiplicative components expose a d
 factor and output-unit contribution `trend*factor`. Prediction order and duplicate instances
 with different capacities, floors, conditions, or regressors are preserved. Persistence stores
 complete public prediction state and honest completion evidence, not a refitting instruction.
-Uncertainty uses the same method-specific fixed trend and failure semantics before sampling;
+Uncertainty uses the same fixed trend and failure semantics before sampling;
 its existing scalar future-event process is unchanged, not Python-default uncertainty parity.
 CV consumes the same public state and filters explicit changepoints strictly before each
 fold's final training timestamp and preserves the selected optimizer controls.
 
 ## Rust/WASM ownership and tracing
 
-`rust/prophet-wasm/src/logistic_map.rs` owns preprocessing and the historical policy;
+`rust/prophet-wasm/src/logistic_map.rs` owns preprocessing, the shared evaluator and prediction;
 `logistic_objective.rs` owns private Stan state, diagnostics, and folding. The shared `stan/`
 modules own optimizer selection, execution, and fallback. `wasm/logistic_map.rs` owns checked
 numeric framing. TypeScript owns option/model parsing, complete-row policy, persistence,
@@ -115,11 +101,8 @@ The fit frame prefix is
  ...changepoints, ...deltas, ...coefficients]
 ```
 
-Control wire version two is the shared Stan frame; version one explicitly selects proximal.
-The decoder checks that completion matches the requested policy, rejects malformed evidence,
-and translates failed attempts without losing either cause. Existing `effect-prophet.wasm.fit`
+Controls use the shared version-two Stan frame; any other version is rejected. The decoder
+requires Stan completion evidence, rejects malformed evidence, and translates failed attempts
+without losing either cause. Existing `effect-prophet.wasm.fit`
 and `.predict` spans cover setup, invocation, result decoding/copying, and failure translation.
 Optimizer attributes contain bounded choices/counts only, never numerical state or payloads.
-Prediction and simulation wire calls require a checked policy code derived from the persisted
-method (`0` Stan, `1` historical continuous); omitted/unknown codes are rejected. Their existing
-boundary spans record only the bounded `effect_prophet.logistic.prediction.policy` choice.

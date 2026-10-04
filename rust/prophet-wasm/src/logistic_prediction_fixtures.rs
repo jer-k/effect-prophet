@@ -1,6 +1,6 @@
 //! Fixed public prediction states, including Prophet's singular gamma results.
 
-use super::{LogisticParameters, LogisticPredictionPolicy, predict_logistic_map};
+use super::{LogisticParameters, predict_logistic_map};
 use crate::additional_features::{
   AdditionalFeatureLayoutView, FeatureMatrixView, SeasonalityMaskView,
 };
@@ -65,7 +65,6 @@ fn fixed_public_logistic_states_match_python_finite_and_singular_rows() {
         },
         &[],
         &[],
-        LogisticPredictionPolicy::Stan,
       );
 
       let simulation = simulate_map(
@@ -81,7 +80,6 @@ fn fixed_public_logistic_states_match_python_finite_and_singular_rows() {
           time_origin: 0.0,
           time_scale: 1.0,
           changepoints: &points,
-          policy: LogisticPredictionPolicy::Stan,
         },
         1.0,
         SimulationRows {
