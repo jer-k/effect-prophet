@@ -18,10 +18,9 @@ MAP configurations accept:
 }
 ```
 
-An explicit scaling option on otherwise featureless linear input selects linear piecewise MAP,
-because Python Prophet applies scaling inside its prior-informed model. Featureless linear input
-without `scaling` or `map` retains this package's existing OLS route. Flat growth always uses the
-flat MAP model and supports both modes.
+All linear input uses linear piecewise MAP, including featureless requests without `scaling`
+or `map`. Python Prophet applies scaling inside its prior-informed model; the default mode is
+absmax. Flat growth always uses the flat MAP model and supports both modes.
 
 Logistic growth extends this contract with row floors and capacities. With explicit floors,
 absmax uses `max(abs(y-floor))` and minmax uses `max(capacity)-min(floor)`. Without explicit

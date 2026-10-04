@@ -1,6 +1,8 @@
 import { Effect, Exit, Option, Predicate, Result, Schema, Tracer } from "effect";
 import { describe, expect, it } from "vitest";
 
+import { fixedPiecewiseParameters } from "./helpers/fixed-piecewise-model";
+
 import { makeTestFittingBackend } from "./internal/fitting-backend-test-layer";
 
 import {
@@ -416,7 +418,7 @@ describe("searchModels", () => {
   it("records nonfinite objective arithmetic without promoting it to a defect", async () => {
     const backend = makeTestFittingBackend(
       Result.succeed({
-        model: "linear-trend",
+        ...fixedPiecewiseParameters,
         intercept: 0,
         slope: 0,
         timeOrigin: epoch,
@@ -461,12 +463,12 @@ describe("searchModels", () => {
     }
   });
 
-  it("records interval-unsupported candidates without a fold, then runs supported MAP", async () => {
+  it("supports seeded intervals for featureless and configured MAP candidates", async () => {
     const result = await Effect.runPromise(
       search({
         candidates: [
           {
-            id: "ols",
+            id: "featureless",
             options: {
               builtInSeasonalities: {
                 daily: "off",
@@ -484,11 +486,8 @@ describe("searchModels", () => {
       }),
     );
 
-    expect(result.candidates[0]).toMatchObject({
-      kind: "failure",
-      failure: { tag: "InputValidationError", input: "evaluation-plan" },
-    });
-    expect(result.selected.id).toBe("map");
+    expect(result.candidates.map((candidate) => candidate.kind)).toEqual(["success", "success"]);
+    expect(["featureless", "map"]).toContain(result.selected.id);
   });
 
   it("requires an explicit exact-zero policy for percentage objectives", async () => {

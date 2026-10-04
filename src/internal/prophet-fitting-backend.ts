@@ -2,7 +2,6 @@ import { Layer } from "effect";
 
 import { FitPlan, FittingBackend } from "./fitting-backend";
 import { fitFlatMapWithWasm } from "./wasm-flat-map-backend";
-import { fitLinearTrendWithWasm } from "./wasm-linear-trend-backend";
 import { fitLogisticMapWithWasm } from "./wasm-logistic-map-backend";
 import { fitMixedFlatMapWithWasm, fitMixedLinearMapWithWasm } from "./wasm-mixed-map-backend";
 import { fitPiecewiseMapFeaturesWithWasm } from "./wasm-piecewise-map-backend";
@@ -20,7 +19,6 @@ export const prophetFittingBackendLayer: Layer.Layer<FittingBackend> = Layer.suc
   {
     fit: (input, plan) =>
       FitPlan.$match(plan, {
-        LinearTrend: () => fitLinearTrendWithWasm(input),
         LinearPiecewiseMap: ({
           scaling,
           seasonalities,

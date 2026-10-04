@@ -6,21 +6,13 @@ import {
   InvalidFittedModel,
   parseFittedModel,
   parseFlatMapModel,
-  parseLinearModel,
   parsePiecewiseMapModel,
   type FlatMapParameters,
-  type LinearParameters,
   type PiecewiseMapParameters,
 } from "../src/fitted-model";
 import { makeSeasonalityLayout, parseSeasonalities } from "../src/seasonality";
 
-const linearParameters: LinearParameters = {
-  model: "linear-trend",
-  intercept: 2,
-  slope: 6,
-  timeOrigin: 1_704_067_200_000,
-  timeScale: 2_000,
-};
+import { fixedPiecewiseParameters } from "./helpers/fixed-piecewise-model";
 
 const validFlatMapParameters = async (): Promise<FlatMapParameters> => {
   const definitions = await Effect.runPromise(
@@ -99,13 +91,17 @@ const expectInvalidModel = async (
 };
 
 describe("fitted model domain", () => {
-  it("parses and freezes linear state", async () => {
-    const input = { ...linearParameters };
-    const model = await Effect.runPromise(parseLinearModel(input));
-
-    expect(model).toEqual(linearParameters);
-    expect(model).not.toBe(input);
-    expect(Object.isFrozen(model)).toBe(true);
+  it("rejects the removed ordinary-linear model kind", async () => {
+    await expectInvalidModel(
+      parseFittedModel({
+        model: "linear-trend",
+        intercept: 2,
+        slope: 6,
+        timeOrigin: 0,
+        timeScale: 1,
+      }),
+      "model",
+    );
   });
 
   it("parses and freezes complete piecewise MAP state", async () => {
@@ -140,7 +136,10 @@ describe("fitted model domain", () => {
   });
 
   it("rejects unrecognized model tags", async () => {
-    await expectInvalidModel(parseFittedModel({ ...linearParameters, model: "seasonal" }), "model");
+    await expectInvalidModel(
+      parseFittedModel({ ...fixedPiecewiseParameters, model: "seasonal" }),
+      "model",
+    );
   });
 
   it("includes flat and piecewise MAP models in the fitted union", async () => {

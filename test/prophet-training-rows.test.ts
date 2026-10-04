@@ -29,7 +29,7 @@ const cases: ReadonlyArray<{
   readonly features: "none" | "conditional" | "logistic";
   readonly options: EncodedProphetOptions;
 }> = [
-  { name: "OLS", features: "none", options: {} },
+  { name: "default MAP", features: "none", options: {} },
   { name: "featureless MAP", features: "none", options: { map: automatic } },
   {
     name: "additive seasonal MAP",
@@ -112,7 +112,7 @@ describe("Prophet training-row policy through generated WASM", () => {
       expect(model).toEqual(sortedModel);
       expect(JSON.stringify(shuffled)).toBe(before);
 
-      if (model.model !== "linear-trend") expect(model.fitSummary.observationCount).toBe(96);
+      expect(model.fitSummary.observationCount).toBe(96);
 
       if (model.model === "linear-piecewise-map" || model.model === "logistic-piecewise-map") {
         expect(model.changepointTimestamps).toHaveLength(25);
@@ -147,21 +147,19 @@ describe("Prophet training-row policy through generated WASM", () => {
       );
       expect(forecasts.every((row) => Number.isFinite(row.value))).toBe(true);
 
-      if (model.model !== "linear-trend") {
-        const controls = { seed: 42, samples: 16, output: "samples" } as const;
-        const samples = await Effect.runPromise(predictUncertainty(model, future, controls));
-        const replay = await Effect.runPromise(predictUncertainty(restored, future, controls));
+      const controls = { seed: 42, samples: 16, output: "samples" } as const;
+      const samples = await Effect.runPromise(predictUncertainty(model, future, controls));
+      const replay = await Effect.runPromise(predictUncertainty(restored, future, controls));
 
-        expect(replay).toEqual(samples);
-        expect(samples.kind).toBe("samples");
+      expect(replay).toEqual(samples);
+      expect(samples.kind).toBe("samples");
 
-        if (samples.kind === "samples")
-          expect(Array.from(samples.value).every(Number.isFinite)).toBe(true);
-      }
+      if (samples.kind === "samples")
+        expect(Array.from(samples.value).every(Number.isFinite)).toBe(true);
     },
   );
 
-  it("counts repeated target rows independently in OLS rather than deduplicating or averaging dates", async () => {
+  it("retains repeated target rows in default MAP rather than deduplicating or averaging dates", async () => {
     const model = await Effect.runPromise(
       fit([
         { timestamp: at(2), value: 2 },
@@ -173,7 +171,11 @@ describe("Prophet training-row policy through generated WASM", () => {
 
     const forecasts = await Effect.runPromise(predict(model, [at(0), at(1), at(2)]));
 
-    expect(forecasts.map((row) => row.value)).toEqual([1, 2, 3]);
+    expect(model).toMatchObject({
+      model: "linear-piecewise-map",
+      fitSummary: { observationCount: 4, method: "piecewise-map-stan-v2" },
+    });
+    expect(forecasts.every((row) => Number.isFinite(row.value))).toBe(true);
   });
 
   it.each([

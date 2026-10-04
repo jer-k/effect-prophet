@@ -12,8 +12,6 @@ import { PositiveFinite } from "./internal/numeric-schemas";
 import { LogisticTargetScalingSchema } from "./logistic";
 import { TargetScalingSchema } from "./target-scaling";
 
-const LinearModel = Schema.Literal("linear-trend");
-
 const FlatMapModel = Schema.Literal("flat-map");
 
 const PiecewiseMapModel = Schema.Literal("linear-piecewise-map");
@@ -21,15 +19,7 @@ const PiecewiseMapModel = Schema.Literal("linear-piecewise-map");
 const LogisticMapModel = Schema.Literal("logistic-piecewise-map");
 
 const ModelDiscriminantSchema = Schema.Struct({
-  model: Schema.Union([LinearModel, FlatMapModel, PiecewiseMapModel, LogisticMapModel]),
-});
-
-const LinearParametersSchema = Schema.Struct({
-  model: LinearModel,
-  intercept: Schema.Finite,
-  slope: Schema.Finite,
-  timeOrigin: Schema.Finite,
-  timeScale: PositiveFinite,
+  model: Schema.Union([FlatMapModel, PiecewiseMapModel, LogisticMapModel]),
 });
 
 const FlatMapFitSummarySchema = Schema.Struct({
@@ -547,10 +537,6 @@ const LogisticMapParametersSchema = LogisticMapParametersFieldsSchema.check(
   consistentLogisticMapParameters,
 );
 
-const FittedLinearProphetSchema = LinearParametersSchema.pipe(
-  Schema.brand("effect-prophet/FittedLinearProphet"),
-);
-
 const FittedFlatMapProphetSchema = FlatMapParametersSchema.pipe(
   Schema.brand("effect-prophet/FittedFlatMapProphet"),
 );
@@ -564,16 +550,12 @@ const FittedLogisticMapProphetSchema = LogisticMapParametersSchema.pipe(
 );
 
 const FittedProphetSchema = Schema.Union([
-  FittedLinearProphetSchema,
   FittedFlatMapProphetSchema,
   FittedPiecewiseMapProphetSchema,
   FittedLogisticMapProphetSchema,
 ]);
 
 type ParsedPiecewiseMapParameters = typeof PiecewiseMapParametersSchema.Type;
-
-/** Untrusted parameters returned by a linear-trend fitting backend. */
-export type LinearParameters = typeof LinearParametersSchema.Type;
 
 type ParsedFlatMapParameters = typeof FlatMapParametersSchema.Type;
 
@@ -598,14 +580,7 @@ type ParsedLogisticMapParameters = typeof LogisticMapParametersSchema.Type;
 export type LogisticMapParameters = ParsedLogisticMapParameters;
 
 /** Untrusted fitted parameters returned by a fitting backend. */
-export type Parameters =
-  | LinearParameters
-  | FlatMapParameters
-  | PiecewiseMapParameters
-  | LogisticMapParameters;
-
-/** A parsed ordinary least-squares linear-trend model. */
-export type FittedLinearProphet = typeof FittedLinearProphetSchema.Type;
+export type Parameters = FlatMapParameters | PiecewiseMapParameters | LogisticMapParameters;
 
 /** A trusted, deeply immutable reduced flat MAP model. */
 export type FittedFlatMapProphet = typeof FittedFlatMapProphetSchema.Type;
@@ -638,10 +613,6 @@ const decodeModelDiscriminant = Schema.decodeUnknownEffect(ModelDiscriminantSche
   errors: "all",
 });
 
-const decodeLinearModel = Schema.decodeUnknownEffect(FittedLinearProphetSchema, {
-  errors: "all",
-});
-
 const decodeFlatMapModel = Schema.decodeUnknownEffect(FittedFlatMapProphetSchema, {
   errors: "all",
 });
@@ -657,8 +628,6 @@ const decodeLogisticMapModel = Schema.decodeUnknownEffect(FittedLogisticMapProph
 const decodeFittedModel = Schema.decodeUnknownEffect(FittedProphetSchema, {
   errors: "all",
 });
-
-const freezeLinearModel = (model: FittedLinearProphet): FittedLinearProphet => Object.freeze(model);
 
 const freezeFeatureModel = <
   Model extends FittedFlatMapProphet | FittedPiecewiseMapProphet | FittedLogisticMapProphet,
@@ -723,17 +692,7 @@ const freezeFeatureModel = <
   return Object.freeze(model);
 };
 
-const freezeFittedModel = (model: FittedProphet): FittedProphet => {
-  if (
-    model.model === "flat-map" ||
-    model.model === "linear-piecewise-map" ||
-    model.model === "logistic-piecewise-map"
-  ) {
-    return freezeFeatureModel(model);
-  }
-
-  return Object.freeze(model);
-};
+const freezeFittedModel = (model: FittedProphet): FittedProphet => freezeFeatureModel(model);
 
 type FirstArgument<Function> = Function extends (
   input: infer Input,
@@ -741,20 +700,6 @@ type FirstArgument<Function> = Function extends (
 ) => infer _Output
   ? Input
   : never;
-
-/**
- * Parse untrusted linear parameters into a fresh, frozen fitted model.
- *
- * @param input - Values at a fitting, prediction, or serialization trust boundary.
- * @returns A trusted linear model or structured fitted-model issues.
- */
-export const parseLinearModel = (
-  input: FirstArgument<typeof decodeLinearModel>,
-): Effect.Effect<FittedLinearProphet, InvalidFittedModel> =>
-  decodeLinearModel(input).pipe(
-    Effect.map(freezeLinearModel),
-    Effect.mapError((error) => invalidFittedModelFromIssue(error.issue)),
-  );
 
 /**
  * Parse complete flat MAP state into a fresh, deeply frozen fitted model.

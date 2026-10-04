@@ -25,7 +25,6 @@ import { decodeObservations, type EncodedObservation, type Observations } from "
 import {
   checkExplicitChangepointBounds,
   decodeOptions,
-  isFeaturelessOls,
   optionsValidationErrorFromSeasonality,
   type EncodedProphetOptions,
   type ProphetOptions,
@@ -468,7 +467,7 @@ const prepareRollingOrigin = (
     );
 
     const controls = yield* parseCrossValidationInput(modeInput);
-    const fitOptions = crossValidationFitOptions(optionsInput, originalOptions, controls);
+    const fitOptions = crossValidationFitOptions(optionsInput, controls);
 
     const options =
       fitOptions === optionsInput ? originalOptions : yield* decodeOptions(fitOptions);
@@ -500,15 +499,6 @@ const prepareRollingOrigin = (
         }
 
         totalCells = nextTotal;
-      }
-
-      if (isFeaturelessOls(options)) {
-        return yield* Effect.fail(
-          invalidPlan(
-            ["uncertainty"],
-            "Featureless linear growth uses OLS, which has no predictive simulation",
-          ),
-        );
       }
     }
 

@@ -18,8 +18,8 @@ policy. Prediction capacities and floors never alter it.
 Omitted built-in seasonality controls are `"auto"`, for every growth family. Python's history/span
 and minimum-positive-gap rules decide whether yearly (order 10), weekly (3), and daily (4) are
 included. Duplicate timestamps do not count as zero sampling gaps. Use `"off"` explicitly for
-custom-only or no-seasonality fitting. This shared seasonality change does not migrate ordinary
-resolved-featureless linear OLS fitting; that separate linear-default difference remains open.
+custom-only or no-seasonality fitting. Featureless linear fitting also uses MAP. Partial map
+requests retain automatic changepoints for both linear and logistic growth.
 
 Logistic uses the same algorithm-specific controls as linear Stan MAP:
 

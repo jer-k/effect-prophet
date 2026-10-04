@@ -13,9 +13,9 @@ describe("Prophet 1.4.0 preprocessing compatibility", () => {
         fit(referenceCase.observations).pipe(Effect.provide(prophetFittingBackendLayer)),
       );
 
-      expect(model.model, referenceCase.id).toBe("linear-trend");
+      expect(model.model, referenceCase.id).toBe("linear-piecewise-map");
 
-      if (model.model !== "linear-trend") {
+      if (model.model !== "linear-piecewise-map") {
         continue;
       }
 

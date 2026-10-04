@@ -35,7 +35,6 @@ const PredictionFailureReasonSchema = Schema.Literals([
   "invalid-model",
   "non-finite-forecast",
   "backend-failure",
-  "unsupported-uncertainty",
   "simulation-limit",
 ]);
 
@@ -74,7 +73,6 @@ export type PredictionFailureReason =
   | "invalid-model"
   | "non-finite-forecast"
   | "backend-failure"
-  | "unsupported-uncertainty"
   | "simulation-limit";
 
 /** The WASM adapter phase that failed. */

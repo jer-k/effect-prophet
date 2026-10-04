@@ -85,6 +85,67 @@ describe("Python-default seasonality requests", () => {
     },
   );
 
+  it.each(["linear", "logistic"] as const)(
+    "keeps automatic changepoints through partial %s MAP requests",
+    async (growth) => {
+      const rows = history(40, day).map((row) =>
+        growth === "logistic" ? row : { timestamp: row.timestamp, value: row.value },
+      );
+
+      const common = {
+        builtInSeasonalities: { daily: "off", weekly: "off", yearly: "off" },
+        map: { changepointPriorScale: 0.5 },
+      } as const;
+
+      const options: EncodedProphetOptions = Match.value(growth).pipe(
+        Match.when("linear", (growth) => ({ ...common, growth })),
+        Match.when("logistic", (growth) => ({ ...common, growth })),
+        Match.exhaustive,
+      );
+
+      const partial = await Effect.runPromise(
+        fit(rows, options).pipe(Effect.provide(prophetFittingBackendLayer)),
+      );
+
+      const explicit = await Effect.runPromise(
+        fit(rows, {
+          ...options,
+          map: { ...common.map, changepoints: { mode: "auto", count: 25, range: 0.8 } },
+        }).pipe(Effect.provide(prophetFittingBackendLayer)),
+      );
+
+      expect(partial).toEqual(explicit);
+
+      if (partial.model === "flat-map") throw new Error("Expected a piecewise MAP trend");
+
+      expect(partial.changepointTimestamps).toHaveLength(25);
+    },
+  );
+
+  it.each([
+    ["short daily history", 10, day],
+    ["monthly history", 12, 30 * day],
+  ] as const)("fits default featureless linear MAP on %s", async (_label, count, spacing) => {
+    const rows = history(count, spacing).map(({ timestamp, value }) => ({ timestamp, value }));
+
+    const implicit = await Effect.runPromise(
+      fit(rows).pipe(Effect.provide(prophetFittingBackendLayer)),
+    );
+
+    const explicit = await Effect.runPromise(
+      fit(rows, { map: { changepoints: { mode: "auto", count: 25, range: 0.8 } } }).pipe(
+        Effect.provide(prophetFittingBackendLayer),
+      ),
+    );
+
+    expect(implicit).toEqual(explicit);
+
+    if (implicit.model !== "linear-piecewise-map") throw new Error("Expected default linear MAP");
+
+    expect(implicit.seasonalities.components).toEqual([]);
+    expect(implicit.changepointTimestamps.length).toBeGreaterThan(0);
+  });
+
   it("uses full-history resolved seasons for Python's default CV initial window", async () => {
     const plan = await Effect.runPromise(
       planRollingOrigin(
@@ -128,10 +189,6 @@ describe("Python-default seasonality requests", () => {
       );
 
       expect(implicit).toEqual(explicit);
-
-      if (implicit.model === "linear-trend") {
-        throw new Error("Weekly history must use a seasonal model");
-      }
 
       expect(
         implicit.seasonalities.components.map((component) => component.definition.name),

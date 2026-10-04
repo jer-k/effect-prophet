@@ -970,7 +970,7 @@ describe("predictUncertainty", () => {
     }
   });
 
-  it("rejects malformed rows before options; skips unsupported and empty runtime paths", async () => {
+  it("rejects malformed rows before options and supports default featureless MAP uncertainty", async () => {
     const model = await linearModel();
 
     const rowError = await Effect.runPromise(
@@ -983,19 +983,17 @@ describe("predictUncertainty", () => {
       expect(rowError.input).toBe("prediction-timestamps");
     }
 
-    const ols = await Effect.runPromise(
+    const featureless = await Effect.runPromise(
       fit(history).pipe(Effect.provide(prophetFittingBackendLayer)),
     );
 
-    const unsupported = await Effect.runPromise(
-      Effect.flip(predictUncertainty(ols, future, { seed: 1 })),
+    expect(featureless.model).toBe("linear-piecewise-map");
+
+    const intervals = await Effect.runPromise(
+      predictUncertainty(featureless, future, { seed: 1, samples: 16 }),
     );
 
-    expect(unsupported).toBeInstanceOf(PredictionError);
-
-    if (unsupported instanceof PredictionError) {
-      expect(unsupported.reason).toBe("unsupported-uncertainty");
-    }
+    expect(intervals.kind).toBe("intervals");
 
     const oversizedRows = Array.from({ length: 500 }, () => future[0] ?? "");
 
@@ -1010,7 +1008,7 @@ describe("predictUncertainty", () => {
     }
   });
 
-  it("keeps option, model, support, alignment and budget failure precedence", async () => {
+  it("keeps option, model, alignment and budget failure precedence", async () => {
     const model = await linearModel();
 
     if (model.model !== "linear-piecewise-map") {
@@ -1062,23 +1060,19 @@ describe("predictUncertainty", () => {
       expect(legacy.reason).toBe("invalid-model");
     }
 
-    const ols = await Effect.runPromise(
+    const featureless = await Effect.runPromise(
       fit(history).pipe(Effect.provide(prophetFittingBackendLayer)),
     );
 
-    const unsupported = await Effect.runPromise(
+    const invalidBounds = await Effect.runPromise(
       Effect.flip(
-        predictUncertainty(ols, [{ timestamp: "2025-01-08T00:00:00.000Z", capacity: 10 }], {
+        predictUncertainty(featureless, [{ timestamp: "2025-01-08T00:00:00.000Z", capacity: 10 }], {
           seed: 1,
         }),
       ),
     );
 
-    expect(unsupported).toBeInstanceOf(PredictionError);
-
-    if (unsupported instanceof PredictionError) {
-      expect(unsupported.reason).toBe("unsupported-uncertainty");
-    }
+    expect(invalidBounds).toBeInstanceOf(InputValidationError);
   });
 
   it("ends one safe public/child trace through real generated WASM", async () => {

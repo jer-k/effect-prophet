@@ -20,8 +20,9 @@ npm run benchmark -- --case map-training-duplicates-auto-stan-v2 \
 ```
 
 `scenarios.json` also inventories non-timing policy comparisons. A catalog entry is not passing
-evidence. Featureless default Effect OLS versus Prophet MAP and built-in seasonality defaults
-are not matched-fit benchmarks. Zero-span linear probes produce no usable matched fit; their
+evidence. Featureless linear fitting uses MAP with automatic changepoints, even when built-in
+seasonalities resolve empty or are explicitly off. Partial map requests retain those defaults.
+Fixed-equation prediction cases use authored MAP state, not an alternate fitting objective. Zero-span linear probes produce no usable matched fit; their
 failures must not be relabeled passing or timed as equivalent work.
 
 See [all runnable declarations](../../../CASES.md),

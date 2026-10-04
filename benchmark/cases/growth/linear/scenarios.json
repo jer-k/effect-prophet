@@ -6,9 +6,9 @@
       "capability": "default linear fit without extra features",
       "pythonCall": "Prophet().fit(history)",
       "effectCall": "fit(observations)",
-      "comparison": "known-difference",
+      "comparison": "equivalent-objective",
       "pythonBehavior": "Piecewise MAP with default automatic changepoints; built-in seasonalities may resolve from history.",
-      "effectBehavior": "Featureless OLS; built-in seasonalities default off.",
+      "effectBehavior": "Piecewise MAP with default automatic changepoints, including partial map requests; built-in seasonalities resolve from history.",
       "timingEligible": false,
       "evidence": ["docs/compatibility/prophet-1.4.0.md#linear-growth"]
     },

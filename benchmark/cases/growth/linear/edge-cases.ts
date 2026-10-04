@@ -66,7 +66,7 @@ const features = {
   regressors: [{ name: "promotion", priorScale: 10, standardization: "never" }],
 } as const;
 
-/** Migration edge cases use the existing correctness-first adapters, never matched OLS/MAP timing. */
+/** Migration edge cases use the existing correctness-first MAP adapters. */
 export const linearGrowthEdgeCases: ReadonlyArray<BenchmarkCase> = [
   ...(["ordered", "unsorted", "duplicates"] as const).flatMap((variant) =>
     (["explicit", "auto"] as const).map((points) => ({

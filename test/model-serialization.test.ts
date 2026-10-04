@@ -9,25 +9,11 @@ import {
   predict,
   prophetFittingBackendLayer,
   type EncodedFittedModel,
-  type FittedLinearProphet,
+  type FittedPiecewiseMapProphet,
 } from "../src/index";
-import { parseLinearModel, type LinearParameters } from "../src/fitted-model";
+import { fixedPiecewiseModel as fittedModel } from "./helpers/fixed-piecewise-model";
 
-const fittedParameters: LinearParameters = {
-  model: "linear-trend",
-  intercept: 2,
-  slope: 6,
-  timeOrigin: 1_704_067_200_000,
-  timeScale: 2_000,
-};
-
-const fittedModel = Effect.runSync(parseLinearModel(fittedParameters));
-
-const encodedModel: EncodedFittedModel = {
-  modelKind: "linear-trend",
-  coefficients: { intercept: 2, slope: 6 },
-  timeScaling: { origin: 1_704_067_200_000, scale: 2_000 },
-};
+const encodedModel: EncodedFittedModel = Effect.runSync(encodeFittedModel(fittedModel));
 
 const expectDecodeFailure = async (decoding: ReturnType<typeof decodeFittedModel>) => {
   const error = await Effect.runPromise(Effect.flip(decoding));
@@ -37,7 +23,7 @@ const expectDecodeFailure = async (decoding: ReturnType<typeof decodeFittedModel
 };
 
 describe("fitted model serialization", () => {
-  it("round-trips an OLS model through JSON", async () => {
+  it("round-trips a featureless MAP model through JSON", async () => {
     const encoded = await Effect.runPromise(encodeFittedModel(fittedModel));
     const decoded = await Effect.runPromise(decodeFittedModel(JSON.parse(JSON.stringify(encoded))));
 
@@ -126,6 +112,16 @@ describe("fitted model serialization", () => {
     });
   });
 
+  it("rejects removed OLS payloads without fitting", async () => {
+    await expectDecodeFailure(
+      decodeFittedModel({
+        modelKind: "linear-trend",
+        coefficients: { intercept: 2, slope: 6 },
+        timeScaling: { origin: 1_704_067_200_000, scale: 2_000 },
+      }),
+    );
+  });
+
   it("rejects former additive ridge payloads without fitting", async () => {
     await expectDecodeFailure(
       decodeFittedModel({
@@ -146,7 +142,7 @@ describe("fitted model serialization", () => {
   });
 
   it("serializes only portable prediction state", async () => {
-    const modelWithBackendState: FittedLinearProphet & {
+    const modelWithBackendState: FittedPiecewiseMapProphet & {
       readonly backend: "wasm";
       readonly handle: object;
     } = { ...fittedModel, backend: "wasm", handle: {} };

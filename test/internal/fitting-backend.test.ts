@@ -9,6 +9,8 @@ import {
   type TrainingInput,
 } from "../../src/internal/fitting-backend";
 import { makeTestFittingBackend } from "./fitting-backend-test-layer";
+import { fixedPiecewiseParameters } from "../helpers/fixed-piecewise-model";
+import { defaultAutomaticMapOptions } from "../../src/options";
 
 const runnableWithoutServices = <A, E>(effect: Effect.Effect<A, E>): Effect.Effect<A, E> => effect;
 
@@ -17,15 +19,20 @@ const trainingInput: TrainingInput = {
   values: new Float64Array([1.5, 2.5]),
 };
 
-const fitPlan = FitPlan.LinearTrend();
+const fitPlan = FitPlan.LinearPiecewiseMap({
+  ...defaultAutomaticMapOptions,
+  scaling: "absmax",
+  seasonalities: fixedPiecewiseParameters.seasonalities,
+  seasonalityMasks: { rowCount: 2, componentCount: 0, values: new Uint8Array() },
+  additionalFeatures: {
+    matrix: { rowCount: 2, columnCount: 0, values: new Float64Array() },
+    layout: { coefficientCount: 0, components: [], priorScales: [] },
+  },
+  events: fixedPiecewiseParameters.events,
+  regressors: [],
+});
 
-const fittedParameters: Parameters = {
-  model: "linear-trend",
-  intercept: 1.5,
-  slope: 1,
-  timeOrigin: 1_704_067_200_000,
-  timeScale: 1_000,
-};
+const fittedParameters: Parameters = fixedPiecewiseParameters;
 
 const fitWithBackend = Effect.fn("fitWithBackend")(function* (
   input: TrainingInput,

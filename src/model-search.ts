@@ -326,7 +326,7 @@ export const searchModels = Effect.fn("Prophet.searchModels")(function* (
 
   const candidates = validatedCandidates.map((candidate) => ({
     id: candidate.id,
-    options: crossValidationFitOptions(candidate.options, candidate.parsedOptions, controls),
+    options: crossValidationFitOptions(candidate.options, controls),
   }));
 
   // Validate the raw plan before attempting to copy it; schema failures remain typed.

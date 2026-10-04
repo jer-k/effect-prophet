@@ -14,11 +14,12 @@ import {
 } from "../src/index";
 import { deriveEvaluationFoldSeed } from "../src/evaluation-seed";
 import { FittingBackend, type FitPlan } from "../src/internal/fitting-backend";
-import { makeWasmLinearTrendAdapter } from "../src/internal/wasm-linear-trend-backend";
+import { makeWasmPiecewiseMapAdapter } from "../src/internal/wasm-piecewise-map-backend";
+import { fixedPiecewiseParameters } from "./helpers/fixed-piecewise-model";
 import { makeTestFittingBackend } from "./internal/fitting-backend-test-layer";
 import { builtInSeasonalitiesOff } from "./helpers/built-in-seasonalities";
 
-const olsOptions = { builtInSeasonalities: builtInSeasonalitiesOff };
+const featurelessOptions = { builtInSeasonalities: builtInSeasonalitiesOff };
 
 const dayMs = 86_400_000;
 
@@ -30,7 +31,7 @@ const history = (days: ReadonlyArray<number>) =>
   days.map((day) => ({ timestamp: at(day), value: day + 1 }));
 
 const run = (days: ReadonlyArray<number>, input: Parameters<typeof planRollingOrigin>[2]) =>
-  Effect.runPromise(planRollingOrigin(history(days), olsOptions, input));
+  Effect.runPromise(planRollingOrigin(history(days), featurelessOptions, input));
 
 const failure = (days: ReadonlyArray<number>, input: Parameters<typeof planRollingOrigin>[2]) =>
   Effect.runPromise(Effect.flip(planRollingOrigin(history(days), {}, input)));
@@ -479,7 +480,9 @@ describe("crossValidate", () => {
     const observations = history([0, 1, 2, 3, 4, 5]);
 
     const operation = (rows: typeof observations) =>
-      crossValidate(rows, olsOptions, plan).pipe(Effect.provide(prophetFittingBackendLayer));
+      crossValidate(rows, featurelessOptions, plan).pipe(
+        Effect.provide(prophetFittingBackendLayer),
+      );
 
     const result = await Effect.runPromise(operation(observations));
 
@@ -493,7 +496,9 @@ describe("crossValidate", () => {
     );
 
     const independent = await Effect.runPromise(
-      fit(observations.slice(0, 3), olsOptions).pipe(Effect.provide(prophetFittingBackendLayer)),
+      fit(observations.slice(0, 3), featurelessOptions).pipe(
+        Effect.provide(prophetFittingBackendLayer),
+      ),
     );
 
     const independentPredictions = await Effect.runPromise(predict(independent, [at(3), at(4)]));
@@ -506,14 +511,14 @@ describe("crossValidate", () => {
         cutoff: epoch + 2 * dayMs,
         trainingCount: 3,
         assessmentCount: 2,
-        model: "linear-trend",
+        model: "linear-piecewise-map",
       },
       {
         index: 1,
         cutoff: epoch + 3 * dayMs,
         trainingCount: 4,
         assessmentCount: 2,
-        model: "linear-trend",
+        model: "linear-piecewise-map",
       },
     ]);
     expect(result.rows.map((row) => [row.fold, row.timestamp, row.horizonMs, row.actual])).toEqual([
@@ -660,25 +665,25 @@ describe("crossValidate", () => {
     expect(observations).toEqual(originalRows);
   });
 
-  it("retains unconfigured OLS while an explicit CV scaling request selects linear MAP", async () => {
+  it("uses linear MAP for featureless folds with default or explicit CV scaling", async () => {
     const observations = history([0, 1, 2, 3, 4, 5]).map((row, index) => ({
       ...row,
       value: row.value + (index % 2) * 0.2,
     }));
 
     const defaultResult = await Effect.runPromise(
-      crossValidate(observations, olsOptions, plan, {}).pipe(
+      crossValidate(observations, featurelessOptions, plan, {}).pipe(
         Effect.provide(prophetFittingBackendLayer),
       ),
     );
 
     const explicit = await Effect.runPromise(
-      crossValidate(observations, olsOptions, plan, { scaling: "minmax" }).pipe(
+      crossValidate(observations, featurelessOptions, plan, { scaling: "minmax" }).pipe(
         Effect.provide(prophetFittingBackendLayer),
       ),
     );
 
-    expect(defaultResult.folds.every(({ model }) => model === "linear-trend")).toBe(true);
+    expect(defaultResult.folds.every(({ model }) => model === "linear-piecewise-map")).toBe(true);
     expect(explicit.folds.every(({ model }) => model === "linear-piecewise-map")).toBe(true);
   });
 
@@ -933,7 +938,7 @@ describe("crossValidate", () => {
           }
 
           return Result.succeed({
-            model: "linear-trend" as const,
+            ...fixedPiecewiseParameters,
             intercept: 1,
             slope: 1,
             timeOrigin: epoch,
@@ -1175,11 +1180,30 @@ describe("crossValidate", () => {
   });
 
   it("retains real WASM loader failure and failed nested fold spans", async () => {
-    const adapter = makeWasmLinearTrendAdapter(() => {
+    const adapter = makeWasmPiecewiseMapAdapter(() => {
       throw new Error("private loader path");
     });
 
-    const layer = Layer.succeed(FittingBackend, { fit: adapter.fit });
+    const layer = Layer.succeed(FittingBackend, {
+      fit: (input, plan) => {
+        if (!Predicate.isTagged("LinearPiecewiseMap")(plan))
+          return Effect.die("Expected a linear MAP plan");
+
+        return adapter.fitWithFeatures(
+          input,
+          plan.scaling,
+          plan.seasonalities,
+          plan.changepoints,
+          plan.changepointPriorScale,
+          plan.optimizer,
+          plan.seasonalityMasks,
+          plan.additionalFeatures,
+          plan.events,
+          plan.regressors,
+        );
+      },
+    });
+
     const spans: Array<Tracer.Span> = [];
 
     const tracer = Tracer.make({
@@ -1264,7 +1288,7 @@ describe("crossValidate", () => {
     });
 
     await Effect.runPromise(
-      crossValidate(history([0, 1, 2, 3, 4, 5]), olsOptions, plan).pipe(
+      crossValidate(history([0, 1, 2, 3, 4, 5]), featurelessOptions, plan).pipe(
         Effect.provide(prophetFittingBackendLayer),
         Effect.withSpan("evaluation.parent"),
         Effect.withTracer(tracer),
@@ -1313,7 +1337,7 @@ describe("crossValidate", () => {
         "effect_prophet.fold.index": index,
         "effect_prophet.training.count": index + 3,
         "effect_prophet.assessment.count": 2,
-        "effect_prophet.model.type": "linear-trend",
+        "effect_prophet.model.type": "linear-piecewise-map",
         "effect_prophet.evaluation.scaling.mode": "absmax",
       });
 
@@ -1652,7 +1676,7 @@ describe("crossValidate intervals", () => {
     ).toBe(false);
   });
 
-  it("rejects statically guaranteed OLS and per-fold or aggregate simulation work before fit", async () => {
+  it("rejects per-fold or aggregate simulation work before fit", async () => {
     const backend = makeTestFittingBackend(
       Result.fail(
         new FittingError({
@@ -1662,21 +1686,6 @@ describe("crossValidate intervals", () => {
         }),
       ),
     );
-
-    const impossible = await Effect.runPromise(
-      Effect.flip(
-        crossValidate(history([0, 1, 2, 3, 4, 5]), olsOptions, plan, mode).pipe(
-          Effect.provide(backend.layer),
-        ),
-      ),
-    );
-
-    if (!(impossible instanceof InputValidationError)) {
-      throw new Error("Expected preflight support failure");
-    }
-
-    expect(impossible).toMatchObject({ input: "evaluation-plan" });
-    expect(impossible.issues[0]?.path).toEqual(["uncertainty"]);
 
     const historyRows = Array.from({ length: 300 }, (_, index) => ({
       timestamp: new Date(epoch + index).toISOString(),
@@ -1731,10 +1740,11 @@ describe("crossValidate intervals", () => {
     expect(backend.invocations).toHaveLength(0);
   });
 
-  it("preserves a runtime unsupported-model cause and the point-first failure order", async () => {
+  it("rejects invalid backend state and preserves the point-first failure order", async () => {
     const modelLayer = makeTestFittingBackend(
       Result.succeed({
-        model: "linear-trend",
+        ...fixedPiecewiseParameters,
+        noiseScale: -1,
         intercept: 2,
         slope: 1,
         timeOrigin: epoch,
@@ -1752,11 +1762,11 @@ describe("crossValidate intervals", () => {
 
     expect(unsupported).toMatchObject({
       fold: 0,
-      stage: "uncertainty",
-      reason: "uncertainty-failed",
+      stage: "fit",
+      reason: "fit-failed",
     });
     expect(unsupported.cause).toMatchObject({
-      reason: "unsupported-uncertainty",
+      reason: "backend-failure",
     });
     expect(modelLayer.invocations).toHaveLength(1);
 

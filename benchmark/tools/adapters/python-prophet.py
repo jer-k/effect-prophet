@@ -469,7 +469,8 @@ def metadata_projection(model: Prophet, benchmark_case: dict[str, Any]) -> dict[
 
     if benchmark_case["workload"]["kind"] == "fixed-linear-prediction":
         return {
-            "modelKind": "linear-trend",
+            "modelKind": "linear-piecewise-map",
+            "targetScaling": {"mode": "absmax", "offset": 0.0, "scale": 1.0},
             "changepointTimestamps": [],
             "seasonalities": [],
             "events": [],

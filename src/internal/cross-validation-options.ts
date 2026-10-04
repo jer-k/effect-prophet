@@ -1,7 +1,7 @@
 import { Effect, Schema } from "effect";
 
 import { InputValidationError, inputValidationErrorFromIssue } from "../errors";
-import { isFeaturelessOls, type EncodedProphetOptions, type ProphetOptions } from "../options";
+import type { EncodedProphetOptions } from "../options";
 import {
   defaultTargetScalingMode,
   TargetScalingModeSchema,
@@ -87,15 +87,9 @@ export const parseCrossValidationInput = (
     });
   });
 
-/** Resolve fold/search fit options, retaining OLS unless scaling is explicitly requested. */
+/** Resolve fold/search fit options using the independent CV scaling policy. */
 export const crossValidationFitOptions = (
   input: EncodedProphetOptions,
-  options: ProphetOptions,
   controls: CrossValidationInput,
-): EncodedProphetOptions => {
-  if (isFeaturelessOls(options) && controls.scaling === undefined) {
-    return input;
-  }
-
-  return Object.freeze({ ...input, scaling: controls.scaling ?? defaultTargetScalingMode });
-};
+): EncodedProphetOptions =>
+  Object.freeze({ ...input, scaling: controls.scaling ?? defaultTargetScalingMode });

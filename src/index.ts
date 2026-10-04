@@ -104,7 +104,6 @@ export {
   type EncodedFittedModel,
   type EncodedFittedRegressor,
   type EncodedFlatMapModel,
-  type EncodedLinearModel,
   type EncodedLogisticMapModel,
   type EncodedPiecewiseMapModel,
   type SerializableFittedModel,
@@ -151,7 +150,6 @@ export {
 
 export {
   type FittedFlatMapProphet,
-  type FittedLinearProphet,
   type FittedLogisticMapProphet,
   type FittedPiecewiseMapProphet,
   type FittedProphet,

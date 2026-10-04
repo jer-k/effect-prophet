@@ -48,21 +48,10 @@ interface PiecewiseMapPredictionStatuses {
   readonly NonFiniteResult: number;
 }
 
-interface LinearTrendFitStatuses {
-  readonly Success: number;
-  readonly InsufficientObservations: number;
-  readonly LengthMismatch: number;
-  readonly NonFiniteTimestamp: number;
-  readonly NonFiniteValue: number;
-  readonly ZeroTimeVariance: number;
-  readonly NonFiniteResult: number;
-}
-
 /** Generated Rust/WASM exports exercised directly by the Node boundary tests. */
 export interface ProphetWasmNodeBindings {
   readonly FlatMapFitStatus: FlatMapFitStatuses;
   readonly FlatMapPredictionStatus: FlatMapPredictionStatuses;
-  readonly LinearTrendFitStatus: LinearTrendFitStatuses;
   readonly PiecewiseMapFitStatus: PiecewiseMapFitStatuses;
   readonly PiecewiseMapPredictionStatus: PiecewiseMapPredictionStatuses;
   readonly fit_flat_map: (
@@ -143,14 +132,6 @@ export interface ProphetWasmNodeBindings {
   readonly predict_logistic_map_with_features: (...args: ReadonlyArray<unknown>) => Float64Array;
   readonly simulate_map_with_features: (...args: ReadonlyArray<unknown>) => Float64Array;
   readonly simulate_logistic_map_with_features: (...args: ReadonlyArray<unknown>) => Float64Array;
-  readonly fit_linear_trend: (timestamps: Float64Array, values: Float64Array) => Float64Array;
-  readonly predict_linear_trend: (
-    timestamps: Float64Array,
-    intercept: number,
-    slope: number,
-    timeOrigin: number,
-    timeScale: number,
-  ) => Float64Array;
 }
 
 const require = createRequire(import.meta.url);
@@ -176,8 +157,6 @@ const requiredFunctionExports = [
   "fit_piecewise_map_with_scaling",
   "predict_piecewise_map",
   "predict_piecewise_map_with_scaling",
-  "fit_linear_trend",
-  "predict_linear_trend",
 ] as const;
 
 const requiredStatusMembers = {
@@ -221,15 +200,6 @@ const requiredStatusMembers = {
     "InvalidModel",
     "InvalidConfiguration",
     "SizeOverflow",
-    "NonFiniteResult",
-  ],
-  LinearTrendFitStatus: [
-    "Success",
-    "InsufficientObservations",
-    "LengthMismatch",
-    "NonFiniteTimestamp",
-    "NonFiniteValue",
-    "ZeroTimeVariance",
     "NonFiniteResult",
   ],
 } as const;

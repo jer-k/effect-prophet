@@ -13,18 +13,15 @@ import {
 } from "./event";
 import {
   parseFlatMapModel,
-  parseLinearModel,
   parseLogisticMapModel,
   parsePiecewiseMapModel,
   PiecewiseMapFitSummarySchema,
   LogisticMapFitSummarySchema,
   type FittedFlatMapProphet,
-  type FittedLinearProphet,
   type FittedLogisticMapProphet,
   type FittedPiecewiseMapProphet,
   type FlatMapParameters,
   type InvalidFittedModel,
-  type LinearParameters,
   type LogisticMapParameters,
   type PiecewiseMapParameters,
 } from "./fitted-model";
@@ -36,30 +33,6 @@ import type {
 } from "./regressor";
 import * as Seasonality from "./seasonality";
 import { TargetScalingSchema, type TargetScaling } from "./target-scaling";
-
-/** The legacy portable representation of a fitted ordinary linear model. */
-export interface EncodedLinearModel {
-  /** Identifies the prediction equation independently of the fitting backend. */
-  readonly modelKind: "linear-trend";
-
-  /** Coefficients of the trend equation over scaled time. */
-  readonly coefficients: {
-    /** Predicted value at scaled time zero. */
-    readonly intercept: number;
-
-    /** Change in the prediction over one scaled time unit. */
-    readonly slope: number;
-  };
-
-  /** Scaling learned during fitting and required to evaluate future timestamps. */
-  readonly timeScaling: {
-    /** Timestamp mapped to scaled time zero. */
-    readonly origin: number;
-
-    /** Positive timestamp interval mapped to one scaled time unit. */
-    readonly scale: number;
-  };
-}
 
 /** Portable training-derived metadata for one fitted additive regressor. */
 export interface EncodedFittedRegressor {
@@ -165,29 +138,15 @@ export interface EncodedLogisticMapModel {
 
 /** Every currently supported JSON-compatible fitted-model payload. */
 export type EncodedFittedModel =
-  | EncodedLinearModel
   | EncodedFlatMapModel
   | EncodedPiecewiseMapModel
   | EncodedLogisticMapModel;
 
 /** Fitted models with complete portable prediction state. */
 export type SerializableFittedModel =
-  | FittedLinearProphet
   | FittedFlatMapProphet
   | FittedPiecewiseMapProphet
   | FittedLogisticMapProphet;
-
-const EncodedLinearModelSchema = Schema.Struct({
-  modelKind: Schema.Literal("linear-trend"),
-  coefficients: Schema.Struct({
-    intercept: Schema.Number,
-    slope: Schema.Number,
-  }),
-  timeScaling: Schema.Struct({
-    origin: Schema.Number,
-    scale: Schema.Number,
-  }),
-});
 
 const EncodedEventOccurrencesSchema = Schema.Array(
   Schema.Struct({
@@ -328,16 +287,10 @@ const EncodedLogisticMapModelSchema = Schema.Struct({
 });
 
 const EncodedModelDiscriminantSchema = Schema.Struct({
-  modelKind: Schema.Literals([
-    "linear-trend",
-    "flat-map",
-    "linear-piecewise-map",
-    "logistic-piecewise-map",
-  ]),
+  modelKind: Schema.Literals(["flat-map", "linear-piecewise-map", "logistic-piecewise-map"]),
 });
 
 const EncodedFittedModelSchema = Schema.Union([
-  EncodedLinearModelSchema,
   EncodedFlatMapModelSchema,
   EncodedPiecewiseMapModelSchema,
   EncodedLogisticMapModelSchema,
@@ -463,26 +416,6 @@ const serializationErrorFromInvalidSeasonality = (
     })),
     message: error.message,
   });
-
-const linearParametersFromEncoded = (encoded: EncodedLinearModel): LinearParameters => ({
-  model: "linear-trend",
-  intercept: encoded.coefficients.intercept,
-  slope: encoded.coefficients.slope,
-  timeOrigin: encoded.timeScaling.origin,
-  timeScale: encoded.timeScaling.scale,
-});
-
-const encodeLinearModel = (model: FittedLinearProphet): EncodedLinearModel => ({
-  modelKind: "linear-trend",
-  coefficients: {
-    intercept: model.intercept,
-    slope: model.slope,
-  },
-  timeScaling: {
-    origin: model.timeOrigin,
-    scale: model.timeScale,
-  },
-});
 
 const encodeFittedRegressors = (
   regressors: ReadonlyArray<FittedRegressor>,
@@ -794,16 +727,6 @@ const decodeLogisticMapModel = Effect.fn("decodeLogisticMapModel")(function* (
 export const encodeFittedModel = Effect.fn("Prophet.encodeFittedModel")(function* (
   model: SerializableFittedModel,
 ): Effect.fn.Return<EncodedFittedModel, ModelSerializationError> {
-  if (model.model === "linear-trend") {
-    const parsedModel = yield* parseLinearModel(model).pipe(
-      Effect.mapError((error) =>
-        serializationErrorFromInvalidModel("encode", "linear-trend", error),
-      ),
-    );
-
-    return encodeLinearModel(parsedModel);
-  }
-
   if (model.model === "flat-map") {
     const parsedModel = yield* parseFlatMapModel(model).pipe(
       Effect.mapError((error) => serializationErrorFromInvalidModel("encode", "flat-map", error)),
@@ -864,14 +787,6 @@ export const decodeFittedModel = Effect.fn("Prophet.decodeFittedModel")(function
   const encoded = yield* decodeEncodedFittedModel(input).pipe(
     Effect.mapError((error) => modelSerializationErrorFromIssue("decode", error.issue)),
   );
-
-  if (encoded.modelKind === "linear-trend") {
-    return yield* parseLinearModel(linearParametersFromEncoded(encoded)).pipe(
-      Effect.mapError((error) =>
-        serializationErrorFromInvalidModel("decode", "linear-trend", error),
-      ),
-    );
-  }
 
   if (encoded.modelKind === "flat-map") {
     return yield* decodeFlatMapModel(encoded);
