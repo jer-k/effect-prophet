@@ -13,3 +13,6 @@ __pycache__/
 
 .pi/
 .agents/
+
+site/.vitepress/cache/
+site/.vitepress/dist/

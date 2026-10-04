@@ -18,6 +18,8 @@ export default defineConfig({
     ".zed/**",
     ".windsurf/**",
     "dist/**",
+    "site/.vitepress/cache/**",
+    "site/.vitepress/dist/**",
     "tools/oxlint/anti-slop/**",
   ],
   jsPlugins: [

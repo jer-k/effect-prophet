@@ -5,6 +5,8 @@
     "integration/fixtures/**/*.json",
     "benchmark/results/retained/**",
     "benchmark/results/RESULTS.md",
-    "benchmark/CASES.md"
+    "benchmark/CASES.md",
+    "site/.vitepress/cache/**",
+    "site/.vitepress/dist/**"
   ]
 }

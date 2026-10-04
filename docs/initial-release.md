@@ -96,7 +96,7 @@ It is green locally.
 | ----------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | License     | `"UNLICENSED"`, no `LICENSE` file                                                   | Pick one. Prophet is MIT; the third-party notices for Stan, Eigen, nalgebra and ARM routines already ship in `wasm/third-party/`.                       |
 | Version     | `0.0.0`                                                                             | Choose a first version (e.g. `0.1.0`) and add a changelog                                                                                               |
-| Effect      | Regular `dependency`, pinned to `4.0.0-beta.107`                                    | Effect libraries usually declare `effect` as a **peer** dependency so apps share one copy (decision 4)                                                  |
+| Effect      | Regular `dependency`, pinned to stable `4.0.0`                                      | Effect libraries usually declare `effect` as a **peer** dependency so apps share one copy (decision 4)                                                  |
 | Runtime     | Node only: `wasm-pack --target nodejs` plus `createRequire`                         | State "Node ≥ 22.19 only" clearly, or add a bundler/browser build (decision 5)                                                                          |
 | Publishing  | No release workflow                                                                 | Add an npm publish workflow, or document manual steps                                                                                                   |
 | CI coverage | CI runs format, lint, typecheck, unit tests, package smoke, Rust and fixture checks | Also run `benchmark:test`, `benchmark:typecheck`, `test:wasm:optimizer` and the four example scripts. `npm run check` covers them locally; CI does not. |
@@ -145,6 +145,11 @@ Proposal:
   and `site/examples/trend.md` has a warning to remove once fixed.
 - **`evaluateHoldout` needs non-empty tuple types** for `development`/`holdout`, while `fit`
   accepts plain arrays, so `array.slice(...)` results need a guard first.
+- **`npm run check` fails on a fresh clone.** `benchmark:test` imports `effect-prophet` from
+  `dist/`, but `check` only builds `dist/` later, in `test:package`. Existing checkouts pass
+  because an old `dist/` is lying around, and CI never runs `benchmark:test`. Fix: build before
+  `benchmark:test`, or point the benchmark's Vitest at `src/` the way the root `tsconfig.json`
+  does.
 
 ## Decisions needed
 
@@ -160,8 +165,8 @@ Proposal:
 3. **Uncertainty method.** We use Python's exact per-path simulation, not its default vectorized
    shortcut, and intervals require an explicit `predictUncertainty` call with a seed.
    _Recommendation:_ keep, and list it as a documented difference.
-4. **Effect as a peer dependency, and shipping on an Effect beta.** _Recommendation:_ make it a peer
-   dependency with a compatible range. Decide whether to wait for a stable Effect 4.
+4. **Effect as a peer dependency.** We're now on stable Effect `4.0.0`. _Recommendation:_ make it a
+   peer dependency with a `^4.0.0` range.
 5. **Node-only for v0.1.** _Recommendation:_ yes. Add browser/bundler support later.
 6. **One acceptance policy.** Logistic is judged output-first; linear still gates on objective and
    noise. _Recommendation:_ move linear to output-first too, so there is one rule.
