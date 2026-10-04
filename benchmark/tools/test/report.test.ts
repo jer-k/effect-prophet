@@ -209,6 +209,70 @@ describe("linear fit-quality acceptance with deferred stationarity", () => {
     expect(report.timings).toEqual([]);
   });
 
+  const outputFirst = {
+    kind: "output-first",
+    investigate: {
+      objectiveAbsolute: 0.01,
+      normalizedNoiseAbsolute: 0.0002,
+      stationarityExcess: 0.01,
+    },
+  } as const;
+
+  const withValues = (values: Readonly<Record<string, number>>) =>
+    optimizerQualityEntries.map((entry) => ({
+      ...entry,
+      value: values[entry.name] ?? entry.value,
+    }));
+
+  it("passes output-first cases with matching outputs and reports internal differences", async () => {
+    const report = await optimizerReport(
+      withValues({
+        objective: -550.94,
+        "stationarity-residual": 161.4,
+        "normalized-noise": 0.0021,
+      }),
+      optimizerQualityEntries,
+      outputFirst,
+    );
+
+    expect(report.correctness[0]?.status).toBe("passed");
+    expect(report.timings).toHaveLength(2);
+    expect(report.correctness[0]?.investigations?.map((item) => item.name)).toEqual([
+      "objective",
+      "stationarity-residual",
+      "normalized-noise",
+    ]);
+    expect(report.correctness[0]?.investigations?.[0]).toMatchObject({
+      run: 0,
+      effectValue: -550.94,
+      pythonValue: -550.96916,
+      threshold: 0.01,
+    });
+    expect(report.correctness[0]?.note).toContain("investigate");
+    expect(report.stationarity[0]?.policy).toBe("output-first");
+    expect(renderBenchmarkMarkdown(report)).toContain("## Output-first investigation flags");
+  });
+
+  it("flags output-first stationarity only when Effect is less stationary than Python", async () => {
+    const better = await optimizerReport(
+      withValues({ "stationarity-residual": 0.00154 }),
+      withValues({ "stationarity-residual": 0.03019 }),
+      outputFirst,
+    );
+
+    const worse = await optimizerReport(
+      withValues({ "stationarity-residual": 0.04119 }),
+      withValues({ "stationarity-residual": 0.03019 }),
+      outputFirst,
+    );
+
+    expect(better.correctness[0]?.investigations).toEqual([]);
+    expect(worse.correctness[0]?.status).toBe("passed");
+    expect(worse.correctness[0]?.investigations?.map((item) => item.name)).toEqual([
+      "stationarity-residual",
+    ]);
+  });
+
   it.each([
     { name: "objective", value: -550.99 },
     { name: "normalized-noise", value: 0.0021 },
@@ -265,7 +329,10 @@ describe("linear fit-quality acceptance with deferred stationarity", () => {
     }
   });
 
-  it("does not bypass forecasts, metadata or persistence when stationarity is deferred", async () => {
+  it.each([
+    { policy: "deferred stationarity", quality: undefined },
+    { policy: "output-first", quality: outputFirst },
+  ])("does not bypass forecasts, metadata or persistence under $policy", async ({ quality }) => {
     if (optimizerCase === undefined) throw new Error("Expected frozen automatic linear case");
 
     const cases = await Effect.runPromise(
@@ -276,6 +343,7 @@ describe("linear fit-quality acceptance with deferred stationarity", () => {
           independentRuns: 1,
           measuredIterations: 3,
           phases: ["warm-predict"],
+          optimizerQuality: quality ?? optimizerCase.optimizerQuality,
         },
       ]),
     );

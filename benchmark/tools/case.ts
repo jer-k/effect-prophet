@@ -269,6 +269,17 @@ export const BenchmarkCaseSchema = Schema.Struct({
           followUp: Schema.Literal("EP-097"),
         }),
       }),
+      // Fitted outputs gate eligibility. Internal fit evidence must still be reported; differences
+      // beyond these thresholds are flagged for investigation, not failed. Stationarity is flagged
+      // only when Effect's residual exceeds Python's.
+      Schema.Struct({
+        kind: Schema.Literal("output-first"),
+        investigate: Schema.Struct({
+          objectiveAbsolute: NonNegativeFinite,
+          normalizedNoiseAbsolute: NonNegativeFinite,
+          stationarityExcess: NonNegativeFinite,
+        }),
+      }),
     ]),
   ),
   rowSelection: Schema.optionalKey(

@@ -160,5 +160,24 @@ class PythonLogisticReferenceTest(unittest.TestCase):
                                        -model.stan_fit.optimized_params_dict["lp__"], places=6)
 
 
+class LaplaceStationarityTest(unittest.TestCase):
+    def test_near_zero_deltas_use_the_subgradient_regardless_of_sign(self):
+        from linear_optimizer_evidence import (
+            LAPLACE_KINK_TOLERANCE, laplace_stationarity_residual)
+
+        # basic-96-auto-minmax endpoints share smooth log-density derivative -11.39111.
+        tau = 0.05
+        smooth = -11.39111
+        self.assertEqual(laplace_stationarity_residual(4.337e-11, smooth - 1 / tau, tau), 0)
+        self.assertEqual(laplace_stationarity_residual(-1.856e-9, smooth + 1 / tau, tau), 0)
+        self.assertEqual(laplace_stationarity_residual(0.0, smooth, tau), 0)
+        self.assertAlmostEqual(laplace_stationarity_residual(0.0, -25.0, tau), 5.0)
+        self.assertEqual(LAPLACE_KINK_TOLERANCE, 1e-6)
+
+        delta = 2 * LAPLACE_KINK_TOLERANCE
+        self.assertEqual(laplace_stationarity_residual(delta, smooth - 1 / tau, tau),
+                         abs(smooth - 1 / tau))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -38,7 +38,7 @@
     },
     {
       "path": "conditional-map-fit.json",
-      "sha256": "7b11da2d961414d5f59fb45e20002a9789eb3501e51e7bc9b19d986c61bc20c2"
+      "sha256": "cb07a6e6e6d73d7f23ddadc299bf3b33bd739e34cbe752c4700d789a0d0feeff"
     },
     {
       "path": "target-scaling.json",
@@ -86,7 +86,7 @@
     "platform": "linux/amd64",
     "uvVersion": "0.8.15"
   },
-  "generatorRevision": "550835c535775484e2b8ce62f0cd08ed857a4141534f617b1a9e85b98a0c1548",
+  "generatorRevision": "c558cee415739fb145c4d82b2109cd081d11a42dae027888d4dd21d8850e4093",
   "numericalEnvironment": [
     {
       "name": "cmdstanpy",

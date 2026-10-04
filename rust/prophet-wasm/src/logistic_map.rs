@@ -1281,11 +1281,10 @@ fn evaluate(
   };
   let mut gradient_deltas: Vec<f64> = deltas
     .iter()
-    .map(|delta| {
-      if matches!(arithmetic, ObjectiveArithmetic::Stan(_)) && *delta != 0.0 {
-        delta.signum() / changepoint_prior_scale
-      } else {
-        0.0
+    .map(|&delta| match arithmetic {
+      ObjectiveArithmetic::Proximal => 0.0,
+      ObjectiveArithmetic::Stan(_) => {
+        crate::map_objective::laplace_derivative(delta, changepoint_prior_scale)
       }
     })
     .collect();
@@ -1450,13 +1449,18 @@ fn evaluate(
   let mut objective = smooth_objective;
   for (index, &delta) in deltas.iter().enumerate() {
     objective += delta.abs() / changepoint_prior_scale;
-    let residual = if delta == 0.0 {
-      (gradient_deltas[index].abs() - 1.0 / changepoint_prior_scale).max(0.0)
-    } else if matches!(arithmetic, ObjectiveArithmetic::Stan(_)) {
-      gradient_deltas[index].abs()
-    } else {
-      (gradient_deltas[index] + delta.signum() / changepoint_prior_scale).abs()
+    // Stan arithmetic already includes the Laplace term in its delta gradients.
+    let laplace = match arithmetic {
+      ObjectiveArithmetic::Proximal => {
+        crate::map_objective::laplace_derivative(delta, changepoint_prior_scale)
+      }
+      ObjectiveArithmetic::Stan(_) => 0.0,
     };
+    let residual = crate::map_objective::laplace_stationarity_residual(
+      delta,
+      gradient_deltas[index] + laplace,
+      changepoint_prior_scale,
+    );
     stationarity_residual = stationarity_residual.max(residual);
   }
 

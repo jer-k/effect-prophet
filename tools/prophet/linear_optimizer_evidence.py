@@ -10,6 +10,20 @@ import re
 
 import numpy as np
 
+# Mirrors LAPLACE_KINK_TOLERANCE in rust/prophet-wasm/src/map_objective.rs. Stan's
+# Newton/L-BFGS stop near, not exactly on, zero; an exact-zero test made the residual
+# jump by 2 / tau with the sign of a round-off-sized delta.
+LAPLACE_KINK_TOLERANCE = 1e-6
+
+
+def laplace_stationarity_residual(delta, log_density_gradient, tau):
+    """KKT residual for one Laplace coordinate from Stan's log-density gradient."""
+    if abs(delta) > LAPLACE_KINK_TOLERANCE:
+        return abs(log_density_gradient)
+    # Stan's gradient includes -sign(delta) / tau, which is zero at an exact zero.
+    smooth = log_density_gradient + np.sign(delta) / tau
+    return max(abs(smooth) - 1 / tau, 0)
+
 
 def stan_density(model, data, constrained):
     """Read proportional density and unconstrained gradient from pinned Stan."""
@@ -118,8 +132,8 @@ def map_optimizer_evidence(model):
     gradient[2 + len(params["delta"])] /= params["sigma_obs"]
 
     for index, delta in enumerate(params["delta"]):
-        if delta == 0:
-            gradient[2 + index] = max(abs(gradient[2 + index]) - 1 / data["tau"], 0)
+        gradient[2 + index] = laplace_stationarity_residual(
+            delta, gradient[2 + index], data["tau"])
 
     objective = -value
     stationarity = float(np.max(np.abs(gradient)))

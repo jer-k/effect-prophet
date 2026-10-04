@@ -8,7 +8,7 @@ Related: [alignment plan](linear-map-stan-alignment-plan.md), [same-point invest
 
 Jeremy accepted the tiny objective, normalized-noise and forecast differences in the frozen ordered automatic case, requested a separate stationarity ticket, and authorized the remaining benchmark/validation/review closeout with stationarity deferred to EP-097.
 
-This approval changes the **benchmark acceptance policy**, not the optimizer or the meaning of the public `stationarityResidual`. Newton/L-BFGS algorithms, initialization, priors, exact Laplace objective, controls, automatic selection, original-initialization fallback and the 10,000-step per-attempt budget remain unchanged. It is not a promise of bitwise trajectories, small KKT residuals, or global optima.
+This approval changes the **benchmark acceptance policy**, not the optimizer or the meaning of the public `stationarityResidual`. (A later, separately approved change on 2026-10-03 does change that meaning for all families: deltas within `1e-6` of zero now use the Laplace subgradient. See [logistic reconciliation](../validation/logistic-reconciliation.md#near-zero-delta-stationarity). Linear stationarity remains diagnostic-only here, and archived results are not requalified.) Newton/L-BFGS algorithms, initialization, priors, exact Laplace objective, controls, automatic selection, original-initialization fallback and the 10,000-step per-attempt budget remain unchanged. It is not a promise of bitwise trajectories, small KKT residuals, or global optima.
 
 ## Versioned requirements
 

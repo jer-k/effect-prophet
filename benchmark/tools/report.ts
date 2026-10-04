@@ -42,8 +42,29 @@ export interface CaseCorrectnessSummary {
     | "scalar-process-different-public-work"
     | "different-public-work";
   readonly maximumDifferences?: QuantityDifferences;
+  readonly investigations?: ReadonlyArray<FitInvestigation>;
   readonly note: string;
 }
+
+/** Internal fit evidence beyond an output-first investigation threshold; never a failure. */
+export interface FitInvestigation {
+  readonly name: string;
+  readonly run: number;
+  readonly effectValue: number;
+  readonly pythonValue: number;
+  readonly difference: number;
+  readonly threshold: number;
+}
+
+type FitQualityPolicy = "equality-gate" | "diagnostic-only" | "output-first";
+
+const fitQualityPolicy = (
+  quality: NonNullable<BenchmarkCase["optimizerQuality"]>,
+): FitQualityPolicy => {
+  if ("kind" in quality) return "output-first";
+
+  return "stationarity" in quality ? "diagnostic-only" : "equality-gate";
+};
 
 /** Complete machine-readable report generated from raw implementation records. */
 export interface BenchmarkReport {
@@ -59,7 +80,7 @@ export interface BenchmarkReport {
     readonly effectResidual: number;
     readonly pythonResidual: number;
     readonly absoluteDifference: number;
-    readonly policy: "equality-gate" | "diagnostic-only";
+    readonly policy: FitQualityPolicy;
     readonly followUp: "EP-097" | undefined;
   }>;
   readonly workloads: ReadonlyArray<{
@@ -601,19 +622,45 @@ const correctnessForCase = (
   }
 
   const optimizerQuality = benchmarkCase.optimizerQuality;
+  const outputFirst = optimizerQuality !== undefined && "kind" in optimizerQuality;
+  const investigations: Array<FitInvestigation> = [];
 
   if (optimizerQuality !== undefined) {
-    const gates = [
-      { name: "objective", tolerance: optimizerQuality.objectiveAbsolute },
-      {
-        name: "stationarity-residual",
-        tolerance:
-          "stationarityAbsolute" in optimizerQuality
-            ? optimizerQuality.stationarityAbsolute
-            : undefined,
-      },
-      { name: "normalized-noise", tolerance: optimizerQuality.normalizedNoiseAbsolute },
-    ];
+    const gates =
+      "kind" in optimizerQuality
+        ? [
+            {
+              name: "objective",
+              tolerance: optimizerQuality.investigate.objectiveAbsolute,
+              oneSided: false,
+            },
+            {
+              name: "stationarity-residual",
+              tolerance: optimizerQuality.investigate.stationarityExcess,
+              oneSided: true,
+            },
+            {
+              name: "normalized-noise",
+              tolerance: optimizerQuality.investigate.normalizedNoiseAbsolute,
+              oneSided: false,
+            },
+          ]
+        : [
+            { name: "objective", tolerance: optimizerQuality.objectiveAbsolute, oneSided: false },
+            {
+              name: "stationarity-residual",
+              tolerance:
+                "stationarityAbsolute" in optimizerQuality
+                  ? optimizerQuality.stationarityAbsolute
+                  : undefined,
+              oneSided: false,
+            },
+            {
+              name: "normalized-noise",
+              tolerance: optimizerQuality.normalizedNoiseAbsolute,
+              oneSided: false,
+            },
+          ];
 
     for (const [index, effectProjection] of effectProjections.entries()) {
       const pythonProjection = pythonProjections[index];
@@ -638,8 +685,7 @@ const correctnessForCase = (
           !Number.isFinite(effectValue) ||
           !Number.isFinite(pythonValue) ||
           (gate.name === "stationarity-residual" && (effectValue < 0 || pythonValue < 0)) ||
-          (gate.name === "normalized-noise" && (effectValue <= 0 || pythonValue <= 0)) ||
-          (gate.tolerance !== undefined && Math.abs(effectValue - pythonValue) > gate.tolerance)
+          (gate.name === "normalized-noise" && (effectValue <= 0 || pythonValue <= 0))
         ) {
           return {
             caseId: benchmarkCase.id,
@@ -648,6 +694,33 @@ const correctnessForCase = (
             note: `Independent optimizer ${gate.name} evidence is missing or exceeds its declared tolerance.`,
           };
         }
+
+        const difference = effectValue - pythonValue;
+
+        if (
+          gate.tolerance === undefined ||
+          (gate.oneSided ? difference : Math.abs(difference)) <= gate.tolerance
+        ) {
+          continue;
+        }
+
+        if (!outputFirst) {
+          return {
+            caseId: benchmarkCase.id,
+            status: "failed",
+            comparison,
+            note: `Independent optimizer ${gate.name} evidence is missing or exceeds its declared tolerance.`,
+          };
+        }
+
+        investigations.push({
+          name: gate.name,
+          run: effectProjection.run,
+          effectValue,
+          pythonValue,
+          difference,
+          threshold: gate.tolerance,
+        });
       }
     }
   }
@@ -753,7 +826,15 @@ const correctnessForCase = (
       ? ` Stationarity is diagnostic-only; near-stationarity acceptance is deferred to ${optimizerQuality.stationarity.followUp}.`
       : "";
 
-  return {
+  const investigationNotice = !outputFirst
+    ? ""
+    : investigations.length === 0
+      ? " Output-first: internal fit evidence is reported, not gated."
+      : ` Output-first: investigate internal fit differences in ${[
+          ...new Set(investigations.map((item) => item.name)),
+        ].join(", ")}.`;
+
+  const summary: CaseCorrectnessSummary = {
     caseId: benchmarkCase.id,
     status: passed ? "passed" : "failed",
     comparison,
@@ -763,9 +844,11 @@ const correctnessForCase = (
           controls === undefined
             ? `Verified equivalent behavior for this configuration under evidence ${evidenceId}.`
             : `Verified fitted point behavior under ${evidenceId}; scalar simulation gated by ${controls.evidence}. Public output work differs.`
-        }${stationarityNotice}`
-      : `Cross-language quantities exceeded tolerance: ${failedQuantities.join(", ")}.`,
+        }${stationarityNotice}${investigationNotice}`
+      : `Cross-language quantities exceeded tolerance: ${failedQuantities.join(", ")}.${investigationNotice}`,
   };
+
+  return outputFirst ? { ...summary, investigations } : summary;
 };
 
 /** Build a neutral correctness and absolute-timing report from raw artifacts. */
@@ -840,8 +923,7 @@ export const buildBenchmarkReport = (
             effectResidual,
             pythonResidual,
             absoluteDifference: Math.abs(effectResidual - pythonResidual),
-            policy:
-              "stationarity" in quality ? ("diagnostic-only" as const) : ("equality-gate" as const),
+            policy: fitQualityPolicy(quality),
             followUp: "stationarity" in quality ? quality.stationarity.followUp : undefined,
           },
         ];
@@ -977,13 +1059,33 @@ export const renderBenchmarkMarkdown = (report: BenchmarkReport): string => {
       "",
       "## Stationarity diagnostics",
       "",
-      "Constrained normalized infinity-norm residuals at independently fitted endpoints, not a same-point gradient comparison. Diagnostic-only rows do not certify near-stationarity; EP-097 owns that deferred requirement. Density, normalized-noise, forecast, component, metadata, persistence and applicable uncertainty gates still apply.",
+      "Constrained normalized infinity-norm residuals at independently fitted endpoints, not a same-point gradient comparison. Deltas within the Laplace kink tolerance use the subgradient interval on both sides. Equality-gate rows bound the absolute difference. Output-first rows never gate eligibility; they are flagged for investigation when Effect's residual exceeds Python's by more than the declared threshold. Diagnostic-only rows do not certify near-stationarity; EP-097 owns that deferred requirement. Forecast, component, metadata, persistence and applicable uncertainty gates always apply; density and normalized noise also gate except under output-first.",
       "",
       "| Case | Run | Effect residual | Python residual | Absolute difference | Policy | Follow-up |",
       "| --- | ---: | ---: | ---: | ---: | --- | --- |",
       ...report.stationarity.map(
         (row) =>
           `| ${escapeTableCell(row.caseId)} | ${row.run} | ${row.effectResidual.toExponential(6)} | ${row.pythonResidual.toExponential(6)} | ${row.absoluteDifference.toExponential(6)} | ${row.policy} | ${row.followUp ?? "n/a"} |`,
+      ),
+    );
+  }
+
+  const investigations = report.correctness.flatMap((summary) =>
+    (summary.investigations ?? []).map((item) => ({ caseId: summary.caseId, ...item })),
+  );
+
+  if (investigations.length > 0) {
+    lines.push(
+      "",
+      "## Output-first investigation flags",
+      "",
+      "Internal fit evidence that differs from Python beyond its declared investigation threshold. These rows do not fail the case: fitted outputs gate eligibility. Each flag should be explained in validation notes. Stationarity is flagged only when Effect's residual exceeds Python's.",
+      "",
+      "| Case | Run | Quantity | Effect | Python | Effect - Python | Threshold |",
+      "| --- | ---: | --- | ---: | ---: | ---: | ---: |",
+      ...investigations.map(
+        (row) =>
+          `| ${escapeTableCell(row.caseId)} | ${row.run} | ${row.name} | ${row.effectValue.toExponential(6)} | ${row.pythonValue.toExponential(6)} | ${row.difference.toExponential(6)} | ${row.threshold.toExponential(3)} |`,
       ),
     );
   }

@@ -10,8 +10,8 @@ historical proximal requests; omission or a budget-only override does not.
 
 The release direction targets unmodified Python Prophet 1.4.0 defaults. Improved edge behavior
 requires an explicit opt-in, not a default-parity exemption. See the [current model contract](../modeling/logistic-map.md)
-and [reconciliation evidence](../validation/logistic-reconciliation.md): six frozen public cases
-and two numerical regressions remain red. Fixed singular public states now have bounded oracle
+and [reconciliation evidence](../validation/logistic-reconciliation.md). Public comparisons use
+the output-first policy below, as do fit-endpoint numerical tests. Fixed singular public states now have bounded oracle
 coverage; Stan prediction uses public gamma arithmetic while proximal retains this extension.
 
 ## Context
@@ -98,6 +98,40 @@ behavior; it is not a permanent default-parity exclusion.
 
 Prophet's constant-target shortcut applies only to linear and flat growth. Logistic histories are
 optimized normally and can return noise-collapse when no reliable finite interior optimum exists.
+
+## Benchmark acceptance: output-first
+
+Jeremy chose an output-first acceptance policy for the logistic Python comparisons on 2026-10-03.
+
+**Gates (a mismatch fails the case):** trend, named components, additive totals and final forecasts;
+output-unit noise; feature metadata, changepoints, scaling and floor policy; public JSON and
+fresh-process persistence; applicable uncertainty replay. Both implementations must also report
+exactly one finite fitting objective, nonnegative stationarity residual and positive normalized
+noise per run. Missing or malformed evidence still fails.
+
+**Reported, not gated:** the independently fitted objective, normalized noise and stationarity
+residual. A difference beyond `0.01` (objective), `0.0002` (normalized noise), or Effect's residual
+exceeding Python's by more than `0.01` (stationarity) is listed under "Output-first investigation
+flags" in the benchmark report. Each flag must be explained in the
+[reconciliation evidence](../validation/logistic-reconciliation.md), but it does not block the case
+or its timings.
+
+**Why:** these three numbers describe where each optimizer stopped, not what users receive. On a
+nonsmooth objective, two correct optimizers, or the same Python release on different CPUs, can
+stop at slightly different points with matching forecasts. Treating those as failures had the
+investigation chasing differences users cannot observe. Forecast gates still catch internal-state
+bugs that change outputs, such as the private no-point delta, which moved forecasts by up to 41
+units before it was fixed.
+
+**Difference from linear:** linear's [accepted policy](linear-map-benchmark-acceptance.md) still
+gates the objective (`0.01`) and normalized noise (`0.0002`), with stationarity diagnostic-only
+under EP-097. Logistic gates neither. Archived equality-gate declarations and results are not
+requalified.
+
+The same split applies to frozen-fixture tests. Tests that feed Python's frozen internal values into
+our code (same-state density/gradient, operation probes, fixed-state prediction, initialization and
+early trajectory) remain exact assertions. Tests that run a full optimization and compare its
+endpoint assert public outputs and print internal gaps for investigation.
 
 ## Runtime and persistence
 

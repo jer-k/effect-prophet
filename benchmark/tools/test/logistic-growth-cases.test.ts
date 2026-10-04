@@ -31,9 +31,12 @@ describe("logistic Python reconciliation catalog", () => {
       expect(item.workload.effectOptimizer).toBeUndefined();
       expect(item.phases).toContain("fresh-process-restored-predict");
       expect(item.optimizerQuality).toEqual({
-        objectiveAbsolute: 0.01,
-        normalizedNoiseAbsolute: 0.0002,
-        stationarityAbsolute: 0.01,
+        kind: "output-first",
+        investigate: {
+          objectiveAbsolute: 0.01,
+          normalizedNoiseAbsolute: 0.0002,
+          stationarityExcess: 0.01,
+        },
       });
 
       const options = effectOptionsForCase(item);
@@ -92,9 +95,16 @@ describe("logistic Python reconciliation catalog", () => {
     expect(oracle.sourceDataset.path).toBe(`benchmark/inputs/${item.dataset}`);
     expect(oracle.sourceDataset.sha256).toBe(createHash("sha256").update(bytes).digest("hex"));
     expect(oracle.maxIterations).toBe(10_000);
-    expect(fixture.tolerances.fitObjectiveAbsolute).toBe(item.optimizerQuality?.objectiveAbsolute);
+    const quality = item.optimizerQuality;
+
+    if (quality === undefined || !("kind" in quality)) {
+      throw new Error("Expected output-first logistic fit quality");
+    }
+
+    // The numerical regression asserts what the public case only flags for investigation.
+    expect(fixture.tolerances.fitObjectiveAbsolute).toBe(quality.investigate.objectiveAbsolute);
     expect(fixture.tolerances.normalizedNoiseAbsolute).toBe(
-      item.optimizerQuality?.normalizedNoiseAbsolute,
+      quality.investigate.normalizedNoiseAbsolute,
     );
   });
 

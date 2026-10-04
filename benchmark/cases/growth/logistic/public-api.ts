@@ -71,9 +71,12 @@ const configuredCase = (
     persistence: { absolute: 1e-8, relative: 0 },
   },
   optimizerQuality: {
-    objectiveAbsolute: 0.01,
-    normalizedNoiseAbsolute: 0.0002,
-    stationarityAbsolute: 0.01,
+    kind: "output-first",
+    investigate: {
+      objectiveAbsolute: 0.01,
+      normalizedNoiseAbsolute: 0.0002,
+      stationarityExcess: 0.01,
+    },
   },
 });
 
