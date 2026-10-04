@@ -18,8 +18,10 @@ Fixture generation runs in the `prophet-fixtures-generate` Compose service. Its 
 - all Python packages through [`uv.lock`](uv.lock), including `prophet==1.4.0`.
 
 The manifest records the base image, platform, Python and uv versions, dependency-lock digest,
-numerical package versions, generator digest, source commit, and Prophet's bundled model-binary
-digest. Docker provides the OS/native execution envelope; `uv.lock` remains the dependency lock.
+numerical package versions, generator source-bundle digest, source commit, and Prophet's bundled
+model-binary digest. `generatorRevision` is SHA-256 of `generate.py`, a NUL byte, then
+`linear_optimizer_evidence.py`, covering the shared executable-probe protocol as well as case
+construction. Docker provides the OS/native execution envelope; `uv.lock` remains the dependency lock.
 
 The pinned platform makes fixture provenance consistent on ARM and x86 development machines. It
 may use emulation on ARM. Do not use an emulated fixture run as performance evidence; future
@@ -89,8 +91,8 @@ The suite is intentionally excluded from ordinary `npm test`.
     The first four cases use 2048 draws; the higher-variance explicit-floor case uses 8192.
     That case pools four predetermined independent 2048-draw generated-WASM requests for
     test-only distribution comparison without exceeding the per-request sample limit.
-    Different RNGs prevent individual draw equality; zero-rate singular extensions are
-    tested separately and not presented as release parity.
+    Different RNGs prevent individual draw equality; the historical proximal zero-rate
+    extension and fixed Stan public-state singular failures are tested separately.
 
 The fixed-parameter fixture families explicitly populate `changepoints_t`, `params.k`, `params.m`,
 and `params.delta` without fitting. With the default zero floor, Prophet evaluates:
@@ -127,6 +129,66 @@ explicit-floor, one-changepoint Newton case. Its fitted
 parameters, noise, and forecasts use the same zero threshold, 12-significant-digit
 canonicalization, and cross-optimizer tolerance policy. Ridge remains a distinct objective and
 makes no fitted-Prophet parity claim.
+
+`stan-logistic-objective.json` freezes 31 density/gradient probes across eight cases: empty changepoints
+with default/loose priors (including the frozen 96-row benchmark in both scalings), explicit changing floors, conditional additive seasonality with an event
+and multiplicative regressor, repeated final dates, and clipped initialization endpoints. Its
+score and complete unconstrained gradients come from the bundled executable's `log_prob` command
+with `jacobian=False` and `sig_figs=12`. Curvature uses the actual Stan Newton symmetric stencil,
+including its scaling and perturbations crossing the Laplace kink. These are not the proximal
+optimizer's diagonal curvature approximations. Features are rounded to 12 decimal places **before**
+oracle evaluation so Rust consumes exactly the same matrix.
+
+Four empty-point cases also record unmodified Newton fits before public folding and Python's
+actual public forecasts afterward. Their tiny fitted values are preserved (no zero snapping),
+while all optimizer outputs remain limited to 12 significant digits. The small default-prior
+case records its 38-step Newton trajectory (`save_iterations=True` affects output only).
+Three low-noise states add executable gradients and one-step optimizations; curvature remains
+asserted on the 28 ordinary probes, where 12-digit gradient output resolves the unchanged `2e-12`
+absolute gate. Low-noise gradient-output rounding cannot resolve that curvature gate.
+
+Correctness tests run the actual Rust evaluator, initializer, Newton stencil and predictor on
+native Rust and WASM. Same-state one-step coordinates match within `1e-10`. Independently fitted
+small-default-prior stationarity still differs by about `0.027`; under the output-first policy the
+fit-endpoint test prints this gap for investigation and asserts the public fold and forecasts. The
+three loose-prior fitted cases agree on score, noise, forecast and stationarity. Public TypeScript/WASM fitting now selects the
+shared Stan policy by default, and the three loose-prior cases also pass public fitting,
+prediction, persistence and uncertainty replay. Historical proximal controls remain explicit.
+Under the output-first policy, all 28 public benchmark cases pass; `defaults-256` carries
+objective and stationarity investigation flags. See
+[the reconciliation checkpoint](../../docs/validation/logistic-reconciliation.md); full optimizer
+or blanket public parity is not claimed.
+
+`logistic-prediction-state.json` freezes 18 authored public states through unmodified
+`setup_dataframe` and `predict_trend`, without fitting: zero base rates, zero post-change rates,
+zero rates at the offset/origin/endpoint, later rate recovery, and nonzero sign crossings in
+both scalings. Empty logical points use Python's actual public zero-time, zero-delta dummy.
+Expected nonfinite rows are tagged rather than written as invalid JSON or replaced with a
+continuous extension. Native/WASM tests check each row and shared simulation baselines;
+public fixture tests also check batch failure indexes, persistence and historical proximal
+restoration. Python's nonfinite results translate to typed library failures, not successful
+NaN forecasts. The existing numerical-objective artifact remains byte-identical.
+
+`stan-logistic-lbfgs.json` consumes the unchanged `logistic-weekly-256.json` benchmark input
+for `logistic-reconcile-defaults-256`. It records an unmodified growth-only public fit and,
+separately, a controlled Stan L-BFGS fit with Fourier inputs rounded to 12 decimal places
+and initialization fixed to the serialized 12-significant-digit state. The controlled
+problem retains the default 10,000-iteration budget and stopping rules. Its full accepted
+trajectory and 13 same-state density/gradient probes support divergence diagnosis through
+the existing solver; public-fit parameters are also probed on the rounded feature matrix.
+All fitted outputs use the shared 12-significant-digit canonicalizer without snapping
+small nonzero deltas. Do not treat the controlled endpoint as the unmodified public fit or
+as a benchmark baseline. The full objective regression is intentionally red until the
+unchanged `0.01` gate is met; initialization, early steps and sampled gradients are narrower
+checks, not a waiver.
+
+Six additional authored private operation cases in this artifact distinguish additive GLM packet
+adjoints from scalar variable-adjoint products, scalar inverse-logit value-view evaluation,
+column-major changepoint forward cancellation/blocking, and scalar changepoint adjoint cancellation.
+They use the same unmodified executable, `jacobian=False`, `sig_figs=12`, and existing absolute
+`1e-7` density/gradient gates. Large authored observations amplify operation differences without
+increasing fitted-output precision; these cases do not claim public preprocessing or full optimizer
+parity. The old packet exponential is now only a test counterexample, not fitting arithmetic.
 
 ## Shared comparison substrate
 

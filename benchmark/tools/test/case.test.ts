@@ -73,12 +73,20 @@ describe("benchmark case parsing", () => {
     expect(cases.map((benchmarkCase) => benchmarkCase.id)).toEqual(["fixed", "automatic"]);
   });
 
-  it("requires an explicit EP-097 deferral or the historical stationarity bound", async () => {
+  it("requires an explicit fit-quality policy: EP-097 deferral, output-first or historical equality", async () => {
     const base = { objectiveAbsolute: 0.01, normalizedNoiseAbsolute: 0.0002 };
 
     for (const optimizerQuality of [
       { ...base, stationarityAbsolute: 0.01 },
       { ...base, stationarity: { kind: "diagnostic-only", followUp: "EP-097" } },
+      {
+        kind: "output-first",
+        investigate: {
+          objectiveAbsolute: 0.01,
+          normalizedNoiseAbsolute: 0.0002,
+          stationarityExcess: 0.01,
+        },
+      },
     ]) {
       const cases = await Effect.runPromise(
         parseBenchmarkCases([{ ...omittedMapCase, optimizerQuality }]),
@@ -92,6 +100,20 @@ describe("benchmark case parsing", () => {
       { ...base, stationarity: { kind: "diagnostic-only" } },
       { ...base, stationarity: { kind: "diagnostic-only", followUp: "unknown" } },
       { ...base, stationarity: { kind: "ignore", followUp: "EP-097" } },
+      { kind: "output-first" },
+      {
+        kind: "output-first",
+        investigate: { objectiveAbsolute: 0.01, normalizedNoiseAbsolute: 0.0002 },
+      },
+      {
+        kind: "output-first",
+        investigate: {
+          objectiveAbsolute: -0.01,
+          normalizedNoiseAbsolute: 0.0002,
+          stationarityExcess: 0.01,
+        },
+      },
+      { ...base, kind: "output-first" },
       {
         ...base,
         stationarityAbsolute: 0.01,

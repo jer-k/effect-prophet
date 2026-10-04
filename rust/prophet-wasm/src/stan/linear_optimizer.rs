@@ -1,11 +1,45 @@
-//! Prophet's linear optimization selection, per-attempt budget and fallback.
-//! This pure policy owns original initialization and never reuses a failed iterate.
+//! Prophet's shared MAP optimization selection, per-attempt budget and fallback.
+//! Historical linear type/entrypoint names remain source-compatible. This pure
+//! policy owns original initialization and never reuses a failed iterate.
 
-use crate::map_objective::StanLinearObjective;
+use crate::map_objective::MapObjectiveError;
 use crate::stan::lbfgs::{LbfgsControls, LbfgsResult, LbfgsTermination, optimize_lbfgs};
 use crate::stan::optimizer::{
   LogDensityEvaluation, NewtonResult, NewtonTermination, StanOptimizerError,
 };
+
+/// A parsed MAP objective in the pinned executable's unconstrained coordinates.
+/// Domain owners supply calculus and initialization; this policy owns attempts.
+pub trait StanMapObjective {
+  /// Every retained observation contributes to automatic algorithm selection.
+  fn observation_count(&self) -> usize;
+  /// Complete state size, including private dummy coordinates.
+  fn parameter_count(&self) -> usize;
+  /// Fresh Prophet initialization, never a failed attempt's final iterate.
+  fn initial_parameters(&self) -> Vec<f64>;
+  /// Parameter-independent constants in Stan's initial service density.
+  fn log_density_constant(&self) -> f64;
+  /// Proportional density and unconstrained gradient, without a Jacobian.
+  fn evaluate(&self, parameters: &[f64]) -> Result<LogDensityEvaluation, MapObjectiveError>;
+
+  /// Run the existing Newton machinery from the original initialization.
+  fn fit_newton(&self, max_iterations: usize) -> Result<NewtonResult, StanOptimizerError> {
+    if max_iterations == 0 {
+      return Err(StanOptimizerError::InvalidConfiguration);
+    }
+    crate::stan::optimizer::check_workspace(self.parameter_count())?;
+    let initial = self.initial_parameters();
+    let density = self
+      .evaluate(&initial)
+      .map_err(StanOptimizerError::Objective)?;
+    crate::stan::optimizer::optimize_newton(
+      &initial,
+      density.value + self.log_density_constant(),
+      max_iterations,
+      |parameters| self.evaluate(parameters),
+    )
+  }
+}
 
 /// Only qualifying L-BFGS numerical failures may trigger Newton.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -191,6 +225,9 @@ pub enum LinearOptimizationError {
   },
 }
 
+/// Preserve the historical linear entrypoint while using the shared policy.
+pub use optimize_map as optimize_linear;
+
 fn newton_result(
   fit: NewtonResult,
   failure: Option<StanOptimizerError>,
@@ -226,8 +263,8 @@ fn lbfgs_result(fit: LbfgsResult) -> LinearOptimizationResult {
 }
 
 /// Fit the same objective on both attempts, with original Prophet initialization.
-pub fn optimize_linear(
-  objective: &StanLinearObjective<'_>,
+pub fn optimize_map(
+  objective: &impl StanMapObjective,
   options: LinearOptimizerOptions,
 ) -> Result<LinearOptimizationResult, LinearOptimizationError> {
   let (controls, fallback) = match options.choice {

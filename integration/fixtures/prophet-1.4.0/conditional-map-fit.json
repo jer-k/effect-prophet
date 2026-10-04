@@ -528,7 +528,7 @@
       ],
       "optimizerEvidence": {
         "objective": -73.877716061,
-        "stationarityResidual": 2.03187242548
+        "stationarityResidual": 0.00426013530686
       },
       "predictionRows": [
         {

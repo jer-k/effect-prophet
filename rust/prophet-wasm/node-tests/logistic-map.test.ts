@@ -5,7 +5,7 @@ import { loadProphetWasmNodeBindings } from "./wasm-bindings.ts";
 
 const wasm = loadProphetWasmNodeBindings();
 
-const fit = () =>
+const fit = (optimizer = new Float64Array([2, 1, 10_000])) =>
   wasm.fit_logistic_map_with_features(
     new Float64Array([0, 1, 2, 3, 4, 5]),
     new Float64Array([1.2, 2.2, 4.2, 6.1, 7.6, 8.9]),
@@ -28,16 +28,16 @@ const fit = () =>
     new Float64Array(),
     new Float64Array(),
     0.05,
-    10_000,
-    1e-10,
-    1e-12,
+    optimizer,
   );
 
 test("generated bindings fit and predict logistic MAP rows", () => {
   const fitted = fit();
 
   assert.equal(fitted[0], 0);
-  assert.equal(fitted.length, 16);
+  assert.equal(fitted.length, 20);
+  assert.equal(fitted[16], 1);
+  assert.equal(fitted[17], 1);
 
   const predicted = wasm.predict_logistic_map_with_features(
     new Float64Array([6, 6]),
@@ -72,6 +72,58 @@ test("generated bindings fit and predict logistic MAP rows", () => {
   assert.ok((predicted[5] ?? 0) > (predicted[1] ?? 0));
 });
 
+test("generated bindings report honest Stan budget completion", () => {
+  const limited = fit(new Float64Array([2, 1, 1]));
+  assert.equal(limited[0], 0);
+  assert.equal(limited[12], 1);
+  assert.deepEqual(Array.from(limited.slice(15, 20)), [9, 1, 1, -1, 0]);
+});
+
+test("generated bindings reject malformed logistic controls instead of silently selecting a policy", () => {
+  for (const controls of [
+    [],
+    [2, 1, 0],
+    [2, 1, 1.5],
+    [2, 1, 10, 0],
+    [2, 3, 10],
+    [1, 10_000, 1e-7, 1e-9],
+    [1, 10, 0, 1e-9],
+  ]) {
+    assert.deepEqual(Array.from(fit(new Float64Array(controls))), [4]);
+  }
+});
+
+test("generated prediction bindings retain singular row indexes", () => {
+  const args = [
+    new Float64Array([0, 0.5, 1]),
+    new Float64Array([10, 10, 10]),
+    new Float64Array(),
+    0,
+    10,
+    0,
+    0,
+    2,
+    0.4,
+    0,
+    1,
+    new Float64Array([0.5]),
+    new Float64Array([-2]),
+    1,
+    new Float64Array(),
+    new Float64Array(),
+    new Float64Array(),
+    new Float64Array(),
+    0,
+    new Float64Array(),
+    new Float64Array(),
+    new Float64Array(),
+    new Float64Array(),
+    new Float64Array(),
+  ] as const;
+
+  assert.deepEqual(Array.from(wasm.predict_logistic_map_with_features(...args)), [5, 1]);
+});
+
 test("generated bindings reject malformed logistic floor framing", () => {
   const fitted = wasm.fit_logistic_map_with_features(
     new Float64Array([0, 1]),
@@ -95,9 +147,7 @@ test("generated bindings reject malformed logistic floor framing", () => {
     new Float64Array(),
     new Float64Array(),
     0.05,
-    10,
-    1e-7,
-    1e-9,
+    new Float64Array([2, 1, 10]),
   );
 
   assert.deepEqual(Array.from(fitted), [2]);

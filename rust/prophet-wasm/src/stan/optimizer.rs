@@ -217,11 +217,18 @@ pub(crate) fn finite_difference_hessian(
 fn spectral_direction(hessian: &[f64], gradient: &[f64]) -> Result<Vec<f64>, NewtonError> {
   let dimension = gradient.len();
   let matrix = DMatrix::from_row_slice(dimension, dimension, hessian);
-  // Preserve the symmetric spectral action without flooring eigenvalues. The
-  // bounded QR owner avoids a cancellation-prone terminal 2×2 eigenvector basis.
+  // Preserve the symmetric spectral action without flooring eigenvalues.
+  // The bounded owner follows Eigen's QR arithmetic and deflation.
   let max_iterations = dimension.checked_mul(30).ok_or(NewtonError::SizeOverflow)?;
   let (eigenvectors, eigenvalues) = crate::symmetric_eigen::decompose(matrix, max_iterations)?;
-  let mut projected = eigenvectors.transpose() * DVector::from_column_slice(gradient);
+  let mut projected = DVector::from_iterator(
+    dimension,
+    (0..dimension).map(|column| {
+      crate::stan::reductions::matrix_row_sum(dimension, |row| {
+        eigenvectors[(row, column)] * gradient[row]
+      })
+    }),
+  );
 
   for column in 0..dimension {
     projected[column] = -projected[column] / eigenvalues[column].abs();

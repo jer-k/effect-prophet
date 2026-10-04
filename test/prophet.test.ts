@@ -492,9 +492,15 @@ const syntheticObservations = Array.from({ length: 56 }, (_, index) => {
 });
 
 const additiveOptions = {
+  builtInSeasonalities: { daily: "off", weekly: "off", yearly: "off" },
   seasonalities: [
     { name: "daily-custom", periodDays: 1, fourierOrder: 1, priorScale: 1_000 },
-    { name: "weekly-custom", periodDays: 7, fourierOrder: 1, priorScale: 1_000 },
+    {
+      name: "weekly-custom",
+      periodDays: 7,
+      fourierOrder: 1,
+      priorScale: 1_000,
+    },
   ],
 } as const;
 
@@ -574,7 +580,7 @@ describe("linear MAP Prophet integration", () => {
     const model = await Effect.runPromise(
       fit(automaticObservations, {
         seasonalities: [{ name: "custom-cycle", periodDays: 2.5, fourierOrder: 1 }],
-        builtInSeasonalities: { weekly: "auto" },
+        builtInSeasonalities: { weekly: "auto", yearly: "off", daily: "off" },
       }).pipe(Effect.provide(prophetFittingBackendLayer)),
     );
 

@@ -5,6 +5,7 @@ use crate::fourier::{
   FourierError, FourierSeasonality, apply_seasonality_masks, checked_element_count,
   coefficient_count, make_fourier_features,
 };
+use crate::map_objective::{laplace_derivative, laplace_stationarity_residual};
 use crate::piecewise_linear::PiecewiseTrend;
 use crate::piecewise_map::{MapControls, MapFitSummary, MapTermination, PiecewiseMapError};
 use crate::seasonality::SeasonalitySpec;
@@ -1003,11 +1004,8 @@ fn evaluate_mixed(
     if is_delta_column(trend_input, column) {
       let value = trend_coefficients[column];
       objective += value.abs() / changepoint_prior_scale;
-      let residual = if value == 0.0 {
-        (derivative.abs() - 1.0 / changepoint_prior_scale).max(0.0)
-      } else {
-        (derivative + value.signum() / changepoint_prior_scale).abs()
-      };
+      let complete = derivative + laplace_derivative(value, changepoint_prior_scale);
+      let residual = laplace_stationarity_residual(value, complete, changepoint_prior_scale);
       stationarity_residual = stationarity_residual.max(residual);
     } else {
       let value = trend_coefficients[column];

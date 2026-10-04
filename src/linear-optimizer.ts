@@ -25,7 +25,7 @@ export interface EncodedLbfgsSettings {
   readonly tolParam?: number;
 }
 
-/** Public linear-only optimizer selection; Newton cannot accept L-BFGS controls. */
+/** Shared Stan optimizer selection, retaining its linear API name; Newton rejects L-BFGS controls. */
 export type EncodedLinearOptimizer =
   | { readonly algorithm: "newton"; readonly maxIterations?: number }
   | {
@@ -35,7 +35,7 @@ export type EncodedLinearOptimizer =
       readonly lbfgs?: EncodedLbfgsSettings;
     };
 
-/** Parsed algorithm-specific linear settings with a fresh budget for each attempt. */
+/** Parsed shared Stan settings with a fresh budget for each attempt. */
 export type LinearOptimizer =
   | { readonly algorithm: "newton"; readonly maxIterations: number }
   | {
@@ -97,7 +97,7 @@ const LbfgsSettingsSchema = Schema.Struct({
   ),
 });
 
-/** Strict linear control schema shared by library and benchmark boundaries. */
+/** Strict Stan control schema shared by linear/logistic library and benchmark boundaries. */
 export const LinearOptimizerSchema = Schema.Union([
   Schema.Struct({ algorithm: Schema.Literal("newton"), maxIterations: MaxIterations }),
   Schema.Struct({

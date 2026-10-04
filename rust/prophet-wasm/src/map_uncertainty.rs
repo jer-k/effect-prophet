@@ -1,6 +1,6 @@
 //! Seeded scalar-path MAP predictive simulation. No Effect, WASM or global RNG state.
 
-use crate::logistic_map::{LogisticParameters, logistic_eta, stable_sigmoid};
+use crate::logistic_map::{LogisticParameters, LogisticPredictionTrend, stable_sigmoid};
 use crate::piecewise_linear::PiecewiseTrend;
 use crate::simulation_rng::{SamplerError, SimulationRng};
 use crate::target_scaling::{LogisticScaling, TargetScaling};
@@ -22,7 +22,7 @@ pub enum SimulationTrend<'a> {
   },
   /// Constant output-unit level relative to the target offset.
   Flat { level: f64, scaling: TargetScaling },
-  /// Continuous dimensionless logit path with explicit row capacities and floor policy.
+  /// Method-specific public trend with explicit row capacities and floor policy.
   Logistic {
     parameters: &'a LogisticParameters,
     scaling: LogisticScaling,
@@ -164,6 +164,7 @@ pub fn simulate_map(
       time_origin,
       time_scale,
       changepoints,
+      ..
     } => {
       let training_end = time_origin + time_scale;
       if !scaling.scale.is_finite()
@@ -192,6 +193,22 @@ pub fn simulate_map(
     }
   }
 
+  let logistic_trend = match model {
+    SimulationTrend::Logistic {
+      parameters,
+      time_origin,
+      time_scale,
+      changepoints,
+      ..
+    } => Some(LogisticPredictionTrend::new(
+      parameters,
+      time_origin,
+      time_scale,
+      changepoints,
+    )),
+    _ => None,
+  };
+
   let mut baseline = Vec::new();
   baseline
     .try_reserve_exact(count)
@@ -216,13 +233,12 @@ pub fn simulate_map(
       }
       SimulationTrend::Flat { level, .. } => level,
       SimulationTrend::Logistic {
-        parameters,
         scaling,
         capacities,
         floors,
         time_origin,
         time_scale,
-        changepoints,
+        ..
       } => {
         let floor = scaling
           .row_floor(floors, row)
@@ -232,16 +248,11 @@ pub fn simulate_map(
         }
         let t = (timestamp - time_origin) / time_scale;
         horizon = horizon.max(t - 1.0);
-        logistic_eta(
-          t,
-          time_origin,
-          time_scale,
-          changepoints,
-          parameters.rate,
-          parameters.offset,
-          &parameters.deltas,
-        )
-        .map_err(|_| SimulationError::NonFiniteResult { row, sample: 0 })?
+        logistic_trend
+          .as_ref()
+          .ok_or(SimulationError::InvalidModel)?
+          .eta(t)
+          .map_err(|_| SimulationError::NonFiniteResult { row, sample: 0 })?
       }
     };
     let fixed = match model {
@@ -646,50 +657,13 @@ mod tests {
   }
 
   #[test]
-  fn forced_logistic_rate_crossing_and_zero_rate_keep_the_latent_logit_continuous() {
-    let points = [5.0, 15.0];
-    let deltas = [-1.0, 0.5];
-    let eta = |time: f64| logistic_eta(time, 0.0, 10.0, &points, 0.5, 0.4, &deltas).unwrap();
-
-    for (time, expected) in [(5.0, 0.05), (10.0, -0.2), (15.0, -0.45), (20.0, -0.45)] {
-      assert!((eta(time / 10.0) - expected).abs() < 1e-14);
-    }
-
-    let before = eta(1.5 - 1e-6);
-    let after = eta(1.5 + 1e-6);
-    assert!((before + 0.45).abs() < 1e-6);
-    assert!((after + 0.45).abs() < 1e-14);
-
-    let fraction = stable_sigmoid(eta(1.5));
-    let first_trend = 1.0 + 9.0 * fraction;
-    let second_trend = 2.0 + 18.0 * stable_sigmoid(eta(2.0));
-    assert!((second_trend - 2.0 * first_trend).abs() < 1e-14);
-    assert!(first_trend > 1.0 && first_trend < 10.0);
-    assert!(second_trend > 2.0 && second_trend < 20.0);
-    assert!((1.5 * first_trend + 0.5).is_finite());
-    assert!((0.5 * second_trend - 1.0).is_finite());
-  }
-
-  #[test]
-  fn logistic_zero_and_crossing_rates_remain_finite_and_bounded() {
+  fn logistic_rate_crossings_stay_bounded_and_zero_post_change_rates_fail() {
     let capacities = [10.0, 12.0];
     let scaling = LogisticScaling::parse(0.0, 10.0, 0.0, 0.0).unwrap();
-
-    for parameters in [
-      LogisticParameters {
-        rate: 0.0,
-        offset: 0.4,
-        deltas: vec![0.0],
-      },
-      LogisticParameters {
-        rate: 0.25,
-        offset: 0.4,
-        deltas: vec![-0.5],
-      },
-    ] {
-      let draws = simulate_map(
+    let simulate = |parameters: &LogisticParameters| {
+      simulate_map(
         SimulationTrend::Logistic {
-          parameters: &parameters,
+          parameters,
           scaling,
           capacities: &capacities,
           floors: None,
@@ -701,17 +675,34 @@ mod tests {
         rows(&[20.0, 30.0], &[0.0; 2], &[0.0; 2]),
         OPTIONS,
       )
-      .unwrap();
+    };
 
-      for (row, &capacity) in capacities.iter().enumerate() {
-        assert!(
-          draws.trend[row * OPTIONS.samples..(row + 1) * OPTIONS.samples]
-            .iter()
-            .all(|value| value.is_finite() && *value > 0.0 && *value < capacity)
-        );
-      }
-      assert!(draws.value.iter().all(|value| value.is_finite()));
+    let crossing = LogisticParameters {
+      rate: 0.25,
+      offset: 0.4,
+      deltas: vec![-0.5],
+    };
+    let draws = simulate(&crossing).unwrap();
+
+    for (row, &capacity) in capacities.iter().enumerate() {
+      assert!(
+        draws.trend[row * OPTIONS.samples..(row + 1) * OPTIONS.samples]
+          .iter()
+          .all(|value| value.is_finite() && *value > 0.0 && *value < capacity)
+      );
     }
+    assert!(draws.value.iter().all(|value| value.is_finite()));
+
+    // Prophet's gamma recurrence divides by each post-change rate.
+    let zero = LogisticParameters {
+      rate: 0.0,
+      offset: 0.4,
+      deltas: vec![0.0],
+    };
+    assert!(matches!(
+      simulate(&zero),
+      Err(SimulationError::NonFiniteResult { row: 0, sample: 0 })
+    ));
   }
 
   #[test]

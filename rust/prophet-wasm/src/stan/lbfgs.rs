@@ -542,6 +542,88 @@ mod tests {
     }
   }
 
+  #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+  #[cfg_attr(not(target_arch = "wasm32"), test)]
+  fn logistic_defaults_256_matches_frozen_initialization_and_early_steps() {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+      "../../../../integration/fixtures/prophet-1.4.0/stan-logistic-lbfgs.json"
+    ))
+    .unwrap();
+    let case = &fixture["cases"][0];
+    let tolerances = &fixture["tolerances"];
+    let target = crate::reference_fixtures::numbers(&case["target"]);
+    let capacities = crate::reference_fixtures::numbers(&case["capacities"]);
+    let times = crate::reference_fixtures::numbers(&case["times"]);
+    let points = crate::reference_fixtures::numbers(&case["changepointTimes"]);
+    let features = crate::reference_fixtures::numbers(&case["features"]);
+    let priors = crate::reference_fixtures::numbers(&case["featurePriors"]);
+    let modes = crate::reference_fixtures::modes(&case["featureModes"]);
+    let objective = crate::logistic_map::StanLogisticObjective::new(
+      &target,
+      &capacities,
+      &times,
+      &points,
+      &features,
+      &priors,
+      &modes,
+      case["changepointPrior"].as_f64().unwrap(),
+    )
+    .unwrap();
+    let initial = crate::reference_fixtures::numbers(&case["initialParameters"]);
+    assert_eq!(objective.parameter_count(), initial.len());
+    for (actual, expected) in objective.initial_parameters().iter().zip(&initial) {
+      assert!((actual - expected).abs() <= tolerances["initialAbsolute"].as_f64().unwrap());
+    }
+
+    let trajectory: Vec<Vec<f64>> = serde_json::from_value(case["trajectory"].clone()).unwrap();
+    assert!(trajectory.len() > 8);
+    let trajectory_tolerance = tolerances["earlyTrajectoryParameterAbsolute"]
+      .as_f64()
+      .unwrap();
+    let mut first_divergence = None;
+    let fit = optimize_steps(
+      &initial,
+      case["maxIterations"].as_u64().unwrap() as usize,
+      LbfgsControls::default(),
+      |point| objective.evaluate(point),
+      |iteration, actual| {
+        if let Some(expected) = trajectory.get(iteration) {
+          let difference = actual
+            .iter()
+            .zip(expected)
+            .map(|(a, b)| (a - b).abs())
+            .fold(0.0_f64, f64::max);
+          if first_divergence.is_none() && difference > trajectory_tolerance {
+            first_divergence = Some((iteration, difference));
+          }
+        }
+
+        if iteration <= 8 {
+          for (column, (a, b)) in actual.iter().zip(&trajectory[iteration]).enumerate() {
+            assert!(
+              (a - b).abs() <= trajectory_tolerance,
+              "defaults-256 iteration {iteration} column {column}: {a} versus {b}"
+            );
+          }
+        }
+      },
+    )
+    .unwrap();
+    // Output-first: the full-budget endpoint is reported for investigation, not asserted.
+    // Initialization and the deterministic early trajectory above remain exact regressions.
+    let noise = crate::stan::math::exp(fit.parameters[2 + points.len()]);
+    println!(
+      "defaults-256 first trajectory difference above {trajectory_tolerance}: {first_divergence:?}; density {} versus {} (threshold {}); normalized noise {noise} versus {} (threshold {}); iterations {}; termination {:?}",
+      fit.evaluation.value,
+      case["fixedProblemFit"]["logDensity"],
+      tolerances["fitObjectiveAbsolute"],
+      case["fixedProblemFit"]["normalizedNoise"],
+      tolerances["normalizedNoiseAbsolute"],
+      fit.iterations,
+      fit.termination
+    );
+  }
+
   fn quadratic(x: &[f64]) -> Result<LogDensityEvaluation, MapObjectiveError> {
     Ok(LogDensityEvaluation {
       value: -0.5 * dot(x, x),

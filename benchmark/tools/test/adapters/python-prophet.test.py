@@ -99,5 +99,85 @@ class PythonProphetInputTest(unittest.TestCase):
         self.assertEqual(path.read_bytes(), contents)
 
 
+class PythonLogisticReferenceTest(unittest.TestCase):
+    def case(self, count=96, empty=False, defaults=False, prior_scale=0.05):
+        return {
+            "id": "logistic-reference-test",
+            "workload": {
+                "kind": "stage-f-map",
+                **({"fitRequest": "growth-only"} if defaults else {}),
+                "configuration": {
+                    "growth": "logistic", "scaling": "absmax",
+                    "changepoints": {"mode": "explicit", "timestamps": [] if empty
+                                     else ["2020-02-08T00:00:00.000Z"]},
+                    "changepointPriorScale": prior_scale,
+                    "seasonalities": [], "events": [], "regressors": [],
+                },
+                "pythonOptimizer": {
+                    "algorithm": "Auto", "maxIterations": 10_000,
+                    "newtonFallback": True, "sigFigs": 12,
+                },
+            },
+        }
+
+    def dataset(self, count):
+        path = BENCHMARK_ROOT / "inputs" / "v2" / f"logistic-basic-{count}.json"
+        return adapter["prepare_input"](json.loads(path.read_bytes()))
+
+    def test_growth_only_does_not_disable_builtin_seasonalities(self):
+        model = adapter["configure_model"](self.case(defaults=True))
+        direct = adapter["Prophet"](growth="logistic", uncertainty_samples=0)
+        for field in ("scaling", "n_changepoints", "changepoint_range",
+                      "changepoint_prior_scale", "weekly_seasonality",
+                      "daily_seasonality", "yearly_seasonality"):
+            self.assertEqual(getattr(model, field), getattr(direct, field))
+        self.assertEqual(model.weekly_seasonality, "auto")
+
+    def test_auto_fitting_uses_python_newton_below_100_and_lbfgs_at_100(self):
+        for count, algorithm in ((99, "newton"), (100, "lbfgs")):
+            with self.subTest(count=count):
+                training, _ = self.dataset(count)
+                model = adapter["fit_model"](training, self.case(count=count))
+                self.assertIn(f"algorithm={algorithm}", model.stan_fit.runset.cmd(0))
+                evidence = adapter["map_optimizer_evidence"](model)
+                self.assertAlmostEqual(evidence["objective"],
+                                       -model.stan_fit.optimized_params_dict["lp__"], places=6)
+                self.assertTrue(np.isfinite(evidence["stationarityResidual"]))
+
+    def test_empty_point_evidence_uses_private_prefold_executable_state(self):
+        training, _ = self.dataset(96)
+        for prior_scale in (0.05, 10):
+            with self.subTest(prior_scale=prior_scale):
+                model = adapter["fit_model"](training, self.case(empty=True, prior_scale=prior_scale))
+                self.assertEqual(len(model.changepoints), 0)
+                self.assertEqual(model.changepoints_t.tolist(), [0])
+                # Public delta is zero after Prophet folds it into k; the executable retains it.
+                self.assertEqual(model.params["delta"].tolist(), [[0]])
+                if prior_scale == 10:
+                    self.assertGreater(abs(model.stan_fit.optimized_params_dict["delta[1]"]), 0.1)
+                evidence = adapter["map_optimizer_evidence"](model)
+                self.assertAlmostEqual(evidence["objective"],
+                                       -model.stan_fit.optimized_params_dict["lp__"], places=6)
+
+
+class LaplaceStationarityTest(unittest.TestCase):
+    def test_near_zero_deltas_use_the_subgradient_regardless_of_sign(self):
+        from linear_optimizer_evidence import (
+            LAPLACE_KINK_TOLERANCE, laplace_stationarity_residual)
+
+        # basic-96-auto-minmax endpoints share smooth log-density derivative -11.39111.
+        tau = 0.05
+        smooth = -11.39111
+        self.assertEqual(laplace_stationarity_residual(4.337e-11, smooth - 1 / tau, tau), 0)
+        self.assertEqual(laplace_stationarity_residual(-1.856e-9, smooth + 1 / tau, tau), 0)
+        self.assertEqual(laplace_stationarity_residual(0.0, smooth, tau), 0)
+        self.assertAlmostEqual(laplace_stationarity_residual(0.0, -25.0, tau), 5.0)
+        self.assertEqual(LAPLACE_KINK_TOLERANCE, 1e-6)
+
+        delta = 2 * LAPLACE_KINK_TOLERANCE
+        self.assertEqual(laplace_stationarity_residual(delta, smooth - 1 / tau, tau),
+                         abs(smooth - 1 / tau))
+
+
 if __name__ == "__main__":
     unittest.main()

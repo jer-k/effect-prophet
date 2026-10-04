@@ -1,10 +1,14 @@
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: Apache-2.0 AND MPL-2.0
 //! Symmetric spectral decomposition for the Stan Newton direction.
 //!
-//! The QR iteration follows nalgebra 0.34.1's symmetric_eigen.rs (Apache-2.0).
-//! Householder tridiagonalization is reused from that pinned dependency. The
-//! terminal 2×2 rotation uses atan2 rather than a cancellation-prone eigenvalue
-//! difference. See `third-party/nalgebra-license.txt`.
+//! Householder tridiagonalization is reused from nalgebra 0.34.1 (Apache-2.0).
+//! The QR iteration follows Eigen 3.4.0's SelfAdjointEigenSolver.h and Jacobi.h
+//! (MPL-2.0), including deflation and arithmetic grouping, without a terminal
+//! atan2 substitution. Eigen copyrights: Gael Guennebaud (2008-2010),
+//! Jitse Niesen (2010), Benoit Jacob (2009).
+//! Modified: bounded pure Rust, real scalars, nalgebra tridiagonalization.
+//! This Source Code Form is subject to the terms of the Mozilla Public License,
+//! v. 2.0. See third-party/eigen-license.txt or https://mozilla.org/MPL/2.0/.
 
 use nalgebra::{DMatrix, DVector, SymmetricTridiagonal};
 
@@ -22,67 +26,78 @@ pub(crate) fn decompose(
   }
 
   let (mut vectors, mut diagonal, mut off_diagonal) = SymmetricTridiagonal::new(matrix).unpack();
-  let (mut start, mut end) = delimit(&diagonal, &mut off_diagonal, dimension - 1);
+  let mut start = 0;
+  let mut end = dimension - 1;
   let mut iterations = 0;
 
-  while end != start {
+  while end > 0 {
+    for column in start..end {
+      let scaled = off_diagonal[column] / f64::EPSILON;
+      if off_diagonal[column].abs() < f64::MIN_POSITIVE
+        || scaled * scaled <= diagonal[column].abs() + diagonal[column + 1].abs()
+      {
+        off_diagonal[column] = 0.0;
+      }
+    }
+    while end > 0 && off_diagonal[end - 1] == 0.0 {
+      end -= 1;
+    }
+    if end == 0 {
+      break;
+    }
     if iterations == max_iterations {
       return Err(NewtonError::CurvatureFailure);
     }
-
-    if end - start == 1 {
-      let a = diagonal[start];
-      let b = off_diagonal[start];
-      let d = diagonal[end];
-      let angle = 0.5 * (2.0 * b).atan2(a - d);
-      let (sine, cosine) = angle.sin_cos();
-      let twice_cross = 2.0 * cosine * sine * b;
-      diagonal[start] = cosine * cosine * a + sine * sine * d + twice_cross;
-      diagonal[end] = sine * sine * a + cosine * cosine * d - twice_cross;
-      off_diagonal[start] = 0.0;
-      rotate_columns(&mut vectors, start, cosine, sine);
-    } else {
-      let gap = 0.5 * (diagonal[end - 1] - diagonal[end]);
-      let b = off_diagonal[end - 1];
-      let sign = if gap < 0.0 { -1.0 } else { 1.0 };
-      let shift = diagonal[end] - b * b / (gap + sign * gap.hypot(b));
-      let mut x = diagonal[start] - shift;
-      let mut y = off_diagonal[start];
-
-      for column in start..end {
-        let norm = x.hypot(y);
-
-        if norm == 0.0 {
-          break;
-        }
-
-        let cosine = x / norm;
-        let sine = y / norm;
-
-        if column > start {
-          off_diagonal[column - 1] = norm;
-        }
-
-        let a = diagonal[column];
-        let d = diagonal[column + 1];
-        let b = off_diagonal[column];
-        let twice_cross = 2.0 * cosine * sine * b;
-        diagonal[column] = cosine * cosine * a + sine * sine * d + twice_cross;
-        diagonal[column + 1] = sine * sine * a + cosine * cosine * d - twice_cross;
-        off_diagonal[column] = cosine * sine * (d - a) + b * (cosine * cosine - sine * sine);
-
-        if column != end - 1 {
-          x = off_diagonal[column];
-          y = sine * off_diagonal[column + 1];
-          off_diagonal[column + 1] *= cosine;
-        }
-
-        rotate_columns(&mut vectors, column, cosine, sine);
-      }
+    iterations += 1;
+    start = end - 1;
+    while start > 0 && off_diagonal[start - 1] != 0.0 {
+      start -= 1;
     }
 
-    (start, end) = delimit(&diagonal, &mut off_diagonal, end);
-    iterations += 1;
+    let gap = (diagonal[end - 1] - diagonal[end]) * 0.5;
+    let b = off_diagonal[end - 1];
+    let mut shift = diagonal[end];
+    if gap == 0.0 {
+      shift -= b.abs();
+    } else if b != 0.0 {
+      let square = b * b;
+      // Eigen's numext::hypot uses scaled sqrt, not host-libm hypot.
+      let maximum = gap.abs().max(b.abs());
+      let ratio = gap.abs().min(b.abs()) / maximum;
+      let hypotenuse = maximum * (1.0 + ratio * ratio).sqrt();
+      let denominator = gap + if gap > 0.0 { hypotenuse } else { -hypotenuse };
+      shift -= if square == 0.0 {
+        b / (denominator / b)
+      } else {
+        square / denominator
+      };
+    }
+    let mut x = diagonal[start] - shift;
+    let mut z = off_diagonal[start];
+
+    for column in start..end {
+      if z == 0.0 {
+        break;
+      }
+      let (cosine, sine) = givens(x, z);
+      let a = diagonal[column];
+      let d = diagonal[column + 1];
+      let b = off_diagonal[column];
+      let first = sine * a + cosine * b;
+      let second = sine * b + cosine * d;
+      diagonal[column] = cosine * (cosine * a - sine * b) - sine * (cosine * b - sine * d);
+      diagonal[column + 1] = sine * first + cosine * second;
+      off_diagonal[column] = cosine * first - sine * second;
+      if column > start {
+        off_diagonal[column - 1] = cosine * off_diagonal[column - 1] - sine * z;
+      }
+      x = off_diagonal[column];
+      if column < end - 1 {
+        z = -sine * off_diagonal[column + 1];
+        off_diagonal[column + 1] *= cosine;
+      }
+      rotate_columns(&mut vectors, column, cosine, -sine);
+    }
   }
 
   diagonal *= scale;
@@ -116,40 +131,24 @@ pub(crate) fn decompose(
   Ok((vectors, diagonal))
 }
 
-fn delimit(
-  diagonal: &DVector<f64>,
-  off_diagonal: &mut DVector<f64>,
-  mut end: usize,
-) -> (usize, usize) {
-  while end > 0 {
-    let threshold = f64::EPSILON * (diagonal[end].abs() + diagonal[end - 1].abs());
-
-    if off_diagonal[end - 1].abs() > threshold {
-      break;
-    }
-
-    off_diagonal[end - 1] = 0.0;
-    end -= 1;
+fn givens(p: f64, q: f64) -> (f64, f64) {
+  if q == 0.0 {
+    return (if p < 0.0 { -1.0 } else { 1.0 }, 0.0);
   }
-
-  if end == 0 {
-    return (0, 0);
+  if p == 0.0 {
+    return (0.0, if q < 0.0 { 1.0 } else { -1.0 });
   }
-
-  let mut start = end - 1;
-
-  while start > 0 {
-    let threshold = f64::EPSILON * (diagonal[start].abs() + diagonal[start - 1].abs());
-
-    if off_diagonal[start - 1].abs() <= threshold {
-      off_diagonal[start - 1] = 0.0;
-      break;
-    }
-
-    start -= 1;
+  if p.abs() > q.abs() {
+    let t = q / p;
+    let u = (1.0 + t * t).sqrt().copysign(p);
+    let cosine = 1.0 / u;
+    (cosine, -t * cosine)
+  } else {
+    let t = p / q;
+    let u = (1.0 + t * t).sqrt().copysign(q);
+    let sine = -1.0 / u;
+    (-t * sine, sine)
   }
-
-  (start, end)
 }
 
 fn rotate_columns(vectors: &mut DMatrix<f64>, column: usize, cosine: f64, sine: f64) {

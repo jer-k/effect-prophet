@@ -113,6 +113,34 @@ Serialization is exercised by lifecycle phases rather than copied into separate 
 | `logistic-explicit-floor-minmax-stan-v2` | [v1/logistic-explicit-floor.json](inputs/v1/logistic-explicit-floor.json) | equivalent-objective | 9 |
 | `logistic-implicit-floor-auto-changepoints-stan-v2` | [v1/logistic-implicit-floor.json](inputs/v1/logistic-implicit-floor.json) | equivalent-objective | 9 |
 | `logistic-implicit-floor-large-stan-v2` | [v1/logistic-implicit-floor-large.json](inputs/v1/logistic-implicit-floor-large.json) | equivalent-objective | 9 |
+| `logistic-reconcile-basic-96-empty-absmax` | [v2/logistic-basic-96.json](inputs/v2/logistic-basic-96.json) | equivalent-objective | 5 |
+| `logistic-reconcile-basic-96-explicit-absmax` | [v2/logistic-basic-96.json](inputs/v2/logistic-basic-96.json) | equivalent-objective | 5 |
+| `logistic-reconcile-basic-96-auto-absmax` | [v2/logistic-basic-96.json](inputs/v2/logistic-basic-96.json) | equivalent-objective | 5 |
+| `logistic-reconcile-basic-96-empty-minmax` | [v2/logistic-basic-96.json](inputs/v2/logistic-basic-96.json) | equivalent-objective | 5 |
+| `logistic-reconcile-basic-96-explicit-minmax` | [v2/logistic-basic-96.json](inputs/v2/logistic-basic-96.json) | equivalent-objective | 5 |
+| `logistic-reconcile-basic-96-auto-minmax` | [v2/logistic-basic-96.json](inputs/v2/logistic-basic-96.json) | equivalent-objective | 5 |
+| `logistic-reconcile-empty-loose-prior-absmax` | [v2/logistic-basic-96.json](inputs/v2/logistic-basic-96.json) | equivalent-objective | 5 |
+| `logistic-reconcile-empty-loose-prior-minmax` | [v2/logistic-basic-96.json](inputs/v2/logistic-basic-96.json) | equivalent-objective | 5 |
+| `logistic-reconcile-basic-99` | [v2/logistic-basic-99.json](inputs/v2/logistic-basic-99.json) | equivalent-objective | 5 |
+| `logistic-reconcile-basic-100` | [v2/logistic-basic-100.json](inputs/v2/logistic-basic-100.json) | equivalent-objective | 5 |
+| `logistic-reconcile-basic-256` | [v2/logistic-basic-256.json](inputs/v2/logistic-basic-256.json) | equivalent-objective | 5 |
+| `logistic-reconcile-defaults-96` | [v2/logistic-weekly-96.json](inputs/v2/logistic-weekly-96.json) | equivalent-objective | 5 |
+| `logistic-reconcile-defaults-256` | [v2/logistic-weekly-256.json](inputs/v2/logistic-weekly-256.json) | equivalent-objective | 5 |
+| `logistic-reconcile-weekly` | [v2/logistic-weekly-96.json](inputs/v2/logistic-weekly-96.json) | equivalent-objective | 5 |
+| `logistic-reconcile-conditional` | [v2/logistic-conditional-96.json](inputs/v2/logistic-conditional-96.json) | equivalent-objective | 5 |
+| `logistic-reconcile-event` | [v2/logistic-event-96.json](inputs/v2/logistic-event-96.json) | equivalent-objective | 5 |
+| `logistic-reconcile-regressor-additive` | [v2/logistic-regressor-additive-96.json](inputs/v2/logistic-regressor-additive-96.json) | equivalent-objective | 5 |
+| `logistic-reconcile-regressor-multiplicative` | [v2/logistic-regressor-multiplicative-96.json](inputs/v2/logistic-regressor-multiplicative-96.json) | equivalent-objective | 5 |
+| `logistic-reconcile-explicit-floor-absmax` | [v2/logistic-floor-96.json](inputs/v2/logistic-floor-96.json) | equivalent-objective | 5 |
+| `logistic-reconcile-mixed-absmax` | [v2/logistic-mixed-96.json](inputs/v2/logistic-mixed-96.json) | equivalent-objective | 5 |
+| `logistic-reconcile-explicit-floor-minmax` | [v2/logistic-floor-96.json](inputs/v2/logistic-floor-96.json) | equivalent-objective | 5 |
+| `logistic-reconcile-mixed-minmax` | [v2/logistic-mixed-96.json](inputs/v2/logistic-mixed-96.json) | equivalent-objective | 5 |
+| `logistic-reconcile-unsorted` | [v2/logistic-unsorted-96.json](inputs/v2/logistic-unsorted-96.json) | equivalent-objective | 5 |
+| `logistic-reconcile-duplicates` | [v2/logistic-duplicates-96.json](inputs/v2/logistic-duplicates-96.json) | equivalent-objective | 5 |
+| `logistic-reconcile-declining` | [v2/logistic-declining-96.json](inputs/v2/logistic-declining-96.json) | equivalent-objective | 5 |
+| `logistic-reconcile-saturated` | [v2/logistic-saturated-96.json](inputs/v2/logistic-saturated-96.json) | equivalent-objective | 5 |
+| `logistic-reconcile-constant` | [v2/logistic-constant-96.json](inputs/v2/logistic-constant-96.json) | equivalent-objective | 5 |
+| `logistic-reconcile-out-of-bounds` | [v2/logistic-out-of-bounds-96.json](inputs/v2/logistic-out-of-bounds-96.json) | equivalent-objective | 5 |
 
 ## holidays
 

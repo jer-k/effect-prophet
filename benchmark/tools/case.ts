@@ -153,6 +153,7 @@ const LinearMapWorkloadSchema = Schema.Struct({
 const StageFMapWorkloadSchema = Schema.Struct({
   kind: Schema.Literal("stage-f-map"),
   comparison: EquivalentObjectiveComparisonSchema,
+  fitRequest: Schema.optionalKey(Schema.Literal("growth-only")),
   configuration: Schema.Struct({
     growth: Schema.Literals(["linear", "flat", "logistic"]),
     scaling: Schema.Literals(["absmax", "minmax"]),
@@ -266,6 +267,17 @@ export const BenchmarkCaseSchema = Schema.Struct({
         stationarity: Schema.Struct({
           kind: Schema.Literal("diagnostic-only"),
           followUp: Schema.Literal("EP-097"),
+        }),
+      }),
+      // Fitted outputs gate eligibility. Internal fit evidence must still be reported; differences
+      // beyond these thresholds are flagged for investigation, not failed. Stationarity is flagged
+      // only when Effect's residual exceeds Python's.
+      Schema.Struct({
+        kind: Schema.Literal("output-first"),
+        investigate: Schema.Struct({
+          objectiveAbsolute: NonNegativeFinite,
+          normalizedNoiseAbsolute: NonNegativeFinite,
+          stationarityExcess: NonNegativeFinite,
         }),
       }),
     ]),
@@ -512,12 +524,48 @@ const validateCaseRelationships = (
           (!emptyPoints ||
             points.mode !== "explicit" ||
             benchmarkCase.workload.effectOptimizer !== undefined)) ||
-        (!flat && (emptyPoints || benchmarkCase.workload.effectOptimizer === undefined))
+        (configuration.growth === "linear" &&
+          (emptyPoints || benchmarkCase.workload.effectOptimizer === undefined))
       ) {
         return Effect.fail(
           new BenchmarkInputError({
             input: "cases",
-            message: `MAP case ${benchmarkCase.id} must use flat defaults or a nonempty comparable changepoint MAP fit`,
+            message: `MAP case ${benchmarkCase.id} must use flat defaults or supported growth-specific controls`,
+          }),
+        );
+      }
+    }
+
+    if (
+      benchmarkCase.workload.kind === "stage-f-map" &&
+      benchmarkCase.workload.fitRequest === "growth-only"
+    ) {
+      const { configuration, pythonOptimizer, effectOptimizer, uncertainty } =
+        benchmarkCase.workload;
+
+      const points = configuration.changepoints;
+
+      if (
+        configuration.growth !== "logistic" ||
+        configuration.scaling !== "absmax" ||
+        configuration.seasonalityMode !== "additive" ||
+        configuration.holidaysMode !== "additive" ||
+        configuration.changepointPriorScale !== 0.05 ||
+        points.mode !== "auto" ||
+        points.count !== 25 ||
+        points.range !== 0.8 ||
+        configuration.events.length !== 0 ||
+        configuration.regressors.length !== 0 ||
+        effectOptimizer !== undefined ||
+        uncertainty !== undefined ||
+        pythonOptimizer.algorithm !== "Auto" ||
+        pythonOptimizer.maxIterations !== 10_000 ||
+        !pythonOptimizer.newtonFallback
+      ) {
+        return Effect.fail(
+          new BenchmarkInputError({
+            input: "cases",
+            message: `Growth-only case ${benchmarkCase.id} must declare Python's logistic defaults without overrides`,
           }),
         );
       }

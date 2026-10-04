@@ -38,7 +38,7 @@
     },
     {
       "path": "conditional-map-fit.json",
-      "sha256": "7b11da2d961414d5f59fb45e20002a9789eb3501e51e7bc9b19d986c61bc20c2"
+      "sha256": "cb07a6e6e6d73d7f23ddadc299bf3b33bd739e34cbe752c4700d789a0d0feeff"
     },
     {
       "path": "target-scaling.json",
@@ -59,6 +59,18 @@
     {
       "path": "stan-linear-optimizer.json",
       "sha256": "49f53c3a23dc3b50a6d29bc5852193f235e56c0519a28f656384de2ed867d259"
+    },
+    {
+      "path": "stan-logistic-objective.json",
+      "sha256": "6970cca83bbd6bbc65bf11344066a17885b72a6522ddcce08aafd2500693e9dc"
+    },
+    {
+      "path": "logistic-prediction-state.json",
+      "sha256": "402a14f3fa77db727b31d8fcec214ba8d2b0efade74b1d03b49a4d6cbc0b8634"
+    },
+    {
+      "path": "stan-logistic-lbfgs.json",
+      "sha256": "062a407eb72c7d06e7a22300f2b617f0aefa87e4e72b2e6fdead22b6b1f8fcc9"
     }
   ],
   "backendArtifacts": [
@@ -74,7 +86,7 @@
     "platform": "linux/amd64",
     "uvVersion": "0.8.15"
   },
-  "generatorRevision": "7d26fbe51bed90b344a24206be050ad79d02422bb61bfbf0e42817ff4a59329a",
+  "generatorRevision": "c558cee415739fb145c4d82b2109cd081d11a42dae027888d4dd21d8850e4093",
   "numericalEnvironment": [
     {
       "name": "cmdstanpy",

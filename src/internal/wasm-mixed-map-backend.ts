@@ -14,12 +14,12 @@ import {
 import type { ChangepointSetting, MapOptimizerControls } from "../options";
 import type { LinearOptimizer } from "../linear-optimizer";
 import {
-  encodeLinearOptimizer,
-  decodeLinearCompletion,
-  annotateLinearCompletion,
-  annotateLinearRequest,
-  linearOptimizerFailure,
-} from "./linear-map-protocol";
+  encodeStanOptimizer as encodeLinearOptimizer,
+  decodeStanCompletion as decodeLinearCompletion,
+  annotateStanCompletion as annotateLinearCompletion,
+  annotateStanRequest as annotateLinearRequest,
+  stanOptimizerFailure as linearOptimizerFailure,
+} from "./stan-map-protocol";
 import type { ResolvedRegressor } from "../regressor";
 import type { SeasonalityLayout } from "../seasonality";
 import { targetScalingModeCode, type TargetScalingMode } from "../target-scaling";
@@ -414,7 +414,9 @@ export const fitMixedLinearMapWithWasm = (
 
   return Effect.gen(function* () {
     yield* annotateLinearRequest(optimizer);
-    yield* Effect.annotateCurrentSpan({ "effect_prophet.component.mode": "mixed" });
+    yield* Effect.annotateCurrentSpan({
+      "effect_prophet.component.mode": "mixed",
+    });
 
     const module = yield* attemptWasmFitting(defaultLoader, observationCount, {
       phase: "load",
@@ -449,7 +451,10 @@ export const fitMixedLinearMapWithWasm = (
           encodeLinearOptimizer(optimizer),
         ),
       observationCount,
-      { phase: "execute", message: "Failed to execute the WASM mixed linear MAP fitting backend" },
+      {
+        phase: "execute",
+        message: "Failed to execute the WASM mixed linear MAP fitting backend",
+      },
     );
 
     return yield* decodeLinearFit(
@@ -492,7 +497,9 @@ export const fitMixedFlatMapWithWasm = (
   const coefficientCount = seasonalities.coefficientCount + features.layout.coefficientCount;
 
   return Effect.gen(function* () {
-    yield* Effect.annotateCurrentSpan({ "effect_prophet.component.mode": "mixed" });
+    yield* Effect.annotateCurrentSpan({
+      "effect_prophet.component.mode": "mixed",
+    });
 
     const module = yield* attemptWasmFitting(defaultLoader, observationCount, {
       phase: "load",
@@ -523,7 +530,10 @@ export const fitMixedFlatMapWithWasm = (
           optimizer.absoluteTolerance,
         ),
       observationCount,
-      { phase: "execute", message: "Failed to execute the WASM mixed flat MAP fitting backend" },
+      {
+        phase: "execute",
+        message: "Failed to execute the WASM mixed flat MAP fitting backend",
+      },
     );
 
     return yield* decodeFlatFit(
@@ -567,7 +577,9 @@ const predictMixed = (
   }
 
   return Effect.gen(function* () {
-    yield* Effect.annotateCurrentSpan({ "effect_prophet.component.mode": "mixed" });
+    yield* Effect.annotateCurrentSpan({
+      "effect_prophet.component.mode": "mixed",
+    });
 
     const module = yield* attemptWasmPrediction(defaultLoader, firstTimestamp, {
       phase: "load",
@@ -618,7 +630,10 @@ const predictMixed = (
             )
           : module.predict_mixed_flat_map(...shared, model.level, ...tail),
       firstTimestamp,
-      { phase: "execute", message: "Failed to execute the WASM mixed MAP prediction backend" },
+      {
+        phase: "execute",
+        message: "Failed to execute the WASM mixed MAP prediction backend",
+      },
     );
 
     const batch = yield* decodePredictions(packed, timestamps, componentCount);

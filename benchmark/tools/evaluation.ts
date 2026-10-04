@@ -61,7 +61,10 @@ const metricPolicy = (workload: Extract<BenchmarkCase["workload"], { kind: "eval
   metrics: ["mae", "rmse", "smape", "mape"] as const,
   aggregation:
     workload.metricAggregation === "rolling"
-      ? { kind: "rolling" as const, window: { kind: "fraction" as const, value: 0.5 } }
+      ? {
+          kind: "rolling" as const,
+          window: { kind: "fraction" as const, value: 0.5 },
+        }
       : { kind: workload.metricAggregation },
   mapeZeroActual: workload.mapeZeroActual,
 });
@@ -84,6 +87,13 @@ const candidateOptions = (
     };
   }
 
+  if (options.growth === "logistic") {
+    return {
+      ...options,
+      map: { ...options.map, changepointPriorScale: prior },
+    };
+  }
+
   return { ...options, map: { ...options.map, changepointPriorScale: prior } };
 };
 
@@ -97,7 +107,11 @@ const search = (benchmarkCase: BenchmarkCase, dataset: BenchmarkDataset): ModelS
         options: candidateOptions(options, candidate.changepointPriorScale, candidate.growth),
       })),
       plan,
-      objective: { metric: "mae", aggregation: { kind: "overall" }, direction: "minimize" },
+      objective: {
+        metric: "mae",
+        aggregation: { kind: "overall" },
+        direction: "minimize",
+      },
       failurePolicy: "record",
     }),
   );
@@ -132,7 +146,10 @@ const holdoutUsingSearch = (
       },
       metrics: { metrics: ["mae"], aggregation: { kind: "overall" } },
       baselines: [{ kind: "last-observation" }, { kind: "training-mean" }],
-      provenance: { build: "benchmark-release", environment: "benchmark-container" },
+      provenance: {
+        build: "benchmark-release",
+        environment: "benchmark-container",
+      },
     }),
   );
 };
@@ -191,7 +208,10 @@ export const evaluationCorrectness = (
   }
 
   const metrics = run(
-    performanceMetrics(result, { metrics: ["mae"], aggregation: { kind: "overall" } }),
+    performanceMetrics(result, {
+      metrics: ["mae"],
+      aggregation: { kind: "overall" },
+    }),
   );
 
   if (metrics.kind !== "overall") throw new Error("Expected overall evaluation metrics");
@@ -283,7 +303,11 @@ export const preparedEvaluationOperation = (
     const summary = run(planRollingOrigin(development, options, plan));
 
     return () => [
-      run(crossValidateBaseline(development, summary, { kind: "last-observation" })),
+      run(
+        crossValidateBaseline(development, summary, {
+          kind: "last-observation",
+        }),
+      ),
       run(crossValidateBaseline(development, summary, { kind: "training-mean" })),
       run(
         crossValidateBaseline(development, summary, {
@@ -349,8 +373,16 @@ export const evaluationOperation = (
       const summary = run(planRollingOrigin(development, options, plan));
 
       return [
-        run(crossValidateBaseline(development, summary, { kind: "last-observation" })),
-        run(crossValidateBaseline(development, summary, { kind: "training-mean" })),
+        run(
+          crossValidateBaseline(development, summary, {
+            kind: "last-observation",
+          }),
+        ),
+        run(
+          crossValidateBaseline(development, summary, {
+            kind: "training-mean",
+          }),
+        ),
         run(
           crossValidateBaseline(development, summary, {
             kind: "seasonal-naive",

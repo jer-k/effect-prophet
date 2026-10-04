@@ -122,8 +122,14 @@ describe("Prophet 1.4.0 logistic MAP compatibility", () => {
           regressors: [],
           noiseScale: 1,
           fitSummary: {
-            method: "logistic-piecewise-map-proximal-v1",
-            termination: "converged",
+            method: "logistic-piecewise-map-stan-v2",
+            termination: "iteration-limit",
+            optimization: {
+              algorithm: "newton",
+              attemptCount: 1,
+              failedAttemptIterations: null,
+              hessianResets: 0,
+            },
             valueScale: reference.expected.scale,
             observationCount: reference.training.length,
             iterations: 1,

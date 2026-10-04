@@ -429,11 +429,119 @@ const flatPrefixDatasets: ReadonlyArray<BenchmarkDataset> = datasets
     }));
   });
 
+/** Deterministic logistic reconciliation inputs; v1 recipes and bytes stay unchanged. */
+export const logisticReconciliationDatasets: ReadonlyArray<BenchmarkDataset> = [
+  ...([96, 99, 100, 256] as const).map((count) => ({ variant: "basic", count })),
+  ...([96, 256] as const).map((count) => ({ variant: "weekly", count })),
+  ...(
+    [
+      "floor",
+      "regressor-additive",
+      "regressor-multiplicative",
+      "conditional",
+      "event",
+      "mixed",
+      "unsorted",
+      "duplicates",
+      "declining",
+      "saturated",
+      "constant",
+      "out-of-bounds",
+    ] as const
+  ).map((variant) => ({ variant, count: 96 })),
+].map(({ variant, count }) => {
+  const timeIndex = (index: number): number =>
+    variant === "duplicates" ? Math.floor(index / 2) : index;
+
+  const endTime = timeIndex(count - 1);
+  const hasFloor = variant === "floor" || variant === "mixed";
+  const hasRegressor = variant.startsWith("regressor-") || variant === "mixed";
+  const hasCondition = variant === "conditional" || variant === "mixed";
+
+  const bounds = (index: number) => {
+    const capacity = canonical(100 + 0.08 * timeIndex(index));
+
+    return hasFloor ? { capacity, floor: canonical(12 + 0.02 * timeIndex(index)) } : { capacity };
+  };
+
+  const trend = (index: number): number => {
+    if (variant === "constant") return 50;
+
+    const { capacity, floor = 0 } = bounds(index);
+    const direction = variant === "declining" ? -1 : 1;
+    const rate = variant === "saturated" ? 24 : 4;
+    const eta = direction * rate * (timeIndex(index) / endTime - 0.45);
+
+    return floor + (capacity - floor) / (1 + Math.exp(-eta));
+  };
+
+  const dataset = makeDataset({
+    id: `logistic-${variant}-${count}`,
+    observationCount: count,
+    predictionCount: 24,
+    recipe: `logistic-reconciliation-v1:${variant}:n=${count}:h=24:bounded-deterministic-noise:changing-capacity`,
+    trainingTimestamp: (index) => timestampAt(timeIndex(index)),
+    trend,
+    noiseMultiplier: variant === "constant" ? 0 : 1,
+    covariates: (index) => {
+      let covariates: Covariates = bounds(index);
+
+      if (hasRegressor) {
+        covariates = { ...covariates, regressors: { promotion: index % 6 === 2 ? 1 : 0 } };
+      }
+
+      if (hasCondition) {
+        covariates = { ...covariates, conditions: { active: index % 5 !== 0 } };
+      }
+
+      return covariates;
+    },
+    additive: (index, covariates) => {
+      const seasonal =
+        variant === "weekly" || (hasCondition && covariates.conditions?.active === true)
+          ? 0.8 * Math.sin((2 * Math.PI * timeIndex(index)) / 7)
+          : 0;
+
+      const event =
+        (variant === "event" || variant === "mixed") && eventActive(index, [21, 106], -1, 1)
+          ? 2
+          : 0;
+
+      const promotion = covariates.regressors?.promotion ?? 0;
+
+      const regressor =
+        variant === "regressor-multiplicative" || variant === "mixed"
+          ? 0.03 * trend(index) * promotion
+          : 1.2 * promotion;
+
+      const outside =
+        variant === "out-of-bounds" ? (index === 0 ? -50 : index === count - 1 ? 50 : 0) : 0;
+
+      return seasonal + event + regressor + outside;
+    },
+  });
+
+  const future = dataset.predictionRows.map((row, index) => ({
+    ...row,
+    timestamp: timestampAt(endTime + index + 1),
+  }));
+
+  const historical = dataset.observations.map(({ value: _value, ...row }) => row);
+
+  return {
+    ...dataset,
+    observations:
+      variant === "unsorted" ? [...dataset.observations].reverse() : dataset.observations,
+    predictionRows: [...historical, ...future],
+  };
+});
+
 /** Generate an immutable input version; existing identical bytes are reused, never overwritten. */
 export const generateBenchmarkData = Effect.fn("benchmark.inputs.generate")(function* (
   outputRoot = new URL("../inputs/v1/", import.meta.url),
+  inputDatasets: ReadonlyArray<BenchmarkDataset> = [...datasets, ...flatPrefixDatasets],
 ) {
-  const files = [...datasets, ...flatPrefixDatasets].map((dataset) => {
+  const files = inputDatasets.map((dataset) => {
     const contents = `${JSON.stringify(dataset, null, 2)}\n`;
 
     return {
@@ -500,7 +608,10 @@ if (
   await Effect.runPromise(
     Effect.gen(function* () {
       const version = yield* parseArtifactId(process.argv[2] ?? "v1");
-      yield* generateBenchmarkData(new URL(`../inputs/${version}/`, import.meta.url));
+      yield* generateBenchmarkData(
+        new URL(`../inputs/${version}/`, import.meta.url),
+        version === "v2" ? logisticReconciliationDatasets : undefined,
+      );
     }),
   );
 }

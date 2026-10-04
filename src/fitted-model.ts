@@ -78,8 +78,14 @@ const featureIdentityIssues = (parameters: {
   readonly seasonalities: typeof SeasonalityLayoutSchema.Type;
   readonly events: typeof EventCalendarSchema.Type;
   readonly regressors: ReadonlyArray<typeof FittedRegressorSchema.Type>;
-}): Array<{ readonly path: ReadonlyArray<PropertyKey>; readonly issue: string }> => {
-  const issues: Array<{ readonly path: ReadonlyArray<PropertyKey>; readonly issue: string }> = [];
+}): Array<{
+  readonly path: ReadonlyArray<PropertyKey>;
+  readonly issue: string;
+}> => {
+  const issues: Array<{
+    readonly path: ReadonlyArray<PropertyKey>;
+    readonly issue: string;
+  }> = [];
 
   const featureNames = new Set(
     parameters.seasonalities.components.map((component) => component.definition.name),
@@ -122,7 +128,10 @@ const featureIdentityIssues = (parameters: {
 };
 
 const consistentFlatMapParameters = Schema.makeFilter<FlatMapParametersFields>((parameters) => {
-  const issues: Array<{ readonly path: ReadonlyArray<PropertyKey>; readonly issue: string }> = [];
+  const issues: Array<{
+    readonly path: ReadonlyArray<PropertyKey>;
+    readonly issue: string;
+  }> = [];
 
   if (parameters.targetScaling.scale !== parameters.fitSummary.valueScale) {
     issues.push({
@@ -195,9 +204,7 @@ const consistentFlatMapParameters = Schema.makeFilter<FlatMapParametersFields>((
 
 const FlatMapParametersSchema = FlatMapParametersFieldsSchema.check(consistentFlatMapParameters);
 
-/** Version-two linear MAP diagnostics with algorithm-consistent completion and attempt evidence. */
-export const PiecewiseMapFitSummarySchema = Schema.Struct({
-  method: Schema.Literals(["piecewise-map-stan-v2", "mixed-piecewise-map-stan-v2"]),
+const StanMapFitSummaryFieldsSchema = Schema.Struct({
   termination: Schema.Literals([
     "constant-target-shortcut",
     "objective-change",
@@ -241,8 +248,10 @@ export const PiecewiseMapFitSummarySchema = Schema.Struct({
   objective: Schema.Finite,
   stationarityResidual: Schema.Finite.check(Schema.isGreaterThanOrEqualTo(0)),
   changepointPriorScale: PositiveFinite,
-}).check(
-  Schema.makeFilter((summary) => {
+});
+
+const consistentStanMapCompletion = Schema.makeFilter(
+  (summary: typeof StanMapFitSummaryFieldsSchema.Type) => {
     const algorithm = summary.optimization.algorithm;
 
     const valid = Match.value(algorithm).pipe(
@@ -270,10 +279,34 @@ export const PiecewiseMapFitSummarySchema = Schema.Struct({
       ? undefined
       : {
           path: ["optimization"],
-          issue: "Linear optimization completion does not match its actual algorithm",
+          issue: "Stan optimization completion does not match its actual algorithm",
         };
-  }),
+  },
 );
+
+/** Version-two linear MAP diagnostics with algorithm-consistent completion evidence. */
+export const PiecewiseMapFitSummarySchema = Schema.Struct({
+  ...StanMapFitSummaryFieldsSchema.fields,
+  method: Schema.Literals(["piecewise-map-stan-v2", "mixed-piecewise-map-stan-v2"]),
+}).check(consistentStanMapCompletion);
+
+/** Logistic completion evidence from the shared Stan optimizer policy. */
+export const LogisticMapFitSummarySchema = Schema.Struct({
+  ...StanMapFitSummaryFieldsSchema.fields,
+  method: Schema.Literal("logistic-piecewise-map-stan-v2"),
+}).check(
+  consistentStanMapCompletion,
+  Schema.makeFilter(
+    (summary) =>
+      summary.optimization.algorithm !== "none" || "Expected a logistic Stan optimization attempt",
+  ),
+);
+
+/** Shared Stan diagnostics used by the complete adapter tracing boundary. */
+export const StanMapFitSummarySchema = Schema.Union([
+  PiecewiseMapFitSummarySchema,
+  LogisticMapFitSummarySchema,
+]);
 
 const PiecewiseMapParametersFieldsSchema = Schema.Struct({
   model: PiecewiseMapModel,
@@ -303,7 +336,10 @@ type PiecewiseMapParametersFields = typeof PiecewiseMapParametersFieldsSchema.Ty
 
 const consistentPiecewiseMapParameters = Schema.makeFilter<PiecewiseMapParametersFields>(
   (parameters) => {
-    const issues: Array<{ readonly path: ReadonlyArray<PropertyKey>; readonly issue: string }> = [];
+    const issues: Array<{
+      readonly path: ReadonlyArray<PropertyKey>;
+      readonly issue: string;
+    }> = [];
 
     if (parameters.targetScaling.scale !== parameters.fitSummary.valueScale) {
       issues.push({
@@ -417,17 +453,6 @@ const PiecewiseMapParametersSchema = PiecewiseMapParametersFieldsSchema.check(
   consistentPiecewiseMapParameters,
 );
 
-const LogisticMapFitSummarySchema = Schema.Struct({
-  method: Schema.Literal("logistic-piecewise-map-proximal-v1"),
-  termination: Schema.Literal("converged"),
-  valueScale: PositiveFinite,
-  observationCount: Schema.Int.check(Schema.isGreaterThanOrEqualTo(2)),
-  iterations: Schema.Int.check(Schema.isGreaterThan(0)),
-  objective: Schema.Finite,
-  stationarityResidual: Schema.Finite.check(Schema.isGreaterThanOrEqualTo(0)),
-  changepointPriorScale: PositiveFinite,
-});
-
 const LogisticMapParametersFieldsSchema = Schema.Struct({
   model: LogisticMapModel,
   targetScaling: LogisticTargetScalingSchema,
@@ -450,7 +475,10 @@ type LogisticMapParametersFields = typeof LogisticMapParametersFieldsSchema.Type
 
 const consistentLogisticMapParameters = Schema.makeFilter<LogisticMapParametersFields>(
   (parameters) => {
-    const issues: Array<{ readonly path: ReadonlyArray<PropertyKey>; readonly issue: string }> = [];
+    const issues: Array<{
+      readonly path: ReadonlyArray<PropertyKey>;
+      readonly issue: string;
+    }> = [];
 
     if (parameters.targetScaling.scale !== parameters.fitSummary.valueScale) {
       issues.push({
@@ -460,7 +488,10 @@ const consistentLogisticMapParameters = Schema.makeFilter<LogisticMapParametersF
     }
 
     if (parameters.changepointTimestamps.length !== parameters.deltas.length) {
-      issues.push({ path: ["deltas"], issue: "Changepoint timestamps and deltas must align" });
+      issues.push({
+        path: ["deltas"],
+        issue: "Changepoint timestamps and deltas must align",
+      });
     }
 
     if (parameters.coefficients.length !== parameters.seasonalities.coefficientCount) {

@@ -25,7 +25,10 @@ import prophet
 from prophet import Prophet
 from prophet.diagnostics import generate_cutoffs, performance_metrics
 
-from linear_optimizer_evidence import linear_optimizer_evidence
+from linear_optimizer_evidence import (
+    linear_optimizer_evidence, map_optimizer_evidence, stan_curvature_probe,
+    stan_optimization_completion, stan_unconstrained_probe,
+)
 
 
 EXPECTED_PROPHET_VERSION = "1.4.0"
@@ -48,6 +51,9 @@ MIXED_MAP_FILENAME = "mixed-map.json"
 LOGISTIC_MAP_FILENAME = "logistic-map.json"
 MAP_UNCERTAINTY_FILENAME = "map-uncertainty.json"
 STAN_LINEAR_OPTIMIZER_FILENAME = "stan-linear-optimizer.json"
+STAN_LOGISTIC_OBJECTIVE_FILENAME = "stan-logistic-objective.json"
+LOGISTIC_PREDICTION_STATE_FILENAME = "logistic-prediction-state.json"
+STAN_LOGISTIC_LBFGS_FILENAME = "stan-logistic-lbfgs.json"
 MANIFEST_FILENAME = "manifest.json"
 ROOT = Path(__file__).resolve().parents[2]
 REFERENCE_PATH = ROOT / "tools" / "prophet" / "reference.json"
@@ -2596,18 +2602,8 @@ def make_stan_linear_optimizer_fixture() -> dict[str, Any]:
         sigma_index = 2 + inputs.S
 
         def density(parameters: Sequence[float]) -> tuple[float, list[float]]:
-            """Use the actual frozen executable's diagnostic command, no Jacobian."""
-
-            constrained = {
-                "k": parameters[0], "m": parameters[1],
-                "delta": list(parameters[2:sigma_index]),
-                "sigma_obs": float(np.exp(parameters[sigma_index])),
-                "beta": list(parameters[sigma_index + 1:]),
-            }
-            result = model.stan_backend.model.log_prob(
-                params=constrained, data=stan_data, jacobian=False, sig_figs=12
-            ).iloc[0]
-            return float(result.iloc[0]), [float(value) for value in result.iloc[1:]]
+            """Use the shared pinned-executable protocol without a Jacobian."""
+            return stan_unconstrained_probe(model, stan_data, parameters)
 
         parameters = [initial.k, initial.m, *initial.delta, 0.0, *initial.beta]
         probes = []
@@ -2619,28 +2615,13 @@ def make_stan_linear_optimizer_fixture() -> dict[str, Any]:
                 probe = list(parameters)
                 probe[2] = delta
                 value, gradient = density(probe)
-                dimension = len(probe)
-                curvature = np.zeros((dimension, dimension))
-
-                for column in range(dimension):
-                    for perturbation, weight in zip(
-                        (-0.002, -0.001, 0.001, 0.002),
-                        (1.0 / 12.0, -2.0 / 3.0, 2.0 / 3.0, -1.0 / 12.0),
-                    ):
-                        trial = list(probe)
-                        trial[column] += perturbation
-                        _, trial_gradient = density(trial)
-
-                        for row, derivative in enumerate(trial_gradient):
-                            increment = 0.0005 * weight * derivative
-                            curvature[column, row] += increment
-                            curvature[row, column] += increment
+                curvature = stan_curvature_probe(model, stan_data, probe)
 
                 probes.append({
                     "parameters": [canonical_fitted_float(v, zero_threshold=0.0) for v in probe],
                     "logDensity": canonical_fitted_float(value, zero_threshold=0.0),
                     "gradient": [canonical_fitted_float(v, zero_threshold=0.0) for v in gradient],
-                    "curvature": [canonical_fitted_float(v, zero_threshold=0.0) for v in curvature.ravel()],
+                    "curvature": [canonical_fitted_float(v, zero_threshold=0.0) for v in curvature],
                 })
 
         attempts = []
@@ -2720,24 +2701,9 @@ def make_stan_linear_optimizer_fixture() -> dict[str, Any]:
 
         state = [fitted["k"], fitted["m"], *[fitted[f"delta[{j + 1}]"] for j in range(inputs.S)],
                  np.log(fitted["sigma_obs"]), *[fitted[f"beta[{j + 1}]"] for j in range(inputs.K)]]
-        if returned_algorithm == "Newton":
-            iterations = sum(line.startswith("Iteration ") for line in stdout.splitlines())
-            termination = "iteration-limit" if iterations == budget else "objective-change"
-        else:
-            lines = [line for line in stdout.splitlines() if re.match(r"^\s*\d+\s+[-\d.]", line)]
-            iterations = int(lines[-1].split()[0])
-            descriptions = {
-                "absolute change in objective": "absolute-objective",
-                "relative change in objective": "relative-objective",
-                "gradient norm is below": "absolute-gradient",
-                "relative gradient magnitude": "relative-gradient",
-                "absolute parameter change": "parameter-change",
-                "Maximum number of iterations": "iteration-limit",
-            }
-            termination = next((label for text, label in descriptions.items() if text in stdout), None)
-            if termination is None:
-                fail("Unrecognized frozen L-BFGS completion")
-        attempts.append({"algorithm": returned_algorithm, "iterations": iterations, "termination": termination})
+        completion = stan_optimization_completion(stdout, returned_algorithm, budget)
+        iterations, termination = completion["iterations"], completion["termination"]
+        attempts.append(completion)
         fitted_density, _ = density(state)
         prediction = np.asarray([fitted[f"trend[{j + 1}]"] for j in range(count)])
 
@@ -2776,6 +2742,411 @@ def make_stan_linear_optimizer_fixture() -> dict[str, Any]:
             "fitLogDensityAbsolute": 0.01, "predictionAbsolute": 0.002,
             "noiseAbsolute": 0.0002, "oneStepParameterAbsolute": 1e-7,
         },
+    }
+
+
+def make_stan_logistic_objective_fixture() -> dict[str, Any]:
+    """Freeze same-point logistic calculus and actual empty-point public folding."""
+    cases = []
+    for identifier in (
+        "implicit-empty-default", "implicit-empty-loose",
+        "implicit-empty-loose-benchmark-absmax", "implicit-empty-loose-benchmark-minmax",
+        "explicit-floor",
+        "mixed-conditional", "duplicate-endpoints", "endpoint-clipping",
+    ):
+        empty = identifier.startswith("implicit-empty")
+        mixed = identifier == "mixed-conditional"
+        explicit_floor = identifier in ("explicit-floor", "mixed-conditional")
+        index = np.arange(12, dtype=np.float64)
+        dates = pd.date_range("2020-01-01", periods=12, freq="D")
+        capacities = 100.0 + 0.2 * index
+        floors = 5.0 + 0.05 * index if explicit_floor else np.zeros(12)
+        values = floors + (capacities - floors) / (1 + np.exp(-4 * (index / 11 - 0.45)))
+        values += 0.08 * np.sin(index * 1.731) + 0.035 * np.cos(index * 0.417)
+        frame = pd.DataFrame({"ds": dates, "y": values, "cap": capacities})
+        if explicit_floor:
+            frame["floor"] = floors
+        if mixed:
+            frame["active"] = index % 3 != 1
+            frame["promotion"] = index % 4 == 2
+            frame["y"] += 0.4 * np.sin(2 * np.pi * index / 7) * frame["active"]
+        if identifier == "duplicate-endpoints":
+            duplicate = frame.iloc[[-1]].copy()
+            duplicate["y"] += 2.0
+            frame = pd.concat([frame, duplicate], ignore_index=True)
+        if identifier == "endpoint-clipping":
+            frame.loc[0, "y"] = -3.0
+            frame.loc[11, "y"] = capacities[-1] + 4.0
+        benchmark_data = None
+        if "-benchmark-" in identifier:
+            # Consume the frozen red-checkpoint bytes, without regenerating inputs.
+            dataset_path = ROOT / "benchmark" / "inputs" / "v2" / "logistic-basic-96.json"
+            benchmark_data = json.loads(dataset_path.read_text())
+            frame = pd.DataFrame({
+                "ds": pd.to_datetime([row["timestamp"] for row in benchmark_data["observations"]]).tz_localize(None),
+                "y": [row["value"] for row in benchmark_data["observations"]],
+                "cap": [row["capacity"] for row in benchmark_data["observations"]],
+            })
+        else:
+            # Authored analytic observations must not expose CPU-sensitive last bits.
+            frame["y"] = frame["y"].map(lambda value: canonical_fitted_float(value, zero_threshold=0.0))
+        prior = 10.0 if "loose" in identifier else 0.05
+        scaling = "minmax" if explicit_floor or identifier.endswith("-minmax") else "absmax"
+
+        def make_model():
+            model = Prophet(
+                growth="logistic", scaling=scaling,
+                changepoints=[] if empty else [dates[5]], changepoint_prior_scale=prior,
+                yearly_seasonality=False, weekly_seasonality=False, daily_seasonality=False,
+                uncertainty_samples=0,
+                holidays=pd.DataFrame({"holiday": ["campaign"], "ds": [dates[4]]}) if mixed else None,
+            )
+            if mixed:
+                model.add_seasonality("weekly-custom", period=7, fourier_order=1,
+                                      condition_name="active", mode="additive", prior_scale=2)
+                model.add_regressor("promotion", standardize=False, mode="multiplicative", prior_scale=3)
+            return model
+
+        model = make_model()
+        inputs = model.preprocess(frame)
+        initial = model.calculate_initial_params(inputs.K)
+        _, data = model.stan_backend.prepare_data(initial.__dict__, inputs.__dict__)
+        # The oracle and Rust both receive these exact, CPU-independent feature bytes.
+        data["X"] = np.round(inputs.X.to_numpy(), FOURIER_DECIMAL_PLACES).tolist()
+        sigma_index = 2 + inputs.S
+        parameters = [initial.k, initial.m, *initial.delta, 0.0, *initial.beta]
+        canonical = lambda value: canonical_fitted_float(value, zero_threshold=0.0)
+        parameters = [canonical(value) for value in parameters]
+        probe_parameters = []
+        for delta in (0.0, -0.0005, 0.25):
+            probe = list(parameters)
+            probe[2] = delta
+            probe[sigma_index] = canonical(float(np.log(0.3)))
+            for column in range(inputs.K):
+                probe[sigma_index + 1 + column] = 0.01 * (column + 1) * (-1 if column % 2 else 1)
+            probe_parameters.append([canonical(value) for value in probe])
+        if not empty:
+            # Nonzero opposite segment rates remain nonsingular in upstream gamma arithmetic.
+            probe = list(probe_parameters[-1])
+            probe[0], probe[2] = 1.0, -2.0
+            probe_parameters.append(probe)
+
+        probes = []
+        for probe in probe_parameters:
+            value, gradient = stan_unconstrained_probe(model, data, probe)
+            probes.append({
+                "parameters": probe, "logDensity": canonical(value),
+                "gradient": [canonical(value) for value in gradient],
+                "curvature": [canonical(value) for value in stan_curvature_probe(model, data, probe)],
+            })
+
+        case = {
+            "id": identifier, "scaling": scaling, "times": [float(value) for value in inputs.t],
+            "target": [float(value) for value in inputs.y],
+            "capacities": [float(value) for value in inputs.cap],
+            "changepointTimes": [] if empty else [float(value) for value in model.changepoints_t],
+            "internalChangepointTimes": [float(value) for value in model.changepoints_t],
+            "features": [float(value) for value in np.asarray(data["X"]).ravel()],
+            "featurePriors": list(inputs.sigmas),
+            "featureModes": ["multiplicative" if value else "additive" for value in inputs.s_m],
+            "changepointPrior": prior, "initialParameters": parameters, "probes": probes,
+        }
+        if benchmark_data is not None:
+            case["sourceDataset"] = {"path": "benchmark/inputs/v2/logistic-basic-96.json", "sha256": sha256_file(dataset_path)}
+        if empty:
+            fitted = make_model().fit(frame, algorithm="Newton", iter=10000, sig_figs=12, seed=2831,
+                                      save_iterations=True)
+            raw = fitted.stan_fit.optimized_params_dict
+            prediction_frame = frame.drop(columns="y") if benchmark_data is None else pd.DataFrame({
+                "ds": pd.to_datetime([row["timestamp"] for row in benchmark_data["predictionRows"]]).tz_localize(None),
+                "cap": [row["capacity"] for row in benchmark_data["predictionRows"]],
+            })
+            prediction = fitted.predict(prediction_frame)
+            prepared_prediction = fitted.setup_dataframe(prediction_frame.copy())
+            trajectory_rows = pd.read_csv(fitted.stan_fit.runset.csv_files[0], comment="#")
+            trajectory = []
+            if identifier == "implicit-empty-default":
+                for _, row in trajectory_rows.iterrows():
+                    trajectory.append({
+                        "parameters": [canonical(row["k"]), canonical(row["m"]),
+                                       canonical(row["delta.1"]), canonical(float(np.log(row["sigma_obs"]))),
+                                       canonical(row["beta.1"])],
+                        "logDensity": canonical(row["lp__"]),
+                    })
+            for iteration in (8, 22, len(trajectory) - 2) if trajectory else ():
+                probe = trajectory[iteration]["parameters"]
+                value, gradient = stan_unconstrained_probe(model, data, probe)
+                # Large low-noise derivatives exceed the resolution of a
+                # curvature stencil built from 12-digit log_prob output. Keep
+                # the existing curvature gate/probes unchanged; add gradients
+                # and a real one-step optimize seam at the same authored state.
+                sigma = canonical(float(np.exp(probe[sigma_index])))
+                step_initial = [*probe[:sigma_index], canonical(float(np.log(sigma))),
+                                *probe[sigma_index + 1:]]
+                step = model.stan_backend.model.optimize(
+                    data=data, inits={"k": probe[0], "m": probe[1], "delta": [probe[2]],
+                                      "sigma_obs": sigma, "beta": [probe[-1]]},
+                    algorithm="Newton", iter=1, sig_figs=12, seed=2831,
+                ).optimized_params_dict
+                probes.append({
+                    "parameters": probe, "logDensity": canonical(value),
+                    "gradient": [canonical(value) for value in gradient],
+                    "trajectoryIteration": iteration,
+                    "newtonStep": {
+                        "initial": step_initial,
+                        "parameters": [canonical(step["k"]), canonical(step["m"]),
+                                       canonical(step["delta[1]"]),
+                                       canonical(float(np.log(step["sigma_obs"]))),
+                                       canonical(step["beta[1]"])],
+                    },
+                })
+            case["fitted"] = {
+                "trajectory": trajectory,
+                "scale": float(fitted.y_scale),
+                "implicitFloor": float(fitted.history["floor"].iloc[0]),
+                "predictionTimes": [float(value) for value in prepared_prediction["t"]],
+                "predictionCapacities": [float(value) for value in prediction_frame["cap"]],
+                "observations": [
+                    {"timestamp": row.ds.strftime("%Y-%m-%dT%H:%M:%S.000Z"),
+                     "value": float(row.y), "capacity": float(row.cap)}
+                    for row in frame.itertuples()
+                ],
+                "internalParameters": [canonical(raw["k"]), canonical(raw["m"]),
+                                       canonical(raw["delta[1]"]), canonical(float(np.log(raw["sigma_obs"]))),
+                                       canonical(raw["beta[1]"])],
+                "rate": canonical(fitted.params["k"][0][0]),
+                "offset": canonical(fitted.params["m"][0][0]),
+                "objective": canonical(-raw["lp__"]),
+                "stationarityResidual": canonical(map_optimizer_evidence(fitted)["stationarityResidual"]),
+                "normalizedNoise": canonical(raw["sigma_obs"]),
+                "trend": [canonical(value) for value in prediction["trend"]],
+                "value": [canonical(value) for value in prediction["yhat"]],
+            }
+        cases.append(case)
+
+    return {
+        "sourceMethod": "Unmodified Prophet 1.4.0 preprocess/init and bundled Stan log_prob without Jacobian",
+        "cases": cases,
+        "tolerances": {"valueAbsolute": 1e-7, "gradientAbsolute": 1e-7,
+                       "curvatureAbsolute": 2e-12, "initialAbsolute": 1e-10,
+                       "fitObjectiveAbsolute": 0.01, "forecastAbsolute": 0.01,
+                       "normalizedNoiseAbsolute": 0.0002, "stationarityAbsolute": 0.01},
+    }
+
+
+def make_stan_logistic_lbfgs_fixture() -> dict[str, Any]:
+    """Freeze defaults-256 public evidence and a separate CPU-independent problem.
+
+    Public fitting uses unmodified preprocessing and backend defaults. The private
+    trajectory instead rounds Fourier inputs to 12 decimal places and fits from
+    the exact serialized initialization. Do not conflate these two endpoints.
+    """
+    dataset_path = ROOT / "benchmark" / "inputs" / "v2" / "logistic-weekly-256.json"
+    dataset = json.loads(dataset_path.read_text())
+    frame = pd.DataFrame({
+        "ds": pd.to_datetime([row["timestamp"] for row in dataset["observations"]]).tz_localize(None),
+        "y": [row["value"] for row in dataset["observations"]],
+        "cap": [row["capacity"] for row in dataset["observations"]],
+    })
+    canonical = lambda value: canonical_fitted_float(value, zero_threshold=0.0)
+    budget = 10000
+    model = Prophet(growth="logistic", uncertainty_samples=0)
+    inputs = model.preprocess(frame)
+    initial = model.calculate_initial_params(inputs.K)
+    _, data = model.stan_backend.prepare_data(initial.__dict__, inputs.__dict__)
+    data["X"] = np.round(inputs.X.to_numpy(), FOURIER_DECIMAL_PLACES).tolist()
+    sigma_index = 2 + inputs.S
+    parameters = [canonical(value) for value in
+                  [initial.k, initial.m, *initial.delta, 0.0, *initial.beta]]
+    inits = {"k": parameters[0], "m": parameters[1], "delta": parameters[2:sigma_index],
+             "sigma_obs": 1.0, "beta": parameters[sigma_index + 1:]}
+
+    with tempfile.TemporaryDirectory(prefix="prophet-logistic-lbfgs-") as directory:
+        public = Prophet(growth="logistic", uncertainty_samples=0).fit(
+            frame, sig_figs=12, save_iterations=True, refresh=1, output_dir=directory,
+        )
+        public_raw = public.stan_fit.optimized_params_dict
+        public_stdout = Path(public.stan_fit.runset.stdout_files[0]).read_text()
+        public_algorithm = {"lbfgs": "LBFGS", "newton": "Newton"}[
+            public.stan_fit.metadata.cmdstan_config["algorithm"]
+        ]
+        fixed = model.stan_backend.model.optimize(
+            data=data, inits=inits, algorithm="LBFGS", iter=budget,
+            sig_figs=12, seed=2831, save_iterations=True, refresh=1, output_dir=directory,
+        )
+        fixed_stdout = Path(fixed.runset.stdout_files[0]).read_text()
+        trajectory_rows = pd.read_csv(fixed.runset.csv_files[0], comment="#")
+        fixed_raw = fixed.optimized_params_dict
+
+    # Save every accepted state for locating the first divergence, not an exact
+    # late-trajectory compatibility gate on this nonsmooth objective.
+    trajectory = []
+    for _, row in trajectory_rows.iterrows():
+        trajectory.append([canonical(value) for value in
+            [row["k"], row["m"], *[row[f"delta.{j + 1}"] for j in range(inputs.S)],
+             np.log(row["sigma_obs"]), *[row[f"beta.{j + 1}"] for j in range(inputs.K)]]])
+
+    public_parameters = [canonical(value) for value in
+        [public_raw["k"], public_raw["m"],
+         *[public_raw[f"delta[{j + 1}]"] for j in range(inputs.S)],
+         np.log(public_raw["sigma_obs"]), *[public_raw[f"beta[{j + 1}]"] for j in range(inputs.K)]]]
+    probes = []
+    authored = list(parameters)
+    authored[sigma_index] = canonical(float(np.log(0.3)))
+    for column in range(inputs.S):
+        authored[2 + column] = canonical(0.25 if column % 2 == 0 else -0.0005)
+    for column in range(inputs.K):
+        authored[sigma_index + 1 + column] = canonical(0.01 * (column + 1) * (-1 if column % 2 else 1))
+    states = [("initial", parameters), ("nonzero-deltas-and-features", authored),
+              ("unmodified-public-endpoint-on-rounded-features", public_parameters)]
+    for iteration in (1, 8, 20, 38, 39, 50, 100, 300, 600, len(trajectory) - 1):
+        if iteration < len(trajectory):
+            states.append((f"iteration-{iteration}", trajectory[iteration]))
+    for identifier, state in states:
+        value, gradient = stan_unconstrained_probe(model, data, state)
+        probes.append({"id": identifier, "parameters": state,
+                       "logDensity": canonical(value), "gradient": [canonical(v) for v in gradient]})
+
+    # An authored normalized problem exposes column-adjoint cancellation without
+    # storing low-bit optimizer output. It is not a public preprocessing case.
+    adjoint_case = {
+        "id": "additive-adjoint-cancellation", "target": [1e16, 1.0, -1e16, 1.0],
+        "times": [0.0, 1.0 / 3.0, 2.0 / 3.0, 1.0], "capacities": [1e-300] * 4,
+        "changepointTimes": [0.5], "features": [1.0] * 4,
+        "featurePriors": [1.0], "featureModes": ["additive"], "changepointPrior": 0.05,
+    }
+    adjoint_cases = [adjoint_case, {
+        "id": "multiplicative-adjoint-scalar-control", "target": [1e16, 2.0, -1e16, 2.0, 2.0],
+        "times": [0.0, 0.0, 0.0, 0.0, 1.0], "capacities": [2.0] * 5,
+        "changepointTimes": [0.5], "features": [1.0, 1.0, 1.0, 1.0, 0.0],
+        "featurePriors": [1.0], "featureModes": ["multiplicative"], "changepointPrior": 0.05,
+    }, {
+        "id": "scalar-inv-logit-value-view", "target": [4797286177634870.0, 0.0],
+        "times": [0.0, 1.0], "capacities": [1e16, 1e-300],
+        "changepointTimes": [0.5], "features": [1.0, 0.0],
+        "featurePriors": [1.0], "featureModes": ["additive"], "changepointPrior": 0.05,
+        "probeParameters": [1.0, 0.08113, 0.0, 0.0, 0.0],
+    }, {
+        "id": "column-major-changepoint-cancellation", "target": [0.0, 8807970779778823.0],
+        "times": [0.0, 1.0], "capacities": [1e-300, 1e16],
+        "changepointTimes": [0.0] * 4, "features": [0.0, 1.0],
+        "featurePriors": [1.0], "featureModes": ["additive"], "changepointPrior": 1e16,
+        "probeParameters": [1.0, 0.0, -1e16, 1.0, 1e16, 1.0, 0.0, 0.0],
+    }, {
+        "id": "column-major-changepoint-blocks", "target": [0.0, 0.0],
+        "times": [0.0, 1.0], "capacities": [1e-300, 1.0],
+        "changepointTimes": [0.0] * 128, "features": [0.0, 1.0],
+        "featurePriors": [1.0], "featureModes": ["additive"], "changepointPrior": 1e16,
+        "probeParameters": [10.0, 0.0, *([-1e16, 1.0, 1e16, 1.0] * 32), 0.0, 0.0],
+    }, {
+        "id": "changepoint-adjoint-scalar-cancellation",
+        "target": [0.0, 10000000000000002.0, 3.9242343145200196, -9999999999999998.0, 3.9242343145200196],
+        "times": [0.0, 1.0, 1.0, 1.0, 1.0], "capacities": [1e-300, 4.0, 4.0, 4.0, 4.0],
+        "changepointTimes": [0.0], "features": [0.0] * 5,
+        "featurePriors": [1.0], "featureModes": ["additive"], "changepointPrior": 0.05,
+    }]
+    for adjoint_case in adjoint_cases:
+        additive = adjoint_case["featureModes"][0] == "additive"
+        adjoint_data = dict(
+            T=len(adjoint_case["target"]), S=len(adjoint_case["changepointTimes"]), K=1,
+            y=adjoint_case["target"], t=adjoint_case["times"], cap=adjoint_case["capacities"],
+            t_change=adjoint_case["changepointTimes"], X=[[v] for v in adjoint_case["features"]],
+            sigmas=[1.0], s_a=[int(additive)], s_m=[int(not additive)],
+            tau=adjoint_case["changepointPrior"], trend_indicator=1,
+        )
+        adjoint_parameters = adjoint_case.pop("probeParameters", [1.0, 0.0, 0.0, 0.0, 0.0])
+        value, gradient = stan_unconstrained_probe(model, adjoint_data, adjoint_parameters)
+        adjoint_case["probes"] = [{
+            "id": "unit-noise-zero-beta", "parameters": adjoint_parameters,
+            "logDensity": canonical(value), "gradient": [canonical(v) for v in gradient],
+        }]
+
+    return {
+        "sourceMethod": "Unmodified Prophet 1.4.0 public defaults; separate 12-decimal Fourier Stan LBFGS trajectory",
+        "adjointReductionCases": adjoint_cases,
+        "cases": [{
+            "id": "logistic-reconcile-defaults-256",
+            "sourceDataset": {"path": str(dataset_path.relative_to(ROOT)), "sha256": sha256_file(dataset_path)},
+            "times": list(inputs.t), "target": list(inputs.y), "capacities": list(inputs.cap),
+            "changepointTimes": list(model.changepoints_t),
+            "features": np.asarray(data["X"]).ravel().tolist(),
+            "featurePriors": list(inputs.sigmas),
+            "featureModes": ["multiplicative" if value else "additive" for value in inputs.s_m],
+            "changepointPrior": inputs.tau, "initialParameters": parameters,
+            "maxIterations": budget, "probes": probes, "trajectory": trajectory,
+            "fixedProblemFit": {
+                **stan_optimization_completion(fixed_stdout, "LBFGS", budget),
+                "logDensity": canonical(fixed_raw["lp__"]), "normalizedNoise": canonical(fixed_raw["sigma_obs"]),
+            },
+            "unmodifiedPublicFit": {
+                "parameters": public_parameters,
+                **stan_optimization_completion(public_stdout, public_algorithm, budget),
+                **{key: canonical(value) for key, value in map_optimizer_evidence(public).items()},
+                "normalizedNoise": canonical(public_raw["sigma_obs"]),
+            },
+        }],
+        "tolerances": {"valueAbsolute": 1e-7, "gradientAbsolute": 1e-7,
+                       "initialAbsolute": 1e-10, "earlyTrajectoryParameterAbsolute": 1e-7,
+                       "fitObjectiveAbsolute": 0.01, "normalizedNoiseAbsolute": 0.0002},
+    }
+
+
+def make_logistic_prediction_state_fixture() -> dict[str, Any]:
+    """Freeze public gamma arithmetic, including nonfinite singular predictions.
+
+    Nonfinite oracle results are tagged, never written as invalid JSON or replaced
+    with a continuous extension. Empty public points retain Prophet's zero dummy.
+    """
+    training = pd.DataFrame({
+        "ds": pd.to_datetime(["2020-01-01", "2020-01-05"]),
+        "y": [20.0, 80.0], "cap": [100.0, 100.0], "floor": [-5.0, -5.0],
+    })
+    prediction_times = [-0.25, 0.0, 0.25, 0.5, 0.75, 1.0, 1.5]
+    prediction_frame = pd.DataFrame({
+        "ds": [training["ds"].iloc[0] + pd.Timedelta(days=4 * t) for t in prediction_times],
+        "cap": [100.0 + i for i in range(len(prediction_times))],
+        "floor": [-5.0 + 0.5 * i for i in range(len(prediction_times))],
+    })
+    cases = []
+    states = (
+        ("empty-nonzero", 2.0, 0.4, [], []),
+        ("empty-zero", 0.0, 0.4, [], []),
+        ("zero-base-nonzero-segment", 0.0, 0.4, [0.5], [2.0]),
+        ("zero-segment", 2.0, 0.4, [0.5], [-2.0]),
+        ("zero-segment-at-offset", 2.0, 0.5, [0.5], [-2.0]),
+        ("zero-segment-then-recovery", 2.0, 0.4, [0.25, 0.75], [-2.0, 3.0]),
+        ("nonzero-sign-crossing", 2.0, 0.4, [0.5], [-4.0]),
+        ("zero-segment-at-origin", 2.0, 0.4, [0.0], [-2.0]),
+        ("zero-segment-at-endpoint", 2.0, 0.4, [1.0], [-2.0]),
+    )
+    for scaling in ("absmax", "minmax"):
+        model = Prophet(growth="logistic", scaling=scaling, changepoints=[],
+                        yearly_seasonality=False, weekly_seasonality=False,
+                        daily_seasonality=False, uncertainty_samples=0)
+        history = model.setup_dataframe(training.copy(), initialize_scales=True)
+        prepared = model.setup_dataframe(prediction_frame.copy())
+        for identifier, rate, offset, points, deltas in states:
+            model.changepoints_t = np.asarray(points if points else [0.0])
+            model.params = {"k": np.asarray([[rate]]), "m": np.asarray([[offset]]),
+                            "delta": np.asarray([deltas if deltas else [0.0]])}
+            with np.errstate(divide="ignore", invalid="ignore", over="ignore"):
+                trend = model.predict_trend(prepared)
+            cases.append({
+                "id": f"{identifier}-{scaling}", "scaling": scaling,
+                "scale": float(model.y_scale), "times": prediction_times,
+                "capacities": prediction_frame["cap"].tolist(),
+                "floors": prediction_frame["floor"].tolist(),
+                "parameters": {"rate": rate, "offset": offset,
+                               "changepoints": points, "deltas": deltas},
+                "expected": [
+                    {"kind": "finite", "trend": canonical_fitted_float(value, zero_threshold=0.0)}
+                    if np.isfinite(value) else {"kind": "non-finite"}
+                    for value in trend
+                ],
+            })
+    return {
+        "sourceMethod": "Unmodified Prophet 1.4.0 setup_dataframe and predict_trend with authored public parameters",
+        "cases": cases, "toleranceAbsolute": 1e-9,
     }
 
 
@@ -2868,6 +3239,12 @@ def write_outputs(output: Path, execution: dict[str, str], reference: dict[str, 
     map_uncertainty_path.write_bytes(stable_json(make_map_uncertainty_fixture()))
     stan_optimizer_path = output / STAN_LINEAR_OPTIMIZER_FILENAME
     stan_optimizer_path.write_bytes(stable_json(make_stan_linear_optimizer_fixture()))
+    stan_logistic_path = output / STAN_LOGISTIC_OBJECTIVE_FILENAME
+    stan_logistic_path.write_bytes(stable_json(make_stan_logistic_objective_fixture()))
+    logistic_prediction_path = output / LOGISTIC_PREDICTION_STATE_FILENAME
+    logistic_prediction_path.write_bytes(stable_json(make_logistic_prediction_state_fixture()))
+    stan_logistic_lbfgs_path = output / STAN_LOGISTIC_LBFGS_FILENAME
+    stan_logistic_lbfgs_path.write_bytes(stable_json(make_stan_logistic_lbfgs_fixture()))
 
     model_path = find_prophet_model()
     manifest = {
@@ -2932,6 +3309,18 @@ def write_outputs(output: Path, execution: dict[str, str], reference: dict[str, 
                 "path": STAN_LINEAR_OPTIMIZER_FILENAME,
                 "sha256": sha256_file(stan_optimizer_path),
             },
+            {
+                "path": STAN_LOGISTIC_OBJECTIVE_FILENAME,
+                "sha256": sha256_file(stan_logistic_path),
+            },
+            {
+                "path": LOGISTIC_PREDICTION_STATE_FILENAME,
+                "sha256": sha256_file(logistic_prediction_path),
+            },
+            {
+                "path": STAN_LOGISTIC_LBFGS_FILENAME,
+                "sha256": sha256_file(stan_logistic_lbfgs_path),
+            },
         ],
         "backendArtifacts": [
             {
@@ -2942,7 +3331,10 @@ def write_outputs(output: Path, execution: dict[str, str], reference: dict[str, 
         ],
         "dependencyLockSha256": sha256_file(LOCK_PATH),
         "executionEnvironment": execution,
-        "generatorRevision": sha256_file(GENERATOR_PATH),
+        "generatorRevision": hashlib.sha256(
+            GENERATOR_PATH.read_bytes() + b"\0"
+            + GENERATOR_PATH.with_name("linear_optimizer_evidence.py").read_bytes()
+        ).hexdigest(),
         "numericalEnvironment": numerical_environment(),
         "prophetSourceCommit": reference["sourceCommit"],
         "prophetVersion": EXPECTED_PROPHET_VERSION,
@@ -2972,6 +3364,9 @@ def compare_outputs(generated: Path, committed: Path) -> None:
         LOGISTIC_MAP_FILENAME,
         MAP_UNCERTAINTY_FILENAME,
         STAN_LINEAR_OPTIMIZER_FILENAME,
+        STAN_LOGISTIC_OBJECTIVE_FILENAME,
+        LOGISTIC_PREDICTION_STATE_FILENAME,
+        STAN_LOGISTIC_LBFGS_FILENAME,
         MANIFEST_FILENAME,
     ):
         generated_path = generated / filename

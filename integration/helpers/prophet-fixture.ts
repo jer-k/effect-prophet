@@ -1273,6 +1273,9 @@ const FixtureManifestSchema = Schema.Struct({
       "logistic-map.json",
       "map-uncertainty.json",
       "stan-linear-optimizer.json",
+      "stan-logistic-objective.json",
+      "logistic-prediction-state.json",
+      "stan-logistic-lbfgs.json",
     ]) {
       if (!paths.has(requiredPath)) {
         return {

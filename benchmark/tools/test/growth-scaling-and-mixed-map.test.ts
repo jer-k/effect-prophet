@@ -39,7 +39,7 @@ describe("growth, scaling, and mixed-component MAP benchmark workloads", () => {
     }
   });
 
-  it("rejects incompatible equivalent-fit declarations before timing", async () => {
+  it("admits empty logistic points for investigation but rejects unsupported flat controls", async () => {
     const logistic = growthScalingAndMixedMapCases.find(
       (benchmarkCase) => benchmarkCase.id === "logistic-implicit-floor-auto-changepoints",
     );
@@ -79,7 +79,7 @@ describe("growth, scaling, and mixed-component MAP benchmark workloads", () => {
       ]).pipe(Effect.exit),
     );
 
-    expect(noPoints._tag).toBe("Failure");
+    expect(noPoints._tag).toBe("Success");
     expect(flatControls._tag).toBe("Failure");
   });
 

@@ -219,6 +219,22 @@
       ]
     },
     {
+      "id": "logistic-python-reconciliation-v1",
+      "classification": "equivalent-objective",
+      "statement": "Investigation targets against unmodified Prophet 1.4.0, not established parity. Python selects Newton below 100 retained rows and L-BFGS otherwise with its default fallback. Include growth-only requests, empty changepoints and existing documented differences. Compare pre-fold executable density/KKT evidence, normalized noise, forecasts, components, metadata and public JSON lifecycles. A failed target admits no timing; matching endpoint residuals is not a near-stationarity certificate.",
+      "prerequisiteFixtures": ["logistic-map.json", "mixed-map.json", "target-scaling.json"],
+      "checks": [
+        "default seasonality resolution",
+        "floor policy and train-only scaling",
+        "historical and future forecasts",
+        "component modes and units",
+        "pre-fold executable objective",
+        "constrained endpoint stationarity difference",
+        "normalized noise",
+        "public JSON and fresh-process prediction"
+      ]
+    },
+    {
       "id": "stage-f-logistic-v1",
       "classification": "equivalent-objective",
       "statement": "Nonsingular logistic MAP with nonempty explicit or automatic changepoints, changing capacities, matched floor and scaling policy, additive Fourier effects and optional multiplicative regressor; no empty-point or singular-rate parity claim.",

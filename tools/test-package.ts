@@ -203,7 +203,8 @@ const evaluated = await Effect.runPromise(
       { timestamp: "2024-01-02T00:00:00.000Z", value: 3 },
       { timestamp: "2024-01-03T00:00:00.000Z", value: 4 },
     ],
-    {},
+    // This smoke check exercises explicit featureless OLS, not automatic MAP CV.
+    { builtInSeasonalities: { yearly: "off", weekly: "off", daily: "off" } },
     {
       horizonMs: 86_400_000,
       cutoffs: { mode: "explicit", timestamps: ["2024-01-02T00:00:00.000Z"] },

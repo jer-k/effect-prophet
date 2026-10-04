@@ -110,7 +110,7 @@ export interface LogisticPiecewiseMapFitPlan {
   readonly seasonalities: SeasonalityLayout;
   readonly changepoints: ChangepointSetting;
   readonly changepointPriorScale: number;
-  readonly optimizer: MapOptimizerControls;
+  readonly optimizer: LinearOptimizer;
   readonly seasonalityMasks: SeasonalityMaskMatrix;
   readonly additionalFeatures: KnownAdditiveFeatures;
   readonly events: EventCalendar;

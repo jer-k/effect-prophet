@@ -2,7 +2,7 @@ import { Effect } from "effect";
 import { describe, expect, it } from "vitest";
 
 import { FittingError } from "../../src/errors";
-import { linearOptimizerFailure } from "../../src/internal/linear-map-protocol";
+import { stanOptimizerFailure as linearOptimizerFailure } from "../../src/internal/stan-map-protocol";
 
 describe("linear optimizer failure protocol", () => {
   it.each([

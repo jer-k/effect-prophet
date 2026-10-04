@@ -153,6 +153,12 @@ are calculated before folding, so public slope alone cannot reconstruct those di
 Constant histories retain the explicit `constant-target-shortcut`. Neither Stan completion
 nor a small objective change guarantees a KKT certificate at a Laplace kink.
 
+`stationarityResidual` is the largest normalized KKT residual. A delta within `1e-6` of zero is
+treated as at its Laplace kink: its smooth derivative is compared with the subgradient interval
+`[-1/tau, 1/tau]`. Stan's Newton and L-BFGS stop near zero rather than on it, and an exact-zero
+test made the residual jump by `2/tau` with the sign of a round-off-sized delta. The pinned
+Python evidence uses the same rule.
+
 ## Rust/WASM protocol
 
 The coarse fit export accepts training timestamps/values, explicit or automatic changepoint

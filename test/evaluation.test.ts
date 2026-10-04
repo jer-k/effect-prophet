@@ -16,6 +16,9 @@ import { deriveEvaluationFoldSeed } from "../src/evaluation-seed";
 import { FittingBackend, type FitPlan } from "../src/internal/fitting-backend";
 import { makeWasmLinearTrendAdapter } from "../src/internal/wasm-linear-trend-backend";
 import { makeTestFittingBackend } from "./internal/fitting-backend-test-layer";
+import { builtInSeasonalitiesOff } from "./helpers/built-in-seasonalities";
+
+const olsOptions = { builtInSeasonalities: builtInSeasonalitiesOff };
 
 const dayMs = 86_400_000;
 
@@ -27,7 +30,7 @@ const history = (days: ReadonlyArray<number>) =>
   days.map((day) => ({ timestamp: at(day), value: day + 1 }));
 
 const run = (days: ReadonlyArray<number>, input: Parameters<typeof planRollingOrigin>[2]) =>
-  Effect.runPromise(planRollingOrigin(history(days), {}, input));
+  Effect.runPromise(planRollingOrigin(history(days), olsOptions, input));
 
 const failure = (days: ReadonlyArray<number>, input: Parameters<typeof planRollingOrigin>[2]) =>
   Effect.runPromise(Effect.flip(planRollingOrigin(history(days), {}, input)));
@@ -130,10 +133,13 @@ describe("planRollingOrigin", () => {
     expect(plan.cutoffs).toEqual([17, 20, 23, 26, 29, 32, 35].map((ms) => epoch + ms));
   });
 
-  it("uses only static seasonality definitions for the generated initial default", async () => {
+  it("uses full-history resolved seasonality definitions for the generated initial default", async () => {
     const days = Array.from({ length: 40 }, (_, index) => index);
 
-    const noSeasonality = await run(days, { horizonMs: 2 * dayMs, cutoffs: { mode: "generated" } });
+    const noSeasonality = await run(days, {
+      horizonMs: 2 * dayMs,
+      cutoffs: { mode: "generated" },
+    });
 
     const weekly = await Effect.runPromise(
       planRollingOrigin(
@@ -197,12 +203,21 @@ describe("planRollingOrigin", () => {
       { horizonMs: 1.5, cutoffs: { mode: "generated" } },
       { horizonMs: 3_650 * dayMs + 1, cutoffs: { mode: "generated" } },
       { horizonMs: dayMs, cutoffs: { mode: "explicit", timestamps: [] } },
-      { horizonMs: dayMs, cutoffs: { mode: "explicit", timestamps: [at(2), at(2)] } },
-      { horizonMs: dayMs, cutoffs: { mode: "explicit", timestamps: [at(3), at(2)] } },
+      {
+        horizonMs: dayMs,
+        cutoffs: { mode: "explicit", timestamps: [at(2), at(2)] },
+      },
+      {
+        horizonMs: dayMs,
+        cutoffs: { mode: "explicit", timestamps: [at(3), at(2)] },
+      },
       { horizonMs: dayMs, cutoffs: { mode: "explicit", timestamps: [at(0)] } },
       { horizonMs: dayMs, cutoffs: { mode: "explicit", timestamps: [at(7)] } },
       { horizonMs: dayMs, cutoffs: { mode: "explicit", timestamps: [at(1)] } },
-      { horizonMs: dayMs, cutoffs: { mode: "generated", initialMs: dayMs * 8 } },
+      {
+        horizonMs: dayMs,
+        cutoffs: { mode: "generated", initialMs: dayMs * 8 },
+      },
     ];
 
     for (const input of cases) {
@@ -240,7 +255,10 @@ describe("planRollingOrigin", () => {
           {},
           {
             horizonMs: 1,
-            cutoffs: { mode: "explicit", timestamps: [new Date(epoch + 1).toISOString()] },
+            cutoffs: {
+              mode: "explicit",
+              timestamps: [new Date(epoch + 1).toISOString()],
+            },
           },
         ),
       ),
@@ -428,7 +446,10 @@ describe("planRollingOrigin", () => {
     expect(outsidePoint.input).toBe("options");
     expect(outsidePoint.issues[0]?.path).toEqual(["map", "changepoints", "timestamps", 0]);
 
-    const input = { horizonMs: dayMs, cutoffs: { mode: "explicit", timestamps: [at(2)] } } as const;
+    const input = {
+      horizonMs: dayMs,
+      cutoffs: { mode: "explicit", timestamps: [at(2)] },
+    } as const;
 
     const original = await Effect.runPromise(planRollingOrigin(history([0, 1, 2, 3]), {}, input));
 
@@ -458,18 +479,21 @@ describe("crossValidate", () => {
     const observations = history([0, 1, 2, 3, 4, 5]);
 
     const operation = (rows: typeof observations) =>
-      crossValidate(rows, {}, plan).pipe(Effect.provide(prophetFittingBackendLayer));
+      crossValidate(rows, olsOptions, plan).pipe(Effect.provide(prophetFittingBackendLayer));
 
     const result = await Effect.runPromise(operation(observations));
 
     const poisoned = await Effect.runPromise(
       operation(
-        observations.map((row, index) => ({ ...row, value: index > 2 ? -1e8 : row.value })),
+        observations.map((row, index) => ({
+          ...row,
+          value: index > 2 ? -1e8 : row.value,
+        })),
       ),
     );
 
     const independent = await Effect.runPromise(
-      fit(observations.slice(0, 3)).pipe(Effect.provide(prophetFittingBackendLayer)),
+      fit(observations.slice(0, 3), olsOptions).pipe(Effect.provide(prophetFittingBackendLayer)),
     );
 
     const independentPredictions = await Effect.runPromise(predict(independent, [at(3), at(4)]));
@@ -555,9 +579,9 @@ describe("crossValidate", () => {
     );
 
     const explicitAbsmax = await Effect.runPromise(
-      crossValidate(observations, options, selection, { scaling: "absmax" }).pipe(
-        Effect.provide(prophetFittingBackendLayer),
-      ),
+      crossValidate(observations, options, selection, {
+        scaling: "absmax",
+      }).pipe(Effect.provide(prophetFittingBackendLayer)),
     );
 
     expect(defaultResult).toEqual(explicitAbsmax);
@@ -580,7 +604,10 @@ describe("crossValidate", () => {
 
       const poisoned = await Effect.runPromise(
         crossValidate(
-          observations.map((row, index) => ({ ...row, value: index >= 28 ? 1e8 : row.value })),
+          observations.map((row, index) => ({
+            ...row,
+            value: index >= 28 ? 1e8 : row.value,
+          })),
           options,
           selection,
           { scaling },
@@ -611,7 +638,10 @@ describe("crossValidate", () => {
       const seed = deriveEvaluationFoldSeed(19, result.plan, "", epoch + 27 * dayMs);
 
       const independentIntervals = await Effect.runPromise(
-        predictUncertainty(model, predictionRows, { seed: seed ?? NaN, samples: 32 }),
+        predictUncertainty(model, predictionRows, {
+          seed: seed ?? NaN,
+          samples: 32,
+        }),
       );
 
       if (independentIntervals.kind !== "intervals") {
@@ -637,11 +667,13 @@ describe("crossValidate", () => {
     }));
 
     const defaultResult = await Effect.runPromise(
-      crossValidate(observations, {}, plan, {}).pipe(Effect.provide(prophetFittingBackendLayer)),
+      crossValidate(observations, olsOptions, plan, {}).pipe(
+        Effect.provide(prophetFittingBackendLayer),
+      ),
     );
 
     const explicit = await Effect.runPromise(
-      crossValidate(observations, {}, plan, { scaling: "minmax" }).pipe(
+      crossValidate(observations, olsOptions, plan, { scaling: "minmax" }).pipe(
         Effect.provide(prophetFittingBackendLayer),
       ),
     );
@@ -668,7 +700,10 @@ describe("crossValidate", () => {
         crossValidate(
           history([0, 1, 2, 3, 4, 5]),
           { growth: "flat", scaling: "minmax" },
-          { horizonMs: 2 * dayMs, cutoffs: { mode: "explicit", timestamps: [at(2)] } },
+          {
+            horizonMs: 2 * dayMs,
+            cutoffs: { mode: "explicit", timestamps: [at(2)] },
+          },
           { scaling },
         ).pipe(
           Effect.provide(prophetFittingBackendLayer),
@@ -777,7 +812,12 @@ describe("crossValidate", () => {
     ).pipe(Layer.provide(prophetFittingBackendLayer));
 
     const options = {
-      map: { changepoints: { mode: "explicit", timestamps: [at(0), at(2), at(3), at(4)] } },
+      map: {
+        changepoints: {
+          mode: "explicit",
+          timestamps: [at(0), at(2), at(3), at(4)],
+        },
+      },
     } as const;
 
     const result = await Effect.runPromise(
@@ -857,7 +897,10 @@ describe("crossValidate", () => {
         await runError(
           history([0, 1, 2]),
           {},
-          { horizonMs: dayMs, cutoffs: { mode: "explicit", timestamps: [at(0)] } },
+          {
+            horizonMs: dayMs,
+            cutoffs: { mode: "explicit", timestamps: [at(0)] },
+          },
         )
       ).input,
     ).toBe("evaluation-plan");
@@ -964,7 +1007,11 @@ describe("crossValidate", () => {
       ),
     );
 
-    expect(early).toMatchObject({ fold: 0, stage: "fit", reason: "fit-failed" });
+    expect(early).toMatchObject({
+      fold: 0,
+      stage: "fit",
+      reason: "fit-failed",
+    });
     expect(early.cause).toMatchObject({ reason: "insufficient-observations" });
 
     const rows = history([0, 1, 2, 3, 4, 5, 6, 7]).map((row, index) => ({
@@ -996,7 +1043,11 @@ describe("crossValidate", () => {
       ),
     );
 
-    expect(missing).toMatchObject({ fold: 0, stage: "predict", reason: "prediction-failed" });
+    expect(missing).toMatchObject({
+      fold: 0,
+      stage: "predict",
+      reason: "prediction-failed",
+    });
     expect(missing.cause).toBeInstanceOf(InputValidationError);
 
     if (!(missing.cause instanceof InputValidationError)) {
@@ -1053,7 +1104,11 @@ describe("crossValidate", () => {
       ),
     );
 
-    expect(error).toMatchObject({ fold: 0, stage: "predict", reason: "prediction-failed" });
+    expect(error).toMatchObject({
+      fold: 0,
+      stage: "predict",
+      reason: "prediction-failed",
+    });
     expect(error.cause).toMatchObject({ input: "prediction-rows" });
   });
 
@@ -1069,7 +1124,12 @@ describe("crossValidate", () => {
 
     const options = {
       seasonalities: [
-        { name: "conditional-weekly", periodDays: 7, fourierOrder: 1, conditionName: "onSeason" },
+        {
+          name: "conditional-weekly",
+          periodDays: 7,
+          fourierOrder: 1,
+          conditionName: "onSeason",
+        },
       ],
       builtInSeasonalities: { weekly: "auto" },
       regressors: [{ name: "promotion" }],
@@ -1159,8 +1219,15 @@ describe("crossValidate", () => {
       throw new Error("Expected typed fold failure and complete traced WASM load");
     }
 
-    expect(failure).toMatchObject({ fold: 0, stage: "fit", reason: "fit-failed" });
-    expect(failure.cause).toMatchObject({ reason: "backend-failure", backendPhase: "load" });
+    expect(failure).toMatchObject({
+      fold: 0,
+      stage: "fit",
+      reason: "fit-failed",
+    });
+    expect(failure.cause).toMatchObject({
+      reason: "backend-failure",
+      backendPhase: "load",
+    });
     expect(spans.filter((span) => span.name === "effect-prophet.evaluation.fold")).toHaveLength(1);
     expect(spans.some((span) => span.name === "Prophet.predict")).toBe(false);
 
@@ -1197,7 +1264,7 @@ describe("crossValidate", () => {
     });
 
     await Effect.runPromise(
-      crossValidate(history([0, 1, 2, 3, 4, 5]), {}, plan).pipe(
+      crossValidate(history([0, 1, 2, 3, 4, 5]), olsOptions, plan).pipe(
         Effect.provide(prophetFittingBackendLayer),
         Effect.withSpan("evaluation.parent"),
         Effect.withTracer(tracer),
@@ -1291,7 +1358,9 @@ describe("crossValidate intervals", () => {
     uncertainty: { seed: 19, samples: 64, intervalWidth: 0.8 },
   } as const;
 
-  const map = { map: { changepoints: { mode: "explicit", timestamps: [] } } } as const;
+  const map = {
+    map: { changepoints: { mode: "explicit", timestamps: [] } },
+  } as const;
 
   it("returns seeded, immutable MAP intervals with the independent point forecast and prefix-only state", async () => {
     const rows = history([0, 1, 2, 3, 4, 5]).map((row, index) => ({
@@ -1317,7 +1386,10 @@ describe("crossValidate intervals", () => {
     );
 
     const poisoned = await run(
-      rows.map((row, index) => ({ ...row, value: index > 2 ? row.value + 1000 : row.value })),
+      rows.map((row, index) => ({
+        ...row,
+        value: index > 2 ? row.value + 1000 : row.value,
+      })),
     );
 
     const prefix = await Effect.runPromise(
@@ -1433,7 +1505,10 @@ describe("crossValidate intervals", () => {
 
     const poisoned = await Effect.runPromise(
       crossValidate(
-        bounded.map((row, index) => ({ ...row, value: index > 2 ? 6 + index * 0.1 : row.value })),
+        bounded.map((row, index) => ({
+          ...row,
+          value: index > 2 ? 6 + index * 0.1 : row.value,
+        })),
         { growth: "logistic", scaling: "minmax" },
         plan,
         mode,
@@ -1459,7 +1534,12 @@ describe("crossValidate intervals", () => {
 
     const options = {
       seasonalities: [
-        { name: "conditional-weekly", periodDays: 7, fourierOrder: 1, conditionName: "onSeason" },
+        {
+          name: "conditional-weekly",
+          periodDays: 7,
+          fourierOrder: 1,
+          conditionName: "onSeason",
+        },
       ],
       builtInSeasonalities: { weekly: "auto" },
       regressors: [{ name: "promotion" }],
@@ -1585,7 +1665,7 @@ describe("crossValidate intervals", () => {
 
     const impossible = await Effect.runPromise(
       Effect.flip(
-        crossValidate(history([0, 1, 2, 3, 4, 5]), {}, plan, mode).pipe(
+        crossValidate(history([0, 1, 2, 3, 4, 5]), olsOptions, plan, mode).pipe(
           Effect.provide(backend.layer),
         ),
       ),
@@ -1637,7 +1717,10 @@ describe("crossValidate intervals", () => {
           map,
           {
             horizonMs: 2_000,
-            cutoffs: { mode: "explicit", timestamps: [new Date(epoch + 1).toISOString()] },
+            cutoffs: {
+              mode: "explicit",
+              timestamps: [new Date(epoch + 1).toISOString()],
+            },
           },
           { mode: "intervals", uncertainty: { seed: 1, samples: 1_024 } },
         ).pipe(Effect.provide(backend.layer)),
@@ -1672,7 +1755,9 @@ describe("crossValidate intervals", () => {
       stage: "uncertainty",
       reason: "uncertainty-failed",
     });
-    expect(unsupported.cause).toMatchObject({ reason: "unsupported-uncertainty" });
+    expect(unsupported.cause).toMatchObject({
+      reason: "unsupported-uncertainty",
+    });
     expect(modelLayer.invocations).toHaveLength(1);
 
     const missing = history([0, 1, 2, 3, 4, 5]).map((row, index) => ({
@@ -1688,7 +1773,11 @@ describe("crossValidate intervals", () => {
       ),
     );
 
-    expect(pointError).toMatchObject({ fold: 0, stage: "predict", reason: "prediction-failed" });
+    expect(pointError).toMatchObject({
+      fold: 0,
+      stage: "predict",
+      reason: "prediction-failed",
+    });
     expect(pointError.cause).toMatchObject({ input: "prediction-rows" });
   });
 
@@ -1720,7 +1809,11 @@ describe("crossValidate intervals", () => {
       ),
     );
 
-    expect(error).toMatchObject({ fold: 0, stage: "uncertainty", reason: "uncertainty-failed" });
+    expect(error).toMatchObject({
+      fold: 0,
+      stage: "uncertainty",
+      reason: "uncertainty-failed",
+    });
     expect(error.cause).toMatchObject({ reason: "simulation-limit" });
 
     const fold = spans.find((span) => span.name === "effect-prophet.evaluation.fold");

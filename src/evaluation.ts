@@ -26,12 +26,18 @@ import {
   checkExplicitChangepointBounds,
   decodeOptions,
   isFeaturelessOls,
+  optionsValidationErrorFromSeasonality,
   type EncodedProphetOptions,
   type ProphetOptions,
 } from "./options";
 import { fit, predict, predictUncertainty } from "./prophet";
 import { simulationIdentity } from "./uncertainty";
 import type { FittedProphet } from "./fitted-model";
+import type { SeasonalityLayout } from "./seasonality";
+import {
+  resolveSeasonalities,
+  type ResolvedSeasonalities,
+} from "./internal/seasonality-resolution";
 
 const maximumDurationMs = 3_650 * millisecondsPerDay;
 
@@ -79,7 +85,10 @@ const ExplicitCutoffsSchema = Schema.Array(TimestampSchema).check(
 const RollingOriginPlanInputSchema = Schema.Struct({
   horizonMs: PositiveDurationMsSchema,
   cutoffs: Schema.Union([
-    Schema.Struct({ mode: Schema.Literal("explicit"), timestamps: ExplicitCutoffsSchema }),
+    Schema.Struct({
+      mode: Schema.Literal("explicit"),
+      timestamps: ExplicitCutoffsSchema,
+    }),
     Schema.Struct({
       mode: Schema.Literal("generated"),
       initialMs: Schema.optionalKey(PositiveDurationMsSchema),
@@ -178,7 +187,11 @@ const decodePlan = Schema.decodeUnknownEffect(RollingOriginPlanInputSchema, {
 type ParsedPlan = typeof RollingOriginPlanInputSchema.Type;
 
 const invalidPlan = (path: ReadonlyArray<PropertyKey>, message: string): InputValidationError =>
-  new InputValidationError({ input: "evaluation-plan", issues: [{ path, message }], message });
+  new InputValidationError({
+    input: "evaluation-plan",
+    issues: [{ path, message }],
+    message,
+  });
 
 const upperBound = (observations: Observations, cutoff: number): number => {
   let lower = 0;
@@ -198,11 +211,11 @@ const upperBound = (observations: Observations, cutoff: number): number => {
   return lower;
 };
 
-const seasonalityPeriodMs = (options: ProphetOptions): number | undefined => {
+const seasonalityPeriodMs = (layout: SeasonalityLayout): number | undefined => {
   let longest = 0;
 
-  for (const seasonality of options.seasonalities) {
-    const duration = Math.ceil(seasonality.periodDays * millisecondsPerDay);
+  for (const component of layout.components) {
+    const duration = Math.ceil(component.definition.periodDays * millisecondsPerDay);
 
     if (!Number.isSafeInteger(duration) || duration > maximumDurationMs) {
       return undefined;
@@ -211,26 +224,12 @@ const seasonalityPeriodMs = (options: ProphetOptions): number | undefined => {
     longest = Math.max(longest, duration);
   }
 
-  const builtIn = options.builtInSeasonalities;
-
-  if (builtIn.yearly !== "off") {
-    longest = Math.max(longest, 365.25 * millisecondsPerDay);
-  }
-
-  if (builtIn.weekly !== "off") {
-    longest = Math.max(longest, 7 * millisecondsPerDay);
-  }
-
-  if (builtIn.daily !== "off") {
-    longest = Math.max(longest, millisecondsPerDay);
-  }
-
   return longest;
 };
 
 const generateCutoffs = (
   observations: Observations,
-  options: ProphetOptions,
+  longestPeriodMs: number | undefined,
   input: ParsedPlan,
 ): ReadonlyArray<number> | InputValidationError => {
   if (input.cutoffs.mode === "explicit") {
@@ -242,7 +241,7 @@ const generateCutoffs = (
 
   const period = input.cutoffs.periodMs ?? Math.ceil(input.horizonMs / 2);
 
-  const longest = input.cutoffs.initialMs === undefined ? seasonalityPeriodMs(options) : 0;
+  const longest = input.cutoffs.initialMs === undefined ? longestPeriodMs : 0;
 
   const tripleHorizon = checkedAdd(input.horizonMs, 2 * input.horizonMs);
 
@@ -335,101 +334,121 @@ export const planRollingOriginIndexes = (
     return Effect.fail(invalidPlan(["history"], "History row count exceeds the limit"));
   }
 
-  const cutoffs = generateCutoffs(observations, options, input);
+  const resolution: Effect.Effect<ResolvedSeasonalities | undefined, InputValidationError> =
+    input.cutoffs.mode === "generated" && input.cutoffs.initialMs === undefined
+      ? resolveSeasonalities(observations, options).pipe(
+          Effect.mapError(optionsValidationErrorFromSeasonality),
+        )
+      : Effect.succeed(undefined);
 
-  if (cutoffs instanceof InputValidationError) {
-    return Effect.fail(cutoffs);
-  }
+  return resolution.pipe(
+    Effect.flatMap((resolved) => {
+      const cutoffs = generateCutoffs(
+        observations,
+        resolved === undefined ? 0 : seasonalityPeriodMs(resolved.layout),
+        input,
+      );
 
-  if (cutoffs.length > maximumFolds) {
-    return Effect.fail(invalidPlan(["cutoffs"], "Fold count exceeds the limit"));
-  }
-
-  const first = observations[0].timestamp;
-  const last = observations[observations.length - 1]?.timestamp;
-  const latest = last === undefined ? undefined : checkedAdd(last, -input.horizonMs);
-
-  if (latest === undefined || !validEpoch(latest)) {
-    return Effect.fail(invalidPlan(["horizonMs"], "Horizon exceeds the timestamp range"));
-  }
-
-  const indexes: Array<EvaluationFoldIndexes> = [];
-  const folds: Array<RollingOriginFoldSummary> = [];
-  let assessmentTotal = 0;
-  let trainingEndExclusive = 0;
-  let assessmentEndExclusive = 0;
-
-  for (const [index, cutoff] of cutoffs.entries()) {
-    const path =
-      input.cutoffs.mode === "explicit" ? ["cutoffs", "timestamps", index] : ["cutoffs", index];
-
-    if (cutoff <= first || cutoff > latest) {
-      return Effect.fail(invalidPlan(path, "Cutoff is outside the legal history range"));
-    }
-
-    const end = checkedAdd(cutoff, input.horizonMs);
-
-    if (end === undefined || !validEpoch(end)) {
-      return Effect.fail(invalidPlan(path, "Assessment endpoint exceeds the timestamp range"));
-    }
-
-    while (true) {
-      const row = observations[trainingEndExclusive];
-
-      if (row === undefined || row.timestamp > cutoff) {
-        break;
+      if (cutoffs instanceof InputValidationError) {
+        return Effect.fail(cutoffs);
       }
 
-      trainingEndExclusive += 1;
-    }
-
-    assessmentEndExclusive = Math.max(assessmentEndExclusive, trainingEndExclusive);
-
-    while (true) {
-      const row = observations[assessmentEndExclusive];
-
-      if (row === undefined || row.timestamp > end) {
-        break;
+      if (cutoffs.length > maximumFolds) {
+        return Effect.fail(invalidPlan(["cutoffs"], "Fold count exceeds the limit"));
       }
 
-      assessmentEndExclusive += 1;
-    }
+      const first = observations[0].timestamp;
+      const last = observations[observations.length - 1]?.timestamp;
+      const latest = last === undefined ? undefined : checkedAdd(last, -input.horizonMs);
 
-    const assessmentCount = assessmentEndExclusive - trainingEndExclusive;
+      if (latest === undefined || !validEpoch(latest)) {
+        return Effect.fail(invalidPlan(["horizonMs"], "Horizon exceeds the timestamp range"));
+      }
 
-    if (assessmentCount === 0) {
-      return Effect.fail(invalidPlan(path, "Cutoff has no assessment observations"));
-    }
+      const indexes: Array<EvaluationFoldIndexes> = [];
+      const folds: Array<RollingOriginFoldSummary> = [];
+      let assessmentTotal = 0;
+      let trainingEndExclusive = 0;
+      let assessmentEndExclusive = 0;
 
-    const nextAssessmentTotal = checkedAdd(assessmentTotal, assessmentCount);
+      for (const [index, cutoff] of cutoffs.entries()) {
+        const path =
+          input.cutoffs.mode === "explicit" ? ["cutoffs", "timestamps", index] : ["cutoffs", index];
 
-    if (nextAssessmentTotal === undefined || nextAssessmentTotal > maximumAssessmentRows) {
-      return Effect.fail(invalidPlan(["cutoffs"], "Assessment row count exceeds the limit"));
-    }
+        if (cutoff <= first || cutoff > latest) {
+          return Effect.fail(invalidPlan(path, "Cutoff is outside the legal history range"));
+        }
 
-    assessmentTotal = nextAssessmentTotal;
+        const end = checkedAdd(cutoff, input.horizonMs);
 
-    indexes.push(
-      Object.freeze({
-        index,
-        cutoff,
-        trainingEndExclusive,
-        assessmentStart: trainingEndExclusive,
-        assessmentEndExclusive,
-      }),
-    );
-    folds.push(
-      Object.freeze({ index, cutoff, trainingCount: trainingEndExclusive, assessmentCount }),
-    );
-  }
+        if (end === undefined || !validEpoch(end)) {
+          return Effect.fail(invalidPlan(path, "Assessment endpoint exceeds the timestamp range"));
+        }
 
-  const summary: RollingOriginPlanSummary = Object.freeze({
-    horizonMs: input.horizonMs,
-    cutoffs: Object.freeze(Array.from(cutoffs)),
-    folds: Object.freeze(folds),
-  });
+        while (true) {
+          const row = observations[trainingEndExclusive];
 
-  return Effect.succeed(Object.freeze({ summary, indexes: Object.freeze(indexes) }));
+          if (row === undefined || row.timestamp > cutoff) {
+            break;
+          }
+
+          trainingEndExclusive += 1;
+        }
+
+        assessmentEndExclusive = Math.max(assessmentEndExclusive, trainingEndExclusive);
+
+        while (true) {
+          const row = observations[assessmentEndExclusive];
+
+          if (row === undefined || row.timestamp > end) {
+            break;
+          }
+
+          assessmentEndExclusive += 1;
+        }
+
+        const assessmentCount = assessmentEndExclusive - trainingEndExclusive;
+
+        if (assessmentCount === 0) {
+          return Effect.fail(invalidPlan(path, "Cutoff has no assessment observations"));
+        }
+
+        const nextAssessmentTotal = checkedAdd(assessmentTotal, assessmentCount);
+
+        if (nextAssessmentTotal === undefined || nextAssessmentTotal > maximumAssessmentRows) {
+          return Effect.fail(invalidPlan(["cutoffs"], "Assessment row count exceeds the limit"));
+        }
+
+        assessmentTotal = nextAssessmentTotal;
+
+        indexes.push(
+          Object.freeze({
+            index,
+            cutoff,
+            trainingEndExclusive,
+            assessmentStart: trainingEndExclusive,
+            assessmentEndExclusive,
+          }),
+        );
+        folds.push(
+          Object.freeze({
+            index,
+            cutoff,
+            trainingCount: trainingEndExclusive,
+            assessmentCount,
+          }),
+        );
+      }
+
+      const summary: RollingOriginPlanSummary = Object.freeze({
+        horizonMs: input.horizonMs,
+        cutoffs: Object.freeze(Array.from(cutoffs)),
+        folds: Object.freeze(folds),
+      });
+
+      return Effect.succeed(Object.freeze({ summary, indexes: Object.freeze(indexes) }));
+    }),
+  );
 };
 
 const prepareRollingOrigin = (
@@ -493,7 +512,14 @@ const prepareRollingOrigin = (
       }
     }
 
-    return { observations, options, fitOptions, controls, foldPlan, uncertainty };
+    return {
+      observations,
+      options,
+      fitOptions,
+      controls,
+      foldPlan,
+      uncertainty,
+    };
   });
 
 /** Parse complete ordered history, options and cutoffs into a pure rolling-origin plan summary. */
@@ -566,7 +592,10 @@ const projectTrainingRow = (row: Observations[number]): EncodedObservation =>
 const projectPredictionRow = (row: Observations[number]) => {
   const { value: _actual, ...future } = row;
 
-  return Object.freeze({ ...future, timestamp: encodeTimestamp(row.timestamp) });
+  return Object.freeze({
+    ...future,
+    timestamp: encodeTimestamp(row.timestamp),
+  });
 };
 
 const foldOptions = (
@@ -582,20 +611,18 @@ const foldOptions = (
     return input;
   }
 
-  const originalMap = "map" in input ? input.map : undefined;
-
-  return {
-    ...input,
-    map: {
-      ...originalMap,
-      changepoints: {
-        mode: "explicit",
-        timestamps: options.map.changepoints.timestamps
-          .filter((timestamp) => timestamp < lastTrainingTimestamp)
-          .map((timestamp) => encodeTimestamp(timestamp)),
-      },
-    },
+  const changepoints = {
+    mode: "explicit" as const,
+    timestamps: options.map.changepoints.timestamps
+      .filter((timestamp) => timestamp < lastTrainingTimestamp)
+      .map((timestamp) => encodeTimestamp(timestamp)),
   };
+
+  if (input.growth === "logistic") {
+    return { ...input, map: { ...input.map, changepoints } };
+  }
+
+  return { ...input, map: { ...input.map, changepoints } };
 };
 
 const foldFailure = (
@@ -636,7 +663,9 @@ const crossValidateOperation = Effect.fn("Prophet.crossValidate")(function* (
 
   const scaling = controls.scaling ?? defaultTargetScalingMode;
 
-  yield* Effect.annotateCurrentSpan({ "effect_prophet.evaluation.scaling.mode": scaling });
+  yield* Effect.annotateCurrentSpan({
+    "effect_prophet.evaluation.scaling.mode": scaling,
+  });
 
   const seeds =
     uncertainty === undefined
@@ -678,7 +707,9 @@ const crossValidateOperation = Effect.fn("Prophet.crossValidate")(function* (
         foldOptions(fitOptions, options, lastTraining.timestamp),
       ).pipe(Effect.mapError((cause) => foldFailure(fold, "fit", cause)));
 
-      yield* Effect.annotateCurrentSpan({ "effect_prophet.model.type": model.model });
+      yield* Effect.annotateCurrentSpan({
+        "effect_prophet.model.type": model.model,
+      });
 
       const forecasts = yield* predict(model, predictionRows).pipe(
         Effect.mapError((cause) => foldFailure(fold, "predict", cause)),

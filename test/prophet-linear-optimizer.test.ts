@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { Effect, Exit, Match, Option, Schema, Tracer } from "effect";
 
 import { requireEndedSpan } from "./internal/tracing-test-helpers";
+import { builtInSeasonalitiesOff } from "./helpers/built-in-seasonalities";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -96,7 +97,10 @@ describe("public linear Stan optimizer lifecycle", () => {
     for (const method of ["piecewise-map-coordinate-v1", "mixed-piecewise-map-coordinate-v1"]) {
       const failure = await Effect.runPromise(
         Effect.flip(
-          decodeFittedModel({ ...encoded, fitSummary: { ...encoded.fitSummary, method } }),
+          decodeFittedModel({
+            ...encoded,
+            fitSummary: { ...encoded.fitSummary, method },
+          }),
         ),
       );
 
@@ -154,8 +158,13 @@ describe("public linear Stan optimizer lifecycle", () => {
       });
 
       const operation = fit(rows, {
+        builtInSeasonalities: builtInSeasonalitiesOff,
         map: {
-          changepoints: { mode: "auto", count: oracle.changepointCount, range: 0.8 },
+          changepoints: {
+            mode: "auto",
+            count: oracle.changepointCount,
+            range: 0.8,
+          },
           changepointPriorScale: oracle.changepointPrior,
           optimizer,
         },
@@ -166,7 +175,12 @@ describe("public linear Stan optimizer lifecycle", () => {
       );
 
       const result = await Effect.runPromise(
-        operation.pipe(Effect.match({ onFailure: (error) => error, onSuccess: (model) => model })),
+        operation.pipe(
+          Effect.match({
+            onFailure: (error) => error,
+            onSuccess: (model) => model,
+          }),
+        ),
       );
 
       const job = spans.find((span) => span.name === "optimizer.job");

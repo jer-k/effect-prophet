@@ -1,6 +1,7 @@
 use crate::fourier::checked_element_count;
 use crate::mixed_map::ComponentMode;
-use crate::stan::optimizer::{LogDensityEvaluation, NewtonError, NewtonResult, optimize_newton};
+use crate::stan::linear_optimizer::StanMapObjective;
+use crate::stan::optimizer::{LogDensityEvaluation, NewtonError, NewtonResult};
 
 const TREND_PRIOR_VARIANCE: f64 = 25.0;
 const NOISE_PRIOR_VARIANCE: f64 = 0.25;
@@ -38,6 +39,87 @@ pub enum MapObjectiveError {
 
   /// Dense dimensions overflow or exceed the shared memory policy.
   SizeOverflow,
+}
+
+/// Parameter-independent terms shared by parsed linear and logistic Stan states.
+pub(crate) fn stan_log_density_constant(
+  observation_count: usize,
+  changepoint_count: usize,
+  feature_priors: &[f64],
+  changepoint_prior: f64,
+) -> f64 {
+  let normal_count = observation_count + 3 + feature_priors.len().max(1);
+  -(normal_count as f64) * 0.5 * std::f64::consts::TAU.ln()
+    - TREND_PRIOR_VARIANCE.ln()
+    - 0.5 * NOISE_PRIOR_VARIANCE.ln()
+    - feature_priors.iter().map(|prior| prior.ln()).sum::<f64>()
+    - changepoint_count.max(1) as f64 * (2.0 * changepoint_prior).ln()
+}
+
+/// Normalized deltas at most this far from zero are at the Laplace kink.
+///
+/// Stan's Newton and L-BFGS do not soft-threshold, so they stop near zero rather than
+/// exactly on it. Testing exact zero made the residual jump by `2 / prior` with the sign
+/// of a round-off-sized delta. Moving such a delta to zero changes the objective by at
+/// most `tolerance * (|derivative| + 1 / prior)`, far below the fitted-objective gates.
+/// `tools/prophet/linear_optimizer_evidence.py` mirrors this value for oracle evidence.
+pub(crate) const LAPLACE_KINK_TOLERANCE: f64 = 1e-6;
+
+/// Derivative of the minimized Laplace term `|delta| / prior`, using zero at the kink.
+pub(crate) fn laplace_derivative(delta: f64, prior_scale: f64) -> f64 {
+  if delta == 0.0 {
+    0.0
+  } else {
+    delta.signum() / prior_scale
+  }
+}
+
+/// KKT residual for one Laplace-prior coordinate of a minimized objective.
+///
+/// `complete_derivative` includes the Laplace term `sign(delta) / prior`, which is zero
+/// at an exact zero. Near the kink, that term is removed and the smooth derivative is
+/// compared with the subgradient interval `[-1 / prior, 1 / prior]`.
+pub(crate) fn laplace_stationarity_residual(
+  delta: f64,
+  complete_derivative: f64,
+  prior_scale: f64,
+) -> f64 {
+  if delta.abs() > LAPLACE_KINK_TOLERANCE {
+    return complete_derivative.abs();
+  }
+
+  let smooth = complete_derivative - laplace_derivative(delta, prior_scale);
+
+  (smooth.abs() - 1.0 / prior_scale).max(0.0)
+}
+
+/// Constrained normalized KKT evidence for an already evaluated complete state.
+pub(crate) fn constrained_stationarity_residual(
+  parameters: &[f64],
+  gradient: &[f64],
+  sigma_index: usize,
+  noise_scale: f64,
+  changepoint_prior: f64,
+) -> Result<f64, MapObjectiveError> {
+  if parameters.len() != gradient.len() || sigma_index >= parameters.len() {
+    return Err(MapObjectiveError::InvalidDimensions);
+  }
+  let mut stationarity = 0.0_f64;
+  for (column, gradient) in gradient.iter().enumerate() {
+    let residual = if column == sigma_index {
+      gradient.abs() / noise_scale
+    } else if column >= 2 && column < sigma_index {
+      // Stan reports log-density gradients; the minimized derivative is their negation.
+      laplace_stationarity_residual(parameters[column], -gradient, changepoint_prior)
+    } else {
+      gradient.abs()
+    };
+    if !residual.is_finite() {
+      return Err(MapObjectiveError::NonFiniteResult);
+    }
+    stationarity = stationarity.max(residual);
+  }
+  Ok(stationarity)
 }
 
 /// Evaluate the approved summed MAP objective and complete stationarity certificate.
@@ -134,12 +216,9 @@ pub fn evaluate_map_objective(
   for (column, &derivative) in gradient.iter().enumerate() {
     let residual = if column >= 2 && column < 2 + changepoint_count {
       let delta = coefficients[column];
+      let complete = derivative + laplace_derivative(delta, changepoint_prior_scale);
 
-      if delta == 0.0 {
-        (derivative.abs() - 1.0 / changepoint_prior_scale).max(0.0)
-      } else {
-        (derivative + delta.signum() / changepoint_prior_scale).abs()
-      }
+      laplace_stationarity_residual(delta, complete, changepoint_prior_scale)
     } else {
       derivative.abs()
     };
@@ -284,16 +363,12 @@ impl<'a> StanLinearObjective<'a> {
 
   /// Parameter-independent constants included in Stan's initial service density.
   pub fn log_density_constant(&self) -> f64 {
-    let normal_count = self.target.len() + 3 + self.feature_priors.len().max(1);
-    -(normal_count as f64) * 0.5 * std::f64::consts::TAU.ln()
-      - TREND_PRIOR_VARIANCE.ln()
-      - 0.5 * NOISE_PRIOR_VARIANCE.ln()
-      - self
-        .feature_priors
-        .iter()
-        .map(|prior| prior.ln())
-        .sum::<f64>()
-      - self.effective_changepoint_count() as f64 * (2.0 * self.changepoint_prior).ln()
+    stan_log_density_constant(
+      self.target.len(),
+      self.changepoint_count,
+      self.feature_priors,
+      self.changepoint_prior,
+    )
   }
 
   /// Evaluate the exact density and Stan's zero-at-the-kink Laplace derivative.
@@ -454,19 +529,7 @@ impl<'a> StanLinearObjective<'a> {
 
   /// Optimize from the original Prophet initialization using the pinned Newton path.
   pub fn fit_newton(&self, max_iterations: usize) -> Result<NewtonResult, NewtonError> {
-    if max_iterations == 0 {
-      return Err(NewtonError::InvalidConfiguration);
-    }
-
-    crate::stan::optimizer::check_workspace(self.parameter_count())?;
-    let initial = self.initial_parameters();
-    let density = self.evaluate(&initial).map_err(NewtonError::Objective)?;
-    optimize_newton(
-      &initial,
-      density.value + self.log_density_constant(),
-      max_iterations,
-      |parameters| self.evaluate(parameters),
-    )
+    StanMapObjective::fit_newton(self, max_iterations)
   }
 
   /// Fit and diagnose the internal state before folding any private parameters.
@@ -481,22 +544,14 @@ impl<'a> StanLinearObjective<'a> {
     let (coefficients, noise_scale) = self
       .coefficients(&fit.parameters)
       .map_err(|error| LinearOptimizationError::Optimizer(StanOptimizerError::Objective(error)))?;
-    let mut stationarity_residual = 0.0_f64;
-    for (column, gradient) in fit.evaluation.gradient.iter().enumerate() {
-      let residual = if column == self.sigma_index() {
-        gradient.abs() / noise_scale
-      } else if column >= 2 && column < self.sigma_index() && fit.parameters[column] == 0.0 {
-        (gradient.abs() - 1.0 / self.changepoint_prior).max(0.0)
-      } else {
-        gradient.abs()
-      };
-      stationarity_residual = stationarity_residual.max(residual);
-    }
-    if !stationarity_residual.is_finite() {
-      return Err(LinearOptimizationError::Optimizer(
-        StanOptimizerError::NonFiniteResult,
-      ));
-    }
+    let stationarity_residual = constrained_stationarity_residual(
+      &fit.parameters,
+      &fit.evaluation.gradient,
+      self.sigma_index(),
+      noise_scale,
+      self.changepoint_prior,
+    )
+    .map_err(|error| LinearOptimizationError::Optimizer(StanOptimizerError::Objective(error)))?;
 
     Ok(NormalizedLinearMapFit {
       coefficients,
@@ -532,6 +587,24 @@ impl<'a> StanLinearObjective<'a> {
   }
 }
 
+impl StanMapObjective for StanLinearObjective<'_> {
+  fn observation_count(&self) -> usize {
+    self.observation_count()
+  }
+  fn parameter_count(&self) -> usize {
+    self.parameter_count()
+  }
+  fn initial_parameters(&self) -> Vec<f64> {
+    self.initial_parameters()
+  }
+  fn log_density_constant(&self) -> f64 {
+    self.log_density_constant()
+  }
+  fn evaluate(&self, parameters: &[f64]) -> Result<LogDensityEvaluation, MapObjectiveError> {
+    self.evaluate(parameters)
+  }
+}
+
 /// Accepted normalized linear state with pre-fold constrained diagnostics.
 #[derive(Clone, Debug, PartialEq)]
 pub struct NormalizedLinearMapFit {
@@ -544,8 +617,12 @@ pub struct NormalizedLinearMapFit {
 
 #[cfg(test)]
 mod tests {
-  use super::{StanLinearObjective, evaluate_map_objective};
+  use super::{
+    LAPLACE_KINK_TOLERANCE, StanLinearObjective, constrained_stationarity_residual,
+    evaluate_map_objective, laplace_stationarity_residual,
+  };
   use crate::mixed_map::ComponentMode;
+  use crate::reference_fixtures::{modes, numbers};
   use crate::stan::optimizer::{NewtonTermination, finite_difference_hessian};
 
   fn termination_name(
@@ -768,28 +845,6 @@ mod tests {
       "../../../integration/fixtures/prophet-1.4.0/stan-linear-optimizer.json"
     ))
     .unwrap()
-  }
-
-  fn numbers(value: &serde_json::Value) -> Vec<f64> {
-    value
-      .as_array()
-      .unwrap()
-      .iter()
-      .map(|value| value.as_f64().unwrap())
-      .collect()
-  }
-
-  fn modes(value: &serde_json::Value) -> Vec<ComponentMode> {
-    value
-      .as_array()
-      .unwrap()
-      .iter()
-      .map(|value| match value.as_str().unwrap() {
-        "additive" => ComponentMode::Additive,
-        "multiplicative" => ComponentMode::Multiplicative,
-        _ => panic!("generated fixture must declare a known mode"),
-      })
-      .collect()
   }
 
   #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
@@ -1021,5 +1076,60 @@ mod tests {
     .unwrap();
 
     assert_eq!(evaluation.smooth_gradient[2], 0.0);
+  }
+
+  #[test]
+  fn near_zero_deltas_use_the_laplace_subgradient_regardless_of_sign() {
+    // basic-96-auto-minmax endpoints: Python stops at +4.337e-11 and Effect at
+    // -1.856e-9 with the same smooth derivative. Neither violates KKT.
+    let smooth = 11.39111;
+    let prior = 0.05;
+    let positive = laplace_stationarity_residual(4.337e-11, smooth + 1.0 / prior, prior);
+    let negative = laplace_stationarity_residual(-1.856e-9, smooth - 1.0 / prior, prior);
+
+    assert_eq!(positive, 0.0);
+    assert_eq!(negative, 0.0);
+    assert_eq!(laplace_stationarity_residual(0.0, smooth, prior), 0.0);
+    assert!((laplace_stationarity_residual(0.0, 25.0, prior) - 5.0).abs() < 1e-12);
+    assert!((laplace_stationarity_residual(1e-9, 25.0 + 1.0 / prior, prior) - 5.0).abs() < 1e-12);
+  }
+
+  #[test]
+  fn deltas_beyond_the_kink_tolerance_keep_their_complete_derivative() {
+    let prior = 0.05;
+    let delta = 2.0 * LAPLACE_KINK_TOLERANCE;
+    let complete = 11.39111 + 1.0 / prior;
+
+    assert_eq!(
+      laplace_stationarity_residual(delta, complete, prior),
+      complete
+    );
+    assert_eq!(laplace_stationarity_residual(-delta, -3.5, prior), 3.5);
+  }
+
+  #[test]
+  fn constrained_residual_does_not_depend_on_near_zero_delta_sign() {
+    // Log-density gradients from Stan: the Laplace term is -sign(delta)/prior.
+    let prior = 0.05;
+    let smooth_log_density = -11.39111;
+    let residual = |delta: f64| {
+      let laplace = if delta == 0.0 {
+        0.0
+      } else {
+        -delta.signum() / prior
+      };
+      constrained_stationarity_residual(
+        &[0.0, 0.0, delta, 0.0],
+        &[0.25, -0.5, smooth_log_density + laplace, 0.0],
+        3,
+        1.0,
+        prior,
+      )
+      .unwrap()
+    };
+
+    assert_eq!(residual(4.337e-11), 0.5);
+    assert_eq!(residual(-1.856e-9), 0.5);
+    assert_eq!(residual(0.0), 0.5);
   }
 }

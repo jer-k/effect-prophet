@@ -7,10 +7,13 @@ import {
   parseCrossValidationInput,
 } from "../../src/internal/cross-validation-options";
 import { decodeOptions } from "../../src/options";
+import { builtInSeasonalitiesOff } from "../helpers/built-in-seasonalities";
 
 describe("cross-validation controls", () => {
   it("parses omitted and scaling-only point controls", async () => {
-    expect(await Effect.runPromise(parseCrossValidationInput())).toEqual({ mode: "point" });
+    expect(await Effect.runPromise(parseCrossValidationInput())).toEqual({
+      mode: "point",
+    });
 
     const controls = await Effect.runPromise(parseCrossValidationInput({ scaling: "minmax" }));
 
@@ -31,7 +34,12 @@ describe("cross-validation controls", () => {
       mode: "intervals",
       scaling: "minmax",
       uncertainty: { seed: 42, samples: 1_000, intervalWidth: 0.8 },
-      uncertaintyOptions: { seed: 42, samples: 1_000, intervalWidth: 0.8, output: "intervals" },
+      uncertaintyOptions: {
+        seed: 42,
+        samples: 1_000,
+        intervalWidth: 0.8,
+        output: "intervals",
+      },
     });
 
     if (controls.mode !== "intervals") {
@@ -55,11 +63,12 @@ describe("cross-validation controls", () => {
   });
 
   it("keeps featureless OLS unconfigured unless scaling is explicitly selected", async () => {
-    const input = {};
+    const input = { builtInSeasonalities: builtInSeasonalitiesOff };
     const options = await Effect.runPromise(decodeOptions(input));
 
     expect(crossValidationFitOptions(input, options, {})).toBe(input);
     expect(crossValidationFitOptions(input, options, { scaling: "absmax" })).toEqual({
+      ...input,
       scaling: "absmax",
     });
   });

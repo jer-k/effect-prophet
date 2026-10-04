@@ -1,10 +1,12 @@
-import { Effect, Exit, Option, Predicate, Tracer } from "effect";
+import { Cause, Effect, Exit, Option, Predicate, Tracer } from "effect";
 import { describe, expect, it } from "vitest";
 
-import { InputValidationError } from "../src/errors";
+import { FittingError, InputValidationError, PredictionError } from "../src/errors";
+import { parseLogisticMapModel } from "../src/fitted-model";
 import { decodeFittedModel, encodeFittedModel } from "../src/model-serialization";
 import { prophetFittingBackendLayer } from "../src/internal/prophet-fitting-backend";
-import { fit, predict } from "../src/prophet";
+import { fit, predict, predictUncertainty } from "../src/prophet";
+import { requireEndedSpan } from "./internal/tracing-test-helpers";
 
 const observations = [
   { timestamp: "2024-01-01T00:00:00.000Z", value: 1.2, capacity: 10 },
@@ -37,7 +39,10 @@ describe("logistic MAP forecasting", () => {
       throw new Error("Expected logistic MAP model");
     }
 
-    expect(model.targetScaling.floorPolicy).toEqual({ kind: "implicit", floor: 0 });
+    expect(model.targetScaling.floorPolicy).toEqual({
+      kind: "implicit",
+      floor: 0,
+    });
 
     const rows = [
       { timestamp: "2024-01-07T00:00:00.000Z", capacity: 10 },
@@ -73,6 +78,7 @@ describe("logistic MAP forecasting", () => {
     const model = await Effect.runPromise(
       fit(mixedObservations, {
         growth: "logistic",
+        builtInSeasonalities: { yearly: "off", weekly: "off", daily: "off" },
         seasonalityMode: "multiplicative",
         seasonalities: [{ name: "weekly-wave", periodDays: 7, fourierOrder: 1 }],
         events: [{ name: "launch", date: timestamp(8).slice(0, 10) }],
@@ -211,10 +217,14 @@ describe("logistic MAP forecasting", () => {
       boundaryCount,
     );
 
-    const collapse = observations.map((row) => ({ ...row, value: 5 }));
+    const degenerate = observations.map((row) => ({
+      ...row,
+      timestamp: observations[0].timestamp,
+    }));
+
     await Effect.runPromise(
       Effect.flip(
-        fit(collapse, options).pipe(
+        fit(degenerate, options).pipe(
           Effect.provide(prophetFittingBackendLayer),
           Effect.withTracer(tracer),
         ),
@@ -228,6 +238,220 @@ describe("logistic MAP forecasting", () => {
     }
 
     expect(Exit.isFailure(failedBoundary.status.exit)).toBe(true);
+  });
+
+  it("traces singular Stan prediction failures without poisoning earlier rows", async () => {
+    const fitted = await Effect.runPromise(
+      fit(observations, options).pipe(Effect.provide(prophetFittingBackendLayer)),
+    );
+
+    if (fitted.model !== "logistic-piecewise-map") throw new Error("Expected logistic MAP");
+
+    const change = fitted.timeOrigin + fitted.timeScale / 2;
+
+    const model = await Effect.runPromise(
+      parseLogisticMapModel({
+        ...fitted,
+        rate: 2,
+        offset: 0.4,
+        changepointTimestamps: [change],
+        deltas: [-2],
+      }),
+    );
+
+    const spans: Array<Tracer.Span> = [];
+
+    const tracer = Tracer.make({
+      span: (spanOptions) => {
+        const span = new Tracer.NativeSpan(spanOptions);
+        spans.push(span);
+
+        return span;
+      },
+    });
+
+    const before = [{ timestamp: timestamp(0), capacity: 10 }];
+    const atChange = [{ timestamp: new Date(change).toISOString(), capacity: 10 }];
+
+    await Effect.runPromise(predict(model, before).pipe(Effect.withTracer(tracer)));
+    await Effect.runPromise(
+      predictUncertainty(model, before, { seed: 19, samples: 2 }).pipe(Effect.withTracer(tracer)),
+    );
+
+    for (const [boundaryName, operation] of [
+      ["effect-prophet.wasm.predict", predict(model, [...before, ...atChange]).pipe(Effect.asVoid)],
+      [
+        "effect-prophet.wasm.simulate",
+        predictUncertainty(model, [...before, ...atChange], { seed: 19, samples: 2 }).pipe(
+          Effect.asVoid,
+        ),
+      ],
+    ] as const) {
+      const failure = await Effect.runPromise(
+        Effect.flip(operation.pipe(Effect.withTracer(tracer))),
+      );
+
+      expect(failure).toBeInstanceOf(PredictionError);
+      expect(failure).toMatchObject({ reason: "non-finite-forecast", timestamp: change });
+
+      const boundaries = spans.filter((span) => span.name === boundaryName);
+      expect(boundaries).toHaveLength(2);
+
+      for (const [index, boundary] of boundaries.entries()) {
+        const parent = spans.find(
+          (span) => span.spanId === Option.getOrUndefined(boundary.parent)?.spanId,
+        );
+
+        if (parent === undefined) throw new Error("Expected a direct public parent");
+        const status = requireEndedSpan(boundary);
+        const parentStatus = requireEndedSpan(parent);
+
+        expect(parent.name).toBe(
+          boundaryName.endsWith("predict") ? "Prophet.predict" : "Prophet.predictUncertainty",
+        );
+        expect(boundary.traceId).toBe(parent.traceId);
+        expect(Object.fromEntries(boundary.attributes)).toEqual({
+          "effect_prophet.operation": boundaryName.endsWith("predict") ? "predict" : "simulate",
+          "effect_prophet.backend.type": "rust-wasm",
+          "effect_prophet.model.type": "logistic-piecewise-map",
+          "effect_prophet.prediction.count": index === 0 ? 1 : 2,
+          ...(boundaryName.endsWith("simulate")
+            ? { "effect_prophet.output.kind": "intervals", "effect_prophet.sample.count": 2 }
+            : { "effect_prophet.scaling.mode": "absmax", "effect_prophet.seasonality.count": 0 }),
+        });
+        expect(status.startTime).toBeGreaterThanOrEqual(parentStatus.startTime);
+        expect(status.endTime).toBeLessThanOrEqual(parentStatus.endTime);
+        expect(Exit.isSuccess(status.exit)).toBe(index === 0);
+        expect(Exit.isSuccess(parentStatus.exit)).toBe(index === 0);
+
+        if (Exit.isFailure(status.exit)) {
+          expect(Option.getOrUndefined(Cause.findErrorOption(status.exit.cause))).toBe(failure);
+        }
+      }
+    }
+
+    const count = spans.filter((span) => span.name.startsWith("effect-prophet.wasm.")).length;
+    expect(await Effect.runPromise(predict(model, []).pipe(Effect.withTracer(tracer)))).toEqual([]);
+
+    const invalid = await Effect.runPromise(
+      Effect.flip(
+        predict(model, [{ timestamp: timestamp(0), capacity: 0 }]).pipe(Effect.withTracer(tracer)),
+      ),
+    );
+
+    expect(invalid).toBeInstanceOf(InputValidationError);
+    expect(spans.filter((span) => span.name.startsWith("effect-prophet.wasm."))).toHaveLength(
+      count,
+    );
+  });
+
+  it("fits a two-row history with honest finite one-step completion", async () => {
+    const model = await Effect.runPromise(
+      fit([observations[0], observations[1]], {
+        ...options,
+        map: { ...options.map, optimizer: { algorithm: "newton", maxIterations: 1 } },
+      }).pipe(Effect.provide(prophetFittingBackendLayer)),
+    );
+
+    if (model.model !== "logistic-piecewise-map") throw new Error("Expected logistic MAP");
+    expect(model.fitSummary).toMatchObject({
+      method: "logistic-piecewise-map-stan-v2",
+      observationCount: 2,
+      termination: "iteration-limit",
+      iterations: 1,
+    });
+    expect(
+      await Effect.runPromise(predict(model, [{ timestamp: timestamp(2), capacity: 10 }])),
+    ).toHaveLength(1);
+  });
+
+  it.each([
+    ["single row", [observations[0]], "insufficient-observations", false],
+    [
+      "zero time range",
+      observations.map((row) => ({ ...row, timestamp: observations[0].timestamp })),
+      "degenerate-observations",
+      true,
+    ],
+  ] as const)(
+    "rejects %s with a typed fitting failure",
+    async (_label, history, reason, boundaryExpected) => {
+      const spans: Array<Tracer.Span> = [];
+
+      const tracer = Tracer.make({
+        span: (spanOptions) => {
+          const span = new Tracer.NativeSpan(spanOptions);
+          spans.push(span);
+
+          return span;
+        },
+      });
+
+      const failure = await Effect.runPromise(
+        Effect.flip(
+          fit(history, options).pipe(
+            Effect.provide(prophetFittingBackendLayer),
+            Effect.withTracer(tracer),
+          ),
+        ),
+      );
+
+      expect(failure).toBeInstanceOf(FittingError);
+      expect(failure).toMatchObject({ reason });
+      expect(spans.filter((span) => span.name === "effect-prophet.wasm.fit")).toHaveLength(
+        boundaryExpected ? 1 : 0,
+      );
+    },
+  );
+
+  it.each([
+    [
+      "partially supplied capacities",
+      observations.map((row, index) =>
+        index === 1 ? { timestamp: row.timestamp, value: row.value } : row,
+      ),
+    ],
+    [
+      "partially supplied floors",
+      observations.map((row, index) => (index === 1 ? row : { ...row, floor: -1 })),
+    ],
+    ["capacity equal to implicit floor", observations.map((row) => ({ ...row, capacity: 0 }))],
+    [
+      "capacity equal to explicit floor",
+      observations.map((row) => ({ ...row, floor: row.capacity })),
+    ],
+    [
+      "capacity below explicit floor",
+      observations.map((row) => ({ ...row, floor: row.capacity + 1 })),
+    ],
+    [
+      "nonfinite capacities",
+      observations.map((row) => ({ ...row, capacity: Number.POSITIVE_INFINITY })),
+    ],
+    ["nonfinite floors", observations.map((row) => ({ ...row, floor: Number.NaN }))],
+  ])("rejects %s before the WASM boundary", async (_label, history) => {
+    const spans: Array<Tracer.Span> = [];
+
+    const tracer = Tracer.make({
+      span: (spanOptions) => {
+        const span = new Tracer.NativeSpan(spanOptions);
+        spans.push(span);
+
+        return span;
+      },
+    });
+
+    const failure = await Effect.runPromise(
+      Effect.flip(
+        fit(history, options).pipe(
+          Effect.provide(prophetFittingBackendLayer),
+          Effect.withTracer(tracer),
+        ),
+      ),
+    );
+
+    expect(failure).toBeInstanceOf(InputValidationError);
+    expect(spans.some((span) => span.name.startsWith("effect-prophet.wasm."))).toBe(false);
   });
 
   it("rejects missing and extraneous bounds at public row boundaries", async () => {

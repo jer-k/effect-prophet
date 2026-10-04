@@ -8,7 +8,15 @@ import {
   type LogisticMapParameters,
 } from "../fitted-model";
 import type { LogisticPredictionBounds, LogisticTrainingBounds } from "../logistic";
-import type { ChangepointSetting, MapOptimizerControls } from "../options";
+import type { ChangepointSetting } from "../options";
+import type { LinearOptimizer } from "../linear-optimizer";
+import {
+  annotateStanRequest,
+  annotateStanCompletion,
+  encodeStanOptimizer,
+  decodeStanCompletion,
+  stanOptimizerFailure,
+} from "./stan-map-protocol";
 import type { ResolvedRegressor } from "../regressor";
 import type { SeasonalityLayout } from "../seasonality";
 import { targetScalingModeCode, type TargetScalingMode } from "../target-scaling";
@@ -45,6 +53,7 @@ const fitStatus = {
   noiseCollapse: 8,
   nonConvergence: 9,
   nonRepresentableScaling: 10,
+  optimizerFailure: 11,
 } as const;
 
 const predictionStatus = {
@@ -61,6 +70,10 @@ const fittingFailure = (
   observationCount: number,
 ): Effect.Effect<never, FittingError> => {
   const status = readWasmStatus(packed);
+
+  if (status === fitStatus.optimizerFailure) {
+    return stanOptimizerFailure(packed, observationCount, "logistic");
+  }
 
   if (status === undefined || packed.length !== 1) {
     return failWasmFitting(observationCount, {
@@ -141,14 +154,15 @@ const decodeFit = (
   const additionalCount = events.layout.coefficientCount + regressors.length;
 
   const expectedLength =
-    16 + changepointCount * 2 + seasonalities.coefficientCount + additionalCount;
+    20 + changepointCount * 2 + seasonalities.coefficientCount + additionalCount;
 
   if (
     packed.length !== expectedLength ||
     packed[1] !== targetScalingModeCode(scaling) ||
     packed[11] !== observationCount ||
-    packed[15] !== 0 ||
-    (packed[3] !== 0 && packed[3] !== 1)
+    (packed[3] !== 0 && packed[3] !== 1) ||
+    (packed[3] === 1 && packed[4] !== 0) ||
+    packed[15] === 0
   ) {
     return fittingFailure(new Float64Array(), observationCount);
   }
@@ -158,7 +172,7 @@ const decodeFit = (
       ? { kind: "implicit" as const, floor: packed[4] ?? Number.NaN }
       : { kind: "explicit" as const };
 
-  const changepointStart = 16;
+  const changepointStart = 20;
   const deltaStart = changepointStart + changepointCount;
   const coefficientStart = deltaStart + changepointCount;
   const eventStart = coefficientStart + seasonalities.coefficientCount;
@@ -180,8 +194,8 @@ const decodeFit = (
     regressors: fittedRegressors(regressors, packed, regressorStart),
     noiseScale: packed[9],
     fitSummary: {
-      method: "logistic-piecewise-map-proximal-v1",
-      termination: "converged",
+      method: "logistic-piecewise-map-stan-v2",
+      ...decodeStanCompletion(packed),
       valueScale: packed[2],
       observationCount: packed[11],
       iterations: packed[12],
@@ -208,7 +222,7 @@ export const fitLogisticMapWithWasm = (
   seasonalities: SeasonalityLayout,
   changepoints: ChangepointSetting,
   changepointPriorScale: number,
-  optimizer: MapOptimizerControls,
+  optimizer: LinearOptimizer,
   masks: SeasonalityMaskMatrix,
   features: KnownAdditiveFeatures,
   events: EventCalendar,
@@ -220,7 +234,11 @@ export const fitLogisticMapWithWasm = (
   const coefficientCount = seasonalities.coefficientCount + features.layout.coefficientCount;
 
   return Effect.gen(function* () {
-    yield* Effect.annotateCurrentSpan({ "effect_prophet.component.mode": "mixed" });
+    yield* Effect.annotateCurrentSpan({
+      "effect_prophet.component.mode": "mixed",
+    });
+
+    yield* annotateStanRequest(optimizer);
 
     const module = yield* attemptWasmFitting(loadProphetWasmModule, observationCount, {
       phase: "load",
@@ -254,15 +272,16 @@ export const fitLogisticMapWithWasm = (
           additional.counts,
           modesFor(seasonalities, features),
           changepointPriorScale,
-          optimizer.maxIterations,
-          optimizer.relativeTolerance,
-          optimizer.absoluteTolerance,
+          encodeStanOptimizer(optimizer),
         ),
       observationCount,
-      { phase: "execute", message: "Failed to execute the WASM logistic MAP fitting backend" },
+      {
+        phase: "execute",
+        message: "Failed to execute the WASM logistic MAP fitting backend",
+      },
     );
 
-    return yield* decodeFit(
+    const fitted = yield* decodeFit(
       packed,
       observationCount,
       scaling,
@@ -271,6 +290,10 @@ export const fitLogisticMapWithWasm = (
       regressors,
       changepointPriorScale,
     );
+
+    yield* annotateStanCompletion(fitted.fitSummary);
+
+    return fitted;
   }).pipe(
     Effect.withSpan(
       "effect-prophet.wasm.fit",
@@ -431,7 +454,10 @@ export const predictLogisticMapWithWasm = (
           modesFor(model.seasonalities, features),
         ),
       firstTimestamp,
-      { phase: "execute", message: "Failed to execute the WASM logistic MAP prediction backend" },
+      {
+        phase: "execute",
+        message: "Failed to execute the WASM logistic MAP prediction backend",
+      },
     );
 
     const batch = yield* decodePredictions(packed, timestamps, componentCount);

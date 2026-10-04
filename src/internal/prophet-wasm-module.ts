@@ -243,7 +243,30 @@ export interface MapUncertaintyWasmBindings {
 /** Rust/WASM bindings for floor-aware logistic MAP operations. */
 export interface LogisticMapWasmBindings {
   /** Fit one complete logistic MAP request. */
-  readonly fit_logistic_map_with_features: (...args: ReadonlyArray<unknown>) => Float64Array;
+  readonly fit_logistic_map_with_features: (
+    timestamps: Float64Array,
+    values: Float64Array,
+    capacities: Float64Array,
+    floorPolicy: number,
+    explicitFloors: Float64Array,
+    scalingMode: number,
+    changepointMode: number,
+    explicitChangepoints: Float64Array,
+    automaticCount: number,
+    automaticRange: number,
+    periodsDays: Float64Array,
+    fourierOrders: Float64Array,
+    seasonalPriorScales: Float64Array,
+    seasonalityMasks: Float64Array,
+    additionalColumnCount: number,
+    additionalValues: Float64Array,
+    additionalPriorScales: Float64Array,
+    additionalComponentOffsets: Float64Array,
+    additionalComponentCounts: Float64Array,
+    columnModes: Float64Array,
+    changepointPriorScale: number,
+    optimizer: Float64Array,
+  ) => Float64Array;
 
   /** Predict one complete logistic MAP batch. */
   readonly predict_logistic_map_with_features: (...args: ReadonlyArray<unknown>) => Float64Array;
