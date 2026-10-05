@@ -13,10 +13,7 @@ import {
 import { loadRunEvidence } from "../stored-results.ts";
 
 const recordedDirectory = fileURLToPath(
-  new URL(
-    "../../results/retained/flat-growth-and-evaluation/2026-10-04T191226-966Z-730ead62/",
-    import.meta.url,
-  ),
+  new URL("../../results/retained/flat-growth/2026-10-05T010915-213Z-730ead62/", import.meta.url),
 );
 
 describe("capability catalog", () => {

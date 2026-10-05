@@ -1,5 +1,6 @@
 import { flatCaseDescriptions, flatGroups } from "./flat-cases.ts";
 import { linearCaseDescriptions, linearGroups } from "./linear-cases.ts";
+import { logisticCaseDescriptions, logisticGroups } from "./logistic-cases.ts";
 
 export interface CaseGroup {
   readonly id: string;
@@ -41,6 +42,13 @@ export const benchmarkSuites: ReadonlyArray<BenchmarkSuite> = [
     baseline: "flat-growth",
     groups: flatGroups,
     descriptions: new Map(Object.entries(flatCaseDescriptions)),
+  },
+  {
+    id: "logistic",
+    title: "Logistic growth",
+    baseline: "logistic-growth",
+    groups: logisticGroups,
+    descriptions: new Map(Object.entries(logisticCaseDescriptions)),
   },
 ];
 

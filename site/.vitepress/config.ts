@@ -59,6 +59,7 @@ export default defineConfig({
         items: [
           { text: "Linear growth", link: "/benchmarks/linear" },
           { text: "Flat growth", link: "/benchmarks/flat" },
+          { text: "Logistic growth", link: "/benchmarks/logistic" },
         ],
       },
     ],

@@ -3,16 +3,17 @@
 Effect Prophet is checked against Python Prophet 1.4.0, feature by feature. Here's where each
 trend type stands:
 
-| Trend                                                  | Status                                        | Evidence                                       |
-| ------------------------------------------------------ | --------------------------------------------- | ---------------------------------------------- |
-| [Linear](../examples/trend)                            | <Badge type="tip" text="matches Python" />    | [Linear growth benchmarks](/benchmarks/linear) |
-| [Flat](../examples/flat-trend)                         | <Badge type="tip" text="matches Python" />    | [Flat growth benchmarks](/benchmarks/flat)     |
-| [Growth with a ceiling](../examples/saturating-growth) | <Badge type="warning" text="being checked" /> | Coming soon                                    |
+| Trend                                                  | Status                                     | Evidence                                           |
+| ------------------------------------------------------ | ------------------------------------------ | -------------------------------------------------- |
+| [Linear](../examples/trend)                            | <Badge type="tip" text="matches Python" /> | [Linear growth benchmarks](/benchmarks/linear)     |
+| [Flat](../examples/flat-trend)                         | <Badge type="tip" text="matches Python" /> | [Flat growth benchmarks](/benchmarks/flat)         |
+| [Growth with a ceiling](../examples/saturating-growth) | <Badge type="tip" text="matches Python" /> | [Logistic growth benchmarks](/benchmarks/logistic) |
 
-Linear and flat growth are ready to use. That covers changepoints, seasonality, events,
+All three trend types are ready to use. That covers changepoints, seasonality, events,
 regressors, multiplicative effects, uncertainty ranges, cross-validation and choosing settings. The
-benchmarks for [linear](/benchmarks/linear) and [flat](/benchmarks/flat) growth show every case: its
-input, both libraries' forecasts side by side, and how long each took.
+benchmarks for [linear](/benchmarks/linear), [flat](/benchmarks/flat) and
+[logistic](/benchmarks/logistic) growth show every case: its input, both libraries' forecasts side
+by side, and how long each took.
 
 ## How we test
 

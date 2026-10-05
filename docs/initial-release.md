@@ -11,7 +11,7 @@ cross-validation, model search and save/load.
 
 What's left is mostly **cleanup and release mechanics**:
 
-1. Benchmark logistic the way linear and flat now are, then finish the docs site's Python pages.
+1. Rerun all three trend baselines from a clean commit, then finish the docs site's Python pages.
 2. Settle packaging: license, version, peer dependency, publishing.
 3. Retire the old `docs/` folder.
 
@@ -60,17 +60,39 @@ What's left is mostly **cleanup and release mechanics**:
     settings, so a stale declaration fails catalog validation instead of failing mid-run.
   - All 68 benchmark-tooling tests pass.
 
+- **Logistic growth verified and published.**
+  - All 45 logistic cases rerun: the 28 reconciliation cases, the 6 older ones, and the 6
+    uncertainty and 5 evaluation cases built from them. 45 of 45 pass. Three are flagged under the
+    output-first policy with matching forecasts: `logistic-reconcile-defaults-256` (objective and
+    stationarity, as before) and `logistic-implicit-floor-large` plus the uncertainty case built
+    from it (stationarity residual; forecasts differ by at most 2.3e-5).
+  - Saved as the `logistic-growth` baseline, with pages at `/benchmarks/logistic`. The site's
+    accuracy page now marks all three trends as matching Python.
+  - The `flat-growth-and-evaluation` snapshot is retired; its cases are covered by the three
+    per-trend baselines. `catalog.test.ts` and `run-fixture.ts` now use `flat-growth`.
+- **Fitting is 2–6× faster, with bit-identical results.**
+  - The objective evaluation no longer rescans every changepoint for every row, and the logistic
+    fit caches each row's probability across optimizer steps. The per-row `exp` also skips one
+    software fused multiply-add, which WASM has to emulate.
+  - Fitted models, forecasts and intervals are bit-for-bit unchanged, checked with before/after
+    fingerprints natively and in WASM, plus new equivalence tests for each changed reduction.
+  - Local WASM timings against Python Prophet 1.4.0 on the same machine: linear 90 rows 27 ms vs
+    91 ms, 730 rows 28 ms vs 156 ms; logistic 90 rows 140 ms vs 171 ms, 730 rows 213 ms vs 407 ms.
+    All three baselines were rerun on 2026-10-05 after the speedups: Effect Prophet is faster
+    than Python on every benchmarked fit (median warm fit: linear 5.1 ms vs 23.5 ms, flat 1.6 ms
+    vs 7.9 ms, logistic 12.8 ms vs 20.6 ms), with the same pass/fail and flag results as before.
+
 ## Where things stand
 
 | Area                                                 | Works | Matches Python?                                                                                      | Saved benchmark evidence                                                                          |
 | ---------------------------------------------------- | ----- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
 | Linear growth                                        | Yes   | Yes. Every linear fit now uses Prophet's MAP model.                                                  | 31 of 33 pass (`linear-growth` baseline). The 2 others are zero-span inputs we reject on purpose. |
 | Flat growth                                          | Yes   | Yes. Additive-only flat with events, regressors or conditional seasonality is rejected (decision 1). | 34 of 34 pass (`flat-growth` baseline)                                                            |
-| Logistic growth                                      | Yes   | Yes, judged on outputs (forecasts must match; internal fit numbers are reported only)                | None saved yet. The 28 reconciliation cases and the 6 older cases pass locally.                   |
+| Logistic growth                                      | Yes   | Yes, judged on outputs (forecasts must match; internal fit numbers are reported only)                | 34 of 34 pass (`logistic-growth` baseline)                                                        |
 | Seasonalities (auto, custom, conditional)            | Yes   | Yes                                                                                                  | Covered by fixtures and the growth cases                                                          |
 | Events/holidays (custom), regressors, multiplicative | Yes   | Yes                                                                                                  | Covered by fixtures and the growth cases                                                          |
-| Uncertainty intervals                                | Yes   | Different method on purpose: Python's default is a vectorized shortcut (decision 2)                  | Linear: 5 of 5 pass (saved). Logistic: 6 of 6 pass locally.                                       |
-| Cross-validation, metrics, search, holdout reports   | Yes   | Yes where Python has an equivalent                                                                   | 14 of 14 pass (`flat-growth-and-evaluation` baseline), plus linear's 5 in its own baseline.       |
+| Uncertainty intervals                                | Yes   | Different method on purpose: Python's default is a vectorized shortcut (decision 2)                  | All pass in the three per-trend baselines (linear 5, flat 2, logistic 6)                          |
+| Cross-validation, metrics, search, holdout reports   | Yes   | Yes where Python has an equivalent                                                                   | All pass in the three per-trend baselines (linear 5, flat 5, logistic 5)                          |
 | Save/load                                            | Yes   | Uses its own format. Python JSON is deliberately not supported.                                      | Lifecycle tests                                                                                   |
 
 ### Not implemented (Python has these)
@@ -93,18 +115,13 @@ What's left is mostly **cleanup and release mechanics**:
 
 ## Must do before release
 
-### 1. Benchmark logistic like linear and flat, then fill in the Python pages
+### 1. Clean baselines, then fill in the Python pages
 
-- Rerun every logistic case (the 28 reconciliation cases, the 6 older ones, and the uncertainty and
-  evaluation cases built from them), save a `logistic-growth` baseline, then add a description
-  file and a suite entry for `/benchmarks/logistic`.
-- Once logistic is saved, the `flat-growth-and-evaluation` snapshot is fully duplicated by the
-  three per-trend baselines. Retire it and point the two tests that use it as a fixture
-  (`catalog.test.ts`, `run-fixture.ts`) at one of the new ones.
-- Every saved run so far is from a dirty tree. Before release, rerun all three from a clean commit.
+- Every saved run so far is from a dirty tree.
+  Before release, rerun all three baselines from a clean commit.
 - Write the remaining outline pages in `site/python/`: **Coming from Python** (a translation
-  table) and **What's different** (the known gaps). **How close are the results?** is written;
-  update its status table as each trend is verified.
+  table) and **What's different** (the known gaps). **How close are the results?** is written and
+  marks all three trends as matching.
 
 ### 2. Packaging
 

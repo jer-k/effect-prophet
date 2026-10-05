@@ -674,9 +674,12 @@ const crossValidateOperation = Effect.fn("Prophet.crossValidate")(function* (
   const intervalRows: Array<CrossValidationIntervalRow> = [];
   const folds: Array<CrossValidationFoldSummary> = [];
 
+  // Folds share growing training prefixes, so encode each row once rather than once per fold.
+  const encodedObservations = observations.map(projectTrainingRow);
+
   for (const fold of foldPlan.indexes) {
     const executed = yield* Effect.gen(function* () {
-      const training = observations.slice(0, fold.trainingEndExclusive).map(projectTrainingRow);
+      const training = encodedObservations.slice(0, fold.trainingEndExclusive);
       const lastTraining = observations[fold.trainingEndExclusive - 1];
 
       if (lastTraining === undefined || training[0] === undefined) {

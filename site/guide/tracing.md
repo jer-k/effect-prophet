@@ -51,11 +51,17 @@ The engine runs as one step, so a trace has no spans _inside_ it. Instead, the
 
 (Every attribute name starts with `effect_prophet.`, left off here to keep the table short.)
 
-Fitting time mostly depends on the number of parameters and the number of steps. With the
-default settings, histories under 100 rows use Newton's method, whose steps get expensive as
-parameters grow, and the 25 default changepoints are often a large share of the parameters. If
-fits are slower than you'd like, try fewer changepoints (see
-[Trends and changepoints](../examples/trend)) and let the trace tell you whether it helped.
+Fitting time is roughly the number of steps times the cost of each step. The cost of a step grows
+with `parameter.count`, and the 25 default changepoints are often a large share of the parameters.
+With the default settings, histories under 100 rows use Newton's method, whose steps get expensive
+as parameters grow.
+
+The number of steps is usually a few dozen to a few hundred. A count much higher than that, as in
+the example above, usually means the data has almost no noise: a perfectly smooth synthetic series
+can be fitted exactly, so the solver keeps shrinking its noise estimate toward zero, one step at a
+time. Python Prophet does the same on such data. Real data rarely triggers this. If yours does,
+fewer changepoints (see [Trends and changepoints](../examples/trend)) make each step cheaper. Let
+the trace tell you whether it helped.
 
 The first engine call in a process also loads the engine. `wasm.cold_start` marks that call so
 the one-time cost isn't mistaken for a slow fit.

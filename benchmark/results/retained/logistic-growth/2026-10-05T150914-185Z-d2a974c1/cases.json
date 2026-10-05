@@ -1,0 +1,4271 @@
+[
+  {
+    "id": "logistic-implicit-floor-absmax",
+    "dataset": "v1/logistic-implicit-floor.json",
+    "workload": {
+      "kind": "stage-f-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "stage-f-logistic-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "explicit",
+          "timestamps": [
+            "2020-02-10T00:00:00.000Z"
+          ]
+        },
+        "changepointPriorScale": 0.2,
+        "seasonalities": [
+          {
+            "name": "weekly-custom",
+            "periodDays": 7,
+            "fourierOrder": 2,
+            "priorScale": 10
+          }
+        ],
+        "events": [],
+        "regressors": []
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      }
+    },
+    "phases": [
+      "adapter-input-conversion",
+      "warm-fit",
+      "warm-predict",
+      "warm-fit-predict",
+      "warm-fit-predict-with-conversion",
+      "cold-first-forecast",
+      "model-json-encode",
+      "model-json-decode",
+      "fresh-process-restored-predict"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 600,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.25,
+        "relative": 0.02
+      },
+      "component": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "additive": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "forecast": {
+        "absolute": 0.3,
+        "relative": 0.02
+      },
+      "noiseScale": {
+        "absolute": 0.1,
+        "relative": 0.2
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-implicit-floor-v1:n=96:h=24:changing-capacity:weekly",
+      "sha256": "d8cde080f7a8af86acb6e70e2577d0d1d2ee8f813bf4836e5a61702a16dc1558",
+      "trainingRows": 96,
+      "predictionRows": 24,
+      "futureRows": 24,
+      "horizonDays": 24
+    }
+  },
+  {
+    "id": "logistic-implicit-floor-minmax",
+    "dataset": "v1/logistic-implicit-floor.json",
+    "workload": {
+      "kind": "stage-f-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "stage-f-logistic-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "minmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "explicit",
+          "timestamps": [
+            "2020-02-10T00:00:00.000Z"
+          ]
+        },
+        "changepointPriorScale": 0.2,
+        "seasonalities": [
+          {
+            "name": "weekly-custom",
+            "periodDays": 7,
+            "fourierOrder": 2,
+            "priorScale": 10
+          }
+        ],
+        "events": [],
+        "regressors": []
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      }
+    },
+    "phases": [
+      "adapter-input-conversion",
+      "warm-fit",
+      "warm-predict",
+      "warm-fit-predict",
+      "warm-fit-predict-with-conversion",
+      "cold-first-forecast",
+      "model-json-encode",
+      "model-json-decode",
+      "fresh-process-restored-predict"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 600,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.25,
+        "relative": 0.02
+      },
+      "component": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "additive": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "forecast": {
+        "absolute": 0.3,
+        "relative": 0.02
+      },
+      "noiseScale": {
+        "absolute": 0.1,
+        "relative": 0.2
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-implicit-floor-v1:n=96:h=24:changing-capacity:weekly",
+      "sha256": "d8cde080f7a8af86acb6e70e2577d0d1d2ee8f813bf4836e5a61702a16dc1558",
+      "trainingRows": 96,
+      "predictionRows": 24,
+      "futureRows": 24,
+      "horizonDays": 24
+    }
+  },
+  {
+    "id": "logistic-explicit-floor-absmax",
+    "dataset": "v1/logistic-explicit-floor.json",
+    "workload": {
+      "kind": "stage-f-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "stage-f-logistic-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "explicit",
+          "timestamps": [
+            "2020-02-10T00:00:00.000Z"
+          ]
+        },
+        "changepointPriorScale": 0.2,
+        "seasonalities": [
+          {
+            "name": "weekly-custom",
+            "periodDays": 7,
+            "fourierOrder": 2,
+            "priorScale": 10
+          }
+        ],
+        "events": [],
+        "regressors": [
+          {
+            "name": "promotion",
+            "priorScale": 10,
+            "standardization": "never",
+            "mode": "multiplicative"
+          }
+        ]
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      }
+    },
+    "phases": [
+      "adapter-input-conversion",
+      "warm-fit",
+      "warm-predict",
+      "warm-fit-predict",
+      "warm-fit-predict-with-conversion",
+      "cold-first-forecast",
+      "model-json-encode",
+      "model-json-decode",
+      "fresh-process-restored-predict"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 600,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.25,
+        "relative": 0.02
+      },
+      "component": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "additive": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "forecast": {
+        "absolute": 0.3,
+        "relative": 0.02
+      },
+      "noiseScale": {
+        "absolute": 0.1,
+        "relative": 0.2
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-explicit-floor-v1:n=96:h=24:changing-capacity:weekly",
+      "sha256": "c6fa262b4fd7353c7113029e7863b000afba00ec339f72dfaaa26b08a76a0f9b",
+      "trainingRows": 96,
+      "predictionRows": 24,
+      "futureRows": 24,
+      "horizonDays": 24
+    }
+  },
+  {
+    "id": "logistic-explicit-floor-minmax",
+    "dataset": "v1/logistic-explicit-floor.json",
+    "workload": {
+      "kind": "stage-f-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "stage-f-logistic-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "minmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "explicit",
+          "timestamps": [
+            "2020-02-10T00:00:00.000Z"
+          ]
+        },
+        "changepointPriorScale": 0.2,
+        "seasonalities": [
+          {
+            "name": "weekly-custom",
+            "periodDays": 7,
+            "fourierOrder": 2,
+            "priorScale": 10
+          }
+        ],
+        "events": [],
+        "regressors": [
+          {
+            "name": "promotion",
+            "priorScale": 10,
+            "standardization": "never",
+            "mode": "multiplicative"
+          }
+        ]
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      }
+    },
+    "phases": [
+      "adapter-input-conversion",
+      "warm-fit",
+      "warm-predict",
+      "warm-fit-predict",
+      "warm-fit-predict-with-conversion",
+      "cold-first-forecast",
+      "model-json-encode",
+      "model-json-decode",
+      "fresh-process-restored-predict"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 600,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.25,
+        "relative": 0.02
+      },
+      "component": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "additive": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "forecast": {
+        "absolute": 0.3,
+        "relative": 0.02
+      },
+      "noiseScale": {
+        "absolute": 0.1,
+        "relative": 0.2
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-explicit-floor-v1:n=96:h=24:changing-capacity:weekly",
+      "sha256": "c6fa262b4fd7353c7113029e7863b000afba00ec339f72dfaaa26b08a76a0f9b",
+      "trainingRows": 96,
+      "predictionRows": 24,
+      "futureRows": 24,
+      "horizonDays": 24
+    }
+  },
+  {
+    "id": "logistic-implicit-floor-auto-changepoints",
+    "dataset": "v1/logistic-implicit-floor.json",
+    "workload": {
+      "kind": "stage-f-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "stage-f-logistic-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "minmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "auto",
+          "count": 2,
+          "range": 0.8
+        },
+        "changepointPriorScale": 0.2,
+        "seasonalities": [
+          {
+            "name": "weekly-custom",
+            "periodDays": 7,
+            "fourierOrder": 2,
+            "priorScale": 10
+          }
+        ],
+        "events": [],
+        "regressors": []
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      }
+    },
+    "phases": [
+      "adapter-input-conversion",
+      "warm-fit",
+      "warm-predict",
+      "warm-fit-predict",
+      "warm-fit-predict-with-conversion",
+      "cold-first-forecast",
+      "model-json-encode",
+      "model-json-decode",
+      "fresh-process-restored-predict"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 600,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.25,
+        "relative": 0.02
+      },
+      "component": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "additive": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "forecast": {
+        "absolute": 0.3,
+        "relative": 0.02
+      },
+      "noiseScale": {
+        "absolute": 0.1,
+        "relative": 0.2
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-implicit-floor-v1:n=96:h=24:changing-capacity:weekly",
+      "sha256": "d8cde080f7a8af86acb6e70e2577d0d1d2ee8f813bf4836e5a61702a16dc1558",
+      "trainingRows": 96,
+      "predictionRows": 24,
+      "futureRows": 24,
+      "horizonDays": 24
+    }
+  },
+  {
+    "id": "logistic-implicit-floor-large",
+    "dataset": "v1/logistic-implicit-floor-large.json",
+    "workload": {
+      "kind": "stage-f-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "stage-f-logistic-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "minmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "explicit",
+          "timestamps": [
+            "2020-02-10T00:00:00.000Z"
+          ]
+        },
+        "changepointPriorScale": 0.2,
+        "seasonalities": [
+          {
+            "name": "weekly-custom",
+            "periodDays": 7,
+            "fourierOrder": 2,
+            "priorScale": 10
+          }
+        ],
+        "events": [],
+        "regressors": []
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      }
+    },
+    "phases": [
+      "adapter-input-conversion",
+      "warm-fit",
+      "warm-predict",
+      "warm-fit-predict",
+      "warm-fit-predict-with-conversion",
+      "cold-first-forecast",
+      "model-json-encode",
+      "model-json-decode",
+      "fresh-process-restored-predict"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 600,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.25,
+        "relative": 0.02
+      },
+      "component": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "additive": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "forecast": {
+        "absolute": 0.3,
+        "relative": 0.02
+      },
+      "noiseScale": {
+        "absolute": 0.1,
+        "relative": 0.2
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-implicit-floor-large-v1:n=256:h=64:changing-capacity:weekly",
+      "sha256": "61b169aa9c925333f6dd11301febfdeb82e9ae7f2b95f3cb4c222e6dcfb080d9",
+      "trainingRows": 256,
+      "predictionRows": 64,
+      "futureRows": 64,
+      "horizonDays": 64
+    }
+  },
+  {
+    "id": "uncertainty-logistic-implicit-floor-minmax-full-samples-512",
+    "dataset": "v1/logistic-implicit-floor.json",
+    "workload": {
+      "kind": "stage-f-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "stage-f-logistic-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "minmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "explicit",
+          "timestamps": [
+            "2020-02-10T00:00:00.000Z"
+          ]
+        },
+        "changepointPriorScale": 0.2,
+        "seasonalities": [
+          {
+            "name": "weekly-custom",
+            "periodDays": 7,
+            "fourierOrder": 2,
+            "priorScale": 10
+          }
+        ],
+        "events": [],
+        "regressors": []
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      },
+      "uncertainty": {
+        "seed": 19,
+        "samples": 512,
+        "intervalWidth": 0.8,
+        "output": "samples",
+        "algorithm": "scalar-continuous-time",
+        "evidence": "docs/validation/uncertainty.md#evidence-classes",
+        "samplerMemoryLimitBytes": 67108864
+      }
+    },
+    "phases": [
+      "uncertainty-input-conversion",
+      "warm-uncertainty",
+      "cold-first-uncertainty",
+      "model-json-encode",
+      "model-json-decode",
+      "fresh-process-restored-uncertainty"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 3,
+    "independentRuns": 2,
+    "timeoutSeconds": 600,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.25,
+        "relative": 0.02
+      },
+      "component": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "additive": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "forecast": {
+        "absolute": 0.3,
+        "relative": 0.02
+      },
+      "noiseScale": {
+        "absolute": 0.1,
+        "relative": 0.2
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-implicit-floor-v1:n=96:h=24:changing-capacity:weekly",
+      "sha256": "d8cde080f7a8af86acb6e70e2577d0d1d2ee8f813bf4836e5a61702a16dc1558",
+      "trainingRows": 96,
+      "predictionRows": 24,
+      "futureRows": 24,
+      "horizonDays": 24
+    }
+  },
+  {
+    "id": "uncertainty-logistic-implicit-floor-large-full-intervals-128",
+    "dataset": "v1/logistic-implicit-floor-large.json",
+    "workload": {
+      "kind": "stage-f-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "stage-f-logistic-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "minmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "explicit",
+          "timestamps": [
+            "2020-02-10T00:00:00.000Z"
+          ]
+        },
+        "changepointPriorScale": 0.2,
+        "seasonalities": [
+          {
+            "name": "weekly-custom",
+            "periodDays": 7,
+            "fourierOrder": 2,
+            "priorScale": 10
+          }
+        ],
+        "events": [],
+        "regressors": []
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      },
+      "uncertainty": {
+        "seed": 19,
+        "samples": 128,
+        "intervalWidth": 0.8,
+        "output": "intervals",
+        "algorithm": "scalar-continuous-time",
+        "evidence": "docs/validation/uncertainty.md#evidence-classes",
+        "samplerMemoryLimitBytes": 67108864
+      }
+    },
+    "phases": [
+      "uncertainty-input-conversion",
+      "warm-uncertainty",
+      "cold-first-uncertainty",
+      "model-json-encode",
+      "model-json-decode",
+      "fresh-process-restored-uncertainty"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 3,
+    "independentRuns": 2,
+    "timeoutSeconds": 600,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.25,
+        "relative": 0.02
+      },
+      "component": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "additive": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "forecast": {
+        "absolute": 0.3,
+        "relative": 0.02
+      },
+      "noiseScale": {
+        "absolute": 0.1,
+        "relative": 0.2
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-implicit-floor-large-v1:n=256:h=64:changing-capacity:weekly",
+      "sha256": "61b169aa9c925333f6dd11301febfdeb82e9ae7f2b95f3cb4c222e6dcfb080d9",
+      "trainingRows": 256,
+      "predictionRows": 64,
+      "futureRows": 64,
+      "horizonDays": 64
+    }
+  },
+  {
+    "id": "uncertainty-logistic-explicit-floor-minmax-full-intervals-512",
+    "dataset": "v1/logistic-explicit-floor.json",
+    "workload": {
+      "kind": "stage-f-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "stage-f-logistic-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "minmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "explicit",
+          "timestamps": [
+            "2020-02-10T00:00:00.000Z"
+          ]
+        },
+        "changepointPriorScale": 0.2,
+        "seasonalities": [
+          {
+            "name": "weekly-custom",
+            "periodDays": 7,
+            "fourierOrder": 2,
+            "priorScale": 10
+          }
+        ],
+        "events": [],
+        "regressors": [
+          {
+            "name": "promotion",
+            "priorScale": 10,
+            "standardization": "never",
+            "mode": "multiplicative"
+          }
+        ]
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      },
+      "uncertainty": {
+        "seed": 19,
+        "samples": 512,
+        "intervalWidth": 0.8,
+        "output": "intervals",
+        "algorithm": "scalar-continuous-time",
+        "evidence": "docs/validation/uncertainty.md#evidence-classes",
+        "samplerMemoryLimitBytes": 67108864
+      }
+    },
+    "phases": [
+      "uncertainty-input-conversion",
+      "warm-uncertainty",
+      "cold-first-uncertainty",
+      "model-json-encode",
+      "model-json-decode",
+      "fresh-process-restored-uncertainty"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 3,
+    "independentRuns": 2,
+    "timeoutSeconds": 600,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.25,
+        "relative": 0.02
+      },
+      "component": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "additive": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "forecast": {
+        "absolute": 0.3,
+        "relative": 0.02
+      },
+      "noiseScale": {
+        "absolute": 0.1,
+        "relative": 0.2
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-explicit-floor-v1:n=96:h=24:changing-capacity:weekly",
+      "sha256": "c6fa262b4fd7353c7113029e7863b000afba00ec339f72dfaaa26b08a76a0f9b",
+      "trainingRows": 96,
+      "predictionRows": 24,
+      "futureRows": 24,
+      "horizonDays": 24
+    }
+  },
+  {
+    "id": "uncertainty-logistic-explicit-floor-minmax-full-samples-128",
+    "dataset": "v1/logistic-explicit-floor.json",
+    "workload": {
+      "kind": "stage-f-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "stage-f-logistic-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "minmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "explicit",
+          "timestamps": [
+            "2020-02-10T00:00:00.000Z"
+          ]
+        },
+        "changepointPriorScale": 0.2,
+        "seasonalities": [
+          {
+            "name": "weekly-custom",
+            "periodDays": 7,
+            "fourierOrder": 2,
+            "priorScale": 10
+          }
+        ],
+        "events": [],
+        "regressors": [
+          {
+            "name": "promotion",
+            "priorScale": 10,
+            "standardization": "never",
+            "mode": "multiplicative"
+          }
+        ]
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      },
+      "uncertainty": {
+        "seed": 19,
+        "samples": 128,
+        "intervalWidth": 0.8,
+        "output": "samples",
+        "algorithm": "scalar-continuous-time",
+        "evidence": "docs/validation/uncertainty.md#evidence-classes",
+        "samplerMemoryLimitBytes": 67108864
+      }
+    },
+    "phases": [
+      "uncertainty-input-conversion",
+      "warm-uncertainty",
+      "cold-first-uncertainty",
+      "model-json-encode",
+      "model-json-decode",
+      "fresh-process-restored-uncertainty"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 3,
+    "independentRuns": 2,
+    "timeoutSeconds": 600,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.25,
+        "relative": 0.02
+      },
+      "component": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "additive": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "forecast": {
+        "absolute": 0.3,
+        "relative": 0.02
+      },
+      "noiseScale": {
+        "absolute": 0.1,
+        "relative": 0.2
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-explicit-floor-v1:n=96:h=24:changing-capacity:weekly",
+      "sha256": "c6fa262b4fd7353c7113029e7863b000afba00ec339f72dfaaa26b08a76a0f9b",
+      "trainingRows": 96,
+      "predictionRows": 24,
+      "futureRows": 24,
+      "horizonDays": 24
+    }
+  },
+  {
+    "id": "uncertainty-logistic-explicit-floor-minmax-mixed-conditions-events-intervals-128",
+    "dataset": "v1/logistic-uncertainty-mixed.json",
+    "workload": {
+      "kind": "stage-f-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "stage-f-logistic-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "minmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "explicit",
+          "timestamps": [
+            "2020-02-10T00:00:00.000Z"
+          ]
+        },
+        "changepointPriorScale": 0.2,
+        "seasonalities": [
+          {
+            "name": "weekly-custom",
+            "periodDays": 7,
+            "fourierOrder": 2,
+            "priorScale": 10,
+            "conditionName": "active"
+          }
+        ],
+        "events": [
+          {
+            "name": "campaign",
+            "date": "2020-01-22",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "campaign",
+            "date": "2020-04-16",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          }
+        ],
+        "regressors": [
+          {
+            "name": "promotion",
+            "priorScale": 10,
+            "standardization": "never",
+            "mode": "multiplicative"
+          }
+        ]
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      },
+      "uncertainty": {
+        "seed": 19,
+        "samples": 128,
+        "intervalWidth": 0.8,
+        "output": "intervals",
+        "algorithm": "scalar-continuous-time",
+        "evidence": "docs/validation/uncertainty.md#evidence-classes",
+        "samplerMemoryLimitBytes": 67108864
+      }
+    },
+    "phases": [
+      "uncertainty-input-conversion",
+      "warm-uncertainty",
+      "cold-first-uncertainty",
+      "model-json-encode",
+      "model-json-decode",
+      "fresh-process-restored-uncertainty"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 3,
+    "independentRuns": 2,
+    "timeoutSeconds": 600,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.25,
+        "relative": 0.02
+      },
+      "component": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "additive": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "forecast": {
+        "absolute": 0.3,
+        "relative": 0.02
+      },
+      "noiseScale": {
+        "absolute": 0.1,
+        "relative": 0.2
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-uncertainty-mixed-v1:n=96:h=24:changing-capacity-floor+conditional-weekly+campaign+promotion",
+      "sha256": "6dd8e686d92b341795f6e1f4cf7be9c247ccdb275ca309059fd9114369416767",
+      "trainingRows": 96,
+      "predictionRows": 24,
+      "futureRows": 24,
+      "horizonDays": 24
+    }
+  },
+  {
+    "id": "uncertainty-logistic-explicit-floor-minmax-mixed-conditions-events-samples-128",
+    "dataset": "v1/logistic-uncertainty-mixed.json",
+    "workload": {
+      "kind": "stage-f-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "stage-f-logistic-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "minmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "explicit",
+          "timestamps": [
+            "2020-02-10T00:00:00.000Z"
+          ]
+        },
+        "changepointPriorScale": 0.2,
+        "seasonalities": [
+          {
+            "name": "weekly-custom",
+            "periodDays": 7,
+            "fourierOrder": 2,
+            "priorScale": 10,
+            "conditionName": "active"
+          }
+        ],
+        "events": [
+          {
+            "name": "campaign",
+            "date": "2020-01-22",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "campaign",
+            "date": "2020-04-16",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          }
+        ],
+        "regressors": [
+          {
+            "name": "promotion",
+            "priorScale": 10,
+            "standardization": "never",
+            "mode": "multiplicative"
+          }
+        ]
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      },
+      "uncertainty": {
+        "seed": 19,
+        "samples": 128,
+        "intervalWidth": 0.8,
+        "output": "samples",
+        "algorithm": "scalar-continuous-time",
+        "evidence": "docs/validation/uncertainty.md#evidence-classes",
+        "samplerMemoryLimitBytes": 67108864
+      }
+    },
+    "phases": [
+      "uncertainty-input-conversion",
+      "warm-uncertainty",
+      "cold-first-uncertainty",
+      "model-json-encode",
+      "model-json-decode",
+      "fresh-process-restored-uncertainty"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 3,
+    "independentRuns": 2,
+    "timeoutSeconds": 600,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.25,
+        "relative": 0.02
+      },
+      "component": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "additive": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "forecast": {
+        "absolute": 0.3,
+        "relative": 0.02
+      },
+      "noiseScale": {
+        "absolute": 0.1,
+        "relative": 0.2
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-uncertainty-mixed-v1:n=96:h=24:changing-capacity-floor+conditional-weekly+campaign+promotion",
+      "sha256": "6dd8e686d92b341795f6e1f4cf7be9c247ccdb275ca309059fd9114369416767",
+      "trainingRows": 96,
+      "predictionRows": 24,
+      "futureRows": 24,
+      "horizonDays": 24
+    }
+  },
+  {
+    "id": "evaluation-logistic-point",
+    "dataset": "v1/logistic-implicit-floor.json",
+    "workload": {
+      "kind": "evaluation",
+      "comparison": {
+        "kind": "different-public-work",
+        "evidenceId": "stage-h-evaluation-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "explicit",
+          "timestamps": [
+            "2020-02-10T00:00:00.000Z"
+          ]
+        },
+        "changepointPriorScale": 0.2,
+        "seasonalities": [
+          {
+            "name": "weekly-custom",
+            "periodDays": 7,
+            "fourierOrder": 2,
+            "priorScale": 10
+          }
+        ],
+        "events": [],
+        "regressors": []
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      },
+      "plan": {
+        "horizonMs": 604800000,
+        "cutoffs": [
+          "2020-03-17T00:00:00.000Z"
+        ]
+      },
+      "metricAggregation": "horizons",
+      "mapeZeroActual": "exclude"
+    },
+    "phases": [
+      "evaluation-input-conversion",
+      "evaluation-plan",
+      "evaluation-point",
+      "evaluation-metrics",
+      "evaluation-baseline",
+      "cold-first-evaluation"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 900,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.25,
+        "relative": 0.02
+      },
+      "component": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "additive": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "forecast": {
+        "absolute": 0.3,
+        "relative": 0.02
+      },
+      "noiseScale": {
+        "absolute": 0.1,
+        "relative": 0.2
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-implicit-floor-v1:n=96:h=24:changing-capacity:weekly",
+      "sha256": "d8cde080f7a8af86acb6e70e2577d0d1d2ee8f813bf4836e5a61702a16dc1558",
+      "trainingRows": 96,
+      "predictionRows": 24,
+      "futureRows": 24,
+      "horizonDays": 24
+    }
+  },
+  {
+    "id": "evaluation-logistic-intervals",
+    "dataset": "v1/logistic-implicit-floor.json",
+    "workload": {
+      "kind": "evaluation",
+      "comparison": {
+        "kind": "different-public-work",
+        "evidenceId": "stage-h-evaluation-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "explicit",
+          "timestamps": [
+            "2020-02-10T00:00:00.000Z"
+          ]
+        },
+        "changepointPriorScale": 0.2,
+        "seasonalities": [
+          {
+            "name": "weekly-custom",
+            "periodDays": 7,
+            "fourierOrder": 2,
+            "priorScale": 10
+          }
+        ],
+        "events": [],
+        "regressors": []
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      },
+      "plan": {
+        "horizonMs": 604800000,
+        "cutoffs": [
+          "2020-03-17T00:00:00.000Z"
+        ]
+      },
+      "metricAggregation": "horizons",
+      "mapeZeroActual": "exclude",
+      "interval": {
+        "seed": 19,
+        "samples": 256,
+        "intervalWidth": 0.8
+      }
+    },
+    "phases": [
+      "evaluation-intervals"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 900,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.25,
+        "relative": 0.02
+      },
+      "component": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "additive": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "forecast": {
+        "absolute": 0.3,
+        "relative": 0.02
+      },
+      "noiseScale": {
+        "absolute": 0.1,
+        "relative": 0.2
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-implicit-floor-v1:n=96:h=24:changing-capacity:weekly",
+      "sha256": "d8cde080f7a8af86acb6e70e2577d0d1d2ee8f813bf4836e5a61702a16dc1558",
+      "trainingRows": 96,
+      "predictionRows": 24,
+      "futureRows": 24,
+      "horizonDays": 24
+    }
+  },
+  {
+    "id": "evaluation-logistic-search",
+    "dataset": "v1/logistic-implicit-floor.json",
+    "workload": {
+      "kind": "evaluation",
+      "comparison": {
+        "kind": "different-public-work",
+        "evidenceId": "stage-h-evaluation-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "explicit",
+          "timestamps": [
+            "2020-02-10T00:00:00.000Z"
+          ]
+        },
+        "changepointPriorScale": 0.2,
+        "seasonalities": [
+          {
+            "name": "weekly-custom",
+            "periodDays": 7,
+            "fourierOrder": 2,
+            "priorScale": 10
+          }
+        ],
+        "events": [],
+        "regressors": []
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      },
+      "plan": {
+        "horizonMs": 604800000,
+        "cutoffs": [
+          "2020-03-17T00:00:00.000Z"
+        ]
+      },
+      "metricAggregation": "horizons",
+      "mapeZeroActual": "exclude",
+      "candidates": [
+        {
+          "id": "prior-low",
+          "changepointPriorScale": 0.2
+        },
+        {
+          "id": "prior-high",
+          "changepointPriorScale": 0.25
+        }
+      ],
+      "holdoutRows": 8
+    },
+    "phases": [
+      "evaluation-search",
+      "evaluation-holdout",
+      "evaluation-report-encode",
+      "evaluation-report-decode"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 900,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.25,
+        "relative": 0.02
+      },
+      "component": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "additive": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "forecast": {
+        "absolute": 0.3,
+        "relative": 0.02
+      },
+      "noiseScale": {
+        "absolute": 0.1,
+        "relative": 0.2
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-implicit-floor-v1:n=96:h=24:changing-capacity:weekly",
+      "sha256": "d8cde080f7a8af86acb6e70e2577d0d1d2ee8f813bf4836e5a61702a16dc1558",
+      "trainingRows": 96,
+      "predictionRows": 24,
+      "futureRows": 24,
+      "horizonDays": 24
+    }
+  },
+  {
+    "id": "evaluation-logistic-large-point",
+    "dataset": "v1/logistic-implicit-floor-large.json",
+    "workload": {
+      "kind": "evaluation",
+      "comparison": {
+        "kind": "different-public-work",
+        "evidenceId": "stage-h-evaluation-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "minmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "explicit",
+          "timestamps": [
+            "2020-02-10T00:00:00.000Z"
+          ]
+        },
+        "changepointPriorScale": 0.2,
+        "seasonalities": [
+          {
+            "name": "weekly-custom",
+            "periodDays": 7,
+            "fourierOrder": 2,
+            "priorScale": 10
+          }
+        ],
+        "events": [],
+        "regressors": []
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      },
+      "plan": {
+        "horizonMs": 604800000,
+        "cutoffs": [
+          "2020-08-12T00:00:00.000Z",
+          "2020-08-19T00:00:00.000Z"
+        ]
+      },
+      "metricAggregation": "rolling",
+      "mapeZeroActual": "exclude"
+    },
+    "phases": [
+      "evaluation-input-conversion",
+      "evaluation-plan",
+      "evaluation-point",
+      "evaluation-metrics",
+      "evaluation-baseline",
+      "cold-first-evaluation"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 900,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.25,
+        "relative": 0.02
+      },
+      "component": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "additive": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "forecast": {
+        "absolute": 0.3,
+        "relative": 0.02
+      },
+      "noiseScale": {
+        "absolute": 0.1,
+        "relative": 0.2
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-implicit-floor-large-v1:n=256:h=64:changing-capacity:weekly",
+      "sha256": "61b169aa9c925333f6dd11301febfdeb82e9ae7f2b95f3cb4c222e6dcfb080d9",
+      "trainingRows": 256,
+      "predictionRows": 64,
+      "futureRows": 64,
+      "horizonDays": 64
+    }
+  },
+  {
+    "id": "evaluation-logistic-large-intervals",
+    "dataset": "v1/logistic-implicit-floor-large.json",
+    "workload": {
+      "kind": "evaluation",
+      "comparison": {
+        "kind": "different-public-work",
+        "evidenceId": "stage-h-evaluation-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "minmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "explicit",
+          "timestamps": [
+            "2020-02-10T00:00:00.000Z"
+          ]
+        },
+        "changepointPriorScale": 0.2,
+        "seasonalities": [
+          {
+            "name": "weekly-custom",
+            "periodDays": 7,
+            "fourierOrder": 2,
+            "priorScale": 10
+          }
+        ],
+        "events": [],
+        "regressors": []
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      },
+      "plan": {
+        "horizonMs": 604800000,
+        "cutoffs": [
+          "2020-08-12T00:00:00.000Z",
+          "2020-08-19T00:00:00.000Z"
+        ]
+      },
+      "metricAggregation": "rolling",
+      "mapeZeroActual": "exclude",
+      "interval": {
+        "seed": 19,
+        "samples": 256,
+        "intervalWidth": 0.8
+      }
+    },
+    "phases": [
+      "evaluation-intervals"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 900,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.25,
+        "relative": 0.02
+      },
+      "component": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "additive": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "forecast": {
+        "absolute": 0.3,
+        "relative": 0.02
+      },
+      "noiseScale": {
+        "absolute": 0.1,
+        "relative": 0.2
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-implicit-floor-large-v1:n=256:h=64:changing-capacity:weekly",
+      "sha256": "61b169aa9c925333f6dd11301febfdeb82e9ae7f2b95f3cb4c222e6dcfb080d9",
+      "trainingRows": 256,
+      "predictionRows": 64,
+      "futureRows": 64,
+      "horizonDays": 64
+    }
+  },
+  {
+    "id": "logistic-reconcile-basic-96-empty-absmax",
+    "dataset": "v2/logistic-basic-96.json",
+    "workload": {
+      "kind": "stage-f-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "logistic-python-reconciliation-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "explicit",
+          "timestamps": []
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [],
+        "events": [],
+        "regressors": []
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      }
+    },
+    "phases": [
+      "warm-fit",
+      "warm-predict",
+      "model-json-encode",
+      "model-json-decode",
+      "fresh-process-restored-predict"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 600,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "component": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "additive": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "forecast": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "noiseScale": {
+        "absolute": 0.02,
+        "relative": 0
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-reconciliation-v1:basic:n=96:h=24:bounded-deterministic-noise:changing-capacity",
+      "sha256": "8ecc67fda9a300c74a9a18aecb8d39a6468ac378c72e413084f90ae2cd61db1c",
+      "trainingRows": 96,
+      "predictionRows": 120,
+      "futureRows": 120,
+      "horizonDays": 24
+    }
+  },
+  {
+    "id": "logistic-reconcile-basic-96-explicit-absmax",
+    "dataset": "v2/logistic-basic-96.json",
+    "workload": {
+      "kind": "stage-f-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "logistic-python-reconciliation-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "explicit",
+          "timestamps": [
+            "2020-02-08T00:00:00.000Z"
+          ]
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [],
+        "events": [],
+        "regressors": []
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      }
+    },
+    "phases": [
+      "warm-fit",
+      "warm-predict",
+      "model-json-encode",
+      "model-json-decode",
+      "fresh-process-restored-predict"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 600,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "component": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "additive": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "forecast": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "noiseScale": {
+        "absolute": 0.02,
+        "relative": 0
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-reconciliation-v1:basic:n=96:h=24:bounded-deterministic-noise:changing-capacity",
+      "sha256": "8ecc67fda9a300c74a9a18aecb8d39a6468ac378c72e413084f90ae2cd61db1c",
+      "trainingRows": 96,
+      "predictionRows": 120,
+      "futureRows": 120,
+      "horizonDays": 24
+    }
+  },
+  {
+    "id": "logistic-reconcile-basic-96-auto-absmax",
+    "dataset": "v2/logistic-basic-96.json",
+    "workload": {
+      "kind": "stage-f-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "logistic-python-reconciliation-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "auto",
+          "count": 3,
+          "range": 0.8
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [],
+        "events": [],
+        "regressors": []
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      }
+    },
+    "phases": [
+      "warm-fit",
+      "warm-predict",
+      "model-json-encode",
+      "model-json-decode",
+      "fresh-process-restored-predict"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 600,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "component": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "additive": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "forecast": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "noiseScale": {
+        "absolute": 0.02,
+        "relative": 0
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-reconciliation-v1:basic:n=96:h=24:bounded-deterministic-noise:changing-capacity",
+      "sha256": "8ecc67fda9a300c74a9a18aecb8d39a6468ac378c72e413084f90ae2cd61db1c",
+      "trainingRows": 96,
+      "predictionRows": 120,
+      "futureRows": 120,
+      "horizonDays": 24
+    }
+  },
+  {
+    "id": "logistic-reconcile-basic-96-empty-minmax",
+    "dataset": "v2/logistic-basic-96.json",
+    "workload": {
+      "kind": "stage-f-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "logistic-python-reconciliation-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "minmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "explicit",
+          "timestamps": []
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [],
+        "events": [],
+        "regressors": []
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      }
+    },
+    "phases": [
+      "warm-fit",
+      "warm-predict",
+      "model-json-encode",
+      "model-json-decode",
+      "fresh-process-restored-predict"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 600,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "component": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "additive": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "forecast": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "noiseScale": {
+        "absolute": 0.02,
+        "relative": 0
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-reconciliation-v1:basic:n=96:h=24:bounded-deterministic-noise:changing-capacity",
+      "sha256": "8ecc67fda9a300c74a9a18aecb8d39a6468ac378c72e413084f90ae2cd61db1c",
+      "trainingRows": 96,
+      "predictionRows": 120,
+      "futureRows": 120,
+      "horizonDays": 24
+    }
+  },
+  {
+    "id": "logistic-reconcile-basic-96-explicit-minmax",
+    "dataset": "v2/logistic-basic-96.json",
+    "workload": {
+      "kind": "stage-f-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "logistic-python-reconciliation-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "minmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "explicit",
+          "timestamps": [
+            "2020-02-08T00:00:00.000Z"
+          ]
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [],
+        "events": [],
+        "regressors": []
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      }
+    },
+    "phases": [
+      "warm-fit",
+      "warm-predict",
+      "model-json-encode",
+      "model-json-decode",
+      "fresh-process-restored-predict"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 600,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "component": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "additive": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "forecast": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "noiseScale": {
+        "absolute": 0.02,
+        "relative": 0
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-reconciliation-v1:basic:n=96:h=24:bounded-deterministic-noise:changing-capacity",
+      "sha256": "8ecc67fda9a300c74a9a18aecb8d39a6468ac378c72e413084f90ae2cd61db1c",
+      "trainingRows": 96,
+      "predictionRows": 120,
+      "futureRows": 120,
+      "horizonDays": 24
+    }
+  },
+  {
+    "id": "logistic-reconcile-basic-96-auto-minmax",
+    "dataset": "v2/logistic-basic-96.json",
+    "workload": {
+      "kind": "stage-f-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "logistic-python-reconciliation-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "minmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "auto",
+          "count": 3,
+          "range": 0.8
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [],
+        "events": [],
+        "regressors": []
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      }
+    },
+    "phases": [
+      "warm-fit",
+      "warm-predict",
+      "model-json-encode",
+      "model-json-decode",
+      "fresh-process-restored-predict"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 600,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "component": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "additive": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "forecast": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "noiseScale": {
+        "absolute": 0.02,
+        "relative": 0
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-reconciliation-v1:basic:n=96:h=24:bounded-deterministic-noise:changing-capacity",
+      "sha256": "8ecc67fda9a300c74a9a18aecb8d39a6468ac378c72e413084f90ae2cd61db1c",
+      "trainingRows": 96,
+      "predictionRows": 120,
+      "futureRows": 120,
+      "horizonDays": 24
+    }
+  },
+  {
+    "id": "logistic-reconcile-empty-loose-prior-absmax",
+    "dataset": "v2/logistic-basic-96.json",
+    "workload": {
+      "kind": "stage-f-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "logistic-python-reconciliation-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "explicit",
+          "timestamps": []
+        },
+        "changepointPriorScale": 10,
+        "seasonalities": [],
+        "events": [],
+        "regressors": []
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      }
+    },
+    "phases": [
+      "warm-fit",
+      "warm-predict",
+      "model-json-encode",
+      "model-json-decode",
+      "fresh-process-restored-predict"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 600,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "component": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "additive": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "forecast": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "noiseScale": {
+        "absolute": 0.02,
+        "relative": 0
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-reconciliation-v1:basic:n=96:h=24:bounded-deterministic-noise:changing-capacity",
+      "sha256": "8ecc67fda9a300c74a9a18aecb8d39a6468ac378c72e413084f90ae2cd61db1c",
+      "trainingRows": 96,
+      "predictionRows": 120,
+      "futureRows": 120,
+      "horizonDays": 24
+    }
+  },
+  {
+    "id": "logistic-reconcile-empty-loose-prior-minmax",
+    "dataset": "v2/logistic-basic-96.json",
+    "workload": {
+      "kind": "stage-f-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "logistic-python-reconciliation-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "minmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "explicit",
+          "timestamps": []
+        },
+        "changepointPriorScale": 10,
+        "seasonalities": [],
+        "events": [],
+        "regressors": []
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      }
+    },
+    "phases": [
+      "warm-fit",
+      "warm-predict",
+      "model-json-encode",
+      "model-json-decode",
+      "fresh-process-restored-predict"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 600,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "component": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "additive": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "forecast": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "noiseScale": {
+        "absolute": 0.02,
+        "relative": 0
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-reconciliation-v1:basic:n=96:h=24:bounded-deterministic-noise:changing-capacity",
+      "sha256": "8ecc67fda9a300c74a9a18aecb8d39a6468ac378c72e413084f90ae2cd61db1c",
+      "trainingRows": 96,
+      "predictionRows": 120,
+      "futureRows": 120,
+      "horizonDays": 24
+    }
+  },
+  {
+    "id": "logistic-reconcile-basic-99",
+    "dataset": "v2/logistic-basic-99.json",
+    "workload": {
+      "kind": "stage-f-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "logistic-python-reconciliation-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "explicit",
+          "timestamps": [
+            "2020-02-08T00:00:00.000Z"
+          ]
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [],
+        "events": [],
+        "regressors": []
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      }
+    },
+    "phases": [
+      "warm-fit",
+      "warm-predict",
+      "model-json-encode",
+      "model-json-decode",
+      "fresh-process-restored-predict"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 600,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "component": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "additive": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "forecast": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "noiseScale": {
+        "absolute": 0.02,
+        "relative": 0
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-reconciliation-v1:basic:n=99:h=24:bounded-deterministic-noise:changing-capacity",
+      "sha256": "42372ce4d1c22348c7f09f5dea6bf41e00cbe03aa3c9024c5b4806bb9be52a2b",
+      "trainingRows": 99,
+      "predictionRows": 123,
+      "futureRows": 123,
+      "horizonDays": 24
+    }
+  },
+  {
+    "id": "logistic-reconcile-basic-100",
+    "dataset": "v2/logistic-basic-100.json",
+    "workload": {
+      "kind": "stage-f-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "logistic-python-reconciliation-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "explicit",
+          "timestamps": [
+            "2020-02-08T00:00:00.000Z"
+          ]
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [],
+        "events": [],
+        "regressors": []
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      }
+    },
+    "phases": [
+      "warm-fit",
+      "warm-predict",
+      "model-json-encode",
+      "model-json-decode",
+      "fresh-process-restored-predict"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 600,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "component": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "additive": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "forecast": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "noiseScale": {
+        "absolute": 0.02,
+        "relative": 0
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-reconciliation-v1:basic:n=100:h=24:bounded-deterministic-noise:changing-capacity",
+      "sha256": "b96e6e9d39e6d8f0d9df618c973698c81b60a2e36f91cc25784d8a305c9488cc",
+      "trainingRows": 100,
+      "predictionRows": 124,
+      "futureRows": 124,
+      "horizonDays": 24
+    }
+  },
+  {
+    "id": "logistic-reconcile-basic-256",
+    "dataset": "v2/logistic-basic-256.json",
+    "workload": {
+      "kind": "stage-f-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "logistic-python-reconciliation-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "explicit",
+          "timestamps": [
+            "2020-02-08T00:00:00.000Z"
+          ]
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [],
+        "events": [],
+        "regressors": []
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      }
+    },
+    "phases": [
+      "warm-fit",
+      "warm-predict",
+      "model-json-encode",
+      "model-json-decode",
+      "fresh-process-restored-predict"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 600,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "component": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "additive": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "forecast": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "noiseScale": {
+        "absolute": 0.02,
+        "relative": 0
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-reconciliation-v1:basic:n=256:h=24:bounded-deterministic-noise:changing-capacity",
+      "sha256": "f5b94d2ca42a607b6e1b9001b8e640fe13ff435ff9c4209ad40f51868d93d7f5",
+      "trainingRows": 256,
+      "predictionRows": 280,
+      "futureRows": 280,
+      "horizonDays": 24
+    }
+  },
+  {
+    "id": "logistic-reconcile-defaults-96",
+    "dataset": "v2/logistic-weekly-96.json",
+    "workload": {
+      "kind": "stage-f-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "logistic-python-reconciliation-v1"
+      },
+      "fitRequest": "growth-only",
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [
+          {
+            "name": "weekly",
+            "periodDays": 7,
+            "fourierOrder": 3,
+            "priorScale": 10
+          }
+        ],
+        "events": [],
+        "regressors": []
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      }
+    },
+    "phases": [
+      "warm-fit",
+      "warm-predict",
+      "model-json-encode",
+      "model-json-decode",
+      "fresh-process-restored-predict"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 600,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "component": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "additive": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "forecast": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "noiseScale": {
+        "absolute": 0.02,
+        "relative": 0
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-reconciliation-v1:weekly:n=96:h=24:bounded-deterministic-noise:changing-capacity",
+      "sha256": "46215a2026d6c61ebe4d60064f44f24a7f406116f8528906e9480b935e51c822",
+      "trainingRows": 96,
+      "predictionRows": 120,
+      "futureRows": 120,
+      "horizonDays": 24
+    }
+  },
+  {
+    "id": "logistic-reconcile-defaults-256",
+    "dataset": "v2/logistic-weekly-256.json",
+    "workload": {
+      "kind": "stage-f-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "logistic-python-reconciliation-v1"
+      },
+      "fitRequest": "growth-only",
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [
+          {
+            "name": "weekly",
+            "periodDays": 7,
+            "fourierOrder": 3,
+            "priorScale": 10
+          }
+        ],
+        "events": [],
+        "regressors": []
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      }
+    },
+    "phases": [
+      "warm-fit",
+      "warm-predict",
+      "model-json-encode",
+      "model-json-decode",
+      "fresh-process-restored-predict"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 600,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "component": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "additive": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "forecast": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "noiseScale": {
+        "absolute": 0.02,
+        "relative": 0
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-reconciliation-v1:weekly:n=256:h=24:bounded-deterministic-noise:changing-capacity",
+      "sha256": "3110b94b54122792796675c0cf8be7017ca80a7147eb66663d0163c46ab2072c",
+      "trainingRows": 256,
+      "predictionRows": 280,
+      "futureRows": 280,
+      "horizonDays": 24
+    }
+  },
+  {
+    "id": "logistic-reconcile-weekly",
+    "dataset": "v2/logistic-weekly-96.json",
+    "workload": {
+      "kind": "stage-f-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "logistic-python-reconciliation-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "explicit",
+          "timestamps": [
+            "2020-02-08T00:00:00.000Z"
+          ]
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [
+          {
+            "name": "weekly-custom",
+            "periodDays": 7,
+            "fourierOrder": 3,
+            "priorScale": 10
+          }
+        ],
+        "events": [],
+        "regressors": []
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      }
+    },
+    "phases": [
+      "warm-fit",
+      "warm-predict",
+      "model-json-encode",
+      "model-json-decode",
+      "fresh-process-restored-predict"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 600,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "component": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "additive": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "forecast": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "noiseScale": {
+        "absolute": 0.02,
+        "relative": 0
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-reconciliation-v1:weekly:n=96:h=24:bounded-deterministic-noise:changing-capacity",
+      "sha256": "46215a2026d6c61ebe4d60064f44f24a7f406116f8528906e9480b935e51c822",
+      "trainingRows": 96,
+      "predictionRows": 120,
+      "futureRows": 120,
+      "horizonDays": 24
+    }
+  },
+  {
+    "id": "logistic-reconcile-conditional",
+    "dataset": "v2/logistic-conditional-96.json",
+    "workload": {
+      "kind": "stage-f-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "logistic-python-reconciliation-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "explicit",
+          "timestamps": [
+            "2020-02-08T00:00:00.000Z"
+          ]
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [
+          {
+            "name": "weekly-custom",
+            "periodDays": 7,
+            "fourierOrder": 3,
+            "priorScale": 10,
+            "conditionName": "active"
+          }
+        ],
+        "events": [],
+        "regressors": []
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      }
+    },
+    "phases": [
+      "warm-fit",
+      "warm-predict",
+      "model-json-encode",
+      "model-json-decode",
+      "fresh-process-restored-predict"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 600,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "component": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "additive": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "forecast": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "noiseScale": {
+        "absolute": 0.02,
+        "relative": 0
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-reconciliation-v1:conditional:n=96:h=24:bounded-deterministic-noise:changing-capacity",
+      "sha256": "2cbe9ef267c1b56d0518382fa4acba99dd41c130b37d0287357f3b90f7e6a436",
+      "trainingRows": 96,
+      "predictionRows": 120,
+      "futureRows": 120,
+      "horizonDays": 24
+    }
+  },
+  {
+    "id": "logistic-reconcile-event",
+    "dataset": "v2/logistic-event-96.json",
+    "workload": {
+      "kind": "stage-f-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "logistic-python-reconciliation-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "explicit",
+          "timestamps": [
+            "2020-02-08T00:00:00.000Z"
+          ]
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [],
+        "events": [
+          {
+            "name": "campaign",
+            "date": "2020-01-22",
+            "lowerWindowDays": -1,
+            "upperWindowDays": 1,
+            "priorScale": 10
+          },
+          {
+            "name": "campaign",
+            "date": "2020-04-16",
+            "lowerWindowDays": -1,
+            "upperWindowDays": 1,
+            "priorScale": 10
+          }
+        ],
+        "regressors": []
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      }
+    },
+    "phases": [
+      "warm-fit",
+      "warm-predict",
+      "model-json-encode",
+      "model-json-decode",
+      "fresh-process-restored-predict"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 600,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "component": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "additive": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "forecast": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "noiseScale": {
+        "absolute": 0.02,
+        "relative": 0
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-reconciliation-v1:event:n=96:h=24:bounded-deterministic-noise:changing-capacity",
+      "sha256": "92c0c72ddbcc79923fd870820dc0f5fa2cdd4886071ccde25c8aecb39a92ff75",
+      "trainingRows": 96,
+      "predictionRows": 120,
+      "futureRows": 120,
+      "horizonDays": 24
+    }
+  },
+  {
+    "id": "logistic-reconcile-regressor-additive",
+    "dataset": "v2/logistic-regressor-additive-96.json",
+    "workload": {
+      "kind": "stage-f-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "logistic-python-reconciliation-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "explicit",
+          "timestamps": [
+            "2020-02-08T00:00:00.000Z"
+          ]
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [],
+        "events": [],
+        "regressors": [
+          {
+            "name": "promotion",
+            "priorScale": 10,
+            "standardization": "never"
+          }
+        ]
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      }
+    },
+    "phases": [
+      "warm-fit",
+      "warm-predict",
+      "model-json-encode",
+      "model-json-decode",
+      "fresh-process-restored-predict"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 600,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "component": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "additive": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "forecast": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "noiseScale": {
+        "absolute": 0.02,
+        "relative": 0
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-reconciliation-v1:regressor-additive:n=96:h=24:bounded-deterministic-noise:changing-capacity",
+      "sha256": "b1f011841d259a1a746b2ebe5b0764dff2da86d0bc208d6e6ec04f28e1402b64",
+      "trainingRows": 96,
+      "predictionRows": 120,
+      "futureRows": 120,
+      "horizonDays": 24
+    }
+  },
+  {
+    "id": "logistic-reconcile-regressor-multiplicative",
+    "dataset": "v2/logistic-regressor-multiplicative-96.json",
+    "workload": {
+      "kind": "stage-f-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "logistic-python-reconciliation-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "explicit",
+          "timestamps": [
+            "2020-02-08T00:00:00.000Z"
+          ]
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [],
+        "events": [],
+        "regressors": [
+          {
+            "name": "promotion",
+            "priorScale": 10,
+            "standardization": "never",
+            "mode": "multiplicative"
+          }
+        ]
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      }
+    },
+    "phases": [
+      "warm-fit",
+      "warm-predict",
+      "model-json-encode",
+      "model-json-decode",
+      "fresh-process-restored-predict"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 600,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "component": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "additive": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "forecast": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "noiseScale": {
+        "absolute": 0.02,
+        "relative": 0
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-reconciliation-v1:regressor-multiplicative:n=96:h=24:bounded-deterministic-noise:changing-capacity",
+      "sha256": "948eb69533977d164db6e410eaa2c7974dad66076046e7b9782183bbcbcb2f23",
+      "trainingRows": 96,
+      "predictionRows": 120,
+      "futureRows": 120,
+      "horizonDays": 24
+    }
+  },
+  {
+    "id": "logistic-reconcile-explicit-floor-absmax",
+    "dataset": "v2/logistic-floor-96.json",
+    "workload": {
+      "kind": "stage-f-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "logistic-python-reconciliation-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "explicit",
+          "timestamps": [
+            "2020-02-08T00:00:00.000Z"
+          ]
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [],
+        "events": [],
+        "regressors": []
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      }
+    },
+    "phases": [
+      "warm-fit",
+      "warm-predict",
+      "model-json-encode",
+      "model-json-decode",
+      "fresh-process-restored-predict"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 600,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "component": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "additive": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "forecast": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "noiseScale": {
+        "absolute": 0.02,
+        "relative": 0
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-reconciliation-v1:floor:n=96:h=24:bounded-deterministic-noise:changing-capacity",
+      "sha256": "feebcb38a088775d51240a2984edaa8c68466c438f7ff3905d06f06667d1d772",
+      "trainingRows": 96,
+      "predictionRows": 120,
+      "futureRows": 120,
+      "horizonDays": 24
+    }
+  },
+  {
+    "id": "logistic-reconcile-mixed-absmax",
+    "dataset": "v2/logistic-mixed-96.json",
+    "workload": {
+      "kind": "stage-f-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "logistic-python-reconciliation-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "explicit",
+          "timestamps": [
+            "2020-02-08T00:00:00.000Z"
+          ]
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [
+          {
+            "name": "weekly-custom",
+            "periodDays": 7,
+            "fourierOrder": 3,
+            "priorScale": 10,
+            "conditionName": "active"
+          }
+        ],
+        "events": [
+          {
+            "name": "campaign",
+            "date": "2020-01-22",
+            "lowerWindowDays": -1,
+            "upperWindowDays": 1,
+            "priorScale": 10
+          },
+          {
+            "name": "campaign",
+            "date": "2020-04-16",
+            "lowerWindowDays": -1,
+            "upperWindowDays": 1,
+            "priorScale": 10
+          }
+        ],
+        "regressors": [
+          {
+            "name": "promotion",
+            "priorScale": 10,
+            "standardization": "never",
+            "mode": "multiplicative"
+          }
+        ]
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      }
+    },
+    "phases": [
+      "warm-fit",
+      "warm-predict",
+      "model-json-encode",
+      "model-json-decode",
+      "fresh-process-restored-predict"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 600,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "component": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "additive": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "forecast": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "noiseScale": {
+        "absolute": 0.02,
+        "relative": 0
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-reconciliation-v1:mixed:n=96:h=24:bounded-deterministic-noise:changing-capacity",
+      "sha256": "82c972c9734dc7d822b3a9fdef7a0208ed5cdc3717f2c3a07a27bd64b80e570b",
+      "trainingRows": 96,
+      "predictionRows": 120,
+      "futureRows": 120,
+      "horizonDays": 24
+    }
+  },
+  {
+    "id": "logistic-reconcile-explicit-floor-minmax",
+    "dataset": "v2/logistic-floor-96.json",
+    "workload": {
+      "kind": "stage-f-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "logistic-python-reconciliation-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "minmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "explicit",
+          "timestamps": [
+            "2020-02-08T00:00:00.000Z"
+          ]
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [],
+        "events": [],
+        "regressors": []
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      }
+    },
+    "phases": [
+      "warm-fit",
+      "warm-predict",
+      "model-json-encode",
+      "model-json-decode",
+      "fresh-process-restored-predict"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 600,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "component": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "additive": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "forecast": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "noiseScale": {
+        "absolute": 0.02,
+        "relative": 0
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-reconciliation-v1:floor:n=96:h=24:bounded-deterministic-noise:changing-capacity",
+      "sha256": "feebcb38a088775d51240a2984edaa8c68466c438f7ff3905d06f06667d1d772",
+      "trainingRows": 96,
+      "predictionRows": 120,
+      "futureRows": 120,
+      "horizonDays": 24
+    }
+  },
+  {
+    "id": "logistic-reconcile-mixed-minmax",
+    "dataset": "v2/logistic-mixed-96.json",
+    "workload": {
+      "kind": "stage-f-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "logistic-python-reconciliation-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "minmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "explicit",
+          "timestamps": [
+            "2020-02-08T00:00:00.000Z"
+          ]
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [
+          {
+            "name": "weekly-custom",
+            "periodDays": 7,
+            "fourierOrder": 3,
+            "priorScale": 10,
+            "conditionName": "active"
+          }
+        ],
+        "events": [
+          {
+            "name": "campaign",
+            "date": "2020-01-22",
+            "lowerWindowDays": -1,
+            "upperWindowDays": 1,
+            "priorScale": 10
+          },
+          {
+            "name": "campaign",
+            "date": "2020-04-16",
+            "lowerWindowDays": -1,
+            "upperWindowDays": 1,
+            "priorScale": 10
+          }
+        ],
+        "regressors": [
+          {
+            "name": "promotion",
+            "priorScale": 10,
+            "standardization": "never",
+            "mode": "multiplicative"
+          }
+        ]
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      }
+    },
+    "phases": [
+      "warm-fit",
+      "warm-predict",
+      "model-json-encode",
+      "model-json-decode",
+      "fresh-process-restored-predict"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 600,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "component": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "additive": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "forecast": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "noiseScale": {
+        "absolute": 0.02,
+        "relative": 0
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-reconciliation-v1:mixed:n=96:h=24:bounded-deterministic-noise:changing-capacity",
+      "sha256": "82c972c9734dc7d822b3a9fdef7a0208ed5cdc3717f2c3a07a27bd64b80e570b",
+      "trainingRows": 96,
+      "predictionRows": 120,
+      "futureRows": 120,
+      "horizonDays": 24
+    }
+  },
+  {
+    "id": "logistic-reconcile-unsorted",
+    "dataset": "v2/logistic-unsorted-96.json",
+    "workload": {
+      "kind": "stage-f-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "logistic-python-reconciliation-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "explicit",
+          "timestamps": [
+            "2020-02-08T00:00:00.000Z"
+          ]
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [],
+        "events": [],
+        "regressors": []
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      }
+    },
+    "phases": [
+      "warm-fit",
+      "warm-predict",
+      "model-json-encode",
+      "model-json-decode",
+      "fresh-process-restored-predict"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 600,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "component": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "additive": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "forecast": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "noiseScale": {
+        "absolute": 0.02,
+        "relative": 0
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-reconciliation-v1:unsorted:n=96:h=24:bounded-deterministic-noise:changing-capacity",
+      "sha256": "fb90bfa78249357a4f43b5fab98a6be34640880a89aa37de45e6fdb356a042af",
+      "trainingRows": 96,
+      "predictionRows": 120,
+      "futureRows": 120,
+      "horizonDays": 24
+    }
+  },
+  {
+    "id": "logistic-reconcile-duplicates",
+    "dataset": "v2/logistic-duplicates-96.json",
+    "workload": {
+      "kind": "stage-f-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "logistic-python-reconciliation-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "explicit",
+          "timestamps": [
+            "2020-01-20T00:00:00.000Z"
+          ]
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [],
+        "events": [],
+        "regressors": []
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      }
+    },
+    "phases": [
+      "warm-fit",
+      "warm-predict",
+      "model-json-encode",
+      "model-json-decode",
+      "fresh-process-restored-predict"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 600,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "component": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "additive": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "forecast": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "noiseScale": {
+        "absolute": 0.02,
+        "relative": 0
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-reconciliation-v1:duplicates:n=96:h=24:bounded-deterministic-noise:changing-capacity",
+      "sha256": "c85a5f74694bd71fdb6c4b63e371728b194a6b4b31baa5b0c8f37809d797aba5",
+      "trainingRows": 96,
+      "predictionRows": 120,
+      "futureRows": 120,
+      "horizonDays": 24
+    }
+  },
+  {
+    "id": "logistic-reconcile-declining",
+    "dataset": "v2/logistic-declining-96.json",
+    "workload": {
+      "kind": "stage-f-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "logistic-python-reconciliation-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "explicit",
+          "timestamps": [
+            "2020-02-08T00:00:00.000Z"
+          ]
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [],
+        "events": [],
+        "regressors": []
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      }
+    },
+    "phases": [
+      "warm-fit",
+      "warm-predict",
+      "model-json-encode",
+      "model-json-decode",
+      "fresh-process-restored-predict"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 600,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "component": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "additive": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "forecast": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "noiseScale": {
+        "absolute": 0.02,
+        "relative": 0
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-reconciliation-v1:declining:n=96:h=24:bounded-deterministic-noise:changing-capacity",
+      "sha256": "e702d016d810f731cd5d316512749bb592a8c3774eb215d9045830df2bef4103",
+      "trainingRows": 96,
+      "predictionRows": 120,
+      "futureRows": 120,
+      "horizonDays": 24
+    }
+  },
+  {
+    "id": "logistic-reconcile-saturated",
+    "dataset": "v2/logistic-saturated-96.json",
+    "workload": {
+      "kind": "stage-f-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "logistic-python-reconciliation-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "explicit",
+          "timestamps": [
+            "2020-02-08T00:00:00.000Z"
+          ]
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [],
+        "events": [],
+        "regressors": []
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      }
+    },
+    "phases": [
+      "warm-fit",
+      "warm-predict",
+      "model-json-encode",
+      "model-json-decode",
+      "fresh-process-restored-predict"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 600,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "component": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "additive": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "forecast": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "noiseScale": {
+        "absolute": 0.02,
+        "relative": 0
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-reconciliation-v1:saturated:n=96:h=24:bounded-deterministic-noise:changing-capacity",
+      "sha256": "2b47fdb8535aa9e526665a20ec64a73f988d1492ac5e01be97184783fb1e96a5",
+      "trainingRows": 96,
+      "predictionRows": 120,
+      "futureRows": 120,
+      "horizonDays": 24
+    }
+  },
+  {
+    "id": "logistic-reconcile-constant",
+    "dataset": "v2/logistic-constant-96.json",
+    "workload": {
+      "kind": "stage-f-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "logistic-python-reconciliation-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "explicit",
+          "timestamps": [
+            "2020-02-08T00:00:00.000Z"
+          ]
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [],
+        "events": [],
+        "regressors": []
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      }
+    },
+    "phases": [
+      "warm-fit",
+      "warm-predict",
+      "model-json-encode",
+      "model-json-decode",
+      "fresh-process-restored-predict"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 600,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "component": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "additive": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "forecast": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "noiseScale": {
+        "absolute": 0.02,
+        "relative": 0
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-reconciliation-v1:constant:n=96:h=24:bounded-deterministic-noise:changing-capacity",
+      "sha256": "ae0c3edc68a5accc05bf55c736b563e0eb26ae38d79e92b06d6e780b4c2527b7",
+      "trainingRows": 96,
+      "predictionRows": 120,
+      "futureRows": 120,
+      "horizonDays": 24
+    }
+  },
+  {
+    "id": "logistic-reconcile-out-of-bounds",
+    "dataset": "v2/logistic-out-of-bounds-96.json",
+    "workload": {
+      "kind": "stage-f-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "logistic-python-reconciliation-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "explicit",
+          "timestamps": [
+            "2020-02-08T00:00:00.000Z"
+          ]
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [],
+        "events": [],
+        "regressors": []
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      }
+    },
+    "phases": [
+      "warm-fit",
+      "warm-predict",
+      "model-json-encode",
+      "model-json-decode",
+      "fresh-process-restored-predict"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 600,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "component": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "additive": {
+        "absolute": 0.002,
+        "relative": 0.0001
+      },
+      "forecast": {
+        "absolute": 0.01,
+        "relative": 0.0001
+      },
+      "noiseScale": {
+        "absolute": 0.02,
+        "relative": 0
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-reconciliation-v1:out-of-bounds:n=96:h=24:bounded-deterministic-noise:changing-capacity",
+      "sha256": "2d0d5492a1229160cb677bf6369c04a3d131484aec09e82d5b267a34dffbe00b",
+      "trainingRows": 96,
+      "predictionRows": 120,
+      "futureRows": 120,
+      "horizonDays": 24
+    }
+  }
+]

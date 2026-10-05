@@ -133,6 +133,66 @@ struct LogisticState {
   residuals: Vec<f64>,
   segments: StanLogisticSegments,
   probabilities: Vec<f64>,
+  /// Per row, the length of the active prefix of the sorted changepoints.
+  active: Vec<usize>,
+  /// Per row, Stan's rate change and offset adjustment for that prefix.
+  changes: Vec<f64>,
+  adjustments: Vec<f64>,
+  /// Per feature column, whether it scales the trend.
+  multiplicative: Vec<bool>,
+}
+
+/// Each row's most recent logistic probability, keyed by the exact bits of
+/// `eta`. The probability is a pure function of `eta`, so a hit returns the
+/// identical value. Finite-difference Hessian perturbations of seasonal and
+/// regressor coefficients, the noise scale, or a changepoint leave `eta`
+/// bit-identical for every row, or every row before that changepoint, so
+/// most of their `exp` calls are skipped.
+pub(crate) struct ProbabilityCache {
+  rows: std::cell::RefCell<Vec<Option<(u64, f64)>>>,
+}
+
+impl ProbabilityCache {
+  pub(crate) fn new(row_count: usize) -> Self {
+    Self {
+      rows: std::cell::RefCell::new(vec![None; row_count]),
+    }
+  }
+
+  fn probability(&self, row: usize, eta: f64) -> f64 {
+    let mut rows = self.rows.borrow_mut();
+    let key = eta.to_bits();
+
+    if let Some((cached, probability)) = rows[row]
+      && cached == key
+    {
+      return probability;
+    }
+
+    let probability = 1.0 / (1.0 + crate::stan::math::exp(-eta));
+    rows[row] = Some((key, probability));
+    probability
+  }
+}
+
+/// Evaluate a row's changepoint `matrix_column_sum` once per distinct active
+/// prefix. Callers pass sorted points, so a row's active columns are exactly
+/// `column < active`, and the masked closure supplies each row the same values
+/// the original per-row comparison did. Prefixes are memoized lazily, so the
+/// work never exceeds one sum per row.
+fn prefix_column_sums(row_count: usize, active: &[usize], values: &[f64]) -> Vec<f64> {
+  let mut memo = vec![None; values.len() + 1];
+
+  active
+    .iter()
+    .map(|&prefix| {
+      *memo[prefix].get_or_insert_with(|| {
+        crate::stan::reductions::matrix_column_sum(row_count, values.len(), |column| {
+          if column < prefix { values[column] } else { 0.0 }
+        })
+      })
+    })
+    .collect()
 }
 
 /// Fit floor-aware logistic MAP state with Prophet's Stan optimizer policy.
@@ -691,44 +751,41 @@ fn logistic_state(
   feature_count: usize,
   beta: &[f64],
   modes: &[ComponentMode],
+  probabilities_cache: &ProbabilityCache,
 ) -> Result<LogisticState, PiecewiseMapError> {
   let mut trend = vec![0.0; target.len()];
   let mut residuals = vec![0.0; target.len()];
   let mut probabilities = vec![0.0; target.len()];
   let segments = stan_logistic_segments(rate, offset, points, deltas)?;
+  let active: Vec<usize> = times
+    .iter()
+    .map(|&time| points.partition_point(|&point| time >= point))
+    .collect();
+  let changes = prefix_column_sums(target.len(), &active, deltas);
+  let adjustments = prefix_column_sums(target.len(), &active, &segments.gamma);
+  let multiplicative: Vec<bool> = modes
+    .iter()
+    .map(|mode| *mode == ComponentMode::Multiplicative)
+    .collect();
+  // Each row's `[additive, multiplicative]` effects, accumulated from zero.
+  let effects = crate::stan::reductions::row_split_sums(
+    target.len(),
+    &multiplicative,
+    &beta[..feature_count],
+    [0.0, 0.0],
+    |row| &features[row * feature_count..(row + 1) * feature_count],
+  );
 
   for row in 0..target.len() {
-    let change = crate::stan::reductions::matrix_column_sum(target.len(), points.len(), |column| {
-      if times[row] >= points[column] {
-        deltas[column]
-      } else {
-        0.0
-      }
-    });
-    let adjustment =
-      crate::stan::reductions::matrix_column_sum(target.len(), points.len(), |column| {
-        if times[row] >= points[column] {
-          segments.gamma[column]
-        } else {
-          0.0
-        }
-      });
+    let change = changes[row];
+    let adjustment = adjustments[row];
     let eta = (rate + change) * (times[row] - (offset + adjustment));
     // Stan's matrix-of-var value view is not packet-accessible. Eigen's
     // logistic functor therefore uses scalar exp in fitting, on every row.
-    let probability = 1.0 / (1.0 + crate::stan::math::exp(-eta));
+    let probability = probabilities_cache.probability(row, eta);
     probabilities[row] = probability;
     trend[row] = capacities[row] * probability;
-    let mut additive = 0.0;
-    let mut factor = 0.0;
-
-    for column in 0..feature_count {
-      let effect = features[row * feature_count + column] * beta[column];
-      match modes[column] {
-        ComponentMode::Additive => additive += effect,
-        ComponentMode::Multiplicative => factor += effect,
-      }
-    }
+    let [additive, factor] = effects[row];
 
     residuals[row] = -(target[row] - additive - trend[row] * (1.0 + factor));
   }
@@ -746,6 +803,10 @@ fn logistic_state(
     residuals,
     segments,
     probabilities,
+    active,
+    changes,
+    adjustments,
+    multiplicative,
   })
 }
 
@@ -765,6 +826,7 @@ fn evaluate(
   priors: &[f64],
   changepoint_prior_scale: f64,
   noise_scale: f64,
+  probabilities_cache: &ProbabilityCache,
 ) -> Result<Evaluation, PiecewiseMapError> {
   let state = logistic_state(
     points,
@@ -778,6 +840,7 @@ fn evaluate(
     feature_count,
     beta,
     modes,
+    probabilities_cache,
   )?;
   let segments = &state.segments;
   let inverse_noise = 1.0 / noise_scale;
@@ -795,33 +858,33 @@ fn evaluate(
   let mut row_rate_adjoints = vec![0.0; target.len()];
   let mut row_offset_adjoints = vec![0.0; target.len()];
 
+  let multiplicative = &state.multiplicative;
+  // Multiplicative factors accumulate from one here, unlike the state's sums
+  // from zero; additive columns land in the unused first slot.
+  let factors: Vec<f64> = if multiplicative.contains(&true) {
+    crate::stan::reductions::row_split_sums(
+      target.len(),
+      multiplicative,
+      &beta[..feature_count],
+      [0.0, 1.0],
+      |row| &features[row * feature_count..(row + 1) * feature_count],
+    )
+    .into_iter()
+    .map(|[_, factor]| factor)
+    .collect()
+  } else {
+    vec![1.0; target.len()]
+  };
+
   for row in 0..target.len() {
-    let mut factor = 1.0;
-    for column in 0..feature_count {
-      if modes[column] == ComponentMode::Multiplicative {
-        factor += features[row * feature_count + column] * beta[column];
-      }
-    }
+    let factor = factors[row];
 
     let sigmoid = state.probabilities[row];
     let scaled_residual = (state.residuals[row] * inverse_noise) * inverse_noise;
     let mean_adjoint = scaled_residual * factor;
     let eta_adjoint = (mean_adjoint * capacities[row]) * sigmoid * (1.0 - sigmoid);
-    let change = crate::stan::reductions::matrix_column_sum(target.len(), points.len(), |column| {
-      if times[row] >= points[column] {
-        deltas[column]
-      } else {
-        0.0
-      }
-    });
-    let adjustment =
-      crate::stan::reductions::matrix_column_sum(target.len(), points.len(), |column| {
-        if times[row] >= points[column] {
-          segments.gamma[column]
-        } else {
-          0.0
-        }
-      });
+    let change = state.changes[row];
+    let adjustment = state.adjustments[row];
     row_rate_adjoints[row] = eta_adjoint * (times[row] - (offset + adjustment));
     row_offset_adjoints[row] = -(rate + change) * eta_adjoint;
     gradient_rate += row_rate_adjoints[row];
@@ -838,24 +901,18 @@ fn evaluate(
   // Reverse the literal gamma recurrence and matrix products rather than
   // cancelling them into hinges. Scalar division follows Math 58ad15b0's
   // operator_division.hpp; cumulative-sum adjoints flow from last to first.
+  let column_adjoints = crate::stan::reductions::matrix_adjoint_prefix_sums(
+    target.len(),
+    points.len(),
+    |row| state.active[row],
+    |row| [row_rate_adjoints[row], row_offset_adjoints[row]],
+  );
   let mut rate_adjoints = vec![0.0; segments.rates.len()];
   let mut offset_adjoint = 0.0;
   for column in (0..points.len()).rev() {
-    gradient_deltas[column] += crate::stan::reductions::matrix_adjoint_sum(target.len(), |row| {
-      if times[row] >= points[column] {
-        row_rate_adjoints[row]
-      } else {
-        0.0
-      }
-    });
-    let gamma_adjoint = offset_adjoint
-      + crate::stan::reductions::matrix_adjoint_sum(target.len(), |row| {
-        if times[row] >= points[column] {
-          row_offset_adjoints[row]
-        } else {
-          0.0
-        }
-      });
+    let [rate_sum, offset_sum] = column_adjoints[column];
+    gradient_deltas[column] += rate_sum;
+    let gamma_adjoint = offset_adjoint + offset_sum;
     let old_rate = segments.rates[column];
     let new_rate = segments.rates[column + 1];
     offset_adjoint -= gamma_adjoint * (1.0 - old_rate / new_rate);
@@ -874,15 +931,19 @@ fn evaluate(
     gradient_deltas[column] += cumulative_adjoint;
   }
 
+  // The GLM's double-valued mu.transpose() * X uses row-major packets.
+  // X_sm's variable-adjoint reverse product retains scalar accumulation;
+  // the pinned cancellation probes distinguish these two paths.
+  let additive_gradients = crate::stan::reductions::scaled_matrix_row_sums(
+    target.len(),
+    &vec![false; feature_count],
+    |row| &features[row * feature_count..(row + 1) * feature_count],
+    |row| [(state.residuals[row] * inverse_noise) * inverse_noise, 0.0],
+  );
+
   for column in 0..feature_count {
     if modes[column] == ComponentMode::Additive {
-      // The GLM's double-valued mu.transpose() * X uses row-major packets.
-      // X_sm's variable-adjoint reverse product retains scalar accumulation;
-      // the pinned cancellation probes distinguish these two paths.
-      feature_gradients[column] = crate::stan::reductions::matrix_row_sum(target.len(), |row| {
-        let scaled_residual = (state.residuals[row] * inverse_noise) * inverse_noise;
-        scaled_residual * features[row * feature_count + column]
-      });
+      feature_gradients[column] = additive_gradients[column];
     }
 
     let inverse = 1.0 / priors[column];

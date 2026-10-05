@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "runId": "2026-10-04T191226-966Z-730ead62",
-  "createdAt": "2026-10-04T19:12:29.506Z",
-  "gitRevision": "730ead622275d37c6b7e0a3c863e82a7984de1b2",
+  "runId": "2026-10-05T145818-926Z-d2a974c1",
+  "createdAt": "2026-10-05T14:58:19.128Z",
+  "gitRevision": "d2a974c150fb09fb54fb4b3aeac555247a1deb35",
   "gitDirty": true,
   "hostPlatform": "darwin",
   "hostRelease": "25.5.0",
@@ -11,22 +11,20 @@
   "containerPlatform": "linux/arm64",
   "emulated": false,
   "selectedCases": [
+    "map-training-zero-span-flat-varied",
+    "map-training-zero-span-flat-constant",
     "flat-mixed-components",
     "flat-mixed-components-large",
-    "evaluation-linear-point",
-    "evaluation-linear-intervals",
-    "evaluation-linear-search",
+    "uncertainty-flat-mixed-components-full-intervals-512",
+    "uncertainty-flat-mixed-components-large-full-samples-128",
     "evaluation-flat-mixed-point",
     "evaluation-flat-mixed-intervals",
     "evaluation-flat-mixed-search",
-    "evaluation-logistic-point",
-    "evaluation-logistic-intervals",
-    "evaluation-logistic-search",
     "evaluation-flat-large-point",
     "evaluation-flat-large-intervals",
-    "evaluation-logistic-large-point",
-    "evaluation-logistic-large-intervals",
-    "evaluation-linear-failure-search",
+    "flat-defaults-level",
+    "flat-defaults-seasonal",
+    "flat-defaults-negative",
     "flat-level-absmax",
     "flat-level-minmax",
     "flat-constant-absmax",
@@ -86,8 +84,8 @@
       "value": "883c3c441bf4203ad63500e636a554222e34d83140b0a33f73216efb30f20d18"
     },
     {
-      "name": "benchmark/cases/growth/linear/defaults.ts",
-      "value": "00be96b85eddb95061eee0e85dbd48bef6ba8b879271703bfcc212e8acac8412"
+      "name": "benchmark/cases/growth/defaults.ts",
+      "value": "ae23e060bd5a442aa805b15e9620c3fcb8829cc75f5107cee3bd906d7d47c2b5"
     },
     {
       "name": "tools/prophet/linear_optimizer_evidence.py",
@@ -115,7 +113,7 @@
     },
     {
       "name": "benchmark/tools/effect-case.ts",
-      "value": "2075a061dcf556a999c9115c550c80574d56e580b82c334401c0c63cbb362d6c"
+      "value": "468ec51bf2a7a3bdd8162f30b50972d383a7d15b40ced0d1219d923bffd18280"
     },
     {
       "name": "benchmark/tools/adapters/effect-prophet.ts",
@@ -127,15 +125,15 @@
     },
     {
       "name": "benchmark/tools/catalog.ts",
-      "value": "b255aed5c777ee5db15d7fc6314c9e6f9de40a25f52c8730b18f76c8d89ed57c"
+      "value": "d3ea7230a18902a5a8ef05b85a61afd1062b7524c7e0bb67ed4e4cfc2ef33923"
     },
     {
       "name": "benchmark/tools/case.ts",
-      "value": "83353d56ad72e1938e8e2ae508f0b682ab24df4fbd064dccfc9b5f51473104f1"
+      "value": "715c0e30e6440db32ecd4b3aeba3af9ddec2068c2bb415ed60de8cf07b4014d0"
     },
     {
       "name": "benchmark/tools/report.ts",
-      "value": "94fc1f056b607c1399495fba1f651ef82b6bffa52a36912db1248381a83df0ed"
+      "value": "82e0c09e3e9b30d2c5dd834373b650c486f59de00d11795e012642ec05facf5e"
     },
     {
       "name": "benchmark/tools/report-cli.ts",
@@ -150,8 +148,8 @@
       "value": "025bcf9f3210e9a2a91c2e70ac43b23cb385952d180603287d4c9d087561c278"
     },
     {
-      "name": "benchmark/results/runs/2026-10-04T191226-966Z-730ead62/cases.json",
-      "value": "7c6695ef7412c8b3b139de3a857e703d364ec6ce0a2620be0e79abc88655c0cd"
+      "name": "benchmark/results/runs/2026-10-05T145818-926Z-d2a974c1/cases.json",
+      "value": "1ec87c6370a9cf1cd2d2c3efa24b47f214454f8c45f90d63c631b4bf4943107b"
     },
     {
       "name": "benchmark/evidence/comparisons.json",
@@ -170,6 +168,14 @@
       "value": "cfc25535eef625e86eaca60be37a77d32387da6ebb2bc16ac53555a690f4c972"
     },
     {
+      "name": "benchmark/inputs/v1/training-zero-span-varied.json",
+      "value": "e307813127392e6c95ea82ca8a1c37e2689b01e18f42cb17ec0a882857617f8b"
+    },
+    {
+      "name": "benchmark/inputs/v1/training-zero-span-constant.json",
+      "value": "47f06ea5accdb781bc8381967f1d0df9452af3afd5216a95861961a9ee95a2ec"
+    },
+    {
       "name": "benchmark/inputs/v1/flat-mixed-components.json",
       "value": "4e1e4fd02c0e9a88f9f8369942d9ae9deaa9a3ebe0dcdffbb6d45e8a23c3263f"
     },
@@ -178,32 +184,20 @@
       "value": "7ee4bb9692dfb115e926da542b37298a311e06037c0e5a638ca067a1fb937b11"
     },
     {
-      "name": "benchmark/inputs/v1/linear-offset-scaling.json",
-      "value": "bfea515181446ef72eeed2acaef46db63d6fcee5cd1d6af177ad886a6c973b5e"
-    },
-    {
-      "name": "benchmark/inputs/v1/logistic-implicit-floor.json",
-      "value": "d8cde080f7a8af86acb6e70e2577d0d1d2ee8f813bf4836e5a61702a16dc1558"
-    },
-    {
-      "name": "benchmark/inputs/v1/logistic-implicit-floor-large.json",
-      "value": "61b169aa9c925333f6dd11301febfdeb82e9ae7f2b95f3cb4c222e6dcfb080d9"
-    },
-    {
       "name": "benchmark/inputs/v1/flat-level.json",
       "value": "aa24bbad8dc371e35c0442c9639788d6b4a2f77bba74d1dac22286a89c52bff0"
     },
     {
-      "name": "benchmark/inputs/v1/flat-constant.json",
-      "value": "e3efc9ebe12eb3c27699c280f421bef601d5b35f660e06dd39e69fa0175ef097"
+      "name": "benchmark/inputs/v1/flat-seasonal.json",
+      "value": "801786aaae3b93349addcc9eca44eff79cb6f5640dce099ddd19082a85636e2a"
     },
     {
       "name": "benchmark/inputs/v1/flat-negative.json",
       "value": "30892ad99fef219ac064fe73ad08a549a8b040bb2883af68dd968772ab0147f2"
     },
     {
-      "name": "benchmark/inputs/v1/flat-seasonal.json",
-      "value": "801786aaae3b93349addcc9eca44eff79cb6f5640dce099ddd19082a85636e2a"
+      "name": "benchmark/inputs/v1/flat-constant.json",
+      "value": "e3efc9ebe12eb3c27699c280f421bef601d5b35f660e06dd39e69fa0175ef097"
     },
     {
       "name": "benchmark/inputs/v1/flat-mixed-components-prefix-63.json",
@@ -229,11 +223,11 @@
   "containerImages": [
     {
       "name": "effect-prophet/benchmark-effect:local",
-      "value": "sha256:cca4d379510a272c49e07c088b23c6b2c90a1368e53c9b66b99914f2203a2d3b"
+      "value": "sha256:ecdbf1674372adc3d7d3f78ffa30dbabfe2d98d32f90ca17f5d424a05b4ada05"
     },
     {
       "name": "effect-prophet/benchmark-python:1.4.0",
-      "value": "sha256:3525c4d03f5aa93b3edc0a134346e8ee16560438e52c86991eae072465885b00"
+      "value": "sha256:9209b9f8b7905d93190c45ac0caa73f28a714f9fa18d93ff3bd3a2777e81a8d7"
     }
   ]
 }

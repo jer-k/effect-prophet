@@ -4,8 +4,12 @@ Time-series forecasting for TypeScript. Give it your history; get back a forecas
 trend, weekly and yearly patterns, and holidays each broken out.
 
 Effect Prophet uses the same model as [Prophet](https://facebook.github.io/prophet/), Meta's
-forecasting library, and is tested against Python Prophet 1.4.0. The math runs in WebAssembly,
-so there's no Python to install.
+forecasting library, and is tested against Python Prophet 1.4.0.
+
+- **One dependency.** [`effect`](https://effect.website) is the only package it depends on.
+- **No Stan install.** Prophet's fitting runs on [Stan](https://mc-stan.org/). The
+  parts Prophet uses are ported to Rust and compiled to WebAssembly, which ships inside the
+  package. Attribution is in [`wasm/third-party/NOTICE.txt`](wasm/third-party/NOTICE.txt).
 
 **📖 [Documentation](https://jer-k.github.io/effect-prophet/)**
 
@@ -94,13 +98,17 @@ so a slow fit explains itself. Spans contain only counts and labels, never your 
 Start with [Coming from Python](https://jer-k.github.io/effect-prophet/python/coming-from-python),
 then see [how close the results are](https://jer-k.github.io/effect-prophet/python/accuracy).
 
-## Built with AI
+## AI disclosure
 
-This package is a port of Facebook's Python [Prophet](https://facebook.github.io/prophet/) and
-was built with the help of AI. Because it is math-heavy, I have done my best to make sure it
-behaves the same as the original. The [benchmarks](https://jer-k.github.io/effect-prophet/benchmarks/linear)
-and [accuracy comparison](https://jer-k.github.io/effect-prophet/python/accuracy) in the docs
-show how closely the results match. If you find a difference, please open an issue.
+Effect Prophet is a TypeScript port of Meta's Python [Prophet](https://facebook.github.io/prophet/),
+and most of the code was written with AI assistance. The forecasting maths is easy to get subtly
+wrong, so the project doesn't ask you to take correctness on trust. Results are checked against
+Python Prophet itself, and you can see how closely they match in the
+[benchmarks](https://jer-k.github.io/effect-prophet/benchmarks/linear) and the
+[accuracy comparison](https://jer-k.github.io/effect-prophet/python/accuracy).
+
+If you find a case where the results differ from Python Prophet, please
+[open an issue](https://github.com/jer-k/effect-prophet/issues).
 
 ## Contributing
 
