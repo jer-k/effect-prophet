@@ -34,7 +34,9 @@ const history = Array.from({ length: 90 }, (_, day) => ({
 }));
 
 // The dates you want forecasts for.
-const nextWeek = Array.from({ length: 7 }, (_, offset) => new Date(Date.UTC(2025, 0, 91 + offset)).toISOString());
+const nextWeek = Array.from({ length: 7 }, (_, offset) =>
+  new Date(Date.UTC(2025, 0, 91 + offset)).toISOString(),
+);
 
 const forecast = await Effect.runPromise(
   Effect.gen(function* () {
