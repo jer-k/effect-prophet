@@ -1,4 +1,4 @@
-import { Array as Arr, Effect } from "effect";
+import { Effect } from "effect";
 import { evaluateHoldout, prophetFittingBackendLayer, searchModels } from "effect-prophet";
 
 const dayMs = 86_400_000;
@@ -14,10 +14,6 @@ const all = Array.from({ length: 140 }, (_, day) => ({
 const development = all.slice(0, 126);
 
 const holdout = all.slice(126);
-
-if (!Arr.isArrayNonEmpty(development) || !Arr.isArrayNonEmpty(holdout)) {
-  throw new Error("Both partitions need at least one row");
-}
 
 const report = await Effect.runPromise(
   Effect.gen(function* () {

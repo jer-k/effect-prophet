@@ -105,6 +105,12 @@ What's left is mostly **cleanup and release mechanics**:
   in CI's `rust` job, fails when that list drifts from `Cargo.lock` or a crate lacks Apache-2.0.
   The two Eigen-derived Rust files stay MPL-2.0. The README's broken `wasm/third-party/` link
   (that folder is gitignored) now points to the tracked notices.
+- **`evaluateHoldout` accepts plain arrays.** `development` and `holdout` are now
+  `ReadonlyArray<EncodedObservation>`, so `array.slice(...)` results pass straight in. Empty
+  or malformed partitions fail at run time with an `evaluation-holdout` `InputValidationError`
+  whose issue paths start with `development` or `holdout`. That re-pathing helper,
+  `nestedInputValidationError`, now lives in `src/errors.ts` and is shared with `searchModels`. The
+  non-empty guards in `site/snippets/holdout.ts` and `benchmark/tools/evaluation.ts` are gone.
 
 ## Where things stand
 
@@ -158,10 +164,6 @@ What's left is mostly **cleanup and release mechanics**:
 
 ## Smaller issues
 
-- **`evaluateHoldout` needs non-empty tuple types** for `development` and `holdout`, while `fit`
-  accepts plain arrays. Results of `array.slice(...)` need a guard first; see
-  `site/snippets/holdout.ts`. Consider accepting plain arrays and validating at run time, as `fit`
-  does.
 - **VitePress is on `2.0.0-alpha.20`.** The stable 1.6.4 is over a year old and pulls in Vite
   versions with audit warnings. Move to 2.0 stable when it ships.
 

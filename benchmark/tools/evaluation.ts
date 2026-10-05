@@ -124,19 +124,13 @@ const holdoutUsingSearch = (
 ) => {
   const { development, holdout: assessment } = inputs(benchmarkCase, dataset);
   const selected = result.candidates[result.selected.candidateIndex];
-  const firstDevelopment = development[0];
-  const firstHoldout = assessment[0];
-
-  if (firstDevelopment === undefined || firstHoldout === undefined) {
-    throw new Error("Holdout benchmark requires both partitions");
-  }
 
   if (selected?.kind !== "success") throw new Error("Search did not select a successful candidate");
 
   return runFitting(
     evaluateHoldout({
-      development: [firstDevelopment, ...development.slice(1)],
-      holdout: [firstHoldout, ...assessment.slice(1)],
+      development,
+      holdout: assessment,
       search: result,
       selectedCandidate: {
         id: selected.id,
