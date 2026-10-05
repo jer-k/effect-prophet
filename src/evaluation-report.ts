@@ -16,6 +16,7 @@ import {
   InputValidationError,
   PortableEvaluationFailureSchema,
   inputValidationErrorFromIssue,
+  nestedInputValidationError,
   validationIssuesFromIssue,
   validationMessageFromIssue,
 } from "./errors";
@@ -25,7 +26,7 @@ import { copyFrozen, freezeOwned } from "./internal/owned-input";
 import { checkedAdd } from "./internal/safe-arithmetic";
 import { isValidTimestamp, TimestampSchema } from "./internal/timestamp";
 import type { ModelSearchResult, SearchCandidateResult } from "./model-search";
-import { decodeObservations, type EncodedObservations, type Observation } from "./observation";
+import { decodeObservations, type EncodedObservation, type Observation } from "./observation";
 import {
   checkExplicitChangepointBounds,
   decodeOptions,
@@ -254,10 +255,10 @@ export interface EvaluationProvenance {
   readonly environment: string;
 }
 
-/** Input to the separate, one-time final holdout operation. */
+/** Input to the separate, one-time final holdout operation. Both partitions must be non-empty. */
 export interface HoldoutEvaluationInput {
-  readonly development: EncodedObservations;
-  readonly holdout: EncodedObservations;
+  readonly development: ReadonlyArray<EncodedObservation>;
+  readonly holdout: ReadonlyArray<EncodedObservation>;
   readonly search: ModelSearchResult;
   readonly selectedCandidate: SelectedCandidateReceipt;
   readonly metrics: MetricOptions & {
@@ -279,6 +280,21 @@ const invalid = (path: ReadonlyArray<PropertyKey>, message: string): InputValida
     issues: [{ path, message }],
     message,
   });
+
+const decodePartition = (
+  rows: ReadonlyArray<EncodedObservation>,
+  partition: "development" | "holdout",
+) =>
+  decodeObservations(rows).pipe(
+    Effect.mapError((error) =>
+      nestedInputValidationError(
+        "evaluation-holdout",
+        error,
+        [partition],
+        `Invalid ${partition} partition: ${error.message}`,
+      ),
+    ),
+  );
 
 const reportError = (
   operation: "encode" | "decode",
@@ -586,8 +602,8 @@ export const evaluateHoldout = Effect.fn("Prophet.evaluateHoldout")(function* (
   InputValidationError | EvaluationMetricError | HoldoutEvaluationError,
   FittingBackend
 > {
-  const development = yield* decodeObservations(input.development);
-  const holdout = yield* decodeObservations(input.holdout);
+  const development = yield* decodePartition(input.development, "development");
+  const holdout = yield* decodePartition(input.holdout, "holdout");
   const lastDevelopment = development.at(-1);
   const finalHoldout = holdout.at(-1);
 

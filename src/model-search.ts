@@ -9,6 +9,7 @@ import {
   InputValidationError,
   PredictionError,
   inputValidationErrorFromIssue,
+  nestedInputValidationError,
   type CandidateId,
   type PortableCandidateOutcome,
   type PortableEvaluationFailure,
@@ -130,15 +131,7 @@ const searchInputContext = (
   error: InputValidationError,
   path: ReadonlyArray<PropertyKey>,
   message: string,
-): InputValidationError =>
-  new InputValidationError({
-    input: "evaluation-search",
-    issues: error.issues.map((issue) => ({
-      path: [...path, ...(issue.path ?? [])],
-      message: issue.message,
-    })),
-    message,
-  });
+): InputValidationError => nestedInputValidationError("evaluation-search", error, path, message);
 
 const portableFailure = (
   error: InputValidationError | EvaluationError | EvaluationMetricError,

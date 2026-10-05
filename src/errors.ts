@@ -480,6 +480,22 @@ export const inputValidationErrorFromIssue = (
     message: validationMessageFromIssue(issue),
   });
 
+/** Re-home a nested validation failure under a path within an enclosing public input. */
+export const nestedInputValidationError = (
+  input: ValidationInput,
+  error: InputValidationError,
+  path: ReadonlyArray<PropertyKey>,
+  message: string,
+): InputValidationError =>
+  new InputValidationError({
+    input,
+    issues: error.issues.map((issue) => ({
+      path: [...path, ...(issue.path ?? [])],
+      message: issue.message,
+    })),
+    message,
+  });
+
 /** Preserve structured Schema issues for a portable model operation. */
 export const modelSerializationErrorFromIssue = (
   operation: ModelSerializationOperation,

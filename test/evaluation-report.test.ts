@@ -6,6 +6,7 @@ import {
   encodeEvaluationReport,
   evaluateHoldout,
   fit,
+  InputValidationError,
   predict,
   prophetFittingBackendLayer,
   searchModels,
@@ -295,6 +296,58 @@ describe("evaluateHoldout", () => {
 
     expect(spans.some((span) => span.name === "effect-prophet.evaluation.holdout")).toBe(false);
     expect(spans.some((span) => span.name === "effect-prophet.wasm.fit")).toBe(false);
+  });
+
+  it("accepts plain array partitions and rejects empty ones at run time", async () => {
+    const search = await find();
+    const all = [...observations, ...holdout];
+    const development = all.slice(0, observations.length);
+    const assessment = all.slice(observations.length);
+
+    const report = await Effect.runPromise(
+      run({ ...input(search), development, holdout: assessment }),
+    );
+
+    expect(report.development.rowCount).toBe(observations.length);
+    expect(report.holdout.rowCount).toBe(holdout.length);
+
+    for (const [partition, partitions] of [
+      ["development", { development: [], holdout: assessment }],
+      ["holdout", { development, holdout: [] }],
+    ] as const) {
+      const failure = await Effect.runPromise(
+        Effect.flip(run({ ...input(search), ...partitions })),
+      );
+
+      expect(failure).toBeInstanceOf(InputValidationError);
+
+      if (failure instanceof InputValidationError) {
+        expect(failure.input).toBe("evaluation-holdout");
+        expect(failure.message).toMatch(new RegExp(`^Invalid ${partition} partition: `));
+        expect(failure.issues.length).toBeGreaterThan(0);
+        expect(failure.issues.every((issue) => issue.path?.[0] === partition)).toBe(true);
+      }
+    }
+  });
+
+  it("names the partition and row of an invalid observation", async () => {
+    const search = await find();
+
+    const failure = await Effect.runPromise(
+      Effect.flip(
+        run({
+          ...input(search),
+          holdout: [holdout[0], { timestamp: timestamp(19), value: Number.NaN }],
+        }),
+      ),
+    );
+
+    expect(failure).toBeInstanceOf(InputValidationError);
+
+    if (failure instanceof InputValidationError) {
+      expect(failure.input).toBe("evaluation-holdout");
+      expect(failure.issues.map((issue) => issue.path)).toEqual([["holdout", 1, "value"]]);
+    }
   });
 
   it("evaluates seeded featureless MAP holdout intervals through the real WASM boundary", async () => {
