@@ -52,4 +52,5 @@ If steps 3 and 4 feel unfamiliar, read [Effect in five minutes](./effect-basics)
 
 - [Prepare your own data](./your-data)
 - [Understand what's in a forecast](./reading-forecasts)
+- [Trace your forecasts](./tracing) in Jaeger or any OpenTelemetry backend
 - Browse the [examples](../examples/trend)

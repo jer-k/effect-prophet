@@ -116,20 +116,7 @@ What's left is mostly **cleanup and release mechanics**:
 | Runtime    | Node only: `wasm-pack --target nodejs` plus `createRequire` | Already stated in the README and docs. Add a bundler/browser build later if wanted (decision 4).                                                      |
 | Publishing | No release workflow                                         | Add an npm publish workflow, or document manual steps. The README and site already show `npm install effect-prophet effect` with no pre-release note. |
 
-### 3. CI and local checks
-
-- **CI skips several checks** that `npm run check` runs locally: `benchmark:test`,
-  `benchmark:typecheck`, `test:wasm:optimizer` and the four `examples/` scripts. The new docs
-  workflow covers the site examples only.
-- **`npm run check` fails on a fresh clone.** `benchmark:test` imports `effect-prophet` from
-  `dist/`, but `check` only builds `dist/` later, in `test:package`. Existing checkouts pass
-  because an old `dist/` is lying around. Fix: build before `benchmark:test`, or point the
-  benchmark's Vitest at `src/` the way the root `tsconfig.json` does.
-- **Decide whether `examples/` should stay.** The four scripts overlap with the docs-site
-  snippets, which are now type-checked and run in CI. Consider removing them, or moving anything
-  they cover that the site doesn't.
-
-### 4. Retire the old docs
+### 3. Retire the old docs
 
 `docs/` still holds 27 files, about 3,500 lines, written as build-out notes. Some are now wrong:
 

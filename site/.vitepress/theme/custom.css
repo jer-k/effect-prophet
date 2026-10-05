@@ -3,6 +3,24 @@
   --vp-layout-max-width: 100%;
 }
 
+/* Prophet blue for the home hero name and primary (brand) buttons. */
+:root {
+  --prophet-blue: rgb(59, 89, 152);
+  --prophet-blue-hover: rgb(77, 108, 176);
+  --prophet-blue-active: rgb(47, 71, 122);
+  --vp-home-hero-name-color: var(--prophet-blue);
+  --vp-home-hero-name-background: none;
+  --vp-button-brand-bg: var(--prophet-blue);
+  --vp-button-brand-border: var(--prophet-blue);
+  --vp-button-brand-text: #fff;
+  --vp-button-brand-hover-bg: var(--prophet-blue-hover);
+  --vp-button-brand-hover-border: var(--prophet-blue-hover);
+  --vp-button-brand-hover-text: #fff;
+  --vp-button-brand-active-bg: var(--prophet-blue-active);
+  --vp-button-brand-active-border: var(--prophet-blue-active);
+  --vp-button-brand-active-text: #fff;
+}
+
 /* Benchmark overviews are wide comparison tables: use the full content width. */
 .benchmark-overview .VPDoc {
   padding-right: 1.5rem;
@@ -60,7 +78,6 @@
   width: 0.625rem;
   height: 0.625rem;
   margin-right: 0.25rem;
-  border-radius: 50%;
   vertical-align: middle;
   cursor: help;
 }
@@ -85,9 +102,8 @@
   position: absolute;
   bottom: calc(100% + 0.5rem);
   left: 50%;
-  z-index: 10;
+  z-index: calc(var(--vp-z-index-sidebar) + 1);
   padding: 0.25rem 0.5rem;
-  border-radius: 6px;
   background-color: var(--vp-c-bg-elv);
   box-shadow: var(--vp-shadow-2);
   color: var(--vp-c-text-1);
@@ -97,4 +113,12 @@
   content: attr(data-label);
   transform: translateX(-50%);
   pointer-events: none;
+}
+
+/* Square corners everywhere to match the Effect website. VitePress hardcodes
+   its radii rather than exposing variables, so override them globally. */
+*,
+*::before,
+*::after {
+  border-radius: 0 !important;
 }

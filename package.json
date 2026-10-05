@@ -36,15 +36,6 @@
     "docs:preview": "vitepress preview site",
     "docs:typecheck": "tsc --noEmit -p site/tsconfig.json",
     "docs:examples": "npm run build && node site/scripts/run-snippets.ts",
-    "example:data-policy:typecheck": "tsc --ignoreConfig --noEmit --strict --skipLibCheck --target ES2022 --module NodeNext --moduleResolution NodeNext examples/data-policy.ts",
-    "example:data-policy:run": "node examples/data-policy.ts",
-    "example:uncertainty:typecheck": "tsc --ignoreConfig --noEmit --strict --skipLibCheck --target ES2022 --module NodeNext --moduleResolution NodeNext examples/uncertainty.ts",
-    "example:uncertainty:run": "node examples/uncertainty.ts",
-    "example:cross-validation:typecheck": "tsc --ignoreConfig --noEmit --strict --skipLibCheck --target ES2022 --module NodeNext --moduleResolution NodeNext examples/cross-validation.ts",
-    "example:cross-validation:run": "node examples/cross-validation.ts",
-    "example:model-selection:typecheck": "tsc --ignoreConfig --noEmit --strict --skipLibCheck --target ES2022 --module NodeNext --moduleResolution NodeNext examples/model-selection.ts",
-    "example:model-selection:run": "node examples/model-selection.ts",
-    "example:data-policy": "npm run build && npm run example:data-policy:typecheck && npm run example:data-policy:run",
     "test:integration:prophet": "npm run build:wasm:production && vitest run --dir integration/tests/prophet-1.4.0",
     "fixtures:generate": "docker compose --profile fixtures-generate run --rm --build prophet-fixtures-generate",
     "fixtures:check": "docker compose --profile fixtures-check run --rm --build prophet-fixtures-check && docker compose --profile fixtures-check run --rm --build --no-deps effect-prophet-fixtures",
@@ -52,7 +43,7 @@
     "benchmark:setup": "node benchmark/tools/generate-data.ts",
     "benchmark:builder": "docker buildx create --name effect-prophet-benchmark --driver docker-container --driver-opt default-load=true --buildkitd-config benchmark/tools/runtime/docker/buildkitd.toml --bootstrap",
     "benchmark:contained": "BUILDX_BUILDER=effect-prophet-benchmark node benchmark/tools/run.ts",
-    "benchmark:test": "vitest run --dir benchmark",
+    "benchmark:test": "vitest run --config benchmark/vitest.config.ts",
     "benchmark:typecheck": "tsc --noEmit -p benchmark/tsconfig.json",
     "benchmark:baseline": "node benchmark/tools/retain.ts",
     "benchmark:retain": "node benchmark/tools/retain.ts",
@@ -69,7 +60,7 @@
     "format:rust": "cargo fmt --manifest-path rust/prophet-wasm/Cargo.toml",
     "format:check": "oxfmt --check .",
     "format:rust:check": "cargo fmt --manifest-path rust/prophet-wasm/Cargo.toml --check",
-    "check": "npm run format:check && npm run format:rust:check && npm run lint && npm run lint:rust && npm run typecheck && npm run benchmark:typecheck && npm test && npm run benchmark:test && npm run test:integration:prophet && npm run test:rust && npm run test:wasm && npm run test:wasm:optimizer && npm run test:package && npm run example:data-policy:typecheck && npm run example:data-policy:run && npm run example:uncertainty:typecheck && npm run example:uncertainty:run && npm run example:cross-validation:typecheck && npm run example:cross-validation:run && npm run example:model-selection:typecheck && npm run example:model-selection:run"
+    "check": "npm run format:check && npm run format:rust:check && npm run lint && npm run lint:rust && npm run typecheck && npm run benchmark:typecheck && npm test && npm run benchmark:test && npm run test:integration:prophet && npm run test:rust && npm run test:wasm && npm run test:wasm:optimizer && npm run test:package"
   },
   "dependencies": {
     "effect": "4.0.0"

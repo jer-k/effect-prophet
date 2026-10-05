@@ -61,7 +61,7 @@ const holdout = completeRows.slice(-2);
 
 const futureRows: ReadonlyArray<EncodedPredictionRow> = holdout.map((row) => ({
   timestamp: row.timestamp,
-  regressors: row.regressors,
+  regressors: row.regressors ?? {},
 }));
 
 const program = Effect.gen(function* () {

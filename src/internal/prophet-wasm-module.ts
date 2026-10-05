@@ -314,6 +314,11 @@ export function assertProphetWasmModule(input: unknown): asserts input is Prophe
   }
 }
 
+let prophetWasmModuleInitialized = false;
+
+/** Report whether this process has already loaded and checked the generated Prophet WASM module. */
+export const isProphetWasmModuleInitialized = (): boolean => prophetWasmModuleInitialized;
+
 /**
  * Lazily load and check the generated Node-target Prophet WASM module.
  *
@@ -325,6 +330,7 @@ export const loadProphetWasmModule: ProphetWasmModuleLoader = () => {
   const loaded: unknown = require("../../wasm/prophet_wasm.js");
 
   assertProphetWasmModule(loaded);
+  prophetWasmModuleInitialized = true;
 
   return loaded;
 };

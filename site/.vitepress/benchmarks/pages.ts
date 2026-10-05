@@ -3,7 +3,8 @@ import { intentionalDifferences, type BenchmarkSuite } from "./suite.ts";
 
 const suitePath = (suite: BenchmarkSuite) => `/benchmarks/${suite.id}`;
 
-const casePath = (suite: BenchmarkSuite, id: string) => `${suitePath(suite)}/${id}`;
+const casePath = (suite: BenchmarkSuite, id: string) =>
+  `${suitePath(suite)}/${id}`;
 
 const milliseconds = (ms: number) =>
   ms < 1
@@ -18,15 +19,24 @@ const ratio = ({ effectMs, pythonMs }: PhaseTiming) =>
     : `${(effectMs / pythonMs).toPrecision(2)}× slower`;
 
 const difference = (value: number) =>
-  value === 0 ? "0" : value < 1e-4 ? value.toExponential(1) : value.toPrecision(2);
+  value === 0
+    ? "0"
+    : value < 1e-4
+      ? value.toExponential(1)
+      : value.toPrecision(2);
 
 const share = (value: number) => {
   const percent = value * 100;
 
-  return percent === 0 ? "0%" : percent < 0.0001 ? "< 0.0001%" : `${percent.toPrecision(2)}%`;
+  return percent === 0
+    ? "0%"
+    : percent < 0.0001
+      ? "< 0.0001%"
+      : `${percent.toPrecision(2)}%`;
 };
 
-const number = (value: number) => (Number.isFinite(value) ? value.toFixed(4) : String(value));
+const number = (value: number) =>
+  Number.isFinite(value) ? value.toFixed(4) : String(value);
 
 const result = (item: CaseResult) =>
   item.passed
@@ -61,8 +71,12 @@ const caseRow = (suite: BenchmarkSuite, item: CaseResult) =>
   [
     `<span class="case-name">${dot(status(item))}[${item.title}](${casePath(suite, item.id)})</span>`,
     `[${item.dataset.trainingRows} rows](${item.dataset.url})`,
-    item.lastValue === undefined ? "—" : number(item.lastValue.effect),
-    item.lastValue === undefined ? "—" : number(item.lastValue.python),
+    item.lastValue === undefined
+      ? (item.outcomes?.effect ?? "—")
+      : number(item.lastValue.effect),
+    item.lastValue === undefined
+      ? (item.outcomes?.python ?? "—")
+      : number(item.lastValue.python),
     item.relativeDifference !== undefined
       ? share(item.relativeDifference)
       : item.maximumDifference !== undefined
@@ -107,7 +121,9 @@ export const overviewMarkdown = (benchmark: Benchmark) => {
 
   const headline = [
     `**${benchmark.passed} of ${benchmark.total} cases match Python Prophet.**`,
-    differences === 0 ? "" : ` ${differences} are intentional differences, explained below.`,
+    differences === 0
+      ? ""
+      : ` ${differences} are intentional differences, explained below.`,
     mismatches === 0 ? "" : ` ${mismatches} don't match yet.`,
   ].join("");
 

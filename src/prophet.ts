@@ -552,6 +552,12 @@ export const fit = Effect.fn("Prophet.fit")(function* (
     });
   }
 
+  if (options.events.layout.components.length > 0) {
+    yield* Effect.annotateCurrentSpan({
+      "effect_prophet.event.count": options.events.layout.components.length,
+    });
+  }
+
   if (conditionNames.length > 0) {
     yield* Effect.annotateCurrentSpan({
       "effect_prophet.seasonality.condition.count": conditionNames.length,
@@ -823,7 +829,7 @@ const forecastsFromMixedBatch = (
     return forecasts;
   });
 
-const makePredictionFeatures = Effect.fn("makePredictionFeatures")(function* (
+const makePredictionFeatures = Effect.fnUntraced(function* (
   timestamps: PredictionTimestamps,
   alignedRegressorValues: ReadonlyArray<ReadonlyArray<number>>,
   masks: SeasonalityMaskMatrix,

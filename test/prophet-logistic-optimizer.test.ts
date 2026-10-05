@@ -412,8 +412,8 @@ describe("public logistic Stan optimizer lifecycle", () => {
 
       const parent = spans.find((span) => span.name === "Prophet.fit");
       const boundary = spans.find((span) => span.name === "effect-prophet.wasm.fit");
-      const optionsSpan = spans.find((span) => span.name === "decodeOptions");
-      const optimizerSpan = spans.find((span) => span.name === "decodeLinearOptimizer");
+      const optionsSpan = spans.find((span) => span.name === "Prophet.decodeOptions");
+      const optimizerSpan = spans.find((span) => span.name === "Prophet.decodeLinearOptimizer");
 
       if (optionsSpan === undefined || optimizerSpan === undefined)
         throw new Error("Missing optimizer parsing spans");
@@ -446,6 +446,8 @@ describe("public logistic Stan optimizer lifecycle", () => {
         "effect_prophet.observation.count",
         "effect_prophet.seasonality.count",
         "effect_prophet.coefficient.count",
+        "effect_prophet.changepoint.count",
+        "effect_prophet.parameter.count",
         "effect_prophet.scaling.mode",
         "effect_prophet.component.mode",
         "effect_prophet.optimizer.requested_algorithm",
@@ -457,6 +459,7 @@ describe("public logistic Stan optimizer lifecycle", () => {
         "effect_prophet.optimizer.attempt.count",
         "effect_prophet.optimizer.hessian_reset.count",
         "effect_prophet.optimizer.failed_attempt.iteration.count",
+        "effect_prophet.wasm.cold_start",
       ]);
 
       expect([...boundary.attributes.keys()].every((key) => safeKeys.has(key))).toBe(true);

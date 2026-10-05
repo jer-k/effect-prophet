@@ -317,7 +317,7 @@ export const emptyEventCalendar: EventCalendar = Object.freeze({
 });
 
 /** Parse event occurrences and derive their deterministic Prophet-compatible column layout. */
-export const parseEventCalendar = Effect.fn("parseEventCalendar")(function* (
+export const parseEventCalendar = Effect.fn("Prophet.parseEventCalendar")(function* (
   input: Parameters<typeof decodeEventCalendarSyntax>[0],
   mode: ComponentMode = "additive",
 ): Effect.fn.Return<EventCalendar, InvalidEventCalendar> {

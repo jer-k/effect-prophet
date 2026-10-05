@@ -27,6 +27,7 @@ import {
   type PiecewiseMapWasmBindings,
 } from "./prophet-wasm-module";
 import {
+  annotateFittedDimensions,
   attemptWasmFitting,
   attemptWasmPrediction,
   decodeSeasonalPredictions,
@@ -369,6 +370,7 @@ export const makeWasmPiecewiseMapAdapter = (
       );
     }).pipe(
       Effect.tap((model) => annotateLinearCompletion(model.fitSummary)),
+      Effect.tap(annotateFittedDimensions),
       Effect.withSpan(
         "effect-prophet.wasm.fit",
         wasmFitSpanOptions(
@@ -471,6 +473,7 @@ export const makeWasmPiecewiseMapAdapter = (
       );
     }).pipe(
       Effect.tap((model) => annotateLinearCompletion(model.fitSummary)),
+      Effect.tap(annotateFittedDimensions),
       Effect.withSpan(
         "effect-prophet.wasm.fit",
         wasmFitSpanOptions(

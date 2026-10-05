@@ -56,13 +56,51 @@ New to [Effect](https://effect.website)? The docs have a
 - Uncertainty ranges
 - Saving and loading fitted models
 - Cross-validation, accuracy metrics and choosing between settings
+- Tracing built in: every fit and forecast is traced, ready for any OpenTelemetry backend
 
 See the [examples](https://jer-k.github.io/effect-prophet/examples/trend) for each one.
+
+## Tracing built in
+
+Every fit, forecast and evaluation creates [Effect](https://effect.website) spans automatically,
+with no changes to how you call the library. Send them to Jaeger, Honeycomb, Grafana Tempo or any
+OpenTelemetry backend using Effect's built-in exporter:
+
+```ts
+import { Effect, Layer } from "effect";
+import { FetchHttpClient } from "effect/http";
+import { OtlpSerialization, OtlpTracer } from "effect/observability";
+
+const tracing = OtlpTracer.layer({
+  url: "http://localhost:4318/v1/traces",
+  resource: { serviceName: "sales-forecast" },
+}).pipe(Layer.provide([OtlpSerialization.layerJson, FetchHttpClient.layer]));
+
+const forecast = await Effect.runPromise(
+  Effect.gen(function* () {
+    const model = yield* fit(history);
+
+    return yield* predict(model, nextWeek);
+  }).pipe(Effect.provide(prophetFittingBackendLayer), Effect.provide(tracing)),
+);
+```
+
+Each fit records what the forecasting engine did (rows, changepoints, parameters, solver steps),
+so a slow fit explains itself. Spans contain only counts and labels, never your data. See
+[Tracing](https://jer-k.github.io/effect-prophet/guide/tracing) for what's recorded.
 
 ## Coming from Python Prophet?
 
 Start with [Coming from Python](https://jer-k.github.io/effect-prophet/python/coming-from-python),
 then see [how close the results are](https://jer-k.github.io/effect-prophet/python/accuracy).
+
+## Built with AI
+
+This package is a port of Facebook's Python [Prophet](https://facebook.github.io/prophet/) and
+was built with the help of AI. Because it is math-heavy, I have done my best to make sure it
+behaves the same as the original. The [benchmarks](https://jer-k.github.io/effect-prophet/benchmarks/linear)
+and [accuracy comparison](https://jer-k.github.io/effect-prophet/python/accuracy) in the docs
+show how closely the results match. If you find a difference, please open an issue.
 
 ## Contributing
 

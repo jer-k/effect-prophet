@@ -55,6 +55,12 @@ const history = rawRows
 
 The model handles gaps in the dates without any trouble.
 
+If rows carry extra columns such as regressors, drop the whole row, not just the value. This
+example removes a row with no target, holds out the last two rows, and predicts them using
+their known regressor values:
+
+<<< @/snippets/missing-values.ts
+
 ## Order and duplicates
 
 Rows can be in any order, because the model sorts them. Two rows with the same timestamp are both

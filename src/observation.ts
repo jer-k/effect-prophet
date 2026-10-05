@@ -53,7 +53,7 @@ const decodeObservationsSchema = Schema.decodeUnknownEffect(ObservationsSchema, 
 });
 
 /** Decode every complete row, then stably sort an owned history without dropping ties. */
-export const decodeObservations = Effect.fn("decodeObservations")(function* (
+export const decodeObservations = Effect.fn("Prophet.decodeObservations")(function* (
   input: Parameters<typeof decodeObservationsSchema>[0],
 ): Effect.fn.Return<Observations, InputValidationError> {
   const observations = yield* decodeObservationsSchema(input).pipe(

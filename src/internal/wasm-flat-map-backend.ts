@@ -11,6 +11,7 @@ import { targetScalingModeCode, type TargetScalingMode } from "../target-scaling
 import type { TrainingInput } from "./fitting-backend";
 import { loadProphetWasmModule, type FlatMapWasmBindings } from "./prophet-wasm-module";
 import {
+  annotateFittedDimensions,
   attemptWasmFitting,
   attemptWasmPrediction,
   checkedAdd,
@@ -283,6 +284,7 @@ export const makeWasmFlatMapAdapter = (loadModule: WasmFlatMapLoader): WasmFlatM
 
       return yield* decodeFittedParameters(packed, observationCount, scaling, seasonalities);
     }).pipe(
+      Effect.tap(annotateFittedDimensions),
       Effect.withSpan(
         "effect-prophet.wasm.fit",
         wasmFitSpanOptions(

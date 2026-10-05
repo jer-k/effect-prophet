@@ -27,6 +27,7 @@ import type { KnownAdditiveFeatures, SeasonalityMaskMatrix } from "./additional-
 import type { TrainingInput } from "./fitting-backend";
 import { loadProphetWasmModule, type MixedMapWasmBindings } from "./prophet-wasm-module";
 import {
+  annotateFittedDimensions,
   attemptWasmFitting,
   attemptWasmPrediction,
   checkedAdd,
@@ -468,6 +469,7 @@ export const fitMixedLinearMapWithWasm = (
     );
   }).pipe(
     Effect.tap((model) => annotateLinearCompletion(model.fitSummary)),
+    Effect.tap(annotateFittedDimensions),
     Effect.withSpan(
       "effect-prophet.wasm.fit",
       wasmFitSpanOptions(
@@ -545,6 +547,7 @@ export const fitMixedFlatMapWithWasm = (
       regressors,
     );
   }).pipe(
+    Effect.tap(annotateFittedDimensions),
     Effect.withSpan(
       "effect-prophet.wasm.fit",
       wasmFitSpanOptions(

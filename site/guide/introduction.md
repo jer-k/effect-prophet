@@ -34,10 +34,20 @@ _why_: how much comes from the trend, how much from the day of the week, and so 
 - Problems that depend on many interacting inputs. A general machine-learning model may do better.
 - Minute-by-minute data where the next few points depend mostly on the last few.
 
+## Built with AI
+
+Effect Prophet is a port of Prophet's Python library and was built with the help of AI. Because
+it is math-heavy, I have done my best to make sure it behaves the same as the original. The
+[benchmarks](/benchmarks/linear) and [accuracy comparison](/python/accuracy) show how closely the
+results match. If you find a difference, please open an issue.
+
 ## Why "Effect"?
 
 The library is built on [Effect](https://effect.website), a TypeScript library for writing
 reliable programs. You don't need to know Effect to use this library. The
 [five-minute introduction](./effect-basics) covers everything you need.
+
+Effect is also why [tracing](./tracing) comes built in. Every fit and forecast is traced
+automatically, ready to send to Jaeger or any OpenTelemetry backend.
 
 Ready? [Make your first forecast.](./getting-started)

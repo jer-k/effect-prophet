@@ -454,7 +454,7 @@ const optionsValidationErrorFromRegressors = (error: InvalidRegressors): InputVa
   });
 
 /** Decode optional, untrusted fitting options and apply the documented defaults. */
-export const decodeOptions = Effect.fn("decodeOptions")(function* (
+export const decodeOptions = Effect.fn("Prophet.decodeOptions")(function* (
   input?: Parameters<typeof decodeProphetOptionsSyntax>[0],
 ): Effect.fn.Return<ProphetOptions, InputValidationError> {
   const encoded = input === undefined ? emptyOptions : input;
