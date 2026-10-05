@@ -54,6 +54,22 @@ stable-looking digits.
 Regenerate fixtures with `npm run fixtures:generate` rather than editing generated JSON by hand,
 then run `npm run fixtures:check` to verify fixture bytes, manifest hashes, and compatibility tests.
 
+## Third-party notices
+
+The "Rust dependencies" list in `rust/prophet-wasm/third-party/NOTICE.txt` names every crate
+compiled into the WebAssembly binary, each used under Apache-2.0. After changing `Cargo.toml` or
+`Cargo.lock`, run `npm run notices:check`; when it fails, it prints the list to paste in.
+
+If a crate in the report does not offer Apache-2.0, decide whether its code reaches the binary:
+
+- If it does, add its license text to `third-party/` and give it its own `NOTICE.txt` section.
+- If it only runs during compilation (for example, it is called only from a proc-macro or build
+  script), add it to `compileTimeOnlyCrates` in `tools/check-third-party-notices.ts` with a
+  comment explaining why. Confirm this from the crate's source rather than assuming it.
+
+Code ported or adapted from another project needs the same treatment: a `NOTICE.txt` section, its
+license text in `third-party/`, and a license header in the adapted Rust file.
+
 ## Testing
 
 Files in `test/` should be at the same level as the file they're testing in `src/`. Example

@@ -9,7 +9,8 @@ forecasting library, and is tested against Python Prophet 1.4.0.
 - **One dependency.** [`effect`](https://effect.website) is the only package it depends on.
 - **No Stan install.** Prophet's fitting runs on [Stan](https://mc-stan.org/). The
   parts Prophet uses are ported to Rust and compiled to WebAssembly, which ships inside the
-  package. Attribution is in [`wasm/third-party/NOTICE.txt`](wasm/third-party/NOTICE.txt).
+  package. Attribution is in
+  [`NOTICE.txt`](rust/prophet-wasm/third-party/NOTICE.txt).
 
 **📖 [Documentation](https://jer-k.github.io/effect-prophet/)**
 
@@ -121,3 +122,10 @@ npm run docs:dev  # documentation site at http://localhost:5173/effect-prophet/
 
 Building the WebAssembly requires Rust and [wasm-pack](https://rustwasm.github.io/wasm-pack/).
 Comparing against Python requires Docker.
+
+## License
+
+[MIT](LICENSE). Effect Prophet reimplements [Prophet](https://github.com/facebook/prophet) (MIT)
+and ports parts of Stan, Eigen, nalgebra and Arm optimized-routines; their notices and license
+terms are in [`rust/prophet-wasm/third-party/`](rust/prophet-wasm/third-party/NOTICE.txt) and ship
+in the package under `wasm/third-party/`.

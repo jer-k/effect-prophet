@@ -12,7 +12,7 @@ cross-validation, model search and save/load.
 What's left is mostly **cleanup and release mechanics**:
 
 1. Rerun all three trend baselines from a clean commit, then finish the docs site's Python pages.
-2. Settle packaging: license, version, peer dependency, publishing.
+2. Settle packaging: version, peer dependency, publishing.
 
 ## Done
 
@@ -97,6 +97,15 @@ What's left is mostly **cleanup and release mechanics**:
   - Features are defined by case group in `site/.vitepress/benchmarks/suite.ts`, and the sidebar
     is generated from the trend and feature lists.
 
+- **Licensing settled.** The project is MIT (`LICENSE`, `package.json`), and npm packs `LICENSE`
+  (asserted in `tools/test-package.ts`). `rust/prophet-wasm/third-party/NOTICE.txt` now credits
+  Prophet itself (MIT text in `prophet-license.txt`), covers the Stan L-BFGS port as well as
+  Newton, and lists the Rust crates compiled into the WASM binary, all used under Apache-2.0
+  (`nalgebra-license.txt` renamed to `apache-2.0-license.txt`). `npm run notices:check`, also
+  in CI's `rust` job, fails when that list drifts from `Cargo.lock` or a crate lacks Apache-2.0.
+  The two Eigen-derived Rust files stay MPL-2.0. The README's broken `wasm/third-party/` link
+  (that folder is gitignored) now points to the tracked notices.
+
 ## Where things stand
 
 | Area                                                 | Works | Matches Python?                                                                                      | Saved benchmark evidence                                                                                |
@@ -142,7 +151,6 @@ What's left is mostly **cleanup and release mechanics**:
 
 | Item       | Now                                                         | Needed                                                                                                                                                |
 | ---------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| License    | `"UNLICENSED"`, no `LICENSE` file                           | Pick one. Prophet is MIT; the third-party notices for Stan, Eigen, nalgebra and ARM routines already ship in `wasm/third-party/`.                     |
 | Version    | `0.0.0`                                                     | Choose a first version (e.g. `0.1.0`) and add a changelog                                                                                             |
 | Effect     | Regular `dependency`, pinned to `4.0.0`                     | Effect libraries usually declare `effect` as a **peer** dependency so apps share one copy (decision 3)                                                |
 | Runtime    | Node only: `wasm-pack --target nodejs` plus `createRequire` | Already stated in the README and docs. Add a bundler/browser build later if wanted (decision 4).                                                      |
