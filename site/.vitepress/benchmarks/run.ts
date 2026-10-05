@@ -116,8 +116,6 @@ export interface Benchmark {
     readonly intro: string;
     readonly cases: ReadonlyArray<CaseResult>;
   }>;
-  readonly passed: number;
-  readonly total: number;
 }
 
 const readJson = (path: string): any =>
@@ -286,7 +284,5 @@ export const loadBenchmark = (suite: BenchmarkSuite): Benchmark => {
         cases.filter((item) => item.id === id && item.group === group.id),
       ),
     })),
-    passed: cases.filter((item) => item.passed).length,
-    total: cases.length,
   };
 };

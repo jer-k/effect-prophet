@@ -116,9 +116,7 @@ lifecycle serialization phases instead of being copied into every feature folder
 See the [Python-default logistic reconciliation](cases/growth/logistic/README.md),
 [flat coverage gaps](cases/growth/flat/README.md),
 [linear input-policy cases](cases/growth/linear/README.md),
-[measurement contracts](tools/MEASUREMENTS.md), and accepted
-[linear fit-quality](../docs/decisions/linear-map-benchmark-acceptance.md) /
-[CV scaling](../docs/decisions/cross-validation-scaling.md) policies.
+and [measurement contracts](tools/MEASUREMENTS.md).
 
 ## Tests
 

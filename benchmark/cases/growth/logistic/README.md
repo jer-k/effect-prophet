@@ -33,9 +33,7 @@ These gates are declared before running the existing implementation. They are in
 - Output noise: absolute `0.02`.
 - Independently evaluated proportional fitting objective (`0.01`), normalized noise (`0.0002`) and
   constrained stationarity (Effect exceeding Python by `0.01`): **reported and flagged for
-  investigation, not gated**, under the
-  [output-first policy](../../../../docs/decisions/logistic-map.md#benchmark-acceptance-output-first)
-  adopted on 2026-10-03. Both residuals treat deltas within `1e-6` of zero as at the Laplace kink.
+  investigation, not gated**, under the output-first policy adopted on 2026-10-03. Both residuals treat deltas within `1e-6` of zero as at the Laplace kink.
   These were originally two-sided equality gates.
 - Public persistence: absolute `1e-8`.
 - Metadata, component identities, row alignment, scaling and floor policy must agree under the existing report contract.
@@ -63,7 +61,7 @@ and prediction-instance alignment. That scoped evidence does not close every ite
 
 ## First observed checkpoint
 
-The [red-checkpoint review](../../../../docs/validation/logistic-reconciliation.md) records 28 new
+The first red checkpoint recorded 28 new
 case failures and four unchanged control passes on native release WASM / pinned Python. It separates
 default-feature mismatches, the large no-point forecast discrepancy and optimizer diagnostics.
 No production fix or gate relaxation is included in that first checkpoint.

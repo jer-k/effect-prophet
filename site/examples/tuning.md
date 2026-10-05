@@ -3,6 +3,11 @@
 The defaults work well for a lot of data, but you can often do better by trying a few settings
 and keeping the one that forecasts best.
 
+::: tip Benchmarked against Python Prophet
+Settings search and the final holdout check are benchmarked on all three trend types. See
+the [cross-validation and choosing settings benchmarks](/benchmarks/cross-validation).
+:::
+
 ## Comparing settings
 
 `searchModels` runs [cross-validation](./cross-validation) for each set of options you give it,

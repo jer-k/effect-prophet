@@ -1,7 +1,12 @@
 import type { Benchmark, CaseResult, PhaseTiming } from "./run.ts";
-import { intentionalDifferences, type BenchmarkSuite } from "./suite.ts";
-
-const suitePath = (suite: BenchmarkSuite) => `/benchmarks/${suite.id}`;
+import {
+  benchmarkFeatures,
+  featurePath,
+  intentionalDifferences,
+  suitePath,
+  type BenchmarkFeature,
+  type BenchmarkSuite,
+} from "./suite.ts";
 
 const casePath = (suite: BenchmarkSuite, id: string) => `${suitePath(suite)}/${id}`;
 
@@ -73,78 +78,182 @@ const caseRow = (suite: BenchmarkSuite, item: CaseResult) =>
     item.headline === undefined ? "—" : milliseconds(item.headline.pythonMs),
   ].join(" | ");
 
-/** The overview page: one table per group with links to every case. */
+const caseTable = (suite: BenchmarkSuite, cases: ReadonlyArray<CaseResult>) =>
+  [
+    "| Case | Input | Effect output | Python output | Largest difference | Timed step | Effect time | Python time |",
+    "| --- | --- | ---: | ---: | ---: | --- | ---: | ---: |",
+    ...cases.map((item) => `| ${caseRow(suite, item)} |`),
+  ].join("\n");
+
+const tally = (cases: ReadonlyArray<CaseResult>) => {
+  const kinds = cases.map(status);
+  const count = (kind: Status) => kinds.filter((candidate) => candidate === kind).length;
+
+  return {
+    total: cases.length,
+    passed: count("match") + count("flagged"),
+    flagged: count("flagged"),
+    differences: count("difference"),
+    mismatches: count("mismatch"),
+  };
+};
+
+const headline = (cases: ReadonlyArray<CaseResult>) => {
+  const { passed, total, differences, mismatches } = tally(cases);
+
+  return [
+    `**${passed} of ${total} cases match Python Prophet.**`,
+    differences === 0 ? "" : ` ${differences} are intentional differences, explained below.`,
+    mismatches === 0 ? "" : ` ${mismatches} don't match yet.`,
+  ].join("");
+};
+
+/** How cases are compared and how to read the tables below. */
+const legend = (cases: ReadonlyArray<CaseResult>) => [
+  "Each case runs the same input through Effect Prophet and Python Prophet 1.4.0, then compares every forecast row, the trend, each component and the fitted noise. A case **matches** when all of them agree within its tolerances, and only matching cases are timed.",
+  "",
+  `Each case's dot shows its result: ${dot("match")} matches, ${dot("flagged")} matches with internal differences flagged, ${dot("difference")} intentional difference, ${dot("mismatch")} doesn't match. Hover over a dot for details.`,
+  "",
+  "How to read the tables:",
+  "",
+  "- **Effect output** and **Python output** are each library's final forecast value. Open a case to see every row side by side.",
+  "- **Largest difference** is the biggest gap between the two forecasts, as a share of the input data's range.",
+  "- **Effect time** and **Python time** are the median time for the **timed step**, usually fitting and predicting. Open a case for every step, including first-run and save/load times.",
+  ...(tally(cases).flagged === 0
+    ? []
+    : [
+        "- **Flagged** cases match, but the two libraries stopped their fitting search at slightly different points. The case page shows the internal numbers.",
+      ]),
+];
+
+const runDetails = ({ run }: Benchmark) => [
+  `- Run \`${run.id}\` on ${run.date}, commit \`${run.revision}\`${run.dirty ? " with uncommitted changes" : ""}`,
+  `- Both libraries ran in \`${run.platform}\` containers on ${run.processor}`,
+  ...run.versions.map((version) => `- ${version.name} ${version.value}`),
+  `- [Full benchmark report](${run.reportUrl})`,
+];
+
+const timingCaveat =
+  "Timings come from one machine and describe this workload only. They are not a general speed ranking.";
+
+const allCases = (benchmark: Benchmark) => benchmark.groups.flatMap((group) => group.cases);
+
+/** One trend's page: one table per group with links to every case. */
 export const overviewMarkdown = (benchmark: Benchmark) => {
   const { suite } = benchmark;
+  const cases = allCases(benchmark);
 
   const sections = benchmark.groups
     .filter((group) => group.cases.length > 0)
     .map((group) =>
-      [
-        `## ${group.title}`,
-        "",
-        group.intro,
-        "",
-        "| Case | Input | Effect output | Python output | Largest difference | Timed step | Effect time | Python time |",
-        "| --- | --- | ---: | ---: | ---: | --- | ---: | ---: |",
-        ...group.cases.map((item) => `| ${caseRow(suite, item)} |`),
-      ].join("\n"),
+      [`## ${group.title}`, "", group.intro, "", caseTable(suite, group.cases)].join("\n"),
     );
-
-  const { run } = benchmark;
-
-  const cases = benchmark.groups.flatMap((group) => group.cases);
-
-  const differences = cases.filter(
-    (item) => !item.passed && item.group === intentionalDifferences,
-  ).length;
-
-  const mismatches = cases.filter(
-    (item) => !item.passed && item.group !== intentionalDifferences,
-  ).length;
-
-  const flagged = cases.filter((item) => item.flags.length > 0).length;
-
-  const headline = [
-    `**${benchmark.passed} of ${benchmark.total} cases match Python Prophet.**`,
-    differences === 0 ? "" : ` ${differences} are intentional differences, explained below.`,
-    mismatches === 0 ? "" : ` ${mismatches} don't match yet.`,
-  ].join("");
 
   return [
     `# ${suite.title} benchmarks`,
     "",
-    headline,
+    headline(cases),
     "",
-    "Each case runs the same input through Effect Prophet and Python Prophet 1.4.0, then compares every forecast row, the trend, each component and the fitted noise. A case **matches** when all of them agree within its tolerances, and only matching cases are timed.",
-    "",
-    `Each case's dot shows its result: ${dot("match")} matches, ${dot("flagged")} matches with internal differences flagged, ${dot("difference")} intentional difference, ${dot("mismatch")} doesn't match. Hover over a dot for details.`,
-    "",
-    "How to read the tables:",
-    "",
-    "- **Effect output** and **Python output** are each library's final forecast value. Open a case to see every row side by side.",
-    "- **Largest difference** is the biggest gap between the two forecasts, as a share of the input data's range.",
-    "- **Effect time** and **Python time** are the median time for the **timed step**, usually fitting and predicting. Open a case for every step, including first-run and save/load times.",
-    ...(flagged === 0
-      ? []
-      : [
-          "- **Flagged** cases match, but the two libraries stopped their fitting search at slightly different points. The case page shows the internal numbers.",
-        ]),
+    ...legend(cases),
     "",
     "::: details About this run",
     "",
-    `- Run \`${run.id}\` on ${run.date}, commit \`${run.revision}\`${run.dirty ? " with uncommitted changes" : ""}`,
-    `- Both libraries ran in \`${run.platform}\` containers on ${run.processor}`,
-    ...run.versions.map((version) => `- ${version.name} ${version.value}`),
-    `- [Full benchmark report](${run.reportUrl})`,
+    ...runDetails(benchmark),
     "",
-    "Timings come from one machine and describe this workload only. They are not a general speed ranking.",
+    timingCaveat,
     "",
     ":::",
     "",
     ...sections.flatMap((section) => [section, ""]),
   ].join("\n");
 };
+
+/** One feature's page: its group from every trend, each linking back to that trend's cases. */
+export const featureMarkdown = (
+  feature: BenchmarkFeature,
+  benchmarks: ReadonlyArray<Benchmark>,
+) => {
+  const sections = benchmarks.flatMap((benchmark) => {
+    const group = benchmark.groups.find((candidate) => candidate.id === feature.group);
+
+    return group === undefined || group.cases.length === 0 ? [] : [{ benchmark, group }];
+  });
+
+  const cases = sections.flatMap(({ group }) => group.cases);
+
+  return [
+    `# ${feature.title} benchmarks`,
+    "",
+    headline(cases),
+    "",
+    feature.intro,
+    "",
+    ...legend(cases),
+    "",
+    "::: details About these runs",
+    "",
+    "Each trend's cases come from that trend's own run.",
+    "",
+    ...sections.flatMap(({ benchmark }) => [
+      `**${benchmark.suite.title}**`,
+      "",
+      ...runDetails(benchmark),
+      "",
+    ]),
+    timingCaveat,
+    "",
+    ":::",
+    "",
+    ...sections.flatMap(({ benchmark: { suite }, group }) => [
+      `## ${suite.title}`,
+      "",
+      `${group.intro} [All ${suite.title.toLowerCase()} benchmarks →](${suitePath(suite)})`,
+      "",
+      caseTable(suite, group.cases),
+      "",
+    ]),
+  ].join("\n");
+};
+
+const tallyColumns = (cases: ReadonlyArray<CaseResult>) => {
+  const { total, passed, differences, mismatches } = tally(cases);
+
+  return [total, passed, differences, mismatches].join(" | ");
+};
+
+/** The benchmarks landing page: every trend and feature page with its results at a glance. */
+export const indexMarkdown = (benchmarks: ReadonlyArray<Benchmark>) =>
+  [
+    "# Benchmarks",
+    "",
+    "Every benchmark case runs the same input through Effect Prophet and Python Prophet 1.4.0, then compares every forecast row, the trend, each component and the fitted noise. Only matching cases are timed. [How close are the results?](/python/accuracy) explains how we test.",
+    "",
+    "Each trend has its own page with every case run for it. The feature pages gather the cases for one feature from all three trends, linking to the same case pages.",
+    "",
+    "## By trend",
+    "",
+    "| Trend | Cases | Match | Intentional differences | Don't match yet | Run |",
+    "| --- | ---: | ---: | ---: | ---: | --- |",
+    ...benchmarks.map(
+      (benchmark) =>
+        `| [${benchmark.suite.title}](${suitePath(benchmark.suite)}) | ${tallyColumns(allCases(benchmark))} | ${benchmark.run.date}, commit \`${benchmark.run.revision}\` |`,
+    ),
+    "",
+    "## By feature",
+    "",
+    "| Feature | Cases | Match | Intentional differences | Don't match yet |",
+    "| --- | ---: | ---: | ---: | ---: |",
+    ...benchmarkFeatures.map((feature) => {
+      const cases = benchmarks.flatMap(
+        (benchmark) => benchmark.groups.find((group) => group.id === feature.group)?.cases ?? [],
+      );
+
+      return `| [${feature.title}](${featurePath(feature)}) | ${tallyColumns(cases)} |`;
+    }),
+    "",
+    timingCaveat,
+    "",
+  ].join("\n");
 
 const valuesTable = (item: CaseResult) => {
   if (item.values.length === 0) {
