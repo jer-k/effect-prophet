@@ -10,15 +10,13 @@ const history = Array.from({ length: 120 }, (_, day) => ({
   value: (day < 70 ? 50 + day * 0.2 : 64 + (day - 70) * 1.2) + 3 * Math.sin(day * 12.9898),
 }));
 
-const changepoints = { mode: "auto" } as const;
-
 const result = await Effect.runPromise(
   searchModels(history, {
     // Each candidate is a set of fit options you want to try.
     candidates: [
-      { id: "stiff-trend", options: { map: { changepoints, changepointPriorScale: 0.001 } } },
-      { id: "default-trend", options: { map: { changepoints, changepointPriorScale: 0.05 } } },
-      { id: "flexible-trend", options: { map: { changepoints, changepointPriorScale: 0.5 } } },
+      { id: "stiff-trend", options: { map: { changepointPriorScale: 0.001 } } },
+      { id: "default-trend", options: { map: { changepointPriorScale: 0.05 } } },
+      { id: "flexible-trend", options: { map: { changepointPriorScale: 0.5 } } },
     ],
     plan: {
       horizonMs: 7 * dayMs,

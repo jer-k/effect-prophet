@@ -6,5 +6,5 @@
       "effect-prophet": ["../src/index.ts"]
     }
   },
-  "include": ["snippets/**/*.ts", "scripts/**/*.ts", ".vitepress/**/*.ts"]
+  "include": ["snippets/**/*.ts", "scripts/**/*.ts", ".vitepress/**/*.ts", "benchmarks/**/*.ts"]
 }

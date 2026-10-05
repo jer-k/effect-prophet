@@ -4,6 +4,11 @@ The trend is the long-term direction of your data. Real trends rarely stay perfe
 a launch, a price change or a new competitor can make growth speed up or slow down. The points
 where the trend changes direction are called **changepoints**.
 
+::: tip Verified against Python Prophet
+Linear trends match Python Prophet 1.4.0. The [linear growth benchmarks](/benchmarks/linear) show
+every case side by side.
+:::
+
 ## The default
 
 With no options, the model places 25 possible changepoints evenly across the first 80% of your
@@ -48,12 +53,6 @@ Keeping `range` below `1` stops the trend from overreacting to the last few days
 
 If you know when something changed, list the dates with `{ mode: "explicit", timestamps: [...] }`.
 Each date must fall within your history.
-
-::: warning Include `changepoints` whenever you pass `map`
-Right now, a `map` option without a `changepoints` field turns changepoints off entirely, giving a
-straight-line trend. Until that is fixed, always include `changepoints: { mode: "auto" }` when you
-pass `map`, as the example above does.
-:::
 
 ## Other trend shapes
 

@@ -294,7 +294,9 @@ const stableMetadata = (projection: CorrectnessProjection) => ({
   modelKind: projection.modelKind,
   scalingMode: projection.targetScaling?.mode,
   floorPolicy: projection.targetScaling?.floorPolicy,
-  changepointTimestamps: projection.changepointTimestamps,
+  // A flat trend never uses changepoints, though Python Prophet still computes its defaults.
+  changepointTimestamps:
+    projection.modelKind === "flat-map" ? [] : projection.changepointTimestamps,
   seasonalities: projection.seasonalities,
   events: projection.events,
   regressors: projection.regressors.map((regressor) => ({

@@ -52,11 +52,7 @@ const omittedMapCase = {
       events: [],
       regressors: [],
     },
-    effectOptimizer: {
-      maxIterations: 10_000,
-      relativeTolerance: 1e-10,
-      absoluteTolerance: 1e-12,
-    },
+    effectOptimizer: { algorithm: "auto", maxIterations: 10_000 },
     pythonOptimizer: {
       algorithm: "LBFGS",
       maxIterations: 10_000,

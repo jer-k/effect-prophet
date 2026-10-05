@@ -15,6 +15,7 @@ export default defineConfig({
       { text: "Guide", link: "/guide/introduction" },
       { text: "Examples", link: "/examples/trend" },
       { text: "Python Prophet", link: "/python/coming-from-python" },
+      { text: "Benchmarks", link: "/benchmarks/linear" },
     ],
 
     sidebar: [
@@ -50,6 +51,13 @@ export default defineConfig({
           { text: "Coming from Python", link: "/python/coming-from-python" },
           { text: "How close are the results?", link: "/python/accuracy" },
           { text: "What's different", link: "/python/differences" },
+        ],
+      },
+      {
+        text: "Benchmarks",
+        items: [
+          { text: "Linear growth", link: "/benchmarks/linear" },
+          { text: "Flat growth", link: "/benchmarks/flat" },
         ],
       },
     ],

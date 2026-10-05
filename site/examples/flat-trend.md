@@ -10,6 +10,11 @@ patterns, events and regressors.
 [ '40.1 (trend 40.1)', '49.5 (trend 40.1)', '51.8 (trend 40.1)' ]
 ```
 
+::: tip Verified against Python Prophet
+Flat trends match Python Prophet 1.4.0. The [flat growth benchmarks](/benchmarks/flat) show every
+case side by side.
+:::
+
 ## When to use it
 
 - The data has no real trend, and you don't want the model to invent one from a few unusual

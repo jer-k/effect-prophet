@@ -9,10 +9,9 @@ Serialization is exercised by lifecycle phases rather than copied into separate 
 | Case | Input | Contract | Phases |
 | --- | --- | --- | ---: |
 | `evaluation-training-duplicates` | [v1/training-duplicates.json](inputs/v1/training-duplicates.json) | different-public-work | 7 |
-| `evaluation-training-duplicates-stan-v2` | [v1/training-duplicates.json](inputs/v1/training-duplicates.json) | different-public-work | 7 |
-| `evaluation-linear-point-stan-v2` | [v1/linear-offset-scaling.json](inputs/v1/linear-offset-scaling.json) | different-public-work | 6 |
-| `evaluation-linear-intervals-stan-v2` | [v1/linear-offset-scaling.json](inputs/v1/linear-offset-scaling.json) | different-public-work | 1 |
-| `evaluation-linear-search-stan-v2` | [v1/linear-offset-scaling.json](inputs/v1/linear-offset-scaling.json) | different-public-work | 4 |
+| `evaluation-linear-point` | [v1/linear-offset-scaling.json](inputs/v1/linear-offset-scaling.json) | different-public-work | 6 |
+| `evaluation-linear-intervals` | [v1/linear-offset-scaling.json](inputs/v1/linear-offset-scaling.json) | different-public-work | 1 |
+| `evaluation-linear-search` | [v1/linear-offset-scaling.json](inputs/v1/linear-offset-scaling.json) | different-public-work | 4 |
 | `evaluation-flat-mixed-point` | [v1/flat-mixed-components.json](inputs/v1/flat-mixed-components.json) | different-public-work | 6 |
 | `evaluation-flat-mixed-intervals` | [v1/flat-mixed-components.json](inputs/v1/flat-mixed-components.json) | different-public-work | 1 |
 | `evaluation-flat-mixed-search` | [v1/flat-mixed-components.json](inputs/v1/flat-mixed-components.json) | different-public-work | 4 |
@@ -23,7 +22,7 @@ Serialization is exercised by lifecycle phases rather than copied into separate 
 | `evaluation-flat-large-intervals` | [v1/flat-mixed-components-large.json](inputs/v1/flat-mixed-components-large.json) | different-public-work | 1 |
 | `evaluation-logistic-large-point` | [v1/logistic-implicit-floor-large.json](inputs/v1/logistic-implicit-floor-large.json) | different-public-work | 6 |
 | `evaluation-logistic-large-intervals` | [v1/logistic-implicit-floor-large.json](inputs/v1/logistic-implicit-floor-large.json) | different-public-work | 1 |
-| `evaluation-linear-failure-search-stan-v2` | [v1/linear-offset-scaling.json](inputs/v1/linear-offset-scaling.json) | different-public-work | 4 |
+| `evaluation-linear-failure-search` | [v1/linear-offset-scaling.json](inputs/v1/linear-offset-scaling.json) | different-public-work | 4 |
 
 ## growth/flat
 
@@ -33,10 +32,9 @@ Serialization is exercised by lifecycle phases rather than copied into separate 
 | `map-training-zero-span-flat-constant` | [v1/training-zero-span-constant.json](inputs/v1/training-zero-span-constant.json) | equivalent-objective | 5 |
 | `flat-mixed-components` | [v1/flat-mixed-components.json](inputs/v1/flat-mixed-components.json) | equivalent-objective | 9 |
 | `flat-mixed-components-large` | [v1/flat-mixed-components-large.json](inputs/v1/flat-mixed-components-large.json) | equivalent-objective | 9 |
-| `map-training-zero-span-flat-varied-stan-v2` | [v1/training-zero-span-varied.json](inputs/v1/training-zero-span-varied.json) | equivalent-objective | 5 |
-| `map-training-zero-span-flat-constant-stan-v2` | [v1/training-zero-span-constant.json](inputs/v1/training-zero-span-constant.json) | equivalent-objective | 5 |
-| `flat-mixed-components-stan-v2` | [v1/flat-mixed-components.json](inputs/v1/flat-mixed-components.json) | equivalent-objective | 9 |
-| `flat-mixed-components-large-stan-v2` | [v1/flat-mixed-components-large.json](inputs/v1/flat-mixed-components-large.json) | equivalent-objective | 9 |
+| `flat-defaults-level` | [v1/flat-level.json](inputs/v1/flat-level.json) | equivalent-objective | 9 |
+| `flat-defaults-seasonal` | [v1/flat-seasonal.json](inputs/v1/flat-seasonal.json) | equivalent-objective | 9 |
+| `flat-defaults-negative` | [v1/flat-negative.json](inputs/v1/flat-negative.json) | equivalent-objective | 9 |
 | `flat-level-absmax` | [v1/flat-level.json](inputs/v1/flat-level.json) | equivalent-objective | 5 |
 | `flat-level-minmax` | [v1/flat-level.json](inputs/v1/flat-level.json) | equivalent-objective | 5 |
 | `flat-constant-absmax` | [v1/flat-constant.json](inputs/v1/flat-constant.json) | equivalent-objective | 5 |
@@ -67,6 +65,9 @@ Serialization is exercised by lifecycle phases rather than copied into separate 
 | `map-seasonal-breaks-irregular-medium` | [v1/map-irregular-medium.json](inputs/v1/map-irregular-medium.json) | equivalent-objective | 8 |
 | `map-mixed-features-explicit-small` | [v1/map-mixed-features-explicit-small.json](inputs/v1/map-mixed-features-explicit-small.json) | equivalent-objective | 9 |
 | `map-mixed-features-automatic-large` | [v1/map-mixed-features-automatic-large.json](inputs/v1/map-mixed-features-automatic-large.json) | equivalent-objective | 9 |
+| `linear-defaults-small` | [v1/linear-small.json](inputs/v1/linear-small.json) | equivalent-objective | 9 |
+| `linear-defaults-medium` | [v1/linear-medium.json](inputs/v1/linear-medium.json) | equivalent-objective | 9 |
+| `linear-defaults-irregular` | [v1/map-irregular-medium.json](inputs/v1/map-irregular-medium.json) | equivalent-objective | 9 |
 | `map-training-ordered-explicit` | [v1/training-ordered.json](inputs/v1/training-ordered.json) | equivalent-objective | 5 |
 | `map-training-ordered-auto` | [v1/training-ordered.json](inputs/v1/training-ordered.json) | equivalent-objective | 5 |
 | `map-training-unsorted-explicit` | [v1/training-unsorted.json](inputs/v1/training-unsorted.json) | equivalent-objective | 5 |
@@ -79,23 +80,6 @@ Serialization is exercised by lifecycle phases rather than copied into separate 
 | `linear-offset-scaling-absmax` | [v1/linear-offset-scaling.json](inputs/v1/linear-offset-scaling.json) | equivalent-objective | 9 |
 | `linear-offset-scaling-minmax` | [v1/linear-offset-scaling.json](inputs/v1/linear-offset-scaling.json) | equivalent-objective | 9 |
 | `linear-mixed-components` | [v1/linear-mixed-components.json](inputs/v1/linear-mixed-components.json) | equivalent-objective | 9 |
-| `fixed-linear-prediction-medium-stan-v2` | [v1/linear-medium.json](inputs/v1/linear-medium.json) | equivalent-equation | 2 |
-| `map-explicit-break-small-stan-v2` | [v1/linear-small.json](inputs/v1/linear-small.json) | equivalent-objective | 9 |
-| `map-seasonal-breaks-irregular-medium-stan-v2` | [v1/map-irregular-medium.json](inputs/v1/map-irregular-medium.json) | equivalent-objective | 8 |
-| `map-mixed-features-explicit-small-stan-v2` | [v1/map-mixed-features-explicit-small.json](inputs/v1/map-mixed-features-explicit-small.json) | equivalent-objective | 9 |
-| `map-mixed-features-automatic-large-stan-v2` | [v1/map-mixed-features-automatic-large.json](inputs/v1/map-mixed-features-automatic-large.json) | equivalent-objective | 9 |
-| `map-training-ordered-explicit-stan-v2` | [v1/training-ordered.json](inputs/v1/training-ordered.json) | equivalent-objective | 5 |
-| `map-training-ordered-auto-stan-v2` | [v1/training-ordered.json](inputs/v1/training-ordered.json) | equivalent-objective | 5 |
-| `map-training-unsorted-explicit-stan-v2` | [v1/training-unsorted.json](inputs/v1/training-unsorted.json) | equivalent-objective | 5 |
-| `map-training-unsorted-auto-stan-v2` | [v1/training-unsorted.json](inputs/v1/training-unsorted.json) | equivalent-objective | 5 |
-| `map-training-duplicates-explicit-stan-v2` | [v1/training-duplicates.json](inputs/v1/training-duplicates.json) | equivalent-objective | 5 |
-| `map-training-duplicates-auto-stan-v2` | [v1/training-duplicates.json](inputs/v1/training-duplicates.json) | equivalent-objective | 5 |
-| `map-training-duplicate-features-auto-stan-v2` | [v1/training-duplicate-features.json](inputs/v1/training-duplicate-features.json) | equivalent-objective | 5 |
-| `map-training-zero-span-linear-varied-stan-v2` | [v1/training-zero-span-varied.json](inputs/v1/training-zero-span-varied.json) | equivalent-objective | 5 |
-| `map-training-zero-span-linear-constant-stan-v2` | [v1/training-zero-span-constant.json](inputs/v1/training-zero-span-constant.json) | equivalent-objective | 5 |
-| `linear-offset-scaling-absmax-stan-v2` | [v1/linear-offset-scaling.json](inputs/v1/linear-offset-scaling.json) | equivalent-objective | 9 |
-| `linear-offset-scaling-minmax-stan-v2` | [v1/linear-offset-scaling.json](inputs/v1/linear-offset-scaling.json) | equivalent-objective | 9 |
-| `linear-mixed-components-stan-v2` | [v1/linear-mixed-components.json](inputs/v1/linear-mixed-components.json) | equivalent-objective | 9 |
 
 ## growth/logistic
 
@@ -107,12 +91,6 @@ Serialization is exercised by lifecycle phases rather than copied into separate 
 | `logistic-explicit-floor-minmax` | [v1/logistic-explicit-floor.json](inputs/v1/logistic-explicit-floor.json) | equivalent-objective | 9 |
 | `logistic-implicit-floor-auto-changepoints` | [v1/logistic-implicit-floor.json](inputs/v1/logistic-implicit-floor.json) | equivalent-objective | 9 |
 | `logistic-implicit-floor-large` | [v1/logistic-implicit-floor-large.json](inputs/v1/logistic-implicit-floor-large.json) | equivalent-objective | 9 |
-| `logistic-implicit-floor-absmax-stan-v2` | [v1/logistic-implicit-floor.json](inputs/v1/logistic-implicit-floor.json) | equivalent-objective | 9 |
-| `logistic-implicit-floor-minmax-stan-v2` | [v1/logistic-implicit-floor.json](inputs/v1/logistic-implicit-floor.json) | equivalent-objective | 9 |
-| `logistic-explicit-floor-absmax-stan-v2` | [v1/logistic-explicit-floor.json](inputs/v1/logistic-explicit-floor.json) | equivalent-objective | 9 |
-| `logistic-explicit-floor-minmax-stan-v2` | [v1/logistic-explicit-floor.json](inputs/v1/logistic-explicit-floor.json) | equivalent-objective | 9 |
-| `logistic-implicit-floor-auto-changepoints-stan-v2` | [v1/logistic-implicit-floor.json](inputs/v1/logistic-implicit-floor.json) | equivalent-objective | 9 |
-| `logistic-implicit-floor-large-stan-v2` | [v1/logistic-implicit-floor-large.json](inputs/v1/logistic-implicit-floor-large.json) | equivalent-objective | 9 |
 | `logistic-reconcile-basic-96-empty-absmax` | [v2/logistic-basic-96.json](inputs/v2/logistic-basic-96.json) | equivalent-objective | 5 |
 | `logistic-reconcile-basic-96-explicit-absmax` | [v2/logistic-basic-96.json](inputs/v2/logistic-basic-96.json) | equivalent-objective | 5 |
 | `logistic-reconcile-basic-96-auto-absmax` | [v2/logistic-basic-96.json](inputs/v2/logistic-basic-96.json) | equivalent-objective | 5 |
@@ -147,28 +125,24 @@ Serialization is exercised by lifecycle phases rather than copied into separate 
 | Case | Input | Contract | Phases |
 | --- | --- | --- | ---: |
 | `map-events-small` | [v1/map-events-small.json](inputs/v1/map-events-small.json) | equivalent-objective | 9 |
-| `map-events-small-stan-v2` | [v1/map-events-small.json](inputs/v1/map-events-small.json) | equivalent-objective | 9 |
 
 ## regressors
 
 | Case | Input | Contract | Phases |
 | --- | --- | --- | ---: |
 | `map-regressors-medium` | [v1/map-regressors-medium.json](inputs/v1/map-regressors-medium.json) | equivalent-objective | 9 |
-| `map-regressors-medium-stan-v2` | [v1/map-regressors-medium.json](inputs/v1/map-regressors-medium.json) | equivalent-objective | 9 |
 
 ## seasonalities
 
 | Case | Input | Contract | Phases |
 | --- | --- | --- | ---: |
 | `map-conditional-seasonalities-medium` | [v1/map-conditional-seasonalities-medium.json](inputs/v1/map-conditional-seasonalities-medium.json) | equivalent-objective | 9 |
-| `map-conditional-seasonalities-medium-stan-v2` | [v1/map-conditional-seasonalities-medium.json](inputs/v1/map-conditional-seasonalities-medium.json) | equivalent-objective | 9 |
 
 ## uncertainty
 
 | Case | Input | Contract | Phases |
 | --- | --- | --- | ---: |
 | `uncertainty-training-duplicates-auto` | [v1/training-duplicates.json](inputs/v1/training-duplicates.json) | equivalent-objective | 2 |
-| `uncertainty-training-duplicates-auto-stan-v2` | [v1/training-duplicates.json](inputs/v1/training-duplicates.json) | equivalent-objective | 2 |
 | `uncertainty-linear-offset-scaling-absmax-historical-intervals-128` | [v1/linear-offset-scaling.json](inputs/v1/linear-offset-scaling.json) | equivalent-objective | 6 |
 | `uncertainty-linear-offset-scaling-absmax-one-future-samples-128` | [v1/linear-offset-scaling.json](inputs/v1/linear-offset-scaling.json) | equivalent-objective | 6 |
 | `uncertainty-linear-mixed-components-mixed-intervals-128` | [v1/linear-mixed-components.json](inputs/v1/linear-mixed-components.json) | equivalent-objective | 6 |

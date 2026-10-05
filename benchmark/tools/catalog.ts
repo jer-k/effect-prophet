@@ -2,10 +2,10 @@ import { fileURLToPath } from "node:url";
 
 import { Effect } from "effect";
 
-import { currentEvaluationCases } from "../cases/diagnostics/evaluation.ts";
+import { evaluationCases } from "../cases/diagnostics/evaluation.ts";
 import { flatGrowthCases } from "../cases/growth/flat/public-api.ts";
+import { flatDefaultCases, linearDefaultCases } from "../cases/growth/defaults.ts";
 import { linearGrowthEdgeCases } from "../cases/growth/linear/edge-cases.ts";
-import { stanAlignedCases } from "../cases/growth/linear/stan-aligned.ts";
 import { growthScalingAndMixedMapCases } from "../cases/growth/mixed-map.ts";
 import { logisticReconciliationCases } from "../cases/growth/logistic/public-api.ts";
 import { uncertaintyCases } from "../cases/uncertainty/public-api.ts";
@@ -28,17 +28,18 @@ export const loadCoreCases = Effect.fn("benchmark.catalog.core")(function* () {
   return groups.flat();
 });
 
-/** Load and parse the complete runnable catalog, including versioned solver counterparts. */
+/** Load and parse the complete runnable catalog. */
 export const loadCaseCatalog = Effect.fn("benchmark.catalog.load")(function* () {
   const originals = yield* loadCoreCases();
 
   return yield* parseBenchmarkCases([
     ...originals,
+    ...linearDefaultCases,
     ...linearGrowthEdgeCases,
     ...growthScalingAndMixedMapCases,
-    ...stanAlignedCases([...originals, ...linearGrowthEdgeCases, ...growthScalingAndMixedMapCases]),
     ...uncertaintyCases,
-    ...currentEvaluationCases,
+    ...evaluationCases,
+    ...flatDefaultCases,
     ...flatGrowthCases,
     ...logisticReconciliationCases,
   ]);

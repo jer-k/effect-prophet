@@ -1,30 +1,43 @@
 # How close are the results?
 
-::: info Outline
-This page is an outline. The numbers will come from a clean benchmark run once the remaining
-alignment work is finished.
-:::
+Effect Prophet is checked against Python Prophet 1.4.0, feature by feature. Here's where each
+trend type stands:
+
+| Trend                                                  | Status                                        | Evidence                                       |
+| ------------------------------------------------------ | --------------------------------------------- | ---------------------------------------------- |
+| [Linear](../examples/trend)                            | <Badge type="tip" text="matches Python" />    | [Linear growth benchmarks](/benchmarks/linear) |
+| [Flat](../examples/flat-trend)                         | <Badge type="tip" text="matches Python" />    | [Flat growth benchmarks](/benchmarks/flat)     |
+| [Growth with a ceiling](../examples/saturating-growth) | <Badge type="warning" text="being checked" /> | Coming soon                                    |
+
+Linear and flat growth are ready to use. That covers changepoints, seasonality, events,
+regressors, multiplicative effects, uncertainty ranges, cross-validation and choosing settings. The
+benchmarks for [linear](/benchmarks/linear) and [flat](/benchmarks/flat) growth show every case: its
+input, both libraries' forecasts side by side, and how long each took.
 
 ## How we test
 
-- Python Prophet 1.4.0, pinned and unmodified
-- Both libraries get the same input files and run on the same machine
-- Every forecast row, trend and component is compared
-- Stored Python results are also checked on every pull request
+1. Both libraries get the **same input file**: the same history rows and the same future dates.
+2. They run with the **same settings**, either both on their defaults or both with the same options.
+3. Each runs in its own container on the same machine. Python Prophet is version 1.4.0,
+   unmodified.
+4. We compare **every forecast row**, the trend, each seasonal pattern, event and regressor, and
+   the fitted noise level.
+5. A case matches when every number agrees within a small tolerance. Only matching cases are timed.
 
-## Results by feature
-
-- Table: feature area, number of test cases, largest forecast difference as a share of the data's
-  range
-- Areas: linear trend and changepoints, seasonality, events, regressors, multiplicative effects,
-  flat trend, growth with a ceiling, cross-validation
+Separately, every pull request checks the library against stored Python Prophet results for each
+feature.
 
 ## Why the numbers aren't exactly zero
 
-- Both libraries search for the best-fitting model and stop when it's "close enough"
-- Tiny rounding differences can shift where that search stops
-- Python itself gives slightly different answers on Intel and ARM computers
+Fitting a model means searching for the best parameters, and both libraries stop searching once
+they're close enough. Tiny rounding differences between computers can shift exactly where that
+search stops, so forecasts often agree to many decimal places rather than all of them. Python
+Prophet itself gives slightly different answers on Intel and ARM computers for the same reason.
 
 ## Known exceptions
 
-- Cases where we return an error and Python returns an invalid (NaN) forecast
+A few inputs are handled differently on purpose. For example, if every row has the same
+timestamp, there's no way to draw a trend through them, so we return an error where Python
+Prophet returns `NaN` forecasts. Each exception is listed in the
+[benchmarks](/benchmarks/linear#intentional-differences) and in
+[What's different](./differences).

@@ -14,7 +14,7 @@ import { loadRunEvidence } from "../stored-results.ts";
 
 const recordedDirectory = fileURLToPath(
   new URL(
-    "../../results/retained/flat-growth-and-evaluation/2026-10-02T210323-182Z-6cbae03d/",
+    "../../results/retained/flat-growth-and-evaluation/2026-10-04T191226-966Z-730ead62/",
     import.meta.url,
   ),
 );
@@ -23,15 +23,13 @@ describe("capability catalog", () => {
   it("preserves original settings/gates while selecting only requested cases", async () => {
     const catalog = await Effect.runPromise(loadCaseCatalog());
     const recorded = await Effect.runPromise(loadRunEvidence(recordedDirectory));
-    expect(catalog).toHaveLength(138);
-    expect(new Set(catalog.map((item) => item.id)).size).toBe(138);
+    expect(catalog).toHaveLength(112);
+    expect(new Set(catalog.map((item) => item.id)).size).toBe(112);
 
     for (const original of recorded.cases) {
       const { datasetIdentity: _identity, ...declaration } = original;
-      expect(catalog.find((item) => item.id === original.id)).toEqual({
-        ...declaration,
-        dataset: declaration.dataset.replace("generated/", "v1/"),
-      });
+
+      expect(catalog.find((item) => item.id === original.id)).toEqual(declaration);
     }
 
     const selected = await Effect.runPromise(

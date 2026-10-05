@@ -54,7 +54,7 @@
       "kind": "linear-map",
       "comparison": {
         "kind": "equivalent-objective",
-        "evidenceId": "explicit-linear-map-objective-v1"
+        "evidenceId": "linear-output-first-v4"
       },
       "configuration": {
         "effectMap": "explicit",
@@ -67,15 +67,12 @@
         "events": [],
         "regressors": []
       },
-      "effectOptimizer": {
-        "maxIterations": 10000,
-        "relativeTolerance": 1e-10,
-        "absoluteTolerance": 1e-12
-      },
+      "effectOptimizer": {},
       "pythonOptimizer": {
-        "algorithm": "Newton",
+        "algorithm": "Auto",
         "maxIterations": 10000,
-        "newtonFallback": false
+        "newtonFallback": true,
+        "sigFigs": 12
       }
     },
     "phases": [
@@ -93,6 +90,14 @@
     "measuredIterations": 3,
     "independentRuns": 2,
     "timeoutSeconds": 300,
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
     "correctnessTolerances": {
       "trend": {
         "absolute": 0.01,
@@ -127,7 +132,7 @@
       "kind": "linear-map",
       "comparison": {
         "kind": "equivalent-objective",
-        "evidenceId": "explicit-linear-map-seasonal-objective-v1"
+        "evidenceId": "linear-output-first-v4"
       },
       "configuration": {
         "effectMap": "explicit",
@@ -147,15 +152,12 @@
         "events": [],
         "regressors": []
       },
-      "effectOptimizer": {
-        "maxIterations": 10000,
-        "relativeTolerance": 1e-10,
-        "absoluteTolerance": 1e-12
-      },
+      "effectOptimizer": {},
       "pythonOptimizer": {
-        "algorithm": "LBFGS",
+        "algorithm": "Auto",
         "maxIterations": 10000,
-        "newtonFallback": false
+        "newtonFallback": true,
+        "sigFigs": 12
       }
     },
     "phases": [
@@ -172,6 +174,14 @@
     "measuredIterations": 3,
     "independentRuns": 2,
     "timeoutSeconds": 300,
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
     "correctnessTolerances": {
       "trend": {
         "absolute": 0.05,
@@ -206,7 +216,7 @@
       "kind": "linear-map",
       "comparison": {
         "kind": "equivalent-objective",
-        "evidenceId": "mixed-features-explicit-map-v1"
+        "evidenceId": "linear-output-first-v4"
       },
       "configuration": {
         "effectMap": "explicit",
@@ -247,15 +257,12 @@
           }
         ]
       },
-      "effectOptimizer": {
-        "maxIterations": 10000,
-        "relativeTolerance": 1e-10,
-        "absoluteTolerance": 1e-12
-      },
+      "effectOptimizer": {},
       "pythonOptimizer": {
-        "algorithm": "Newton",
+        "algorithm": "Auto",
         "maxIterations": 10000,
-        "newtonFallback": false
+        "newtonFallback": true,
+        "sigFigs": 12
       }
     },
     "phases": [
@@ -273,6 +280,14 @@
     "measuredIterations": 3,
     "independentRuns": 2,
     "timeoutSeconds": 300,
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
     "correctnessTolerances": {
       "trend": {
         "absolute": 0.08,
@@ -307,7 +322,7 @@
       "kind": "linear-map",
       "comparison": {
         "kind": "equivalent-objective",
-        "evidenceId": "mixed-features-automatic-map-v1"
+        "evidenceId": "linear-output-first-v4"
       },
       "configuration": {
         "effectMap": "omitted",
@@ -399,15 +414,12 @@
           }
         ]
       },
-      "effectOptimizer": {
-        "maxIterations": 10000,
-        "relativeTolerance": 1e-10,
-        "absoluteTolerance": 1e-12
-      },
+      "effectOptimizer": {},
       "pythonOptimizer": {
-        "algorithm": "LBFGS",
+        "algorithm": "Auto",
         "maxIterations": 10000,
-        "newtonFallback": false
+        "newtonFallback": true,
+        "sigFigs": 12
       }
     },
     "phases": [
@@ -425,6 +437,14 @@
     "measuredIterations": 2,
     "independentRuns": 2,
     "timeoutSeconds": 600,
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
     "correctnessTolerances": {
       "trend": {
         "absolute": 0.5,

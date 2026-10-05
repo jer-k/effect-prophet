@@ -516,9 +516,17 @@ const metadataProjection = (
   return { ...metadata, targetScaling: { ...model.targetScaling } };
 };
 
+/** Prophet's `set_changepoints` shrinks the count when the history is too short for it. */
+const expectedAutomaticCount = (count: number, range: number, trainingRows: number) => {
+  const historySize = Math.floor(trainingRows * range);
+
+  return Math.max(0, count + 1 > historySize ? historySize - 1 : count);
+};
+
 const assertMetadata = (
   benchmarkCase: BenchmarkCase,
   metadata: ReturnType<typeof metadataProjection>,
+  trainingRows: number,
 ): void => {
   if (benchmarkCase.workload.kind === "fixed-linear-prediction") {
     return;
@@ -604,7 +612,14 @@ const assertMetadata = (
     if (JSON.stringify(metadata.changepointTimestamps) !== JSON.stringify(expected)) {
       throw new Error(`Case ${benchmarkCase.id} changed explicit changepoints`);
     }
-  } else if (metadata.changepointTimestamps.length !== configuration.changepoints.count) {
+  } else if (
+    metadata.changepointTimestamps.length !==
+    expectedAutomaticCount(
+      configuration.changepoints.count,
+      configuration.changepoints.range,
+      trainingRows,
+    )
+  ) {
     throw new Error(`Case ${benchmarkCase.id} resolved the wrong automatic changepoint count`);
   }
 };
@@ -834,7 +849,7 @@ const correctnessProjection = (
 
   assertForecasts(forecasts, benchmarkCase, dataset);
   assertFixedEquation(forecasts, benchmarkCase);
-  assertMetadata(benchmarkCase, metadata);
+  assertMetadata(benchmarkCase, metadata, dataset.observations.length);
 
   const persistenceError = persistenceMaximumError(model, input, forecasts);
 

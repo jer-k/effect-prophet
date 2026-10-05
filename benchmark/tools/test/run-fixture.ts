@@ -17,7 +17,7 @@ export const makeRunFixture = async () => {
 
   const retained = fileURLToPath(
     new URL(
-      "../../results/retained/flat-growth-and-evaluation/2026-10-02T210323-182Z-6cbae03d/",
+      "../../results/retained/flat-growth-and-evaluation/2026-10-04T191226-966Z-730ead62/",
       import.meta.url,
     ),
   );

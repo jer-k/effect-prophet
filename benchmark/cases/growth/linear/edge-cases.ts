@@ -1,4 +1,5 @@
 import type { BenchmarkCase } from "../../../tools/case.ts";
+import { linearComparison, linearOptimizerQuality, linearOptimizers } from "./controls.ts";
 
 const phases = [
   "warm-fit",
@@ -23,23 +24,21 @@ const policy = {
   },
 };
 
-const effectOptimizer = {
-  maxIterations: 10000,
-  relativeTolerance: 1e-10,
-  absoluteTolerance: 1e-12,
-};
-
-const pythonOptimizer = {
-  algorithm: "Newton",
-  maxIterations: 10000,
-  newtonFallback: false,
-} as const;
-
 const automatic = { mode: "auto", count: 25, range: 0.8 } as const;
 
 const explicit = { mode: "explicit", timestamps: ["2020-01-17T00:00:00.000Z"] } as const;
 
-const comparison = { kind: "equivalent-objective", evidenceId: "training-row-map-v1" } as const;
+/** Flat zero-span probes keep their original row-handling evidence and Python controls. */
+const flatComparison = {
+  kind: "equivalent-objective",
+  evidenceId: "training-row-map-v1",
+} as const;
+
+const flatPythonOptimizer = {
+  algorithm: "Newton",
+  maxIterations: 10000,
+  newtonFallback: false,
+} as const;
 
 const configuration = {
   growth: "linear",
@@ -75,14 +74,14 @@ export const linearGrowthEdgeCases: ReadonlyArray<BenchmarkCase> = [
       dataset: `v1/training-${variant}.json`,
       workload: {
         kind: "stage-f-map" as const,
-        comparison,
+        comparison: linearComparison,
         configuration: {
           ...configuration,
           changepoints: points === "explicit" ? explicit : automatic,
         },
-        effectOptimizer,
-        pythonOptimizer,
+        ...linearOptimizers,
       },
+      optimizerQuality: linearOptimizerQuality,
       phases,
     })),
   ),
@@ -92,11 +91,11 @@ export const linearGrowthEdgeCases: ReadonlyArray<BenchmarkCase> = [
     dataset: "v1/training-duplicate-features.json",
     workload: {
       kind: "stage-f-map",
-      comparison,
+      comparison: linearComparison,
       configuration: { ...configuration, ...features },
-      effectOptimizer,
-      pythonOptimizer,
+      ...linearOptimizers,
     },
+    optimizerQuality: linearOptimizerQuality,
     phases,
   },
   {
@@ -105,10 +104,9 @@ export const linearGrowthEdgeCases: ReadonlyArray<BenchmarkCase> = [
     dataset: "v1/training-duplicates.json",
     workload: {
       kind: "stage-f-map",
-      comparison,
+      comparison: linearComparison,
       configuration,
-      effectOptimizer,
-      pythonOptimizer,
+      ...linearOptimizers,
       uncertainty: {
         seed: 42,
         samples: 128,
@@ -119,6 +117,7 @@ export const linearGrowthEdgeCases: ReadonlyArray<BenchmarkCase> = [
         samplerMemoryLimitBytes: 33554432,
       },
     },
+    optimizerQuality: linearOptimizerQuality,
     phases: ["warm-uncertainty", "fresh-process-restored-uncertainty"],
   },
   ...(["varied", "constant"] as const).flatMap((variant) =>
@@ -132,19 +131,28 @@ export const linearGrowthEdgeCases: ReadonlyArray<BenchmarkCase> = [
 
       const workload = {
         kind: "stage-f-map" as const,
-        comparison,
         configuration: {
           ...configuration,
           growth,
           changepoints:
             growth === "flat" ? { mode: "explicit" as const, timestamps: [] } : automatic,
         },
-        pythonOptimizer,
       };
 
       return growth === "flat"
-        ? { ...base, workload }
-        : { ...base, workload: { ...workload, effectOptimizer } };
+        ? {
+            ...base,
+            workload: {
+              ...workload,
+              comparison: flatComparison,
+              pythonOptimizer: flatPythonOptimizer,
+            },
+          }
+        : {
+            ...base,
+            workload: { ...workload, comparison: linearComparison, ...linearOptimizers },
+            optimizerQuality: linearOptimizerQuality,
+          };
     }),
   ),
   {
@@ -155,8 +163,7 @@ export const linearGrowthEdgeCases: ReadonlyArray<BenchmarkCase> = [
       kind: "evaluation",
       comparison: { kind: "different-public-work", evidenceId: "stage-h-evaluation-v1" },
       configuration: { ...configuration, changepoints: explicit },
-      effectOptimizer,
-      pythonOptimizer,
+      ...linearOptimizers,
       plan: {
         horizonMs: 3 * 86400000,
         cutoffs: ["2020-01-18T00:00:00.000Z", "2020-01-19T00:00:00.000Z"],

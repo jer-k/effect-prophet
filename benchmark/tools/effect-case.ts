@@ -13,7 +13,15 @@ export const effectOptionsForCase = (
   }
 
   if (workload.kind === "stage-f-map" && workload.fitRequest === "growth-only") {
-    return { growth: "logistic" };
+    // Linear is the default growth, so a linear defaults probe passes no options at all.
+    switch (workload.configuration.growth) {
+      case "linear":
+        return {};
+      case "flat":
+        return { growth: "flat" };
+      case "logistic":
+        return { growth: "logistic" };
+    }
   }
 
   const configuration = workload.configuration;

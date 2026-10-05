@@ -1,4 +1,8 @@
 import type { BenchmarkCase } from "../../../tools/case.ts";
+import {
+  outputFirstQuality,
+  pythonDefaultOptimizer as pythonOptimizer,
+} from "../../prophet-defaults.ts";
 
 const phases = [
   "warm-fit",
@@ -7,13 +11,6 @@ const phases = [
   "model-json-decode",
   "fresh-process-restored-predict",
 ] as const;
-
-const pythonOptimizer = {
-  algorithm: "Auto",
-  maxIterations: 10_000,
-  newtonFallback: true,
-  sigFigs: 12,
-} as const;
 
 const weekly = { name: "weekly-custom", periodDays: 7, fourierOrder: 3, priorScale: 10 };
 
@@ -70,14 +67,7 @@ const configuredCase = (
     noiseScale: { absolute: 0.02, relative: 0 },
     persistence: { absolute: 1e-8, relative: 0 },
   },
-  optimizerQuality: {
-    kind: "output-first",
-    investigate: {
-      objectiveAbsolute: 0.01,
-      normalizedNoiseAbsolute: 0.0002,
-      stationarityExcess: 0.01,
-    },
-  },
+  optimizerQuality: outputFirstQuality,
 });
 
 /** Python-default logistic investigation targets; declarations do not imply passing parity. */

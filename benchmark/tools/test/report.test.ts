@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 
 import { parseBenchmarkCases, type BenchmarkCase } from "../case.ts";
 import { linearGrowthEdgeCases } from "../../cases/growth/linear/edge-cases.ts";
-import { stanAlignedCases } from "../../cases/growth/linear/stan-aligned.ts";
 import { uncertaintyCases } from "../../cases/uncertainty/public-api.ts";
 import { buildBenchmarkReport, renderBenchmarkMarkdown } from "../report.ts";
 import { parseImplementationResult, parseRunManifest } from "../result.ts";
@@ -110,9 +109,18 @@ const manifestInput = {
   containerImages: [],
 };
 
-const optimizerCase = stanAlignedCases(linearGrowthEdgeCases).find(
-  (benchmarkCase) => benchmarkCase.id === "map-training-ordered-auto-stan-v2",
+const optimizerCase = linearGrowthEdgeCases.find(
+  (benchmarkCase) => benchmarkCase.id === "map-training-ordered-auto",
 );
+
+const optimizerEvidence = optimizerCase?.workload.comparison.evidenceId ?? "";
+
+/** The retired linear policy: objective and noise gate, stationarity reported only. */
+const deferredStationarity = {
+  objectiveAbsolute: 0.01,
+  normalizedNoiseAbsolute: 0.0002,
+  stationarity: { kind: "diagnostic-only", followUp: "EP-097" },
+} as const;
 
 const optimizerQualityEntries = [
   { name: "objective", value: -550.96916 },
@@ -130,7 +138,7 @@ const optimizerResultInput = (
     {
       ...makeResultInput(implementation, 100).measurements[0],
       comparison: "equivalent-objective",
-      evidenceId: "linear-stan-map-fit-quality-v3",
+      evidenceId: optimizerEvidence,
     },
   ],
 });
@@ -165,7 +173,7 @@ const optimizerReport = async (
     cases,
     effectResult,
     pythonResult,
-    new Set(["linear-stan-map-fit-quality-v3"]),
+    new Set([optimizerEvidence]),
   );
 };
 
@@ -176,6 +184,7 @@ describe("linear fit-quality acceptance with deferred stationarity", () => {
       optimizerQualityEntries.map((entry) =>
         entry.name === "stationarity-residual" ? { ...entry, value: 161.266 } : entry,
       ),
+      deferredStationarity,
     );
 
     expect(report.correctness[0]?.status).toBe("passed");
@@ -282,6 +291,7 @@ describe("linear fit-quality acceptance with deferred stationarity", () => {
     const report = await optimizerReport(
       optimizerQualityEntries,
       optimizerQualityEntries.map((entry) => (entry.name === name ? { ...entry, value } : entry)),
+      deferredStationarity,
     );
 
     expect(report.correctness[0]?.status).toBe("failed");
@@ -330,7 +340,7 @@ describe("linear fit-quality acceptance with deferred stationarity", () => {
   });
 
   it.each([
-    { policy: "deferred stationarity", quality: undefined },
+    { policy: "deferred stationarity", quality: deferredStationarity },
     { policy: "output-first", quality: outputFirst },
   ])("does not bypass forecasts, metadata or persistence under $policy", async ({ quality }) => {
     if (optimizerCase === undefined) throw new Error("Expected frozen automatic linear case");
@@ -374,7 +384,7 @@ describe("linear fit-quality acceptance with deferred stationarity", () => {
         cases,
         effectResult,
         pythonResult,
-        new Set(["linear-stan-map-fit-quality-v3"]),
+        new Set([optimizerEvidence]),
       );
 
       expect(report.correctness[0]?.status).toBe("failed");
@@ -413,6 +423,49 @@ describe("benchmark reporting", () => {
     expect(markdown.toLowerCase()).not.toContain("speedup");
     expect(markdown.toLowerCase()).not.toContain("winner");
   });
+
+  it.each([
+    { modelKind: "flat-map", status: "passed" },
+    { modelKind: "linear-piecewise-map", status: "failed" },
+  ])(
+    "compares changepoints only when the trend uses them ($modelKind)",
+    async ({ modelKind, status }) => {
+      const withChangepoints = (
+        implementation: "effect-prophet" | "python-prophet",
+        changepointTimestamps: ReadonlyArray<number>,
+      ) => {
+        const input = makeResultInput(implementation, 10);
+
+        return {
+          ...input,
+          correctness: input.correctness.map((entry) => ({
+            ...entry,
+            modelKind,
+            changepointTimestamps,
+          })),
+        };
+      };
+
+      const [cases, manifest, effectResult, pythonResult] = await Promise.all([
+        Effect.runPromise(parseBenchmarkCases([caseInput])),
+        Effect.runPromise(parseRunManifest(manifestInput)),
+        Effect.runPromise(parseImplementationResult(withChangepoints("effect-prophet", []))),
+        Effect.runPromise(
+          parseImplementationResult(withChangepoints("python-prophet", [1_704_067_200_000])),
+        ),
+      ]);
+
+      const report = buildBenchmarkReport(
+        manifest,
+        cases,
+        effectResult,
+        pythonResult,
+        new Set(["fixed-v1"]),
+      );
+
+      expect(report.correctness[0]?.status).toBe(status);
+    },
+  );
 
   it("suppresses all timings when a cross-language quantity fails", async () => {
     const [cases, manifest, effectResult] = await Promise.all([
@@ -499,7 +552,7 @@ describe("benchmark reporting", () => {
           caseId: selected.id,
           modelKind: "linear-piecewise-map",
           noiseScale: 0.2,
-          fitQuality: [{ name: "objective", value: 1 }],
+          fitQuality: optimizerQualityEntries,
         },
       ],
       measurements: [

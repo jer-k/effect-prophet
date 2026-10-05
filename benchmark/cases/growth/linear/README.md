@@ -1,31 +1,25 @@
-# Linear growth coverage
+# Linear growth cases
 
-`public-api.json` owns fixed-equation prediction, explicit/automatic changepoints, irregular
-seasonal trends and mixed-feature linear fits. Focused holidays, regressors and conditional
-seasonality cases have their own capability folders. `../mixed-map.ts` supplies scaling and
-mixed-component growth cases.
+Every fitted linear case runs both libraries on their default optimizers. The shared settings and
+fit-quality gate live in `controls.ts`.
 
-`edge-cases.ts` covers ordered/unsorted histories, repeated timestamps and differing covariates,
-uncertainty/restoration, duplicate-aware evaluation and zero-time-range linear/flat probes.
-Source rows are never sorted or deduplicated by the dataset parser. Public adapters preserve
-complete rows; temporal evaluation stably partitions timestamp groups without leakage.
+| File                                            | Cases                                                                                  |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `../defaults.ts`                                | `fit(history)` against `Prophet().fit(df)` with no options on either side              |
+| `public-api.json`                               | Fixed-equation prediction, explicit/automatic changepoints and mixed-feature fits      |
+| `edge-cases.ts`                                 | Sorted, unsorted and repeated timestamps, uncertainty, evaluation and zero-span probes |
+| `../mixed-map.ts`                               | Absmax/minmax scaling and mixed additive/multiplicative components                     |
+| `../../holidays`, `regressors`, `seasonalities` | One focused case each                                                                  |
 
-`stan-aligned.ts` derives current `-stan-v2` counterparts without copying input datasets or
-weakening original forecast/lifecycle gates. Unsuffixed declarations remain historical controls.
-Use current IDs for reviewed fit-quality work:
+The uncertainty and evaluation suites derive their linear cases from these sources.
+
+Zero-span probes put every row on one timestamp. A trend over zero time is undefined, so Effect
+returns a `FittingError`; they are expected to fail the comparison and are never timed.
+
+`scenarios.json` inventories the public calls these cases compare. Run all linear cases with:
 
 ```sh
-npm run benchmark -- --case map-training-duplicates-auto-stan-v2 \
-  --case map-training-duplicate-features-auto-stan-v2
+npm run benchmark -- --case linear-defaults-small --case map-explicit-break-small
 ```
 
-`scenarios.json` also inventories non-timing policy comparisons. A catalog entry is not passing
-evidence. Featureless linear fitting uses MAP with automatic changepoints, even when built-in
-seasonalities resolve empty or are explicitly off. Partial map requests retain those defaults.
-Fixed-equation prediction cases use authored MAP state, not an alternate fitting objective. Zero-span linear probes produce no usable matched fit; their
-failures must not be relabeled passing or timed as equivalent work.
-
-See [all runnable declarations](../../../CASES.md),
-[recorded results](../../../results/RESULTS.md), and the
-[accepted fit-quality policy](../../../../docs/decisions/linear-map-benchmark-acceptance.md).
-Stationarity is diagnostic-only under EP-097, not a global-optimality certificate.
+The docs site renders the retained `linear-growth` baseline at `/benchmarks/linear`.
