@@ -100,6 +100,27 @@ const pack = spawnSync("npm", ["pack", "--dry-run", "--json", "--ignore-scripts"
 
 assert.equal(pack.status, 0, pack.stderr || pack.stdout);
 
+const PackageManifestSchema = Schema.Struct({
+  dependencies: Schema.optional(Schema.Record(Schema.String, Schema.String)),
+  peerDependencies: Schema.Record(Schema.String, Schema.String),
+});
+
+const packageManifest = Schema.decodeUnknownSync(PackageManifestSchema)(
+  JSON.parse(await readFile(new URL("package.json", projectRoot), "utf8")),
+);
+
+assert.equal(
+  packageManifest.peerDependencies["effect"],
+  "^4.0.0",
+  "effect must be a peer dependency so applications share one copy",
+);
+
+assert.equal(
+  packageManifest.dependencies?.["effect"],
+  undefined,
+  "effect must not also be a regular dependency",
+);
+
 const PackResultsSchema = Schema.Array(
   Schema.Struct({
     files: Schema.Array(Schema.Struct({ path: Schema.String })),
