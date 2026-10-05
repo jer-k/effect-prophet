@@ -138,6 +138,8 @@ struct LogisticState {
   /// Per row, Stan's rate change and offset adjustment for that prefix.
   changes: Vec<f64>,
   adjustments: Vec<f64>,
+  /// Per feature column, whether it scales the trend.
+  multiplicative: Vec<bool>,
 }
 
 /// Each row's most recent logistic probability, keyed by the exact bits of
@@ -761,6 +763,18 @@ fn logistic_state(
     .collect();
   let changes = prefix_column_sums(target.len(), &active, deltas);
   let adjustments = prefix_column_sums(target.len(), &active, &segments.gamma);
+  let multiplicative: Vec<bool> = modes
+    .iter()
+    .map(|mode| *mode == ComponentMode::Multiplicative)
+    .collect();
+  // Each row's `[additive, multiplicative]` effects, accumulated from zero.
+  let effects = crate::stan::reductions::row_split_sums(
+    target.len(),
+    &multiplicative,
+    &beta[..feature_count],
+    [0.0, 0.0],
+    |row| &features[row * feature_count..(row + 1) * feature_count],
+  );
 
   for row in 0..target.len() {
     let change = changes[row];
@@ -771,16 +785,7 @@ fn logistic_state(
     let probability = probabilities_cache.probability(row, eta);
     probabilities[row] = probability;
     trend[row] = capacities[row] * probability;
-    let mut additive = 0.0;
-    let mut factor = 0.0;
-
-    for column in 0..feature_count {
-      let effect = features[row * feature_count + column] * beta[column];
-      match modes[column] {
-        ComponentMode::Additive => additive += effect,
-        ComponentMode::Multiplicative => factor += effect,
-      }
-    }
+    let [additive, factor] = effects[row];
 
     residuals[row] = -(target[row] - additive - trend[row] * (1.0 + factor));
   }
@@ -801,6 +806,7 @@ fn logistic_state(
     active,
     changes,
     adjustments,
+    multiplicative,
   })
 }
 
@@ -852,13 +858,26 @@ fn evaluate(
   let mut row_rate_adjoints = vec![0.0; target.len()];
   let mut row_offset_adjoints = vec![0.0; target.len()];
 
+  let multiplicative = &state.multiplicative;
+  // Multiplicative factors accumulate from one here, unlike the state's sums
+  // from zero; additive columns land in the unused first slot.
+  let factors: Vec<f64> = if multiplicative.contains(&true) {
+    crate::stan::reductions::row_split_sums(
+      target.len(),
+      multiplicative,
+      &beta[..feature_count],
+      [0.0, 1.0],
+      |row| &features[row * feature_count..(row + 1) * feature_count],
+    )
+    .into_iter()
+    .map(|[_, factor]| factor)
+    .collect()
+  } else {
+    vec![1.0; target.len()]
+  };
+
   for row in 0..target.len() {
-    let mut factor = 1.0;
-    for column in 0..feature_count {
-      if modes[column] == ComponentMode::Multiplicative {
-        factor += features[row * feature_count + column] * beta[column];
-      }
-    }
+    let factor = factors[row];
 
     let sigmoid = state.probabilities[row];
     let scaled_residual = (state.residuals[row] * inverse_noise) * inverse_noise;
@@ -912,15 +931,19 @@ fn evaluate(
     gradient_deltas[column] += cumulative_adjoint;
   }
 
+  // The GLM's double-valued mu.transpose() * X uses row-major packets.
+  // X_sm's variable-adjoint reverse product retains scalar accumulation;
+  // the pinned cancellation probes distinguish these two paths.
+  let additive_gradients = crate::stan::reductions::scaled_matrix_row_sums(
+    target.len(),
+    &vec![false; feature_count],
+    |row| &features[row * feature_count..(row + 1) * feature_count],
+    |row| [(state.residuals[row] * inverse_noise) * inverse_noise, 0.0],
+  );
+
   for column in 0..feature_count {
     if modes[column] == ComponentMode::Additive {
-      // The GLM's double-valued mu.transpose() * X uses row-major packets.
-      // X_sm's variable-adjoint reverse product retains scalar accumulation;
-      // the pinned cancellation probes distinguish these two paths.
-      feature_gradients[column] = crate::stan::reductions::matrix_row_sum(target.len(), |row| {
-        let scaled_residual = (state.residuals[row] * inverse_noise) * inverse_noise;
-        scaled_residual * features[row * feature_count + column]
-      });
+      feature_gradients[column] = additive_gradients[column];
     }
 
     let inverse = 1.0 / priors[column];

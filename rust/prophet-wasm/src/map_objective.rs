@@ -260,6 +260,8 @@ pub struct StanLinearObjective<'a> {
   active_changepoints: Vec<usize>,
   feature_priors: &'a [f64],
   modes: &'a [ComponentMode],
+  /// Per feature column, whether its adjoint scales with the trend.
+  multiplicative_columns: Vec<bool>,
   changepoint_prior: f64,
   column_count: usize,
 }
@@ -326,6 +328,10 @@ impl<'a> StanLinearObjective<'a> {
       active_changepoints,
       feature_priors,
       modes,
+      multiplicative_columns: modes
+        .iter()
+        .map(|mode| *mode == ComponentMode::Multiplicative)
+        .collect(),
       changepoint_prior,
       column_count,
     })
@@ -435,25 +441,23 @@ impl<'a> StanLinearObjective<'a> {
       offset_adjustments.push(offset_adjustment);
     }
 
+    let feature_start = 2 + self.changepoint_count;
+    // Each row's `[additive, factor]` effects, accumulated column by column.
+    let effects = crate::stan::reductions::row_split_sums(
+      self.target.len(),
+      &self.multiplicative_columns,
+      &parameters[beta_start..beta_start + self.modes.len()],
+      [0.0, 1.0],
+      |row| &self.design[row * self.column_count + feature_start..(row + 1) * self.column_count],
+    );
+
     for (row, &target) in self.target.iter().enumerate() {
       let offset = row * self.column_count;
       let time = self.design[offset + 1];
       let active = self.active_changepoints[row];
       let trend = (parameters[0] + rate_adjustments[active]) * time
         + (parameters[1] + offset_adjustments[active]);
-
-      let mut additive = 0.0;
-      let mut factor = 1.0;
-
-      for (column, mode) in self.modes.iter().enumerate() {
-        let feature = self.design[offset + 2 + self.changepoint_count + column];
-        let contribution = feature * parameters[beta_start + column];
-
-        match mode {
-          ComponentMode::Additive => additive += contribution,
-          ComponentMode::Multiplicative => factor += contribution,
-        }
-      }
+      let [additive, factor] = effects[row];
 
       // Match normal_id_glm's evaluation order, not an algebraically equivalent
       // direct RSS/variance expression: scale residual first, then scale its
@@ -554,13 +558,12 @@ impl<'a> StanLinearObjective<'a> {
   fn feature_adjoints(&self, scores: &[f64], trends: &[f64]) -> Vec<f64> {
     let feature_start = 2 + self.changepoint_count;
 
-    crate::stan::reductions::matrix_row_sums(scores.len(), self.modes.len(), |row, column| {
-      let adjoint = match self.modes[column] {
-        ComponentMode::Additive => scores[row],
-        ComponentMode::Multiplicative => trends[row] * scores[row],
-      };
-      self.design[row * self.column_count + feature_start + column] * adjoint
-    })
+    crate::stan::reductions::scaled_matrix_row_sums(
+      scores.len(),
+      &self.multiplicative_columns,
+      |row| &self.design[row * self.column_count + feature_start..(row + 1) * self.column_count],
+      |row| [scores[row], trends[row] * scores[row]],
+    )
   }
 
   /// Optimize from the original Prophet initialization using the pinned Newton path.

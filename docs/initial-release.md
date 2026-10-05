@@ -78,7 +78,9 @@ What's left is mostly **cleanup and release mechanics**:
     fingerprints natively and in WASM, plus new equivalence tests for each changed reduction.
   - Local WASM timings against Python Prophet 1.4.0 on the same machine: linear 90 rows 27 ms vs
     91 ms, 730 rows 28 ms vs 156 ms; logistic 90 rows 140 ms vs 171 ms, 730 rows 213 ms vs 407 ms.
-    The published linear and flat timings predate this work.
+    All three baselines were rerun on 2026-10-05 after the speedups: Effect Prophet is faster
+    than Python on every benchmarked fit (median warm fit: linear 5.1 ms vs 23.5 ms, flat 1.6 ms
+    vs 7.9 ms, logistic 12.8 ms vs 20.6 ms), with the same pass/fail and flag results as before.
 
 ## Where things stand
 
@@ -115,7 +117,7 @@ What's left is mostly **cleanup and release mechanics**:
 
 ### 1. Clean baselines, then fill in the Python pages
 
-- Every saved run so far is from a dirty tree, and the linear and flat timings predate the speedup.
+- Every saved run so far is from a dirty tree.
   Before release, rerun all three baselines from a clean commit.
 - Write the remaining outline pages in `site/python/`: **Coming from Python** (a translation
   table) and **What's different** (the known gaps). **How close are the results?** is written and
