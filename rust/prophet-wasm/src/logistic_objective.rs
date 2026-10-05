@@ -1,7 +1,7 @@
 //! Parsed logistic MAP state for the existing Stan numerical strategies.
 //! The public no-point fold deliberately leaves m unchanged, matching Prophet.
 
-use super::{LogisticParameters, evaluate, initialize_logistic};
+use super::{LogisticParameters, ProbabilityCache, evaluate, initialize_logistic};
 use crate::fourier::checked_element_count;
 use crate::map_objective::{
   MapObjectiveError, constrained_stationarity_residual, stan_log_density_constant,
@@ -27,6 +27,7 @@ pub struct StanLogisticObjective<'a> {
   sigma_index: usize,
   parameter_count: usize,
   initial: (f64, f64),
+  probabilities: ProbabilityCache,
 }
 
 impl<'a> StanLogisticObjective<'a> {
@@ -102,6 +103,7 @@ impl<'a> StanLogisticObjective<'a> {
       sigma_index,
       parameter_count,
       initial,
+      probabilities: ProbabilityCache::new(target.len()),
     })
   }
 
@@ -172,6 +174,7 @@ impl<'a> StanLogisticObjective<'a> {
       self.priors,
       self.changepoint_prior,
       sigma,
+      &self.probabilities,
     )
     .map_err(|_| MapObjectiveError::NonFiniteResult)?;
 

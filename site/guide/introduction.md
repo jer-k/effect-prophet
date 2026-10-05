@@ -7,6 +7,11 @@ It is a TypeScript version of [Prophet](https://facebook.github.io/prophet/), a 
 library from Meta that is popular because it works well on everyday business data without much
 tuning. Effect Prophet uses the same model and is tested against the Python version.
 
+- **One dependency.** [Effect](https://effect.website) is the only package it depends on.
+- **No Stan install.** Prophet's fitting runs on [Stan](https://mc-stan.org/). The
+  parts Prophet uses are ported to Rust and compiled to WebAssembly, which ships inside the
+  package.
+
 ## How a forecast is built
 
 Prophet treats your data as a few simple pieces added together:
@@ -34,12 +39,16 @@ _why_: how much comes from the trend, how much from the day of the week, and so 
 - Problems that depend on many interacting inputs. A general machine-learning model may do better.
 - Minute-by-minute data where the next few points depend mostly on the last few.
 
-## Built with AI
+## AI disclosure
 
-Effect Prophet is a port of Prophet's Python library and was built with the help of AI. Because
-it is math-heavy, I have done my best to make sure it behaves the same as the original. The
-[benchmarks](/benchmarks/linear) and [accuracy comparison](/python/accuracy) show how closely the
-results match. If you find a difference, please open an issue.
+Effect Prophet is a TypeScript port of Meta's Python [Prophet](https://facebook.github.io/prophet/),
+and most of the code was written with AI assistance. The forecasting maths is easy to get subtly
+wrong, so the project doesn't ask you to take correctness on trust. Results are checked against
+Python Prophet itself, and you can see how closely they match in the
+[benchmarks](/benchmarks/linear) and the [accuracy comparison](/python/accuracy).
+
+If you find a case where the results differ from Python Prophet, please
+[open an issue](https://github.com/jer-k/effect-prophet/issues).
 
 ## Why "Effect"?
 

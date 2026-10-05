@@ -1,0 +1,284 @@
+{
+  "schemaVersion": 1,
+  "runId": "2026-10-05T042852-427Z-67c0fada",
+  "createdAt": "2026-10-05T04:29:10.501Z",
+  "gitRevision": "67c0fadac27b562c968436cf839143d83e560a3d",
+  "gitDirty": true,
+  "hostPlatform": "darwin",
+  "hostRelease": "25.5.0",
+  "hostArchitecture": "arm64",
+  "hostProcessor": "Apple M4 Pro",
+  "containerPlatform": "linux/arm64",
+  "emulated": false,
+  "selectedCases": [
+    "logistic-implicit-floor-absmax",
+    "logistic-implicit-floor-minmax",
+    "logistic-explicit-floor-absmax",
+    "logistic-explicit-floor-minmax",
+    "logistic-implicit-floor-auto-changepoints",
+    "logistic-implicit-floor-large",
+    "uncertainty-logistic-implicit-floor-minmax-full-samples-512",
+    "uncertainty-logistic-implicit-floor-large-full-intervals-128",
+    "uncertainty-logistic-explicit-floor-minmax-full-intervals-512",
+    "uncertainty-logistic-explicit-floor-minmax-full-samples-128",
+    "uncertainty-logistic-explicit-floor-minmax-mixed-conditions-events-intervals-128",
+    "uncertainty-logistic-explicit-floor-minmax-mixed-conditions-events-samples-128",
+    "evaluation-logistic-point",
+    "evaluation-logistic-intervals",
+    "evaluation-logistic-search",
+    "evaluation-logistic-large-point",
+    "evaluation-logistic-large-intervals",
+    "logistic-reconcile-basic-96-empty-absmax",
+    "logistic-reconcile-basic-96-explicit-absmax",
+    "logistic-reconcile-basic-96-auto-absmax",
+    "logistic-reconcile-basic-96-empty-minmax",
+    "logistic-reconcile-basic-96-explicit-minmax",
+    "logistic-reconcile-basic-96-auto-minmax",
+    "logistic-reconcile-empty-loose-prior-absmax",
+    "logistic-reconcile-empty-loose-prior-minmax",
+    "logistic-reconcile-basic-99",
+    "logistic-reconcile-basic-100",
+    "logistic-reconcile-basic-256",
+    "logistic-reconcile-defaults-96",
+    "logistic-reconcile-defaults-256",
+    "logistic-reconcile-weekly",
+    "logistic-reconcile-conditional",
+    "logistic-reconcile-event",
+    "logistic-reconcile-regressor-additive",
+    "logistic-reconcile-regressor-multiplicative",
+    "logistic-reconcile-explicit-floor-absmax",
+    "logistic-reconcile-mixed-absmax",
+    "logistic-reconcile-explicit-floor-minmax",
+    "logistic-reconcile-mixed-minmax",
+    "logistic-reconcile-unsorted",
+    "logistic-reconcile-duplicates",
+    "logistic-reconcile-declining",
+    "logistic-reconcile-saturated",
+    "logistic-reconcile-constant",
+    "logistic-reconcile-out-of-bounds"
+  ],
+  "commands": [
+    "BENCHMARK_STAGE=correctness BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/tools/runtime/compose.yaml run --rm effect-prophet-benchmark",
+    "BENCHMARK_STAGE=correctness BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/tools/runtime/compose.yaml run --rm python-prophet-benchmark",
+    "BENCHMARK_REPORT_MODE=eligibility BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/tools/runtime/compose.yaml run --rm benchmark-report",
+    "BENCHMARK_STAGE=timing BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/tools/runtime/compose.yaml run --rm effect-prophet-benchmark",
+    "BENCHMARK_STAGE=timing BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/tools/runtime/compose.yaml run --rm python-prophet-benchmark",
+    "BENCHMARK_REPORT_MODE=final BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/tools/runtime/compose.yaml run --rm benchmark-report"
+  ],
+  "inputHashes": [
+    {
+      "name": "benchmark/cases/growth/linear/public-api.json",
+      "value": "525b2342abbbfa4f107f6ad410f3d7a11b80d3981b40f885e1004ebc75a8b68b"
+    },
+    {
+      "name": "benchmark/cases/holidays/public-api.json",
+      "value": "68bfd246325a715a3803ea0ca134aafe32c82297325c922b9d7d33b5bd442a17"
+    },
+    {
+      "name": "benchmark/cases/regressors/public-api.json",
+      "value": "93a51dfa8e4985e2e3aa1d0bf3568416cf5ba40138b97a2c06225455d3ae6fac"
+    },
+    {
+      "name": "benchmark/cases/seasonalities/public-api.json",
+      "value": "04acddf65c3852ecafcadbe3ebd2f87d1b8dab9922ad364c876aa64db165d00d"
+    },
+    {
+      "name": "benchmark/cases/growth/linear/scenarios.json",
+      "value": "2d4d37b05f57480b7a5b34d87f4158d784182d91fd973e666b1198a97e55bb9d"
+    },
+    {
+      "name": "benchmark/cases/growth/linear/edge-cases.ts",
+      "value": "71108a0cc6553e562c868cc801f739333fa66dfb1431e99c8bdf3042251126d9"
+    },
+    {
+      "name": "benchmark/cases/growth/linear/controls.ts",
+      "value": "883c3c441bf4203ad63500e636a554222e34d83140b0a33f73216efb30f20d18"
+    },
+    {
+      "name": "benchmark/cases/growth/defaults.ts",
+      "value": "ae23e060bd5a442aa805b15e9620c3fcb8829cc75f5107cee3bd906d7d47c2b5"
+    },
+    {
+      "name": "tools/prophet/linear_optimizer_evidence.py",
+      "value": "66db5f89eed91f87a524e6f1f34781b25fe1976a7a162b0751320eaca023a72f"
+    },
+    {
+      "name": "benchmark/cases/growth/mixed-map.ts",
+      "value": "37a01496c590c44f4e63e63988be2811e5dcebaf8f2d36cbd4025f2b02a6208c"
+    },
+    {
+      "name": "benchmark/cases/uncertainty/public-api.ts",
+      "value": "40a65e43cde3ab40b67aea2c2859a2ab9f3be4a856d3621aad964a5785d9ccbe"
+    },
+    {
+      "name": "benchmark/cases/diagnostics/evaluation.ts",
+      "value": "f8fef3a7ae9d6a3d5cf094f40d0a4a876aadcc25ae8c12e07b07c5c86791058c"
+    },
+    {
+      "name": "benchmark/cases/growth/flat/public-api.ts",
+      "value": "1ebec991b24cb60d819ba6e49952ad14b3c6e6ff1f3a3c650058887c9005008a"
+    },
+    {
+      "name": "benchmark/cases/growth/logistic/public-api.ts",
+      "value": "0987c580325059f77fe4d0467f758317156aff9b43916e99240600cf1d917ba4"
+    },
+    {
+      "name": "benchmark/tools/effect-case.ts",
+      "value": "468ec51bf2a7a3bdd8162f30b50972d383a7d15b40ced0d1219d923bffd18280"
+    },
+    {
+      "name": "benchmark/tools/adapters/effect-prophet.ts",
+      "value": "5cf8ab821305f6572be3eb6b22bb90ee8f6919620eb3588d50f151c04a1dd0b6"
+    },
+    {
+      "name": "benchmark/tools/adapters/python-prophet.py",
+      "value": "620f19f91c042a4412f95070b0f558c4de4d5eeeaca498c195ca5b17dbbd0d71"
+    },
+    {
+      "name": "benchmark/tools/catalog.ts",
+      "value": "d3ea7230a18902a5a8ef05b85a61afd1062b7524c7e0bb67ed4e4cfc2ef33923"
+    },
+    {
+      "name": "benchmark/tools/case.ts",
+      "value": "715c0e30e6440db32ecd4b3aeba3af9ddec2068c2bb415ed60de8cf07b4014d0"
+    },
+    {
+      "name": "benchmark/tools/report.ts",
+      "value": "82e0c09e3e9b30d2c5dd834373b650c486f59de00d11795e012642ec05facf5e"
+    },
+    {
+      "name": "benchmark/tools/report-cli.ts",
+      "value": "7d44074f1d29bb2f62389d4957be4c53d17d6e09c8a5eeec37cbfbf50387a3a8"
+    },
+    {
+      "name": "benchmark/tools/evaluation.ts",
+      "value": "db0d639d74db0aa0482c4e321b423d294aa83762b2548dc0aa6b2032d75224b3"
+    },
+    {
+      "name": "benchmark/tools/adapters/evaluation.py",
+      "value": "025bcf9f3210e9a2a91c2e70ac43b23cb385952d180603287d4c9d087561c278"
+    },
+    {
+      "name": "benchmark/results/runs/2026-10-05T042852-427Z-67c0fada/cases.json",
+      "value": "c405b2e131211fed79de5b4bb91b81ca952374695d5ac64d2f6a66c527092a7a"
+    },
+    {
+      "name": "benchmark/evidence/comparisons.json",
+      "value": "e38ee7276d7193f95e65e3e281cdcbfea1638cd1fd51453895886898062e3676"
+    },
+    {
+      "name": "benchmark/tools/runtime/python/uv.lock",
+      "value": "c90f2464e1d50dbe489bdcdaf8350f04c162f6c617559cfb75d6977b0f430ab1"
+    },
+    {
+      "name": "benchmark/inputs/v1/manifest.json",
+      "value": "2ed4d034e5fb034e7faf1c9a5160ff4e2e28562b51dc8b06bb50a48dbf4960c1"
+    },
+    {
+      "name": "benchmark/inputs/v2/manifest.json",
+      "value": "104ef27a397a89f076d5f2fe9486a3af427ec8791be5015ad0d2dfaa99ce3aae"
+    },
+    {
+      "name": "package-lock.json",
+      "value": "cfc25535eef625e86eaca60be37a77d32387da6ebb2bc16ac53555a690f4c972"
+    },
+    {
+      "name": "benchmark/inputs/v1/logistic-implicit-floor.json",
+      "value": "d8cde080f7a8af86acb6e70e2577d0d1d2ee8f813bf4836e5a61702a16dc1558"
+    },
+    {
+      "name": "benchmark/inputs/v1/logistic-explicit-floor.json",
+      "value": "c6fa262b4fd7353c7113029e7863b000afba00ec339f72dfaaa26b08a76a0f9b"
+    },
+    {
+      "name": "benchmark/inputs/v1/logistic-implicit-floor-large.json",
+      "value": "61b169aa9c925333f6dd11301febfdeb82e9ae7f2b95f3cb4c222e6dcfb080d9"
+    },
+    {
+      "name": "benchmark/inputs/v1/logistic-uncertainty-mixed.json",
+      "value": "6dd8e686d92b341795f6e1f4cf7be9c247ccdb275ca309059fd9114369416767"
+    },
+    {
+      "name": "benchmark/inputs/v2/logistic-basic-96.json",
+      "value": "8ecc67fda9a300c74a9a18aecb8d39a6468ac378c72e413084f90ae2cd61db1c"
+    },
+    {
+      "name": "benchmark/inputs/v2/logistic-basic-99.json",
+      "value": "42372ce4d1c22348c7f09f5dea6bf41e00cbe03aa3c9024c5b4806bb9be52a2b"
+    },
+    {
+      "name": "benchmark/inputs/v2/logistic-basic-100.json",
+      "value": "b96e6e9d39e6d8f0d9df618c973698c81b60a2e36f91cc25784d8a305c9488cc"
+    },
+    {
+      "name": "benchmark/inputs/v2/logistic-basic-256.json",
+      "value": "f5b94d2ca42a607b6e1b9001b8e640fe13ff435ff9c4209ad40f51868d93d7f5"
+    },
+    {
+      "name": "benchmark/inputs/v2/logistic-weekly-96.json",
+      "value": "46215a2026d6c61ebe4d60064f44f24a7f406116f8528906e9480b935e51c822"
+    },
+    {
+      "name": "benchmark/inputs/v2/logistic-weekly-256.json",
+      "value": "3110b94b54122792796675c0cf8be7017ca80a7147eb66663d0163c46ab2072c"
+    },
+    {
+      "name": "benchmark/inputs/v2/logistic-conditional-96.json",
+      "value": "2cbe9ef267c1b56d0518382fa4acba99dd41c130b37d0287357f3b90f7e6a436"
+    },
+    {
+      "name": "benchmark/inputs/v2/logistic-event-96.json",
+      "value": "92c0c72ddbcc79923fd870820dc0f5fa2cdd4886071ccde25c8aecb39a92ff75"
+    },
+    {
+      "name": "benchmark/inputs/v2/logistic-regressor-additive-96.json",
+      "value": "b1f011841d259a1a746b2ebe5b0764dff2da86d0bc208d6e6ec04f28e1402b64"
+    },
+    {
+      "name": "benchmark/inputs/v2/logistic-regressor-multiplicative-96.json",
+      "value": "948eb69533977d164db6e410eaa2c7974dad66076046e7b9782183bbcbcb2f23"
+    },
+    {
+      "name": "benchmark/inputs/v2/logistic-floor-96.json",
+      "value": "feebcb38a088775d51240a2984edaa8c68466c438f7ff3905d06f06667d1d772"
+    },
+    {
+      "name": "benchmark/inputs/v2/logistic-mixed-96.json",
+      "value": "82c972c9734dc7d822b3a9fdef7a0208ed5cdc3717f2c3a07a27bd64b80e570b"
+    },
+    {
+      "name": "benchmark/inputs/v2/logistic-unsorted-96.json",
+      "value": "fb90bfa78249357a4f43b5fab98a6be34640880a89aa37de45e6fdb356a042af"
+    },
+    {
+      "name": "benchmark/inputs/v2/logistic-duplicates-96.json",
+      "value": "c85a5f74694bd71fdb6c4b63e371728b194a6b4b31baa5b0c8f37809d797aba5"
+    },
+    {
+      "name": "benchmark/inputs/v2/logistic-declining-96.json",
+      "value": "e702d016d810f731cd5d316512749bb592a8c3774eb215d9045830df2bef4103"
+    },
+    {
+      "name": "benchmark/inputs/v2/logistic-saturated-96.json",
+      "value": "2b47fdb8535aa9e526665a20ec64a73f988d1492ac5e01be97184783fb1e96a5"
+    },
+    {
+      "name": "benchmark/inputs/v2/logistic-constant-96.json",
+      "value": "ae0c3edc68a5accc05bf55c736b563e0eb26ae38d79e92b06d6e780b4c2527b7"
+    },
+    {
+      "name": "benchmark/inputs/v2/logistic-out-of-bounds-96.json",
+      "value": "2d0d5492a1229160cb677bf6369c04a3d131484aec09e82d5b267a34dffbe00b"
+    }
+  ],
+  "containerImages": [
+    {
+      "name": "effect-prophet/benchmark-effect:local",
+      "value": "sha256:1b22e7d1a158448616c87b246daa988a97df3cadb41185b7516c76366cd66dbf"
+    },
+    {
+      "name": "effect-prophet/benchmark-python:1.4.0",
+      "value": "sha256:d245bbb205a084864a20cfca0960ee30ba9975f2d423726ed274d0bdf1e27651"
+    }
+  ]
+}

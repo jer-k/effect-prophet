@@ -68,9 +68,9 @@ old executable. It verifies exact shared input bytes; it does not regenerate mis
 You can further restrict the recorded selection with `--case`.
 
 ```sh
-npm run benchmark -- --replay flat-growth-and-evaluation
+npm run benchmark -- --replay flat-growth
 npm run benchmark -- --replay runs/<run-id> --case flat-constant-minmax
-npm run benchmark:compare -- flat-growth-and-evaluation runs/<new-run-id>
+npm run benchmark:compare -- flat-growth runs/<new-run-id>
 npm run benchmark:compare -- runs/<before-id> runs/<after-id>
 ```
 
@@ -87,9 +87,9 @@ restore those inputs under a new immutable version before creating a new declara
 ## Retain reviewed evidence
 
 ```sh
-npm run benchmark:retain -- <run-id> flat-growth-and-evaluation
+npm run benchmark:retain -- <run-id> flat-growth
 # Explicitly update that scope's named baseline as well:
-npm run benchmark:retain -- <another-run-id> flat-growth-and-evaluation --baseline
+npm run benchmark:retain -- <another-run-id> flat-growth --baseline
 npm run benchmark:results
 ```
 

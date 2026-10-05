@@ -254,7 +254,10 @@ pub struct StanLinearObjective<'a> {
   design: &'a [f64],
   target: &'a [f64],
   changepoint_count: usize,
-  changepoint_times: Vec<f64>,
+  /// Effective changepoint locations, including the private zero-time dummy.
+  changepoint_points: Vec<f64>,
+  /// Per row, the length of the active prefix of `changepoint_points`.
+  active_changepoints: Vec<usize>,
   feature_priors: &'a [f64],
   modes: &'a [ComponentMode],
   changepoint_prior: f64,
@@ -298,11 +301,29 @@ impl<'a> StanLinearObjective<'a> {
       return Err(MapObjectiveError::InvalidInput);
     }
 
+    // Sorted locations make each row's active changepoints a prefix: once a
+    // row precedes one location it precedes every later location as well.
+    let changepoint_points = if changepoint_times.is_empty() {
+      vec![0.0]
+    } else {
+      changepoint_times.to_vec()
+    };
+    let active_changepoints = design
+      .chunks_exact(column_count)
+      .map(|row| {
+        changepoint_points
+          .iter()
+          .take_while(|&&point| row[1] >= point)
+          .count()
+      })
+      .collect();
+
     Ok(Self {
       design,
       target,
       changepoint_count,
-      changepoint_times: changepoint_times.to_vec(),
+      changepoint_points,
+      active_changepoints,
       feature_priors,
       modes,
       changepoint_prior,
@@ -398,19 +419,28 @@ impl<'a> StanLinearObjective<'a> {
     let mut trend_scores = vec![0.0; self.target.len()];
     let mut trends = vec![0.0; self.target.len()];
 
+    // Each row sums its active changepoint prefix sequentially from zero, so
+    // every row with the same prefix length produces the same rounded value.
+    // Accumulate each prefix once, in the same order, instead of per row.
+    let mut rate_adjustments = Vec::with_capacity(self.changepoint_points.len() + 1);
+    let mut offset_adjustments = Vec::with_capacity(self.changepoint_points.len() + 1);
+    let mut rate_adjustment = 0.0;
+    let mut offset_adjustment = 0.0;
+    rate_adjustments.push(rate_adjustment);
+    offset_adjustments.push(offset_adjustment);
+    for (delta, point) in self.changepoint_points.iter().enumerate() {
+      rate_adjustment += parameters[2 + delta];
+      offset_adjustment += -point * parameters[2 + delta];
+      rate_adjustments.push(rate_adjustment);
+      offset_adjustments.push(offset_adjustment);
+    }
+
     for (row, &target) in self.target.iter().enumerate() {
       let offset = row * self.column_count;
       let time = self.design[offset + 1];
-      let mut rate_adjustment = 0.0;
-      let mut offset_adjustment = 0.0;
-      for delta in 0..self.effective_changepoint_count() {
-        let point = self.changepoint_times.get(delta).copied().unwrap_or(0.0);
-        if time >= point {
-          rate_adjustment += parameters[2 + delta];
-          offset_adjustment += -point * parameters[2 + delta];
-        }
-      }
-      let trend = (parameters[0] + rate_adjustment) * time + (parameters[1] + offset_adjustment);
+      let active = self.active_changepoints[row];
+      let trend = (parameters[0] + rate_adjustments[active]) * time
+        + (parameters[1] + offset_adjustments[active]);
 
       let mut additive = 0.0;
       let mut factor = 1.0;
@@ -449,23 +479,9 @@ impl<'a> StanLinearObjective<'a> {
       gradient[0] += self.design[row * self.column_count + 1] * score;
       gradient[1] += score;
     }
-    for delta in 0..self.effective_changepoint_count() {
-      let point = self.changepoint_times.get(delta).copied().unwrap_or(0.0);
-      let rate_adjoint = crate::stan::reductions::matrix_row_sum(count, |row| {
-        let time = self.design[row * self.column_count + 1];
-        if time >= point {
-          time * trend_scores[row]
-        } else {
-          0.0
-        }
-      });
-      let offset_adjoint = crate::stan::reductions::matrix_row_sum(count, |row| {
-        if self.design[row * self.column_count + 1] >= point {
-          trend_scores[row]
-        } else {
-          0.0
-        }
-      });
+    let adjoints = self.changepoint_adjoints(&trend_scores);
+    for (delta, point) in self.changepoint_points.iter().copied().enumerate() {
+      let [rate_adjoint, offset_adjoint] = adjoints[delta];
       let coefficient = parameters[2 + delta];
       let sign = if coefficient > 0.0 {
         1.0
@@ -478,15 +494,8 @@ impl<'a> StanLinearObjective<'a> {
       gradient[2 + delta] += rate_adjoint;
       gradient[2 + delta] += -point * offset_adjoint;
     }
-    for (column, mode) in self.modes.iter().enumerate() {
-      gradient[beta_start + column] = crate::stan::reductions::matrix_row_sum(count, |row| {
-        let adjoint = match mode {
-          ComponentMode::Additive => scores[row],
-          ComponentMode::Multiplicative => trends[row] * scores[row],
-        };
-        self.design[row * self.column_count + 2 + self.changepoint_count + column] * adjoint
-      });
-    }
+    let feature_adjoints = self.feature_adjoints(&scores, &trends);
+    gradient[beta_start..beta_start + self.modes.len()].copy_from_slice(&feature_adjoints);
 
     let mut value = 0.0;
 
@@ -525,6 +534,33 @@ impl<'a> StanLinearObjective<'a> {
     }
 
     Ok(LogDensityEvaluation { value, gradient })
+  }
+
+  /// Per-changepoint `(rate, offset)` adjoints. Only a row's active prefix of
+  /// changepoints receives its contribution; see `matrix_row_sums`.
+  fn changepoint_adjoints(&self, trend_scores: &[f64]) -> Vec<[f64; 2]> {
+    crate::stan::reductions::matrix_row_prefix_sums(
+      trend_scores.len(),
+      self.changepoint_points.len(),
+      |row| self.active_changepoints[row],
+      |row| {
+        let score = trend_scores[row];
+        [self.design[row * self.column_count + 1] * score, score]
+      },
+    )
+  }
+
+  /// Feature adjoints, gathered in one row-major pass.
+  fn feature_adjoints(&self, scores: &[f64], trends: &[f64]) -> Vec<f64> {
+    let feature_start = 2 + self.changepoint_count;
+
+    crate::stan::reductions::matrix_row_sums(scores.len(), self.modes.len(), |row, column| {
+      let adjoint = match self.modes[column] {
+        ComponentMode::Additive => scores[row],
+        ComponentMode::Multiplicative => trends[row] * scores[row],
+      };
+      self.design[row * self.column_count + feature_start + column] * adjoint
+    })
   }
 
   /// Optimize from the original Prophet initialization using the pinned Newton path.

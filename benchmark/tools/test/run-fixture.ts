@@ -16,10 +16,7 @@ export const makeRunFixture = async () => {
   const benchmarkRoot = resolve(root, "benchmark");
 
   const retained = fileURLToPath(
-    new URL(
-      "../../results/retained/flat-growth-and-evaluation/2026-10-04T191226-966Z-730ead62/",
-      import.meta.url,
-    ),
+    new URL("../../results/retained/flat-growth/2026-10-05T010915-213Z-730ead62/", import.meta.url),
   );
 
   const evidence = await Effect.runPromise(loadRunEvidence(retained));

@@ -6,54 +6,13 @@ Recorded historical outcomes are not recomputed using current gates. Architectur
 
 | Scope | Run | Passed | Failed | Provenance | Report |
 | --- | --- | ---: | ---: | --- | --- |
-| flat-growth-and-evaluation | `2026-10-04T191226-966Z-730ead62` | 36 | 0 | dirty tree | [results](retained/flat-growth-and-evaluation/2026-10-04T191226-966Z-730ead62/report.md) |
 | flat-growth | `2026-10-05T010915-213Z-730ead62` | 34 | 0 | dirty tree | [results](retained/flat-growth/2026-10-05T010915-213Z-730ead62/report.md) |
 | linear-growth | `2026-10-04T184932-255Z-730ead62` | 31 | 2 | dirty tree | [results](retained/linear-growth/2026-10-04T184932-255Z-730ead62/report.md) |
+| logistic-growth | `2026-10-05T042852-427Z-67c0fada` | 45 | 0 | dirty tree | [results](retained/logistic-growth/2026-10-05T042852-427Z-67c0fada/report.md) |
 
 ## Case outcomes
 
 Only passed gates admit timing. Diagnostic invalid-domain cases remain failed; they are not relabeled as successful fits.
-
-### flat-growth-and-evaluation/2026-10-04T191226-966Z-730ead62
-
-| Case | Outcome | Contract |
-| --- | --- | --- |
-| `flat-mixed-components` | passed | equivalent-objective |
-| `flat-mixed-components-large` | passed | equivalent-objective |
-| `evaluation-linear-point` | passed | different-public-work |
-| `evaluation-linear-intervals` | passed | different-public-work |
-| `evaluation-linear-search` | passed | different-public-work |
-| `evaluation-flat-mixed-point` | passed | different-public-work |
-| `evaluation-flat-mixed-intervals` | passed | different-public-work |
-| `evaluation-flat-mixed-search` | passed | different-public-work |
-| `evaluation-logistic-point` | passed | different-public-work |
-| `evaluation-logistic-intervals` | passed | different-public-work |
-| `evaluation-logistic-search` | passed | different-public-work |
-| `evaluation-flat-large-point` | passed | different-public-work |
-| `evaluation-flat-large-intervals` | passed | different-public-work |
-| `evaluation-logistic-large-point` | passed | different-public-work |
-| `evaluation-logistic-large-intervals` | passed | different-public-work |
-| `evaluation-linear-failure-search` | passed | different-public-work |
-| `flat-level-absmax` | passed | equivalent-objective |
-| `flat-level-minmax` | passed | equivalent-objective |
-| `flat-constant-absmax` | passed | equivalent-objective |
-| `flat-constant-minmax` | passed | equivalent-objective |
-| `flat-negative-absmax` | passed | equivalent-objective |
-| `flat-negative-minmax` | passed | equivalent-objective |
-| `flat-seasonal-absmax` | passed | equivalent-objective |
-| `flat-seasonal-minmax` | passed | equivalent-objective |
-| `flat-prefix-63-absmax` | passed | equivalent-objective |
-| `flat-prefix-63-minmax` | passed | equivalent-objective |
-| `flat-prefix-70-absmax` | passed | equivalent-objective |
-| `flat-prefix-70-minmax` | passed | equivalent-objective |
-| `flat-prefix-77-absmax` | passed | equivalent-objective |
-| `flat-prefix-77-minmax` | passed | equivalent-objective |
-| `flat-mixed-components-absmax` | passed | equivalent-objective |
-| `flat-prefix-225-absmax` | passed | equivalent-objective |
-| `flat-prefix-225-minmax` | passed | equivalent-objective |
-| `flat-prefix-232-absmax` | passed | equivalent-objective |
-| `flat-prefix-232-minmax` | passed | equivalent-objective |
-| `flat-mixed-components-large-absmax` | passed | equivalent-objective |
 
 ### flat-growth/2026-10-05T010915-213Z-730ead62
 
@@ -131,3 +90,53 @@ Only passed gates admit timing. Diagnostic invalid-domain cases remain failed; t
 | `evaluation-linear-intervals` | passed | different-public-work |
 | `evaluation-linear-search` | passed | different-public-work |
 | `evaluation-linear-failure-search` | passed | different-public-work |
+
+### logistic-growth/2026-10-05T042852-427Z-67c0fada
+
+| Case | Outcome | Contract |
+| --- | --- | --- |
+| `logistic-implicit-floor-absmax` | passed | equivalent-objective |
+| `logistic-implicit-floor-minmax` | passed | equivalent-objective |
+| `logistic-explicit-floor-absmax` | passed | equivalent-objective |
+| `logistic-explicit-floor-minmax` | passed | equivalent-objective |
+| `logistic-implicit-floor-auto-changepoints` | passed | equivalent-objective |
+| `logistic-implicit-floor-large` | passed | equivalent-objective |
+| `uncertainty-logistic-implicit-floor-minmax-full-samples-512` | passed | scalar-process-different-public-work |
+| `uncertainty-logistic-implicit-floor-large-full-intervals-128` | passed | scalar-process-different-public-work |
+| `uncertainty-logistic-explicit-floor-minmax-full-intervals-512` | passed | scalar-process-different-public-work |
+| `uncertainty-logistic-explicit-floor-minmax-full-samples-128` | passed | scalar-process-different-public-work |
+| `uncertainty-logistic-explicit-floor-minmax-mixed-conditions-events-intervals-128` | passed | scalar-process-different-public-work |
+| `uncertainty-logistic-explicit-floor-minmax-mixed-conditions-events-samples-128` | passed | scalar-process-different-public-work |
+| `evaluation-logistic-point` | passed | different-public-work |
+| `evaluation-logistic-intervals` | passed | different-public-work |
+| `evaluation-logistic-search` | passed | different-public-work |
+| `evaluation-logistic-large-point` | passed | different-public-work |
+| `evaluation-logistic-large-intervals` | passed | different-public-work |
+| `logistic-reconcile-basic-96-empty-absmax` | passed | equivalent-objective |
+| `logistic-reconcile-basic-96-explicit-absmax` | passed | equivalent-objective |
+| `logistic-reconcile-basic-96-auto-absmax` | passed | equivalent-objective |
+| `logistic-reconcile-basic-96-empty-minmax` | passed | equivalent-objective |
+| `logistic-reconcile-basic-96-explicit-minmax` | passed | equivalent-objective |
+| `logistic-reconcile-basic-96-auto-minmax` | passed | equivalent-objective |
+| `logistic-reconcile-empty-loose-prior-absmax` | passed | equivalent-objective |
+| `logistic-reconcile-empty-loose-prior-minmax` | passed | equivalent-objective |
+| `logistic-reconcile-basic-99` | passed | equivalent-objective |
+| `logistic-reconcile-basic-100` | passed | equivalent-objective |
+| `logistic-reconcile-basic-256` | passed | equivalent-objective |
+| `logistic-reconcile-defaults-96` | passed | equivalent-objective |
+| `logistic-reconcile-defaults-256` | passed | equivalent-objective |
+| `logistic-reconcile-weekly` | passed | equivalent-objective |
+| `logistic-reconcile-conditional` | passed | equivalent-objective |
+| `logistic-reconcile-event` | passed | equivalent-objective |
+| `logistic-reconcile-regressor-additive` | passed | equivalent-objective |
+| `logistic-reconcile-regressor-multiplicative` | passed | equivalent-objective |
+| `logistic-reconcile-explicit-floor-absmax` | passed | equivalent-objective |
+| `logistic-reconcile-mixed-absmax` | passed | equivalent-objective |
+| `logistic-reconcile-explicit-floor-minmax` | passed | equivalent-objective |
+| `logistic-reconcile-mixed-minmax` | passed | equivalent-objective |
+| `logistic-reconcile-unsorted` | passed | equivalent-objective |
+| `logistic-reconcile-duplicates` | passed | equivalent-objective |
+| `logistic-reconcile-declining` | passed | equivalent-objective |
+| `logistic-reconcile-saturated` | passed | equivalent-objective |
+| `logistic-reconcile-constant` | passed | equivalent-objective |
+| `logistic-reconcile-out-of-bounds` | passed | equivalent-objective |

@@ -5,6 +5,13 @@
 
 mod data;
 
+/// `-ln(2) / 128`, high part. Its 36 significant bits make `kd * NEG_LN2_HI_N`
+/// exact for every integer `|kd| < 2^17`.
+const NEG_LN2_HI_N: u64 = 0xbf762e42fefa0000;
+
+/// Largest exclusive `|kd|` for which `kd * NEG_LN2_HI_N` is exact.
+const EXACT_REDUCTION_LIMIT: f64 = 131_072.0;
+
 /// Table-based exponential with explicit round-to-nearest fused evaluation.
 pub(crate) fn exp(x: f64) -> f64 {
   if x.is_nan() {
@@ -31,7 +38,13 @@ pub(crate) fn exp(x: f64) -> f64 {
   let rounded = z + shift;
   let ki = rounded.to_bits();
   let kd = rounded - shift;
-  let r = kd.mul_add(f64::from_bits(0xbf762e42fefa0000), x);
+  // An exact product rounds only once when added, exactly as the fused form
+  // does, and avoids WASM's software `fma` for every `|x|` below about 709.
+  let r = if kd.abs() < EXACT_REDUCTION_LIMIT {
+    kd * f64::from_bits(NEG_LN2_HI_N) + x
+  } else {
+    kd.mul_add(f64::from_bits(NEG_LN2_HI_N), x)
+  };
   let r = kd.mul_add(f64::from_bits(0xbd0cf79abc9e3b3a), r);
   let index = 2 * (ki % 128) as usize;
   let sbits = data::EXP_TABLE[index + 1].wrapping_add(ki.wrapping_shl(45));
@@ -73,7 +86,28 @@ pub(crate) fn exp(x: f64) -> f64 {
 
 #[cfg(test)]
 mod tests {
-  use super::exp;
+  use super::{EXACT_REDUCTION_LIMIT, NEG_LN2_HI_N, exp};
+
+  #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+  #[cfg_attr(not(target_arch = "wasm32"), test)]
+  fn unfused_high_reduction_matches_fused_for_every_exact_kd() {
+    let high = f64::from_bits(NEG_LN2_HI_N);
+    let limit = EXACT_REDUCTION_LIMIT as i64;
+    let offsets = [0.0, 1e-300, -3.0e-17, 0.4, -177.25, 709.0];
+
+    for kd in -(limit - 1)..limit {
+      let kd = kd as f64;
+      for offset in offsets {
+        // Shape `x` as `exp` sees it: near `kd * ln(2) / 128` plus an offset.
+        let x = -kd * high + offset * 1e-3;
+        assert_eq!(
+          (kd * high + x).to_bits(),
+          kd.mul_add(high, x).to_bits(),
+          "kd {kd} x {x:e}"
+        );
+      }
+    }
+  }
 
   #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
   #[cfg_attr(not(target_arch = "wasm32"), test)]
