@@ -17,7 +17,6 @@ import type { EventCalendar } from "./event";
 import {
   parseFittedModel,
   type FittedFlatMapProphet,
-  type FittedLinearProphet,
   type FittedLogisticMapProphet,
   type FittedPiecewiseMapProphet,
   type FittedProphet,
@@ -45,7 +44,6 @@ import {
 import { resolveSeasonalities } from "./internal/seasonality-resolution";
 import { createSeasonalityMasks } from "./internal/seasonality-masks";
 import { predictFlatMapWithWasm } from "./internal/wasm-flat-map-backend";
-import { predictLinearTrendWithWasm } from "./internal/wasm-linear-trend-backend";
 import { simulateMapWithWasm } from "./internal/wasm-map-uncertainty-backend";
 import { predictLogisticMapWithWasm } from "./internal/wasm-logistic-map-backend";
 import {
@@ -61,7 +59,6 @@ import { decodeObservations, type Observations } from "./observation";
 import {
   checkExplicitChangepointBounds,
   decodeOptions,
-  defaultAutomaticMapOptions,
   defaultFlatOptimizerControls,
   optionsValidationErrorFromSeasonality,
   type EncodedProphetOptions,
@@ -216,8 +213,8 @@ const makeFitPlan = (
     layout.components.some((component) => component.definition.mode === "multiplicative") ||
     additionalFeatures.layout.components.some((component) => component.mode === "multiplicative");
 
-  if (options.growth === "linear" && (options.map !== undefined || options.scaling !== undefined)) {
-    const map = options.map ?? defaultAutomaticMapOptions;
+  if (options.growth === "linear") {
+    const map = options.map;
 
     return FitPlan.LinearPiecewiseMap({
       scaling: options.scaling ?? defaultTargetScalingMode,
@@ -239,31 +236,6 @@ const makeFitPlan = (
       scaling: options.scaling ?? defaultTargetScalingMode,
       seasonalities: layout,
       optimizer: defaultFlatOptimizerControls,
-      seasonalityMasks: masks,
-      additionalFeatures,
-      events: options.events,
-      regressors,
-    });
-  }
-
-  if (firstComponent === undefined && additionalFeatures.layout.coefficientCount === 0) {
-    return options.growth === "linear"
-      ? FitPlan.LinearTrend()
-      : FitPlan.FlatMap({
-          scaling: options.scaling ?? defaultTargetScalingMode,
-          seasonalities: emptyLayoutFromResolved(layout),
-        });
-  }
-
-  if (options.growth === "linear") {
-    const map = defaultAutomaticMapOptions;
-
-    return FitPlan.LinearPiecewiseMap({
-      scaling: options.scaling ?? defaultTargetScalingMode,
-      seasonalities: layout,
-      changepoints: map.changepoints,
-      changepointPriorScale: map.changepointPriorScale,
-      optimizer: map.optimizer,
       seasonalityMasks: masks,
       additionalFeatures,
       events: options.events,
@@ -601,7 +573,7 @@ export const fit = Effect.fn("Prophet.fit")(function* (
     ),
   );
 
-  const returnedRegressors = fittedRegressors(fittedModel);
+  const returnedRegressors = fittedModel.regressors;
 
   if (!fittedRegressorsMatch(regressorFeatures.regressors, returnedRegressors)) {
     return yield* Effect.fail(
@@ -615,42 +587,6 @@ export const fit = Effect.fn("Prophet.fit")(function* (
 
   return fittedModel;
 });
-
-const predictLinearForecasts = (
-  model: FittedLinearProphet,
-  timestamps: PredictionTimestamps,
-): Effect.Effect<Forecasts, PredictionError> =>
-  Effect.gen(function* () {
-    const predictions = yield* predictLinearTrendWithWasm(model, timestamps);
-    const forecasts: Array<Forecast> = [];
-
-    for (const [index, timestamp] of timestamps.entries()) {
-      const prediction = predictions[index];
-
-      if (prediction === undefined) {
-        return yield* Effect.fail(
-          new PredictionError({
-            reason: "backend-failure",
-            timestamp,
-            message: "WASM prediction backend omitted an expected forecast",
-          }),
-        );
-      }
-
-      forecasts.push({
-        timestamp,
-        value: prediction,
-        trend: prediction,
-        additive: 0,
-        multiplicative: 0,
-        seasonalities: [],
-        events: [],
-        regressors: [],
-      });
-    }
-
-    return forecasts;
-  });
 
 type FittedSeasonalProphet =
   | FittedFlatMapProphet
@@ -1044,18 +980,11 @@ const predictFittedSeasonalModel = (
         }),
       );
 
-const fittedRegressors = (model: FittedProphet): ReadonlyArray<FittedRegressor> =>
-  model.model === "linear-piecewise-map" ||
-  model.model === "flat-map" ||
-  model.model === "logistic-piecewise-map"
-    ? model.regressors
-    : [];
-
 /** Return fitted regressor coefficients in original input units. */
 export const getRegressorCoefficients = (
   model: FittedProphet,
 ): ReadonlyArray<RegressorCoefficient> =>
-  Object.freeze(fittedRegressors(model).map(projectRegressorCoefficient));
+  Object.freeze(model.regressors.map(projectRegressorCoefficient));
 
 /**
  * Predict point forecasts and decomposed components at validated rows.
@@ -1089,8 +1018,7 @@ export const predict = Effect.fn("Prophet.predict")(function* (
     ),
   );
 
-  const conditionNames =
-    parsedModel.model === "linear-trend" ? [] : conditionNamesFromLayout(parsedModel.seasonalities);
+  const conditionNames = conditionNamesFromLayout(parsedModel.seasonalities);
 
   let logisticBounds: LogisticPredictionBounds | undefined;
 
@@ -1109,7 +1037,7 @@ export const predict = Effect.fn("Prophet.predict")(function* (
     "prediction-rows",
   ).pipe(Effect.mapError((error) => conditionValidationError("prediction-rows", error)));
 
-  const regressors = fittedRegressors(parsedModel);
+  const regressors = parsedModel.regressors;
 
   const alignedRegressorValues = yield* alignRegressorValues(
     rows,
@@ -1118,10 +1046,6 @@ export const predict = Effect.fn("Prophet.predict")(function* (
   );
 
   const timestamps = rows.map((row) => row.timestamp);
-
-  if (parsedModel.model === "linear-trend") {
-    return yield* predictLinearForecasts(parsedModel, timestamps);
-  }
 
   const masks = yield* createSeasonalityMasks(
     parsedModel.seasonalities,
@@ -1190,20 +1114,6 @@ export const predictUncertainty = Effect.fn("Prophet.predictUncertainty")(functi
         }),
     ),
   );
-
-  if (
-    parsedModel.model !== "linear-piecewise-map" &&
-    parsedModel.model !== "flat-map" &&
-    parsedModel.model !== "logistic-piecewise-map"
-  ) {
-    return yield* Effect.fail(
-      new PredictionError({
-        reason: "unsupported-uncertainty",
-        timestamp: firstRow.timestamp,
-        message: "Predictive simulation requires a supported MAP model",
-      }),
-    );
-  }
 
   const logisticBounds =
     parsedModel.model === "logistic-piecewise-map"

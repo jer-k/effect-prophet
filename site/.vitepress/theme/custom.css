@@ -1,0 +1,100 @@
+/* Use the whole window instead of centering the layout with empty gutters on wide screens. */
+:root {
+  --vp-layout-max-width: 100%;
+}
+
+/* Benchmark overviews are wide comparison tables: use the full content width. */
+.benchmark-overview .VPDoc {
+  padding-right: 1.5rem;
+  padding-left: 1.5rem;
+}
+
+.benchmark-overview .VPDoc .container,
+.benchmark-overview .VPDoc .content,
+.benchmark-overview .VPDoc .content-container {
+  flex-grow: 1;
+  max-width: none;
+}
+
+.benchmark-overview .vp-doc table {
+  display: table;
+  width: 100%;
+}
+
+/* Keep numbers and short labels on one line; only the case name may wrap. */
+.benchmark-overview .vp-doc th,
+.benchmark-overview .vp-doc td {
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+/* The dot stays centered against the case name, even when the name wraps. */
+.case-name {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.case-name .status-dot {
+  flex-shrink: 0;
+  margin-right: 0;
+}
+
+.benchmark-overview .vp-doc td:first-child {
+  min-width: 15rem;
+  white-space: normal;
+}
+
+/* Narrow screens scroll the table sideways instead of crushing it. */
+@media (max-width: 960px) {
+  .benchmark-overview .vp-doc table {
+    display: block;
+    overflow-x: auto;
+  }
+}
+
+/* Benchmark result dots: compact status with a hover label. */
+.status-dot {
+  position: relative;
+  display: inline-block;
+  width: 0.625rem;
+  height: 0.625rem;
+  margin-right: 0.25rem;
+  border-radius: 50%;
+  vertical-align: middle;
+  cursor: help;
+}
+
+.status-match {
+  background-color: var(--vp-c-green-1);
+}
+
+.status-flagged {
+  background-color: var(--vp-c-yellow-1);
+}
+
+.status-difference {
+  background-color: var(--vp-c-gray-1);
+}
+
+.status-mismatch {
+  background-color: var(--vp-c-red-1);
+}
+
+.status-dot:hover::after {
+  position: absolute;
+  bottom: calc(100% + 0.5rem);
+  left: 50%;
+  z-index: 10;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  background-color: var(--vp-c-bg-elv);
+  box-shadow: var(--vp-shadow-2);
+  color: var(--vp-c-text-1);
+  font-size: 0.75rem;
+  line-height: 1.4;
+  white-space: nowrap;
+  content: attr(data-label);
+  transform: translateX(-50%);
+  pointer-events: none;
+}

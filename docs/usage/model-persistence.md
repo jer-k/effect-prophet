@@ -6,12 +6,11 @@ WASM, selecting a fitting Layer, or refitting observations.
 
 The current portable model kinds are:
 
-- `linear-trend` — intercept, slope, and time scaling;
 - `linear-piecewise-map` — target scaling, relative piecewise trend and changepoints, ordered mode-resolved seasonality definitions and coefficients, condition names, events, fitted regressors, positive observation noise, and MAP diagnostics;
 - `flat-map` — target scaling, relative constant level, ordered mode-resolved seasonalities, events and regressors, positive observation noise, and flat MAP diagnostics;
 - `logistic-piecewise-map` — floor-aware target scaling, dimensionless rate/time-offset/deltas, training time bounds, resolved changepoints and mixed features, output-unit noise, and logistic MAP diagnostics. Future capacities and explicit floors remain row inputs and are not persisted as curves.
 
-Payloads from the removed pre-release additive ridge model are rejected as typed decode errors;
+Payloads from the removed pre-release OLS (`linear-trend`) and additive ridge models are rejected as typed decode errors;
 models are never silently refit or migrated.
 
 ## Flat MAP payload
@@ -78,6 +77,5 @@ stored output-unit noise, train-only scaling, time bounds, resolved changepoint 
 deltas, and fixed feature/mode metadata. For the proposed true-empty-point scalar simulation,
 those fields reconstruct the linear/flat scalar simulation process; the caller supplies a seed and complete ordered
 prediction rows. Neither a seed nor future covariates/capacities are stored in the fitted model.
-Point-only OLS models do not store MAP observation noise and cannot simulate uncertainty.
 Missing historical noise or process state must never be silently filled during decoding or
-prediction. Same-build replay is tested through real generated WASM and JSON reload; cross-version replay is not promised. Logistic MAP uncertainty is supported experimentally; OLS uncertainty remains unsupported.
+prediction. Same-build replay is tested through real generated WASM and JSON reload; cross-version replay is not promised. All current fitted model kinds support experimental MAP uncertainty.

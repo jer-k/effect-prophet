@@ -24,7 +24,7 @@ Existing in-memory tracer tests in [`test/prophet-regressors.test.ts`](../../tes
 
 ## Zero-span histories
 
-Repeated dates do not guarantee an identifiable time trend. Linear OLS/MAP and logistic MAP return a typed degenerate-observations fitting failure when all times coincide; flat fitting can succeed without a positive time range. In pinned Python 1.4.0 featureless probes, differing-target linear and logistic fits fail at NaN initialization, while constant-target linear can return a nominally successful NaN model. We deliberately do not reproduce that invalid success. Featureless flat produces finite forecasts for both varied and constant targets. The [linear-growth benchmark edge cases](../../benchmark/cases/growth/linear/README.md) record outcomes and suppress timings for failed correctness gates.
+Repeated dates do not guarantee an identifiable time trend. Linear and logistic MAP return a typed degenerate-observations fitting failure when all times coincide; flat fitting can succeed without a positive time range. In pinned Python 1.4.0 featureless probes, differing-target linear and logistic fits fail at NaN initialization, while constant-target linear can return a nominally successful NaN model. We deliberately do not reproduce that invalid success. Featureless flat produces finite forecasts for both varied and constant targets. The [linear-growth benchmark edge cases](../../benchmark/cases/growth/linear/README.md) record outcomes and suppress timings for failed correctness gates.
 
 ## Application workflow
 

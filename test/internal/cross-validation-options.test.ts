@@ -6,7 +6,6 @@ import {
   crossValidationFitOptions,
   parseCrossValidationInput,
 } from "../../src/internal/cross-validation-options";
-import { decodeOptions } from "../../src/options";
 import { builtInSeasonalitiesOff } from "../helpers/built-in-seasonalities";
 
 describe("cross-validation controls", () => {
@@ -52,25 +51,23 @@ describe("cross-validation controls", () => {
 
   it("resolves MAP scaling independently of the original fit options without mutation", async () => {
     const input = { growth: "flat", scaling: "minmax" } as const;
-    const options = await Effect.runPromise(decodeOptions(input));
-
-    const resolved = crossValidationFitOptions(input, options, {});
+    const resolved = crossValidationFitOptions(input, {});
 
     expect(resolved).toEqual({ growth: "flat", scaling: "absmax" });
     expect(Object.isFrozen(resolved)).toBe(true);
-    expect(crossValidationFitOptions(input, options, { scaling: "minmax" })).toEqual(input);
+    expect(crossValidationFitOptions(input, { scaling: "minmax" })).toEqual(input);
     expect(input).toEqual({ growth: "flat", scaling: "minmax" });
   });
 
-  it("keeps featureless OLS unconfigured unless scaling is explicitly selected", async () => {
+  it("applies MAP scaling to featureless requests without changing the caller", () => {
     const input = { builtInSeasonalities: builtInSeasonalitiesOff };
-    const options = await Effect.runPromise(decodeOptions(input));
 
-    expect(crossValidationFitOptions(input, options, {})).toBe(input);
-    expect(crossValidationFitOptions(input, options, { scaling: "absmax" })).toEqual({
+    expect(crossValidationFitOptions(input, {})).toEqual({ ...input, scaling: "absmax" });
+    expect(crossValidationFitOptions(input, { scaling: "minmax" })).toEqual({
       ...input,
-      scaling: "absmax",
+      scaling: "minmax",
     });
+    expect(input).toEqual({ builtInSeasonalities: builtInSeasonalitiesOff });
   });
 
   it.each([

@@ -15,12 +15,7 @@ import type {
 } from "../seasonality";
 import type { KnownAdditiveFeatures, SeasonalityMaskMatrix } from "./additional-features";
 
-export type {
-  FlatMapParameters,
-  LinearParameters,
-  Parameters,
-  PiecewiseMapParameters,
-} from "../fitted-model";
+export type { FlatMapParameters, Parameters, PiecewiseMapParameters } from "../fitted-model";
 
 /** Packed, index-aligned numerical observations supplied to a fitting backend. */
 export interface TrainingInput {
@@ -29,11 +24,6 @@ export interface TrainingInput {
 
   /** Observation values whose indexes correspond to `timestamps`. */
   readonly values: Float64Array;
-}
-
-/** Request for ordinary linear-trend fitting without seasonal components. */
-export interface LinearTrendFitPlan {
-  readonly _tag: "LinearTrend";
 }
 
 /** Request for joint linear piecewise MAP fitting and additive-seasonality fitting. */
@@ -119,7 +109,6 @@ export interface LogisticPiecewiseMapFitPlan {
 
 /** Exhaustive set of configurations supported by the public fitting backend. */
 export type FitPlan =
-  | LinearTrendFitPlan
   | LinearPiecewiseMapFitPlan
   | FlatMapFitPlan
   | FlatAdditiveMapFitPlan

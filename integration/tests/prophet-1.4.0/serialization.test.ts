@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 
 import { loadProphetFixtureBundle } from "../../helpers/prophet-fixture";
 import { decodeFittedModel, encodeFittedModel, predict } from "../../../src/index";
+import { parsePiecewiseMapModel } from "../../../src/fitted-model";
+import { fixedPiecewiseParameters } from "../../../test/helpers/fixed-piecewise-model";
 
 describe("Prophet 1.4.0 serialization compatibility", () => {
   it("reloads fixed models with equivalent reference predictions", async () => {
@@ -10,16 +12,9 @@ describe("Prophet 1.4.0 serialization compatibility", () => {
 
     for (const referenceCase of linearTrend.cases) {
       const model = await Effect.runPromise(
-        decodeFittedModel({
-          modelKind: "linear-trend",
-          coefficients: {
-            intercept: referenceCase.parameters.intercept,
-            slope: referenceCase.parameters.slope,
-          },
-          timeScaling: {
-            origin: referenceCase.parameters.timeOrigin,
-            scale: referenceCase.parameters.timeScale,
-          },
+        parsePiecewiseMapModel({
+          ...fixedPiecewiseParameters,
+          ...referenceCase.parameters,
         }),
       );
 

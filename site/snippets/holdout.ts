@@ -24,10 +24,7 @@ const report = await Effect.runPromise(
     const search = yield* searchModels(development, {
       candidates: [
         { id: "default", options: {} },
-        {
-          id: "flexible-trend",
-          options: { map: { changepoints: { mode: "auto" }, changepointPriorScale: 0.5 } },
-        },
+        { id: "flexible-trend", options: { map: { changepointPriorScale: 0.5 } } },
       ],
       plan: {
         horizonMs: 14 * dayMs,

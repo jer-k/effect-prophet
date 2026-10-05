@@ -297,12 +297,12 @@ describe("evaluateHoldout", () => {
     expect(spans.some((span) => span.name === "effect-prophet.wasm.fit")).toBe(false);
   });
 
-  it("rejects OLS intervals before entering the holdout/WASM boundary", async () => {
+  it("evaluates seeded featureless MAP holdout intervals through the real WASM boundary", async () => {
     const search = await Effect.runPromise(
       searchModels(observations, {
         candidates: [
           {
-            id: "ols",
+            id: "featureless",
             options: {
               builtInSeasonalities: {
                 daily: "off",
@@ -343,14 +343,9 @@ describe("evaluateHoldout", () => {
       Effect.result(run(input(search)).pipe(Effect.withTracer(tracer))),
     );
 
-    expect(result._tag).toBe("Failure");
-    expect(
-      spans.some(
-        (span) =>
-          span.name === "effect-prophet.evaluation.holdout" ||
-          span.name.startsWith("effect-prophet.wasm."),
-      ),
-    ).toBe(false);
+    expect(result._tag).toBe("Success");
+    expect(spans.some((span) => span.name === "effect-prophet.evaluation.holdout")).toBe(true);
+    expect(spans.some((span) => span.name === "effect-prophet.wasm.simulate")).toBe(true);
   });
 
   it("reports missing known future regressors after fit but before prediction WASM", async () => {

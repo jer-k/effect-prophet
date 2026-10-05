@@ -2,12 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import {
   assertProphetWasmModule,
+  loadProphetWasmModule,
   type ProphetWasmModule,
 } from "../../src/internal/prophet-wasm-module";
 
 const validModule: ProphetWasmModule = {
-  fit_linear_trend: () => new Float64Array([0, 2, 6, 100, 200]),
-  predict_linear_trend: () => new Float64Array([0, 11]),
   fit_piecewise_map_with_features: () => new Float64Array([0]),
   fit_piecewise_map_with_features_and_scaling: () => new Float64Array([0]),
   predict_piecewise_map_with_features: () => new Float64Array([0]),
@@ -31,6 +30,14 @@ const validModule: ProphetWasmModule = {
 };
 
 describe("Prophet WASM module boundary", () => {
+  it("does not ship the removed OLS numerical exports", () => {
+    const module = loadProphetWasmModule();
+
+    expect(module).not.toHaveProperty("fit_linear_trend");
+    expect(module).not.toHaveProperty("predict_linear_trend");
+    expect(module).not.toHaveProperty("LinearTrendFitStatus");
+  });
+
   it("accepts the complete callable export contract", () => {
     assertProphetWasmModule(validModule);
 
@@ -41,18 +48,18 @@ describe("Prophet WASM module boundary", () => {
     ["a non-object module", null, "Prophet WASM module must be an object"],
     [
       "a missing fit export",
-      { predict_linear_trend: validModule.predict_linear_trend },
-      "Prophet WASM module export fit_linear_trend must be a function",
+      { predict_piecewise_map_with_features: validModule.predict_piecewise_map_with_features },
+      "Prophet WASM module export fit_piecewise_map_with_features must be a function",
     ],
     [
       "a non-callable fit export",
-      { ...validModule, fit_linear_trend: 1 },
-      "Prophet WASM module export fit_linear_trend must be a function",
+      { ...validModule, fit_piecewise_map_with_features: 1 },
+      "Prophet WASM module export fit_piecewise_map_with_features must be a function",
     ],
     [
       "a missing prediction export",
-      { fit_linear_trend: validModule.fit_linear_trend },
-      "Prophet WASM module export predict_linear_trend must be a function",
+      { ...validModule, predict_piecewise_map_with_features: undefined },
+      "Prophet WASM module export predict_piecewise_map_with_features must be a function",
     ],
   ])("rejects %s", (_label, loaded, message) => {
     expect(() => assertProphetWasmModule(loaded)).toThrowError(message);

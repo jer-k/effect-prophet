@@ -290,6 +290,28 @@
         "independent duplicate rows",
         "actual algorithm and termination"
       ]
+    },
+    {
+      "id": "linear-output-first-v4",
+      "classification": "equivalent-objective",
+      "statement": "Linear growth under the output-first policy shared with logistic growth. Both libraries fit with their defaults (Prophet's Auto selection with Newton fallback; Effect's matching Stan-style policy) on the v1 datasets and priors. Forecasts, components, metadata, noise scale and public JSON persistence gate each case. Fitting objective, normalized noise and constrained stationarity are reported, and gaps beyond the declared thresholds are flagged for investigation rather than failing the case. Default-settings probes pass no options to either library. Zero-span histories remain intentional differences.",
+      "prerequisiteFixtures": [
+        "stan-linear-optimizer.json",
+        "linear-map-fit.json",
+        "mixed-map.json",
+        "conditional-map-fit.json"
+      ],
+      "checks": [
+        "default seasonality resolution",
+        "forecast",
+        "components",
+        "metadata",
+        "noise scale",
+        "persistence",
+        "independent duplicate rows",
+        "reported objective, normalized noise and stationarity",
+        "actual algorithm and termination"
+      ]
     }
   ]
 }

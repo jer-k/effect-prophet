@@ -1,4 +1,6 @@
 import type { BenchmarkCase } from "../../tools/case.ts";
+import { outputFirstQuality, pythonDefaultOptimizer } from "../prophet-defaults.ts";
+import { linearComparison, linearOptimizerQuality, linearOptimizers } from "./linear/controls.ts";
 
 const phases = [
   "adapter-input-conversion",
@@ -20,8 +22,6 @@ const tolerances = {
   noiseScale: { absolute: 0.1, relative: 0.2 },
   persistence: { absolute: 1e-8, relative: 0 },
 };
-
-const optimizer = { maxIterations: 10000, relativeTolerance: 1e-7, absoluteTolerance: 1e-9 };
 
 const pythonOptimizer = {
   algorithm: "LBFGS",
@@ -52,7 +52,7 @@ export const growthScalingAndMixedMapCases: ReadonlyArray<BenchmarkCase> = [
     dataset: "v1/linear-offset-scaling.json",
     workload: {
       kind: "stage-f-map" as const,
-      comparison: { kind: "equivalent-objective" as const, evidenceId: "stage-f-scaling-v1" },
+      comparison: linearComparison,
       configuration: {
         growth: "linear" as const,
         scaling,
@@ -64,9 +64,9 @@ export const growthScalingAndMixedMapCases: ReadonlyArray<BenchmarkCase> = [
         events: [],
         regressors: [],
       },
-      effectOptimizer: optimizer,
-      pythonOptimizer,
+      ...linearOptimizers,
     },
+    optimizerQuality: linearOptimizerQuality,
     phases,
     warmupIterations: 1,
     measuredIterations: 2,
@@ -105,7 +105,7 @@ export const growthScalingAndMixedMapCases: ReadonlyArray<BenchmarkCase> = [
     dataset: "v1/linear-mixed-components.json",
     workload: {
       kind: "stage-f-map",
-      comparison: { kind: "equivalent-objective", evidenceId: "stage-f-linear-mixed-v1" },
+      comparison: linearComparison,
       configuration: {
         growth: "linear",
         scaling: "absmax",
@@ -117,9 +117,9 @@ export const growthScalingAndMixedMapCases: ReadonlyArray<BenchmarkCase> = [
         events: [campaign],
         regressors: [promotion],
       },
-      effectOptimizer: optimizer,
-      pythonOptimizer,
+      ...linearOptimizers,
     },
+    optimizerQuality: linearOptimizerQuality,
     phases,
     warmupIterations: 1,
     measuredIterations: 2,
@@ -172,9 +172,9 @@ export const growthScalingAndMixedMapCases: ReadonlyArray<BenchmarkCase> = [
           regressors:
             floorPolicy === "explicit" ? [{ ...promotion, mode: "multiplicative" as const }] : [],
         },
-        effectOptimizer: optimizer,
-        pythonOptimizer,
+        pythonOptimizer: pythonDefaultOptimizer,
       },
+      optimizerQuality: outputFirstQuality,
       phases,
       warmupIterations: 1,
       measuredIterations: 2,
@@ -200,9 +200,9 @@ export const growthScalingAndMixedMapCases: ReadonlyArray<BenchmarkCase> = [
         events: [],
         regressors: [],
       },
-      effectOptimizer: optimizer,
-      pythonOptimizer,
+      pythonOptimizer: pythonDefaultOptimizer,
     },
+    optimizerQuality: outputFirstQuality,
     phases,
     warmupIterations: 1,
     measuredIterations: 2,
@@ -227,9 +227,9 @@ export const growthScalingAndMixedMapCases: ReadonlyArray<BenchmarkCase> = [
         events: [],
         regressors: [],
       },
-      effectOptimizer: optimizer,
-      pythonOptimizer,
+      pythonOptimizer: pythonDefaultOptimizer,
     },
+    optimizerQuality: outputFirstQuality,
     phases,
     warmupIterations: 1,
     measuredIterations: 2,

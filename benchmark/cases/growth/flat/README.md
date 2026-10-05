@@ -1,43 +1,21 @@
-# Flat growth coverage
+# Flat growth cases
 
-Flat growth means a constant **trend**, not a constant forecast. Seasonalities, holidays and
-regressors may vary the forecast. `public-api.ts` derives controls from the shared flat mixed
-cases in `../mixed-map.ts`; it does not expose invented Effect optimizer settings.
+Flat growth means a constant **trend**, not a constant forecast: seasonalities, events and
+regressors still move the forecast. Effect fits flat models with its own fixed optimizer, so flat
+declarations never set `effectOptimizer`.
 
-The runnable direct set includes positive/negative noisy levels, exact constants, additive
-weekly patterns, full-history mixed models and exact rolling-prefix fits under absmax/minmax.
-Diagnostic zero-span controls also live with the shared training-row edge cases. Canonical flat
-CV/interval/search declarations belong to `../../diagnostics/evaluation.ts`, not copied here.
+| File                                     | Cases                                                                                                              |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `../defaults.ts`                         | `fit(history, { growth: "flat" })` against `Prophet(growth="flat").fit(df)`, nothing else set                      |
+| `public-api.ts`                          | Noisy, constant and negative levels; weekly patterns; mixed models at full length and as cross-validation prefixes |
+| `../mixed-map.ts`                        | The original mixed-component flat models                                                                           |
+| `../linear/edge-cases.ts`                | Zero-span probes: every row on one timestamp                                                                       |
+| `../../uncertainty`, `../../diagnostics` | Uncertainty and cross-validation cases built from the mixed models                                                 |
 
-Direct fits gate forecasts/components, noise, scaling, public JSON round trips and fresh-process
-restoration. Both adapters disable built-in seasonalities and retain declared Python fitting
-settings. These settings do not establish default-algorithm equivalence.
+Additive-only flat requests with events, regressors or switchable seasonalities are rejected, so
+every feature case includes a multiplicative component.
 
-## Coverage and gaps
+Python Prophet's cross-validation drops the parent model's scaling for each fold. Effect's
+cross-validation defaults to absmax independently, with an explicit minmax override.
 
-| Capability    | Runnable coverage                                         | Remaining or intentionally different                                                                                        |
-| ------------- | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Basic levels  | Positive, negative and positive constant histories        | Zero/zero-centered histories and zero constants                                                                             |
-| Scaling       | absmax/minmax, full mixed histories and exact prefixes    | Broader per-feature scaling controls                                                                                        |
-| Seasonalities | Additive custom weekly and conditional mixed patterns     | Flat fitted built-ins and multiple periods/priors; additive-only conditional requests rejected; isolated masks still to add |
-| Holidays      | A mixed single-event route                                | Additive-only flat requests rejected; isolated windows/overlaps still to add                                                |
-| Regressors    | A mixed binary never-standardized route                   | Additive-only flat requests rejected; isolated transforms still to add                                                      |
-| Composition   | Original mixed models, full histories and prefixes        | Toggle one feature at a time; do not add unrelated features to manufacture passing cases                                    |
-| Input policy  | Shared sorting/duplicates and zero-span tests             | More flat-specific row-shape timing variants; invalid input policy is not parity timing                                     |
-| Lifecycle     | JSON and fresh-process restoration                        | Separate unsorted/repeated/empty prediction workloads                                                                       |
-| Uncertainty   | Shared scalar uncertainty and interval-fold workloads     | No identical-RNG or calibration claim                                                                                       |
-| Evaluation    | Canonical point/interval/search and exact direct prefixes | Independent CV scaling policy, not an optimizer fix                                                                         |
-
-Planned coverage is not runnable or passing evidence. Add focused datasets through the existing
-versioned input generator and preserve original gates. No posterior/MCMC fitting, country
-calendars, Python JSON interchange or general calendar generator is implied.
-
-Pinned Prophet's fold copy omits parent scaling. Effect CV therefore defaults independently to
-absmax and supports an explicit minmax override. Every fold learns numerical scaling from
-training data only. See the [accepted policy](../../../../docs/decisions/cross-validation-scaling.md),
-[complete runnable catalog](../../../CASES.md) and [retained outcomes](../../../results/RESULTS.md).
-
-```sh
-npm run benchmark -- --case flat-prefix-63-minmax --case flat-prefix-63-absmax \
-  --case evaluation-flat-mixed-point --case evaluation-flat-mixed-intervals
-```
+The docs site renders the retained `flat-growth` baseline at `/benchmarks/flat`.

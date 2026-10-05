@@ -5,10 +5,9 @@ import { decodeOptions, defaultLinearOptimizer } from "effect-prophet";
 import { describe, expect, it } from "vitest";
 
 import { parseBenchmarkCases, parseBenchmarkDataset } from "../case.ts";
-import { currentEvaluationCases, evaluationCases } from "../../cases/diagnostics/evaluation.ts";
+import { evaluationCases } from "../../cases/diagnostics/evaluation.ts";
 import { effectOptionsForCase } from "../effect-case.ts";
 import { linearGrowthEdgeCases } from "../../cases/growth/linear/edge-cases.ts";
-import { stanAlignedCases } from "../../cases/growth/linear/stan-aligned.ts";
 import {
   evaluationCorrectness,
   evaluationOperation,
@@ -17,9 +16,7 @@ import {
 import { buildBenchmarkReport } from "../report.ts";
 import type { CorrectnessProjection, ImplementationResult, RunManifest } from "../result.ts";
 
-const base = stanAlignedCases(evaluationCases).find(
-  (item) => item.id === "evaluation-linear-point-stan-v2",
-);
+const base = evaluationCases.find((item) => item.id === "evaluation-linear-point");
 
 if (base === undefined) throw new Error("Missing evaluation test case");
 
@@ -96,42 +93,30 @@ const report = (left: CorrectnessProjection, right: CorrectnessProjection) =>
   );
 
 describe("evaluation public benchmark", () => {
-  it("selects current linear controls without changing canonical flat/logistic cases or gates", async () => {
-    expect(currentEvaluationCases).toHaveLength(14);
+  it("declares valid fit options, with both libraries' default optimizers for linear growth", async () => {
+    expect(evaluationCases).toHaveLength(14);
 
-    await Effect.runPromise(parseBenchmarkCases(currentEvaluationCases));
+    await Effect.runPromise(parseBenchmarkCases(evaluationCases));
 
-    for (const [index, current] of currentEvaluationCases.entries()) {
-      const original = evaluationCases[index];
-      const options = effectOptionsForCase(current);
+    for (const declaration of evaluationCases) {
+      const options = effectOptionsForCase(declaration);
 
-      if (
-        original === undefined ||
-        options === undefined ||
-        current.workload.kind !== "evaluation"
-      ) {
-        throw new Error("Expected aligned evaluation declarations and fit options");
+      if (options === undefined || declaration.workload.kind !== "evaluation") {
+        throw new Error("Expected evaluation declarations and fit options");
       }
 
       await Effect.runPromise(decodeOptions(options));
 
-      expect(current.dataset).toBe(original.dataset);
-      expect(current.correctnessTolerances).toEqual(original.correctnessTolerances);
-      expect(current.phases).toEqual(original.phases);
-
-      if (current.workload.configuration.growth === "linear") {
-        expect(current.id).toBe(`${original.id}-stan-v2`);
-        expect(current.workload.effectOptimizer).toEqual(defaultLinearOptimizer);
-        expect(current.workload.pythonOptimizer?.algorithm).toBe("Auto");
-      } else {
-        expect(current).toBe(original);
+      if (declaration.workload.configuration.growth === "linear") {
+        expect(declaration.workload.effectOptimizer).toEqual(defaultLinearOptimizer);
+        expect(declaration.workload.pythonOptimizer?.algorithm).toBe("Auto");
       }
     }
   });
 
   it("checks duplicate assessment targets by stable row instance, never first timestamp match", async () => {
-    const declaration = stanAlignedCases(linearGrowthEdgeCases).find(
-      (item) => item.id === "evaluation-training-duplicates-stan-v2",
+    const declaration = linearGrowthEdgeCases.find(
+      (item) => item.id === "evaluation-training-duplicates",
     );
 
     if (declaration === undefined) throw new Error("Missing duplicate evaluation case");
@@ -212,9 +197,7 @@ describe("evaluation public benchmark", () => {
   });
 
   it("records one expected candidate failure and keeps report encode/decode separate from search", async () => {
-    const case_ = stanAlignedCases(evaluationCases).find(
-      (item) => item.id === "evaluation-linear-failure-search-stan-v2",
-    );
+    const case_ = evaluationCases.find((item) => item.id === "evaluation-linear-failure-search");
 
     if (case_ === undefined) throw new Error("Missing failure workload");
 

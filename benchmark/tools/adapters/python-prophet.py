@@ -156,7 +156,7 @@ def configure_model(benchmark_case: dict[str, Any]) -> Prophet:
         raise ValueError(f"Case {benchmark_case['id']} is not a fitting workload")
     if workload.get("fitRequest") == "growth-only":
         # Point output only: leave every fitting/seasonality default with Prophet.
-        return Prophet(growth="logistic", uncertainty_samples=0)
+        return Prophet(growth=workload["configuration"]["growth"], uncertainty_samples=0)
 
     configuration = workload["configuration"]
     changepoints = configuration["changepoints"]
@@ -469,7 +469,8 @@ def metadata_projection(model: Prophet, benchmark_case: dict[str, Any]) -> dict[
 
     if benchmark_case["workload"]["kind"] == "fixed-linear-prediction":
         return {
-            "modelKind": "linear-trend",
+            "modelKind": "linear-piecewise-map",
+            "targetScaling": {"mode": "absmax", "offset": 0.0, "scale": 1.0},
             "changepointTimestamps": [],
             "seasonalities": [],
             "events": [],
@@ -500,7 +501,16 @@ def metadata_projection(model: Prophet, benchmark_case: dict[str, Any]) -> dict[
     }
 
 
-def assert_metadata(benchmark_case: dict[str, Any], metadata: dict[str, Any]) -> None:
+def expected_automatic_count(count: int, changepoint_range: float, training_rows: int) -> int:
+    """Mirror Prophet's set_changepoints reduction for histories too short for the count."""
+
+    history_size = int(np.floor(training_rows * changepoint_range))
+    return max(0, history_size - 1 if count + 1 > history_size else count)
+
+
+def assert_metadata(
+    benchmark_case: dict[str, Any], metadata: dict[str, Any], training_rows: int
+) -> None:
     """Verify public Prophet retained the declared benchmark configuration."""
 
     workload = benchmark_case["workload"]
@@ -546,7 +556,9 @@ def assert_metadata(benchmark_case: dict[str, Any], metadata: dict[str, Any]) ->
         expected = [int(pd.Timestamp(value).value // 1_000_000) for value in changepoints["timestamps"]]
         if metadata["changepointTimestamps"] != expected:
             raise ValueError("Prophet changed explicit changepoints")
-    elif len(metadata["changepointTimestamps"]) != changepoints["count"]:
+    elif len(metadata["changepointTimestamps"]) != expected_automatic_count(
+        changepoints["count"], changepoints["range"], training_rows
+    ):
         raise ValueError("Prophet resolved the wrong automatic changepoint count")
 
 
@@ -682,7 +694,7 @@ def correctness_projection(
     metadata = metadata_projection(model, benchmark_case)
     assert_forecasts(benchmark_case, dataset, projections)
     assert_fixed_equation(benchmark_case, projections)
-    assert_metadata(benchmark_case, metadata)
+    assert_metadata(benchmark_case, metadata, len(training))
     verified = subprocess.run(
         [sys.executable, str(ADAPTER_PATH), "--verify-restored", benchmark_case["id"]],
         input=json.dumps({

@@ -43,7 +43,7 @@ crossValidate(observations, fitOptions, plan, {
   numerical scaling values from that fold's training observations only. Held-out targets
   never participate. All other fit options and the existing explicit-changepoint projection
   retain their contracts.
-- Existing unconfigured featureless linear OLS remains OLS; it has no MAP target-scaling state.
+- All linear fitting uses MAP, including featureless requests; there is no OLS scaling exception.
   An explicit CV scaling request selects linear MAP, as an explicit ordinary fit scaling
   request already does. This is an existing package-family distinction, not Python parity.
 - Invalid scaling/mode combinations fail validation before any fold/WASM boundary. Point
@@ -71,7 +71,7 @@ This consistency is our application workflow; Python has no matching search/hold
 ## Evidence and observability
 
 Real public/WASM tests compare both scaling policies with independent prefix fits and seeded
-simulations, poison held-out targets, preserve unconfigured OLS, reject malformed controls before
+simulations, poison held-out targets, exercise featureless MAP, reject malformed controls before
 integration, and check search receipts/final holdout fits and strict report round trips.
 Existing `Prophet.crossValidate`, candidate and fold spans retain normal parent/completion
 semantics. The bounded `effect_prophet.evaluation.scaling.mode` attribute identifies the CV

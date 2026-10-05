@@ -2,21 +2,6 @@ import { createRequire } from "node:module";
 
 import { Predicate } from "effect";
 
-/** Rust/WASM bindings required by the linear-trend adapter. */
-export interface LinearTrendWasmBindings {
-  /** Fit one complete linear trend and return the packed Rust protocol result. */
-  readonly fit_linear_trend: (timestamps: Float64Array, values: Float64Array) => Float64Array;
-
-  /** Evaluate one complete timestamp batch and return the packed Rust protocol result. */
-  readonly predict_linear_trend: (
-    timestamps: Float64Array,
-    intercept: number,
-    slope: number,
-    timeOrigin: number,
-    timeScale: number,
-  ) => Float64Array;
-}
-
 /** Rust/WASM bindings for masked seasonalities and known additive MAP columns. */
 export interface AdditiveFeatureWasmBindings {
   readonly fit_piecewise_map_with_features: (
@@ -273,8 +258,7 @@ export interface LogisticMapWasmBindings {
 }
 
 /** Complete generated Rust/WASM module contract required by this package version. */
-export type ProphetWasmModule = LinearTrendWasmBindings &
-  AdditiveFeatureWasmBindings &
+export type ProphetWasmModule = AdditiveFeatureWasmBindings &
   FlatMapWasmBindings &
   PiecewiseMapWasmBindings &
   MixedMapWasmBindings &
@@ -287,8 +271,6 @@ export type ProphetWasmModuleLoader = () => ProphetWasmModule;
 const require = createRequire(import.meta.url);
 
 const requiredFunctionExports = [
-  "fit_linear_trend",
-  "predict_linear_trend",
   "fit_piecewise_map_with_features",
   "fit_piecewise_map_with_features_and_scaling",
   "predict_piecewise_map_with_features",

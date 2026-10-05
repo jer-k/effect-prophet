@@ -34,6 +34,7 @@ describe("decodeOptions", () => {
       builtInSeasonalities: { daily: "auto", weekly: "auto", yearly: "auto" },
       events: emptyEventCalendar,
       regressors: [],
+      map: defaultAutomaticMapOptions,
     });
   });
 
@@ -48,7 +49,7 @@ describe("decodeOptions", () => {
     async (growth) => {
       const options = await Effect.runPromise(decodeOptions({ growth }));
 
-      expect(options).toEqual({
+      const expected = {
         growth,
         seasonalityMode: "additive",
         holidaysMode: "additive",
@@ -56,7 +57,11 @@ describe("decodeOptions", () => {
         builtInSeasonalities: { daily: "auto", weekly: "auto", yearly: "auto" },
         events: emptyEventCalendar,
         regressors: [],
-      });
+      };
+
+      expect(options).toEqual(
+        growth === "linear" ? { ...expected, map: defaultAutomaticMapOptions } : expected,
+      );
     },
   );
 
@@ -141,6 +146,7 @@ describe("decodeOptions", () => {
       builtInSeasonalities: { daily: "auto", weekly: "auto", yearly: "auto" },
       events: emptyEventCalendar,
       regressors: [],
+      map: defaultAutomaticMapOptions,
     });
     expect(Object.isFrozen(options.seasonalities)).toBe(true);
   });
@@ -308,6 +314,32 @@ describe("decodeOptions", () => {
       message: "Feature name 'price' collides with a seasonality",
     });
   });
+
+  it.each(["linear", "logistic"] as const)(
+    "keeps automatic changepoints when %s MAP controls are partial",
+    async (growth) => {
+      for (const map of [
+        {},
+        { changepointPriorScale: 0.5 },
+        { optimizer: { maxIterations: 250 } },
+      ]) {
+        const options = await Effect.runPromise(decodeOptions({ growth, map }));
+
+        if (options.growth === "flat") throw new Error("Expected a MAP trend request");
+
+        expect(options.map.changepoints).toEqual({ mode: "auto", count: 25, range: 0.8 });
+        expect(Object.isFrozen(options.map.changepoints)).toBe(true);
+      }
+
+      const disabled = await Effect.runPromise(
+        decodeOptions({ growth, map: { changepoints: { mode: "explicit", timestamps: [] } } }),
+      );
+
+      expect(disabled).toMatchObject({
+        map: { changepoints: { mode: "explicit", timestamps: [] } },
+      });
+    },
+  );
 
   it("parses explicit and automatic linear MAP controls", async () => {
     const explicit = await Effect.runPromise(

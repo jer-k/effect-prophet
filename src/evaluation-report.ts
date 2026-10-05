@@ -29,7 +29,6 @@ import { decodeObservations, type EncodedObservations, type Observation } from "
 import {
   checkExplicitChangepointBounds,
   decodeOptions,
-  isFeaturelessOls,
   type EncodedProphetOptions,
 } from "./options";
 import { fit, predict, predictUncertainty } from "./prophet";
@@ -133,37 +132,34 @@ const ProvenanceSchema = Schema.Struct({
   environment: ProvenanceLabelSchema,
 });
 
-const ModelSchema = Schema.Union([
-  Schema.Struct({ kind: Schema.Literal("linear-trend") }),
-  Schema.Struct({
-    kind: Schema.Literals(["flat-map", "linear-piecewise-map", "logistic-piecewise-map"]),
-    fitSummary: Schema.Struct({
-      method: Schema.Literals([
-        "flat-map-coordinate-v1",
-        "mixed-flat-map-coordinate-v1",
-        "piecewise-map-stan-v2",
-        "mixed-piecewise-map-stan-v2",
-        "logistic-piecewise-map-stan-v2",
-      ]),
-      termination: Schema.Literals([
-        "converged",
-        "constant-target-shortcut",
-        "objective-change",
-        "no-progress",
-        "absolute-objective",
-        "relative-objective",
-        "absolute-gradient",
-        "relative-gradient",
-        "parameter-change",
-        "iteration-limit",
-      ]),
-      observationCount: Schema.Int.check(Schema.isGreaterThanOrEqualTo(2)),
-      iterations: Schema.Natural,
-      objective: Schema.Finite,
-      stationarityResidual: Schema.Finite.check(Schema.isGreaterThanOrEqualTo(0)),
-    }),
+const ModelSchema = Schema.Struct({
+  kind: Schema.Literals(["flat-map", "linear-piecewise-map", "logistic-piecewise-map"]),
+  fitSummary: Schema.Struct({
+    method: Schema.Literals([
+      "flat-map-coordinate-v1",
+      "mixed-flat-map-coordinate-v1",
+      "piecewise-map-stan-v2",
+      "mixed-piecewise-map-stan-v2",
+      "logistic-piecewise-map-stan-v2",
+    ]),
+    termination: Schema.Literals([
+      "converged",
+      "constant-target-shortcut",
+      "objective-change",
+      "no-progress",
+      "absolute-objective",
+      "relative-objective",
+      "absolute-gradient",
+      "relative-gradient",
+      "parameter-change",
+      "iteration-limit",
+    ]),
+    observationCount: Schema.Int.check(Schema.isGreaterThanOrEqualTo(2)),
+    iterations: Schema.Natural,
+    objective: Schema.Finite,
+    stationarityResidual: Schema.Finite.check(Schema.isGreaterThanOrEqualTo(0)),
   }),
-]);
+});
 
 const CommonReportSchema = {
   reportKind: Schema.Literal("effect-prophet-evaluation"),
@@ -400,20 +396,18 @@ const reportConsistency = (
     if (
       (options.growth === "logistic" && report.model.kind !== "logistic-piecewise-map") ||
       (options.growth === "flat" && report.model.kind !== "flat-map") ||
-      (options.growth === "linear" &&
-        !["linear-trend", "linear-piecewise-map"].includes(report.model.kind)) ||
-      (report.model.kind !== "linear-trend" &&
-        (report.model.fitSummary.observationCount !== development.rowCount ||
-          (report.model.kind === "logistic-piecewise-map" &&
-            report.model.fitSummary.method !== "logistic-piecewise-map-stan-v2") ||
-          (report.model.kind === "flat-map" &&
-            !["flat-map-coordinate-v1", "mixed-flat-map-coordinate-v1"].includes(
-              report.model.fitSummary.method,
-            )) ||
-          (report.model.kind === "linear-piecewise-map" &&
-            !["piecewise-map-stan-v2", "mixed-piecewise-map-stan-v2"].includes(
-              report.model.fitSummary.method,
-            ))))
+      (options.growth === "linear" && report.model.kind !== "linear-piecewise-map") ||
+      report.model.fitSummary.observationCount !== development.rowCount ||
+      (report.model.kind === "logistic-piecewise-map" &&
+        report.model.fitSummary.method !== "logistic-piecewise-map-stan-v2") ||
+      (report.model.kind === "flat-map" &&
+        !["flat-map-coordinate-v1", "mixed-flat-map-coordinate-v1"].includes(
+          report.model.fitSummary.method,
+        )) ||
+      (report.model.kind === "linear-piecewise-map" &&
+        !["piecewise-map-stan-v2", "mixed-piecewise-map-stan-v2"].includes(
+          report.model.fitSummary.method,
+        ))
     ) {
       return yield* Effect.fail(
         reportError(
@@ -703,12 +697,6 @@ export const evaluateHoldout = Effect.fn("Prophet.evaluateHoldout")(function* (
     );
   }
 
-  if (uncertainty !== undefined && isFeaturelessOls(options)) {
-    return yield* Effect.fail(
-      invalid(["uncertainty"], "Featureless OLS has no interval simulation"),
-    );
-  }
-
   if (uncertainty === undefined && metricPolicy.metrics.includes("coverage")) {
     return yield* Effect.fail(invalid(["metrics"], "Coverage requires interval simulation"));
   }
@@ -946,8 +934,6 @@ export const evaluateHoldout = Effect.fn("Prophet.evaluateHoldout")(function* (
 });
 
 const modelSummary = (model: FittedProphet) => {
-  if (model.model === "linear-trend") return { kind: model.model };
-
   const { method, termination, observationCount, iterations, objective, stationarityResidual } =
     model.fitSummary;
 

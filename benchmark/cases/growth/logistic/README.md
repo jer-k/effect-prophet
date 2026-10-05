@@ -4,7 +4,7 @@
 
 Unmodified Python Prophet **1.4.0**, source `abf69a215604afcaa7ecb4359f592d13bf6dea9f`, is the default-behavior target. Old documented differences are investigation targets, not permanent exclusions. A better edge-case behavior may eventually be an explicit opt-in; it must not silently replace Python defaults.
 
-`public-api.ts` adds 28 correctness-first cases to the existing runner. No production solver is changed by this first suite. Existing Stage F cases, inputs and tolerances remain unchanged. In particular, old logistic `-stan-v2` declarations are renamed copies, **not** a logistic solver upgrade.
+`public-api.ts` adds 28 correctness-first cases. The six older `logistic-*-floor-*` cases in `../mixed-map.ts`, and the uncertainty and evaluation cases built from them, use the same defaults and output-first policy (shared in `../../prophet-defaults.ts`).
 
 ## First runnable selection
 
@@ -42,7 +42,7 @@ These gates are declared before running the existing implementation. They are in
 
 The stationarity comparison is a **difference between independently fitted endpoints**, not proof that either endpoint is near an optimum. Keep both raw residuals visible. Output-first is an explicit logistic policy, not linear EP-097's waiver: every flag still needs an explanation in the validation review. If an expectation turns out to be unsuitable, investigate and document why before proposing a changed gate; never quietly loosen it to obtain green results.
 
-The Python objective/residual are computed with the pinned executable's `log_prob(jacobian=False)`. Logistic diagnostics recover its internal **pre-fold** fitted state, including the dummy delta. Python's public empty-point folding changes the prediction parameters; evaluating those folded parameters would misrepresent the optimizer's fitting score. Forecasts still use Python's unmodified public prediction state. Public Stan fitting now reports its private pre-fold objective too; explicitly selected historical proximal fits retain their own true-empty objective.
+The Python objective/residual are computed with the pinned executable's `log_prob(jacobian=False)`. Logistic diagnostics recover its internal **pre-fold** fitted state, including the dummy delta. Python's public empty-point folding changes the prediction parameters; evaluating those folded parameters would misrepresent the optimizer's fitting score. Forecasts still use Python's unmodified public prediction state. Effect also reports its private pre-fold objective.
 
 ## Coverage ledger — not exclusions
 
@@ -52,8 +52,7 @@ selection/overrides, honest limits, fallback, persistence, CV, subdaily sorting,
 and prediction-instance alignment. That scoped evidence does not close every item below:
 
 - Fixed-parameter zero base/segment rates and nonzero sign crossings now have 18 public-state
-  oracle cases, including Python nonfinite results translated to typed failures and historical
-  proximal restoration. Extreme arithmetic and randomly sampled future singular states remain
+  oracle cases, including Python nonfinite results translated to typed failures. Extreme arithmetic and randomly sampled future singular states remain
   broader investigation work.
 - Explicit Newton/L-BFGS overrides, stopping reasons, iteration exhaustion, qualifying fallback and reset state.
 - Independent same-point objective, derivatives and curvature before adapting existing Stan-style solvers to logistic growth.

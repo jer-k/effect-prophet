@@ -4,6 +4,7 @@ import { join, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { Effect } from "effect";
+import { defaultLinearOptimizer } from "effect-prophet";
 import { describe, expect, it } from "vitest";
 
 import { parseBenchmarkCases, parseBenchmarkDataset } from "../case.ts";
@@ -73,7 +74,7 @@ describe("growth, scaling, and mixed-component MAP benchmark workloads", () => {
           ...flat,
           workload: {
             ...flat.workload,
-            effectOptimizer: { maxIterations: 1, relativeTolerance: 1e-7, absoluteTolerance: 1e-9 },
+            effectOptimizer: defaultLinearOptimizer,
           },
         },
       ]).pipe(Effect.exit),

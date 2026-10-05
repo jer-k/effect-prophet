@@ -11,8 +11,10 @@ import {
   prophetFittingBackendLayer,
   type FittedProphet,
 } from "../src/index";
-import { parseLinearModel, type LinearParameters } from "../src/fitted-model";
+import { parsePiecewiseMapModel, type PiecewiseMapParameters } from "../src/fitted-model";
 import { FitPlan, FittingBackend } from "../src/internal/fitting-backend";
+import { defaultAutomaticMapOptions } from "../src/options";
+import { fixedPiecewiseParameters } from "./helpers/fixed-piecewise-model";
 import { makeTestFittingBackend } from "./internal/fitting-backend-test-layer";
 
 const observations = [
@@ -23,10 +25,9 @@ const observations = [
 
 const predictionTimestamps = ["2024-01-01T00:00:03.000Z", "2024-01-01T00:00:04.000Z"] as const;
 
-// Twelve decimal places are strict for this normalized exact-line fixture while allowing rounding.
-const linearForecastPrecisionDigits = 12;
+const linearForecastPrecisionDigits = 6;
 
-describe("linear-trend Prophet integration", () => {
+describe("linear MAP Prophet integration", () => {
   it("exposes validation and numerical failures precisely", () => {
     expectTypeOf(fit(observations)).toEqualTypeOf<
       Effect.Effect<
@@ -44,12 +45,12 @@ describe("linear-trend Prophet integration", () => {
 
     const forecasts = await Effect.runPromise(predict(model, predictionTimestamps));
 
-    expect(model).toEqual({
-      model: "linear-trend",
-      intercept: 2,
-      slope: 6,
+    expect(model).toMatchObject({
+      model: "linear-piecewise-map",
       timeOrigin: 1_704_067_200_000,
       timeScale: 2_000,
+      targetScaling: { mode: "absmax", offset: 0, scale: 8 },
+      fitSummary: { method: "piecewise-map-stan-v2", observationCount: 3 },
     });
     expect(Object.isFrozen(model)).toBe(true);
     expect(forecasts).toHaveLength(2);
@@ -68,10 +69,10 @@ describe("linear-trend Prophet integration", () => {
       fit(retained).pipe(Effect.provide(prophetFittingBackendLayer)),
     );
 
-    expect(model.model).toBe("linear-trend");
+    expect(model.model).toBe("linear-piecewise-map");
 
-    if (model.model !== "linear-trend") {
-      throw new Error("Expected an OLS model from retained rows");
+    if (model.model !== "linear-piecewise-map") {
+      throw new Error("Expected a MAP model from retained rows");
     }
 
     expect(model.timeScale).toBe(2_000);
@@ -119,7 +120,7 @@ describe("linear-trend Prophet integration", () => {
   it("uses exactly the origin and scale returned by the backend", async () => {
     const testBackend = makeTestFittingBackend(
       Result.succeed({
-        model: "linear-trend",
+        ...fixedPiecewiseParameters,
         intercept: 10,
         slope: 4,
         timeOrigin: 1_704_067_199_000,
@@ -137,19 +138,23 @@ describe("linear-trend Prophet integration", () => {
       timestamp: 1_704_067_203_000,
       value: 14,
       trend: 14,
-      additive: 0,
+      additive: -0,
       multiplicative: 0,
       seasonalities: [],
       events: [],
       regressors: [],
     });
+    expect(FitPlan.$is("LinearPiecewiseMap")(testBackend.invocations[0]?.options)).toBe(true);
     expect(testBackend.invocations).toEqual([
       {
         input: {
           timestamps: new Float64Array([1_704_067_200_000, 1_704_067_201_000, 1_704_067_202_000]),
           values: new Float64Array([2, 5, 8]),
         },
-        options: FitPlan.LinearTrend(),
+        options: expect.objectContaining({
+          ...defaultAutomaticMapOptions,
+          scaling: "absmax",
+        }),
       },
     ]);
   });
@@ -291,7 +296,7 @@ describe("linear-trend Prophet integration", () => {
   it("rejects invalid observations before executing the backend", async () => {
     const testBackend = makeTestFittingBackend(
       Result.succeed({
-        model: "linear-trend",
+        ...fixedPiecewiseParameters,
         intercept: 0,
         slope: 1,
         timeOrigin: 0,
@@ -317,7 +322,7 @@ describe("linear-trend Prophet integration", () => {
   it("rejects invalid options before executing the backend", async () => {
     const testBackend = makeTestFittingBackend(
       Result.succeed({
-        model: "linear-trend",
+        ...fixedPiecewiseParameters,
         intercept: 0,
         slope: 1,
         timeOrigin: 0,
@@ -341,7 +346,7 @@ describe("linear-trend Prophet integration", () => {
     expect(testBackend.invocations).toHaveLength(0);
   });
 
-  it("maps insufficient data from the linear kernel to a fitting error", async () => {
+  it("rejects insufficient linear MAP data before fitting", async () => {
     const program = fit([{ timestamp: "2024-01-01T00:00:00.000Z", value: 2 }]).pipe(
       Effect.provide(prophetFittingBackendLayer),
     );
@@ -356,7 +361,7 @@ describe("linear-trend Prophet integration", () => {
     }
   });
 
-  it("maps non-finite numerical results to degenerate observations", async () => {
+  it("preserves MAP non-finite numerical failures", async () => {
     const extremeObservations = [
       { timestamp: "2024-01-01T00:00:00.000Z", value: -Number.MAX_VALUE },
       { timestamp: "2024-01-01T00:00:01.000Z", value: Number.MAX_VALUE },
@@ -369,7 +374,7 @@ describe("linear-trend Prophet integration", () => {
     expect(error).toBeInstanceOf(FittingError);
 
     if (error instanceof FittingError) {
-      expect(error.reason).toBe("degenerate-observations");
+      expect(error.reason).toBe("non-finite-result");
       expect(error.observationCount).toBe(2);
     }
   });
@@ -391,7 +396,7 @@ describe("linear-trend Prophet integration", () => {
   it("rejects invalid parameters returned by a backend", async () => {
     const testBackend = makeTestFittingBackend(
       Result.succeed({
-        model: "linear-trend",
+        ...fixedPiecewiseParameters,
         intercept: 0,
         slope: 1,
         timeOrigin: 0,
@@ -424,8 +429,8 @@ describe("linear-trend Prophet integration", () => {
   });
 
   it("rejects an invalid fitted model through the prediction error channel", async () => {
-    const invalidModel: LinearParameters = {
-      model: "linear-trend",
+    const invalidModel: PiecewiseMapParameters = {
+      ...fixedPiecewiseParameters,
       intercept: Number.NaN,
       slope: 1,
       timeOrigin: 1_704_067_200_000,
@@ -447,8 +452,8 @@ describe("linear-trend Prophet integration", () => {
 
   it("rejects a non-finite forecast through the prediction error channel", async () => {
     const model = Effect.runSync(
-      parseLinearModel({
-        model: "linear-trend",
+      parsePiecewiseMapModel({
+        ...fixedPiecewiseParameters,
         intercept: 0,
         slope: Number.MAX_VALUE,
         timeOrigin: 1_704_067_200_000,

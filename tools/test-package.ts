@@ -203,7 +203,7 @@ const evaluated = await Effect.runPromise(
       { timestamp: "2024-01-02T00:00:00.000Z", value: 3 },
       { timestamp: "2024-01-03T00:00:00.000Z", value: 4 },
     ],
-    // This smoke check exercises explicit featureless OLS, not automatic MAP CV.
+    // Disabling built-ins still exercises Python-default automatic linear MAP CV.
     { builtInSeasonalities: { yearly: "off", weekly: "off", daily: "off" } },
     {
       horizonMs: 86_400_000,
@@ -216,9 +216,9 @@ assert.equal(evaluated.kind, "point");
 
 assert.equal(evaluated.rows[0]?.actual, 4);
 
-assert.ok(Math.abs((evaluated.rows[0]?.predicted ?? NaN) - 4) < 1e-12);
+assert.ok(Number.isFinite(evaluated.rows[0]?.predicted));
 
-assert.equal(evaluated.folds[0]?.model, "linear-trend");
+assert.equal(evaluated.folds[0]?.model, "linear-piecewise-map");
 
 const selection = await Effect.runPromise(
   searchModels(

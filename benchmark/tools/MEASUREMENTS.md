@@ -22,8 +22,8 @@ Public JSON round trips and fresh-process restoration must retain predictions. T
 report applies the exact declared per-quantity gates before admitting samples. There is no
 second harness or permissive fallback gate.
 
-Stan-aligned linear counterparts retain `-stan-v2` IDs, original data/priors and 10,000-step
-per-attempt budgets. Current objective/noise acceptance and diagnostic-only stationarity are
+Fitted linear cases run both libraries on their default optimizers (shared in
+`cases/growth/linear/controls.ts`) with 10,000-step per-attempt budgets. Objective/noise acceptance and diagnostic-only stationarity are
 specified in the [accepted policy](../../docs/decisions/linear-map-benchmark-acceptance.md).
 Historical failed stationarity-equality gates are not retroactively repaired. Flat fits use
 Effect's fixed optimizer; declarations must not invent unsupported flat optimizer controls.

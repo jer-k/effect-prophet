@@ -33,7 +33,7 @@ and adapters verify their recorded identities again before measuring.
 ```sh
 npm run benchmark
 npm run benchmark -- --case flat-level-minmax --case evaluation-flat-mixed-point
-npm run benchmark -- --no-build --case map-events-small-stan-v2
+npm run benchmark -- --no-build --case map-events-small
 ```
 
 Rebuild after source/adapter changes; `--no-build` deliberately reuses existing images.

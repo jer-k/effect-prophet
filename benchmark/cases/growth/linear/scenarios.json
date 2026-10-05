@@ -3,14 +3,15 @@
   "scenarios": [
     {
       "id": "featureless-default",
-      "capability": "default linear fit without extra features",
+      "capability": "default linear fit with no options",
       "pythonCall": "Prophet().fit(history)",
       "effectCall": "fit(observations)",
-      "comparison": "known-difference",
+      "comparison": "equivalent-objective",
       "pythonBehavior": "Piecewise MAP with default automatic changepoints; built-in seasonalities may resolve from history.",
-      "effectBehavior": "Featureless OLS; built-in seasonalities default off.",
-      "timingEligible": false,
-      "evidence": ["docs/compatibility/prophet-1.4.0.md#linear-growth"]
+      "effectBehavior": "Piecewise MAP with default automatic changepoints; built-in seasonalities resolve from history, as in Python.",
+      "timingEligible": true,
+      "evidence": ["benchmark/cases/growth/linear/defaults.ts"],
+      "timingCase": "linear-defaults-small"
     },
     {
       "id": "fixed-linear-prediction",
@@ -222,21 +223,6 @@
       "timingCase": "map-training-zero-span-flat-varied",
       "evidence": [
         "test/prophet-training-rows.test.ts",
-        "benchmark/cases/growth/linear/edge-cases.ts"
-      ]
-    },
-    {
-      "id": "automatic-map-convergence-control",
-      "capability": "retain a real migration failure with a sorted versus unsorted control",
-      "pythonCall": "Prophet(n_changepoints=25, changepoint_range=0.8).fit(history)",
-      "effectCall": "fit(history, { map: { changepoints: { mode: 'auto' } } })",
-      "comparison": "known-difference",
-      "timingEligible": false,
-      "timingCase": "map-training-ordered-auto",
-      "pythonBehavior": "Both ordered and unsorted unique-history controls fit successfully in the reviewed native run.",
-      "effectBehavior": "Both controls exhaust the declared 10000-iteration budget. No accepted timings or general no-regression claim.",
-      "evidence": [
-        "benchmark/results/retained/linear-growth-training-rows/2026-09-30T224402-292Z-4d661a06/README.md",
         "benchmark/cases/growth/linear/edge-cases.ts"
       ]
     }

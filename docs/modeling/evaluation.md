@@ -20,11 +20,9 @@ crossValidate(observations, fitOptions, plan, {
 ```
 
 The override chooses a method, never a shared fitted offset/scale: every fold learns those
-numbers from its training prefix only. All built-ins explicitly off with no MAP/scaling request
-guarantees featureless OLS; omitted/point CV controls preserve that selection. Automatic requests
-now receive the MAP CV scaling policy even if a short ordinary fit would resolve no features and
-use OLS. That remaining ordinary linear-default difference is not logistic parity evidence.
-Explicitly requesting scaling selects linear MAP as ordinary `fit` does.
+numbers from its training prefix only. All linear fits use MAP, including featureless requests
+with built-ins explicitly off. Default and partial map requests retain automatic changepoints;
+explicit empty changepoints disable breaks without changing the fitting objective.
 Search accepts the same controls in `mode`, retaining the **effective** scaling in successful
 candidate options so final holdout fitting uses the evaluated policy. Always build a holdout
 receipt from that success record, not the original input options. See the

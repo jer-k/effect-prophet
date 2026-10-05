@@ -1,4 +1,4 @@
-/** Explicit no-built-in configuration for tests that intentionally exercise featureless/OLS or custom-only models. */
+/** Explicit no-built-in configuration for featureless MAP or custom-only model tests. */
 export const builtInSeasonalitiesOff = Object.freeze({
   daily: "off",
   weekly: "off",

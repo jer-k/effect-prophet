@@ -1,9 +1,8 @@
 {
   "schemaVersion": 1,
   "baselines": {
-    "flat-growth-and-evaluation": "retained/flat-growth-and-evaluation/2026-10-02T210323-182Z-6cbae03d",
-    "linear-growth-training-rows": "retained/linear-growth-training-rows/2026-09-30T224402-292Z-4d661a06",
-    "linear-map-fit-quality": "retained/linear-map-fit-quality/2026-10-02T043132-582Z-4d661a06",
-    "public-api": "retained/public-api/2026-09-20T224643-979Z-ff2c99b0"
+    "flat-growth-and-evaluation": "retained/flat-growth-and-evaluation/2026-10-04T191226-966Z-730ead62",
+    "linear-growth": "retained/linear-growth/2026-10-04T184932-255Z-730ead62",
+    "flat-growth": "retained/flat-growth/2026-10-05T010915-213Z-730ead62"
   }
 }

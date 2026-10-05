@@ -117,7 +117,6 @@ export const checkExplicitChangepointBounds = (
   if (
     observations.length < 2 ||
     options.growth === "flat" ||
-    options.map === undefined ||
     options.map.changepoints.mode !== "explicit"
   ) {
     return Effect.void;
@@ -150,7 +149,7 @@ export const checkExplicitChangepointBounds = (
   return Effect.void;
 };
 
-/** Parsed coordinate controls for flat/logistic fitting, not linear Stan fitting. */
+/** Parsed coordinate controls for reduced flat MAP fitting. */
 export interface MapOptimizerControls {
   readonly maxIterations: number;
   readonly relativeTolerance: number;
@@ -218,14 +217,14 @@ interface ParsedBuiltInOptions {
 export interface LinearTrendOptions extends ParsedBuiltInOptions {
   readonly growth: "linear";
   readonly seasonalities: readonly [];
-  readonly map?: MapOptions;
+  readonly map: MapOptions;
 }
 
 /** Parsed linear-growth options with at least one configured custom seasonality. */
 export interface LinearAdditiveOptions extends ParsedBuiltInOptions {
   readonly growth: "linear";
   readonly seasonalities: readonly [SeasonalityDefinition, ...ReadonlyArray<SeasonalityDefinition>];
-  readonly map?: MapOptions;
+  readonly map: MapOptions;
 }
 
 /** Parsed flat-growth MAP options without configured custom seasonalities. */
@@ -255,18 +254,6 @@ export type ProphetOptions =
   | FlatAdditiveOptions
   | LogisticOptions;
 
-/** Recognize the only known model configuration without MAP predictive simulation. */
-export const isFeaturelessOls = (options: ProphetOptions): boolean =>
-  options.growth === "linear" &&
-  options.map === undefined &&
-  options.scaling === undefined &&
-  options.seasonalities.length === 0 &&
-  options.events.layout.coefficientCount === 0 &&
-  options.regressors.length === 0 &&
-  options.builtInSeasonalities.yearly === "off" &&
-  options.builtInSeasonalities.weekly === "off" &&
-  options.builtInSeasonalities.daily === "off";
-
 const emptySeasonalities: readonly [] = Object.freeze([]);
 
 const emptyRegressors: readonly [] = Object.freeze([]);
@@ -277,9 +264,15 @@ const defaultBuiltInSeasonalities: BuiltInSeasonalities = Object.freeze({
   yearly: "auto",
 });
 
-/** Default automatic changepoint controls for additive linear requests. */
+const defaultAutomaticChangepoints = Object.freeze({
+  mode: "auto",
+  count: 25,
+  range: 0.8,
+} as const);
+
+/** Default automatic changepoint controls for linear and logistic MAP requests. */
 export const defaultAutomaticMapOptions: MapOptions = Object.freeze({
-  changepoints: Object.freeze({ mode: "auto", count: 25, range: 0.8 }),
+  changepoints: defaultAutomaticChangepoints,
   changepointPriorScale: 0.05,
   optimizer: defaultLinearOptimizer,
 });
@@ -305,6 +298,7 @@ export const defaultProphetOptions: LinearTrendOptions = Object.freeze({
   builtInSeasonalities: defaultBuiltInSeasonalities,
   events: emptyEventCalendar,
   regressors: emptyRegressors,
+  map: defaultAutomaticMapOptions,
 });
 
 const GrowthSchema = Schema.Literals(["flat", "linear", "logistic"]);
@@ -361,9 +355,7 @@ const MapOptionsSchema = Schema.Struct({
         Schema.withDecodingDefaultKey(Effect.succeed(0.8)),
       ),
     }),
-  ]).pipe(
-    Schema.withDecodingDefaultKey(Effect.succeed({ mode: "explicit", timestamps: [] } as const)),
-  ),
+  ]).pipe(Schema.withDecodingDefaultKey(Effect.succeed(defaultAutomaticChangepoints))),
   changepointPriorScale: PositiveFinite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(0.05))),
   optimizer: Schema.Unknown.pipe(Schema.withDecodingDefaultKey(Effect.succeed({}))),
 });
@@ -582,23 +574,14 @@ export const decodeOptions = Effect.fn("decodeOptions")(function* (
 
   const builtInSeasonalities = freezeBuiltInSeasonalities(syntax.builtInSeasonalities);
 
-  const linearMap =
-    syntax.growth !== "logistic" && syntax.map !== undefined
-      ? freezeMapOptions({
+  const map =
+    syntax.map === undefined
+      ? defaultAutomaticMapOptions
+      : freezeMapOptions({
           ...syntax.map,
           optimizer: yield* decodeLinearOptimizer(syntax.map.optimizer),
-        })
-      : undefined;
+        });
 
-  const logisticMap =
-    syntax.growth === "logistic" && syntax.map !== undefined
-      ? freezeMapOptions({
-          ...syntax.map,
-          optimizer: yield* decodeLinearOptimizer(syntax.map.optimizer),
-        })
-      : undefined;
-
-  const map = linearMap;
   const scaling = syntax.scaling === undefined ? {} : { scaling: syntax.scaling };
 
   const resolvedModes = {
@@ -616,7 +599,7 @@ export const decodeOptions = Effect.fn("decodeOptions")(function* (
       builtInSeasonalities,
       events,
       regressors,
-      map: logisticMap ?? defaultAutomaticMapOptions,
+      map,
       ...scaling,
     };
   }
@@ -634,26 +617,16 @@ export const decodeOptions = Effect.fn("decodeOptions")(function* (
       };
     }
 
-    return map === undefined
-      ? {
-          growth: "linear",
-          ...resolvedModes,
-          seasonalities: emptySeasonalities,
-          builtInSeasonalities,
-          events,
-          regressors,
-          ...scaling,
-        }
-      : {
-          growth: "linear",
-          ...resolvedModes,
-          seasonalities: emptySeasonalities,
-          builtInSeasonalities,
-          events,
-          regressors,
-          map,
-          ...scaling,
-        };
+    return {
+      growth: "linear",
+      ...resolvedModes,
+      seasonalities: emptySeasonalities,
+      builtInSeasonalities,
+      events,
+      regressors,
+      map,
+      ...scaling,
+    };
   }
 
   const nonEmptySeasonalities: readonly [
@@ -673,24 +646,14 @@ export const decodeOptions = Effect.fn("decodeOptions")(function* (
     };
   }
 
-  return map === undefined
-    ? {
-        growth: "linear",
-        ...resolvedModes,
-        seasonalities: nonEmptySeasonalities,
-        builtInSeasonalities,
-        events,
-        regressors,
-        ...scaling,
-      }
-    : {
-        growth: "linear",
-        ...resolvedModes,
-        seasonalities: nonEmptySeasonalities,
-        builtInSeasonalities,
-        events,
-        regressors,
-        map,
-        ...scaling,
-      };
+  return {
+    growth: "linear",
+    ...resolvedModes,
+    seasonalities: nonEmptySeasonalities,
+    builtInSeasonalities,
+    events,
+    regressors,
+    map,
+    ...scaling,
+  };
 });

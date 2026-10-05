@@ -1,6 +1,5 @@
 import type { BenchmarkCase } from "../../tools/case.ts";
 import { growthScalingAndMixedMapCases } from "../growth/mixed-map.ts";
-import { stanAlignedCases } from "../growth/linear/stan-aligned.ts";
 
 const dayMs = 86_400_000;
 
@@ -30,8 +29,11 @@ export const evaluationCases: ReadonlyArray<BenchmarkCase> = [
     throw new Error("Evaluation source must be a Stage F MAP case");
   }
 
+  // Evaluation compares cross-validation rows, not one fit's optimizer endpoint.
+  const { optimizerQuality: _optimizerQuality, ...declared } = original;
+
   const shared = {
-    ...original,
+    ...declared,
     warmupIterations: 1,
     measuredIterations: 2,
     independentRuns: 2,
@@ -128,11 +130,3 @@ export const evaluationCases: ReadonlyArray<BenchmarkCase> = [
       : []),
   ];
 });
-
-/** Current evaluation selection replaces retired linear controls with existing Stan-aligned mappings. */
-export const currentEvaluationCases: ReadonlyArray<BenchmarkCase> = evaluationCases.flatMap(
-  (original) =>
-    original.workload.kind === "evaluation" && original.workload.configuration.growth === "linear"
-      ? stanAlignedCases([original])
-      : [original],
-);

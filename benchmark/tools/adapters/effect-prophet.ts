@@ -254,9 +254,39 @@ const fixedPredictionModel = (benchmarkCase: BenchmarkCase): FittedProphet => {
 
   return runWithoutTracing(
     decodeFittedModel({
-      modelKind: "linear-trend",
-      coefficients: { intercept: parameters.intercept, slope: parameters.slope },
+      modelKind: "linear-piecewise-map",
+      targetScaling: { mode: "absmax", offset: 0, scale: 1 },
+      coefficients: {
+        intercept: parameters.intercept,
+        slope: parameters.slope,
+        deltas: [],
+        seasonal: [],
+        events: [],
+        regressors: [],
+      },
       timeScaling: { origin: parameters.timeOrigin, scale: parameters.timeScale },
+      changepointTimestamps: [],
+      seasonalities: [],
+      events: [],
+      regressors: [],
+      noiseScale: 0.1,
+      // Authored fixed prediction state; this workload does not report optimizer diagnostics.
+      fitSummary: {
+        method: "piecewise-map-stan-v2",
+        termination: "objective-change",
+        optimization: {
+          algorithm: "newton",
+          attemptCount: 1,
+          failedAttemptIterations: null,
+          hessianResets: 0,
+        },
+        valueScale: 1,
+        observationCount: 2,
+        iterations: 1,
+        objective: 0,
+        stationarityResidual: 0,
+        changepointPriorScale: 0.05,
+      },
     }),
   );
 };
@@ -383,10 +413,6 @@ const assertFixedEquation = (
 };
 
 const eventMetadata = (model: FittedProphet): CorrectnessProjection["events"] => {
-  if (model.model === "linear-trend") {
-    return [];
-  }
-
   return model.events.layout.components.map((component) => {
     const occurrences = model.events.occurrences.filter(
       (occurrence) => occurrence.name === component.name,
@@ -410,10 +436,6 @@ const eventMetadata = (model: FittedProphet): CorrectnessProjection["events"] =>
 };
 
 const regressorMetadata = (model: FittedProphet): CorrectnessProjection["regressors"] => {
-  if (model.model === "linear-trend") {
-    return [];
-  }
-
   const coefficients = getRegressorCoefficients(model);
 
   return model.regressors.map((regressor, index) => {
@@ -436,10 +458,7 @@ const regressorMetadata = (model: FittedProphet): CorrectnessProjection["regress
 };
 
 const seasonalityMetadata = (
-  component: Exclude<
-    FittedProphet,
-    { readonly model: "linear-trend" }
-  >["seasonalities"]["components"][number],
+  component: FittedProphet["seasonalities"]["components"][number],
 ): CorrectnessProjection["seasonalities"][number] =>
   component.definition.conditionName === undefined
     ? { name: component.definition.name, mode: component.definition.mode }
@@ -474,8 +493,7 @@ const metadataProjection = (
       model.model === "linear-piecewise-map" || model.model === "logistic-piecewise-map"
         ? model.changepointTimestamps
         : [],
-    seasonalities:
-      model.model === "linear-trend" ? [] : model.seasonalities.components.map(seasonalityMetadata),
+    seasonalities: model.seasonalities.components.map(seasonalityMetadata),
     events: eventMetadata(model),
     regressors: regressorMetadata(model),
   };
@@ -493,16 +511,22 @@ const metadataProjection = (
         floorPolicy: model.targetScaling.floorPolicy.kind,
       },
     };
-  } else if (model.model !== "linear-trend") {
-    return { ...metadata, targetScaling: { ...model.targetScaling } };
   }
 
-  return metadata;
+  return { ...metadata, targetScaling: { ...model.targetScaling } };
+};
+
+/** Prophet's `set_changepoints` shrinks the count when the history is too short for it. */
+const expectedAutomaticCount = (count: number, range: number, trainingRows: number) => {
+  const historySize = Math.floor(trainingRows * range);
+
+  return Math.max(0, count + 1 > historySize ? historySize - 1 : count);
 };
 
 const assertMetadata = (
   benchmarkCase: BenchmarkCase,
   metadata: ReturnType<typeof metadataProjection>,
+  trainingRows: number,
 ): void => {
   if (benchmarkCase.workload.kind === "fixed-linear-prediction") {
     return;
@@ -588,7 +612,14 @@ const assertMetadata = (
     if (JSON.stringify(metadata.changepointTimestamps) !== JSON.stringify(expected)) {
       throw new Error(`Case ${benchmarkCase.id} changed explicit changepoints`);
     }
-  } else if (metadata.changepointTimestamps.length !== configuration.changepoints.count) {
+  } else if (
+    metadata.changepointTimestamps.length !==
+    expectedAutomaticCount(
+      configuration.changepoints.count,
+      configuration.changepoints.range,
+      trainingRows,
+    )
+  ) {
     throw new Error(`Case ${benchmarkCase.id} resolved the wrong automatic changepoint count`);
   }
 };
@@ -818,7 +849,7 @@ const correctnessProjection = (
 
   assertForecasts(forecasts, benchmarkCase, dataset);
   assertFixedEquation(forecasts, benchmarkCase);
-  assertMetadata(benchmarkCase, metadata);
+  assertMetadata(benchmarkCase, metadata, dataset.observations.length);
 
   const persistenceError = persistenceMaximumError(model, input, forecasts);
 
@@ -863,7 +894,7 @@ const correctnessProjection = (
   const withUncertainty: CorrectnessProjection =
     uncertainty === undefined ? common : { ...common, uncertainty };
 
-  if (model.model !== "linear-trend") {
+  if (benchmarkCase.workload.kind !== "fixed-linear-prediction") {
     return {
       ...withUncertainty,
       noiseScale: model.noiseScale,

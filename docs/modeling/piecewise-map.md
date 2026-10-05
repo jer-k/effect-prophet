@@ -140,7 +140,8 @@ L-BFGS defaults are `tolObj: 1e-12`, `tolRelObj: 1e4`, `tolGrad: 1e-8`,
 `tolRelGrad: 1e7`, and `tolParam: 1e-8`; relative thresholds use Stan's machine-epsilon
 formulas. Explicit Newton accepts only its algorithm and iteration budget. Obsolete linear
 `relativeTolerance`/`absoluteTolerance` controls, excess fields, and inapplicable settings fail
-validation rather than being ignored. Flat/logistic controls and featureless-default OLS are unchanged.
+validation rather than being ignored. Featureless linear requests use the same Stan MAP fitting
+policy; flat fitting retains its reduced coordinate controls.
 
 Methods are `piecewise-map-stan-v2` and `mixed-piecewise-map-stan-v2`. Summaries retain the
 actual algorithm, termination, iterations, attempt count, known failed-attempt work, and Hessian
@@ -195,7 +196,7 @@ Prediction accepts complete stored model state and returns exact width `1 + N*(3
 request row. Public empty prediction requests return before loading WASM; direct binding calls
 still validate supplied model metadata.
 
-Featureless linear requests without `map` retain OLS. When linear additive features are present,
-omitting `map` selects automatic changepoints `{ count: 25, range: 0.8 }`; explicit `map` controls
-remain available, and `map: {}` means an explicit empty changepoint set. All requests produce the
+All linear requests use MAP. Omitting `map`, passing `map: {}`, or supplying only a prior or
+optimizer control retains automatic changepoints `{ count: 25, range: 0.8 }`. Explicit `map`
+controls remain available; use `changepoints: { mode: "explicit", timestamps: [] }` for no breaks. All requests produce the
 persisted `linear-piecewise-map` model kind, and decode/prediction never rerun candidate selection.

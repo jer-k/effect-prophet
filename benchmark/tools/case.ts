@@ -133,15 +133,7 @@ const LinearMapWorkloadSchema = Schema.Struct({
     events: Schema.Array(BenchmarkEventSchema),
     regressors: Schema.Array(BenchmarkRegressorSchema),
   }),
-  effectOptimizer: Schema.Union([
-    // Original case snapshots remain readable diagnostic evidence, not public control shims.
-    Schema.Struct({
-      maxIterations: PositiveInteger,
-      relativeTolerance: PositiveFinite,
-      absoluteTolerance: PositiveFinite,
-    }),
-    LinearOptimizerSchema,
-  ]),
+  effectOptimizer: LinearOptimizerSchema,
   pythonOptimizer: Schema.Struct({
     algorithm: Schema.Literals(["Newton", "LBFGS", "Auto"]),
     maxIterations: PositiveInteger,
@@ -519,12 +511,17 @@ const validateCaseRelationships = (
       const emptyPoints =
         points.mode === "explicit" ? points.timestamps.length === 0 : points.count === 0;
 
+      const growthOnly =
+        benchmarkCase.workload.kind === "stage-f-map" &&
+        benchmarkCase.workload.fitRequest === "growth-only";
+
       if (
         (flat &&
           (!emptyPoints ||
             points.mode !== "explicit" ||
             benchmarkCase.workload.effectOptimizer !== undefined)) ||
         (configuration.growth === "linear" &&
+          !growthOnly &&
           (emptyPoints || benchmarkCase.workload.effectOptimizer === undefined))
       ) {
         return Effect.fail(
@@ -546,14 +543,13 @@ const validateCaseRelationships = (
       const points = configuration.changepoints;
 
       if (
-        configuration.growth !== "logistic" ||
         configuration.scaling !== "absmax" ||
         configuration.seasonalityMode !== "additive" ||
         configuration.holidaysMode !== "additive" ||
         configuration.changepointPriorScale !== 0.05 ||
-        points.mode !== "auto" ||
-        points.count !== 25 ||
-        points.range !== 0.8 ||
+        (configuration.growth === "flat"
+          ? points.mode !== "explicit" || points.timestamps.length !== 0
+          : points.mode !== "auto" || points.count !== 25 || points.range !== 0.8) ||
         configuration.events.length !== 0 ||
         configuration.regressors.length !== 0 ||
         effectOptimizer !== undefined ||
@@ -565,7 +561,7 @@ const validateCaseRelationships = (
         return Effect.fail(
           new BenchmarkInputError({
             input: "cases",
-            message: `Growth-only case ${benchmarkCase.id} must declare Python's logistic defaults without overrides`,
+            message: `Growth-only case ${benchmarkCase.id} must declare Python's ${configuration.growth} defaults without overrides`,
           }),
         );
       }
