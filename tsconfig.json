@@ -23,6 +23,7 @@
     "test/**/*.ts",
     "integration/**/*.ts",
     "rust/prophet-wasm/node-tests/**/*.ts",
+    "tools/check-third-party-notices.ts",
     "tools/clean-build.ts",
     "tools/prepare-wasm-package.ts",
     "tools/test-package.ts",

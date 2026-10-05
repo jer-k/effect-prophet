@@ -94,6 +94,9 @@ jobs:
       - name: Lint
         run: npm run lint:rust
 
+      - name: Check third-party notices
+        run: npm run notices:check
+
       - name: Test
         run: npm run test:rust
 

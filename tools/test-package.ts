@@ -117,6 +117,7 @@ assert.ok(packResult);
 const packedFiles = packResult.files.map(({ path }) => path).sort();
 
 const expectedPackedFiles = [
+  "LICENSE",
   "README.md",
   "package.json",
   ...expectedDeclarationFiles,
