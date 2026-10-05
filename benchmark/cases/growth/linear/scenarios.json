@@ -70,10 +70,7 @@
       "effectCall": "fit(observations, { builtInSeasonalities: { weekly: 'auto' } })",
       "comparison": "selection-policy",
       "timingEligible": false,
-      "evidence": [
-        "integration/fixtures/prophet-1.4.0/seasonality-resolution.json",
-        "docs/compatibility/prophet-1.4.0.md"
-      ]
+      "evidence": ["integration/fixtures/prophet-1.4.0/seasonality-resolution.json"]
     },
     {
       "id": "custom-seasonality",
@@ -143,7 +140,7 @@
       "effectCall": "fit(observations)",
       "comparison": "input-policy",
       "timingEligible": false,
-      "evidence": ["test/observation.test.ts", "docs/usage/data-and-edge-cases.md"]
+      "evidence": ["test/observation.test.ts", "site/guide/your-data.md"]
     },
     {
       "id": "stable-training-sort",
@@ -208,10 +205,7 @@
       "timingCase": "map-training-zero-span-linear-constant",
       "pythonBehavior": "Varied targets fail optimization; constant targets can return a nominally successful NaN model.",
       "effectBehavior": "Return a typed degenerate-observations failure; never admit a successful NaN model.",
-      "evidence": [
-        "docs/usage/data-and-edge-cases.md",
-        "benchmark/cases/growth/linear/edge-cases.ts"
-      ]
+      "evidence": ["site/python/accuracy.md", "benchmark/cases/growth/linear/edge-cases.ts"]
     },
     {
       "id": "zero-span-flat-outcomes",

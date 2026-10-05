@@ -1,5 +1,7 @@
 import { defineConfig } from "vitepress";
 
+import { benchmarkFeatures, benchmarkSuites, featurePath, suitePath } from "./benchmarks/suite.ts";
+
 const repository = "https://github.com/jer-k/effect-prophet";
 
 export default defineConfig({
@@ -15,7 +17,7 @@ export default defineConfig({
       { text: "Guide", link: "/guide/introduction" },
       { text: "Examples", link: "/examples/trend" },
       { text: "Python Prophet", link: "/python/coming-from-python" },
-      { text: "Benchmarks", link: "/benchmarks/linear" },
+      { text: "Benchmarks", link: "/benchmarks/" },
     ],
 
     sidebar: [
@@ -57,9 +59,21 @@ export default defineConfig({
       {
         text: "Benchmarks",
         items: [
-          { text: "Linear growth", link: "/benchmarks/linear" },
-          { text: "Flat growth", link: "/benchmarks/flat" },
-          { text: "Logistic growth", link: "/benchmarks/logistic" },
+          { text: "Overview", link: "/benchmarks/" },
+          {
+            text: "By trend",
+            items: benchmarkSuites.map((suite) => ({
+              text: suite.title,
+              link: suitePath(suite),
+            })),
+          },
+          {
+            text: "By feature",
+            items: benchmarkFeatures.map((feature) => ({
+              text: feature.title,
+              link: featurePath(feature),
+            })),
+          },
         ],
       },
     ],

@@ -1,7 +1,7 @@
 # Initial release: status and remaining work
 
-Last updated 2026-10-04 on branch `linear-growth-benchmarks`. This file is the current read on what's left before
-a first release. Where the older docs under `docs/` disagree with it, trust this one.
+Last updated 2026-10-05 on branch `more-docs-benchmarks`. This file is the current read on what's left before
+a first release. Delete it once the release ships.
 
 ## Summary
 
@@ -13,7 +13,6 @@ What's left is mostly **cleanup and release mechanics**:
 
 1. Rerun all three trend baselines from a clean commit, then finish the docs site's Python pages.
 2. Settle packaging: license, version, peer dependency, publishing.
-3. Retire the old `docs/` folder.
 
 ## Done
 
@@ -81,19 +80,35 @@ What's left is mostly **cleanup and release mechanics**:
     All three baselines were rerun on 2026-10-05 after the speedups: Effect Prophet is faster
     than Python on every benchmarked fit (median warm fit: linear 5.1 ms vs 23.5 ms, flat 1.6 ms
     vs 7.9 ms, logistic 12.8 ms vs 20.6 ms), with the same pass/fail and flag results as before.
+- **Old `docs/` folder deleted.** Its 27 build-out notes were out of date, and several linked to
+  benchmark snapshots the current baselines replaced. The docs site covers the user-facing parts,
+  and git history keeps the rest. This file moved to the repository root. Benchmark READMEs,
+  `tools/prophet/README.md` and the linear `scenarios.json` inventory now point to the site or
+  to benchmark files instead. The `uncertainty.evidence` strings in the uncertainty and linear
+  edge-case declarations still name `docs/validation/uncertainty.md`: they are part of the frozen
+  case contracts, so change them only together with the clean baseline rerun.
+- **Benchmark pages reorganized.**
+  - `/benchmarks/` is now an overview with pass counts for every trend and feature; the nav, README
+    and guide link there instead of `/benchmarks/linear`.
+  - New feature pages gather each feature's cases from all three trend baselines:
+    `/benchmarks/features` (seasonality, events and regressors, 31 cases),
+    `/benchmarks/uncertainty` (13) and `/benchmarks/cross-validation` (15). They link to the
+    existing case pages, so all 112 cases still have one page each, under their trend.
+  - Features are defined by case group in `site/.vitepress/benchmarks/suite.ts`, and the sidebar
+    is generated from the trend and feature lists.
 
 ## Where things stand
 
-| Area                                                 | Works | Matches Python?                                                                                      | Saved benchmark evidence                                                                          |
-| ---------------------------------------------------- | ----- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| Linear growth                                        | Yes   | Yes. Every linear fit now uses Prophet's MAP model.                                                  | 31 of 33 pass (`linear-growth` baseline). The 2 others are zero-span inputs we reject on purpose. |
-| Flat growth                                          | Yes   | Yes. Additive-only flat with events, regressors or conditional seasonality is rejected (decision 1). | 34 of 34 pass (`flat-growth` baseline)                                                            |
-| Logistic growth                                      | Yes   | Yes, judged on outputs (forecasts must match; internal fit numbers are reported only)                | 34 of 34 pass (`logistic-growth` baseline)                                                        |
-| Seasonalities (auto, custom, conditional)            | Yes   | Yes                                                                                                  | Covered by fixtures and the growth cases                                                          |
-| Events/holidays (custom), regressors, multiplicative | Yes   | Yes                                                                                                  | Covered by fixtures and the growth cases                                                          |
-| Uncertainty intervals                                | Yes   | Different method on purpose: Python's default is a vectorized shortcut (decision 2)                  | All pass in the three per-trend baselines (linear 5, flat 2, logistic 6)                          |
-| Cross-validation, metrics, search, holdout reports   | Yes   | Yes where Python has an equivalent                                                                   | All pass in the three per-trend baselines (linear 5, flat 5, logistic 5)                          |
-| Save/load                                            | Yes   | Uses its own format. Python JSON is deliberately not supported.                                      | Lifecycle tests                                                                                   |
+| Area                                                 | Works | Matches Python?                                                                                      | Saved benchmark evidence                                                                                |
+| ---------------------------------------------------- | ----- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Linear growth                                        | Yes   | Yes. Every linear fit now uses Prophet's MAP model.                                                  | 31 of 33 pass (`linear-growth` baseline). The 2 others are zero-span inputs we reject on purpose.       |
+| Flat growth                                          | Yes   | Yes. Additive-only flat with events, regressors or conditional seasonality is rejected (decision 1). | 34 of 34 pass (`flat-growth` baseline)                                                                  |
+| Logistic growth                                      | Yes   | Yes, judged on outputs (forecasts must match; internal fit numbers are reported only)                | 45 of 45 pass (`logistic-growth` baseline)                                                              |
+| Seasonalities (auto, custom, conditional)            | Yes   | Yes                                                                                                  | Fixtures, plus 31 of 31 feature cases across the three baselines (`/benchmarks/features`)               |
+| Events/holidays (custom), regressors, multiplicative | Yes   | Yes                                                                                                  | Fixtures, plus 31 of 31 feature cases across the three baselines (`/benchmarks/features`)               |
+| Uncertainty intervals                                | Yes   | Different method on purpose: Python's default is a vectorized shortcut (decision 2)                  | 13 of 13 pass across the three baselines (linear 5, flat 2, logistic 6; `/benchmarks/uncertainty`)      |
+| Cross-validation, metrics, search, holdout reports   | Yes   | Yes where Python has an equivalent                                                                   | 15 of 15 pass across the three baselines (linear 5, flat 5, logistic 5; `/benchmarks/cross-validation`) |
+| Save/load                                            | Yes   | Uses its own format. Python JSON is deliberately not supported.                                      | Lifecycle tests                                                                                         |
 
 ### Not implemented (Python has these)
 
@@ -117,8 +132,8 @@ What's left is mostly **cleanup and release mechanics**:
 
 ### 1. Clean baselines, then fill in the Python pages
 
-- Every saved run so far is from a dirty tree.
-  Before release, rerun all three baselines from a clean commit.
+- Every saved run so far is from a dirty tree, including the current three baselines (commit
+  `d2a974c` with uncommitted changes). Before release, rerun all three from a clean commit.
 - Write the remaining outline pages in `site/python/`: **Coming from Python** (a translation
   table) and **What's different** (the known gaps). **How close are the results?** is written and
   marks all three trends as matching.
@@ -132,22 +147,6 @@ What's left is mostly **cleanup and release mechanics**:
 | Effect     | Regular `dependency`, pinned to `4.0.0`                     | Effect libraries usually declare `effect` as a **peer** dependency so apps share one copy (decision 3)                                                |
 | Runtime    | Node only: `wasm-pack --target nodejs` plus `createRequire` | Already stated in the README and docs. Add a bundler/browser build later if wanted (decision 4).                                                      |
 | Publishing | No release workflow                                         | Add an npm publish workflow, or document manual steps. The README and site already show `npm install effect-prophet effect` with no pre-release note. |
-
-### 3. Retire the old docs
-
-`docs/` still holds 27 files, about 3,500 lines, written as build-out notes. Some are now wrong:
-
-- `docs/usage/operations.md` says model search is not implemented.
-- The compatibility doc and `tools/prophet/README.md` describe proximal fitting as available.
-- The compatibility doc, several decision records and the evaluation modeling page link to
-  benchmark snapshots that the current baselines replaced, so those links are now broken.
-
-The docs site replaces the user-facing parts. Proposal:
-
-- Delete `docs/usage/` and `docs/modeling/`; the site covers them.
-- Delete or archive `docs/decisions/` and `docs/validation/`. Git history keeps them.
-- Replace `docs/compatibility/prophet-1.4.0.md` with the site's Python pages.
-- Keep this file until the release, then delete it.
 
 ## Smaller issues
 

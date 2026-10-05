@@ -23,8 +23,9 @@ report applies the exact declared per-quantity gates before admitting samples. T
 second harness or permissive fallback gate.
 
 Fitted linear cases run both libraries on their default optimizers (shared in
-`cases/growth/linear/controls.ts`) with 10,000-step per-attempt budgets. Objective/noise acceptance and diagnostic-only stationarity are
-specified in the [accepted policy](../../docs/decisions/linear-map-benchmark-acceptance.md).
+`cases/growth/linear/controls.ts`) with 10,000-step per-attempt budgets. They follow the same
+output-first policy as logistic: fitted outputs gate each case, while objective, noise and
+stationarity differences are reported and flagged for investigation, not gated.
 Historical failed stationarity-equality gates are not retroactively repaired. Flat fits use
 Effect's fixed optimizer; declarations must not invent unsupported flat optimizer controls.
 
@@ -60,8 +61,7 @@ Interval mode is not constant-scratch, and sampler limits are not total-process 
 
 Evaluation is `different-public-work`, even when point gates pass. MAP CV defaults independently
 to absmax, matching Prophet's fold-copy behavior; Effect permits an explicit minmax override.
-Every fold learns numerical scaling from its training prefix. See the
-[accepted CV policy](../../docs/decisions/cross-validation-scaling.md).
+Every fold learns numerical scaling from its training prefix.
 
 Warm point/interval evaluation measures complete public CV, sequentially. Python requires an
 untimed full-history model fit and includes history copies and fold fits. Interval CV uses

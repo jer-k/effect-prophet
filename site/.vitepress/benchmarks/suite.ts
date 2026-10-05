@@ -52,6 +52,43 @@ export const benchmarkSuites: ReadonlyArray<BenchmarkSuite> = [
   },
 ];
 
+/** A capability benchmarked under every trend: one page gathering its group from each suite. */
+export interface BenchmarkFeature {
+  readonly id: string;
+  readonly title: string;
+  /** The case group that holds this feature's cases in every suite. */
+  readonly group: string;
+  readonly intro: string;
+}
+
+export const benchmarkFeatures: ReadonlyArray<BenchmarkFeature> = [
+  {
+    id: "features",
+    title: "Seasonality, events and regressors",
+    group: "features",
+    intro:
+      "Custom and switchable seasonal patterns, events with windows, extra regressors, and additive and multiplicative effects together, on every trend type.",
+  },
+  {
+    id: "uncertainty",
+    title: "Uncertainty ranges",
+    group: "uncertainty",
+    intro:
+      "Both libraries simulate possible futures with random draws, so individual simulated values never match. These cases compare the fitted model behind the simulation and time the work, on every trend type.",
+  },
+  {
+    id: "cross-validation",
+    title: "Cross-validation and choosing settings",
+    group: "evaluation",
+    intro:
+      "Rolling-origin cross-validation, metrics, baselines, settings search and a final holdout check, on every trend type.",
+  },
+];
+
+export const suitePath = (suite: BenchmarkSuite) => `/benchmarks/${suite.id}`;
+
+export const featurePath = (feature: BenchmarkFeature) => `/benchmarks/${feature.id}`;
+
 export const benchmarkSuite = (id: string): BenchmarkSuite => {
   const suite = benchmarkSuites.find((candidate) => candidate.id === id);
 

@@ -45,7 +45,7 @@ Effect Prophet is a TypeScript port of Meta's Python [Prophet](https://facebook.
 and most of the code was written with AI assistance. The forecasting maths is easy to get subtly
 wrong, so the project doesn't ask you to take correctness on trust. Results are checked against
 Python Prophet itself, and you can see how closely they match in the
-[benchmarks](/benchmarks/linear) and the [accuracy comparison](/python/accuracy).
+[benchmarks](/benchmarks/) and the [accuracy comparison](/python/accuracy).
 
 If you find a case where the results differ from Python Prophet, please
 [open an issue](https://github.com/jer-k/effect-prophet/issues).

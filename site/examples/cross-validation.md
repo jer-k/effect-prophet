@@ -4,6 +4,11 @@ How good are your forecasts? The honest way to find out is to pretend it's the p
 on older data, forecast the next few weeks, and compare against what actually happened. Repeat
 this at several points in time and average the errors. This is called **cross-validation**.
 
+::: tip Verified against Python Prophet
+Cross-validation forecasts match Python Prophet 1.4.0 on all three trend types. The
+[cross-validation benchmarks](/benchmarks/cross-validation) show every case side by side.
+:::
+
 <<< @/snippets/cross-validation.ts
 
 ```txt [Output]

@@ -3,6 +3,11 @@
 Seasonality is any pattern that repeats on a schedule: busier weekends, a summer peak, a spike at
 the start of each month.
 
+::: tip Verified against Python Prophet
+Seasonal patterns match Python Prophet 1.4.0 on all three trend types. The
+[seasonality, events and regressors benchmarks](/benchmarks/features) show every case side by side.
+:::
+
 ## Built-in patterns
 
 There are three built-in patterns. Each one switches on automatically once you have enough data

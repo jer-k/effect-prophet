@@ -3,6 +3,11 @@
 Some days don't follow the usual pattern: holidays, sales, launches, outages. List them as
 **events**, and the model learns how much each one moves your data.
 
+::: tip Verified against Python Prophet
+Events match Python Prophet 1.4.0 on all three trend types. The
+[seasonality, events and regressors benchmarks](/benchmarks/features) show every case side by side.
+:::
+
 <<< @/snippets/events.ts
 
 ```txt [Output]

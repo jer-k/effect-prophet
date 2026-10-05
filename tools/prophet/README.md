@@ -5,8 +5,9 @@ The separate TypeScript/Rust-WASM integration suite consumes committed JSON with
 Python, uv, Prophet, or Docker.
 
 [`reference.json`](reference.json) is the machine-readable Prophet source identity. The
-human-facing capability contract is
-[`docs/compatibility/prophet-1.4.0.md`](../../docs/compatibility/prophet-1.4.0.md).
+human-facing compatibility notes are the docs site's
+[How close are the results?](../../site/python/accuracy.md) and
+[What's different](../../site/python/differences.md) pages.
 
 ## Canonical environment
 
@@ -104,8 +105,7 @@ m = observation_unit_intercept / y_scale
 ```
 
 For explicit changepoints, the same conversion applies independently to every output-unit delta,
-and the release evaluates the equivalent hinge form documented in
-[`piecewise-map.md`](../../docs/modeling/piecewise-map.md). Keeping this conversion in the
+and the release evaluates the equivalent hinge form. Keeping this conversion in the
 generator ensures Python Prophet remains the preprocessing and fixed-evaluation oracle rather
 than silently substituting the Effect/Rust equation. Fourier fixtures similarly use Prophet for
 every expected feature column; explicit matrix multiplication produces their fixed component
@@ -155,8 +155,8 @@ three loose-prior fitted cases agree on score, noise, forecast and stationarity.
 shared Stan policy by default, and the three loose-prior cases also pass public fitting,
 prediction, persistence and uncertainty replay. Historical proximal controls remain explicit.
 Under the output-first policy, all 28 public benchmark cases pass; `defaults-256` carries
-objective and stationarity investigation flags. See
-[the reconciliation checkpoint](../../docs/validation/logistic-reconciliation.md); full optimizer
+objective and stationarity investigation flags. See the
+[logistic benchmark cases](../../benchmark/cases/growth/logistic/README.md); full optimizer
 or blanket public parity is not claimed.
 
 `logistic-prediction-state.json` freezes 18 authored public states through unmodified

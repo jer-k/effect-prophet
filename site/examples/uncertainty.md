@@ -3,6 +3,12 @@
 A single number is never the whole story. `predictUncertainty` gives a **range** for each
 forecast: "between 133 and 140, most likely around 136".
 
+::: tip Benchmarked against Python Prophet
+Both libraries simulate ranges with random draws, so individual values never match exactly. The
+[uncertainty benchmarks](/benchmarks/uncertainty) check the fitted model behind the ranges against
+Python Prophet 1.4.0 on all three trend types, and time the work.
+:::
+
 <<< @/snippets/uncertainty.ts
 
 ```txt [Output]

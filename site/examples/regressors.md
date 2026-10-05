@@ -3,6 +3,11 @@
 Sometimes you know something that helps explain your data: the temperature, how much you spent
 on ads, whether a promotion was running. Add these as **regressors**.
 
+::: tip Verified against Python Prophet
+Regressors match Python Prophet 1.4.0 on all three trend types. The
+[seasonality, events and regressors benchmarks](/benchmarks/features) show every case side by side.
+:::
+
 <<< @/snippets/regressors.ts
 
 ```txt [Output]
