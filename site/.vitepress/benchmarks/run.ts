@@ -77,6 +77,7 @@ export interface CaseResult {
   readonly group: string;
   readonly title: string;
   readonly summary: string;
+  readonly outcomes?: { readonly effect: string; readonly python: string };
   readonly kind: "forecast" | "cross-validation";
   readonly passed: boolean;
   readonly dataset: {

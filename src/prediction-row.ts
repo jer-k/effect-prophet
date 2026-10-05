@@ -52,7 +52,7 @@ const decodePredictionRowsSchema = Schema.decodeUnknownEffect(PredictionRowsSche
 });
 
 /** Structurally parse prediction rows while preserving legacy diagnostic labels. */
-export const decodePredictionRows = Effect.fn("decodePredictionRows")(function* (
+export const decodePredictionRows = Effect.fnUntraced(function* (
   input: Parameters<typeof decodePredictionRowsSchema>[0],
 ): Effect.fn.Return<PredictionRows, InputValidationError> {
   const diagnosticInput =

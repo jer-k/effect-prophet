@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Option, Tracer } from "effect";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -71,6 +71,41 @@ describe("custom event public lifecycle", () => {
       expect(model.eventCoefficients).toHaveLength(1);
       expect(model.events.columns).toHaveLength(1);
     }
+  });
+
+  it("traces event and fitted dimension counts on the fit boundaries", async () => {
+    const spans: Array<Tracer.Span> = [];
+
+    const tracer = Tracer.make({
+      span: (options) => {
+        const span = new Tracer.NativeSpan(options);
+        spans.push(span);
+
+        return span;
+      },
+    });
+
+    const model = await Effect.runPromise(
+      fit(history, {
+        events,
+        map: { changepoints: { mode: "explicit", timestamps: ["2024-01-05T12:00:00.000Z"] } },
+      }).pipe(Effect.provide(prophetFittingBackendLayer), Effect.withTracer(tracer)),
+    );
+
+    const publicFit = spans.find((span) => span.name === "Prophet.fit");
+    const wasmFit = spans.find((span) => span.name === "effect-prophet.wasm.fit");
+
+    if (publicFit === undefined || wasmFit === undefined) {
+      throw new Error("Expected public and WASM fit spans");
+    }
+
+    expect(wasmFit.traceId).toBe(publicFit.traceId);
+    expect(wasmFit.parent.pipe(Option.getOrUndefined)?.spanId).toBe(publicFit.spanId);
+    expect(Object.fromEntries(publicFit.attributes)["effect_prophet.event.count"]).toBe(1);
+    expect(Object.fromEntries(wasmFit.attributes)).toMatchObject({
+      "effect_prophet.changepoint.count": 1,
+      "effect_prophet.parameter.count": 2 + 1 + model.coefficients.length + 1,
+    });
   });
 
   it("rejects events for flat growth before loading WASM", async () => {

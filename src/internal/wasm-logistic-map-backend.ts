@@ -24,6 +24,7 @@ import type { KnownAdditiveFeatures, SeasonalityMaskMatrix } from "./additional-
 import type { TrainingInput } from "./fitting-backend";
 import { loadProphetWasmModule } from "./prophet-wasm-module";
 import {
+  annotateFittedDimensions,
   attemptWasmFitting,
   attemptWasmPrediction,
   checkedAdd,
@@ -292,6 +293,7 @@ export const fitLogisticMapWithWasm = (
     );
 
     yield* annotateStanCompletion(fitted.fitSummary);
+    yield* annotateFittedDimensions(fitted);
 
     return fitted;
   }).pipe(

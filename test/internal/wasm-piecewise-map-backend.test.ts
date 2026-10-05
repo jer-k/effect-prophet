@@ -181,6 +181,8 @@ describe("linear piecewise MAP tracing", () => {
     if (wasmFit !== undefined) {
       expect(Exit.isSuccess(requireEnded(wasmFit).exit)).toBe(true);
       expect(Object.fromEntries(wasmFit.attributes)).toMatchObject({
+        "effect_prophet.changepoint.count": 2,
+        "effect_prophet.parameter.count": 4 + model.coefficients.length,
         "effect_prophet.optimizer.requested_algorithm": "newton",
         "effect_prophet.optimizer.max_iterations": 1,
         "effect_prophet.optimizer.fallback": "none",

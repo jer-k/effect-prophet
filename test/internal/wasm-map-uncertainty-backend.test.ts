@@ -138,6 +138,7 @@ describe("MAP uncertainty WASM adapter", () => {
         "effect_prophet.output.kind": "intervals",
         "effect_prophet.prediction.count": 1,
         "effect_prophet.sample.count": 2,
+        "effect_prophet.wasm.cold_start": expect.any(Boolean),
       });
     }
   });
@@ -230,6 +231,7 @@ describe("MAP uncertainty WASM adapter", () => {
       "effect_prophet.output.kind": "samples",
       "effect_prophet.prediction.count": 2,
       "effect_prophet.sample.count": 2,
+      "effect_prophet.wasm.cold_start": expect.any(Boolean),
     });
   });
 

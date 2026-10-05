@@ -100,6 +100,9 @@ jobs:
       - name: Test Node/WASM integration
         run: npm run test:wasm
 
+      - name: Test WASM optimizer
+        run: npm run test:wasm:optimizer
+
   prophet-compatibility:
     runs-on: ubuntu-22.04
 

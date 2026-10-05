@@ -7,9 +7,11 @@ import {
   type PredictionFailureReason,
   type WasmFailurePhase,
 } from "../errors";
+import type { Parameters as FittedParameters } from "../fitted-model";
 import type { SeasonalityLayout } from "../seasonality";
 import type { TargetScalingMode } from "../target-scaling";
 import type { KnownAdditiveFeatures, SeasonalityMaskMatrix } from "./additional-features";
+import { isProphetWasmModuleInitialized } from "./prophet-wasm-module";
 import { checkedAdd, checkedMultiply } from "./safe-arithmetic";
 
 export { checkedAdd, checkedMultiply } from "./safe-arithmetic";
@@ -84,6 +86,18 @@ export const failWasmPrediction = (
   fields: Parameters<typeof wasmPredictionError>[1],
 ): Effect.Effect<never, PredictionError> => Effect.fail(wasmPredictionError(timestamp, fields));
 
+/** Mark whether a successful load step initialized the generated WASM module in this process. */
+const annotateColdStart = <Result, Failure>(load: Effect.Effect<Result, Failure>) =>
+  Effect.suspend(() => {
+    const initializedBefore = isProphetWasmModuleInitialized();
+
+    return Effect.tap(load, () =>
+      Effect.annotateCurrentSpan({
+        "effect_prophet.wasm.cold_start": !initializedBefore && isProphetWasmModuleInitialized(),
+      }),
+    );
+  });
+
 /** Run one WASM fitting step and classify a thrown boundary failure. */
 export const attemptWasmFitting = <Result>(
   operation: () => Result,
@@ -93,8 +107,8 @@ export const attemptWasmFitting = <Result>(
     readonly message: string;
     readonly parameterCount?: number;
   },
-): Effect.Effect<Result, FittingError> =>
-  Effect.try({
+): Effect.Effect<Result, FittingError> => {
+  const attempt = Effect.try({
     try: operation,
     catch: (cause) => {
       const fields = {
@@ -113,13 +127,16 @@ export const attemptWasmFitting = <Result>(
     },
   });
 
+  return context.phase === "load" ? annotateColdStart(attempt) : attempt;
+};
+
 /** Run one WASM prediction step and classify a thrown boundary failure. */
 export const attemptWasmPrediction = <Result>(
   operation: () => Result,
   timestamp: number,
   context: { readonly phase: "load" | "execute"; readonly message: string },
-): Effect.Effect<Result, PredictionError> =>
-  Effect.try({
+): Effect.Effect<Result, PredictionError> => {
+  const attempt = Effect.try({
     try: operation,
     catch: (cause) =>
       wasmPredictionError(
@@ -132,6 +149,9 @@ export const attemptWasmPrediction = <Result>(
         cause,
       ),
   });
+
+  return context.phase === "load" ? annotateColdStart(attempt) : attempt;
+};
 
 /** Read an integral status code from a non-empty packed WASM frame. */
 export const readWasmStatus = (packed: Float64Array): number | undefined => {
@@ -380,6 +400,23 @@ export const wasmFitSpanOptions = (
           "effect_prophet.scaling.mode": scaling,
         },
       };
+};
+
+/** Annotate the fitted dimensions that drive optimizer cost within a WASM fit boundary. */
+export const annotateFittedDimensions = (parameters: FittedParameters) => {
+  const changepointCount = "deltas" in parameters ? parameters.deltas.length : 0;
+
+  const parameterCount =
+    2 +
+    changepointCount +
+    parameters.coefficients.length +
+    (parameters.eventCoefficients?.length ?? 0) +
+    (parameters.regressors?.length ?? 0);
+
+  return Effect.annotateCurrentSpan({
+    "effect_prophet.changepoint.count": changepointCount,
+    "effect_prophet.parameter.count": parameterCount,
+  });
 };
 
 /** Build stable span options for a WASM prediction boundary. */

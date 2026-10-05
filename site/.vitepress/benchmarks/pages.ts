@@ -61,8 +61,8 @@ const caseRow = (suite: BenchmarkSuite, item: CaseResult) =>
   [
     `<span class="case-name">${dot(status(item))}[${item.title}](${casePath(suite, item.id)})</span>`,
     `[${item.dataset.trainingRows} rows](${item.dataset.url})`,
-    item.lastValue === undefined ? "—" : number(item.lastValue.effect),
-    item.lastValue === undefined ? "—" : number(item.lastValue.python),
+    item.lastValue === undefined ? (item.outcomes?.effect ?? "—") : number(item.lastValue.effect),
+    item.lastValue === undefined ? (item.outcomes?.python ?? "—") : number(item.lastValue.python),
     item.relativeDifference !== undefined
       ? share(item.relativeDifference)
       : item.maximumDifference !== undefined

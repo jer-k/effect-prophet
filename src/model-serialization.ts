@@ -584,7 +584,7 @@ const fittedRegressorsFromEncoded = (
   );
 };
 
-const decodeFlatMapModel = Effect.fn("decodeFlatMapModel")(function* (
+const decodeFlatMapModel = Effect.fnUntraced(function* (
   encoded: EncodedFlatMapModel,
 ): Effect.fn.Return<FittedFlatMapProphet, ModelSerializationError> {
   const definitions = yield* Seasonality.parseSeasonalityDefinitions(encoded.seasonalities).pipe(
@@ -626,7 +626,7 @@ const decodeFlatMapModel = Effect.fn("decodeFlatMapModel")(function* (
   );
 });
 
-const decodePiecewiseMapModel = Effect.fn("decodePiecewiseMapModel")(function* (
+const decodePiecewiseMapModel = Effect.fnUntraced(function* (
   encoded: EncodedPiecewiseMapModel,
 ): Effect.fn.Return<FittedPiecewiseMapProphet, ModelSerializationError> {
   const definitions = yield* Seasonality.parseSeasonalityDefinitions(encoded.seasonalities).pipe(
@@ -675,7 +675,7 @@ const decodePiecewiseMapModel = Effect.fn("decodePiecewiseMapModel")(function* (
   );
 });
 
-const decodeLogisticMapModel = Effect.fn("decodeLogisticMapModel")(function* (
+const decodeLogisticMapModel = Effect.fnUntraced(function* (
   encoded: EncodedLogisticMapModel,
 ): Effect.fn.Return<FittedLogisticMapProphet, ModelSerializationError> {
   const definitions = yield* Seasonality.parseSeasonalityDefinitions(encoded.seasonalities).pipe(

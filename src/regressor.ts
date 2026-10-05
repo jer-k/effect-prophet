@@ -221,7 +221,7 @@ const invalidFromIssue = (issue: SchemaIssue.Issue): InvalidRegressors =>
   });
 
 /** Parse ordered additive regressor definitions and apply defaults. */
-export const parseRegressorDefinitions = Effect.fn("parseRegressorDefinitions")(function* (
+export const parseRegressorDefinitions = Effect.fn("Prophet.parseRegressorDefinitions")(function* (
   input: Parameters<typeof decodeRegressorDefinitions>[0],
   inheritedMode: ComponentMode = "additive",
 ): Effect.fn.Return<ReadonlyArray<RegressorDefinition>, InvalidRegressors> {

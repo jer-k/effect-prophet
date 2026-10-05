@@ -120,7 +120,7 @@ const decode = Schema.decodeUnknownEffect(LinearOptimizerSchema, {
 });
 
 /** Parse linear settings, rejecting obsolete or algorithm-inapplicable controls. */
-export const decodeLinearOptimizer = Effect.fn("decodeLinearOptimizer")(function* (
+export const decodeLinearOptimizer = Effect.fn("Prophet.decodeLinearOptimizer")(function* (
   input: Parameters<typeof decode>[0],
 ): Effect.fn.Return<LinearOptimizer, InputValidationError> {
   const parsed = yield* decode(input).pipe(

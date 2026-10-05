@@ -11,6 +11,8 @@ export interface CaseDescription {
   readonly group: string;
   readonly title: string;
   readonly summary: string;
+  /** For intentional differences: what each library does, shown where the numbers would be. */
+  readonly outcomes?: { readonly effect: string; readonly python: string };
 }
 
 /** One trend's benchmark pages: where its baseline lives and how its cases are explained. */

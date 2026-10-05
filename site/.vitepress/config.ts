@@ -27,6 +27,7 @@ export default defineConfig({
           { text: "Effect in five minutes", link: "/guide/effect-basics" },
           { text: "Preparing your data", link: "/guide/your-data" },
           { text: "Reading a forecast", link: "/guide/reading-forecasts" },
+          { text: "Tracing", link: "/guide/tracing" },
         ],
       },
       {

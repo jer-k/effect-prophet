@@ -215,11 +215,13 @@ export const linearCaseDescriptions = {
     title: "Every row on the same date, different values",
     summary:
       "Three rows sharing one timestamp. A trend over zero time is undefined. Python Prophet's optimizer crashes on a NaN starting value; we return a FittingError before fitting.",
+    outcomes: { effect: "FittingError", python: "Optimizer crash" },
   },
   "map-training-zero-span-linear-constant": {
     group: "differences",
     title: "Every row on the same date, same value",
     summary:
       "Three identical rows. Python Prophet reports success but forecasts NaN; we return a FittingError instead.",
+    outcomes: { effect: "FittingError", python: "NaN forecast" },
   },
 } satisfies Record<string, CaseDescription>;

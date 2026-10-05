@@ -28,7 +28,7 @@ describe("linear optimizer controls", () => {
       );
 
       const root = spans.find((span) => span.name === "linear.controls");
-      const decodeSpan = spans.find((span) => span.name === "decodeLinearOptimizer");
+      const decodeSpan = spans.find((span) => span.name === "Prophet.decodeLinearOptimizer");
 
       expect(root).toBeDefined();
       expect(decodeSpan).toBeDefined();

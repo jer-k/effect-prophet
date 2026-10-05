@@ -276,6 +276,10 @@ describe("Rust/WASM flat MAP tracing", () => {
 
       expect(child.startTime >= parent.startTime).toBe(true);
       expect(child.endTime <= parent.endTime).toBe(true);
+      expect(Object.fromEntries(wasmFit.attributes)).toMatchObject({
+        "effect_prophet.changepoint.count": 0,
+        "effect_prophet.parameter.count": 4,
+      });
     }
 
     if (wasmPredict !== undefined) {

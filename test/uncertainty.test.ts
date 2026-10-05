@@ -1120,6 +1120,7 @@ describe("predictUncertainty", () => {
       "effect_prophet.output.kind": "intervals",
       "effect_prophet.prediction.count": 3,
       "effect_prophet.sample.count": 8,
+      "effect_prophet.wasm.cold_start": expect.any(Boolean),
     });
 
     spans.length = 0;
