@@ -238,11 +238,11 @@ What's left is mostly **cleanup and release mechanics**:
 
 ### 2. Packaging
 
-| Item       | Now                                                         | Needed                                                                                                                                                |
-| ---------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Version    | `0.0.0`                                                     | Choose a first version (e.g. `0.1.0`) and add a changelog                                                                                             |
-| Runtime    | Node only: `wasm-pack --target nodejs` plus `createRequire` | Already stated in the README and docs. Browser/bundler support is tracked in #67.                                                                     |
-| Publishing | No release workflow                                         | Add an npm publish workflow, or document manual steps. The README and site already show `npm install effect-prophet effect` with no pre-release note. |
+| Item       | Now                                                         | Needed                                                                                       |
+| ---------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Version    | `0.1.0`, with `CHANGELOG.md` (dated "Unreleased")           | Date the changelog entry when releasing                                                      |
+| Runtime    | Node only: `wasm-pack --target nodejs` plus `createRequire` | Already stated in the README and docs. Browser/bundler support is tracked in #67.            |
+| Publishing | `.github/workflows/release.yml` (npm trusted publishing)    | Configure the trusted publisher on npmjs.com, then publish a GitHub release tagged `v0.1.0`. |
 
 ## Smaller issues
 

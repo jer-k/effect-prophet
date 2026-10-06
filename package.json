@@ -1,7 +1,19 @@
 {
   "name": "effect-prophet",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Effect-based time-series forecasting with a Rust/WASM numerical backend",
+  "keywords": [
+    "effect",
+    "forecasting",
+    "prophet",
+    "rust",
+    "time-series",
+    "wasm"
+  ],
+  "homepage": "https://jer-k.github.io/effect-prophet/",
+  "bugs": {
+    "url": "https://github.com/jer-k/effect-prophet/issues"
+  },
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -20,6 +32,10 @@
       "import": "./dist/index.js",
       "default": "./dist/index.js"
     }
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
   },
   "scripts": {
     "clean": "node tools/clean-build.ts",
