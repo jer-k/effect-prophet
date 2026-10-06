@@ -52,6 +52,10 @@ export const flatGrowthCases: ReadonlyArray<BenchmarkCase> = growthScalingAndMix
       return [...prefixes, fullHistory];
     }
 
+    // Feature-free and seasonal-only variants keep Effect's default exact reduced fitter;
+    // an explicit optimizer would route them through Stan.
+    const { effectOptimizer: _optimizer, ...reducedWorkload } = workload;
+
     const basics: ReadonlyArray<BenchmarkCase> = (
       ["level", "constant", "negative", "seasonal"] as const
     ).flatMap((variant) =>
@@ -60,7 +64,7 @@ export const flatGrowthCases: ReadonlyArray<BenchmarkCase> = growthScalingAndMix
         id: `flat-${variant}-${scaling}`,
         dataset: `v1/flat-${variant}.json`,
         workload: {
-          ...workload,
+          ...reducedWorkload,
           comparison: { ...workload.comparison, evidenceId: "flat-growth-reduced-v1" },
           configuration: {
             ...workload.configuration,

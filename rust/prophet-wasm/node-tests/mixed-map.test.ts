@@ -5,6 +5,9 @@ import { loadProphetWasmNodeBindings } from "./wasm-bindings.ts";
 
 const wasm = loadProphetWasmNodeBindings();
 
+/** Newton through the shared Stan optimizer wire format, version two. */
+const newton = new Float64Array([2, 1, 10_000]);
+
 describe("mixed MAP WASM boundary", () => {
   it("fits and predicts dimensionless flat multiplicative effects", () => {
     const fit = wasm.fit_mixed_flat_map(
@@ -21,13 +24,11 @@ describe("mixed MAP WASM boundary", () => {
       new Float64Array([0]),
       new Float64Array([1]),
       new Float64Array([1]),
-      10_000,
-      1e-10,
-      1e-12,
+      newton,
     );
 
     assert.equal(fit[0], wasm.PiecewiseMapFitStatus.Success);
-    assert.equal(fit.length, 13);
+    assert.equal(fit.length, 17);
 
     const prediction = wasm.predict_mixed_flat_map(
       new Float64Array([6]),
@@ -42,7 +43,7 @@ describe("mixed MAP WASM boundary", () => {
       new Float64Array(),
       1,
       new Float64Array([2]),
-      new Float64Array([fit[12] ?? Number.NaN]),
+      new Float64Array([fit[16] ?? Number.NaN]),
       new Float64Array([0]),
       new Float64Array([1]),
       new Float64Array([1]),
@@ -76,9 +77,7 @@ describe("mixed MAP WASM boundary", () => {
         new Float64Array([0]),
         new Float64Array([1]),
         new Float64Array([mode]),
-        10,
-        1e-10,
-        1e-12,
+        newton,
       );
 
       assert.deepEqual(Array.from(fit), [wasm.PiecewiseMapFitStatus.InvalidConfiguration]);
@@ -100,9 +99,7 @@ describe("mixed MAP WASM boundary", () => {
       new Float64Array([0]),
       new Float64Array([1]),
       new Float64Array([1]),
-      10_000,
-      1e-10,
-      1e-12,
+      newton,
     ] as const;
 
     const first = wasm.fit_mixed_flat_map(...arguments_);

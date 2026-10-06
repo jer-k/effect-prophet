@@ -149,18 +149,54 @@ What's left is mostly **cleanup and release mechanics**:
   120 ms. Site descriptions now cover every new case, and the uncertainty group intros say that
   ranges are compared with Python.
 
+- **Flat growth accepts additive events, regressors and conditional seasonalities.** `fit` used
+  to reject them unless the model also had a multiplicative component. Python has no such limit:
+  its flat model is the linear Stan model with the trend fixed at `m`. Now any flat model with
+  events, regressors, conditions or multiplicative components fits through that same Stan
+  density with Prophet's `m = mean` start and default optimizer policy, with method
+  `flat-map-stan-v1`. Plain additive seasonality keeps the exact reduced fitter
+  (`flat-map-coordinate-v1`), so those results are unchanged.
+  - `StanFlatObjective` optimizes only `[m, log(sigma), beta...]`: Prophet's flat model carries
+    the linear `k` and `delta`, but its trend ignores both and their gradients are zero at the
+    zero start, so the steps are the same in exact arithmetic. Keeping them let spectral-solve
+    rounding push `delta` off zero, where its Laplace kink turned that noise into curvature: one
+    96-row Newton fit took 214 iterations in WASM, 27 natively, and 32 in Python. Without them it
+    takes 76 in both builds and reaches the optimum, slightly above Python's. Densities keep
+    Prophet's constants, so objectives stay comparable with CmdStan's.
+  - This replaced the one-coefficient-at-a-time flat fitter, which ran out of iterations on a
+    constant regressor (exactly collinear with the level). That failure was already on `main`
+    for multiplicative flat models.
+  - `UnsupportedConfigurationError` is gone: nothing raises it any more.
+  - Flat models accept `map: { optimizer }`, Python's `fit(algorithm=..., iter=...)`. An explicit
+    optimizer always fits through Stan. `map.changepoints` and `map.changepointPriorScale` stay
+    rejected for flat growth, with path-specific errors: they cannot affect a flat trend. Add this
+    row to the "Coming from Python" translation table.
+  - The mixed flat cases, and the prefix, uncertainty and evaluation cases built from them, now pin
+    both libraries to L-BFGS without fallback; they used to pin only Python. The feature-free and
+    seasonal-only flat cases keep Effect's exact reduced fitter.
+  - A local run on 2026-10-06 passed 38 of 38: all 34 `flat-growth` cases plus 4 new ones on both
+    libraries' default optimizer: `flat-additive-components` (and `-large`),
+    `flat-correlated-regressors` (a v4 input: temperature tracking the yearly pattern, a constant
+    regressor, and a warm winter in the forecast rows) and `flat-mixed-components-absmax-defaults`.
+    Both libraries fit temperature at 0.60026 (true 0.6). After the `StanFlatObjective` change, a
+    focused rerun of the 20 standalone flat Stan-path fit cases passed 20 of 20: objectives
+    within Python's 8-significant-figure `lp` output, forecasts within 4.2e-6.
+  - Timing (focused rerun, a busier machine): Stan-path flat fits take 1.4–6.0 ms against Python's
+    7.1–23.8 ms. The 96-row default-settings Newton case dropped from 20.8 ms to 6.0 ms, against
+    Python's 13.9 ms.
+
 ## Where things stand
 
-| Area                                                 | Works | Matches Python?                                                                                      | Saved benchmark evidence                                                                                |
-| ---------------------------------------------------- | ----- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| Linear growth                                        | Yes   | Yes. Every linear fit now uses Prophet's MAP model.                                                  | 31 of 33 pass (`linear-growth` baseline). The 2 others are zero-span inputs we reject on purpose.       |
-| Flat growth                                          | Yes   | Yes. Additive-only flat with events, regressors or conditional seasonality is rejected (decision 1). | 34 of 34 pass (`flat-growth` baseline)                                                                  |
-| Logistic growth                                      | Yes   | Yes, judged on outputs (forecasts must match; internal fit numbers are reported only)                | 45 of 45 pass (`logistic-growth` baseline)                                                              |
-| Seasonalities (auto, custom, conditional)            | Yes   | Yes                                                                                                  | Fixtures, plus 31 of 31 feature cases across the three baselines (`/benchmarks/features`)               |
-| Events/holidays (custom), regressors, multiplicative | Yes   | Yes                                                                                                  | Fixtures, plus 31 of 31 feature cases across the three baselines (`/benchmarks/features`)               |
-| Uncertainty intervals                                | Yes   | Same per-path method as Python's `vectorized=False` (decided); every interval bound is gated         | 18 of 18 pass locally, including 5 default-settings cases; not yet in the saved baselines               |
-| Cross-validation, metrics, search, holdout reports   | Yes   | Yes where Python has an equivalent                                                                   | 15 of 15 pass across the three baselines (linear 5, flat 5, logistic 5; `/benchmarks/cross-validation`) |
-| Save/load                                            | Yes   | Uses its own format. Python JSON is deliberately not supported.                                      | Lifecycle tests                                                                                         |
+| Area                                                 | Works | Matches Python?                                                                              | Saved benchmark evidence                                                                                |
+| ---------------------------------------------------- | ----- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Linear growth                                        | Yes   | Yes. Every linear fit now uses Prophet's MAP model.                                          | 31 of 33 pass (`linear-growth` baseline). The 2 others are zero-span inputs we reject on purpose.       |
+| Flat growth                                          | Yes   | Yes, including additive events, regressors and conditional seasonality on their own          | 34 of 34 pass (`flat-growth` baseline); 4 new cases pass locally, not yet in the saved baseline         |
+| Logistic growth                                      | Yes   | Yes, judged on outputs (forecasts must match; internal fit numbers are reported only)        | 45 of 45 pass (`logistic-growth` baseline)                                                              |
+| Seasonalities (auto, custom, conditional)            | Yes   | Yes                                                                                          | Fixtures, plus 31 of 31 feature cases across the three baselines (`/benchmarks/features`)               |
+| Events/holidays (custom), regressors, multiplicative | Yes   | Yes                                                                                          | Fixtures, plus 31 of 31 feature cases across the three baselines (`/benchmarks/features`)               |
+| Uncertainty intervals                                | Yes   | Same per-path method as Python's `vectorized=False` (decided); every interval bound is gated | 18 of 18 pass locally, including 5 default-settings cases; not yet in the saved baselines               |
+| Cross-validation, metrics, search, holdout reports   | Yes   | Yes where Python has an equivalent                                                           | 15 of 15 pass across the three baselines (linear 5, flat 5, logistic 5; `/benchmarks/cross-validation`) |
+| Save/load                                            | Yes   | Uses its own format. Python JSON is deliberately not supported.                              | Lifecycle tests                                                                                         |
 
 ### Not implemented (Python has these)
 
@@ -190,7 +226,9 @@ What's left is mostly **cleanup and release mechanics**:
   run each suite with an explicit `--case` list that includes the new cases:
   linear `uncertainty-linear-defaults-long-history-intervals-1000` and
   `uncertainty-linear-defaults-irregular-intervals-1000`; flat
-  `uncertainty-flat-defaults-seasonal-intervals-1000`; logistic
+  `uncertainty-flat-defaults-seasonal-intervals-1000`, `flat-additive-components`,
+  `flat-additive-components-large`, `flat-correlated-regressors` and
+  `flat-mixed-components-absmax-defaults`; logistic
   `logistic-reconcile-defaults-rate-changes` and
   `uncertainty-logistic-reconcile-defaults-rate-changes-intervals-1000` (plus `-seed-7`). The
   site's uncertainty intros describe the new interval gate, which old baselines did not run.
@@ -211,15 +249,14 @@ What's left is mostly **cleanup and release mechanics**:
 - **VitePress is on `2.0.0-alpha.20`.** The stable 1.6.4 is over a year old and pulls in Vite
   versions with audit warnings. Move to 2.0 stable when it ships.
 
-## Decisions needed
+## Decisions
 
-1. **Flat growth with additive events, regressors or conditional seasonality.** These are rejected
-   today, but work when a multiplicative component is present, and Python supports them. The docs
-   site documents the limitation. _Recommendation:_ route them through the existing mixed flat
-   fitter.
+None open.
 
 Decided:
 
+- Flat growth accepts additive events, regressors and conditional seasonalities, as Python does,
+  and fits them through Prophet's Stan density (done).
 - Drop the OLS default and match Python (done).
 - One acceptance policy: linear is judged output-first, like logistic (done).
 - Effect is a peer dependency with a `^4.0.0` range (done).

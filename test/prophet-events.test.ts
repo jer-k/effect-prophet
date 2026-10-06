@@ -2,7 +2,6 @@ import { Effect, Option, Tracer } from "effect";
 import { describe, expect, it } from "vitest";
 
 import {
-  UnsupportedConfigurationError,
   decodeFittedModel,
   encodeFittedModel,
   fit,
@@ -108,17 +107,27 @@ describe("custom event public lifecycle", () => {
     });
   });
 
-  it("rejects events for flat growth before loading WASM", async () => {
-    const error = await Effect.runPromise(
-      Effect.flip(
-        fit(history, { growth: "flat", events }).pipe(Effect.provide(prophetFittingBackendLayer)),
-      ),
+  it("fits additive events with flat growth through the mixed flat fitter", async () => {
+    const model = await Effect.runPromise(
+      fit(history, { growth: "flat", events }).pipe(Effect.provide(prophetFittingBackendLayer)),
     );
 
-    expect(error).toBeInstanceOf(UnsupportedConfigurationError);
-
-    if (error instanceof UnsupportedConfigurationError) {
-      expect(error.option).toBe("events");
+    if (model.model !== "flat-map") {
+      throw new Error("Expected flat growth to select flat MAP");
     }
+
+    expect(model.fitSummary.method).toBe("flat-map-stan-v1");
+    expect(model.eventCoefficients).toHaveLength(1);
+
+    const timestamps = ["2024-01-09T12:00:00.000Z", "2024-01-10T12:00:00.000Z"] as const;
+    const forecasts = await Effect.runPromise(predict(model, timestamps));
+
+    expect(forecasts[0]?.events).toEqual([{ name: "launch", mode: "additive", value: 0 }]);
+    expect(additiveValue(forecasts[1]?.events[0]) ?? 0).toBeGreaterThan(1);
+    expect(forecasts[0]?.trend).toBe(forecasts[1]?.trend);
+    expect(forecasts[1]?.value).toBeCloseTo(
+      (forecasts[1]?.trend ?? Number.NaN) + (additiveValue(forecasts[1]?.events[0]) ?? 0),
+      12,
+    );
   });
 });

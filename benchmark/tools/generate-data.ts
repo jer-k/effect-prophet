@@ -588,6 +588,38 @@ export const uncertaintyDatasets: ReadonlyArray<BenchmarkDataset> = [
   })(),
 ];
 
+const yearlyAngle = (index: number): number => (2 * Math.PI * index) / 365.25;
+
+/** Daily temperature that tracks the yearly cycle; future rows hold an unusually warm winter. */
+const correlatedTemperature = (index: number, observationCount: number): number =>
+  canonical(
+    15 -
+      10 * Math.cos(yearlyAngle(index)) +
+      1.5 * Math.sin(index * 0.9) +
+      (index >= observationCount ? 6 : 0),
+  );
+
+/** Regressors nearly or exactly collinear with flat-model features. */
+export const correlatedRegressorDatasets: ReadonlyArray<BenchmarkDataset> = [
+  // Two daily years, then a half-year whose temperature departs from its yearly pattern.
+  makeDataset({
+    id: "flat-correlated-regressors",
+    observationCount: 730,
+    predictionCount: 180,
+    recipe:
+      "flat-correlated-regressors-v1:level=40+0.6*temperature(yearly-tracking,future+6)+yearly(phase=1)+weekly+constant-baseline+bounded-noise-x5:n=730:h=180",
+    noiseMultiplier: 5,
+    trend: () => 40,
+    covariates: (index) => ({
+      regressors: { temperature: correlatedTemperature(index, 730), baseline: 1 },
+    }),
+    additive: (index, covariates) =>
+      0.6 * (covariates.regressors?.temperature ?? 0) +
+      2 * Math.sin(yearlyAngle(index) + 1) +
+      0.8 * weekly(index),
+  }),
+];
+
 /** Generate an immutable input version; existing identical bytes are reused, never overwritten. */
 export const generateBenchmarkData = Effect.fn("benchmark.inputs.generate")(function* (
   outputRoot = new URL("../inputs/v1/", import.meta.url),
@@ -655,6 +687,7 @@ export const generateBenchmarkData = Effect.fn("benchmark.inputs.generate")(func
 const versionDatasets = new Map<string, ReadonlyArray<BenchmarkDataset>>([
   ["v2", logisticReconciliationDatasets],
   ["v3", uncertaintyDatasets],
+  ["v4", correlatedRegressorDatasets],
 ]);
 
 const entrypoint = process.argv[1];

@@ -131,19 +131,19 @@ Every attribute name starts with `effect_prophet.`.
 
 **`effect-prophet.wasm.fit`**
 
-| Attribute                                                                                              | Meaning                                                                            |
-| ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
-| `backend.type`, `operation`                                                                            | Always `rust-wasm` and `fit`                                                       |
-| `model.type`, `growth`                                                                                 | `flat-map`, `linear-piecewise-map` or `logistic-piecewise-map`, and the trend type |
-| `observation.count`                                                                                    | Rows in the history                                                                |
-| `seasonality.count`, `coefficient.count`                                                               | Seasonal, event and regressor components, and the coefficients behind them         |
-| `changepoint.count`, `parameter.count`                                                                 | Changepoints and total values solved for, as fitted                                |
-| `scaling.mode`                                                                                         | How values were scaled before fitting                                              |
-| `component.mode`                                                                                       | `mixed` when additive and multiplicative components are combined                   |
-| `wasm.cold_start`                                                                                      | `true` only for the call that loaded the engine                                    |
-| `optimizer.requested_algorithm`, `optimizer.max_iterations`, `optimizer.fallback`                      | Your optimizer settings (linear and capped trends)                                 |
-| `optimizer.algorithm`, `optimizer.termination`, `optimizer.iteration.count`                            | What ran, why it stopped and how many steps it took                                |
-| `optimizer.attempt.count`, `optimizer.failed_attempt.iteration.count`, `optimizer.hessian_reset.count` | Retries and recoveries, when the first method fell back to the second              |
+| Attribute                                                                                              | Meaning                                                                                                     |
+| ------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| `backend.type`, `operation`                                                                            | Always `rust-wasm` and `fit`                                                                                |
+| `model.type`, `growth`                                                                                 | `flat-map`, `linear-piecewise-map` or `logistic-piecewise-map`, and the trend type                          |
+| `observation.count`                                                                                    | Rows in the history                                                                                         |
+| `seasonality.count`, `coefficient.count`                                                               | Seasonal, event and regressor components, and the coefficients behind them                                  |
+| `changepoint.count`, `parameter.count`                                                                 | Changepoints and total values solved for, as fitted                                                         |
+| `scaling.mode`                                                                                         | How values were scaled before fitting                                                                       |
+| `component.mode`                                                                                       | `mixed` for multiplicative effects and capped trends; `additive` for flat trends with only additive effects |
+| `wasm.cold_start`                                                                                      | `true` only for the call that loaded the engine                                                             |
+| `optimizer.requested_algorithm`, `optimizer.max_iterations`, `optimizer.fallback`                      | The optimizer settings you passed in `map.optimizer`, or Prophet's defaults                                 |
+| `optimizer.algorithm`, `optimizer.termination`, `optimizer.iteration.count`                            | What ran, why it stopped and how many steps it took                                                         |
+| `optimizer.attempt.count`, `optimizer.failed_attempt.iteration.count`, `optimizer.hessian_reset.count` | Retries and recoveries, when the first method fell back to the second                                       |
 
 **`effect-prophet.wasm.predict` and `effect-prophet.wasm.simulate`**
 

@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 import { describe, expect, it } from "vitest";
 
-import { emptyEventCalendar } from "../src/event";
+import { emptyEventCalendar, parseEventCalendar } from "../src/event";
 import {
   InvalidFittedModel,
   parseFittedModel,
@@ -172,6 +172,74 @@ describe("fitted model domain", () => {
         },
       }),
       "level",
+    );
+  });
+
+  it("keeps the reduced flat MAP method to features it can represent", async () => {
+    const parameters = await validFlatMapParameters();
+
+    const stanSummary = {
+      method: "flat-map-stan-v1",
+      termination: "objective-change",
+      optimization: {
+        algorithm: "newton",
+        attemptCount: 1,
+        failedAttemptIterations: null,
+        hessianResets: 0,
+      },
+      valueScale: 3,
+      observationCount: 6,
+      iterations: 7,
+      objective: -2,
+      stationarityResidual: 1e-6,
+    } as const;
+
+    const conditionalDefinitions = await Effect.runPromise(
+      parseSeasonalities([
+        { name: "custom-day", periodDays: 1, fourierOrder: 1, conditionName: "active" },
+      ]),
+    );
+
+    const conditional = {
+      ...parameters,
+      seasonalities: await Effect.runPromise(makeSeasonalityLayout(conditionalDefinitions)),
+    };
+
+    const events = await Effect.runPromise(
+      parseEventCalendar([{ name: "launch", date: "2024-01-03" }]),
+    );
+
+    const withEvent = { ...parameters, events, eventCoefficients: [0.5] };
+
+    const requestedStan = await Effect.runPromise(
+      parseFlatMapModel({ ...parameters, fitSummary: stanSummary }),
+    );
+
+    expect(requestedStan.fitSummary.method).toBe("flat-map-stan-v1");
+
+    await expectInvalidModel(parseFlatMapModel(conditional), "method");
+    await expectInvalidModel(parseFlatMapModel(withEvent), "method");
+
+    const conditionalModel = await Effect.runPromise(
+      parseFlatMapModel({ ...conditional, fitSummary: stanSummary }),
+    );
+
+    const eventModel = await Effect.runPromise(
+      parseFlatMapModel({ ...withEvent, fitSummary: stanSummary }),
+    );
+
+    expect(conditionalModel.fitSummary.method).toBe("flat-map-stan-v1");
+    expect(eventModel.events.layout.components[0]?.mode).toBe("additive");
+
+    await expectInvalidModel(
+      parseFlatMapModel({
+        ...withEvent,
+        fitSummary: {
+          ...stanSummary,
+          optimization: { ...stanSummary.optimization, algorithm: "lbfgs" },
+        },
+      }),
+      "optimization",
     );
   });
 });

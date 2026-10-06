@@ -75,14 +75,14 @@ describe("Prophet 1.4.0 mixed MAP evidence", () => {
               referenceCase.settings.changepointPriorScale,
               new Float64Array([2, 1, 10_000]),
             )
-          : wasm.fit_mixed_flat_map(...common, 10_000, 1e-10, 1e-12);
+          : wasm.fit_mixed_flat_map(...common, new Float64Array([2, 1, 10_000]));
 
       expect(fit[0]).toBe(0);
 
       const coefficientStart =
         referenceCase.growth === "linear"
           ? 20 + referenceCase.expected.changepointTimestamps.length * 2
-          : 12;
+          : 16;
 
       for (const [index, expected] of referenceCase.expected.coefficients.entries()) {
         expectClose(

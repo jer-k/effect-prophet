@@ -15,6 +15,7 @@ import {
   parseFlatMapModel,
   parseLogisticMapModel,
   parsePiecewiseMapModel,
+  FlatMapFitSummarySchema,
   PiecewiseMapFitSummarySchema,
   LogisticMapFitSummarySchema,
   type FittedFlatMapProphet,
@@ -201,15 +202,7 @@ const EncodedFlatMapModelSchema = Schema.Struct({
     }),
   ),
   noiseScale: Schema.Number,
-  fitSummary: Schema.Struct({
-    method: Schema.Literals(["flat-map-coordinate-v1", "mixed-flat-map-coordinate-v1"]),
-    termination: Schema.Literals(["converged", "constant-target-shortcut"]),
-    valueScale: Schema.Number,
-    observationCount: Schema.Number,
-    iterations: Schema.Number,
-    objective: Schema.Number,
-    stationarityResidual: Schema.Number,
-  }),
+  fitSummary: FlatMapFitSummarySchema,
 });
 
 const EncodedPiecewiseMapModelSchema = Schema.Struct({
@@ -466,15 +459,7 @@ const encodeFlatMapModel = (model: FittedFlatMapProphet): EncodedFlatMapModel =>
   regressors: encodeFittedRegressors(model.regressors),
   seasonalities: model.seasonalities.components.map(encodeSeasonalityDefinition),
   noiseScale: model.noiseScale,
-  fitSummary: {
-    method: model.fitSummary.method,
-    termination: model.fitSummary.termination,
-    valueScale: model.fitSummary.valueScale,
-    observationCount: model.fitSummary.observationCount,
-    iterations: model.fitSummary.iterations,
-    objective: model.fitSummary.objective,
-    stationarityResidual: model.fitSummary.stationarityResidual,
-  },
+  fitSummary: { ...model.fitSummary },
 });
 
 const encodePiecewiseMapModel = (model: FittedPiecewiseMapProphet): EncodedPiecewiseMapModel => ({

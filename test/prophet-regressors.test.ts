@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   InputValidationError,
-  UnsupportedConfigurationError,
   decodeFittedModel,
   encodeFittedModel,
   fit,
@@ -305,7 +304,34 @@ describe("additional regressor public lifecycle", () => {
     expect(spans.some((span) => span.name === "effect-prophet.wasm.predict")).toBe(false);
   });
 
-  it("rejects flat regressors before semantic row alignment", async () => {
+  it("fits additive regressors with flat growth through the mixed flat fitter", async () => {
+    const model = await Effect.runPromise(
+      fit(history, { growth: "flat", ...options }).pipe(Effect.provide(prophetFittingBackendLayer)),
+    );
+
+    if (model.model !== "flat-map") {
+      throw new Error("Expected flat growth to select flat MAP");
+    }
+
+    expect(model.fitSummary.method).toBe("flat-map-stan-v1");
+    expect(getRegressorCoefficients(model).map((coefficient) => coefficient.mode)).toEqual([
+      "additive",
+      "additive",
+      "additive",
+    ]);
+
+    const forecasts = await Effect.runPromise(predict(model, futureRows));
+
+    expect(forecasts[0]?.trend).toBe(forecasts[1]?.trend);
+    expect(forecasts[1]?.value).toBeGreaterThan(forecasts[0]?.value ?? Number.POSITIVE_INFINITY);
+
+    const encoded = await Effect.runPromise(encodeFittedModel(model));
+    const decoded = await Effect.runPromise(decodeFittedModel(JSON.parse(JSON.stringify(encoded))));
+
+    expect(await Effect.runPromise(predict(decoded, futureRows))).toEqual(forecasts);
+  });
+
+  it("validates flat regressor training rows", async () => {
     const error = await Effect.runPromise(
       Effect.flip(
         fit(
@@ -315,10 +341,6 @@ describe("additional regressor public lifecycle", () => {
       ),
     );
 
-    expect(error).toBeInstanceOf(UnsupportedConfigurationError);
-
-    if (error instanceof UnsupportedConfigurationError) {
-      expect(error.option).toBe("regressors");
-    }
+    expect(error).toBeInstanceOf(InputValidationError);
   });
 });

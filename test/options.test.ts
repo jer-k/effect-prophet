@@ -409,13 +409,38 @@ describe("decodeOptions", () => {
     });
   });
 
-  it("rejects linear MAP options with flat growth", async () => {
-    const error = await expectOptionsFailure({ growth: "flat", map: {} });
-
-    expect(error.issues).toContainEqual({
-      path: ["map"],
-      message: "Linear MAP options require linear growth",
+  it("rejects changepoint options with flat growth", async () => {
+    const error = await expectOptionsFailure({
+      growth: "flat",
+      map: { changepoints: { mode: "explicit", timestamps: [] }, changepointPriorScale: 0.5 },
     });
+
+    expect(error.issues).toEqual([
+      {
+        path: ["map", "changepoints"],
+        message: "Changepoint options require linear or logistic growth",
+      },
+      {
+        path: ["map", "changepointPriorScale"],
+        message: "Changepoint options require linear or logistic growth",
+      },
+    ]);
+  });
+
+  it("accepts an explicit flat-growth optimizer and omits flat controls otherwise", async () => {
+    const requested = await Effect.runPromise(
+      decodeOptions({ growth: "flat", map: { optimizer: { algorithm: "newton" } } }),
+    );
+
+    const unrequested = await Effect.runPromise(decodeOptions({ growth: "flat", map: {} }));
+
+    if (requested.growth !== "flat" || unrequested.growth !== "flat") {
+      throw new Error("Expected flat options");
+    }
+
+    expect(requested.map?.optimizer.algorithm).toBe("newton");
+    expect(Object.isFrozen(requested.map)).toBe(true);
+    expect(unrequested.map).toBeUndefined();
   });
 
   it("parses built-in controls and applies per-component defaults", async () => {

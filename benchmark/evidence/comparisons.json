@@ -206,6 +206,19 @@
       ]
     },
     {
+      "id": "stage-f-flat-additive-v1",
+      "classification": "equivalent-objective",
+      "statement": "Flat MAP with only additive features: conditional seasonalities, events and regressors, including regressors nearly or exactly collinear with the level or a seasonality. Both libraries optimize Prophet's Stan density with the trend fixed at its level; the unused rate and changepoint parameters stay at zero.",
+      "prerequisiteFixtures": ["target-scaling.json", "mixed-map.json", "conditional-map-fit.json"],
+      "checks": [
+        "target scaling",
+        "condition masks",
+        "named effects",
+        "forecast",
+        "persistence equivalence"
+      ]
+    },
+    {
       "id": "stage-f-linear-mixed-v1",
       "classification": "equivalent-objective",
       "statement": "Linear MAP with nonzero target offset, inherited multiplicative seasonality and explicit additive event/regressor overrides.",

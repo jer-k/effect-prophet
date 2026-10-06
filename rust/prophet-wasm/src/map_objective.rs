@@ -1,3 +1,4 @@
+use crate::compensated_sum::CompensatedSum;
 use crate::fourier::checked_element_count;
 use crate::mixed_map::ComponentMode;
 use crate::stan::linear_optimizer::StanMapObjective;
@@ -576,28 +577,45 @@ impl<'a> StanLinearObjective<'a> {
     &self,
     options: crate::stan::linear_optimizer::LinearOptimizerOptions,
   ) -> Result<NormalizedLinearMapFit, crate::stan::linear_optimizer::LinearOptimizationError> {
+    let fit = self.fit_stan(options)?;
+
+    self.normalized_fit(
+      &fit.parameters,
+      &fit.evaluation.gradient,
+      fit.evaluation.value,
+      fit.attempts.summary(),
+    )
+  }
+
+  /// Restore coefficients and constrained diagnostics from a complete optimizer state.
+  fn normalized_fit(
+    &self,
+    parameters: &[f64],
+    gradient: &[f64],
+    log_density: f64,
+    optimization: crate::stan::linear_optimizer::LinearOptimizationSummary,
+  ) -> Result<NormalizedLinearMapFit, crate::stan::linear_optimizer::LinearOptimizationError> {
     use crate::stan::linear_optimizer::LinearOptimizationError;
     use crate::stan::optimizer::StanOptimizerError;
 
-    let fit = self.fit_stan(options)?;
-    let (coefficients, noise_scale) = self
-      .coefficients(&fit.parameters)
-      .map_err(|error| LinearOptimizationError::Optimizer(StanOptimizerError::Objective(error)))?;
+    let objective_error =
+      |error| LinearOptimizationError::Optimizer(StanOptimizerError::Objective(error));
+    let (coefficients, noise_scale) = self.coefficients(parameters).map_err(objective_error)?;
     let stationarity_residual = constrained_stationarity_residual(
-      &fit.parameters,
-      &fit.evaluation.gradient,
+      parameters,
+      gradient,
       self.sigma_index(),
       noise_scale,
       self.changepoint_prior,
     )
-    .map_err(|error| LinearOptimizationError::Optimizer(StanOptimizerError::Objective(error)))?;
+    .map_err(objective_error)?;
 
     Ok(NormalizedLinearMapFit {
       coefficients,
       noise_scale,
-      objective: -fit.evaluation.value,
+      objective: -log_density,
       stationarity_residual,
-      optimization: fit.attempts.summary(),
+      optimization,
     })
   }
 
@@ -641,6 +659,120 @@ impl StanMapObjective for StanLinearObjective<'_> {
   }
   fn evaluate(&self, parameters: &[f64]) -> Result<LogDensityEvaluation, MapObjectiveError> {
     self.evaluate(parameters)
+  }
+}
+
+/// Prophet's flat-growth density over the coordinates its trend can move.
+///
+/// Prophet's flat Stan model keeps the linear model's rate `k` and changepoint
+/// `delta`, but its trend ignores both: only priors touch them, and their
+/// gradients are exactly zero at Prophet's zero start. Stan's Newton and L-BFGS
+/// steps therefore never move them in exact arithmetic. Optimizing only
+/// `[m, log(sigma), beta...]` takes those same steps without letting rounding in
+/// the spectral solve seed `delta` beside its Laplace kink, where the kink turns
+/// that noise into large curvature. Densities keep every Prophet constant, so
+/// objectives stay comparable with CmdStan's.
+pub struct StanFlatObjective<'a> {
+  linear: StanLinearObjective<'a>,
+  initial_level: f64,
+}
+
+impl<'a> StanFlatObjective<'a> {
+  /// Parse `[1,0,beta...]` design rows: the linear density with a zero time column.
+  pub fn new(
+    design: &'a [f64],
+    target: &'a [f64],
+    feature_priors: &'a [f64],
+    modes: &'a [ComponentMode],
+    changepoint_prior: f64,
+  ) -> Result<Self, MapObjectiveError> {
+    let linear = StanLinearObjective::new(
+      design,
+      target,
+      &[],
+      feature_priors,
+      modes,
+      changepoint_prior,
+    )?;
+
+    if design
+      .chunks_exact(linear.column_count)
+      .any(|row| row[1] != 0.0)
+    {
+      return Err(MapObjectiveError::InvalidInput);
+    }
+
+    let mut sum = CompensatedSum::default();
+
+    for value in target {
+      sum.add(*value);
+    }
+
+    let initial_level = sum.total() / target.len() as f64;
+
+    if !initial_level.is_finite() {
+      return Err(MapObjectiveError::NonFiniteResult);
+    }
+
+    Ok(Self {
+      linear,
+      initial_level,
+    })
+  }
+
+  /// Insert the fixed zero rate and zero-time delta: `[0, m, 0, log(sigma), beta...]`.
+  fn linear_state(&self, flat: &[f64]) -> Vec<f64> {
+    let mut state = Vec::with_capacity(flat.len() + 2);
+    state.extend_from_slice(&[0.0, flat[0], 0.0]);
+    state.extend_from_slice(&flat[1..]);
+    state
+  }
+
+  /// Fit with Prophet's selection policy and restore `[m, k = 0, beta...]` coefficients.
+  pub fn fit_model(
+    &self,
+    options: crate::stan::linear_optimizer::LinearOptimizerOptions,
+  ) -> Result<NormalizedLinearMapFit, crate::stan::linear_optimizer::LinearOptimizationError> {
+    let fit = crate::stan::linear_optimizer::optimize_map(self, options)?;
+
+    self.linear.normalized_fit(
+      &self.linear_state(&fit.parameters),
+      &self.linear_state(&fit.evaluation.gradient),
+      fit.evaluation.value,
+      fit.attempts.summary(),
+    )
+  }
+}
+
+impl StanMapObjective for StanFlatObjective<'_> {
+  fn observation_count(&self) -> usize {
+    self.linear.observation_count()
+  }
+  fn parameter_count(&self) -> usize {
+    self.linear.parameter_count() - 2
+  }
+  fn initial_parameters(&self) -> Vec<f64> {
+    let mut parameters = vec![0.0; self.parameter_count()];
+    parameters[0] = self.initial_level;
+    parameters
+  }
+  fn log_density_constant(&self) -> f64 {
+    self.linear.log_density_constant()
+  }
+  fn evaluate(&self, parameters: &[f64]) -> Result<LogDensityEvaluation, MapObjectiveError> {
+    if parameters.len() != self.parameter_count() {
+      return Err(MapObjectiveError::InvalidDimensions);
+    }
+
+    let evaluation = self.linear.evaluate(&self.linear_state(parameters))?;
+    let mut gradient = Vec::with_capacity(parameters.len());
+    gradient.push(evaluation.gradient[1]);
+    gradient.extend_from_slice(&evaluation.gradient[3..]);
+
+    Ok(LogDensityEvaluation {
+      value: evaluation.value,
+      gradient,
+    })
   }
 }
 
@@ -1170,5 +1302,47 @@ mod tests {
     assert_eq!(residual(4.337e-11), 0.5);
     assert_eq!(residual(-1.856e-9), 0.5);
     assert_eq!(residual(0.0), 0.5);
+  }
+
+  #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+  #[cfg_attr(not(target_arch = "wasm32"), test)]
+  fn flat_density_starts_at_prophet_flat_initialization_and_omits_the_unused_trend() {
+    use crate::stan::linear_optimizer::StanMapObjective;
+
+    let target = [0.5, 0.75, 0.25, 1.0];
+    let design = [1.0, 0.0, 1.0, 1.0, 0.0, -1.0, 1.0, 0.0, 0.5, 1.0, 0.0, 0.0];
+    let modes = [ComponentMode::Additive];
+    let flat = super::StanFlatObjective::new(&design, &target, &[10.0], &modes, 0.05).unwrap();
+    let linear = StanLinearObjective::new(&design, &target, &[], &[10.0], &modes, 0.05).unwrap();
+
+    assert_eq!(flat.parameter_count(), 3);
+    assert_eq!(flat.initial_parameters(), vec![0.625, 0.0, 0.0]);
+    assert_eq!(flat.log_density_constant(), linear.log_density_constant());
+
+    let point = [0.6, -1.2, 0.3];
+    let reduced = flat.evaluate(&point).unwrap();
+    let complete = linear.evaluate(&[0.0, 0.6, 0.0, -1.2, 0.3]).unwrap();
+
+    assert_eq!(reduced.value, complete.value);
+    assert_eq!(
+      reduced.gradient,
+      vec![
+        complete.gradient[1],
+        complete.gradient[3],
+        complete.gradient[4]
+      ]
+    );
+    assert_eq!((complete.gradient[0], complete.gradient[2]), (0.0, 0.0));
+
+    let fit = flat
+      .fit_model(crate::stan::linear_optimizer::LinearOptimizerOptions::default())
+      .unwrap();
+
+    assert_eq!(fit.coefficients[1], 0.0);
+    assert!(fit.coefficients[0].is_finite() && fit.coefficients[2].is_finite());
+
+    let sloped = [1.0, 0.0, 1.0, 1.0, 0.5, -1.0, 1.0, 0.0, 0.5, 1.0, 0.0, 0.0];
+
+    assert!(super::StanFlatObjective::new(&sloped, &target, &[10.0], &modes, 0.05).is_err());
   }
 }

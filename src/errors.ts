@@ -40,12 +40,6 @@ const PredictionFailureReasonSchema = Schema.Literals([
 
 const ModelSerializationOperationSchema = Schema.Literals(["encode", "decode"]);
 
-const UnsupportedOptionSchema = Schema.Literals([
-  "events",
-  "regressors",
-  "conditional-seasonalities",
-]);
-
 const WasmFailurePhaseSchema = Schema.Literals(["load", "execute", "protocol"]);
 
 export type ValidationInput =
@@ -113,16 +107,6 @@ const defineRuntimeCause = (target: Error, options: RuntimeCauseOptions | undefi
     enumerable: false,
   });
 };
-
-/** A valid configuration that the selected model family cannot execute. */
-export class UnsupportedConfigurationError extends Schema.TaggedError<UnsupportedConfigurationError>()(
-  "UnsupportedConfigurationError",
-  {
-    option: UnsupportedOptionSchema,
-    model: Schema.String,
-    message: Schema.String,
-  },
-) {}
 
 /** An expected failure while fitting a model. */
 export class FittingError extends Schema.TaggedError<FittingError>()("FittingError", {
@@ -201,11 +185,7 @@ export class EvaluationError extends Schema.TaggedError<EvaluationError>()("Eval
   message: Schema.String,
 }) {
   /** The original typed failure, never encoded or enumerated. */
-  declare readonly cause?:
-    | InputValidationError
-    | UnsupportedConfigurationError
-    | FittingError
-    | PredictionError;
+  declare readonly cause?: InputValidationError | FittingError | PredictionError;
 
   /** Construct fold context without flattening the underlying expected failure. */
   constructor(
@@ -225,11 +205,7 @@ export class EvaluationError extends Schema.TaggedError<EvaluationError>()("Eval
       readonly message: string;
     },
     options?: {
-      readonly cause?:
-        | InputValidationError
-        | UnsupportedConfigurationError
-        | FittingError
-        | PredictionError;
+      readonly cause?: InputValidationError | FittingError | PredictionError;
     },
   ) {
     super(fields);
@@ -255,7 +231,6 @@ export class HoldoutEvaluationError extends Schema.TaggedError<HoldoutEvaluation
   /** Original expected failure, excluded from the report. */
   declare readonly cause?:
     | InputValidationError
-    | UnsupportedConfigurationError
     | FittingError
     | PredictionError
     | EvaluationMetricError
@@ -278,7 +253,6 @@ export class HoldoutEvaluationError extends Schema.TaggedError<HoldoutEvaluation
     options?: {
       readonly cause?:
         | InputValidationError
-        | UnsupportedConfigurationError
         | FittingError
         | PredictionError
         | EvaluationMetricError
@@ -345,12 +319,7 @@ export const PortableEvaluationFailureSchema = Schema.Union([
     ]),
     rowIndex: Schema.optionalKey(Schema.Natural.check(Schema.isLessThan(1_000_000))),
     causeTag: Schema.optionalKey(
-      Schema.Literals([
-        "InputValidationError",
-        "UnsupportedConfigurationError",
-        "FittingError",
-        "PredictionError",
-      ]),
+      Schema.Literals(["InputValidationError", "FittingError", "PredictionError"]),
     ),
     causeReason: Schema.optionalKey(
       Schema.Union([FittingFailureReasonSchema, PredictionFailureReasonSchema]),

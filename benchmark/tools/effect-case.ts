@@ -52,9 +52,14 @@ export const effectOptionsForCase = (
     };
 
     if (workload.configuration.growth === "flat") {
+      const flat =
+        workload.effectOptimizer === undefined
+          ? { ...options, growth: "flat" as const }
+          : { ...options, growth: "flat" as const, map: { optimizer: workload.effectOptimizer } };
+
       return seasonalities === undefined
-        ? { ...options, growth: "flat", seasonalities: [] }
-        : { ...options, growth: "flat", seasonalities };
+        ? { ...flat, seasonalities: [] }
+        : { ...flat, seasonalities };
     }
 
     const mapConfiguration = {

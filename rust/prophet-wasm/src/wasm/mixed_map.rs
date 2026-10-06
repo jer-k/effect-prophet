@@ -4,19 +4,22 @@ use crate::additional_features::{
   AdditionalFeatureLayoutView, FeatureMatrixView, SeasonalityMaskView,
 };
 use crate::mixed_map::{
-  ComponentMode, MixedMapControls, MixedTrendInput, MixedTrendModel, fit_mixed_map,
-  predict_mixed_map,
+  ComponentMode, MixedTrendInput, MixedTrendModel, fit_mixed_map, predict_mixed_map,
 };
 use crate::piecewise_linear::PiecewiseTrend;
-use crate::piecewise_map::{MapControls, resolve_automatic_changepoints};
+use crate::piecewise_map::resolve_automatic_changepoints;
 use crate::seasonality::SeasonalitySpec;
 use crate::target_scaling::{ScalingMode, TargetScaling};
 use crate::wasm::map::{
-  PiecewiseMapFitStatus, PiecewiseMapPredictionStatus, prediction_error_frame, status_for_fit_error,
+  PiecewiseMapFitStatus, PiecewiseMapPredictionStatus, prediction_error_frame,
 };
 use crate::wasm::protocol::{
   parse_explicit_changepoints, parse_nonnegative_integer, parse_positive_integer,
 };
+
+/// Prophet's default changepoint prior. It scales only the flat density's unused
+/// zero-time delta, which contributes a constant to the objective.
+const FLAT_CHANGEPOINT_PRIOR_SCALE: f64 = 0.05;
 
 pub(crate) struct ParsedMetadata {
   pub(crate) masks: Vec<u8>,
@@ -100,7 +103,7 @@ pub fn fit_mixed_linear_map(
     layout_view(additional_prior_scales, &metadata.offsets, &metadata.counts),
     &modes,
     changepoint_prior_scale,
-    MixedMapControls::Linear(controls),
+    controls,
     scaling,
   ) {
     Ok(model) => pack_linear_fit(model),
@@ -108,7 +111,7 @@ pub fn fit_mixed_linear_map(
   }
 }
 
-/// Fit a mixed additive/multiplicative reduced flat MAP model.
+/// Fit a flat MAP model with events, regressors, conditions, or multiplicative components.
 #[must_use]
 #[wasm_bindgen]
 #[allow(clippy::too_many_arguments)]
@@ -126,9 +129,7 @@ pub fn fit_mixed_flat_map(
   additional_component_offsets: &[f64],
   additional_component_counts: &[f64],
   column_modes: &[f64],
-  max_iterations: f64,
-  relative_tolerance: f64,
-  absolute_tolerance: f64,
+  optimizer: &[f64],
 ) -> Vec<f64> {
   let Some(scaling) = ScalingMode::from_code(scaling_mode) else {
     return fit_error(PiecewiseMapFitStatus::InvalidConfiguration);
@@ -138,8 +139,7 @@ pub fn fit_mixed_flat_map(
   else {
     return fit_error(PiecewiseMapFitStatus::InvalidConfiguration);
   };
-  let Some(controls) = parse_controls(max_iterations, relative_tolerance, absolute_tolerance)
-  else {
+  let Some(controls) = crate::wasm::protocol::parse_linear_optimizer(optimizer) else {
     return fit_error(PiecewiseMapFitStatus::InvalidConfiguration);
   };
   let Some(additional_columns) = parse_nonnegative_integer(additional_column_count) else {
@@ -170,12 +170,12 @@ pub fn fit_mixed_flat_map(
     matrix_view(timestamps.len(), additional_columns, additional_values),
     layout_view(additional_prior_scales, &metadata.offsets, &metadata.counts),
     &modes,
-    0.05,
-    MixedMapControls::Flat(controls),
+    FLAT_CHANGEPOINT_PRIOR_SCALE,
+    controls,
     scaling,
   ) {
     Ok(model) => pack_flat_fit(model),
-    Err(error) => fit_error(status_for_fit_error(error)),
+    Err(error) => crate::wasm::map::fit_error_frame(error),
   }
 }
 
@@ -383,7 +383,7 @@ fn pack_flat_fit(model: crate::mixed_map::MixedMapModel) -> Vec<f64> {
     return fit_error(PiecewiseMapFitStatus::InvalidConfiguration);
   };
   let mut packed =
-    Vec::with_capacity(12 + model.coefficients.len() + model.additional_coefficients.len());
+    Vec::with_capacity(16 + model.coefficients.len() + model.additional_coefficients.len());
 
   packed.extend_from_slice(&[
     0.0,
@@ -399,6 +399,9 @@ fn pack_flat_fit(model: crate::mixed_map::MixedMapModel) -> Vec<f64> {
     model.summary.stationarity_residual,
     termination_code(model.summary.termination),
   ]);
+  packed.extend_from_slice(&crate::wasm::protocol::linear_summary_frame(
+    model.summary.termination,
+  ));
   packed.extend_from_slice(&model.coefficients);
   packed.extend_from_slice(&model.additional_coefficients);
   packed
@@ -492,22 +495,6 @@ pub(crate) fn parse_seasonalities(
     .collect()
 }
 
-pub(crate) fn parse_controls(
-  max_iterations: f64,
-  relative: f64,
-  absolute: f64,
-) -> Option<MapControls> {
-  if !relative.is_finite() || relative <= 0.0 || !absolute.is_finite() || absolute <= 0.0 {
-    return None;
-  }
-
-  Some(MapControls {
-    max_iterations: parse_positive_integer(max_iterations)?,
-    relative_tolerance: relative,
-    absolute_tolerance: absolute,
-  })
-}
-
 pub(crate) fn parse_changepoints(
   timestamps: &[f64],
   mode: f64,
@@ -582,6 +569,11 @@ fn success_frame(values: &[f64]) -> Vec<f64> {
 mod tests {
   use super::{fit_mixed_flat_map, predict_mixed_flat_map};
 
+  /// Prophet's default optimizer in wire version two: automatic L-BFGS with Newton fallback.
+  const DEFAULT_OPTIMIZER: [f64; 11] = [
+    2.0, 0.0, 10_000.0, 1.0, 5.0, 0.001, 1e-12, 1e4, 1e-8, 1e7, 1e-8,
+  ];
+
   #[test]
   fn frames_flat_mixed_fit_and_prediction() {
     let fit = fit_mixed_flat_map(
@@ -598,13 +590,15 @@ mod tests {
       &[0.0],
       &[1.0],
       &[1.0],
-      10_000.0,
-      1e-10,
-      1e-12,
+      &DEFAULT_OPTIMIZER,
     );
 
     assert_eq!(fit[0], 0.0);
-    assert_eq!(fit.len(), 13);
+    assert_eq!(fit.len(), 17);
+    assert_eq!(
+      fit[12], 1.0,
+      "Prophet's automatic policy uses Newton below 100 rows"
+    );
 
     let prediction = predict_mixed_flat_map(
       &[6.0],
@@ -619,7 +613,7 @@ mod tests {
       &[],
       1.0,
       &[2.0],
-      &[fit[12]],
+      &[fit[16]],
       &[0.0],
       &[1.0],
       &[1.0],
@@ -648,9 +642,7 @@ mod tests {
         &[0.0],
         &[1.0],
         &[mode],
-        10.0,
-        1e-10,
-        1e-12,
+        &DEFAULT_OPTIMIZER,
       );
 
       assert_eq!(packed, vec![4.0]);
