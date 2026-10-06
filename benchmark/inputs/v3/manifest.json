@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "files": [
+    {
+      "file": "linear-long-history.json",
+      "recipe": "long-history-v1:piecewise+weekly+yearly+bounded-noise-x20:n=1095:h=365",
+      "sha256": "30f02c063165126f62a0964a83fef842d557b54fab6300c692ef69225bb94d41"
+    },
+    {
+      "file": "logistic-rate-changes.json",
+      "recipe": "logistic-rate-changes-v1:logit=-3+6t|1.5t|4t@0.35,0.65+weekly+bounded-noise-x10:changing-capacity:n=365:h=90",
+      "sha256": "a2b86c23197e401e7531c84acd97a4af204be36a92bcf992ce229f99096fe628"
+    }
+  ]
+}

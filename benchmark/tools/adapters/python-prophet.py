@@ -155,7 +155,7 @@ def configure_model(benchmark_case: dict[str, Any]) -> Prophet:
     if workload["kind"] not in ("linear-map", "stage-f-map", "evaluation"):
         raise ValueError(f"Case {benchmark_case['id']} is not a fitting workload")
     if workload.get("fitRequest") == "growth-only":
-        # Point output only: leave every fitting/seasonality default with Prophet.
+        # Leave every fitting/seasonality default with Prophet; uncertainty is set per call.
         return Prophet(growth=workload["configuration"]["growth"], uncertainty_samples=0)
 
     configuration = workload["configuration"]
@@ -679,8 +679,11 @@ def assert_uncertainty(model: Prophet, frame: pd.DataFrame, benchmark_case: dict
     if verified.returncode != 0 or PROTOCOL_PREFIX not in verified.stdout:
         raise ValueError(verified.stderr or verified.stdout or "Fresh-process uncertainty replay failed")
 
+    bounds = intervals[["trend_lower", "trend_upper", "yhat_lower", "yhat_upper"]].to_numpy(dtype=np.float64)
     return {"algorithm": "prophet-1.4.0-scalar-continuous-time", "output": controls["output"],
-            "rows": length, "samples": count, "replay": "passed", "reduction": "passed", "finite": "passed"}
+            "rows": length, "samples": count, "replay": "passed", "reduction": "passed", "finite": "passed",
+            "intervals": [{"trendLower": float(row[0]), "trendUpper": float(row[1]),
+                           "valueLower": float(row[2]), "valueUpper": float(row[3])} for row in bounds]}
 
 
 def correctness_projection(

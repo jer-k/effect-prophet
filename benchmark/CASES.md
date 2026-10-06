@@ -104,6 +104,7 @@ Serialization is exercised by lifecycle phases rather than copied into separate 
 | `logistic-reconcile-basic-256` | [v2/logistic-basic-256.json](inputs/v2/logistic-basic-256.json) | equivalent-objective | 5 |
 | `logistic-reconcile-defaults-96` | [v2/logistic-weekly-96.json](inputs/v2/logistic-weekly-96.json) | equivalent-objective | 5 |
 | `logistic-reconcile-defaults-256` | [v2/logistic-weekly-256.json](inputs/v2/logistic-weekly-256.json) | equivalent-objective | 5 |
+| `logistic-reconcile-defaults-rate-changes` | [v3/logistic-rate-changes.json](inputs/v3/logistic-rate-changes.json) | equivalent-objective | 5 |
 | `logistic-reconcile-weekly` | [v2/logistic-weekly-96.json](inputs/v2/logistic-weekly-96.json) | equivalent-objective | 5 |
 | `logistic-reconcile-conditional` | [v2/logistic-conditional-96.json](inputs/v2/logistic-conditional-96.json) | equivalent-objective | 5 |
 | `logistic-reconcile-event` | [v2/logistic-event-96.json](inputs/v2/logistic-event-96.json) | equivalent-objective | 5 |
@@ -143,6 +144,11 @@ Serialization is exercised by lifecycle phases rather than copied into separate 
 | Case | Input | Contract | Phases |
 | --- | --- | --- | ---: |
 | `uncertainty-training-duplicates-auto` | [v1/training-duplicates.json](inputs/v1/training-duplicates.json) | equivalent-objective | 2 |
+| `uncertainty-linear-defaults-long-history-intervals-1000` | [v3/linear-long-history.json](inputs/v3/linear-long-history.json) | equivalent-objective | 6 |
+| `uncertainty-linear-defaults-irregular-intervals-1000` | [v1/map-irregular-medium.json](inputs/v1/map-irregular-medium.json) | equivalent-objective | 6 |
+| `uncertainty-flat-defaults-seasonal-intervals-1000` | [v1/flat-seasonal.json](inputs/v1/flat-seasonal.json) | equivalent-objective | 6 |
+| `uncertainty-logistic-reconcile-defaults-rate-changes-intervals-1000` | [v3/logistic-rate-changes.json](inputs/v3/logistic-rate-changes.json) | equivalent-objective | 6 |
+| `uncertainty-logistic-reconcile-defaults-rate-changes-intervals-1000-seed-7` | [v3/logistic-rate-changes.json](inputs/v3/logistic-rate-changes.json) | equivalent-objective | 6 |
 | `uncertainty-linear-offset-scaling-absmax-historical-intervals-128` | [v1/linear-offset-scaling.json](inputs/v1/linear-offset-scaling.json) | equivalent-objective | 6 |
 | `uncertainty-linear-offset-scaling-absmax-one-future-samples-128` | [v1/linear-offset-scaling.json](inputs/v1/linear-offset-scaling.json) | equivalent-objective | 6 |
 | `uncertainty-linear-mixed-components-mixed-intervals-128` | [v1/linear-mixed-components.json](inputs/v1/linear-mixed-components.json) | equivalent-objective | 6 |

@@ -79,6 +79,7 @@ import type {
 } from "./seasonality";
 import { defaultTargetScalingMode } from "./target-scaling";
 import {
+  exceedsSimulationBudget,
   parseUncertaintyOptions,
   simulationIdentity,
   type EncodedUncertaintyOptions,
@@ -1148,17 +1149,13 @@ export const predictUncertainty = Effect.fn("Prophet.predictUncertainty")(functi
     Effect.mapError((error) => conditionValidationError("prediction-rows", error)),
   );
 
-  const cells = timestamps.length * options.samples;
-
   const horizon =
     parsedModel.model !== "flat-map"
       ? Math.max(0, (Math.max(...timestamps) - parsedModel.timeOrigin) / parsedModel.timeScale - 1)
       : 0;
 
   if (
-    timestamps.length > 10_000 ||
-    cells > 1_000_000 ||
-    !Number.isSafeInteger(cells) ||
+    exceedsSimulationBudget(timestamps.length, options.samples, options.output) ||
     (parsedModel.model !== "flat-map" && parsedModel.deltas.length > 10_000) ||
     horizon > 20 ||
     (parsedModel.model !== "flat-map" && parsedModel.deltas.length * horizon > 256)

@@ -30,7 +30,7 @@ import {
   type ProphetOptions,
 } from "./options";
 import { fit, predict, predictUncertainty } from "./prophet";
-import { simulationIdentity } from "./uncertainty";
+import { exceedsSimulationBudget, simulationIdentity } from "./uncertainty";
 import type { FittedProphet } from "./fitted-model";
 import type { SeasonalityLayout } from "./seasonality";
 import {
@@ -47,10 +47,6 @@ const maximumFolds = 128;
 const maximumAssessmentRows = 1_000_000;
 
 const maximumIntervalCells = 8_000_000;
-
-const maximumSimulationRows = 10_000;
-
-const maximumSimulationCells = 1_000_000;
 
 /** Shared positive elapsed-millisecond codec for evaluation plans and exact baseline lags. */
 export const PositiveDurationMsSchema = Schema.Int.check(
@@ -484,9 +480,8 @@ const prepareRollingOrigin = (
         const nextTotal = cells === undefined ? undefined : checkedAdd(totalCells, cells);
 
         if (
-          fold.assessmentCount > maximumSimulationRows ||
+          exceedsSimulationBudget(fold.assessmentCount, uncertainty.samples, "intervals") ||
           cells === undefined ||
-          cells > maximumSimulationCells ||
           nextTotal === undefined ||
           nextTotal > maximumIntervalCells
         ) {

@@ -33,6 +33,7 @@ import {
 import { defaultTargetScalingMode } from "./target-scaling";
 import { decodeObservations } from "./observation";
 import { decodeOptions, type EncodedProphetOptions, type ProphetOptions } from "./options";
+import { exceedsSimulationBudget } from "./uncertainty";
 
 const ObjectiveMetricSchema = Schema.Literals(["mae", "mse", "rmse", "mape", "mdape", "smape"]);
 
@@ -187,12 +188,7 @@ const checkWork = (
   let assessment = 0;
 
   for (const fold of plan.folds) {
-    const foldCells = checkedMultiply(fold.assessmentCount, samples);
-
-    if (
-      samples > 0 &&
-      (fold.assessmentCount > 10_000 || foldCells === undefined || foldCells > 1_000_000)
-    ) {
+    if (samples > 0 && exceedsSimulationBudget(fold.assessmentCount, samples, "intervals")) {
       return Effect.fail(
         invalidSearch(
           ["mode", "uncertainty", "samples"],

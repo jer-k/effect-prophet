@@ -998,7 +998,9 @@ describe("predictUncertainty", () => {
     const oversizedRows = Array.from({ length: 500 }, () => future[0] ?? "");
 
     const budget = await Effect.runPromise(
-      Effect.flip(predictUncertainty(model, oversizedRows, { seed: 1, samples: 2048 })),
+      Effect.flip(
+        predictUncertainty(model, oversizedRows, { seed: 1, samples: 2048, output: "samples" }),
+      ),
     );
 
     expect(budget).toBeInstanceOf(PredictionError);
@@ -1006,6 +1008,24 @@ describe("predictUncertainty", () => {
     if (budget instanceof PredictionError) {
       expect(budget.reason).toBe("simulation-limit");
     }
+
+    const streamed = await Effect.runPromise(
+      predictUncertainty(model, oversizedRows, { seed: 1, samples: 2048 }),
+    );
+
+    expect(streamed.kind).toBe("intervals");
+
+    if (streamed.kind === "intervals") {
+      expect(streamed.rows).toHaveLength(500);
+    }
+
+    const tooManyRows = Array.from({ length: 10_001 }, () => future[0] ?? "");
+
+    const rowBudget = await Effect.runPromise(
+      Effect.flip(predictUncertainty(model, tooManyRows, { seed: 1, samples: 1 })),
+    );
+
+    expect(rowBudget).toMatchObject({ reason: "simulation-limit" });
   });
 
   it("keeps option, model, alignment and budget failure precedence", async () => {
@@ -1134,7 +1154,7 @@ describe("predictUncertainty", () => {
 
     const excessiveRows = Array.from({ length: 500 }, () => future[0] ?? "");
     await Effect.runPromise(
-      predictUncertainty(model, excessiveRows, { seed: 1, samples: 2048 }).pipe(
+      predictUncertainty(model, excessiveRows, { seed: 1, samples: 2048, output: "samples" }).pipe(
         Effect.withTracer(tracer),
         Effect.exit,
       ),

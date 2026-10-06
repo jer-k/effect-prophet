@@ -149,8 +149,19 @@ export const CorrectnessProjectionSchema = Schema.Struct({
       rows: NonNegativeInteger,
       samples: PositiveInteger,
       replay: Schema.Literal("passed"),
-      reduction: Schema.Literal("passed"),
+      // `streamed`: intervals past the sample-output budget, which has no draws to reduce.
+      reduction: Schema.Literals(["passed", "streamed"]),
       finite: Schema.Literal("passed"),
+      intervals: Schema.optionalKey(
+        Schema.Array(
+          Schema.Struct({
+            trendLower: Schema.Finite,
+            trendUpper: Schema.Finite,
+            valueLower: Schema.Finite,
+            valueUpper: Schema.Finite,
+          }),
+        ),
+      ),
     }),
   ),
 });

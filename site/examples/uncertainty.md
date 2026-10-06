@@ -5,8 +5,8 @@ forecast: "between 133 and 140, most likely around 136".
 
 ::: tip Benchmarked against Python Prophet
 Both libraries simulate ranges with random draws, so individual values never match exactly. The
-[uncertainty benchmarks](/benchmarks/uncertainty) check the fitted model behind the ranges against
-Python Prophet 1.4.0 on all three trend types, and time the work.
+[uncertainty benchmarks](/benchmarks/uncertainty) check every range against Python Prophet 1.4.0
+on all three trend types, within the variation expected from that many draws, and time the work.
 :::
 
 <<< @/snippets/uncertainty.ts
@@ -47,3 +47,8 @@ Use `output: "samples"` to answer questions like "what's the chance we go over 1
 - **The ranges reflect trend changes and noise only.** They don't account for uncertainty in the
   seasonal patterns, so treat them as a minimum, not a guarantee.
 - **The seed is required** so that results are repeatable. Pick any number and keep it.
+- **Size limits.** One call takes up to 10,000 rows. Ranges work with any sample count up to
+  2,048, but `output: "samples"` returns every simulated value, so rows × samples can be at most
+  1,000,000. Very long forecasts are also capped: with the default 25 changepoints, ranges reach
+  about 10 times the length of the history ahead. Past any limit, `predictUncertainty` fails with
+  a `PredictionError` whose reason is `simulation-limit`.

@@ -70,6 +70,28 @@ const configuredCase = (
   optimizerQuality: outputFirstQuality,
 });
 
+/** Both libraries' logistic defaults; only the expected resolved weekly seasonality is declared. */
+const defaultsCase = (id: string, dataset: string): BenchmarkCase => {
+  const original = configuredCase(`defaults-${id}`, "");
+
+  if (original.workload.kind !== "stage-f-map") throw new Error("Expected logistic fitting case");
+
+  return {
+    ...original,
+    dataset,
+    workload: {
+      ...original.workload,
+      fitRequest: "growth-only",
+      configuration: {
+        ...configuration,
+        changepoints: { mode: "auto", count: 25, range: 0.8 },
+        // Expected resolved metadata, NOT a custom seasonality request.
+        seasonalities: [{ ...weekly, name: "weekly" }],
+      },
+    },
+  };
+};
+
 /** Python-default logistic investigation targets; declarations do not imply passing parity. */
 export const logisticReconciliationCases: ReadonlyArray<BenchmarkCase> = [
   ...(["absmax", "minmax"] as const).flatMap((scaling) =>
@@ -98,25 +120,11 @@ export const logisticReconciliationCases: ReadonlyArray<BenchmarkCase> = [
   ...([99, 100, 256] as const).map((count) =>
     configuredCase(`basic-${count}`, `logistic-basic-${count}`),
   ),
-  ...([96, 256] as const).map((count): BenchmarkCase => {
-    const original = configuredCase(`defaults-${count}`, `logistic-weekly-${count}`);
-
-    if (original.workload.kind !== "stage-f-map") throw new Error("Expected logistic fitting case");
-
-    return {
-      ...original,
-      workload: {
-        ...original.workload,
-        fitRequest: "growth-only",
-        configuration: {
-          ...configuration,
-          changepoints: { mode: "auto", count: 25, range: 0.8 },
-          // Expected resolved metadata, NOT a custom seasonality request.
-          seasonalities: [{ ...weekly, name: "weekly" }],
-        },
-      },
-    };
-  }),
+  defaultsCase("96", "v2/logistic-weekly-96.json"),
+  defaultsCase("256", "v2/logistic-weekly-256.json"),
+  // Growth-rate changes at 35% and 65% of the history, so the 25 automatic changepoints have
+  // real changes to fit. The weekly datasets are one smooth curve, so their deltas fit near zero.
+  defaultsCase("rate-changes", "v3/logistic-rate-changes.json"),
   configuredCase("weekly", "logistic-weekly-96", { ...configuration, seasonalities: [weekly] }),
   configuredCase("conditional", "logistic-conditional-96", {
     ...configuration,

@@ -34,6 +34,7 @@ import {
 } from "./options";
 import { fit, predict, predictUncertainty } from "./prophet";
 import {
+  exceedsSimulationBudget,
   simulationIdentity,
   parseUncertaintyOptions,
   type EncodedUncertaintyOptions,
@@ -706,7 +707,8 @@ export const evaluateHoldout = Effect.fn("Prophet.evaluateHoldout")(function* (
 
   if (
     uncertainty?.output === "samples" ||
-    (uncertainty !== undefined && holdout.length * uncertainty.samples > 1_000_000)
+    (uncertainty !== undefined &&
+      exceedsSimulationBudget(holdout.length, uncertainty.samples, "intervals"))
   ) {
     return yield* Effect.fail(
       invalid(["uncertainty"], "Holdout requires bounded interval-only simulation"),

@@ -4,8 +4,8 @@ use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::logistic_map::{LogisticParameters, predict_logistic_map};
 use crate::map_uncertainty::{
-  PredictiveSamples, SimulationError, SimulationOptions, SimulationRows, SimulationTrend,
-  checked_cells, reduce_intervals, simulate_map,
+  SimulationError, SimulationOptions, SimulationRows, SimulationTrend, checked_cells,
+  checked_interval_budget, simulate_intervals, simulate_map,
 };
 use crate::mixed_map::{MixedTrendModel, predict_mixed_map};
 use crate::piecewise_linear::PiecewiseTrend;
@@ -97,7 +97,7 @@ pub fn simulate_map_with_features(
   {
     return vec![INVALID_REQUEST];
   }
-  if let Err(error) = checked_cells(timestamps.len(), samples) {
+  if let Err(error) = checked_budget(timestamps.len(), samples, output_code) {
     return error_frame(error);
   }
   if changepoint_timestamps.len() > 10_000 || deltas.len() > 10_000 {
@@ -198,7 +198,7 @@ pub fn simulate_map_with_features(
       scaling,
     },
   };
-  let draws = match simulate_map(
+  simulate_frame(
     simulation_trend,
     noise_scale,
     SimulationRows {
@@ -211,12 +211,8 @@ pub fn simulate_map_with_features(
       samples,
       interval_width,
     },
-  ) {
-    Ok(draws) => draws,
-    Err(error) => return error_frame(error),
-  };
-
-  pack_samples(draws, interval_width, output_code)
+    output_code,
+  )
 }
 
 /// Simulate floor-aware logistic MAP from the complete deterministic prediction state.
@@ -267,7 +263,7 @@ pub fn simulate_logistic_map_with_features(
   {
     return vec![INVALID_REQUEST];
   }
-  if let Err(error) = checked_cells(timestamps.len(), samples) {
+  if let Err(error) = checked_budget(timestamps.len(), samples, output_code) {
     return error_frame(error);
   }
   if changepoint_timestamps.len() > 10_000 || deltas.len() > 10_000 {
@@ -355,7 +351,7 @@ pub fn simulate_logistic_map_with_features(
     .chunks_exact(width)
     .map(|row| row[2])
     .collect();
-  let draws = match simulate_map(
+  simulate_frame(
     SimulationTrend::Logistic {
       parameters: &parameters,
       scaling,
@@ -376,28 +372,53 @@ pub fn simulate_logistic_map_with_features(
       samples,
       interval_width,
     },
-  ) {
-    Ok(draws) => draws,
-    Err(error) => return error_frame(error),
-  };
-
-  pack_samples(draws, interval_width, output_code)
+    output_code,
+  )
 }
 
-fn pack_samples(draws: PredictiveSamples, interval_width: f64, output_code: f64) -> Vec<f64> {
+/// Interval output streams rows, so only sample output is bounded by its full draw matrix.
+fn checked_budget(rows: usize, samples: usize, output_code: f64) -> Result<(), SimulationError> {
   if output_code == 0.0 {
-    match reduce_intervals(&draws, interval_width) {
+    checked_interval_budget(rows, samples)
+  } else {
+    checked_cells(rows, samples).map(|_| ())
+  }
+}
+
+fn simulate_frame(
+  model: SimulationTrend<'_>,
+  noise_scale: f64,
+  rows: SimulationRows<'_>,
+  options: SimulationOptions,
+  output_code: f64,
+) -> Vec<f64> {
+  let header = |output: f64| {
+    vec![
+      0.0,
+      output,
+      rows.timestamps.len() as f64,
+      options.samples as f64,
+    ]
+  };
+
+  if output_code == 0.0 {
+    match simulate_intervals(model, noise_scale, rows, options) {
       Ok(intervals) => {
-        let mut frame = vec![0.0, 0.0, draws.rows as f64, draws.samples as f64];
+        let mut frame = header(0.0);
         frame.extend(intervals.values);
         frame
       }
       Err(error) => error_frame(error),
     }
   } else {
-    let mut frame = vec![0.0, 1.0, draws.rows as f64, draws.samples as f64];
-    frame.extend(draws.trend);
-    frame.extend(draws.value);
-    frame
+    match simulate_map(model, noise_scale, rows, options) {
+      Ok(draws) => {
+        let mut frame = header(1.0);
+        frame.extend(draws.trend);
+        frame.extend(draws.value);
+        frame
+      }
+      Err(error) => error_frame(error),
+    }
   }
 }

@@ -30,6 +30,20 @@ export interface UncertaintyOptions {
   readonly output: "intervals" | "samples";
 }
 
+/** Rows one simulation call accepts in either output mode. */
+export const maximumSimulationRows = 10_000;
+
+/** Draws one sample-output call may return; interval output streams rows instead. */
+export const maximumSampleCells = 1_000_000;
+
+/** Whether one simulation call exceeds its row bound or, for samples, its returned-draw bound. */
+export const exceedsSimulationBudget = (
+  rows: number,
+  samples: number,
+  output: UncertaintyOptions["output"],
+): boolean =>
+  rows > maximumSimulationRows || (output === "samples" && rows * samples > maximumSampleCells);
+
 /** One finite equal-tailed predictive interval in observation units. */
 export interface UncertaintyInterval {
   readonly lower: number;

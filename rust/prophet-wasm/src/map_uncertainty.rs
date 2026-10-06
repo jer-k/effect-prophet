@@ -35,6 +35,7 @@ pub enum SimulationTrend<'a> {
 }
 
 /// Complete fixed inputs for one batch; each slice has the same row count.
+#[derive(Clone, Copy)]
 pub struct SimulationRows<'a> {
   pub timestamps: &'a [f64],
   pub additive: &'a [f64],
@@ -74,9 +75,7 @@ pub enum SimulationError {
 }
 
 pub(crate) fn checked_cells(rows: usize, samples: usize) -> Result<usize, SimulationError> {
-  if rows > MAX_ROWS || samples == 0 || samples > MAX_SAMPLES {
-    return Err(SimulationError::ResourceLimit);
-  }
+  checked_interval_budget(rows, samples)?;
 
   let cells = rows
     .checked_mul(samples)
@@ -94,6 +93,15 @@ pub(crate) fn checked_cells(rows: usize, samples: usize) -> Result<usize, Simula
   }
 
   Ok(cells)
+}
+
+/// Interval output holds one row of draws at a time, so only rows and samples are bounded.
+pub(crate) fn checked_interval_budget(rows: usize, samples: usize) -> Result<(), SimulationError> {
+  if rows > MAX_ROWS || samples == 0 || samples > MAX_SAMPLES {
+    return Err(SimulationError::ResourceLimit);
+  }
+
+  Ok(())
 }
 
 fn finite_scaling(scaling: TargetScaling) -> bool {
@@ -115,14 +123,35 @@ fn sampler_failure(error: SamplerError, sample: usize) -> SimulationError {
   }
 }
 
-/// Draw one shared future trend path per sample and independent row observation errors.
-/// Validate model, dimensions and deterministic row values before any RNG or allocation.
-pub fn simulate_map(
-  model: SimulationTrend<'_>,
+fn zeroed(length: usize) -> Result<Vec<f64>, SimulationError> {
+  let mut values = Vec::new();
+  values
+    .try_reserve_exact(length)
+    .map_err(|_| SimulationError::ResourceLimit)?;
+  values.resize(length, 0.0);
+
+  Ok(values)
+}
+
+/// Validated rows, fixed per-row trends and the future changepoint process of one request.
+struct PreparedSimulation<'a> {
+  model: SimulationTrend<'a>,
   noise_scale: f64,
-  rows: SimulationRows<'_>,
+  rows: SimulationRows<'a>,
+  baseline: Vec<f64>,
+  horizon: f64,
+  rate: f64,
+  delta_scale: f64,
+}
+
+/// Validate model, dimensions and deterministic row values before any RNG or allocation.
+fn prepare<'a>(
+  model: SimulationTrend<'a>,
+  noise_scale: f64,
+  rows: SimulationRows<'a>,
   options: SimulationOptions,
-) -> Result<PredictiveSamples, SimulationError> {
+  budget: fn(usize, usize) -> Result<(), SimulationError>,
+) -> Result<PreparedSimulation<'a>, SimulationError> {
   let count = rows.timestamps.len();
 
   if rows.additive.len() != count || rows.multiplicative.len() != count {
@@ -136,7 +165,7 @@ pub fn simulate_map(
     return Err(SimulationError::InvalidOptions);
   }
 
-  let cells = checked_cells(count, options.samples)?;
+  budget(count, options.samples)?;
 
   if !noise_scale.is_finite() || noise_scale <= 0.0 {
     return Err(SimulationError::InvalidModel);
@@ -312,85 +341,165 @@ pub fn simulate_map(
     _ => (0.0, 0.0),
   };
 
-  let mut trend_draws = Vec::new();
-  let mut value_draws = Vec::new();
-  trend_draws
-    .try_reserve_exact(cells)
-    .map_err(|_| SimulationError::ResourceLimit)?;
-  value_draws
-    .try_reserve_exact(cells)
-    .map_err(|_| SimulationError::ResourceLimit)?;
-  trend_draws.resize(cells, 0.0);
-  value_draws.resize(cells, 0.0);
+  Ok(PreparedSimulation {
+    model,
+    noise_scale,
+    rows,
+    baseline,
+    horizon,
+    rate,
+    delta_scale,
+  })
+}
 
+/// Each sample's sorted future slope changes and the RNG state that starts its row noise.
+struct SamplePaths {
+  events: Vec<(f64, f64)>,
+  offsets: Vec<usize>,
+  noise: Vec<SimulationRng>,
+}
+
+/// Draw every sample's changes in the original sample-major stream order.
+///
+/// Sample `s` draws its changes, then two uniforms per row of noise, before sample `s + 1`
+/// starts. Saving the stream at each noise start lets rows be emitted in any order with
+/// exactly the draws a sample-major loop would produce.
+fn draw_paths(
+  prepared: &PreparedSimulation<'_>,
+  options: SimulationOptions,
+) -> Result<SamplePaths, SimulationError> {
+  let count = prepared.rows.timestamps.len();
   let mut rng = SimulationRng::new(options.seed);
   let mut events = Vec::<(f64, f64)>::new();
-  let mut remaining_events = MAX_NEW_EVENTS;
+  let mut offsets = Vec::new();
+  let mut noise = Vec::new();
   let mut remaining_steps = MAX_POISSON_STEPS;
 
-  for sample in 0..options.samples {
-    events.clear();
+  offsets
+    .try_reserve_exact(options.samples + 1)
+    .map_err(|_| SimulationError::ResourceLimit)?;
+  noise
+    .try_reserve_exact(options.samples)
+    .map_err(|_| SimulationError::ResourceLimit)?;
+  offsets.push(0);
 
-    if rate > 0.0 {
+  for sample in 0..options.samples {
+    let start = events.len();
+
+    if prepared.rate > 0.0 {
       let changes = rng
-        .poisson(rate * horizon, &mut remaining_steps)
+        .poisson(prepared.rate * prepared.horizon, &mut remaining_steps)
         .map_err(|error| sampler_failure(error, sample))?;
 
-      if changes > remaining_events {
+      if changes > MAX_NEW_EVENTS - start {
         return Err(SimulationError::ResourceLimit);
       }
-      remaining_events -= changes;
       events
         .try_reserve(changes)
         .map_err(|_| SimulationError::ResourceLimit)?;
 
       for _ in 0..changes {
-        events.push((1.0 + horizon * rng.uniform(), 0.0));
+        events.push((1.0 + prepared.horizon * rng.uniform(), 0.0));
       }
-      events.sort_unstable_by(|left, right| left.0.total_cmp(&right.0));
+      events[start..].sort_unstable_by(|left, right| left.0.total_cmp(&right.0));
 
-      for event in &mut events {
-        event.1 = rng.laplace(delta_scale);
+      for event in &mut events[start..] {
+        event.1 = rng.laplace(prepared.delta_scale);
       }
     }
 
-    for (row, (&timestamp, &fixed)) in rows.timestamps.iter().zip(&baseline).enumerate() {
-      let time = match model {
-        SimulationTrend::Linear { trend, .. } => (timestamp - trend.time_origin) / trend.time_scale,
-        SimulationTrend::Flat { .. } => 0.0,
-        SimulationTrend::Logistic {
-          time_origin,
-          time_scale,
-          ..
-        } => (timestamp - time_origin) / time_scale,
-      };
-      let shift = future_shift(time, &events);
-      let trend = match model {
-        SimulationTrend::Linear { scaling, .. } => fixed + scaling.scale * shift,
-        SimulationTrend::Flat { .. } => fixed,
-        SimulationTrend::Logistic {
-          scaling,
-          capacities,
-          floors,
-          ..
-        } => {
-          let floor = scaling
-            .row_floor(floors, row)
-            .map_err(|_| SimulationError::InvalidModel)?;
-          floor + (capacities[row] - floor) * stable_sigmoid(fixed + shift)
-        }
-      };
-      let value =
-        trend * (1.0 + rows.multiplicative[row]) + rows.additive[row] + noise_scale * rng.normal();
+    offsets.push(events.len());
+    noise.push(rng.clone());
+    rng.discard(2 * count);
+  }
 
-      if !trend.is_finite() || !value.is_finite() {
-        return Err(SimulationError::NonFiniteResult { row, sample });
+  Ok(SamplePaths {
+    events,
+    offsets,
+    noise,
+  })
+}
+
+/// Fill one row's trend and observation draws for every sample, advancing each noise stream.
+fn draw_row(
+  prepared: &PreparedSimulation<'_>,
+  paths: &mut SamplePaths,
+  row: usize,
+  trend_draws: &mut [f64],
+  value_draws: &mut [f64],
+) -> Result<(), SimulationError> {
+  let rows = prepared.rows;
+  let timestamp = rows.timestamps[row];
+  let fixed = prepared.baseline[row];
+
+  let time = match prepared.model {
+    SimulationTrend::Linear { trend, .. } => (timestamp - trend.time_origin) / trend.time_scale,
+    SimulationTrend::Flat { .. } => 0.0,
+    SimulationTrend::Logistic {
+      time_origin,
+      time_scale,
+      ..
+    } => (timestamp - time_origin) / time_scale,
+  };
+  let floor = match prepared.model {
+    SimulationTrend::Logistic {
+      scaling, floors, ..
+    } => scaling
+      .row_floor(floors, row)
+      .map_err(|_| SimulationError::InvalidModel)?,
+    _ => 0.0,
+  };
+
+  for (sample, noise) in paths.noise.iter_mut().enumerate() {
+    let events = &paths.events[paths.offsets[sample]..paths.offsets[sample + 1]];
+    let shift = future_shift(time, events);
+    let trend = match prepared.model {
+      SimulationTrend::Linear { scaling, .. } => fixed + scaling.scale * shift,
+      SimulationTrend::Flat { .. } => fixed,
+      SimulationTrend::Logistic { capacities, .. } => {
+        floor + (capacities[row] - floor) * stable_sigmoid(fixed + shift)
       }
+    };
+    let value = trend * (1.0 + rows.multiplicative[row])
+      + rows.additive[row]
+      + prepared.noise_scale * noise.normal();
 
-      let index = row * options.samples + sample;
-      trend_draws[index] = trend;
-      value_draws[index] = value;
+    if !trend.is_finite() || !value.is_finite() {
+      return Err(SimulationError::NonFiniteResult { row, sample });
     }
+
+    trend_draws[sample] = trend;
+    value_draws[sample] = value;
+  }
+
+  Ok(())
+}
+
+/// Draw one shared future trend path per sample and independent row observation errors.
+pub fn simulate_map(
+  model: SimulationTrend<'_>,
+  noise_scale: f64,
+  rows: SimulationRows<'_>,
+  options: SimulationOptions,
+) -> Result<PredictiveSamples, SimulationError> {
+  let prepared = prepare(model, noise_scale, rows, options, |rows, samples| {
+    checked_cells(rows, samples).map(|_| ())
+  })?;
+  let count = rows.timestamps.len();
+  let cells = count * options.samples;
+  let mut paths = draw_paths(&prepared, options)?;
+  let mut trend_draws = zeroed(cells)?;
+  let mut value_draws = zeroed(cells)?;
+
+  for row in 0..count {
+    let draws = row * options.samples..(row + 1) * options.samples;
+    draw_row(
+      &prepared,
+      &mut paths,
+      row,
+      &mut trend_draws[draws.clone()],
+      &mut value_draws[draws],
+    )?;
   }
 
   Ok(PredictiveSamples {
@@ -402,6 +511,46 @@ pub fn simulate_map(
 }
 
 pub use simulate_map as simulate_linear_flat;
+
+/// Reduce the same draws as `simulate_map` to intervals while holding one row at a time.
+pub fn simulate_intervals(
+  model: SimulationTrend<'_>,
+  noise_scale: f64,
+  rows: SimulationRows<'_>,
+  options: SimulationOptions,
+) -> Result<PredictiveIntervals, SimulationError> {
+  let prepared = prepare(model, noise_scale, rows, options, checked_interval_budget)?;
+  let count = rows.timestamps.len();
+  let mut paths = draw_paths(&prepared, options)?;
+  let mut trend_draws = zeroed(options.samples)?;
+  let mut value_draws = zeroed(options.samples)?;
+  let mut values = Vec::new();
+
+  values
+    .try_reserve_exact(count * 4)
+    .map_err(|_| SimulationError::ResourceLimit)?;
+
+  for row in 0..count {
+    draw_row(
+      &prepared,
+      &mut paths,
+      row,
+      &mut trend_draws,
+      &mut value_draws,
+    )?;
+
+    for draws in [&mut trend_draws, &mut value_draws] {
+      let (lower, upper) = row_interval(draws, options.interval_width, row)?;
+      values.push(lower);
+      values.push(upper);
+    }
+  }
+
+  Ok(PredictiveIntervals {
+    rows: count,
+    values,
+  })
+}
 
 fn quantile(sorted: &[f64], probability: f64) -> f64 {
   let position = (sorted.len() - 1) as f64 * probability;
@@ -430,6 +579,23 @@ fn quantile(sorted: &[f64], probability: f64) -> f64 {
   }
 }
 
+/// Sort one row's draws in place and return its equal-tailed `[lower, upper]` bounds.
+fn row_interval(draws: &mut [f64], width: f64, row: usize) -> Result<(f64, f64), SimulationError> {
+  if draws.iter().any(|value| !value.is_finite()) {
+    return Err(SimulationError::NonFiniteResult { row, sample: 0 });
+  }
+
+  draws.sort_unstable_by(f64::total_cmp);
+  let lower = quantile(draws, (1.0 - width) / 2.0);
+  let upper = quantile(draws, (1.0 + width) / 2.0);
+
+  if !lower.is_finite() || !upper.is_finite() || lower > upper {
+    return Err(SimulationError::NonFiniteResult { row, sample: 0 });
+  }
+
+  Ok((lower, upper))
+}
+
 /// Reduce already-generated samples without mutating their column identity.
 pub fn reduce_intervals(
   samples: &PredictiveSamples,
@@ -456,30 +622,16 @@ pub fn reduce_intervals(
   sorted
     .try_reserve_exact(samples.samples)
     .map_err(|_| SimulationError::ResourceLimit)?;
-  values.resize(length, 0.0);
-  let low = (1.0 - width) / 2.0;
-  let high = (1.0 + width) / 2.0;
 
   for row in 0..samples.rows {
-    for (column, source) in [&samples.trend, &samples.value].iter().enumerate() {
-      sorted.clear();
+    for source in [&samples.trend, &samples.value] {
       let start = row * samples.samples;
+      sorted.clear();
       sorted.extend_from_slice(&source[start..start + samples.samples]);
 
-      if sorted.iter().any(|value| !value.is_finite()) {
-        return Err(SimulationError::NonFiniteResult { row, sample: 0 });
-      }
-
-      sorted.sort_unstable_by(f64::total_cmp);
-      let lower = quantile(&sorted, low);
-      let upper = quantile(&sorted, high);
-
-      if !lower.is_finite() || !upper.is_finite() || lower > upper {
-        return Err(SimulationError::NonFiniteResult { row, sample: 0 });
-      }
-
-      values[row * 4 + column * 2] = lower;
-      values[row * 4 + column * 2 + 1] = upper;
+      let (lower, upper) = row_interval(&mut sorted, width, row)?;
+      values.push(lower);
+      values.push(upper);
     }
   }
 
@@ -750,6 +902,107 @@ mod tests {
     );
   }
 
+  /// The pre-streaming loop: each sample draws its changes, then every row's noise.
+  fn sample_major(
+    model: SimulationTrend<'_>,
+    input: SimulationRows<'_>,
+    options: SimulationOptions,
+  ) -> (Vec<f64>, Vec<f64>) {
+    let SimulationTrend::Linear { trend, scaling } = model else {
+      unreachable!("reference covers linear trends")
+    };
+    let prepared = prepare(model, 0.2, input, options, |_, _| Ok(())).unwrap();
+    let count = input.timestamps.len();
+    let mut rng = SimulationRng::new(options.seed);
+    let mut steps = MAX_POISSON_STEPS;
+    let mut trend_draws = vec![0.0; count * options.samples];
+    let mut value_draws = vec![0.0; count * options.samples];
+
+    for sample in 0..options.samples {
+      let changes = rng
+        .poisson(prepared.rate * prepared.horizon, &mut steps)
+        .unwrap();
+      let mut events: Vec<(f64, f64)> = (0..changes)
+        .map(|_| (1.0 + prepared.horizon * rng.uniform(), 0.0))
+        .collect();
+      events.sort_unstable_by(|left, right| left.0.total_cmp(&right.0));
+      for event in &mut events {
+        event.1 = rng.laplace(prepared.delta_scale);
+      }
+
+      for row in 0..count {
+        let time = (input.timestamps[row] - trend.time_origin) / trend.time_scale;
+        let draw = prepared.baseline[row] + scaling.scale * future_shift(time, &events);
+        let index = row * options.samples + sample;
+        trend_draws[index] = draw;
+        value_draws[index] =
+          draw * (1.0 + input.multiplicative[row]) + input.additive[row] + 0.2 * rng.normal();
+      }
+    }
+
+    (trend_draws, value_draws)
+  }
+
+  #[test]
+  fn row_streaming_replays_the_sample_major_draw_stream() {
+    let trend = linear(vec![0.5]);
+    let model = SimulationTrend::Linear {
+      trend: &trend,
+      scaling: SCALING,
+    };
+    let input = rows(
+      &[5.0, 12.0, 20.0, 31.0, 15.0],
+      &[1.0, 0.0, -2.0, 0.5, 0.0],
+      &[0.0, 0.25, -0.5, 0.0, 1.0],
+    );
+
+    for seed in [0, 42, u32::MAX] {
+      let options = SimulationOptions { seed, ..OPTIONS };
+      let streamed = simulate_map(model, 0.2, input, options).unwrap();
+      let (trend_draws, value_draws) = sample_major(model, input, options);
+
+      assert_eq!(streamed.trend, trend_draws, "seed {seed}");
+      assert_eq!(streamed.value, value_draws, "seed {seed}");
+      let future = &streamed.trend[3 * OPTIONS.samples..4 * OPTIONS.samples];
+      assert!(future.iter().any(|draw| *draw != future[0]));
+    }
+  }
+
+  #[test]
+  fn streamed_intervals_reduce_the_same_draws_beyond_the_sample_budget() {
+    let trend = linear(vec![0.5]);
+    let model = SimulationTrend::Linear {
+      trend: &trend,
+      scaling: SCALING,
+    };
+    let input = rows(&[5.0, 12.0, 20.0, 31.0], &[1.0; 4], &[0.0, 0.25, -0.5, 0.0]);
+    let streamed = simulate_intervals(model, 0.2, input, OPTIONS).unwrap();
+    let draws = simulate_map(model, 0.2, input, OPTIONS).unwrap();
+
+    assert_eq!(
+      streamed.values,
+      reduce_intervals(&draws, OPTIONS.interval_width)
+        .unwrap()
+        .values
+    );
+
+    let timestamps: Vec<f64> = (0..1_001).map(|row| 5.0 + row as f64 * 0.02).collect();
+    let zeros = vec![0.0; timestamps.len()];
+    let large = rows(&timestamps, &zeros, &zeros);
+    let options = SimulationOptions {
+      samples: 1_000,
+      ..OPTIONS
+    };
+
+    assert!(matches!(
+      simulate_map(model, 0.2, large, options),
+      Err(SimulationError::ResourceLimit)
+    ));
+    let intervals = simulate_intervals(model, 0.2, large, options).unwrap();
+    assert_eq!(intervals.rows, 1_001);
+    assert_eq!(intervals.values.len(), 4 * 1_001);
+  }
+
   #[test]
   fn intervals_reduce_the_same_samples_without_mutating_them() {
     let samples = PredictiveSamples {
@@ -951,6 +1204,16 @@ mod tests {
     );
     assert_eq!(
       checked_cells(500, 2_048),
+      Err(SimulationError::ResourceLimit)
+    );
+    assert_eq!(checked_interval_budget(500, 2_048), Ok(()));
+    assert_eq!(checked_interval_budget(10_000, 2_048), Ok(()));
+    assert_eq!(
+      checked_interval_budget(10_001, 1),
+      Err(SimulationError::ResourceLimit)
+    );
+    assert_eq!(
+      checked_interval_budget(1, 2_049),
       Err(SimulationError::ResourceLimit)
     );
 

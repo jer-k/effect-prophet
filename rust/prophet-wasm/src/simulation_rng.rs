@@ -10,6 +10,7 @@ pub(crate) enum SamplerError {
 }
 
 /// Four-word xoshiro128** state expanded from a caller-supplied u32 seed.
+#[derive(Clone)]
 pub(crate) struct SimulationRng {
   state: [u32; 4],
 }
@@ -41,6 +42,13 @@ impl SimulationRng {
     ];
 
     result
+  }
+
+  /// Advance past `draws` integer outputs, as if each had been consumed by a transform.
+  pub(crate) fn discard(&mut self, draws: usize) {
+    for _ in 0..draws {
+      self.next_u32();
+    }
   }
 
   /// One open-interval uniform; endpoint avoidance keeps log transforms finite.
@@ -151,6 +159,14 @@ mod tests {
       assert_eq!(a, b);
       assert!(a.0 > 0.0 && a.0 < 1.0 && a.1.is_finite() && a.2.is_finite());
     }
+
+    let mut skipped = SimulationRng::new(42);
+    let mut consumed = SimulationRng::new(42);
+    skipped.discard(6);
+    for _ in 0..3 {
+      consumed.normal();
+    }
+    assert_eq!(skipped.uniform(), consumed.uniform());
 
     let mut steps = 0;
     assert_eq!(

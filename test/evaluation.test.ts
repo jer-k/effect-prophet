@@ -1676,7 +1676,7 @@ describe("crossValidate intervals", () => {
     ).toBe(false);
   });
 
-  it("rejects per-fold or aggregate simulation work before fit", async () => {
+  it("rejects aggregate simulation work before fit but streams one large interval fold", async () => {
     const backend = makeTestFittingBackend(
       Result.fail(
         new FittingError({
@@ -1736,8 +1736,9 @@ describe("crossValidate intervals", () => {
       ),
     );
 
-    expect(perFold).toMatchObject({ input: "evaluation-plan" });
-    expect(backend.invocations).toHaveLength(0);
+    // 2,000 rows × 1,024 draws exceeds the sample-output budget but streams as intervals.
+    expect(perFold).toBeInstanceOf(EvaluationError);
+    expect(backend.invocations).toHaveLength(1);
   });
 
   it("rejects invalid backend state and preserves the point-first failure order", async () => {

@@ -10,7 +10,11 @@ import { describe, expect, it } from "vitest";
 import { logisticReconciliationCases } from "../../cases/growth/logistic/public-api.ts";
 import { parseBenchmarkCases } from "../case.ts";
 import { effectOptionsForCase } from "../effect-case.ts";
-import { generateBenchmarkData, logisticReconciliationDatasets } from "../generate-data.ts";
+import {
+  generateBenchmarkData,
+  logisticReconciliationDatasets,
+  uncertaintyDatasets,
+} from "../generate-data.ts";
 import { loadInputDataset } from "../inputs.ts";
 
 const parsedCases = () => Effect.runPromise(parseBenchmarkCases(logisticReconciliationCases));
@@ -18,7 +22,7 @@ const parsedCases = () => Effect.runPromise(parseBenchmarkCases(logisticReconcil
 describe("logistic Python reconciliation catalog", () => {
   it("admits defaults, empty points, and omitted controls rather than excluding differences", async () => {
     const cases = await parsedCases();
-    expect(cases).toHaveLength(28);
+    expect(cases).toHaveLength(29);
 
     for (const item of cases) {
       if (item.workload.kind !== "stage-f-map") throw new Error("Expected Stage F workload");
@@ -54,7 +58,7 @@ describe("logistic Python reconciliation catalog", () => {
     }
 
     expect(cases.filter((item) => item.id.includes("empty-"))).toHaveLength(4);
-    expect(cases.filter((item) => item.id.includes("defaults-"))).toHaveLength(2);
+    expect(cases.filter((item) => item.id.includes("defaults-"))).toHaveLength(3);
   });
 
   it("ties the defaults-256 solver oracle to the unchanged weekly dataset and gates", async () => {
@@ -127,7 +131,7 @@ describe("logistic Python reconciliation catalog", () => {
     }
   });
 
-  it("freezes complete v2 rows/checksums and leaves v1 bytes unchanged", async () => {
+  it("freezes complete v2/v3 rows/checksums and leaves v1 bytes unchanged", async () => {
     const directory = await mkdtemp(join(tmpdir(), "logistic-inputs-"));
     const v1Manifest = await readFile(new URL("../../inputs/v1/manifest.json", import.meta.url));
     const root = pathToFileURL(`${join(directory, "v2")}${sep}`);
@@ -142,6 +146,10 @@ describe("logistic Python reconciliation catalog", () => {
       await Effect.runPromise(generateBenchmarkData(root, logisticReconciliationDatasets));
       expect(await readFile(new URL("manifest.json", root))).toEqual(manifest);
 
+      await Effect.runPromise(
+        generateBenchmarkData(pathToFileURL(`${join(directory, "v3")}${sep}`), uncertaintyDatasets),
+      );
+
       for (const item of await parsedCases()) {
         const { dataset, bytes, sha256 } = await Effect.runPromise(
           loadInputDataset(directory, item),
@@ -151,7 +159,9 @@ describe("logistic Python reconciliation catalog", () => {
         expect(await readFile(new URL(`../../inputs/${item.dataset}`, import.meta.url))).toEqual(
           bytes,
         );
-        expect(dataset.predictionRows.length).toBe(dataset.observations.length + 24);
+        expect(dataset.predictionRows.length).toBe(
+          dataset.observations.length + (item.dataset.startsWith("v3/") ? 90 : 24),
+        );
         expect(dataset.predictionRows.every((row) => row.capacity !== undefined)).toBe(true);
         expect(dataset.observations.every((row) => Number.isFinite(row.value))).toBe(true);
       }
