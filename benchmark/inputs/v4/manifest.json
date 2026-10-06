@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "files": [
+    {
+      "file": "flat-correlated-regressors.json",
+      "recipe": "flat-correlated-regressors-v1:level=40+0.6*temperature(yearly-tracking,future+6)+yearly(phase=1)+weekly+constant-baseline+bounded-noise-x5:n=730:h=180",
+      "sha256": "bf69b68aa75b99e49972817a6f5e24654c3deabc452fa563fa2eee0340a9b121"
+    }
+  ]
+}

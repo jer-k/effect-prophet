@@ -8,6 +8,7 @@ import {
   fit,
   getRegressorCoefficients,
   predict,
+  predictUncertainty,
   prophetFittingBackendLayer,
 } from "../src/index";
 
@@ -231,7 +232,7 @@ describe("mixed component public lifecycle", () => {
       throw new Error("Expected flat MAP state");
     }
 
-    expect(model.fitSummary.method).toBe("mixed-flat-map-coordinate-v1");
+    expect(model.fitSummary.method).toBe("flat-map-stan-v1");
 
     const [forecast] = await Effect.runPromise(
       predict(model, [{ timestamp: timestamp(22), regressors: { promotion: 1 } }]),
@@ -245,5 +246,220 @@ describe("mixed component public lifecycle", () => {
     expect(forecast.events[0]?.mode).toBe("additive");
     expect(forecast.regressors[0]?.mode).toBe("multiplicative");
     expect(getRegressorCoefficients(model)[0]?.mode).toBe("multiplicative");
+  });
+
+  describe("additive flat features", () => {
+    const observations = Array.from({ length: 28 }, (_, index) => {
+      const active = index % 3 !== 0;
+      const weekly = active ? 1.5 * Math.sin((2 * Math.PI * index) / 7) : 0;
+      const promotion = index % 2;
+
+      return {
+        timestamp: timestamp(index),
+        value: 30 + weekly + 2 * promotion + (index === 7 ? 4 : 0) + 0.3 * Math.sin(index * 1.7),
+        conditions: { active },
+        regressors: { promotion },
+      };
+    });
+
+    const options = {
+      growth: "flat",
+      seasonalities: [
+        { name: "weekly-active", periodDays: 7, fourierOrder: 2, conditionName: "active" },
+      ],
+      events: [{ name: "campaign", date: "2025-01-08" }],
+      regressors: [{ name: "promotion", standardization: "never" }],
+    } as const;
+
+    const rows = [
+      { timestamp: timestamp(28), conditions: { active: true }, regressors: { promotion: 1 } },
+      { timestamp: timestamp(29), conditions: { active: false }, regressors: { promotion: 0 } },
+    ];
+
+    it("fits, predicts, simulates, and reloads all-additive flat features", async () => {
+      const model = await Effect.runPromise(
+        fit(observations, options).pipe(Effect.provide(prophetFittingBackendLayer)),
+      );
+
+      if (model.model !== "flat-map") {
+        throw new Error("Expected flat MAP state");
+      }
+
+      expect(model.fitSummary.method).toBe("flat-map-stan-v1");
+      expect(model.seasonalities.components[0]?.definition.mode).toBe("additive");
+      expect(model.events.mode).toBe("additive");
+      expect(getRegressorCoefficients(model)[0]?.coefficient).toBeCloseTo(2, 0);
+
+      const forecasts = await Effect.runPromise(predict(model, rows));
+
+      for (const forecast of forecasts) {
+        reconstruct(forecast);
+        expect(forecast.multiplicative).toBe(0);
+        expect(forecast.trend).toBeCloseTo(model.level + model.targetScaling.offset, 12);
+      }
+
+      expect(forecasts[1]?.seasonalities[0]).toEqual({
+        name: "weekly-active",
+        mode: "additive",
+        value: 0,
+      });
+
+      const intervals = await Effect.runPromise(predictUncertainty(model, rows, { seed: 3 }));
+
+      if (intervals.kind !== "intervals") {
+        throw new Error("Expected interval output");
+      }
+
+      expect(intervals.rows.map((row) => row.trend.upper - row.trend.lower)).toEqual([0, 0]);
+
+      for (const [index, row] of intervals.rows.entries()) {
+        const value = forecasts[index]?.value ?? Number.NaN;
+
+        expect(row.value.lower).toBeLessThan(value);
+        expect(row.value.upper).toBeGreaterThan(value);
+      }
+
+      const encoded = await Effect.runPromise(encodeFittedModel(model));
+
+      const restored = await Effect.runPromise(
+        decodeFittedModel(JSON.parse(JSON.stringify(encoded))),
+      );
+
+      expect(await Effect.runPromise(predict(restored, rows))).toEqual(forecasts);
+
+      if (encoded.modelKind !== "flat-map") {
+        throw new Error("Expected encoded flat MAP state");
+      }
+
+      const reducedMethod = {
+        ...encoded,
+        fitSummary: { ...encoded.fitSummary, method: "flat-map-coordinate-v1" as const },
+      };
+
+      const methodError = await Effect.runPromise(Effect.flip(decodeFittedModel(reducedMethod)));
+
+      expect(methodError).toBeInstanceOf(ModelSerializationError);
+    });
+
+    it("honors an explicit flat optimizer, as Prophet's fit(algorithm=...) does", async () => {
+      const lbfgs = { algorithm: "lbfgs", fallback: "none" } as const;
+
+      const featured = await Effect.runPromise(
+        fit(observations, { ...options, map: { optimizer: lbfgs } }).pipe(
+          Effect.provide(prophetFittingBackendLayer),
+        ),
+      );
+
+      if (featured.model !== "flat-map" || featured.fitSummary.method !== "flat-map-stan-v1") {
+        throw new Error("Expected a flat Stan fit");
+      }
+
+      expect(featured.fitSummary.optimization.algorithm).toBe("lbfgs");
+
+      const seasonalOnly = {
+        growth: "flat",
+        seasonalities: [{ name: "weekly-custom", periodDays: 7, fourierOrder: 2 }],
+      } as const;
+
+      const history = observations.map(({ timestamp, value }) => ({ timestamp, value }));
+
+      const [exact, requested] = await Effect.runPromise(
+        Effect.all([
+          fit(history, seasonalOnly),
+          fit(history, { ...seasonalOnly, map: { optimizer: lbfgs } }),
+        ]).pipe(Effect.provide(prophetFittingBackendLayer)),
+      );
+
+      expect(exact.fitSummary.method).toBe("flat-map-coordinate-v1");
+      expect(requested.fitSummary.method).toBe("flat-map-stan-v1");
+
+      const future = [timestamp(28), timestamp(29)];
+      const exactForecasts = await Effect.runPromise(predict(exact, future));
+      const requestedForecasts = await Effect.runPromise(predict(requested, future));
+
+      for (const [index, forecast] of requestedForecasts.entries()) {
+        expect(forecast.value).toBeCloseTo(exactForecasts[index]?.value ?? Number.NaN, 4);
+      }
+    });
+
+    it("records additive flat fit and prediction boundary spans", async () => {
+      const spans: Array<Tracer.Span> = [];
+
+      const tracer = Tracer.make({
+        span: (spanOptions) => {
+          const span = new Tracer.NativeSpan(spanOptions);
+          spans.push(span);
+
+          return span;
+        },
+      });
+
+      await Effect.runPromise(
+        Effect.gen(function* () {
+          const model = yield* fit(observations, options);
+
+          yield* predict(model, rows);
+        }).pipe(
+          Effect.provide(prophetFittingBackendLayer),
+          Effect.withSpan("flat.forecast.job"),
+          Effect.withTracer(tracer),
+        ),
+      );
+
+      const job = spans.find((span) => span.name === "flat.forecast.job");
+      const publicFit = spans.find((span) => span.name === "Prophet.fit");
+      const publicPredict = spans.find((span) => span.name === "Prophet.predict");
+      const wasmFit = spans.find((span) => span.name === "effect-prophet.wasm.fit");
+      const wasmPredict = spans.find((span) => span.name === "effect-prophet.wasm.predict");
+
+      if (
+        job === undefined ||
+        publicFit === undefined ||
+        publicPredict === undefined ||
+        wasmFit === undefined ||
+        wasmPredict === undefined
+      ) {
+        throw new Error("Expected complete additive flat tracing boundaries");
+      }
+
+      expect(Object.fromEntries(wasmFit.attributes)).toMatchObject({
+        "effect_prophet.model.type": "flat-map",
+        "effect_prophet.growth": "flat",
+        "effect_prophet.component.mode": "additive",
+        "effect_prophet.optimizer.requested_algorithm": "auto",
+        "effect_prophet.optimizer.algorithm": "newton",
+      });
+      expect(Object.fromEntries(wasmPredict.attributes)["effect_prophet.component.mode"]).toBe(
+        "additive",
+      );
+      expect(publicFit.parent.pipe(Option.getOrUndefined)?.spanId).toBe(job.spanId);
+      expect(wasmFit.parent.pipe(Option.getOrUndefined)?.spanId).toBe(publicFit.spanId);
+      expect(wasmPredict.parent.pipe(Option.getOrUndefined)?.spanId).toBe(publicPredict.spanId);
+
+      for (const span of [publicFit, publicPredict, wasmFit, wasmPredict]) {
+        expect(span.traceId).toBe(job.traceId);
+
+        if (!Predicate.isTagged("Ended")(span.status)) {
+          throw new Error(`Expected ${span.name} to end`);
+        }
+
+        expect(Exit.isSuccess(span.status.exit)).toBe(true);
+      }
+
+      for (const [child, parent] of [
+        [wasmFit, publicFit],
+        [wasmPredict, publicPredict],
+      ] as const) {
+        if (
+          !Predicate.isTagged("Ended")(child.status) ||
+          !Predicate.isTagged("Ended")(parent.status)
+        ) {
+          throw new Error("Expected ended spans");
+        }
+
+        expect(child.status.startTime).toBeGreaterThanOrEqual(parent.status.startTime);
+        expect(child.status.endTime).toBeLessThanOrEqual(parent.status.endTime);
+      }
+    });
   });
 });

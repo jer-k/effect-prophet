@@ -11,7 +11,7 @@ import {
   type FlatMapParameters,
   type PiecewiseMapParameters,
 } from "../fitted-model";
-import type { ChangepointSetting, MapOptimizerControls } from "../options";
+import type { ChangepointSetting } from "../options";
 import type { LinearOptimizer } from "../linear-optimizer";
 import {
   encodeStanOptimizer as encodeLinearOptimizer,
@@ -102,17 +102,18 @@ export const modesFor = (
   return modes;
 };
 
-const terminationFrom = (code: number | undefined) => {
-  if (code === 0) {
-    return "converged" as const;
-  }
+/** Whether any resolved seasonal, event, or regressor component is multiplicative. */
+export const hasMultiplicativeMode = (
+  seasonalities: SeasonalityLayout,
+  features: KnownAdditiveFeatures,
+): boolean =>
+  seasonalities.components.some((component) => component.definition.mode === "multiplicative") ||
+  features.layout.components.some((component) => component.mode === "multiplicative");
 
-  if (code === 1) {
-    return "constant-target-shortcut" as const;
-  }
-
-  return undefined;
-};
+const componentModeAttribute = (
+  seasonalities: SeasonalityLayout,
+  features: KnownAdditiveFeatures,
+): "mixed" | "additive" => (hasMultiplicativeMode(seasonalities, features) ? "mixed" : "additive");
 
 const fittingFailure = (
   packed: Float64Array,
@@ -120,10 +121,10 @@ const fittingFailure = (
   model: "flat" | "linear",
 ): Effect.Effect<never, FittingError> => {
   const status = readWasmStatus(packed);
-  const label = model === "flat" ? "Mixed flat MAP" : "Mixed linear MAP";
+  const label = model === "flat" ? "Flat MAP" : "Mixed linear MAP";
 
-  if (status === 11 && model === "linear") {
-    return linearOptimizerFailure(packed, observationCount);
+  if (status === 11) {
+    return linearOptimizerFailure(packed, observationCount, model);
   }
 
   if (status === undefined || packed.length !== 1) {
@@ -272,14 +273,15 @@ const decodeFlatFit = (
     return fittingFailure(packed, observationCount, "flat");
   }
 
-  const eventStart = 12 + seasonalities.coefficientCount;
+  const coefficientStart = 16;
+  const eventStart = coefficientStart + seasonalities.coefficientCount;
   const regressorStart = eventStart + events.layout.coefficientCount;
   const expectedLength = regressorStart + regressors.length;
-  const termination = terminationFrom(packed[11]);
+  const completion = decodeLinearCompletion(packed, 11);
 
   if (
     packed.length !== expectedLength ||
-    termination === undefined ||
+    completion.termination === undefined ||
     packed[1] !== targetScalingModeCode(scaling) ||
     packed[7] !== observationCount
   ) {
@@ -291,14 +293,14 @@ const decodeFlatFit = (
     targetScaling: { mode: scaling, offset: packed[2], scale: packed[3] },
     level: packed[4],
     seasonalities,
-    coefficients: Array.from(packed.slice(12, eventStart)),
+    coefficients: Array.from(packed.slice(coefficientStart, eventStart)),
     events,
     eventCoefficients: Array.from(packed.slice(eventStart, regressorStart)),
     regressors: fittedRegressors(regressors, packed, regressorStart),
     noiseScale: packed[5],
     fitSummary: {
-      method: "mixed-flat-map-coordinate-v1",
-      termination,
+      method: "flat-map-stan-v1",
+      ...completion,
       valueScale: packed[6],
       observationCount: packed[7],
       iterations: packed[8],
@@ -310,7 +312,7 @@ const decodeFlatFit = (
       wasmFittingError(observationCount, {
         reason: "backend-failure",
         backendPhase: "protocol",
-        message: "WASM mixed flat MAP fitting backend returned invalid fitted parameters",
+        message: "WASM flat Stan MAP fitting backend returned invalid fitted parameters",
       }),
     ),
   );
@@ -483,12 +485,15 @@ export const fitMixedLinearMapWithWasm = (
   );
 };
 
-/** Fit a mixed flat MAP model through one coarse Rust/WASM call. */
-export const fitMixedFlatMapWithWasm = (
+/**
+ * Fit a flat MAP model with events, regressors, conditions, or multiplicative
+ * components through Prophet's Stan density in one coarse Rust/WASM call.
+ */
+export const fitFlatStanMapWithWasm = (
   input: TrainingInput,
   scaling: TargetScalingMode,
   seasonalities: SeasonalityLayout,
-  optimizer: MapOptimizerControls,
+  optimizer: LinearOptimizer,
   masks: SeasonalityMaskMatrix,
   features: KnownAdditiveFeatures,
   events: EventCalendar = emptyEventCalendar,
@@ -499,13 +504,14 @@ export const fitMixedFlatMapWithWasm = (
   const coefficientCount = seasonalities.coefficientCount + features.layout.coefficientCount;
 
   return Effect.gen(function* () {
+    yield* annotateLinearRequest(optimizer);
     yield* Effect.annotateCurrentSpan({
-      "effect_prophet.component.mode": "mixed",
+      "effect_prophet.component.mode": componentModeAttribute(seasonalities, features),
     });
 
     const module = yield* attemptWasmFitting(defaultLoader, observationCount, {
       phase: "load",
-      message: "Failed to load the WASM mixed flat MAP fitting backend",
+      message: "Failed to load the WASM flat Stan MAP fitting backend",
     });
 
     const seasonal = packSeasonalitiesForFit(seasonalities);
@@ -527,14 +533,12 @@ export const fitMixedFlatMapWithWasm = (
           additional.offsets,
           additional.counts,
           modesFor(seasonalities, features),
-          optimizer.maxIterations,
-          optimizer.relativeTolerance,
-          optimizer.absoluteTolerance,
+          encodeLinearOptimizer(optimizer),
         ),
       observationCount,
       {
         phase: "execute",
-        message: "Failed to execute the WASM mixed flat MAP fitting backend",
+        message: "Failed to execute the WASM flat Stan MAP fitting backend",
       },
     );
 
@@ -547,6 +551,11 @@ export const fitMixedFlatMapWithWasm = (
       regressors,
     );
   }).pipe(
+    Effect.tap((model) =>
+      model.fitSummary.method === "flat-map-stan-v1"
+        ? annotateLinearCompletion(model.fitSummary)
+        : Effect.void,
+    ),
     Effect.tap(annotateFittedDimensions),
     Effect.withSpan(
       "effect-prophet.wasm.fit",
@@ -581,7 +590,7 @@ const predictMixed = (
 
   return Effect.gen(function* () {
     yield* Effect.annotateCurrentSpan({
-      "effect_prophet.component.mode": "mixed",
+      "effect_prophet.component.mode": componentModeAttribute(model.seasonalities, features),
     });
 
     const module = yield* attemptWasmPrediction(defaultLoader, firstTimestamp, {

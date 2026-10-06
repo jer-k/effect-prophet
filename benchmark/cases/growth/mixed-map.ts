@@ -1,3 +1,5 @@
+import { defaultLbfgsSettings } from "effect-prophet";
+
 import type { BenchmarkCase } from "../../tools/case.ts";
 import { outputFirstQuality, pythonDefaultOptimizer } from "../prophet-defaults.ts";
 import { linearComparison, linearOptimizerQuality, linearOptimizers } from "./linear/controls.ts";
@@ -23,10 +25,15 @@ const tolerances = {
   persistence: { absolute: 1e-8, relative: 0 },
 };
 
-const pythonOptimizer = {
-  algorithm: "LBFGS",
-  maxIterations: 10000,
-  newtonFallback: false,
+/** Both libraries pinned to L-BFGS without the Newton fallback, as `fit(algorithm="LBFGS")`. */
+const pinnedLbfgs = {
+  effectOptimizer: {
+    algorithm: "lbfgs",
+    maxIterations: 10_000,
+    fallback: "none",
+    lbfgs: defaultLbfgsSettings,
+  },
+  pythonOptimizer: { algorithm: "LBFGS", maxIterations: 10000, newtonFallback: false },
 } as const;
 
 const noPoints = { mode: "explicit", timestamps: [] } as const;
@@ -44,6 +51,46 @@ const campaign = {
   upperWindowDays: 0,
   priorScale: 10,
 };
+
+/** Flat growth where both libraries choose Prophet's default optimizer. */
+const flatDefaultsCase = (
+  id: string,
+  dataset: string,
+  evidenceId: "stage-f-flat-additive-v1" | "stage-f-flat-mixed-v1",
+  configuration: Pick<
+    Extract<BenchmarkCase["workload"], { kind: "stage-f-map" }>["configuration"],
+    "scaling" | "seasonalities" | "events" | "regressors"
+  >,
+): BenchmarkCase => ({
+  id,
+  dataset,
+  workload: {
+    kind: "stage-f-map",
+    comparison: { kind: "equivalent-objective", evidenceId },
+    configuration: {
+      growth: "flat",
+      seasonalityMode: "additive",
+      holidaysMode: "additive",
+      changepoints: noPoints,
+      changepointPriorScale: 0.05,
+      ...configuration,
+    },
+    pythonOptimizer: pythonDefaultOptimizer,
+  },
+  phases,
+  warmupIterations: 1,
+  measuredIterations: 2,
+  independentRuns: 2,
+  timeoutSeconds: 600,
+  correctnessTolerances: tolerances,
+});
+
+const additiveFlatComponents = {
+  scaling: "minmax",
+  seasonalities: [{ ...weekly, conditionName: "active" }],
+  events: [campaign],
+  regressors: [promotion],
+} as const;
 
 /** Deterministic growth, scaling, and mixed-component MAP workloads for both adapters. */
 export const growthScalingAndMixedMapCases: ReadonlyArray<BenchmarkCase> = [
@@ -91,7 +138,7 @@ export const growthScalingAndMixedMapCases: ReadonlyArray<BenchmarkCase> = [
         events: [campaign],
         regressors: [promotion],
       },
-      pythonOptimizer,
+      ...pinnedLbfgs,
     },
     phases,
     warmupIterations: 1,
@@ -144,7 +191,7 @@ export const growthScalingAndMixedMapCases: ReadonlyArray<BenchmarkCase> = [
         events: [campaign],
         regressors: [promotion],
       },
-      pythonOptimizer,
+      ...pinnedLbfgs,
     },
     phases,
     warmupIterations: 1,
@@ -237,4 +284,51 @@ export const growthScalingAndMixedMapCases: ReadonlyArray<BenchmarkCase> = [
     timeoutSeconds: 600,
     correctnessTolerances: tolerances,
   },
+];
+
+/**
+ * Flat Stan workloads on Prophet's default optimizer, kept apart from the pinned mixed
+ * flat cases whose prefix and scaling variants `flatGrowthCases` derives.
+ */
+export const flatDefaultOptimizerCases: ReadonlyArray<BenchmarkCase> = [
+  flatDefaultsCase(
+    "flat-additive-components",
+    "v1/flat-mixed-components.json",
+    "stage-f-flat-additive-v1",
+    additiveFlatComponents,
+  ),
+  flatDefaultsCase(
+    "flat-additive-components-large",
+    "v1/flat-mixed-components-large.json",
+    "stage-f-flat-additive-v1",
+    additiveFlatComponents,
+  ),
+  flatDefaultsCase(
+    "flat-mixed-components-absmax-defaults",
+    "v1/flat-mixed-components.json",
+    "stage-f-flat-mixed-v1",
+    {
+      scaling: "absmax",
+      seasonalities: [{ ...weekly, conditionName: "active", mode: "multiplicative" }],
+      events: [campaign],
+      regressors: [promotion],
+    },
+  ),
+  flatDefaultsCase(
+    "flat-correlated-regressors",
+    "v4/flat-correlated-regressors.json",
+    "stage-f-flat-additive-v1",
+    {
+      scaling: "absmax",
+      seasonalities: [
+        { name: "yearly-custom", periodDays: 365.25, fourierOrder: 10, priorScale: 10 },
+        weekly,
+      ],
+      events: [],
+      regressors: [
+        { name: "temperature", priorScale: 10, standardization: "auto" },
+        { name: "baseline", priorScale: 10, standardization: "never" },
+      ],
+    },
+  ),
 ];

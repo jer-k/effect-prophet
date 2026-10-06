@@ -55,6 +55,10 @@ Serialization is exercised by lifecycle phases rather than copied into separate 
 | `flat-prefix-232-absmax` | [v1/flat-mixed-components-large-prefix-232.json](inputs/v1/flat-mixed-components-large-prefix-232.json) | equivalent-objective | 5 |
 | `flat-prefix-232-minmax` | [v1/flat-mixed-components-large-prefix-232.json](inputs/v1/flat-mixed-components-large-prefix-232.json) | equivalent-objective | 5 |
 | `flat-mixed-components-large-absmax` | [v1/flat-mixed-components-large.json](inputs/v1/flat-mixed-components-large.json) | equivalent-objective | 5 |
+| `flat-additive-components` | [v1/flat-mixed-components.json](inputs/v1/flat-mixed-components.json) | equivalent-objective | 9 |
+| `flat-additive-components-large` | [v1/flat-mixed-components-large.json](inputs/v1/flat-mixed-components-large.json) | equivalent-objective | 9 |
+| `flat-mixed-components-absmax-defaults` | [v1/flat-mixed-components.json](inputs/v1/flat-mixed-components.json) | equivalent-objective | 9 |
+| `flat-correlated-regressors` | [v4/flat-correlated-regressors.json](inputs/v4/flat-correlated-regressors.json) | equivalent-objective | 9 |
 
 ## growth/linear
 

@@ -518,10 +518,7 @@ const validateCaseRelationships = (
         benchmarkCase.workload.fitRequest === "growth-only";
 
       if (
-        (flat &&
-          (!emptyPoints ||
-            points.mode !== "explicit" ||
-            benchmarkCase.workload.effectOptimizer !== undefined)) ||
+        (flat && (!emptyPoints || points.mode !== "explicit")) ||
         (configuration.growth === "linear" &&
           !growthOnly &&
           (emptyPoints || benchmarkCase.workload.effectOptimizer === undefined))

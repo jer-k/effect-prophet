@@ -5,7 +5,6 @@ import {
   FittingError,
   InputValidationError,
   PredictionError,
-  UnsupportedConfigurationError,
   inputValidationErrorFromIssue,
 } from "./errors";
 import type { FittingBackend } from "./internal/fitting-backend";
@@ -613,7 +612,7 @@ const foldOptions = (
 const foldFailure = (
   fold: EvaluationFoldIndexes,
   stage: "fit" | "predict" | "result" | "uncertainty" | "interval-result",
-  cause: InputValidationError | UnsupportedConfigurationError | FittingError | PredictionError,
+  cause: InputValidationError | FittingError | PredictionError,
   rowIndex?: number,
 ): EvaluationError => {
   const reason = {

@@ -139,7 +139,7 @@ const ModelSchema = Schema.Struct({
   fitSummary: Schema.Struct({
     method: Schema.Literals([
       "flat-map-coordinate-v1",
-      "mixed-flat-map-coordinate-v1",
+      "flat-map-stan-v1",
       "piecewise-map-stan-v2",
       "mixed-piecewise-map-stan-v2",
       "logistic-piecewise-map-stan-v2",
@@ -418,9 +418,7 @@ const reportConsistency = (
       (report.model.kind === "logistic-piecewise-map" &&
         report.model.fitSummary.method !== "logistic-piecewise-map-stan-v2") ||
       (report.model.kind === "flat-map" &&
-        !["flat-map-coordinate-v1", "mixed-flat-map-coordinate-v1"].includes(
-          report.model.fitSummary.method,
-        )) ||
+        !["flat-map-coordinate-v1", "flat-map-stan-v1"].includes(report.model.fitSummary.method)) ||
       (report.model.kind === "linear-piecewise-map" &&
         !["piecewise-map-stan-v2", "mixed-piecewise-map-stan-v2"].includes(
           report.model.fitSummary.method,

@@ -5,7 +5,6 @@ import {
   FittingError,
   InputValidationError,
   PredictionError,
-  UnsupportedConfigurationError,
   fit,
   predict,
   prophetFittingBackendLayer,
@@ -30,11 +29,7 @@ const linearForecastPrecisionDigits = 6;
 describe("linear MAP Prophet integration", () => {
   it("exposes validation and numerical failures precisely", () => {
     expectTypeOf(fit(observations)).toEqualTypeOf<
-      Effect.Effect<
-        FittedProphet,
-        InputValidationError | UnsupportedConfigurationError | FittingError,
-        FittingBackend
-      >
+      Effect.Effect<FittedProphet, InputValidationError | FittingError, FittingBackend>
     >();
   });
 

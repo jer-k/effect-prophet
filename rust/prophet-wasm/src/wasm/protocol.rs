@@ -61,7 +61,6 @@ pub(crate) fn map_termination_code(termination: crate::piecewise_map::MapTermina
   use crate::piecewise_map::MapTermination;
   use crate::stan::linear_optimizer::LinearTermination as T;
   match termination {
-    MapTermination::Converged => 0.0,
     MapTermination::ConstantTargetShortcut => 1.0,
     MapTermination::Stan(summary) => match summary.termination {
       T::NewtonObjectiveChange => 2.0,

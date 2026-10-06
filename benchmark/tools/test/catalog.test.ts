@@ -10,23 +10,42 @@ import {
   renderCaseCatalog,
   selectCases,
 } from "../catalog.ts";
+import type { BenchmarkCase } from "../case.ts";
 import { loadRunEvidence } from "../stored-results.ts";
 
 const recordedDirectory = fileURLToPath(
   new URL("../../results/retained/flat-growth/2026-10-05T010915-213Z-730ead62/", import.meta.url),
 );
 
+/** Flat feature cases now pin Effect to Python's L-BFGS; the recorded run predates that. */
+const withoutFlatOptimizerPin = (item: BenchmarkCase | undefined) => {
+  if (
+    item === undefined ||
+    item.workload.kind === "linear-map" ||
+    item.workload.kind === "fixed-linear-prediction" ||
+    item.workload.configuration.growth !== "flat"
+  ) {
+    return item;
+  }
+
+  const { effectOptimizer: _optimizer, ...workload } = item.workload;
+
+  return { ...item, workload };
+};
+
 describe("capability catalog", () => {
   it("preserves original settings/gates while selecting only requested cases", async () => {
     const catalog = await Effect.runPromise(loadCaseCatalog());
     const recorded = await Effect.runPromise(loadRunEvidence(recordedDirectory));
-    expect(catalog).toHaveLength(118);
-    expect(new Set(catalog.map((item) => item.id)).size).toBe(118);
+    expect(catalog).toHaveLength(122);
+    expect(new Set(catalog.map((item) => item.id)).size).toBe(122);
 
     for (const original of recorded.cases) {
       const { datasetIdentity: _identity, ...declaration } = original;
 
-      expect(catalog.find((item) => item.id === original.id)).toEqual(declaration);
+      expect(withoutFlatOptimizerPin(catalog.find((item) => item.id === original.id))).toEqual(
+        declaration,
+      );
     }
 
     const selected = await Effect.runPromise(

@@ -9,13 +9,13 @@ import {
   FittingError,
   InputValidationError,
   PredictionError,
-  UnsupportedConfigurationError,
   type ValidationInput,
   type ValidationIssue,
 } from "./errors";
 import type { EventCalendar } from "./event";
 import {
   parseFittedModel,
+  requiresFlatStanMap,
   type FittedFlatMapProphet,
   type FittedLogisticMapProphet,
   type FittedPiecewiseMapProphet,
@@ -55,11 +55,11 @@ import {
   predictPiecewiseMapFeaturesWithWasm,
   predictPiecewiseMapWithWasm,
 } from "./internal/wasm-piecewise-map-backend";
+import { defaultLinearOptimizer } from "./linear-optimizer";
 import { decodeObservations, type Observations } from "./observation";
 import {
   checkExplicitChangepointBounds,
   decodeOptions,
-  defaultFlatOptimizerControls,
   optionsValidationErrorFromSeasonality,
   type EncodedProphetOptions,
   type ProphetOptions,
@@ -210,10 +210,6 @@ const makeFitPlan = (
     });
   }
 
-  const hasMultiplicativeComponent =
-    layout.components.some((component) => component.definition.mode === "multiplicative") ||
-    additionalFeatures.layout.components.some((component) => component.mode === "multiplicative");
-
   if (options.growth === "linear") {
     const map = options.map;
 
@@ -232,11 +228,15 @@ const makeFitPlan = (
 
   const firstComponent = layout.components[0];
 
-  if (options.growth === "flat" && hasMultiplicativeComponent) {
-    return FitPlan.FlatMixedMap({
+  if (
+    options.growth === "flat" &&
+    (options.map !== undefined ||
+      requiresFlatStanMap({ seasonalities: layout, events: options.events, regressors }))
+  ) {
+    return FitPlan.FlatStanMap({
       scaling: options.scaling ?? defaultTargetScalingMode,
       seasonalities: layout,
-      optimizer: defaultFlatOptimizerControls,
+      optimizer: options.map?.optimizer ?? defaultLinearOptimizer,
       seasonalityMasks: masks,
       additionalFeatures,
       events: options.events,
@@ -403,11 +403,7 @@ const regressorFeatureValidationError = (
 export const fit = Effect.fn("Prophet.fit")(function* (
   observationsInput: Parameters<typeof decodeObservations>[0],
   optionsInput?: EncodedProphetOptions,
-): Effect.fn.Return<
-  FittedProphet,
-  InputValidationError | UnsupportedConfigurationError | FittingError,
-  FittingBackend
-> {
+): Effect.fn.Return<FittedProphet, InputValidationError | FittingError, FittingBackend> {
   const observations = yield* decodeObservations(observationsInput);
   const options = yield* decodeOptions(optionsInput);
 
@@ -416,47 +412,6 @@ export const fit = Effect.fn("Prophet.fit")(function* (
   );
 
   const conditionNames = conditionNamesFromLayout(resolved.layout);
-
-  const hasMultiplicativeRequest =
-    resolved.layout.components.some(
-      (component) => component.definition.mode === "multiplicative",
-    ) ||
-    options.events.layout.components.some((component) => component.mode === "multiplicative") ||
-    options.regressors.some((regressor) => regressor.mode === "multiplicative");
-
-  if (options.growth === "flat" && conditionNames.length > 0 && !hasMultiplicativeRequest) {
-    return yield* Effect.fail(
-      new UnsupportedConfigurationError({
-        option: "conditional-seasonalities",
-        model: "flat-map",
-        message: "Conditional seasonalities require linear piecewise MAP fitting",
-      }),
-    );
-  }
-
-  if (
-    options.growth === "flat" &&
-    options.events.layout.coefficientCount > 0 &&
-    !hasMultiplicativeRequest
-  ) {
-    return yield* Effect.fail(
-      new UnsupportedConfigurationError({
-        option: "events",
-        model: "flat-map",
-        message: "Custom events require linear piecewise MAP fitting",
-      }),
-    );
-  }
-
-  if (options.growth === "flat" && options.regressors.length > 0 && !hasMultiplicativeRequest) {
-    return yield* Effect.fail(
-      new UnsupportedConfigurationError({
-        option: "regressors",
-        model: "flat-map",
-        message: "Additional regressors require linear piecewise MAP fitting",
-      }),
-    );
-  }
 
   if (observations.length < 2) {
     return yield* Effect.fail(
@@ -967,8 +922,8 @@ const predictLogisticMapForecasts = (
     return yield* forecastsFromMixedBatch(model, timestamps, batch);
   });
 
-const isMixedModel = (model: FittedFlatMapProphet | FittedPiecewiseMapProphet): boolean =>
-  model.fitSummary.method === "mixed-flat-map-coordinate-v1" ||
+const usesMixedPrediction = (model: FittedFlatMapProphet | FittedPiecewiseMapProphet): boolean =>
+  model.fitSummary.method === "flat-map-stan-v1" ||
   model.fitSummary.method === "mixed-piecewise-map-stan-v2";
 
 const predictFittedSeasonalModel = (
@@ -977,7 +932,7 @@ const predictFittedSeasonalModel = (
   alignedRegressorValues: ReadonlyArray<ReadonlyArray<number>>,
   masks: SeasonalityMaskMatrix,
 ): Effect.Effect<Forecasts, PredictionError | InputValidationError> =>
-  isMixedModel(model)
+  usesMixedPrediction(model)
     ? predictMixedMapForecasts(model, timestamps, alignedRegressorValues, masks)
     : Match.value(model).pipe(
         Match.discriminatorsExhaustive("model")({

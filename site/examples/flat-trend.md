@@ -20,8 +20,3 @@ case side by side.
 - The data has no real trend, and you don't want the model to invent one from a few unusual
   weeks.
 - You are forecasting far ahead and would rather assume "same as now" than extend a slope.
-
-::: warning Current limitation
-With a flat trend, events, regressors and switchable patterns only work if the model also has at
-least one multiplicative piece. Otherwise `fit` fails with an `UnsupportedConfigurationError`.
-:::

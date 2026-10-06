@@ -17,17 +17,22 @@ const loadDataset = async (root: URL, file: string) =>
   Effect.runPromise(parseBenchmarkDataset(JSON.parse(await readFile(new URL(file, root), "utf8"))));
 
 describe("flat-growth reconciliation catalog", () => {
-  it("parses unique flat cases without pretending to expose Effect flat optimizer controls", async () => {
+  it("parses unique flat cases and pins Effect's optimizer only where features need Stan", async () => {
     const cases = await Effect.runPromise(parseBenchmarkCases(flatGrowthCases));
 
     expect(cases).toHaveLength(20);
     expect(new Set(cases.map((item) => item.id)).size).toBe(cases.length);
 
     for (const item of cases) {
-      expect(effectOptionsForCase(item)?.growth).toBe("flat");
+      const options = effectOptionsForCase(item);
+
+      expect(options?.growth).toBe("flat");
 
       if (item.workload.kind === "stage-f-map" || item.workload.kind === "evaluation") {
-        expect(item.workload.effectOptimizer).toBeUndefined();
+        const featured = item.workload.configuration.regressors.length > 0;
+
+        expect(item.workload.effectOptimizer?.algorithm).toBe(featured ? "lbfgs" : undefined);
+        expect(options !== undefined && "map" in options).toBe(featured);
         expect(item.workload.configuration.changepoints).toEqual({
           mode: "explicit",
           timestamps: [],

@@ -1,0 +1,7108 @@
+{
+  "id": "flat-correlated-regressors",
+  "recipe": "flat-correlated-regressors-v1:level=40+0.6*temperature(yearly-tracking,future+6)+yearly(phase=1)+weekly+constant-baseline+bounded-noise-x5:n=730:h=180",
+  "observations": [
+    {
+      "timestamp": "2020-01-01T00:00:00.000Z",
+      "value": 44.8579419696,
+      "regressors": {
+        "temperature": 5,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-01-02T00:00:00.000Z",
+      "value": 46.8376961389,
+      "regressors": {
+        "temperature": 6.17646994488,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-01-03T00:00:00.000Z",
+      "value": 46.6826540686,
+      "regressors": {
+        "temperature": 6.46668933025,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-01-04T00:00:00.000Z",
+      "value": 45.3153537846,
+      "regressors": {
+        "temperature": 5.65438341747,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-01-05T00:00:00.000Z",
+      "value": 44.105392924,
+      "regressors": {
+        "temperature": 4.35988386654,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-01-06T00:00:00.000Z",
+      "value": 43.0123533095,
+      "regressors": {
+        "temperature": 3.57067244751,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-01-07T00:00:00.000Z",
+      "value": 42.7777477326,
+      "regressors": {
+        "temperature": 3.89407220677,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-01-08T00:00:00.000Z",
+      "value": 44.5147028138,
+      "regressors": {
+        "temperature": 5.09763451548,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-01-09T00:00:00.000Z",
+      "value": 46.6736428929,
+      "regressors": {
+        "temperature": 6.28504791968,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-01-10T00:00:00.000Z",
+      "value": 46.7741771597,
+      "regressors": {
+        "temperature": 6.5744444825,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-01-11T00:00:00.000Z",
+      "value": 45.2983547228,
+      "regressors": {
+        "temperature": 5.76577490285,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-01-12T00:00:00.000Z",
+      "value": 44.1197555892,
+      "regressors": {
+        "temperature": 4.49219622758,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-01-13T00:00:00.000Z",
+      "value": 43.4471568879,
+      "regressors": {
+        "temperature": 3.74090495625,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-01-14T00:00:00.000Z",
+      "value": 43.3866242359,
+      "regressors": {
+        "temperature": 4.10603949372,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-01-15T00:00:00.000Z",
+      "value": 44.9404587222,
+      "regressors": {
+        "temperature": 5.33904048206,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-01-16T00:00:00.000Z",
+      "value": 47.1713876978,
+      "regressors": {
+        "temperature": 6.53674735044,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-01-17T00:00:00.000Z",
+      "value": 47.4807187139,
+      "regressors": {
+        "temperature": 6.82488336655,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-01-18T00:00:00.000Z",
+      "value": 45.7764277536,
+      "regressors": {
+        "temperature": 6.01968133158,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-01-19T00:00:00.000Z",
+      "value": 44.2640477882,
+      "regressors": {
+        "temperature": 4.7669447861,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-01-20T00:00:00.000Z",
+      "value": 43.6668700843,
+      "regressors": {
+        "temperature": 4.05330598166,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-01-21T00:00:00.000Z",
+      "value": 43.6421644216,
+      "regressors": {
+        "temperature": 4.45955084458,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-01-22T00:00:00.000Z",
+      "value": 44.8613658108,
+      "regressors": {
+        "temperature": 5.72107971658,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-01-23T00:00:00.000Z",
+      "value": 46.9755668805,
+      "regressors": {
+        "temperature": 6.92813842438,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-01-24T00:00:00.000Z",
+      "value": 47.5597546771,
+      "regressors": {
+        "temperature": 7.21428880055,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-01-25T00:00:00.000Z",
+      "value": 45.903550786,
+      "regressors": {
+        "temperature": 6.412097895,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-01-26T00:00:00.000Z",
+      "value": 44.2477434852,
+      "regressors": {
+        "temperature": 5.17983335817,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-01-27T00:00:00.000Z",
+      "value": 43.9096564006,
+      "regressors": {
+        "temperature": 4.50328446016,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-01-28T00:00:00.000Z",
+      "value": 44.279377689,
+      "regressors": {
+        "temperature": 4.94972067093,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-01-29T00:00:00.000Z",
+      "value": 45.4555377068,
+      "regressors": {
+        "temperature": 6.2385770793,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-01-30T00:00:00.000Z",
+      "value": 47.4719211874,
+      "regressors": {
+        "temperature": 7.45376337152,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-01-31T00:00:00.000Z",
+      "value": 48.3040470202,
+      "regressors": {
+        "temperature": 7.73692517196,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-02-01T00:00:00.000Z",
+      "value": 46.7100100917,
+      "regressors": {
+        "temperature": 6.93701138994,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-02-02T00:00:00.000Z",
+      "value": 44.7068924991,
+      "regressors": {
+        "temperature": 5.72456795995,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-02-03T00:00:00.000Z",
+      "value": 44.2402260678,
+      "regressors": {
+        "temperature": 5.08426275684,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-02-04T00:00:00.000Z",
+      "value": 44.7556765115,
+      "regressors": {
+        "temperature": 5.56968871867,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-02-05T00:00:00.000Z",
+      "value": 45.7402888993,
+      "regressors": {
+        "temperature": 6.88439532297,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-02-06T00:00:00.000Z",
+      "value": 47.4054173985,
+      "regressors": {
+        "temperature": 8.10621544849,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-02-07T00:00:00.000Z",
+      "value": 48.3254115923,
+      "regressors": {
+        "temperature": 8.38512153197,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-02-08T00:00:00.000Z",
+      "value": 46.9353205605,
+      "regressors": {
+        "temperature": 7.58648739965,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-02-09T00:00:00.000Z",
+      "value": 44.7913269406,
+      "regressors": {
+        "temperature": 6.39294805054,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-02-10T00:00:00.000Z",
+      "value": 44.3182216987,
+      "regressors": {
+        "temperature": 5.78777194464,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-02-11T00:00:00.000Z",
+      "value": 45.2449295255,
+      "regressors": {
+        "temperature": 6.31071935573,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-02-12T00:00:00.000Z",
+      "value": 46.4352246513,
+      "regressors": {
+        "temperature": 7.64953835853,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-02-13T00:00:00.000Z",
+      "value": 47.9502858071,
+      "regressors": {
+        "temperature": 8.87624615032,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-02-14T00:00:00.000Z",
+      "value": 48.9776966488,
+      "regressors": {
+        "temperature": 9.14938272062,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-02-15T00:00:00.000Z",
+      "value": 47.8700225279,
+      "regressors": {
+        "temperature": 8.35078529974,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-02-16T00:00:00.000Z",
+      "value": 45.5820873668,
+      "regressors": {
+        "temperature": 7.17498538629,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-02-17T00:00:00.000Z",
+      "value": 44.8145937604,
+      "regressors": {
+        "temperature": 6.60357447317,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-02-18T00:00:00.000Z",
+      "value": 45.8205809978,
+      "regressors": {
+        "temperature": 7.16232801914,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-02-19T00:00:00.000Z",
+      "value": 47.0397614306,
+      "regressors": {
+        "temperature": 8.52328144213,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-02-20T00:00:00.000Z",
+      "value": 48.1762376922,
+      "regressors": {
+        "temperature": 9.75289909724,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-02-21T00:00:00.000Z",
+      "value": 49.0031847424,
+      "regressors": {
+        "temperature": 10.018526913,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-02-22T00:00:00.000Z",
+      "value": 48.101772889,
+      "regressors": {
+        "temperature": 9.21849942358,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-02-23T00:00:00.000Z",
+      "value": 45.8225666343,
+      "regressors": {
+        "temperature": 8.05904876498,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-02-24T00:00:00.000Z",
+      "value": 44.8622663809,
+      "regressors": {
+        "temperature": 7.51981245011,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-02-25T00:00:00.000Z",
+      "value": 46.0769466672,
+      "regressors": {
+        "temperature": 8.11243299019,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-02-26T00:00:00.000Z",
+      "value": 47.6826058761,
+      "regressors": {
+        "temperature": 9.4933263979,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-02-27T00:00:00.000Z",
+      "value": 48.7973429442,
+      "regressors": {
+        "temperature": 10.7236686577,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-02-28T00:00:00.000Z",
+      "value": 49.5495270194,
+      "regressors": {
+        "temperature": 10.9798475949,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-02-29T00:00:00.000Z",
+      "value": 48.9488054483,
+      "regressors": {
+        "temperature": 10.1767243427,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-03-01T00:00:00.000Z",
+      "value": 46.8235255576,
+      "regressors": {
+        "temperature": 9.03203256373,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-03-02T00:00:00.000Z",
+      "value": 45.5882053256,
+      "regressors": {
+        "temperature": 8.52317938808,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-03-03T00:00:00.000Z",
+      "value": 46.6980279934,
+      "regressors": {
+        "temperature": 9.14753029944,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-03-04T00:00:00.000Z",
+      "value": 48.457550084,
+      "regressors": {
+        "temperature": 10.5459796285,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-03-05T00:00:00.000Z",
+      "value": 49.3739307816,
+      "regressors": {
+        "temperature": 11.77468101,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-03-06T00:00:00.000Z",
+      "value": 49.7229251778,
+      "regressors": {
+        "temperature": 12.0192976208,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-03-07T00:00:00.000Z",
+      "value": 49.1394594395,
+      "regressors": {
+        "temperature": 11.2112418685,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-03-08T00:00:00.000Z",
+      "value": 47.1710899787,
+      "regressors": {
+        "temperature": 10.0795466296,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-03-09T00:00:00.000Z",
+      "value": 45.7470347467,
+      "regressors": {
+        "temperature": 9.59911292934,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-03-10T00:00:00.000Z",
+      "value": 46.7779665204,
+      "regressors": {
+        "temperature": 10.2528892288,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-03-11T00:00:00.000Z",
+      "value": 48.8957339382,
+      "regressors": {
+        "temperature": 11.6663503353,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-03-12T00:00:00.000Z",
+      "value": 50.0124241904,
+      "regressors": {
+        "temperature": 12.8908950211,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-03-13T00:00:00.000Z",
+      "value": 50.2231988888,
+      "regressors": {
+        "temperature": 13.1216926913,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-03-14T00:00:00.000Z",
+      "value": 49.7745346778,
+      "regressors": {
+        "temperature": 12.3067270664,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-03-15T00:00:00.000Z",
+      "value": 48.1621824466,
+      "regressors": {
+        "temperature": 11.1861247727,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-03-16T00:00:00.000Z",
+      "value": 46.6841902595,
+      "regressors": {
+        "temperature": 10.7320057573,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-03-17T00:00:00.000Z",
+      "value": 47.4695062845,
+      "regressors": {
+        "temperature": 11.4127655788,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-03-18T00:00:00.000Z",
+      "value": 49.6853684393,
+      "regressors": {
+        "temperature": 12.8385660779,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-03-19T00:00:00.000Z",
+      "value": 50.8498563121,
+      "regressors": {
+        "temperature": 14.0563200318,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-03-20T00:00:00.000Z",
+      "value": 50.6739884349,
+      "regressors": {
+        "temperature": 14.2709312987,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-03-21T00:00:00.000Z",
+      "value": 49.9748959382,
+      "regressors": {
+        "temperature": 13.4469703,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-03-22T00:00:00.000Z",
+      "value": 48.518437497,
+      "regressors": {
+        "temperature": 12.3354488426,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-03-23T00:00:00.000Z",
+      "value": 47.007031473,
+      "regressors": {
+        "temperature": 11.9054316399,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-03-24T00:00:00.000Z",
+      "value": 47.5274582879,
+      "regressors": {
+        "temperature": 12.6106296131,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-03-25T00:00:00.000Z",
+      "value": 49.8658398188,
+      "regressors": {
+        "temperature": 14.0460025499,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-03-26T00:00:00.000Z",
+      "value": 51.3730439145,
+      "regressors": {
+        "temperature": 15.2542473961,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-03-27T00:00:00.000Z",
+      "value": 51.1712736826,
+      "regressors": {
+        "temperature": 15.4502279606,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-03-28T00:00:00.000Z",
+      "value": 50.4044038287,
+      "regressors": {
+        "temperature": 14.6151120878,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-03-29T00:00:00.000Z",
+      "value": 49.2888854581,
+      "regressors": {
+        "temperature": 13.5105851419,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-03-30T00:00:00.000Z",
+      "value": 48.0137172224,
+      "regressors": {
+        "temperature": 13.1023833323,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-03-31T00:00:00.000Z",
+      "value": 48.3285259772,
+      "regressors": {
+        "temperature": 13.8294053782,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-04-01T00:00:00.000Z",
+      "value": 50.5930717793,
+      "regressors": {
+        "temperature": 15.2715242453,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-04-02T00:00:00.000Z",
+      "value": 52.2842741563,
+      "regressors": {
+        "temperature": 16.4674924198,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-04-03T00:00:00.000Z",
+      "value": 51.914743214,
+      "regressors": {
+        "temperature": 16.6423563585,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-04-04T00:00:00.000Z",
+      "value": 50.734830057,
+      "regressors": {
+        "temperature": 15.7938873726,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-04-05T00:00:00.000Z",
+      "value": 49.5963293655,
+      "regressors": {
+        "temperature": 14.6942297546,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-04-06T00:00:00.000Z",
+      "value": 48.4411153994,
+      "regressors": {
+        "temperature": 14.3055188909,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-04-07T00:00:00.000Z",
+      "value": 48.510321743,
+      "regressors": {
+        "temperature": 15.0517179329,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-04-08T00:00:00.000Z",
+      "value": 50.6007751801,
+      "regressors": {
+        "temperature": 16.4977325276,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-04-09T00:00:00.000Z",
+      "value": 52.5693122374,
+      "regressors": {
+        "temperature": 17.6786431952,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-04-10T00:00:00.000Z",
+      "value": 52.3706357289,
+      "regressors": {
+        "temperature": 17.829898864,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-04-11T00:00:00.000Z",
+      "value": 51.0449964003,
+      "regressors": {
+        "temperature": 16.9658756644,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-04-12T00:00:00.000Z",
+      "value": 50.0480980572,
+      "regressors": {
+        "temperature": 15.8689592336,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-04-13T00:00:00.000Z",
+      "value": 49.2998588153,
+      "regressors": {
+        "temperature": 15.4974128351,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-04-14T00:00:00.000Z",
+      "value": 49.3878950247,
+      "regressors": {
+        "temperature": 16.2601449069,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-04-15T00:00:00.000Z",
+      "value": 51.277475124,
+      "regressors": {
+        "temperature": 17.7072175107,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-04-16T00:00:00.000Z",
+      "value": 53.3766926195,
+      "regressors": {
+        "temperature": 18.8703127285,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-04-17T00:00:00.000Z",
+      "value": 53.2773680195,
+      "regressors": {
+        "temperature": 18.9954988365,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-04-18T00:00:00.000Z",
+      "value": 51.6007006826,
+      "regressors": {
+        "temperature": 18.1137534359,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-04-19T00:00:00.000Z",
+      "value": 50.3417607541,
+      "regressors": {
+        "temperature": 17.0174830205,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-04-20T00:00:00.000Z",
+      "value": 49.7201458227,
+      "regressors": {
+        "temperature": 16.6608085153,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-04-21T00:00:00.000Z",
+      "value": 49.7365890333,
+      "regressors": {
+        "temperature": 17.4374687452,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-04-22T00:00:00.000Z",
+      "value": 51.281427877,
+      "regressors": {
+        "temperature": 18.8828101031,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-04-23T00:00:00.000Z",
+      "value": 53.4023694634,
+      "regressors": {
+        "temperature": 20.0253907071,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-04-24T00:00:00.000Z",
+      "value": 53.5853789799,
+      "regressors": {
+        "temperature": 20.1221120397,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-04-25T00:00:00.000Z",
+      "value": 51.861266547,
+      "regressors": {
+        "temperature": 19.220545113,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-04-26T00:00:00.000Z",
+      "value": 50.5183531341,
+      "regressors": {
+        "temperature": 18.1228939374,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-04-27T00:00:00.000Z",
+      "value": 50.2467531774,
+      "regressors": {
+        "temperature": 17.7788680351,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-04-28T00:00:00.000Z",
+      "value": 50.5513046448,
+      "regressors": {
+        "temperature": 18.5669259848,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-04-29T00:00:00.000Z",
+      "value": 51.9427146985,
+      "regressors": {
+        "temperature": 20.0078305649,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-04-30T00:00:00.000Z",
+      "value": 54.0235119437,
+      "regressors": {
+        "temperature": 21.1272912619,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-05-01T00:00:00.000Z",
+      "value": 54.4438875579,
+      "regressors": {
+        "temperature": 21.1932535346,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-05-02T00:00:00.000Z",
+      "value": 52.6209817112,
+      "regressors": {
+        "temperature": 20.2698690269,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-05-03T00:00:00.000Z",
+      "value": 50.8952086583,
+      "regressors": {
+        "temperature": 19.1689131271,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-05-04T00:00:00.000Z",
+      "value": 50.5886414414,
+      "regressors": {
+        "temperature": 18.8354161071,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-05-05T00:00:00.000Z",
+      "value": 50.9904549309,
+      "regressors": {
+        "temperature": 19.6324499548,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-05-06T00:00:00.000Z",
+      "value": 52.0854416266,
+      "regressors": {
+        "temperature": 21.066329978,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-05-07T00:00:00.000Z",
+      "value": 53.8980722781,
+      "regressors": {
+        "temperature": 22.1601931358,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-05-08T00:00:00.000Z",
+      "value": 54.5109149625,
+      "regressors": {
+        "temperature": 22.1932364742,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-05-09T00:00:00.000Z",
+      "value": 52.8192608504,
+      "regressors": {
+        "temperature": 21.246174765,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-05-10T00:00:00.000Z",
+      "value": 50.9199446772,
+      "regressors": {
+        "temperature": 20.1401258914,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-05-11T00:00:00.000Z",
+      "value": 50.728267412,
+      "regressors": {
+        "temperature": 19.8151743101,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-05-12T00:00:00.000Z",
+      "value": 51.548710219,
+      "regressors": {
+        "temperature": 20.6189033828,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-05-13T00:00:00.000Z",
+      "value": 52.7056677816,
+      "regressors": {
+        "temperature": 22.0433211331,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-05-14T00:00:00.000Z",
+      "value": 54.3526110336,
+      "regressors": {
+        "temperature": 23.1092687797,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-05-15T00:00:00.000Z",
+      "value": 55.1400956911,
+      "regressors": {
+        "temperature": 23.1073993408,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-05-16T00:00:00.000Z",
+      "value": 53.6271271112,
+      "regressors": {
+        "temperature": 22.1349684836,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-05-17T00:00:00.000Z",
+      "value": 51.447129029,
+      "regressors": {
+        "temperature": 21.0222050131,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-05-18T00:00:00.000Z",
+      "value": 51.0115781832,
+      "regressors": {
+        "temperature": 20.7039823558,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-05-19T00:00:00.000Z",
+      "value": 51.9498065197,
+      "regressors": {
+        "temperature": 21.512297541,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-05-20T00:00:00.000Z",
+      "value": 53.0133065808,
+      "regressors": {
+        "temperature": 22.924995488,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-05-21T00:00:00.000Z",
+      "value": 54.2515077112,
+      "regressors": {
+        "temperature": 23.9608990586,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-05-22T00:00:00.000Z",
+      "value": 54.9714670332,
+      "regressors": {
+        "temperature": 23.9223183361,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-05-23T00:00:00.000Z",
+      "value": 53.682034893,
+      "regressors": {
+        "temperature": 22.923022918,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-05-24T00:00:00.000Z",
+      "value": 51.4203717132,
+      "regressors": {
+        "temperature": 21.802118327,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-05-25T00:00:00.000Z",
+      "value": 50.8549212989,
+      "regressors": {
+        "temperature": 21.4890031607,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-05-26T00:00:00.000Z",
+      "value": 52.1105127521,
+      "regressors": {
+        "temperature": 22.2999947573,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-05-27T00:00:00.000Z",
+      "value": 53.4756671232,
+      "regressors": {
+        "temperature": 23.698923057,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-05-28T00:00:00.000Z",
+      "value": 54.5917829819,
+      "regressors": {
+        "temperature": 24.7028704588,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-05-29T00:00:00.000Z",
+      "value": 55.3045274295,
+      "regressors": {
+        "temperature": 24.6260018458,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-05-30T00:00:00.000Z",
+      "value": 54.320411229,
+      "regressors": {
+        "temperature": 23.5985690501,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-05-31T00:00:00.000Z",
+      "value": 52.0524991194,
+      "regressors": {
+        "temperature": 22.4683175343,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-06-01T00:00:00.000Z",
+      "value": 51.1591719157,
+      "regressors": {
+        "temperature": 22.1589087513,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-06-02T00:00:00.000Z",
+      "value": 52.3891989288,
+      "regressors": {
+        "temperature": 22.9708913577,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-06-03T00:00:00.000Z",
+      "value": 53.8506132016,
+      "regressors": {
+        "temperature": 24.3542323351,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-06-04T00:00:00.000Z",
+      "value": 54.6460396303,
+      "regressors": {
+        "temperature": 25.3245519384,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-06-05T00:00:00.000Z",
+      "value": 55.0230640628,
+      "regressors": {
+        "temperature": 25.208064165,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-06-06T00:00:00.000Z",
+      "value": 54.1625574301,
+      "regressors": {
+        "temperature": 24.1514666567,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-06-07T00:00:00.000Z",
+      "value": 51.9848690849,
+      "regressors": {
+        "temperature": 23.010905525,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-06-08T00:00:00.000Z",
+      "value": 50.8690896134,
+      "regressors": {
+        "temperature": 22.7040443133,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-06-09T00:00:00.000Z",
+      "value": 52.1499182167,
+      "regressors": {
+        "temperature": 23.515578392,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-06-10T00:00:00.000Z",
+      "value": 54.0006803126,
+      "regressors": {
+        "temperature": 24.8817676519,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-06-11T00:00:00.000Z",
+      "value": 54.8723440948,
+      "regressors": {
+        "temperature": 25.8170488613,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-06-12T00:00:00.000Z",
+      "value": 55.1075981592,
+      "regressors": {
+        "temperature": 25.6598759665,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-06-13T00:00:00.000Z",
+      "value": 54.4673034414,
+      "regressors": {
+        "temperature": 24.5733512682,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-06-14T00:00:00.000Z",
+      "value": 52.5568956053,
+      "regressors": {
+        "temperature": 23.4217797852,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-06-15T00:00:00.000Z",
+      "value": 51.2446883913,
+      "regressors": {
+        "temperature": 23.1165680057,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-06-16T00:00:00.000Z",
+      "value": 52.3163951079,
+      "regressors": {
+        "temperature": 23.9264778145,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-06-17T00:00:00.000Z",
+      "value": 54.2978098785,
+      "regressors": {
+        "temperature": 25.2742216757,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-06-18T00:00:00.000Z",
+      "value": 55.0856764638,
+      "regressors": {
+        "temperature": 26.1733317856,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-06-19T00:00:00.000Z",
+      "value": 54.8857868543,
+      "regressors": {
+        "temperature": 25.9746893331,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-06-20T00:00:00.000Z",
+      "value": 54.1190261858,
+      "regressors": {
+        "temperature": 24.8577554099,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-06-21T00:00:00.000Z",
+      "value": 52.3851874003,
+      "regressors": {
+        "temperature": 23.6947498129,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-06-22T00:00:00.000Z",
+      "value": 50.94767143,
+      "regressors": {
+        "temperature": 23.3905645176,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-06-23T00:00:00.000Z",
+      "value": 51.8159378921,
+      "regressors": {
+        "temperature": 24.1979521463,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-06-24T00:00:00.000Z",
+      "value": 54.0455000704,
+      "regressors": {
+        "temperature": 25.5262411498,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-06-25T00:00:00.000Z",
+      "value": 55.1170635872,
+      "regressors": {
+        "temperature": 26.3883382394,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-06-26T00:00:00.000Z",
+      "value": 54.8080016275,
+      "regressors": {
+        "temperature": 26.1477355442,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-06-27T00:00:00.000Z",
+      "value": 54.0580813806,
+      "regressors": {
+        "temperature": 25.00020237,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-06-28T00:00:00.000Z",
+      "value": 52.6926104422,
+      "regressors": {
+        "temperature": 23.8256268414,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-06-29T00:00:00.000Z",
+      "value": 51.340735187,
+      "regressors": {
+        "temperature": 23.5221307208,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-06-30T00:00:00.000Z",
+      "value": 51.9425026178,
+      "regressors": {
+        "temperature": 24.3263860336,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-07-01T00:00:00.000Z",
+      "value": 54.1723971017,
+      "regressors": {
+        "temperature": 25.6345043289,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-07-02T00:00:00.000Z",
+      "value": 55.3696962142,
+      "regressors": {
+        "temperature": 26.459046012,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-07-03T00:00:00.000Z",
+      "value": 54.7581691796,
+      "regressors": {
+        "temperature": 26.1762941987,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-07-04T00:00:00.000Z",
+      "value": 53.6462140967,
+      "regressors": {
+        "temperature": 24.9982711355,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-07-05T00:00:00.000Z",
+      "value": 52.3603694281,
+      "regressors": {
+        "temperature": 23.8122845701,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-07-06T00:00:00.000Z",
+      "value": 51.0610314884,
+      "regressors": {
+        "temperature": 23.5094321797,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-07-07T00:00:00.000Z",
+      "value": 51.3766025834,
+      "regressors": {
+        "temperature": 24.3102385178,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-07-08T00:00:00.000Z",
+      "value": 53.5670216902,
+      "regressors": {
+        "temperature": 25.597768994,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-07-09T00:00:00.000Z",
+      "value": 55.096851186,
+      "regressors": {
+        "temperature": 26.3845168977,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-07-10T00:00:00.000Z",
+      "value": 54.5550932068,
+      "regressors": {
+        "temperature": 26.0597326746,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-07-11T00:00:00.000Z",
+      "value": 53.309912191,
+      "regressors": {
+        "temperature": 24.8516315567,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-07-12T00:00:00.000Z",
+      "value": 52.2738416102,
+      "regressors": {
+        "temperature": 23.6546900252,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-07-13T00:00:00.000Z",
+      "value": 51.3148215797,
+      "regressors": {
+        "temperature": 23.3527296989,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-07-14T00:00:00.000Z",
+      "value": 51.5107077103,
+      "regressors": {
+        "temperature": 24.150065263,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-07-15T00:00:00.000Z",
+      "value": 53.5334752526,
+      "regressors": {
+        "temperature": 25.4168903513,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-07-16T00:00:00.000Z",
+      "value": 55.231011034,
+      "regressors": {
+        "temperature": 26.1659102592,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-07-17T00:00:00.000Z",
+      "value": 54.6557148371,
+      "regressors": {
+        "temperature": 25.7995153528,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-07-18T00:00:00.000Z",
+      "value": 52.9951258256,
+      "regressors": {
+        "temperature": 24.5620492292,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-07-19T00:00:00.000Z",
+      "value": 51.808676845,
+      "regressors": {
+        "temperature": 23.3549041004,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-07-20T00:00:00.000Z",
+      "value": 50.9945136613,
+      "regressors": {
+        "temperature": 23.054375524,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-07-21T00:00:00.000Z",
+      "value": 51.0198353055,
+      "regressors": {
+        "temperature": 23.8485104172,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-07-22T00:00:00.000Z",
+      "value": 52.7532982285,
+      "regressors": {
+        "temperature": 25.0948085548,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-07-23T00:00:00.000Z",
+      "value": 54.6123806177,
+      "regressors": {
+        "temperature": 25.8064662147,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-07-24T00:00:00.000Z",
+      "value": 54.2856363113,
+      "regressors": {
+        "temperature": 25.3991824725,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-07-25T00:00:00.000Z",
+      "value": 52.5117639858,
+      "regressors": {
+        "temperature": 24.1333600253,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-07-26T00:00:00.000Z",
+      "value": 51.3439239379,
+      "regressors": {
+        "temperature": 22.9170517727,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-07-27T00:00:00.000Z",
+      "value": 50.9337567441,
+      "regressors": {
+        "temperature": 22.6187792516,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-07-28T00:00:00.000Z",
+      "value": 51.1143523405,
+      "regressors": {
+        "temperature": 23.4102682264,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-07-29T00:00:00.000Z",
+      "value": 52.6364595322,
+      "regressors": {
+        "temperature": 24.6365060346,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-07-30T00:00:00.000Z",
+      "value": 54.535747779,
+      "regressors": {
+        "temperature": 25.3114586904,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-07-31T00:00:00.000Z",
+      "value": 54.3971448658,
+      "regressors": {
+        "temperature": 24.8642989231,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-08-01T00:00:00.000Z",
+      "value": 52.3828874901,
+      "regressors": {
+        "temperature": 23.5714146408,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-08-02T00:00:00.000Z",
+      "value": 50.8664445682,
+      "regressors": {
+        "temperature": 22.3472624225,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-08-03T00:00:00.000Z",
+      "value": 50.5162135602,
+      "regressors": {
+        "temperature": 22.0523439409,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-08-04T00:00:00.000Z",
+      "value": 50.7215214822,
+      "regressors": {
+        "temperature": 22.8420149563,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-08-05T00:00:00.000Z",
+      "value": 51.8955814851,
+      "regressors": {
+        "temperature": 24.0489352474,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-08-06T00:00:00.000Z",
+      "value": 53.6619241314,
+      "regressors": {
+        "temperature": 24.6881190213,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-08-07T00:00:00.000Z",
+      "value": 53.7911692052,
+      "regressors": {
+        "temperature": 24.2023737155,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-08-08T00:00:00.000Z",
+      "value": 51.8267604694,
+      "regressors": {
+        "temperature": 22.8839939625,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-08-09T00:00:00.000Z",
+      "value": 50.1624789876,
+      "regressors": {
+        "temperature": 21.6535811234,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-08-10T00:00:00.000Z",
+      "value": 50.0576982244,
+      "regressors": {
+        "temperature": 21.3633733535,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-08-11T00:00:00.000Z",
+      "value": 50.6419189454,
+      "regressors": {
+        "temperature": 22.1523121089,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-08-12T00:00:00.000Z",
+      "value": 51.7529428405,
+      "regressors": {
+        "temperature": 23.3409178974,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-08-13T00:00:00.000Z",
+      "value": 53.3945647168,
+      "regressors": {
+        "temperature": 23.9455312033,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-08-14T00:00:00.000Z",
+      "value": 53.7500318042,
+      "regressors": {
+        "temperature": 23.422751298,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-08-15T00:00:00.000Z",
+      "value": 51.8374719312,
+      "regressors": {
+        "temperature": 22.0806964803,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-08-16T00:00:00.000Z",
+      "value": 49.8150178151,
+      "regressors": {
+        "temperature": 20.845852186,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-08-17T00:00:00.000Z",
+      "value": 49.5644258601,
+      "regressors": {
+        "temperature": 20.5619516638,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-08-18T00:00:00.000Z",
+      "value": 50.2796937221,
+      "regressors": {
+        "temperature": 21.3514823347,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-08-19T00:00:00.000Z",
+      "value": 51.1885743742,
+      "regressors": {
+        "temperature": 22.5230170852,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-08-20T00:00:00.000Z",
+      "value": 52.4667959232,
+      "regressors": {
+        "temperature": 23.0945003166,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-08-21T00:00:00.000Z",
+      "value": 52.9028869861,
+      "regressors": {
+        "temperature": 22.536476292,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-08-22T00:00:00.000Z",
+      "value": 51.1988438697,
+      "regressors": {
+        "temperature": 21.1727993764,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-08-23T00:00:00.000Z",
+      "value": 49.040078412,
+      "regressors": {
+        "temperature": 19.9355766428,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-08-24T00:00:00.000Z",
+      "value": 48.7757244375,
+      "regressors": {
+        "temperature": 19.6597973826,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-08-25T00:00:00.000Z",
+      "value": 49.889390593,
+      "regressors": {
+        "temperature": 20.451459838,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-08-26T00:00:00.000Z",
+      "value": 50.9912562797,
+      "regressors": {
+        "temperature": 21.6073842379,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-08-27T00:00:00.000Z",
+      "value": 52.1018252552,
+      "regressors": {
+        "temperature": 22.1473960245,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-08-28T00:00:00.000Z",
+      "value": 52.6264227099,
+      "regressors": {
+        "temperature": 21.5561336047,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-08-29T00:00:00.000Z",
+      "value": 51.1951224004,
+      "regressors": {
+        "temperature": 20.1730953014,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-08-30T00:00:00.000Z",
+      "value": 48.8865279817,
+      "regressors": {
+        "temperature": 18.9357457372,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-08-31T00:00:00.000Z",
+      "value": 48.3133796837,
+      "regressors": {
+        "temperature": 18.6700936092,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-09-01T00:00:00.000Z",
+      "value": 49.4885188733,
+      "regressors": {
+        "temperature": 19.4656174422,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-09-02T00:00:00.000Z",
+      "value": 50.6084464476,
+      "regressors": {
+        "temperature": 20.6075830372,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-09-03T00:00:00.000Z",
+      "value": 51.33328434,
+      "regressors": {
+        "temperature": 21.1179734137,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-09-04T00:00:00.000Z",
+      "value": 51.6520046373,
+      "regressors": {
+        "temperature": 20.4956662371,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-09-05T00:00:00.000Z",
+      "value": 50.4313643259,
+      "regressors": {
+        "temperature": 19.0957072025,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-09-06T00:00:00.000Z",
+      "value": 48.1423068445,
+      "regressors": {
+        "temperature": 17.8606528291,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-09-07T00:00:00.000Z",
+      "value": 47.3778893849,
+      "regressors": {
+        "temperature": 17.6072970716,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-09-08T00:00:00.000Z",
+      "value": 48.7529049865,
+      "regressors": {
+        "temperature": 18.408572819,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-09-09T00:00:00.000Z",
+      "value": 50.2514950651,
+      "regressors": {
+        "temperature": 19.538392894,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-09-10T00:00:00.000Z",
+      "value": 50.9475110594,
+      "regressors": {
+        "temperature": 20.0211737729,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-09-11T00:00:00.000Z",
+      "value": 51.1803400809,
+      "regressors": {
+        "temperature": 19.3701734224,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-09-12T00:00:00.000Z",
+      "value": 50.2523707072,
+      "regressors": {
+        "temperature": 17.9558838851,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-09-13T00:00:00.000Z",
+      "value": 48.1152172601,
+      "regressors": {
+        "temperature": 16.7256864411,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-09-14T00:00:00.000Z",
+      "value": 47.067628105,
+      "regressors": {
+        "temperature": 16.4869287178,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-09-15T00:00:00.000Z",
+      "value": 48.3203550495,
+      "regressors": {
+        "temperature": 17.2959766889,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-09-16T00:00:00.000Z",
+      "value": 49.9596892941,
+      "regressors": {
+        "temperature": 18.4155948177,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-09-17T00:00:00.000Z",
+      "value": 50.4535886267,
+      "regressors": {
+        "temperature": 18.8729081924,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-09-18T00:00:00.000Z",
+      "value": 50.2821646376,
+      "regressors": {
+        "temperature": 18.1956920217,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-09-19T00:00:00.000Z",
+      "value": 49.3753090939,
+      "regressors": {
+        "temperature": 16.7697792691,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-09-20T00:00:00.000Z",
+      "value": 47.4077925094,
+      "regressors": {
+        "temperature": 15.5471074419,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-09-21T00:00:00.000Z",
+      "value": 46.1814356785,
+      "regressors": {
+        "temperature": 15.3253488946,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-09-22T00:00:00.000Z",
+      "value": 47.3530579933,
+      "regressors": {
+        "temperature": 16.1442860585,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-09-23T00:00:00.000Z",
+      "value": 49.3461618838,
+      "regressors": {
+        "temperature": 17.2557427805,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-09-24T00:00:00.000Z",
+      "value": 50.0416455488,
+      "regressors": {
+        "temperature": 17.6898271209,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-09-25T00:00:00.000Z",
+      "value": 49.732020125,
+      "regressors": {
+        "temperature": 16.9889643408,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-09-26T00:00:00.000Z",
+      "value": 48.9569518556,
+      "regressors": {
+        "temperature": 15.5542185353,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-09-27T00:00:00.000Z",
+      "value": 47.3460066171,
+      "regressors": {
+        "temperature": 14.3418135943,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-09-28T00:00:00.000Z",
+      "value": 46.0644631371,
+      "regressors": {
+        "temperature": 14.1395203663,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-09-29T00:00:00.000Z",
+      "value": 46.9780188083,
+      "regressors": {
+        "temperature": 14.9705257819,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-09-30T00:00:00.000Z",
+      "value": 49.0546388609,
+      "regressors": {
+        "temperature": 16.0759238875,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-10-01T00:00:00.000Z",
+      "value": 49.7946351731,
+      "regressors": {
+        "temperature": 16.4890792155,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-10-02T00:00:00.000Z",
+      "value": 49.1024552814,
+      "regressors": {
+        "temperature": 15.7671957314,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-10-03T00:00:00.000Z",
+      "value": 48.0823363125,
+      "regressors": {
+        "temperature": 14.3264545514,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-10-04T00:00:00.000Z",
+      "value": 46.6387421934,
+      "regressors": {
+        "temperature": 13.1270948778,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-10-05T00:00:00.000Z",
+      "value": 45.3386390292,
+      "regressors": {
+        "temperature": 12.9467626085,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-10-06T00:00:00.000Z",
+      "value": 45.9932277896,
+      "regressors": {
+        "temperature": 13.7920418958,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-10-07T00:00:00.000Z",
+      "value": 48.1917420287,
+      "regressors": {
+        "temperature": 14.8935108272,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-10-08T00:00:00.000Z",
+      "value": 49.2805587505,
+      "regressors": {
+        "temperature": 15.2880629785,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-10-09T00:00:00.000Z",
+      "value": 48.5734756136,
+      "regressors": {
+        "temperature": 14.547805487,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-10-10T00:00:00.000Z",
+      "value": 47.4915744858,
+      "regressors": {
+        "temperature": 13.103918102,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-10-11T00:00:00.000Z",
+      "value": 46.3925130091,
+      "regressors": {
+        "temperature": 11.9203831297,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-10-12T00:00:00.000Z",
+      "value": 45.3326181715,
+      "regressors": {
+        "temperature": 11.7645009334,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-10-13T00:00:00.000Z",
+      "value": 45.7771439406,
+      "regressors": {
+        "temperature": 12.6262503042,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-10-14T00:00:00.000Z",
+      "value": 47.8894243471,
+      "regressors": {
+        "temperature": 13.7259101865,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-10-15T00:00:00.000Z",
+      "value": 49.1576223451,
+      "regressors": {
+        "temperature": 14.1041747767,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-10-16T00:00:00.000Z",
+      "value": 48.2903569931,
+      "regressors": {
+        "temperature": 13.3481746424,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-10-17T00:00:00.000Z",
+      "value": 46.8048017744,
+      "regressors": {
+        "temperature": 11.903965543,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-10-18T00:00:00.000Z",
+      "value": 45.6926603469,
+      "regressors": {
+        "temperature": 10.7389996295,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-10-19T00:00:00.000Z",
+      "value": 44.7677639638,
+      "regressors": {
+        "temperature": 10.6100140809,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-10-20T00:00:00.000Z",
+      "value": 44.9794414732,
+      "regressors": {
+        "temperature": 11.4903844496,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-10-21T00:00:00.000Z",
+      "value": 46.9225626776,
+      "regressors": {
+        "temperature": 12.5903102764,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-10-22T00:00:00.000Z",
+      "value": 48.4765844263,
+      "regressors": {
+        "temperature": 12.9545568941,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-10-23T00:00:00.000Z",
+      "value": 47.7986964516,
+      "regressors": {
+        "temperature": 12.1853943272,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-10-24T00:00:00.000Z",
+      "value": 46.1844660398,
+      "regressors": {
+        "temperature": 10.7436275324,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-10-25T00:00:00.000Z",
+      "value": 45.2230642214,
+      "regressors": {
+        "temperature": 9.59990428358,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-10-26T00:00:00.000Z",
+      "value": 44.7123590662,
+      "regressors": {
+        "temperature": 9.50018393141,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-10-27T00:00:00.000Z",
+      "value": 44.9463512949,
+      "regressors": {
+        "temperature": 10.4012456268,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-10-28T00:00:00.000Z",
+      "value": 46.68269738,
+      "regressors": {
+        "temperature": 11.5034321192,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-10-29T00:00:00.000Z",
+      "value": 48.3624717289,
+      "regressors": {
+        "temperature": 11.8558492659,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-10-30T00:00:00.000Z",
+      "value": 47.7921669082,
+      "regressors": {
+        "temperature": 11.0760183195,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-10-31T00:00:00.000Z",
+      "value": 45.841041189,
+      "regressors": {
+        "temperature": 9.63936247842,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-11-01T00:00:00.000Z",
+      "value": 44.6281648867,
+      "regressors": {
+        "temperature": 8.51945004142,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-11-02T00:00:00.000Z",
+      "value": 44.2561943146,
+      "regressors": {
+        "temperature": 8.45125096377,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-11-03T00:00:00.000Z",
+      "value": 44.4341217832,
+      "regressors": {
+        "temperature": 9.37495955535,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-11-04T00:00:00.000Z",
+      "value": 45.8369858982,
+      "regressors": {
+        "temperature": 10.4812872048,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-11-05T00:00:00.000Z",
+      "value": 47.5491669043,
+      "regressors": {
+        "temperature": 10.8239484894,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-11-06T00:00:00.000Z",
+      "value": 47.2826927814,
+      "regressors": {
+        "temperature": 10.0358233834,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-11-07T00:00:00.000Z",
+      "value": 45.3106715203,
+      "regressors": {
+        "temperature": 8.60681827464,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-11-08T00:00:00.000Z",
+      "value": 44.0313647251,
+      "regressors": {
+        "temperature": 7.51314610135,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-11-09T00:00:00.000Z",
+      "value": 44.019539409,
+      "regressors": {
+        "temperature": 7.47857900198,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-11-10T00:00:00.000Z",
+      "value": 44.4944486733,
+      "regressors": {
+        "temperature": 8.42674273522,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-11-11T00:00:00.000Z",
+      "value": 45.7467923622,
+      "regressors": {
+        "temperature": 9.53894552457,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-11-12T00:00:00.000Z",
+      "value": 47.417111857,
+      "regressors": {
+        "temperature": 9.87377760201,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-11-13T00:00:00.000Z",
+      "value": 47.3952051104,
+      "regressors": {
+        "temperature": 9.07958085978,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-11-14T00:00:00.000Z",
+      "value": 45.3415510805,
+      "regressors": {
+        "temperature": 7.66060577338,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-11-15T00:00:00.000Z",
+      "value": 43.6931911264,
+      "regressors": {
+        "temperature": 6.59543333398,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-11-16T00:00:00.000Z",
+      "value": 43.6556067176,
+      "regressors": {
+        "temperature": 6.59643265609,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-11-17T00:00:00.000Z",
+      "value": 44.2413444824,
+      "regressors": {
+        "temperature": 7.57068197068,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-11-18T00:00:00.000Z",
+      "value": 45.213018239,
+      "regressors": {
+        "temperature": 8.69031724077,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-11-19T00:00:00.000Z",
+      "value": 46.6292126953,
+      "regressors": {
+        "temperature": 9.01906996139,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-11-20T00:00:00.000Z",
+      "value": 46.8211577698,
+      "regressors": {
+        "temperature": 8.22084282022,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-11-21T00:00:00.000Z",
+      "value": 44.9302029352,
+      "regressors": {
+        "temperature": 6.8140872775,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-11-22T00:00:00.000Z",
+      "value": 43.1350033754,
+      "regressors": {
+        "temperature": 5.77947517667,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-11-23T00:00:00.000Z",
+      "value": 43.2269226346,
+      "regressors": {
+        "temperature": 5.81777068143,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-11-24T00:00:00.000Z",
+      "value": 44.2427230161,
+      "regressors": {
+        "temperature": 6.81953025468,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-11-25T00:00:00.000Z",
+      "value": 45.2870526648,
+      "regressors": {
+        "temperature": 7.94795115552,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-11-26T00:00:00.000Z",
+      "value": 46.5428251492,
+      "regressors": {
+        "temperature": 8.27217035658,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-11-27T00:00:00.000Z",
+      "value": 46.9166039786,
+      "regressors": {
+        "temperature": 7.47174587985,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-11-28T00:00:00.000Z",
+      "value": 45.2216893457,
+      "regressors": {
+        "temperature": 6.07918311437,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-11-29T00:00:00.000Z",
+      "value": 43.1635581422,
+      "regressors": {
+        "temperature": 5.07696702695,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-11-30T00:00:00.000Z",
+      "value": 43.0204559455,
+      "regressors": {
+        "temperature": 5.15405824876,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-12-01T00:00:00.000Z",
+      "value": 44.1628880562,
+      "regressors": {
+        "temperature": 6.18452197033,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-12-02T00:00:00.000Z",
+      "value": 45.1298191015,
+      "regressors": {
+        "temperature": 7.32285289668,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-12-03T00:00:00.000Z",
+      "value": 45.9946487239,
+      "regressors": {
+        "temperature": 7.6438562312,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-12-04T00:00:00.000Z",
+      "value": 46.3216688876,
+      "regressors": {
+        "temperature": 6.84283551088,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-12-05T00:00:00.000Z",
+      "value": 44.8814091528,
+      "regressors": {
+        "temperature": 5.46619909292,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-12-06T00:00:00.000Z",
+      "value": 42.7747619854,
+      "regressors": {
+        "temperature": 4.49796689575,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-12-07T00:00:00.000Z",
+      "value": 42.5226680279,
+      "regressors": {
+        "temperature": 4.61510084409,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-12-08T00:00:00.000Z",
+      "value": 43.995314225,
+      "regressors": {
+        "temperature": 5.6752100858,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-12-09T00:00:00.000Z",
+      "value": 45.2788548729,
+      "regressors": {
+        "temperature": 6.82432545444,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-12-10T00:00:00.000Z",
+      "value": 46.03526505,
+      "regressors": {
+        "temperature": 7.14318160794,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-12-11T00:00:00.000Z",
+      "value": 46.365464387,
+      "regressors": {
+        "temperature": 6.34291340115,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-12-12T00:00:00.000Z",
+      "value": 45.2463962802,
+      "regressors": {
+        "temperature": 4.9836773428,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-12-13T00:00:00.000Z",
+      "value": 43.153405519,
+      "regressors": {
+        "temperature": 4.05074977277,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-12-14T00:00:00.000Z",
+      "value": 42.5846715327,
+      "regressors": {
+        "temperature": 4.20890220384,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-12-15T00:00:00.000Z",
+      "value": 44.036449327,
+      "regressors": {
+        "temperature": 5.29932770051,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-12-16T00:00:00.000Z",
+      "value": 45.4281934623,
+      "regressors": {
+        "temperature": 6.45983437799,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-12-17T00:00:00.000Z",
+      "value": 45.883535766,
+      "regressors": {
+        "temperature": 6.77734597441,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-12-18T00:00:00.000Z",
+      "value": 45.8992392662,
+      "regressors": {
+        "temperature": 5.97891006831,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-12-19T00:00:00.000Z",
+      "value": 44.9313066506,
+      "regressors": {
+        "temperature": 4.63827269593,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-12-20T00:00:00.000Z",
+      "value": 42.9628006037,
+      "regressors": {
+        "temperature": 3.74168781318,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-12-21T00:00:00.000Z",
+      "value": 42.1985650516,
+      "regressors": {
+        "temperature": 3.94154834285,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-12-22T00:00:00.000Z",
+      "value": 43.7162026199,
+      "regressors": {
+        "temperature": 5.06267594775,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-12-23T00:00:00.000Z",
+      "value": 45.5128873433,
+      "regressors": {
+        "temperature": 6.23489958452,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-12-24T00:00:00.000Z",
+      "value": 46.0644854711,
+      "regressors": {
+        "temperature": 6.5515900295,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-12-25T00:00:00.000Z",
+      "value": 45.9551089908,
+      "regressors": {
+        "temperature": 5.75578457461,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-12-26T00:00:00.000Z",
+      "value": 45.2226798988,
+      "regressors": {
+        "temperature": 4.43465640053,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-12-27T00:00:00.000Z",
+      "value": 43.5406244095,
+      "regressors": {
+        "temperature": 3.57515808113,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-12-28T00:00:00.000Z",
+      "value": 42.5942721411,
+      "regressors": {
+        "temperature": 3.8171193548,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-12-29T00:00:00.000Z",
+      "value": 43.9063255237,
+      "regressors": {
+        "temperature": 4.96903987748,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-12-30T00:00:00.000Z",
+      "value": 45.8393654794,
+      "regressors": {
+        "temperature": 6.15301534757,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2020-12-31T00:00:00.000Z",
+      "value": 46.3246806809,
+      "regressors": {
+        "temperature": 6.46911980006,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-01-01T00:00:00.000Z",
+      "value": 45.8023312742,
+      "regressors": {
+        "temperature": 5.67645279448,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-01-02T00:00:00.000Z",
+      "value": 44.9670585329,
+      "regressors": {
+        "temperature": 4.37544856237,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-01-03T00:00:00.000Z",
+      "value": 43.4915651484,
+      "regressors": {
+        "temperature": 3.5534791858,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-01-04T00:00:00.000Z",
+      "value": 42.4494767805,
+      "regressors": {
+        "temperature": 3.83763026249,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-01-05T00:00:00.000Z",
+      "value": 43.5764431098,
+      "regressors": {
+        "temperature": 5.02013353724,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-01-06T00:00:00.000Z",
+      "value": 45.7721229826,
+      "regressors": {
+        "temperature": 6.21559962353,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-01-07T00:00:00.000Z",
+      "value": 46.5631357101,
+      "regressors": {
+        "temperature": 6.53106022677,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-01-08T00:00:00.000Z",
+      "value": 45.955103732,
+      "regressors": {
+        "temperature": 5.74174527393,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-01-09T00:00:00.000Z",
+      "value": 45.1541972033,
+      "regressors": {
+        "temperature": 4.46118029139,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-01-10T00:00:00.000Z",
+      "value": 44.0637720233,
+      "regressors": {
+        "temperature": 3.676877728,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-01-11T00:00:00.000Z",
+      "value": 43.1228161591,
+      "regressors": {
+        "temperature": 4.00300177457,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-01-12T00:00:00.000Z",
+      "value": 43.9885987813,
+      "regressors": {
+        "temperature": 5.21557504695,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-01-13T00:00:00.000Z",
+      "value": 46.1853315913,
+      "regressors": {
+        "temperature": 6.42197345013,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-01-14T00:00:00.000Z",
+      "value": 47.1136807415,
+      "regressors": {
+        "temperature": 6.73643889164,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-01-15T00:00:00.000Z",
+      "value": 46.2246721858,
+      "regressors": {
+        "temperature": 5.95039529204,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-01-16T00:00:00.000Z",
+      "value": 45.0829257922,
+      "regressors": {
+        "temperature": 4.69028610212,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-01-17T00:00:00.000Z",
+      "value": 44.0949677676,
+      "regressors": {
+        "temperature": 3.94348504305,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-01-18T00:00:00.000Z",
+      "value": 43.2332345673,
+      "regressors": {
+        "temperature": 4.31106137238,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-01-19T00:00:00.000Z",
+      "value": 43.8336841127,
+      "regressors": {
+        "temperature": 5.55289202825,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-01-20T00:00:00.000Z",
+      "value": 46.0047073327,
+      "regressors": {
+        "temperature": 6.76937071538,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-01-21T00:00:00.000Z",
+      "value": 47.2853933572,
+      "regressors": {
+        "temperature": 7.08220012251,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-01-22T00:00:00.000Z",
+      "value": 46.4935138615,
+      "regressors": {
+        "temperature": 6.29905729727,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-01-23T00:00:00.000Z",
+      "value": 45.2407291512,
+      "regressors": {
+        "temperature": 5.05912667766,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-01-24T00:00:00.000Z",
+      "value": 44.5175036005,
+      "regressors": {
+        "temperature": 4.34936428722,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-01-25T00:00:00.000Z",
+      "value": 44.0097712416,
+      "regressors": {
+        "temperature": 4.75757471099,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-01-26T00:00:00.000Z",
+      "value": 44.4982755588,
+      "regressors": {
+        "temperature": 6.02755731011,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-01-27T00:00:00.000Z",
+      "value": 46.5008619187,
+      "regressors": {
+        "temperature": 7.25297815545,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-01-28T00:00:00.000Z",
+      "value": 47.9536223043,
+      "regressors": {
+        "temperature": 7.56324927053,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-01-29T00:00:00.000Z",
+      "value": 47.1456522068,
+      "regressors": {
+        "temperature": 6.78235545175,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-01-30T00:00:00.000Z",
+      "value": 45.4972229961,
+      "regressors": {
+        "temperature": 5.56204166785,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-01-31T00:00:00.000Z",
+      "value": 44.6397055618,
+      "regressors": {
+        "temperature": 4.88856747534,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-02-01T00:00:00.000Z",
+      "value": 44.2956770558,
+      "regressors": {
+        "temperature": 5.33630687987,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-02-02T00:00:00.000Z",
+      "value": 44.6334258457,
+      "regressors": {
+        "temperature": 6.63305439335,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-02-03T00:00:00.000Z",
+      "value": 46.3605930015,
+      "regressors": {
+        "temperature": 7.86600500223,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-02-04T00:00:00.000Z",
+      "value": 47.9905739226,
+      "regressors": {
+        "temperature": 8.17252651923,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-02-05T00:00:00.000Z",
+      "value": 47.4574390704,
+      "regressors": {
+        "temperature": 7.39296158033,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-02-06T00:00:00.000Z",
+      "value": 45.7223106222,
+      "regressors": {
+        "temperature": 6.1914317566,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-02-07T00:00:00.000Z",
+      "value": 44.8990759119,
+      "regressors": {
+        "temperature": 5.55322164364,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-02-08T00:00:00.000Z",
+      "value": 44.9691030688,
+      "regressors": {
+        "temperature": 6.03911263591,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-02-09T00:00:00.000Z",
+      "value": 45.4702473528,
+      "regressors": {
+        "temperature": 7.36097172614,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-02-10T00:00:00.000Z",
+      "value": 46.9868588459,
+      "regressors": {
+        "temperature": 8.59978127199,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-02-11T00:00:00.000Z",
+      "value": 48.6561727058,
+      "regressors": {
+        "temperature": 8.9011091562,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-02-12T00:00:00.000Z",
+      "value": 48.3215749417,
+      "regressors": {
+        "temperature": 8.12170139554,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-02-13T00:00:00.000Z",
+      "value": 46.3633733276,
+      "regressors": {
+        "temperature": 6.93786881006,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-02-14T00:00:00.000Z",
+      "value": 45.2031556957,
+      "regressors": {
+        "temperature": 6.33364288979,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-02-15T00:00:00.000Z",
+      "value": 45.3421433784,
+      "regressors": {
+        "temperature": 6.85605430195,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-02-16T00:00:00.000Z",
+      "value": 45.8816459658,
+      "regressors": {
+        "temperature": 8.20112442519,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-02-17T00:00:00.000Z",
+      "value": 47.0634437721,
+      "regressors": {
+        "temperature": 9.44388327148,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-02-18T00:00:00.000Z",
+      "value": 48.6117972982,
+      "regressors": {
+        "temperature": 9.73834082629,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-02-19T00:00:00.000Z",
+      "value": 48.5659478591,
+      "regressors": {
+        "temperature": 8.9576874599,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-02-20T00:00:00.000Z",
+      "value": 46.6850559487,
+      "regressors": {
+        "temperature": 7.7902325102,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-02-21T00:00:00.000Z",
+      "value": 45.3952942453,
+      "regressors": {
+        "temperature": 7.21847663865,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-02-22T00:00:00.000Z",
+      "value": 45.786769727,
+      "regressors": {
+        "temperature": 7.77554562342,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-02-23T00:00:00.000Z",
+      "value": 46.7105774705,
+      "regressors": {
+        "temperature": 9.1417016796,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-02-24T00:00:00.000Z",
+      "value": 47.8322591902,
+      "regressors": {
+        "temperature": 10.386284504,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-02-25T00:00:00.000Z",
+      "value": 49.2536810342,
+      "regressors": {
+        "temperature": 10.6719858943,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-02-26T00:00:00.000Z",
+      "value": 49.4369253396,
+      "regressors": {
+        "temperature": 9.88847696004,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-02-27T00:00:00.000Z",
+      "value": 47.6201184915,
+      "regressors": {
+        "temperature": 8.73587149501,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-02-28T00:00:00.000Z",
+      "value": 45.981112427,
+      "regressors": {
+        "temperature": 8.19486210226,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-03-01T00:00:00.000Z",
+      "value": 46.2274779009,
+      "regressors": {
+        "temperature": 8.78451949958,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-03-02T00:00:00.000Z",
+      "value": 47.285798114,
+      "regressors": {
+        "temperature": 10.1694377028,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-03-03T00:00:00.000Z",
+      "value": 48.214754838,
+      "regressors": {
+        "temperature": 11.41352979,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-03-04T00:00:00.000Z",
+      "value": 49.2822009271,
+      "regressors": {
+        "temperature": 11.6884066814,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-03-05T00:00:00.000Z",
+      "value": 49.5599337791,
+      "regressors": {
+        "temperature": 10.9002520075,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-03-06T00:00:00.000Z",
+      "value": 47.974868428,
+      "regressors": {
+        "temperature": 9.76078667156,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-03-07T00:00:00.000Z",
+      "value": 46.2197030094,
+      "regressors": {
+        "temperature": 9.24861855217,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-03-08T00:00:00.000Z",
+      "value": 46.4585476013,
+      "regressors": {
+        "temperature": 9.86861716034,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-03-09T00:00:00.000Z",
+      "value": 47.9160654856,
+      "regressors": {
+        "temperature": 11.2698037567,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-03-10T00:00:00.000Z",
+      "value": 49.04080407,
+      "regressors": {
+        "temperature": 12.5109300798,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-03-11T00:00:00.000Z",
+      "value": 49.9401891444,
+      "regressors": {
+        "temperature": 12.7727610093,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-03-12T00:00:00.000Z",
+      "value": 50.3044239832,
+      "regressors": {
+        "temperature": 11.9780198548,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-03-13T00:00:00.000Z",
+      "value": 48.9970664508,
+      "regressors": {
+        "temperature": 10.8498340469,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-03-14T00:00:00.000Z",
+      "value": 47.0980176597,
+      "regressors": {
+        "temperature": 10.3644507065,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-03-15T00:00:00.000Z",
+      "value": 47.023772972,
+      "regressors": {
+        "temperature": 11.0123960486,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-03-16T00:00:00.000Z",
+      "value": 48.5353251543,
+      "regressors": {
+        "temperature": 12.4272184668,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-03-17T00:00:00.000Z",
+      "value": 49.6794849547,
+      "regressors": {
+        "temperature": 13.6627751385,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-03-18T00:00:00.000Z",
+      "value": 50.1997418179,
+      "regressors": {
+        "temperature": 13.9092171891,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-03-19T00:00:00.000Z",
+      "value": 50.365939579,
+      "regressors": {
+        "temperature": 13.1058301276,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-03-20T00:00:00.000Z",
+      "value": 49.2842672697,
+      "regressors": {
+        "temperature": 11.9869441396,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-03-21T00:00:00.000Z",
+      "value": 47.4230345029,
+      "regressors": {
+        "temperature": 11.5261702568,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-03-22T00:00:00.000Z",
+      "value": 47.1645807384,
+      "regressors": {
+        "temperature": 12.1995533979,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-03-23T00:00:00.000Z",
+      "value": 48.8727943747,
+      "regressors": {
+        "temperature": 13.625273383,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-03-24T00:00:00.000Z",
+      "value": 50.3950585113,
+      "regressors": {
+        "temperature": 14.8525610207,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-03-25T00:00:00.000Z",
+      "value": 50.8882113355,
+      "regressors": {
+        "temperature": 15.0811833443,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-03-26T00:00:00.000Z",
+      "value": 50.9658219577,
+      "regressors": {
+        "temperature": 14.267005926,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-03-27T00:00:00.000Z",
+      "value": 50.1747858017,
+      "regressors": {
+        "temperature": 13.1553547935,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-03-28T00:00:00.000Z",
+      "value": 48.4665049769,
+      "regressors": {
+        "temperature": 12.7169303275,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-03-29T00:00:00.000Z",
+      "value": 47.9181988672,
+      "regressors": {
+        "temperature": 13.4131622664,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-03-30T00:00:00.000Z",
+      "value": 49.4885570039,
+      "regressors": {
+        "temperature": 14.8469705183,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-03-31T00:00:00.000Z",
+      "value": 51.1420952767,
+      "regressors": {
+        "temperature": 16.063229043,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-04-01T00:00:00.000Z",
+      "value": 51.4345553002,
+      "regressors": {
+        "temperature": 16.2715477434,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-04-02T00:00:00.000Z",
+      "value": 51.111582857,
+      "regressors": {
+        "temperature": 15.4443854489,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-04-03T00:00:00.000Z",
+      "value": 50.3475860635,
+      "regressors": {
+        "temperature": 14.3378540228,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-04-04T00:00:00.000Z",
+      "value": 48.8205062797,
+      "regressors": {
+        "temperature": 13.9194694701,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-04-05T00:00:00.000Z",
+      "value": 48.100375696,
+      "regressors": {
+        "temperature": 14.6359166108,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-04-06T00:00:00.000Z",
+      "value": 49.5845800207,
+      "regressors": {
+        "temperature": 16.0749684267,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-04-07T00:00:00.000Z",
+      "value": 51.5861310532,
+      "regressors": {
+        "temperature": 17.2774127913,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-04-08T00:00:00.000Z",
+      "value": 52.0815286289,
+      "regressors": {
+        "temperature": 17.4629266641,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-04-09T00:00:00.000Z",
+      "value": 51.6200040215,
+      "regressors": {
+        "temperature": 16.6205706411,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-04-10T00:00:00.000Z",
+      "value": 50.9818786353,
+      "regressors": {
+        "temperature": 15.5170293704,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-04-11T00:00:00.000Z",
+      "value": 49.8059922676,
+      "regressors": {
+        "temperature": 15.1163616614,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-04-12T00:00:00.000Z",
+      "value": 49.0219507365,
+      "regressors": {
+        "temperature": 15.8503818477,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-04-13T00:00:00.000Z",
+      "value": 50.2287430331,
+      "regressors": {
+        "temperature": 17.2918332549,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-04-14T00:00:00.000Z",
+      "value": 52.2941657016,
+      "regressors": {
+        "temperature": 18.4776895865,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-04-15T00:00:00.000Z",
+      "value": 52.8271939379,
+      "regressors": {
+        "temperature": 18.6379161975,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-04-16T00:00:00.000Z",
+      "value": 51.9831993765,
+      "regressors": {
+        "temperature": 17.7781792624,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-04-17T00:00:00.000Z",
+      "value": 51.0988202385,
+      "regressors": {
+        "temperature": 16.6755201694,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-04-18T00:00:00.000Z",
+      "value": 50.0919390532,
+      "regressors": {
+        "temperature": 16.2902686823,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-04-19T00:00:00.000Z",
+      "value": 49.2926003695,
+      "regressors": {
+        "temperature": 17.0392472773,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-04-20T00:00:00.000Z",
+      "value": 50.2351271018,
+      "regressors": {
+        "temperature": 18.480291133,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-04-21T00:00:00.000Z",
+      "value": 52.4121838295,
+      "regressors": {
+        "temperature": 19.6468327669,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-04-22T00:00:00.000Z",
+      "value": 53.2916932975,
+      "regressors": {
+        "temperature": 19.7793443467,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-04-23T00:00:00.000Z",
+      "value": 52.4347961453,
+      "regressors": {
+        "temperature": 18.9000967288,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-04-24T00:00:00.000Z",
+      "value": 51.4830967647,
+      "regressors": {
+        "temperature": 17.7962690524,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-04-25T00:00:00.000Z",
+      "value": 50.809728415,
+      "regressors": {
+        "temperature": 17.4241912239,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-04-26T00:00:00.000Z",
+      "value": 50.2384099543,
+      "regressors": {
+        "temperature": 18.1855767106,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-04-27T00:00:00.000Z",
+      "value": 50.9510152917,
+      "regressors": {
+        "temperature": 19.6234782487,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-04-28T00:00:00.000Z",
+      "value": 53.015983844,
+      "regressors": {
+        "temperature": 20.768061133,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-04-29T00:00:00.000Z",
+      "value": 54.0582193452,
+      "regressors": {
+        "temperature": 20.8705197683,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-04-30T00:00:00.000Z",
+      "value": 53.0362654414,
+      "regressors": {
+        "temperature": 19.9697240767,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-05-01T00:00:00.000Z",
+      "value": 51.6754243383,
+      "regressors": {
+        "temperature": 18.8627690684,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-05-02T00:00:00.000Z",
+      "value": 50.9809109313,
+      "regressors": {
+        "temperature": 18.5017150834,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-05-03T00:00:00.000Z",
+      "value": 50.5399670076,
+      "regressors": {
+        "temperature": 19.2730536722,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-05-04T00:00:00.000Z",
+      "value": 51.0133688014,
+      "regressors": {
+        "temperature": 20.7051849823,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-05-05T00:00:00.000Z",
+      "value": 52.8967452715,
+      "regressors": {
+        "temperature": 21.8252819423,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-05-06T00:00:00.000Z",
+      "value": 54.2170437252,
+      "regressors": {
+        "temperature": 21.8954735535,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-05-07T00:00:00.000Z",
+      "value": 53.3860506501,
+      "regressors": {
+        "temperature": 20.9712184609,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-05-08T00:00:00.000Z",
+      "value": 51.8941363146,
+      "regressors": {
+        "temperature": 19.8593028259,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-05-09T00:00:00.000Z",
+      "value": 51.3370305647,
+      "regressors": {
+        "temperature": 19.5072488841,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-05-10T00:00:00.000Z",
+      "value": 51.2934769295,
+      "regressors": {
+        "temperature": 20.2862176266,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-05-11T00:00:00.000Z",
+      "value": 51.7695007092,
+      "regressors": {
+        "temperature": 21.7100905691,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-05-12T00:00:00.000Z",
+      "value": 53.4191471044,
+      "regressors": {
+        "temperature": 22.8033239351,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-05-13T00:00:00.000Z",
+      "value": 54.8406514987,
+      "regressors": {
+        "temperature": 22.8391905487,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-05-14T00:00:00.000Z",
+      "value": 54.1053858402,
+      "regressors": {
+        "temperature": 21.889722701,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-05-15T00:00:00.000Z",
+      "value": 52.2683314565,
+      "regressors": {
+        "temperature": 20.7711702006,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-05-16T00:00:00.000Z",
+      "value": 51.4450923051,
+      "regressors": {
+        "temperature": 20.4262498773,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-05-17T00:00:00.000Z",
+      "value": 51.5256143639,
+      "regressors": {
+        "temperature": 21.2106878072,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-05-18T00:00:00.000Z",
+      "value": 51.9350539817,
+      "regressors": {
+        "temperature": 22.6239848876,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-05-19T00:00:00.000Z",
+      "value": 53.2383917112,
+      "regressors": {
+        "temperature": 23.6881570162,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-05-20T00:00:00.000Z",
+      "value": 54.6800766638,
+      "regressors": {
+        "temperature": 23.6878268642,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-05-21T00:00:00.000Z",
+      "value": 54.2464326195,
+      "regressors": {
+        "temperature": 22.7115805544,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-05-22T00:00:00.000Z",
+      "value": 52.3888213242,
+      "regressors": {
+        "temperature": 21.5849013093,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-05-23T00:00:00.000Z",
+      "value": 51.4876096231,
+      "regressors": {
+        "temperature": 21.2454345556,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-05-24T00:00:00.000Z",
+      "value": 51.9078478527,
+      "regressors": {
+        "temperature": 22.0333714068,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-05-25T00:00:00.000Z",
+      "value": 52.5934596099,
+      "regressors": {
+        "temperature": 23.4339741642,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-05-26T00:00:00.000Z",
+      "value": 53.7217614811,
+      "regressors": {
+        "temperature": 24.4670954107,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-05-27T00:00:00.000Z",
+      "value": 55.0939690216,
+      "regressors": {
+        "temperature": 24.4289104215,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-05-28T00:00:00.000Z",
+      "value": 54.8856813152,
+      "regressors": {
+        "temperature": 23.4245345958,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-05-29T00:00:00.000Z",
+      "value": 52.9349582416,
+      "regressors": {
+        "temperature": 22.2884516648,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-05-30T00:00:00.000Z",
+      "value": 51.6472919959,
+      "regressors": {
+        "temperature": 21.9529710264,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-05-31T00:00:00.000Z",
+      "value": 52.0184897311,
+      "regressors": {
+        "temperature": 22.7426531131,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-06-01T00:00:00.000Z",
+      "value": 52.7968884246,
+      "regressors": {
+        "temperature": 24.1286676131,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-06-02T00:00:00.000Z",
+      "value": 53.6308319493,
+      "regressors": {
+        "temperature": 25.1289813527,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-06-03T00:00:00.000Z",
+      "value": 54.7348664138,
+      "regressors": {
+        "temperature": 25.0515216343,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-06-04T00:00:00.000Z",
+      "value": 54.7329172542,
+      "regressors": {
+        "temperature": 24.0179038384,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-06-05T00:00:00.000Z",
+      "value": 52.9449197819,
+      "regressors": {
+        "temperature": 22.8713766865,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-06-06T00:00:00.000Z",
+      "value": 51.5029945978,
+      "regressors": {
+        "temperature": 22.5386503616,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-06-07T00:00:00.000Z",
+      "value": 51.9828961829,
+      "regressors": {
+        "temperature": 23.3285632455,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-06-08T00:00:00.000Z",
+      "value": 53.1682962359,
+      "regressors": {
+        "temperature": 24.6983423104,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-06-09T00:00:00.000Z",
+      "value": 54.0534051637,
+      "regressors": {
+        "temperature": 25.6643466447,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-06-10T00:00:00.000Z",
+      "value": 54.971750441,
+      "regressors": {
+        "temperature": 25.5464516069,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-06-11T00:00:00.000Z",
+      "value": 55.1277946121,
+      "regressors": {
+        "temperature": 24.4827385243,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-06-12T00:00:00.000Z",
+      "value": 53.5199376118,
+      "regressors": {
+        "temperature": 23.3249830387,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-06-13T00:00:00.000Z",
+      "value": 51.7972419183,
+      "regressors": {
+        "temperature": 22.9940344396,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-06-14T00:00:00.000Z",
+      "value": 52.0144452543,
+      "regressors": {
+        "temperature": 23.7829220582,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-06-15T00:00:00.000Z",
+      "value": 53.2998827419,
+      "regressors": {
+        "temperature": 25.1350839128,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-06-16T00:00:00.000Z",
+      "value": 54.0905334927,
+      "regressors": {
+        "temperature": 26.0655497504,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-06-17T00:00:00.000Z",
+      "value": 54.6041815937,
+      "regressors": {
+        "temperature": 25.9063355582,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-06-18T00:00:00.000Z",
+      "value": 54.7019869575,
+      "regressors": {
+        "temperature": 24.8119498423,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-06-19T00:00:00.000Z",
+      "value": 53.3451424369,
+      "regressors": {
+        "temperature": 23.6424546045,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-06-20T00:00:00.000Z",
+      "value": 51.5697633595,
+      "regressors": {
+        "temperature": 23.31257814,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-06-21T00:00:00.000Z",
+      "value": 51.6605401334,
+      "regressors": {
+        "temperature": 24.0994581182,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-06-22T00:00:00.000Z",
+      "value": 53.251739514,
+      "regressors": {
+        "temperature": 25.4329011837,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-06-23T00:00:00.000Z",
+      "value": 54.3389727288,
+      "regressors": {
+        "temperature": 26.3268864329,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-06-24T00:00:00.000Z",
+      "value": 54.7246043267,
+      "regressors": {
+        "temperature": 26.1257595395,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-06-25T00:00:00.000Z",
+      "value": 54.8022995938,
+      "regressors": {
+        "temperature": 25.000412694,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-06-26T00:00:00.000Z",
+      "value": 53.7466213366,
+      "regressors": {
+        "temperature": 23.818951272,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-06-27T00:00:00.000Z",
+      "value": 51.9667098662,
+      "regressors": {
+        "temperature": 23.4897241207,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-06-28T00:00:00.000Z",
+      "value": 51.7133965777,
+      "regressors": {
+        "temperature": 24.2738990461,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-06-29T00:00:00.000Z",
+      "value": 53.2511069034,
+      "regressors": {
+        "temperature": 25.5878126687,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-06-30T00:00:00.000Z",
+      "value": 54.4236202579,
+      "regressors": {
+        "temperature": 26.4446723375,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-07-01T00:00:00.000Z",
+      "value": 54.4946738476,
+      "regressors": {
+        "temperature": 26.2013389005,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-07-02T00:00:00.000Z",
+      "value": 54.2454786046,
+      "regressors": {
+        "temperature": 25.0450400202,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-07-03T00:00:00.000Z",
+      "value": 53.3324240294,
+      "regressors": {
+        "temperature": 23.8516791005,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-07-04T00:00:00.000Z",
+      "value": 51.6727804801,
+      "regressors": {
+        "temperature": 23.5229688047,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-07-05T00:00:00.000Z",
+      "value": 51.211690358,
+      "regressors": {
+        "temperature": 24.304033303,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-07-06T00:00:00.000Z",
+      "value": 52.7923562754,
+      "regressors": {
+        "temperature": 25.5979042637,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-07-07T00:00:00.000Z",
+      "value": 54.3497714235,
+      "regressors": {
+        "temperature": 26.4172963233,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-07-08T00:00:00.000Z",
+      "value": 54.5031848336,
+      "regressors": {
+        "temperature": 26.1317673667,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-07-09T00:00:00.000Z",
+      "value": 54.1113618324,
+      "regressors": {
+        "temperature": 24.9448276111,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-07-10T00:00:00.000Z",
+      "value": 53.4127031872,
+      "regressors": {
+        "temperature": 23.7399308518,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-07-11T00:00:00.000Z",
+      "value": 52.0201578715,
+      "regressors": {
+        "temperature": 23.4118986215,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-07-12T00:00:00.000Z",
+      "value": 51.3524176826,
+      "regressors": {
+        "temperature": 24.1897421311,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-07-13T00:00:00.000Z",
+      "value": 52.6938916418,
+      "regressors": {
+        "temperature": 25.4633568432,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-07-14T00:00:00.000Z",
+      "value": 54.3588166069,
+      "regressors": {
+        "temperature": 26.2452437697,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-07-15T00:00:00.000Z",
+      "value": 54.4307417904,
+      "regressors": {
+        "temperature": 25.9178360176,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-07-16T00:00:00.000Z",
+      "value": 53.6151226169,
+      "regressors": {
+        "temperature": 24.7008687514,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-07-17T00:00:00.000Z",
+      "value": 52.8020302572,
+      "regressors": {
+        "temperature": 23.4850962987,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-07-18T00:00:00.000Z",
+      "value": 51.6085168698,
+      "regressors": {
+        "temperature": 23.1581959771,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-07-19T00:00:00.000Z",
+      "value": 50.8365763596,
+      "regressors": {
+        "temperature": 23.9330011835,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-07-20T00:00:00.000Z",
+      "value": 51.9748332804,
+      "regressors": {
+        "temperature": 25.186443549,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-07-21T00:00:00.000Z",
+      "value": 53.8828235991,
+      "regressors": {
+        "temperature": 25.9310895218,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-07-22T00:00:00.000Z",
+      "value": 54.2500372278,
+      "regressors": {
+        "temperature": 25.562421891,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-07-23T00:00:00.000Z",
+      "value": 53.3395406557,
+      "regressors": {
+        "temperature": 24.3163384872,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-07-24T00:00:00.000Z",
+      "value": 52.5436087125,
+      "regressors": {
+        "temperature": 23.0906421622,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-07-25T00:00:00.000Z",
+      "value": 51.7150706585,
+      "regressors": {
+        "temperature": 22.7656148677,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-07-26T00:00:00.000Z",
+      "value": 51.0227973657,
+      "regressors": {
+        "temperature": 23.5378518211,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-07-27T00:00:00.000Z",
+      "value": 51.8702294315,
+      "regressors": {
+        "temperature": 24.7714967761,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-07-28T00:00:00.000Z",
+      "value": 53.7478282628,
+      "regressors": {
+        "temperature": 25.4794605763,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-07-29T00:00:00.000Z",
+      "value": 54.2336819822,
+      "regressors": {
+        "temperature": 25.0704463782,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-07-30T00:00:00.000Z",
+      "value": 53.0332641444,
+      "regressors": {
+        "temperature": 23.7964477446,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-07-31T00:00:00.000Z",
+      "value": 51.8852961891,
+      "regressors": {
+        "temperature": 22.562061967,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-08-01T00:00:00.000Z",
+      "value": 51.147558867,
+      "regressors": {
+        "temperature": 22.2399264889,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-08-02T00:00:00.000Z",
+      "value": 50.5263575576,
+      "regressors": {
+        "temperature": 23.0103424908,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-08-03T00:00:00.000Z",
+      "value": 51.09631919,
+      "regressors": {
+        "temperature": 24.2248453375,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-08-04T00:00:00.000Z",
+      "value": 52.9315677831,
+      "regressors": {
+        "temperature": 24.8969690476,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-08-05T00:00:00.000Z",
+      "value": 53.7607655745,
+      "regressors": {
+        "temperature": 24.4488040125,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-08-06T00:00:00.000Z",
+      "value": 52.6557299932,
+      "regressors": {
+        "temperature": 23.148367962,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-08-07T00:00:00.000Z",
+      "value": 51.3878814652,
+      "regressors": {
+        "temperature": 21.9067965424,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-08-08T00:00:00.000Z",
+      "value": 50.8968518234,
+      "regressors": {
+        "temperature": 21.5888356286,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-08-09T00:00:00.000Z",
+      "value": 50.6102630865,
+      "regressors": {
+        "temperature": 22.3584410359,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-08-10T00:00:00.000Z",
+      "value": 51.045148915,
+      "regressors": {
+        "temperature": 23.5547227153,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-08-11T00:00:00.000Z",
+      "value": 52.683309174,
+      "regressors": {
+        "temperature": 24.1921163869,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-08-12T00:00:00.000Z",
+      "value": 53.6629879901,
+      "regressors": {
+        "temperature": 23.7062626831,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-08-13T00:00:00.000Z",
+      "value": 52.5332461904,
+      "regressors": {
+        "temperature": 22.3811273296,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-08-14T00:00:00.000Z",
+      "value": 50.8617281337,
+      "regressors": {
+        "temperature": 21.1341263191,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-08-15T00:00:00.000Z",
+      "value": 50.222859502,
+      "regressors": {
+        "temperature": 20.8218690553,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-08-16T00:00:00.000Z",
+      "value": 50.0890358765,
+      "regressors": {
+        "temperature": 21.5919192072,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-08-17T00:00:00.000Z",
+      "value": 50.3652392942,
+      "regressors": {
+        "temperature": 22.7711477277,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-08-18T00:00:00.000Z",
+      "value": 51.7169485739,
+      "regressors": {
+        "temperature": 23.3751702387,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-08-19T00:00:00.000Z",
+      "value": 52.8662327267,
+      "regressors": {
+        "temperature": 22.8533367181,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-08-20T00:00:00.000Z",
+      "value": 52.0139244727,
+      "regressors": {
+        "temperature": 21.5054801376,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-08-21T00:00:00.000Z",
+      "value": 50.2567536161,
+      "regressors": {
+        "temperature": 20.2550369831,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-08-22T00:00:00.000Z",
+      "value": 49.6405103359,
+      "regressors": {
+        "temperature": 19.9502375165,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-08-23T00:00:00.000Z",
+      "value": 49.9034466442,
+      "regressors": {
+        "temperature": 20.7222110473,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-08-24T00:00:00.000Z",
+      "value": 50.326086878,
+      "regressors": {
+        "temperature": 21.8857793405,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-08-25T00:00:00.000Z",
+      "value": 51.4461266412,
+      "regressors": {
+        "temperature": 22.4580157211,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-08-26T00:00:00.000Z",
+      "value": 52.6139245232,
+      "regressors": {
+        "temperature": 21.9021346766,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-08-27T00:00:00.000Z",
+      "value": 51.9504620054,
+      "regressors": {
+        "temperature": 20.5337511254,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-08-28T00:00:00.000Z",
+      "value": 49.9658455348,
+      "regressors": {
+        "temperature": 19.2820604299,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-08-29T00:00:00.000Z",
+      "value": 49.0010069142,
+      "regressors": {
+        "temperature": 18.9866733473,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-08-30T00:00:00.000Z",
+      "value": 49.3187598442,
+      "regressors": {
+        "temperature": 19.7622472011,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-08-31T00:00:00.000Z",
+      "value": 49.7724273075,
+      "regressors": {
+        "temperature": 20.9117477258,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-09-01T00:00:00.000Z",
+      "value": 50.5529202679,
+      "regressors": {
+        "temperature": 21.4539832813,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-09-02T00:00:00.000Z",
+      "value": 51.5955058392,
+      "regressors": {
+        "temperature": 20.8661840522,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-09-03T00:00:00.000Z",
+      "value": 51.2249807196,
+      "regressors": {
+        "temperature": 19.4796570874,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-09-04T00:00:00.000Z",
+      "value": 49.3265587768,
+      "regressors": {
+        "temperature": 18.2290933258,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-09-05T00:00:00.000Z",
+      "value": 48.2302641025,
+      "regressors": {
+        "temperature": 17.9452460412,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-09-06T00:00:00.000Z",
+      "value": 48.7874206858,
+      "regressors": {
+        "temperature": 18.7262675496,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-09-07T00:00:00.000Z",
+      "value": 49.6129286176,
+      "regressors": {
+        "temperature": 19.8634640141,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-09-08T00:00:00.000Z",
+      "value": 50.3215819636,
+      "regressors": {
+        "temperature": 20.3776556209,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-09-09T00:00:00.000Z",
+      "value": 51.2224142066,
+      "regressors": {
+        "temperature": 19.7602354285,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-09-10T00:00:00.000Z",
+      "value": 51.0710488684,
+      "regressors": {
+        "temperature": 18.3581083164,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-09-11T00:00:00.000Z",
+      "value": 49.2345485109,
+      "regressors": {
+        "temperature": 17.1111959005,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-09-12T00:00:00.000Z",
+      "value": 47.7822269457,
+      "regressors": {
+        "temperature": 16.8411584524,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-09-13T00:00:00.000Z",
+      "value": 48.1795909651,
+      "regressors": {
+        "temperature": 17.6296148824,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-09-14T00:00:00.000Z",
+      "value": 49.1299943587,
+      "regressors": {
+        "temperature": 18.7564114956,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-09-15T00:00:00.000Z",
+      "value": 49.6453696293,
+      "regressors": {
+        "temperature": 19.2446564868,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-09-16T00:00:00.000Z",
+      "value": 50.1935369388,
+      "regressors": {
+        "temperature": 18.6000489219,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-09-17T00:00:00.000Z",
+      "value": 50.1419256532,
+      "regressors": {
+        "temperature": 17.1849927626,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-09-18T00:00:00.000Z",
+      "value": 48.5498605674,
+      "regressors": {
+        "temperature": 15.9443738877,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-09-19T00:00:00.000Z",
+      "value": 46.9894755498,
+      "regressors": {
+        "temperature": 15.6905265834,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-09-20T00:00:00.000Z",
+      "value": 47.3737461184,
+      "regressors": {
+        "temperature": 16.4885125962,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-09-21T00:00:00.000Z",
+      "value": 48.7145789533,
+      "regressors": {
+        "temperature": 17.6069212947,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-09-22T00:00:00.000Z",
+      "value": 49.4220987983,
+      "regressors": {
+        "temperature": 18.0714243866,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-09-23T00:00:00.000Z",
+      "value": 49.7974005279,
+      "regressors": {
+        "temperature": 17.4021660041,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-09-24T00:00:00.000Z",
+      "value": 49.8256601461,
+      "regressors": {
+        "temperature": 15.9769460333,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-09-25T00:00:00.000Z",
+      "value": 48.5099681097,
+      "regressors": {
+        "temperature": 14.7453467708,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-09-26T00:00:00.000Z",
+      "value": 46.8041432561,
+      "regressors": {
+        "temperature": 14.5101461454,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-09-27T00:00:00.000Z",
+      "value": 46.8641135201,
+      "regressors": {
+        "temperature": 15.3198296394,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-09-28T00:00:00.000Z",
+      "value": 48.247054351,
+      "regressors": {
+        "temperature": 16.4319357667,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-09-29T00:00:00.000Z",
+      "value": 48.9739854363,
+      "regressors": {
+        "temperature": 16.8749745058,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-09-30T00:00:00.000Z",
+      "value": 48.9773239044,
+      "regressors": {
+        "temperature": 16.1836700112,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-10-01T00:00:00.000Z",
+      "value": 48.8155206488,
+      "regressors": {
+        "temperature": 14.7511105639,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-10-02T00:00:00.000Z",
+      "value": 47.7386850605,
+      "regressors": {
+        "temperature": 13.5313056893,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-10-03T00:00:00.000Z",
+      "value": 46.0855968833,
+      "regressors": {
+        "temperature": 13.3172492734,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-10-04T00:00:00.000Z",
+      "value": 45.9654589647,
+      "regressors": {
+        "temperature": 14.1408361069,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-10-05T00:00:00.000Z",
+      "value": 47.5411646562,
+      "regressors": {
+        "temperature": 15.2487630423,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-10-06T00:00:00.000Z",
+      "value": 48.6479380688,
+      "regressors": {
+        "temperature": 15.6726522746,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-10-07T00:00:00.000Z",
+      "value": 48.6301157868,
+      "regressors": {
+        "temperature": 14.9619388043,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-10-08T00:00:00.000Z",
+      "value": 48.3809889427,
+      "regressors": {
+        "temperature": 13.5248874484,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-10-09T00:00:00.000Z",
+      "value": 47.5949464454,
+      "regressors": {
+        "temperature": 12.3196645135,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-10-10T00:00:00.000Z",
+      "value": 46.0968216704,
+      "regressors": {
+        "temperature": 12.1292549191,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-10-11T00:00:00.000Z",
+      "value": 45.681875214,
+      "regressors": {
+        "temperature": 12.9689530243,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-10-12T00:00:00.000Z",
+      "value": 47.1084629315,
+      "regressors": {
+        "temperature": 14.0748262769,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-10-13T00:00:00.000Z",
+      "value": 48.3444236722,
+      "regressors": {
+        "temperature": 14.4818821537,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-10-14T00:00:00.000Z",
+      "value": 48.1366115951,
+      "regressors": {
+        "temperature": 13.7543931676,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-10-15T00:00:00.000Z",
+      "value": 47.499490332,
+      "regressors": {
+        "temperature": 12.3156845237,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-10-16T00:00:00.000Z",
+      "value": 46.7533494421,
+      "regressors": {
+        "temperature": 11.1278076919,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-10-17T00:00:00.000Z",
+      "value": 45.4533890801,
+      "regressors": {
+        "temperature": 10.9635165367,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-10-18T00:00:00.000Z",
+      "value": 44.87945495,
+      "regressors": {
+        "temperature": 11.8214999459,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-10-19T00:00:00.000Z",
+      "value": 46.2230928669,
+      "regressors": {
+        "temperature": 12.927411234,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-10-20T00:00:00.000Z",
+      "value": 47.8123905236,
+      "regressors": {
+        "temperature": 13.3199152776,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-10-21T00:00:00.000Z",
+      "value": 47.8216560635,
+      "regressors": {
+        "temperature": 12.5782445844,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-10-22T00:00:00.000Z",
+      "value": 47.0580621751,
+      "regressors": {
+        "temperature": 11.1406643559,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-10-23T00:00:00.000Z",
+      "value": 46.4424692318,
+      "regressors": {
+        "temperature": 9.97283852274,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-10-24T00:00:00.000Z",
+      "value": 45.4975833224,
+      "regressors": {
+        "temperature": 9.83707071525,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-10-25T00:00:00.000Z",
+      "value": 44.8610691421,
+      "regressors": {
+        "temperature": 10.7154440226,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-10-26T00:00:00.000Z",
+      "value": 45.9207134671,
+      "regressors": {
+        "temperature": 11.8234158601,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-10-27T00:00:00.000Z",
+      "value": 47.570046401,
+      "regressors": {
+        "temperature": 12.2035796087,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-10-28T00:00:00.000Z",
+      "value": 47.6276251647,
+      "regressors": {
+        "temperature": 11.4502460465,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-10-29T00:00:00.000Z",
+      "value": 46.498847077,
+      "regressors": {
+        "temperature": 10.0164957782,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-10-30T00:00:00.000Z",
+      "value": 45.6510810761,
+      "regressors": {
+        "temperature": 8.87133149675,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-10-31T00:00:00.000Z",
+      "value": 44.8905781822,
+      "regressors": {
+        "temperature": 8.76639039932,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-11-01T00:00:00.000Z",
+      "value": 44.2562573823,
+      "regressors": {
+        "temperature": 9.66715417191,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-11-02T00:00:00.000Z",
+      "value": 45.0630056496,
+      "regressors": {
+        "temperature": 10.7791054766,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-11-03T00:00:00.000Z",
+      "value": 46.8331208918,
+      "regressors": {
+        "temperature": 11.1490362234,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-11-04T00:00:00.000Z",
+      "value": 47.2556772038,
+      "regressors": {
+        "temperature": 10.3864495044,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-11-05T00:00:00.000Z",
+      "value": 46.1362857062,
+      "regressors": {
+        "temperature": 8.95911257945,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-11-06T00:00:00.000Z",
+      "value": 45.2340523235,
+      "regressors": {
+        "temperature": 7.83909229584,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-11-07T00:00:00.000Z",
+      "value": 44.8129914474,
+      "regressors": {
+        "temperature": 7.76714627046,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-11-08T00:00:00.000Z",
+      "value": 44.4121519851,
+      "regressors": {
+        "temperature": 8.69216391248,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-11-09T00:00:00.000Z",
+      "value": 44.989513387,
+      "regressors": {
+        "temperature": 9.80987713585,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-11-10T00:00:00.000Z",
+      "value": 46.6451047359,
+      "regressors": {
+        "temperature": 10.1715452567,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-11-11T00:00:00.000Z",
+      "value": 47.2387174837,
+      "regressors": {
+        "temperature": 9.40197347159,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-11-12T00:00:00.000Z",
+      "value": 45.9738957157,
+      "regressors": {
+        "temperature": 7.98348283739,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-11-13T00:00:00.000Z",
+      "value": 44.6796782438,
+      "regressors": {
+        "temperature": 6.89092892548,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-11-14T00:00:00.000Z",
+      "value": 44.2505284006,
+      "regressors": {
+        "temperature": 6.85397974657,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-11-15T00:00:00.000Z",
+      "value": 43.9970223139,
+      "regressors": {
+        "temperature": 7.80494629706,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-11-16T00:00:00.000Z",
+      "value": 44.3528658294,
+      "regressors": {
+        "temperature": 8.93003655224,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-11-17T00:00:00.000Z",
+      "value": 45.8411837934,
+      "regressors": {
+        "temperature": 9.28524489785,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-11-18T00:00:00.000Z",
+      "value": 46.7330266728,
+      "regressors": {
+        "temperature": 8.51078414872,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-11-19T00:00:00.000Z",
+      "value": 45.6878478266,
+      "regressors": {
+        "temperature": 7.10339223778,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-11-20T00:00:00.000Z",
+      "value": 44.2852607837,
+      "regressors": {
+        "temperature": 6.04043729432,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-11-21T00:00:00.000Z",
+      "value": 44.0037790334,
+      "regressors": {
+        "temperature": 6.04029088624,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-11-22T00:00:00.000Z",
+      "value": 44.154995677,
+      "regressors": {
+        "temperature": 7.01870420336,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-11-23T00:00:00.000Z",
+      "value": 44.5205449727,
+      "regressors": {
+        "temperature": 8.15259084067,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-11-24T00:00:00.000Z",
+      "value": 45.7779361748,
+      "regressors": {
+        "temperature": 8.50294663548,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-11-25T00:00:00.000Z",
+      "value": 46.7775819079,
+      "regressors": {
+        "temperature": 7.72549323724,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-11-26T00:00:00.000Z",
+      "value": 45.8467090537,
+      "regressors": {
+        "temperature": 6.33124451719,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-11-27T00:00:00.000Z",
+      "value": 44.1192977607,
+      "regressors": {
+        "temperature": 5.29980434674,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-11-28T00:00:00.000Z",
+      "value": 43.5841463194,
+      "regressors": {
+        "temperature": 5.33804426978,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-11-29T00:00:00.000Z",
+      "value": 43.8723328046,
+      "regressors": {
+        "temperature": 6.34517902036,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-11-30T00:00:00.000Z",
+      "value": 44.1907239088,
+      "regressors": {
+        "temperature": 7.48906006309,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-12-01T00:00:00.000Z",
+      "value": 45.1216080866,
+      "regressors": {
+        "temperature": 7.8359497195,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-12-02T00:00:00.000Z",
+      "value": 46.1628425052,
+      "regressors": {
+        "temperature": 7.057175371,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-12-03T00:00:00.000Z",
+      "value": 45.5638768775,
+      "regressors": {
+        "temperature": 5.67788191992,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-12-04T00:00:00.000Z",
+      "value": 43.8465674581,
+      "regressors": {
+        "temperature": 4.67963159952,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-12-05T00:00:00.000Z",
+      "value": 43.2506739305,
+      "regressors": {
+        "temperature": 4.75759566845,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-12-06T00:00:00.000Z",
+      "value": 43.8873216638,
+      "regressors": {
+        "temperature": 5.79448050069,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-12-07T00:00:00.000Z",
+      "value": 44.4926788061,
+      "regressors": {
+        "temperature": 6.94931031286,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-12-08T00:00:00.000Z",
+      "value": 45.2584665515,
+      "regressors": {
+        "temperature": 7.29387752564,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-12-09T00:00:00.000Z",
+      "value": 46.2382894739,
+      "regressors": {
+        "temperature": 6.51520780965,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-12-10T00:00:00.000Z",
+      "value": 45.8801772867,
+      "regressors": {
+        "temperature": 5.15242826884,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-12-11T00:00:00.000Z",
+      "value": 44.0909747372,
+      "regressors": {
+        "temperature": 4.18878163814,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-12-12T00:00:00.000Z",
+      "value": 43.1225599439,
+      "regressors": {
+        "temperature": 4.30754201225,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-12-13T00:00:00.000Z",
+      "value": 43.7186761613,
+      "regressors": {
+        "temperature": 5.37494024337,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-12-14T00:00:00.000Z",
+      "value": 44.4328468753,
+      "regressors": {
+        "temperature": 6.54141075425,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-12-15T00:00:00.000Z",
+      "value": 44.9272514748,
+      "regressors": {
+        "temperature": 6.88453819295,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-12-16T00:00:00.000Z",
+      "value": 45.6624212916,
+      "regressors": {
+        "temperature": 6.10713471562,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-12-17T00:00:00.000Z",
+      "value": 45.5393062688,
+      "regressors": {
+        "temperature": 4.76215692333,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-12-18T00:00:00.000Z",
+      "value": 43.946610116,
+      "regressors": {
+        "temperature": 3.8342497961,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-12-19T00:00:00.000Z",
+      "value": 42.8486661129,
+      "regressors": {
+        "temperature": 3.99459682898,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-12-20T00:00:00.000Z",
+      "value": 43.5651631132,
+      "regressors": {
+        "temperature": 5.0929909288,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-12-21T00:00:00.000Z",
+      "value": 44.6979312498,
+      "regressors": {
+        "temperature": 6.27151668768,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-12-22T00:00:00.000Z",
+      "value": 45.2592728343,
+      "regressors": {
+        "temperature": 6.61381155271,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-12-23T00:00:00.000Z",
+      "value": 45.8218049179,
+      "regressors": {
+        "temperature": 5.83855798029,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-12-24T00:00:00.000Z",
+      "value": 45.8699473965,
+      "regressors": {
+        "temperature": 4.5123855363,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-12-25T00:00:00.000Z",
+      "value": 44.4763571154,
+      "regressors": {
+        "temperature": 3.62106287541,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-12-26T00:00:00.000Z",
+      "value": 43.1132981111,
+      "regressors": {
+        "temperature": 3.82349295879,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-12-27T00:00:00.000Z",
+      "value": 43.573441307,
+      "regressors": {
+        "temperature": 4.95307305519,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-12-28T00:00:00.000Z",
+      "value": 44.8158527531,
+      "regressors": {
+        "temperature": 6.14378033401,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-12-29T00:00:00.000Z",
+      "value": 45.3043056959,
+      "regressors": {
+        "temperature": 6.48556398608,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2021-12-30T00:00:00.000Z",
+      "value": 45.4878259748,
+      "regressors": {
+        "temperature": 5.71305618042,
+        "baseline": 1
+      }
+    }
+  ],
+  "predictionRows": [
+    {
+      "timestamp": "2021-12-31T00:00:00.000Z",
+      "regressors": {
+        "temperature": 10.4063991346,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-01-01T00:00:00.000Z",
+      "regressors": {
+        "temperature": 9.55220637526,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-01-02T00:00:00.000Z",
+      "regressors": {
+        "temperature": 9.79691395294,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-01-03T00:00:00.000Z",
+      "regressors": {
+        "temperature": 10.957570527,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-01-04T00:00:00.000Z",
+      "regressors": {
+        "temperature": 12.1602906303,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-01-05T00:00:00.000Z",
+      "regressors": {
+        "temperature": 12.5015924437,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-01-06T00:00:00.000Z",
+      "regressors": {
+        "temperature": 11.7321328385,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-01-07T00:00:00.000Z",
+      "regressors": {
+        "temperature": 10.445402637,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-01-08T00:00:00.000Z",
+      "regressors": {
+        "temperature": 9.62858128269,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-01-09T00:00:00.000Z",
+      "regressors": {
+        "temperature": 9.91545515062,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-01-10T00:00:00.000Z",
+      "regressors": {
+        "temperature": 11.1067760285,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-01-11T00:00:00.000Z",
+      "regressors": {
+        "temperature": 12.3210429085,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-01-12T00:00:00.000Z",
+      "regressors": {
+        "temperature": 12.6615984382,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-01-13T00:00:00.000Z",
+      "regressors": {
+        "temperature": 11.8951947364,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-01-14T00:00:00.000Z",
+      "regressors": {
+        "temperature": 10.6285034966,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-01-15T00:00:00.000Z",
+      "regressors": {
+        "temperature": 9.84899105101,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-01-16T00:00:00.000Z",
+      "regressors": {
+        "temperature": 10.1776149973,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-01-17T00:00:00.000Z",
+      "regressors": {
+        "temperature": 11.3988866835,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-01-18T00:00:00.000Z",
+      "regressors": {
+        "temperature": 12.6239388973,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-01-19T00:00:00.000Z",
+      "regressors": {
+        "temperature": 12.9631923856,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-01-20T00:00:00.000Z",
+      "regressors": {
+        "temperature": 12.1995605966,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-01-21T00:00:00.000Z",
+      "regressors": {
+        "temperature": 10.9527247204,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-01-22T00:00:00.000Z",
+      "regressors": {
+        "temperature": 10.2101589547,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-01-23T00:00:00.000Z",
+      "regressors": {
+        "temperature": 10.5798167304,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-01-24T00:00:00.000Z",
+      "regressors": {
+        "temperature": 11.8300300651,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-01-25T00:00:00.000Z",
+      "regressors": {
+        "temperature": 13.0648170451,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-01-26T00:00:00.000Z",
+      "regressors": {
+        "temperature": 13.4019282335,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-01-27T00:00:00.000Z",
+      "regressors": {
+        "temperature": 12.6405000046,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-01-28T00:00:00.000Z",
+      "regressors": {
+        "temperature": 11.413048076,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-01-29T00:00:00.000Z",
+      "regressors": {
+        "temperature": 10.7067755691,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-01-30T00:00:00.000Z",
+      "regressors": {
+        "temperature": 11.1164601187,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-01-31T00:00:00.000Z",
+      "regressors": {
+        "temperature": 12.3943201775,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-02-01T00:00:00.000Z",
+      "regressors": {
+        "temperature": 13.6375127277,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-02-02T00:00:00.000Z",
+      "regressors": {
+        "temperature": 13.9713678746,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-02-03T00:00:00.000Z",
+      "regressors": {
+        "temperature": 13.2113020094,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-02-04T00:00:00.000Z",
+      "regressors": {
+        "temperature": 12.0024868607,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-02-05T00:00:00.000Z",
+      "regressors": {
+        "temperature": 11.3315756879,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-02-06T00:00:00.000Z",
+      "regressors": {
+        "temperature": 11.7800025049,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-02-07T00:00:00.000Z",
+      "regressors": {
+        "temperature": 13.0839425999,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-02-08T00:00:00.000Z",
+      "regressors": {
+        "temperature": 14.333947466,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-02-09T00:00:00.000Z",
+      "regressors": {
+        "temperature": 14.6631744112,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-02-10T00:00:00.000Z",
+      "regressors": {
+        "temperature": 13.9033724083,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-02-11T00:00:00.000Z",
+      "regressors": {
+        "temperature": 12.7121871782,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-02-12T00:00:00.000Z",
+      "regressors": {
+        "temperature": 12.0754435637,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-02-13T00:00:00.000Z",
+      "regressors": {
+        "temperature": 12.5610679795,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-02-14T00:00:00.000Z",
+      "regressors": {
+        "temperature": 13.8892675598,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-02-15T00:00:00.000Z",
+      "regressors": {
+        "temperature": 15.1442458638,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-02-16T00:00:00.000Z",
+      "regressors": {
+        "temperature": 15.4672329219,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-02-17T00:00:00.000Z",
+      "regressors": {
+        "temperature": 14.7063583072,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-02-18T00:00:00.000Z",
+      "regressors": {
+        "temperature": 13.5315562573,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-02-19T00:00:00.000Z",
+      "regressors": {
+        "temperature": 12.9275449475,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-02-20T00:00:00.000Z",
+      "regressors": {
+        "temperature": 13.4485831034,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-02-21T00:00:00.000Z",
+      "regressors": {
+        "temperature": 14.798989297,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-02-22T00:00:00.000Z",
+      "regressors": {
+        "temperature": 16.0568785709,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-02-23T00:00:00.000Z",
+      "regressors": {
+        "temperature": 16.3717969806,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-02-24T00:00:00.000Z",
+      "regressors": {
+        "temperature": 15.6082981518,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-02-25T00:00:00.000Z",
+      "regressors": {
+        "temperature": 14.4484159528,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-02-26T00:00:00.000Z",
+      "regressors": {
+        "temperature": 13.8754840162,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-02-27T00:00:00.000Z",
+      "regressors": {
+        "temperature": 14.4299372138,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-02-28T00:00:00.000Z",
+      "regressors": {
+        "temperature": 15.8002897009,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-03-01T00:00:00.000Z",
+      "regressors": {
+        "temperature": 17.0588292011,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-03-02T00:00:00.000Z",
+      "regressors": {
+        "temperature": 17.3636588054,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-03-03T00:00:00.000Z",
+      "regressors": {
+        "temperature": 16.5957950576,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-03-04T00:00:00.000Z",
+      "regressors": {
+        "temperature": 15.4491792065,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-03-05T00:00:00.000Z",
+      "regressors": {
+        "temperature": 14.9054829129,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-03-06T00:00:00.000Z",
+      "regressors": {
+        "temperature": 15.4911649929,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-03-07T00:00:00.000Z",
+      "regressors": {
+        "temperature": 16.8790238508,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-03-08T00:00:00.000Z",
+      "regressors": {
+        "temperature": 18.1357827884,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-03-09T00:00:00.000Z",
+      "regressors": {
+        "temperature": 18.4283405733,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-03-10T00:00:00.000Z",
+      "regressors": {
+        "temperature": 17.654210928,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-03-11T00:00:00.000Z",
+      "regressors": {
+        "temperature": 16.519046912,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-03-12T00:00:00.000Z",
+      "regressors": {
+        "temperature": 16.0025813022,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-03-13T00:00:00.000Z",
+      "regressors": {
+        "temperature": 16.6171486534,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-03-14T00:00:00.000Z",
+      "regressors": {
+        "temperature": 18.0199247723,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-03-15T00:00:00.000Z",
+      "regressors": {
+        "temperature": 19.2723330516,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-03-16T00:00:00.000Z",
+      "regressors": {
+        "temperature": 19.5503041314,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-03-17T00:00:00.000Z",
+      "regressors": {
+        "temperature": 18.7678785488,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-03-18T00:00:00.000Z",
+      "regressors": {
+        "temperature": 17.6422223326,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-03-19T00:00:00.000Z",
+      "regressors": {
+        "temperature": 17.1508530486,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-03-20T00:00:00.000Z",
+      "regressors": {
+        "temperature": 17.7918368143,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-03-21T00:00:00.000Z",
+      "regressors": {
+        "temperature": 19.2068244438,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-03-22T00:00:00.000Z",
+      "regressors": {
+        "temperature": 20.4522054649,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-03-23T00:00:00.000Z",
+      "regressors": {
+        "temperature": 20.7131760645,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-03-24T00:00:00.000Z",
+      "regressors": {
+        "temperature": 19.9203285883,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-03-25T00:00:00.000Z",
+      "regressors": {
+        "temperature": 18.8021399668,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-03-26T00:00:00.000Z",
+      "regressors": {
+        "temperature": 18.3336368815,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-03-27T00:00:00.000Z",
+      "regressors": {
+        "temperature": 18.9984768969,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-03-28T00:00:00.000Z",
+      "regressors": {
+        "temperature": 20.4228878535,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-03-29T00:00:00.000Z",
+      "regressors": {
+        "temperature": 21.6584929054,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-03-30T00:00:00.000Z",
+      "regressors": {
+        "temperature": 21.8999848625,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-03-31T00:00:00.000Z",
+      "regressors": {
+        "temperature": 21.0945282144,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-04-01T00:00:00.000Z",
+      "regressors": {
+        "temperature": 19.9817055461,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-04-02T00:00:00.000Z",
+      "regressors": {
+        "temperature": 19.5337777042,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-04-03T00:00:00.000Z",
+      "regressors": {
+        "temperature": 20.2198576738,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-04-04T00:00:00.000Z",
+      "regressors": {
+        "temperature": 21.650856716,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-04-05T00:00:00.000Z",
+      "regressors": {
+        "temperature": 22.8739004632,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-04-06T00:00:00.000Z",
+      "regressors": {
+        "temperature": 23.0934067511,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-04-07T00:00:00.000Z",
+      "regressors": {
+        "temperature": 22.2731278731,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-04-08T00:00:00.000Z",
+      "regressors": {
+        "temperature": 21.1635436908,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-04-09T00:00:00.000Z",
+      "regressors": {
+        "temperature": 20.7338750539,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-04-10T00:00:00.000Z",
+      "regressors": {
+        "temperature": 21.43855846,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-04-11T00:00:00.000Z",
+      "regressors": {
+        "temperature": 22.8732993196,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-04-12T00:00:00.000Z",
+      "regressors": {
+        "temperature": 24.0809958691,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-04-13T00:00:00.000Z",
+      "regressors": {
+        "temperature": 24.2760166254,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-04-14T00:00:00.000Z",
+      "regressors": {
+        "temperature": 23.4387126549,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-04-15T00:00:00.000Z",
+      "regressors": {
+        "temperature": 22.3302496353,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-04-16T00:00:00.000Z",
+      "regressors": {
+        "temperature": 21.9165351135,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-04-17T00:00:00.000Z",
+      "regressors": {
+        "temperature": 22.6372013364,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-04-18T00:00:00.000Z",
+      "regressors": {
+        "temperature": 24.0728628851,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-04-19T00:00:00.000Z",
+      "regressors": {
+        "temperature": 25.262461914,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-04-20T00:00:00.000Z",
+      "regressors": {
+        "temperature": 25.4305404531,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-04-21T00:00:00.000Z",
+      "regressors": {
+        "temperature": 24.5740546078,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-04-22T00:00:00.000Z",
+      "regressors": {
+        "temperature": 23.464641378,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-04-23T00:00:00.000Z",
+      "regressors": {
+        "temperature": 23.0646226252,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-04-24T00:00:00.000Z",
+      "regressors": {
+        "temperature": 23.7987027521,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-04-25T00:00:00.000Z",
+      "regressors": {
+        "temperature": 25.2325247826,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-04-26T00:00:00.000Z",
+      "regressors": {
+        "temperature": 26.4013472024,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-04-27T00:00:00.000Z",
+      "regressors": {
+        "temperature": 26.5401054911,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-04-28T00:00:00.000Z",
+      "regressors": {
+        "temperature": 25.6623623435,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-04-29T00:00:00.000Z",
+      "regressors": {
+        "temperature": 24.5500086046,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-04-30T00:00:00.000Z",
+      "regressors": {
+        "temperature": 24.1615090577,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-05-01T00:00:00.000Z",
+      "regressors": {
+        "temperature": 24.9065208635,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-05-02T00:00:00.000Z",
+      "regressors": {
+        "temperature": 26.335838966,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-05-03T00:00:00.000Z",
+      "regressors": {
+        "temperature": 27.4813116097,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-05-04T00:00:00.000Z",
+      "regressors": {
+        "temperature": 27.588484692,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-05-05T00:00:00.000Z",
+      "regressors": {
+        "temperature": 26.687524321,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-05-06T00:00:00.000Z",
+      "regressors": {
+        "temperature": 25.5703547786,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-05-07T00:00:00.000Z",
+      "regressors": {
+        "temperature": 25.1913134336,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-05-08T00:00:00.000Z",
+      "regressors": {
+        "temperature": 25.9448950258,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-05-09T00:00:00.000Z",
+      "regressors": {
+        "temperature": 27.3671740586,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-05-10T00:00:00.000Z",
+      "regressors": {
+        "temperature": 28.4868628887,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-05-11T00:00:00.000Z",
+      "regressors": {
+        "temperature": 28.5603317606,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-05-12T00:00:00.000Z",
+      "regressors": {
+        "temperature": 27.6343422847,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-05-13T00:00:00.000Z",
+      "regressors": {
+        "temperature": 26.5106288929,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-05-14T00:00:00.000Z",
+      "regressors": {
+        "temperature": 26.1391323272,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-05-15T00:00:00.000Z",
+      "regressors": {
+        "temperature": 26.8990739702,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-05-16T00:00:00.000Z",
+      "regressors": {
+        "temperature": 28.3119396396,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-05-17T00:00:00.000Z",
+      "regressors": {
+        "temperature": 29.4035809976,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-05-18T00:00:00.000Z",
+      "regressors": {
+        "temperature": 29.441403456,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-05-19T00:00:00.000Z",
+      "regressors": {
+        "temperature": 28.4887514758,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-05-20T00:00:00.000Z",
+      "regressors": {
+        "temperature": 27.3569435273,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-05-21T00:00:00.000Z",
+      "regressors": {
+        "temperature": 26.9912557046,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-05-22T00:00:00.000Z",
+      "regressors": {
+        "temperature": 27.7555293614,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-05-23T00:00:00.000Z",
+      "regressors": {
+        "temperature": 29.1567974555,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-05-24T00:00:00.000Z",
+      "regressors": {
+        "temperature": 30.2183269008,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-05-25T00:00:00.000Z",
+      "regressors": {
+        "temperature": 30.2187659208,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-05-26T00:00:00.000Z",
+      "regressors": {
+        "temperature": 29.2380244283,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-05-27T00:00:00.000Z",
+      "regressors": {
+        "temperature": 28.0967760524,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-05-28T00:00:00.000Z",
+      "regressors": {
+        "temperature": 27.7353654768,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-05-29T00:00:00.000Z",
+      "regressors": {
+        "temperature": 28.5021516424,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-05-30T00:00:00.000Z",
+      "regressors": {
+        "temperature": 29.8898544968,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-05-31T00:00:00.000Z",
+      "regressors": {
+        "temperature": 30.9194328197,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-06-01T00:00:00.000Z",
+      "regressors": {
+        "temperature": 30.8809820471,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-06-02T00:00:00.000Z",
+      "regressors": {
+        "temperature": 29.8709553972,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-06-03T00:00:00.000Z",
+      "regressors": {
+        "temperature": 28.7191500666,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-06-04T00:00:00.000Z",
+      "regressors": {
+        "temperature": 28.3607138935,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-06-05T00:00:00.000Z",
+      "regressors": {
+        "temperature": 29.1284253313,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-06-06T00:00:00.000Z",
+      "regressors": {
+        "temperature": 30.5008351447,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-06-07T00:00:00.000Z",
+      "regressors": {
+        "temperature": 31.496871176,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-06-08T00:00:00.000Z",
+      "regressors": {
+        "temperature": 31.4182771681,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-06-09T00:00:00.000Z",
+      "regressors": {
+        "temperature": 30.3780227484,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-06-10T00:00:00.000Z",
+      "regressors": {
+        "temperature": 29.2147944382,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-06-11T00:00:00.000Z",
+      "regressors": {
+        "temperature": 28.8582791912,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-06-12T00:00:00.000Z",
+      "regressors": {
+        "temperature": 29.6255812296,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-06-13T00:00:00.000Z",
+      "regressors": {
+        "temperature": 30.9812298936,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-06-14T00:00:00.000Z",
+      "regressors": {
+        "temperature": 31.9423997837,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-06-15T00:00:00.000Z",
+      "regressors": {
+        "temperature": 31.8226806738,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-06-16T00:00:00.000Z",
+      "regressors": {
+        "temperature": 30.7515269584,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-06-17T00:00:00.000Z",
+      "regressors": {
+        "temperature": 29.5762776499,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-06-18T00:00:00.000Z",
+      "regressors": {
+        "temperature": 29.2208962437,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-06-19T00:00:00.000Z",
+      "regressors": {
+        "temperature": 29.9867233393,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-06-20T00:00:00.000Z",
+      "regressors": {
+        "temperature": 31.324418496,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-06-21T00:00:00.000Z",
+      "regressors": {
+        "temperature": 32.2496811832,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-06-22T00:00:00.000Z",
+      "regressors": {
+        "temperature": 32.0881415008,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-06-23T00:00:00.000Z",
+      "regressors": {
+        "temperature": 30.9857022255,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-06-24T00:00:00.000Z",
+      "regressors": {
+        "temperature": 29.7981154987,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-06-25T00:00:00.000Z",
+      "regressors": {
+        "temperature": 29.4433603202,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-06-26T00:00:00.000Z",
+      "regressors": {
+        "temperature": 30.2069286496,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-06-27T00:00:00.000Z",
+      "regressors": {
+        "temperature": 31.5257657465,
+        "baseline": 1
+      }
+    },
+    {
+      "timestamp": "2022-06-28T00:00:00.000Z",
+      "regressors": {
+        "temperature": 32.4143743937,
+        "baseline": 1
+      }
+    }
+  ]
+}

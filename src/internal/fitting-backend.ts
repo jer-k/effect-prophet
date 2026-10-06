@@ -5,7 +5,7 @@ import type { EventCalendar } from "../event";
 import type { Parameters } from "../fitted-model";
 import type { LogisticTrainingBounds } from "../logistic";
 import type { LinearOptimizer } from "../linear-optimizer";
-import type { ChangepointSetting, MapOptimizerControls } from "../options";
+import type { ChangepointSetting } from "../options";
 import type { ResolvedRegressor } from "../regressor";
 import type { TargetScalingMode } from "../target-scaling";
 import type {
@@ -80,12 +80,12 @@ export interface FlatAdditiveMapFitPlan {
   readonly seasonalities: NonEmptySeasonalityLayout;
 }
 
-/** Request for mixed reduced-flat MAP fitting with resolved feature modes. */
-export interface FlatMixedMapFitPlan {
-  readonly _tag: "FlatMixedMap";
+/** Request for flat MAP fitting through Prophet's Stan density with resolved feature modes. */
+export interface FlatStanMapFitPlan {
+  readonly _tag: "FlatStanMap";
   readonly scaling: TargetScalingMode;
   readonly seasonalities: SeasonalityLayout;
-  readonly optimizer: MapOptimizerControls;
+  readonly optimizer: LinearOptimizer;
   readonly seasonalityMasks: SeasonalityMaskMatrix;
   readonly additionalFeatures: KnownAdditiveFeatures;
   readonly events: EventCalendar;
@@ -112,7 +112,7 @@ export type FitPlan =
   | LinearPiecewiseMapFitPlan
   | FlatMapFitPlan
   | FlatAdditiveMapFitPlan
-  | FlatMixedMapFitPlan
+  | FlatStanMapFitPlan
   | LogisticPiecewiseMapFitPlan;
 
 /** Constructors and exhaustive matching for supported fitting plans. */

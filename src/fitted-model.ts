@@ -22,8 +22,87 @@ const ModelDiscriminantSchema = Schema.Struct({
   model: Schema.Union([FlatMapModel, PiecewiseMapModel, LogisticMapModel]),
 });
 
-const FlatMapFitSummarySchema = Schema.Struct({
-  method: Schema.Literals(["flat-map-coordinate-v1", "mixed-flat-map-coordinate-v1"]),
+const StanCompletionFieldsSchema = Schema.Struct({
+  termination: Schema.Literals([
+    "constant-target-shortcut",
+    "objective-change",
+    "no-progress",
+    "absolute-objective",
+    "relative-objective",
+    "absolute-gradient",
+    "relative-gradient",
+    "parameter-change",
+    "iteration-limit",
+  ]),
+  optimization: Schema.Union([
+    Schema.Struct({
+      algorithm: Schema.Literal("none"),
+      attemptCount: Schema.Literal(0),
+      failedAttemptIterations: Schema.Null,
+      hessianResets: Schema.Literal(0),
+    }),
+    Schema.Struct({
+      algorithm: Schema.Literal("newton"),
+      attemptCount: Schema.Literal(1),
+      failedAttemptIterations: Schema.Null,
+      hessianResets: Schema.Literal(0),
+    }),
+    Schema.Struct({
+      algorithm: Schema.Literal("newton"),
+      attemptCount: Schema.Literal(2),
+      failedAttemptIterations: Schema.NullOr(Schema.Natural),
+      hessianResets: Schema.Literal(0),
+    }),
+    Schema.Struct({
+      algorithm: Schema.Literal("lbfgs"),
+      attemptCount: Schema.Literal(1),
+      failedAttemptIterations: Schema.Null,
+      hessianResets: Schema.Natural,
+    }),
+  ]),
+  valueScale: PositiveFinite,
+  observationCount: Schema.Int.check(Schema.isGreaterThanOrEqualTo(2)),
+  iterations: Schema.Natural,
+  objective: Schema.Finite,
+  stationarityResidual: Schema.Finite.check(Schema.isGreaterThanOrEqualTo(0)),
+});
+
+const consistentStanMapCompletion = Schema.makeFilter(
+  (summary: typeof StanCompletionFieldsSchema.Type) => {
+    const algorithm = summary.optimization.algorithm;
+
+    const valid = Match.value(algorithm).pipe(
+      Match.when(
+        "none",
+        () => summary.termination === "constant-target-shortcut" && summary.iterations === 0,
+      ),
+      Match.when("newton", () =>
+        ["objective-change", "no-progress", "iteration-limit"].includes(summary.termination),
+      ),
+      Match.when("lbfgs", () =>
+        [
+          "absolute-objective",
+          "relative-objective",
+          "absolute-gradient",
+          "relative-gradient",
+          "parameter-change",
+          "iteration-limit",
+        ].includes(summary.termination),
+      ),
+      Match.exhaustive,
+    );
+
+    return valid
+      ? undefined
+      : {
+          path: ["optimization"],
+          issue: "Stan optimization completion does not match its actual algorithm",
+        };
+  },
+);
+
+const FlatMapCoordinateFitSummarySchema = Schema.Struct({
+  method: Schema.Literal("flat-map-coordinate-v1"),
   termination: Schema.Literals(["converged", "constant-target-shortcut"]),
   valueScale: PositiveFinite,
   observationCount: Schema.Int.check(Schema.isGreaterThanOrEqualTo(2)),
@@ -31,6 +110,18 @@ const FlatMapFitSummarySchema = Schema.Struct({
   objective: Schema.Finite,
   stationarityResidual: Schema.Finite.check(Schema.isGreaterThanOrEqualTo(0)),
 });
+
+/** Flat completion evidence from Prophet's Stan density with the trend fixed at its level. */
+export const FlatMapStanFitSummarySchema = Schema.Struct({
+  ...StanCompletionFieldsSchema.fields,
+  method: Schema.Literal("flat-map-stan-v1"),
+}).check(consistentStanMapCompletion);
+
+/** Reduced coordinate or Stan flat MAP diagnostics. */
+export const FlatMapFitSummarySchema = Schema.Union([
+  FlatMapCoordinateFitSummarySchema,
+  FlatMapStanFitSummarySchema,
+]);
 
 const FlatMapParametersFieldsSchema = Schema.Struct({
   model: FlatMapModel,
@@ -63,6 +154,27 @@ const hasMultiplicativeComponents = (parameters: {
   ) ||
   parameters.events.layout.components.some((component) => component.mode === "multiplicative") ||
   parameters.regressors.some((regressor) => regressor.definition.mode === "multiplicative");
+
+/**
+ * Whether a flat model must fit through Prophet's Stan density.
+ *
+ * The reduced coordinate fitter covers only unconditional additive seasonalities.
+ * Events, regressors, conditional seasonalities, and multiplicative components all
+ * fit through Stan, as Prophet's flat model does. Any flat model may also fit through
+ * Stan when its caller requests an optimizer.
+ */
+export const requiresFlatStanMap = (features: {
+  readonly seasonalities: typeof SeasonalityLayoutSchema.Type;
+  readonly events: typeof EventCalendarSchema.Type;
+  readonly regressors: ReadonlyArray<unknown>;
+}): boolean =>
+  features.events.layout.components.length > 0 ||
+  features.regressors.length > 0 ||
+  features.seasonalities.components.some(
+    (component) =>
+      component.definition.mode === "multiplicative" ||
+      component.definition.conditionName !== undefined,
+  );
 
 const featureIdentityIssues = (parameters: {
   readonly seasonalities: typeof SeasonalityLayoutSchema.Type;
@@ -153,12 +265,13 @@ const consistentFlatMapParameters = Schema.makeFilter<FlatMapParametersFields>((
 
   issues.push(...featureIdentityIssues(parameters));
 
-  const mixed = hasMultiplicativeComponents(parameters);
-
-  if (mixed !== (parameters.fitSummary.method === "mixed-flat-map-coordinate-v1")) {
+  if (
+    parameters.fitSummary.method === "flat-map-coordinate-v1" &&
+    requiresFlatStanMap(parameters)
+  ) {
     issues.push({
       path: ["fitSummary", "method"],
-      issue: "Flat MAP method identity must match its resolved component modes",
+      issue: "The reduced flat MAP method supports only unconditional additive seasonalities",
     });
   }
 
@@ -194,95 +307,17 @@ const consistentFlatMapParameters = Schema.makeFilter<FlatMapParametersFields>((
 
 const FlatMapParametersSchema = FlatMapParametersFieldsSchema.check(consistentFlatMapParameters);
 
-const StanMapFitSummaryFieldsSchema = Schema.Struct({
-  termination: Schema.Literals([
-    "constant-target-shortcut",
-    "objective-change",
-    "no-progress",
-    "absolute-objective",
-    "relative-objective",
-    "absolute-gradient",
-    "relative-gradient",
-    "parameter-change",
-    "iteration-limit",
-  ]),
-  optimization: Schema.Union([
-    Schema.Struct({
-      algorithm: Schema.Literal("none"),
-      attemptCount: Schema.Literal(0),
-      failedAttemptIterations: Schema.Null,
-      hessianResets: Schema.Literal(0),
-    }),
-    Schema.Struct({
-      algorithm: Schema.Literal("newton"),
-      attemptCount: Schema.Literal(1),
-      failedAttemptIterations: Schema.Null,
-      hessianResets: Schema.Literal(0),
-    }),
-    Schema.Struct({
-      algorithm: Schema.Literal("newton"),
-      attemptCount: Schema.Literal(2),
-      failedAttemptIterations: Schema.NullOr(Schema.Natural),
-      hessianResets: Schema.Literal(0),
-    }),
-    Schema.Struct({
-      algorithm: Schema.Literal("lbfgs"),
-      attemptCount: Schema.Literal(1),
-      failedAttemptIterations: Schema.Null,
-      hessianResets: Schema.Natural,
-    }),
-  ]),
-  valueScale: PositiveFinite,
-  observationCount: Schema.Int.check(Schema.isGreaterThanOrEqualTo(2)),
-  iterations: Schema.Natural,
-  objective: Schema.Finite,
-  stationarityResidual: Schema.Finite.check(Schema.isGreaterThanOrEqualTo(0)),
-  changepointPriorScale: PositiveFinite,
-});
-
-const consistentStanMapCompletion = Schema.makeFilter(
-  (summary: typeof StanMapFitSummaryFieldsSchema.Type) => {
-    const algorithm = summary.optimization.algorithm;
-
-    const valid = Match.value(algorithm).pipe(
-      Match.when(
-        "none",
-        () => summary.termination === "constant-target-shortcut" && summary.iterations === 0,
-      ),
-      Match.when("newton", () =>
-        ["objective-change", "no-progress", "iteration-limit"].includes(summary.termination),
-      ),
-      Match.when("lbfgs", () =>
-        [
-          "absolute-objective",
-          "relative-objective",
-          "absolute-gradient",
-          "relative-gradient",
-          "parameter-change",
-          "iteration-limit",
-        ].includes(summary.termination),
-      ),
-      Match.exhaustive,
-    );
-
-    return valid
-      ? undefined
-      : {
-          path: ["optimization"],
-          issue: "Stan optimization completion does not match its actual algorithm",
-        };
-  },
-);
-
 /** Version-two linear MAP diagnostics with algorithm-consistent completion evidence. */
 export const PiecewiseMapFitSummarySchema = Schema.Struct({
-  ...StanMapFitSummaryFieldsSchema.fields,
+  ...StanCompletionFieldsSchema.fields,
+  changepointPriorScale: PositiveFinite,
   method: Schema.Literals(["piecewise-map-stan-v2", "mixed-piecewise-map-stan-v2"]),
 }).check(consistentStanMapCompletion);
 
 /** Logistic completion evidence from the shared Stan optimizer policy. */
 export const LogisticMapFitSummarySchema = Schema.Struct({
-  ...StanMapFitSummaryFieldsSchema.fields,
+  ...StanCompletionFieldsSchema.fields,
+  changepointPriorScale: PositiveFinite,
   method: Schema.Literal("logistic-piecewise-map-stan-v2"),
 }).check(
   consistentStanMapCompletion,
@@ -296,6 +331,7 @@ export const LogisticMapFitSummarySchema = Schema.Struct({
 export const StanMapFitSummarySchema = Schema.Union([
   PiecewiseMapFitSummarySchema,
   LogisticMapFitSummarySchema,
+  FlatMapStanFitSummarySchema,
 ]);
 
 const PiecewiseMapParametersFieldsSchema = Schema.Struct({

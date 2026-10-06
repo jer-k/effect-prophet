@@ -34,11 +34,13 @@ export const annotateStanCompletion = (summary: typeof StanMapFitSummarySchema.T
   });
 };
 
+const growthLabels = { flat: "Flat", linear: "Linear", logistic: "Logistic" } as const;
+
 /** Decode bounded failure evidence without losing either failed optimization attempt. */
 export const stanOptimizerFailure = (
   packed: Float64Array,
   observationCount: number,
-  growth: "linear" | "logistic" = "linear",
+  growth: "flat" | "linear" | "logistic" = "linear",
 ): Effect.Effect<never, FittingError> => {
   const reasons = [
     "invalid-configuration",
@@ -70,7 +72,7 @@ export const stanOptimizerFailure = (
         observationCount,
         backendPhase: valid ? "execute" : "protocol",
         message: valid
-          ? `${growth === "linear" ? "Linear" : "Logistic"} MAP optimizer failed`
+          ? `${growthLabels[growth]} MAP optimizer failed`
           : `WASM ${growth} optimizer returned malformed failure evidence`,
       },
       valid

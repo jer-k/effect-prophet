@@ -18,7 +18,7 @@ export const flatGroups = [
     id: "features",
     title: "Seasonality, events and regressors",
     intro:
-      "A switchable multiplicative weekly pattern, an event and a regressor on a flat trend, at full length and cut to the history lengths cross-validation uses.",
+      "Weekly patterns, events and regressors on a flat trend: with a switchable multiplicative weekly pattern at full length and cut to the history lengths cross-validation uses, with every effect additive, and with regressors that move almost or exactly in step with the level or the yearly pattern.",
   },
   {
     id: "uncertainty",
@@ -125,6 +125,29 @@ export const flatCaseDescriptions = {
     group: "features",
     title: "Mixed effects, eight months, minmax scaling",
     summary: "The same features on 256 daily rows.",
+  },
+  "flat-additive-components": {
+    group: "features",
+    title: "Additive effects, minmax scaling",
+    summary:
+      "The mixed-effects rows with every effect additive: a switchable weekly pattern, an event and a regressor.",
+  },
+  "flat-additive-components-large": {
+    group: "features",
+    title: "Additive effects, eight months, minmax scaling",
+    summary: "The same additive features on 256 daily rows.",
+  },
+  "flat-mixed-components-absmax-defaults": {
+    group: "features",
+    title: "Mixed effects, both libraries on default settings",
+    summary:
+      "The mixed-effects rows with absmax scaling, where both libraries pick their own optimizer. The other mixed-effects cases pin both to L-BFGS.",
+  },
+  "flat-correlated-regressors": {
+    group: "features",
+    title: "Regressors that track other effects",
+    summary:
+      "Two years of daily rows. Temperature follows the yearly pattern closely and a constant regressor duplicates the level. The forecast half-year has an unusually warm winter, so the split between temperature and the yearly pattern shows.",
   },
   "flat-mixed-components-large-absmax": {
     group: "features",

@@ -17,25 +17,9 @@ const TREND_PRIOR_SCALE: f64 = 5.0;
 const NOISE_PRIOR_SCALE: f64 = 0.5;
 const CONSTANT_TARGET_NOISE_SCALE: f64 = 1e-9;
 
-/// Deterministic controls for linear piecewise MAP fitting.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct MapControls {
-  /// Maximum complete coefficient/noise updates.
-  pub max_iterations: usize,
-
-  /// Scale-relative stopping tolerance.
-  pub relative_tolerance: f64,
-
-  /// Absolute stopping tolerance.
-  pub absolute_tolerance: f64,
-}
-
 /// Successful linear MAP termination category.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum MapTermination {
-  /// Alternating proximal coordinate and noise updates converged.
-  Converged,
-
   /// Prophet's exact-constant-history shortcut was used.
   ConstantTargetShortcut,
 

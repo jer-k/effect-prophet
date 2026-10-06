@@ -4,7 +4,6 @@ import { describe, expect, it } from "vitest";
 import {
   FittingError,
   InputValidationError,
-  UnsupportedConfigurationError,
   decodeFittedModel,
   encodeFittedModel,
   fit,
@@ -400,7 +399,45 @@ describe("conditional seasonality public lifecycle", () => {
     expect(error).toBeInstanceOf(InputValidationError);
   });
 
-  it("rejects conditional flat models before semantic training alignment", async () => {
+  it("fits additive conditional seasonalities with flat growth", async () => {
+    const flatOptions = {
+      growth: "flat",
+      seasonalities: conditionalOptions.seasonalities,
+    } as const;
+
+    const model = await Effect.runPromise(
+      fit(history, flatOptions).pipe(Effect.provide(prophetFittingBackendLayer)),
+    );
+
+    if (model.model !== "flat-map") {
+      throw new Error("Expected flat growth to select flat MAP");
+    }
+
+    expect(model.fitSummary.method).toBe("flat-map-stan-v1");
+
+    const forecasts = await Effect.runPromise(predict(model, predictionRows));
+
+    expect(additiveValue(forecasts[0]?.seasonalities[0])).toBe(0);
+    expect(Math.abs(additiveValue(forecasts[1]?.seasonalities[0]) ?? 0)).toBeGreaterThan(0.1);
+    expect(forecasts[0]?.trend).toBe(forecasts[1]?.trend);
+
+    const intervals = await Effect.runPromise(
+      predictUncertainty(model, predictionRows, { seed: 7, samples: 200 }),
+    );
+
+    if (intervals.kind !== "intervals") {
+      throw new Error("Expected interval output");
+    }
+
+    for (const [index, row] of intervals.rows.entries()) {
+      const value = forecasts[index]?.value ?? Number.NaN;
+
+      expect(row.value.lower).toBeLessThan(value);
+      expect(row.value.upper).toBeGreaterThan(value);
+    }
+  });
+
+  it("validates flat conditional training rows", async () => {
     const error = await Effect.runPromise(
       Effect.flip(
         fit(
@@ -410,11 +447,7 @@ describe("conditional seasonality public lifecycle", () => {
       ),
     );
 
-    expect(error).toBeInstanceOf(UnsupportedConfigurationError);
-
-    if (error instanceof UnsupportedConfigurationError) {
-      expect(error.option).toBe("conditional-seasonalities");
-    }
+    expect(error).toBeInstanceOf(InputValidationError);
   });
 
   it("records safe conditional featureful boundaries and skips prediction WASM on alignment failure", async () => {

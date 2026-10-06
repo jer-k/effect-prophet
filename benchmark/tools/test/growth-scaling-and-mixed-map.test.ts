@@ -40,7 +40,7 @@ describe("growth, scaling, and mixed-component MAP benchmark workloads", () => {
     }
   });
 
-  it("admits empty logistic points for investigation but rejects unsupported flat controls", async () => {
+  it("admits empty logistic points for investigation but rejects flat changepoints", async () => {
     const logistic = growthScalingAndMixedMapCases.find(
       (benchmarkCase) => benchmarkCase.id === "logistic-implicit-floor-auto-changepoints",
     );
@@ -68,7 +68,7 @@ describe("growth, scaling, and mixed-component MAP benchmark workloads", () => {
       ]).pipe(Effect.exit),
     );
 
-    const flatControls = await Effect.runPromise(
+    const flatOptimizer = await Effect.runPromise(
       parseBenchmarkCases([
         {
           ...flat,
@@ -80,8 +80,24 @@ describe("growth, scaling, and mixed-component MAP benchmark workloads", () => {
       ]).pipe(Effect.exit),
     );
 
+    const flatChangepoints = await Effect.runPromise(
+      parseBenchmarkCases([
+        {
+          ...flat,
+          workload: {
+            ...flat.workload,
+            configuration: {
+              ...flat.workload.configuration,
+              changepoints: { mode: "auto", count: 25, range: 0.8 },
+            },
+          },
+        },
+      ]).pipe(Effect.exit),
+    );
+
     expect(noPoints._tag).toBe("Success");
-    expect(flatControls._tag).toBe("Failure");
+    expect(flatOptimizer._tag).toBe("Success");
+    expect(flatChangepoints._tag).toBe("Failure");
   });
 
   it("generates complete, deterministic shared growth and mixed-component rows", async () => {
