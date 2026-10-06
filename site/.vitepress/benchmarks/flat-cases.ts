@@ -24,7 +24,7 @@ export const flatGroups = [
     id: "uncertainty",
     title: "Uncertainty ranges",
     intro:
-      "Both libraries simulate possible futures with random draws, so individual simulated values never match. These cases compare the point forecast behind the simulation, check that it replays, and time the work.",
+      "Both libraries simulate possible futures with random draws, so individual simulated values never match. Each range must still match Python's within the variation expected from that many draws.",
   },
   {
     id: "evaluation",
@@ -141,6 +141,12 @@ export const flatCaseDescriptions = {
   "flat-prefix-225-minmax": prefix(225, "minmax", 256),
   "flat-prefix-232-absmax": prefix(232, "absmax", 256),
   "flat-prefix-232-minmax": prefix(232, "minmax", 256),
+  "uncertainty-flat-defaults-seasonal-intervals-1000": {
+    group: "uncertainty",
+    title: "Defaults, ranges with a weekly pattern",
+    summary:
+      "80% ranges from 1,000 simulated paths on every past and future date. A flat trend never changes, so the ranges come from noise alone.",
+  },
   "uncertainty-flat-mixed-components-full-intervals-512": {
     group: "uncertainty",
     title: "Ranges with mixed effects",

@@ -12,7 +12,7 @@ cross-validation, model search and save/load.
 What's left is mostly **cleanup and release mechanics**:
 
 1. Rerun all three trend baselines from a clean commit, then finish the docs site's Python pages.
-2. Settle packaging: version, peer dependency, publishing.
+2. Settle packaging: version and publishing.
 
 ## Done
 
@@ -25,6 +25,8 @@ What's left is mostly **cleanup and release mechanics**:
 - **README rewritten**: install, quick start, feature list, links to the site.
 - **Effect upgraded** from `4.0.0-beta.107` to stable `4.0.0`. No code changes were needed, and
   the full check suite passes.
+- **Effect is a peer dependency** (`^4.0.0`), so apps share one copy; the repository pins `4.0.0`
+  as a dev dependency. `tools/test-package.ts` asserts the manifest keeps it that way.
 - **OLS default removed** (branch `remove-ols`). Featureless linear fits now use Prophet's MAP
   model, as Python does. The same change makes `map.changepoints` default to automatic, fixing a
   bug where `fit(data, { map: { changepointPriorScale: 0.5 } })` silently turned changepoints off
@@ -111,6 +113,41 @@ What's left is mostly **cleanup and release mechanics**:
   whose issue paths start with `development` or `holdout`. That re-pathing helper,
   `nestedInputValidationError`, now lives in `src/errors.ts` and is shared with `searchModels`. The
   non-empty guards in `site/snippets/holdout.ts` and `benchmark/tools/evaluation.ts` are gone.
+- **Uncertainty intervals no longer cap rows × samples.** Interval output used to fail with
+  `simulation-limit` past 1,000,000 draws (1,000 rows at the default 1,000 samples). The Rust
+  simulator now draws each sample's trend changes first, saves where that sample's noise starts
+  in the RNG stream, and emits one row at a time. Draws are bit-identical to before (checked by
+  output fingerprints and a reference sample-major test). Intervals now take up to 10,000 rows ×
+  2,048 samples (about 0.9 s, flat memory); `output: "samples"` keeps the 1,000,000-value cap.
+  Cross-validation, search and holdout share the same check (`exceedsSimulationBudget` in
+  `src/uncertainty.ts`), and `maximumSampleCells`/`maximumSimulationRows` are exported.
+- **Uncertainty benchmarks compare intervals with Python.** Both adapters now project every
+  row's trend and value bounds, and the report fails a case when any bound differs from Python's
+  `vectorized=False` simulation by more than the point tolerance plus 6 × width / √samples. A
+  new case, `uncertainty-linear-defaults-long-history-intervals-1000` (v3 input: three daily
+  years, all 1,460 history and future rows, 1,000 samples), covers requests past the old cap. A
+  local run on 2026-10-05 passed all 14 uncertainty cases; the largest bound difference used 39%
+  of its allowance. On that case, observation-noise widths agree to 0.14%; trend widths differ by
+  5.5% at seed 19, which over 8 seeds is Monte Carlo noise (Effect 17.4 ± 0.7, Python 17.8 ±
+  0.7; Python's default vectorized method 17.7). The benchmark image now copies the locked
+  `effect` in, since the production install omits the peer dependency.
+- **Default-settings uncertainty cases.** Growth-only cases may now declare uncertainty, so four
+  more cases run both libraries on their defaults at 1,000 samples over every row: linear with
+  irregular spacing, flat, and logistic at seeds 19 and 7. Earlier logistic uncertainty cases all
+  used one explicit changepoint, leaving trend ranges near zero, and the existing logistic
+  datasets fit near-zero deltas under defaults too. A new v3 input, `logistic-rate-changes`
+  (365 daily rows, growth-rate changes at 35% and 65%, 90 future rows), gives mean |delta| 0.28
+  and trend ranges of about 8 at the last row. All four passed locally on 2026-10-05 (largest
+  bound ratio 0.48); future logistic trend widths matched within 0.7% at seed 19 and 8% at
+  seed 7, consistent with single-seed Monte Carlo noise.
+- **Logistic defaults on real growth changes.** `logistic-reconcile-defaults-rate-changes` fits
+  the same v3 input as a point-forecast case on the logistic page; the other logistic datasets
+  are single smooth curves, so their automatic changepoints correctly fit near-zero deltas and
+  never test fitting real changes. It passed locally: forecasts within 0.013 (allowance 0.032).
+  Output-first flags the endpoint (Python's objective is 0.037 better; stationarity residual 209
+  vs 201). It is also the first benchmarked fit where Effect is slower: median warm fit 151 ms vs
+  120 ms. Site descriptions now cover every new case, and the uncertainty group intros say that
+  ranges are compared with Python.
 
 ## Where things stand
 
@@ -121,7 +158,7 @@ What's left is mostly **cleanup and release mechanics**:
 | Logistic growth                                      | Yes   | Yes, judged on outputs (forecasts must match; internal fit numbers are reported only)                | 45 of 45 pass (`logistic-growth` baseline)                                                              |
 | Seasonalities (auto, custom, conditional)            | Yes   | Yes                                                                                                  | Fixtures, plus 31 of 31 feature cases across the three baselines (`/benchmarks/features`)               |
 | Events/holidays (custom), regressors, multiplicative | Yes   | Yes                                                                                                  | Fixtures, plus 31 of 31 feature cases across the three baselines (`/benchmarks/features`)               |
-| Uncertainty intervals                                | Yes   | Different method on purpose: Python's default is a vectorized shortcut (decision 2)                  | 13 of 13 pass across the three baselines (linear 5, flat 2, logistic 6; `/benchmarks/uncertainty`)      |
+| Uncertainty intervals                                | Yes   | Same per-path method as Python's `vectorized=False` (decided); every interval bound is gated         | 18 of 18 pass locally, including 5 default-settings cases; not yet in the saved baselines               |
 | Cross-validation, metrics, search, holdout reports   | Yes   | Yes where Python has an equivalent                                                                   | 15 of 15 pass across the three baselines (linear 5, flat 5, logistic 5; `/benchmarks/cross-validation`) |
 | Save/load                                            | Yes   | Uses its own format. Python JSON is deliberately not supported.                                      | Lifecycle tests                                                                                         |
 
@@ -149,6 +186,14 @@ What's left is mostly **cleanup and release mechanics**:
 
 - Every saved run so far is from a dirty tree, including the current three baselines (commit
   `d2a974c` with uncommitted changes). Before release, rerun all three from a clean commit.
+  `--replay <baseline>` reruns only the recorded selection, and `--case` can only narrow it, so
+  run each suite with an explicit `--case` list that includes the new cases:
+  linear `uncertainty-linear-defaults-long-history-intervals-1000` and
+  `uncertainty-linear-defaults-irregular-intervals-1000`; flat
+  `uncertainty-flat-defaults-seasonal-intervals-1000`; logistic
+  `logistic-reconcile-defaults-rate-changes` and
+  `uncertainty-logistic-reconcile-defaults-rate-changes-intervals-1000` (plus `-seed-7`). The
+  site's uncertainty intros describe the new interval gate, which old baselines did not run.
 - Write the remaining outline pages in `site/python/`: **Coming from Python** (a translation
   table) and **What's different** (the known gaps). **How close are the results?** is written and
   marks all three trends as matching.
@@ -158,8 +203,7 @@ What's left is mostly **cleanup and release mechanics**:
 | Item       | Now                                                         | Needed                                                                                                                                                |
 | ---------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Version    | `0.0.0`                                                     | Choose a first version (e.g. `0.1.0`) and add a changelog                                                                                             |
-| Effect     | Regular `dependency`, pinned to `4.0.0`                     | Effect libraries usually declare `effect` as a **peer** dependency so apps share one copy (decision 3)                                                |
-| Runtime    | Node only: `wasm-pack --target nodejs` plus `createRequire` | Already stated in the README and docs. Add a bundler/browser build later if wanted (decision 4).                                                      |
+| Runtime    | Node only: `wasm-pack --target nodejs` plus `createRequire` | Already stated in the README and docs. Browser/bundler support is tracked in #67.                                                                     |
 | Publishing | No release workflow                                         | Add an npm publish workflow, or document manual steps. The README and site already show `npm install effect-prophet effect` with no pre-release note. |
 
 ## Smaller issues
@@ -173,17 +217,22 @@ What's left is mostly **cleanup and release mechanics**:
    today, but work when a multiplicative component is present, and Python supports them. The docs
    site documents the limitation. _Recommendation:_ route them through the existing mixed flat
    fitter.
-2. **Uncertainty method.** We use Python's exact per-path simulation, not its default vectorized
-   shortcut, and intervals require an explicit `predictUncertainty` call with a seed.
-   _Recommendation:_ keep, and list it as a documented difference.
-3. **Effect as a peer dependency.** _Recommendation:_ make it a peer dependency with a `^4.0.0`
-   range.
-4. **Node-only for the first release.** _Recommendation:_ yes. Add browser/bundler support later.
 
 Decided:
 
 - Drop the OLS default and match Python (done).
 - One acceptance policy: linear is judged output-first, like logistic (done).
+- Effect is a peer dependency with a `^4.0.0` range (done).
+- Node-only for the first release; browser/bundler support comes later (#67).
+- Uncertainty keeps Python's per-path simulation (`vectorized=False`), not its default vectorized
+  shortcut. The shortcut only allows trend changes at the requested rows and assumes they are
+  evenly spaced; callers here supply their own rows. On evenly spaced rows the two agree (mean
+  future trend width 17.7 vs 17.8 over 8 seeds on the long-history case). List it on "What's
+  different".
+- The seed stays required. Making it optional later (for example, defaulting to Effect's `Random`
+  service) is not breaking; making it required after release would be.
+- Intervals stay a separate `predictUncertainty` call rather than part of every `predict`, so
+  point forecasts never pay for 1,000 simulations.
 
 ## After the first release
 
@@ -191,7 +240,7 @@ Decided:
 - Bayesian fitting / `mcmc_samples`
 - Warm starts
 - Regressor predictor models
-- Browser/bundler build
+- Browser/bundler build (#67)
 - Worker-based parallel cross-validation
 - Performance benchmarks for evaluation workloads
 - Monthly horizons and custom metrics in diagnostics

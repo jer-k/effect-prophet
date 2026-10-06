@@ -536,6 +536,58 @@ export const logisticReconciliationDatasets: ReadonlyArray<BenchmarkDataset> = [
   };
 });
 
+const yearly = (index: number): number => 6 * Math.sin((2 * Math.PI * index) / 365.25);
+
+/** Logistic log-odds with growth-rate changes at 35% and 65% of the history, never saturated. */
+const changingRateLogit = (index: number, endIndex: number): number => {
+  const time = index / endIndex;
+
+  return (
+    -3 +
+    6 * Math.min(time, 0.35) +
+    1.5 * Math.max(0, Math.min(time, 0.65) - 0.35) +
+    4 * Math.max(0, time - 0.65)
+  );
+};
+
+const changingRateCapacity = (index: number): number => canonical(200 + 0.05 * index);
+
+/** Uncertainty inputs whose default fits have real trend uncertainty and long interval requests. */
+export const uncertaintyDatasets: ReadonlyArray<BenchmarkDataset> = [
+  // Three daily years: enough history for default yearly seasonality, 1,460 interval rows.
+  makeDataset({
+    id: "linear-long-history",
+    observationCount: 1_095,
+    predictionCount: 365,
+    recipe: "long-history-v1:piecewise+weekly+yearly+bounded-noise-x20:n=1095:h=365",
+    noiseMultiplier: 20,
+    covariates: noCovariates,
+    additive: (index) => weekly(index) + yearly(index),
+  }),
+  // The prediction rows hold all history rows, then the future ones.
+  ((): BenchmarkDataset => {
+    const observationCount = 365;
+    const endIndex = observationCount - 1;
+
+    const dataset = makeDataset({
+      id: "logistic-rate-changes",
+      observationCount,
+      predictionCount: 90,
+      recipe:
+        "logistic-rate-changes-v1:logit=-3+6t|1.5t|4t@0.35,0.65+weekly+bounded-noise-x10:changing-capacity:n=365:h=90",
+      noiseMultiplier: 10,
+      trend: (index) =>
+        changingRateCapacity(index) / (1 + Math.exp(-changingRateLogit(index, endIndex))),
+      covariates: (index) => ({ capacity: changingRateCapacity(index) }),
+      additive: (index) => 0.8 * weekly(index),
+    });
+
+    const historical = dataset.observations.map(({ value: _value, ...row }) => row);
+
+    return { ...dataset, predictionRows: [...historical, ...dataset.predictionRows] };
+  })(),
+];
+
 /** Generate an immutable input version; existing identical bytes are reused, never overwritten. */
 export const generateBenchmarkData = Effect.fn("benchmark.inputs.generate")(function* (
   outputRoot = new URL("../inputs/v1/", import.meta.url),
@@ -599,6 +651,12 @@ export const generateBenchmarkData = Effect.fn("benchmark.inputs.generate")(func
   }).pipe(Effect.withSpan("benchmark.inputs.generate-filesystem"));
 });
 
+/** Later versions add datasets; v1 is the default recipe list. */
+const versionDatasets = new Map<string, ReadonlyArray<BenchmarkDataset>>([
+  ["v2", logisticReconciliationDatasets],
+  ["v3", uncertaintyDatasets],
+]);
+
 const entrypoint = process.argv[1];
 
 if (
@@ -610,7 +668,7 @@ if (
       const version = yield* parseArtifactId(process.argv[2] ?? "v1");
       yield* generateBenchmarkData(
         new URL(`../inputs/${version}/`, import.meta.url),
-        version === "v2" ? logisticReconciliationDatasets : undefined,
+        versionDatasets.get(version),
       );
     }),
   );

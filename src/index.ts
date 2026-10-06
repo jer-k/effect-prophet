@@ -192,6 +192,8 @@ export {
 } from "./prophet";
 
 export {
+  maximumSampleCells,
+  maximumSimulationRows,
   simulationIdentity,
   type EncodedUncertaintyOptions,
   type UncertaintyInterval,

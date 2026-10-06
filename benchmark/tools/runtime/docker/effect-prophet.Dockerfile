@@ -46,6 +46,9 @@ FROM runtime-dependencies AS runtime
 
 LABEL org.effect-prophet.benchmark=true
 
+# `effect` is a peer dependency, so the production install omits it; like any consumer, the
+# adapter supplies its own copy. Take the locked version, which has no dependencies of its own.
+COPY --from=build /workspace/node_modules/effect ./node_modules/effect
 COPY --from=build /workspace/dist ./dist
 COPY --from=build /workspace/wasm ./wasm
 COPY --from=build /build-tools ./build-tools

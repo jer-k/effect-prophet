@@ -20,8 +20,8 @@ describe("capability catalog", () => {
   it("preserves original settings/gates while selecting only requested cases", async () => {
     const catalog = await Effect.runPromise(loadCaseCatalog());
     const recorded = await Effect.runPromise(loadRunEvidence(recordedDirectory));
-    expect(catalog).toHaveLength(112);
-    expect(new Set(catalog.map((item) => item.id)).size).toBe(112);
+    expect(catalog).toHaveLength(118);
+    expect(new Set(catalog.map((item) => item.id)).size).toBe(118);
 
     for (const original of recorded.cases) {
       const { datasetIdentity: _identity, ...declaration } = original;

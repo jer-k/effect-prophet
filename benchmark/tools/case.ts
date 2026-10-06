@@ -1,5 +1,5 @@
 import { Effect, Schema } from "effect";
-import { LinearOptimizerSchema } from "effect-prophet";
+import { LinearOptimizerSchema, maximumSampleCells, maximumSimulationRows } from "effect-prophet";
 
 const NonEmptyString = Schema.String.check(Schema.isMinLength(1));
 
@@ -436,7 +436,9 @@ const validateCaseRelationships = (
 
       if (
         (selection !== undefined && rows === 0) ||
-        (rows !== undefined && (rows > 10_000 || rows * uncertainty.samples > 1_000_000))
+        (rows !== undefined &&
+          (rows > maximumSimulationRows ||
+            (uncertainty.output === "samples" && rows * uncertainty.samples > maximumSampleCells)))
       ) {
         return Effect.fail(
           new BenchmarkInputError({
@@ -537,8 +539,7 @@ const validateCaseRelationships = (
       benchmarkCase.workload.kind === "stage-f-map" &&
       benchmarkCase.workload.fitRequest === "growth-only"
     ) {
-      const { configuration, pythonOptimizer, effectOptimizer, uncertainty } =
-        benchmarkCase.workload;
+      const { configuration, pythonOptimizer, effectOptimizer } = benchmarkCase.workload;
 
       const points = configuration.changepoints;
 
@@ -553,7 +554,6 @@ const validateCaseRelationships = (
         configuration.events.length !== 0 ||
         configuration.regressors.length !== 0 ||
         effectOptimizer !== undefined ||
-        uncertainty !== undefined ||
         pythonOptimizer.algorithm !== "Auto" ||
         pythonOptimizer.maxIterations !== 10_000 ||
         !pythonOptimizer.newtonFallback

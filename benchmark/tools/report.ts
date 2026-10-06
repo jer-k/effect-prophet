@@ -1,5 +1,7 @@
 import { createHash } from "node:crypto";
 
+import { maximumSampleCells } from "effect-prophet";
+
 import type { BenchmarkCase, BenchmarkPhase } from "./case.ts";
 import type {
   BenchmarkImplementation,
@@ -9,6 +11,7 @@ import type {
   ImplementationResult,
   RunManifest,
 } from "./result.ts";
+import { intervalBoundRatio } from "./uncertainty.ts";
 
 /** Distribution summary derived from retained raw timing samples. */
 export interface TimingSummary {
@@ -42,6 +45,8 @@ export interface CaseCorrectnessSummary {
     | "scalar-process-different-public-work"
     | "different-public-work";
   readonly maximumDifferences?: QuantityDifferences;
+  /** Largest interval-bound difference as a fraction of its allowance; at most 1 passes. */
+  readonly intervalBoundRatio?: number;
   readonly investigations?: ReadonlyArray<FitInvestigation>;
   readonly note: string;
 }
@@ -419,13 +424,12 @@ const projectionsForCase = (
     .filter((projection) => projection.caseId === caseId)
     .sort((left, right) => left.run - right.run);
 
-const quantityPasses = (
-  difference: number,
+const quantityAllowance = (
   quantity: keyof QuantityDifferences,
   benchmarkCase: BenchmarkCase,
   effectProjections: ReadonlyArray<CorrectnessProjection>,
   pythonProjections: ReadonlyArray<CorrectnessProjection>,
-): boolean => {
+): number => {
   const tolerance = benchmarkCase.correctnessTolerances[quantity];
   let scale = 0;
 
@@ -458,7 +462,49 @@ const quantityPasses = (
     }
   }
 
-  return difference <= tolerance.absolute + tolerance.relative * scale;
+  return tolerance.absolute + tolerance.relative * scale;
+};
+
+const quantityPasses = (
+  difference: number,
+  quantity: keyof QuantityDifferences,
+  benchmarkCase: BenchmarkCase,
+  effectProjections: ReadonlyArray<CorrectnessProjection>,
+  pythonProjections: ReadonlyArray<CorrectnessProjection>,
+): boolean =>
+  difference <= quantityAllowance(quantity, benchmarkCase, effectProjections, pythonProjections);
+
+/** Largest seeded interval-bound difference across aligned runs, or undefined when missing. */
+const maximumIntervalBoundRatio = (
+  benchmarkCase: BenchmarkCase,
+  samples: number,
+  effectProjections: ReadonlyArray<CorrectnessProjection>,
+  pythonProjections: ReadonlyArray<CorrectnessProjection>,
+): number | undefined => {
+  const point = {
+    trend: quantityAllowance("trend", benchmarkCase, effectProjections, pythonProjections),
+    value: quantityAllowance("forecast", benchmarkCase, effectProjections, pythonProjections),
+  };
+
+  let maximum = 0;
+
+  for (const [index, effectProjection] of effectProjections.entries()) {
+    const effect = effectProjection.uncertainty?.intervals;
+    const python = pythonProjections[index]?.uncertainty?.intervals;
+
+    const ratio =
+      effect === undefined || python === undefined
+        ? undefined
+        : intervalBoundRatio(effect, python, samples, point);
+
+    if (ratio === undefined) {
+      return undefined;
+    }
+
+    maximum = Math.max(maximum, ratio);
+  }
+
+  return maximum;
 };
 
 const correctnessForCase = (
@@ -752,7 +798,12 @@ const correctnessForCase = (
         (benchmarkCase.datasetIdentity !== undefined &&
           projection.uncertainty.rows !== benchmarkCase.datasetIdentity.predictionRows) ||
         projection.uncertainty.replay !== "passed" ||
-        projection.uncertainty.reduction !== "passed" ||
+        !(
+          projection.uncertainty.reduction === "passed" ||
+          (projection.uncertainty.reduction === "streamed" &&
+            controls.output === "intervals" &&
+            projection.uncertainty.rows * controls.samples > maximumSampleCells)
+        ) ||
         projection.uncertainty.finite !== "passed",
     )
   ) {
@@ -821,7 +872,32 @@ const correctnessForCase = (
       ),
   );
 
-  const passed = failedQuantities.length === 0;
+  const intervalRatio =
+    controls === undefined
+      ? undefined
+      : maximumIntervalBoundRatio(
+          benchmarkCase,
+          controls.samples,
+          effectProjections,
+          pythonProjections,
+        );
+
+  if (controls !== undefined && intervalRatio === undefined) {
+    return {
+      caseId: benchmarkCase.id,
+      status: "failed",
+      comparison,
+      maximumDifferences: maximum,
+      note: "Uncertainty interval bounds are missing or misaligned.",
+    };
+  }
+
+  const failedChecks = [
+    ...failedQuantities,
+    ...(intervalRatio !== undefined && intervalRatio > 1 ? ["interval bounds"] : []),
+  ];
+
+  const passed = failedChecks.length === 0;
 
   const stationarityNotice =
     optimizerQuality !== undefined && "stationarity" in optimizerQuality
@@ -845,12 +921,15 @@ const correctnessForCase = (
       ? `${
           controls === undefined
             ? `Verified equivalent behavior for this configuration under evidence ${evidenceId}.`
-            : `Verified fitted point behavior under ${evidenceId}; scalar simulation gated by ${controls.evidence}. Public output work differs.`
+            : `Verified fitted point behavior under ${evidenceId}; every interval bound matched Python's scalar simulation within its Monte Carlo allowance. Public output work differs.`
         }${stationarityNotice}${investigationNotice}`
-      : `Cross-language quantities exceeded tolerance: ${failedQuantities.join(", ")}.${investigationNotice}`,
+      : `Cross-language quantities exceeded tolerance: ${failedChecks.join(", ")}.${investigationNotice}`,
   };
 
-  return outputFirst ? { ...summary, investigations } : summary;
+  const withIntervals =
+    intervalRatio === undefined ? summary : { ...summary, intervalBoundRatio: intervalRatio };
+
+  return outputFirst ? { ...withIntervals, investigations } : withIntervals;
 };
 
 /** Build a neutral correctness and absolute-timing report from raw artifacts. */
@@ -1044,15 +1123,15 @@ export const renderBenchmarkMarkdown = (report: BenchmarkReport): string => {
     "",
     "## Correctness",
     "",
-    "| Case | Classification | Status | Trend | Component | Additive | Forecast | Noise scale | Note |",
-    "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | --- |",
+    "| Case | Classification | Status | Trend | Component | Additive | Forecast | Noise scale | Interval bounds | Note |",
+    "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |",
   ];
 
   for (const summary of report.correctness) {
     const differences = summary.maximumDifferences;
 
     lines.push(
-      `| ${escapeTableCell(summary.caseId)} | ${summary.comparison} | ${summary.status} | ${differences?.trend.toExponential(3) ?? "n/a"} | ${differences?.component.toExponential(3) ?? "n/a"} | ${differences?.additive.toExponential(3) ?? "n/a"} | ${differences?.forecast.toExponential(3) ?? "n/a"} | ${differences?.noiseScale.toExponential(3) ?? "n/a"} | ${escapeTableCell(summary.note)} |`,
+      `| ${escapeTableCell(summary.caseId)} | ${summary.comparison} | ${summary.status} | ${differences?.trend.toExponential(3) ?? "n/a"} | ${differences?.component.toExponential(3) ?? "n/a"} | ${differences?.additive.toExponential(3) ?? "n/a"} | ${differences?.forecast.toExponential(3) ?? "n/a"} | ${differences?.noiseScale.toExponential(3) ?? "n/a"} | ${summary.intervalBoundRatio?.toFixed(3) ?? "n/a"} | ${escapeTableCell(summary.note)} |`,
     );
   }
 

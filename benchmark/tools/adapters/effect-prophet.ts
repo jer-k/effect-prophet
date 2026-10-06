@@ -11,6 +11,7 @@ import {
   encodeFittedModel,
   fit,
   getRegressorCoefficients,
+  maximumSampleCells,
   predict,
   predictUncertainty,
   prophetFittingBackendLayer,
@@ -747,29 +748,38 @@ const assertUncertainty = (
     throw new Error("Missing uncertainty controls");
   }
 
-  const samples = runUncertainty(model, input, benchmarkCase, "samples");
+  const rows = input.predictionRows.length;
+  const count = controls.samples;
+
+  // Interval requests past the sample-output budget stream rows; there are no draws to reduce.
+  const streamed = controls.output === "intervals" && rows * count > maximumSampleCells;
+
+  const samples = streamed ? undefined : runUncertainty(model, input, benchmarkCase, "samples");
   const intervals = runUncertainty(model, input, benchmarkCase, "intervals");
   const replay = runUncertainty(model, input, benchmarkCase, controls.output);
   const original = controls.output === "samples" ? samples : intervals;
+
+  if (original === undefined) {
+    throw new Error("Sample output requires reducible draws");
+  }
 
   const restored = runWithoutTracing(
     decodeFittedModel(JSON.parse(JSON.stringify(runWithoutTracing(encodeFittedModel(model))))),
   );
 
   const reloaded = runUncertainty(restored, input, benchmarkCase, controls.output);
-  const rows = input.predictionRows.length;
-  const count = controls.samples;
   const lower = (1 - controls.intervalWidth) / 2;
   const upper = (1 + controls.intervalWidth) / 2;
 
   if (
-    samples.kind !== "samples" ||
+    (samples !== undefined &&
+      (samples.kind !== "samples" ||
+        samples.trend.length !== rows * count ||
+        samples.value.length !== rows * count ||
+        samples.timestamps.length !== rows ||
+        samples.sampleCount !== count)) ||
     intervals.kind !== "intervals" ||
-    samples.trend.length !== rows * count ||
-    samples.value.length !== rows * count ||
-    samples.timestamps.length !== rows ||
     intervals.rows.length !== rows ||
-    samples.sampleCount !== count ||
     intervals.sampleCount !== count
   ) {
     throw new Error("Uncertainty returned incorrect dimensions");
@@ -779,7 +789,23 @@ const assertUncertainty = (
     const timestamp = Date.parse(input.predictionRows[index]?.timestamp ?? "");
     const interval = intervals.rows[index];
 
-    if (samples.timestamps[index] !== timestamp || interval?.timestamp !== timestamp) {
+    if (
+      interval?.timestamp !== timestamp ||
+      ![interval.trend, interval.value].every(
+        (bounds) =>
+          Number.isFinite(bounds.lower) &&
+          Number.isFinite(bounds.upper) &&
+          bounds.lower <= bounds.upper,
+      )
+    ) {
+      throw new Error("Uncertainty changed prediction row order or returned invalid bounds");
+    }
+
+    if (samples?.kind !== "samples") {
+      continue;
+    }
+
+    if (samples.timestamps[index] !== timestamp) {
       throw new Error("Uncertainty changed prediction row order");
     }
 
@@ -827,13 +853,19 @@ const assertUncertainty = (
   }
 
   return {
-    algorithm: samples.simulation,
+    algorithm: intervals.simulation,
     output: controls.output,
     rows,
     samples: count,
     replay: "passed",
-    reduction: "passed",
+    reduction: streamed ? "streamed" : "passed",
     finite: "passed",
+    intervals: intervals.rows.map((row) => ({
+      trendLower: row.trend.lower,
+      trendUpper: row.trend.upper,
+      valueLower: row.value.lower,
+      valueUpper: row.value.upper,
+    })),
   };
 };
 

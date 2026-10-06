@@ -22,7 +22,12 @@ const tolerances = {
   persistence: { absolute: 1e-10, relative: 0 },
 };
 
-const defaultCase = (growth: "linear" | "flat", id: string, dataset: string): BenchmarkCase => {
+/** Library defaults on both sides for one growth and dataset. */
+export const defaultCase = (
+  growth: "linear" | "flat",
+  id: string,
+  dataset: string,
+): BenchmarkCase => {
   const benchmarkCase: BenchmarkCase = {
     id: `${growth}-defaults-${id}`,
     dataset,

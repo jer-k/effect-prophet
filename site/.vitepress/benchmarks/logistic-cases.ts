@@ -36,7 +36,7 @@ export const logisticGroups = [
     id: "uncertainty",
     title: "Uncertainty ranges",
     intro:
-      "Both libraries simulate possible futures with random draws, so individual simulated values never match. These cases compare the fitted model behind the simulation and time the work.",
+      "Both libraries simulate possible futures with random draws, so individual simulated values never match. Each range must still match Python's within the variation expected from that many draws.",
   },
   {
     id: "evaluation",
@@ -67,6 +67,12 @@ export const logisticCaseDescriptions = {
     group: "defaults",
     title: "Defaults, eight months of daily data",
     summary: "256 days with a weekly pattern. Over 100 rows, so both libraries fit with L-BFGS.",
+  },
+  "logistic-reconcile-defaults-rate-changes": {
+    group: "defaults",
+    title: "Defaults, a year with changing growth",
+    summary:
+      "365 days whose growth rate changes twice, so the automatic changepoints have real changes to find.",
   },
   "logistic-reconcile-basic-96-empty-absmax": {
     group: "trend",
@@ -237,6 +243,18 @@ export const logisticCaseDescriptions = {
     group: "data",
     title: "Values outside the bounds",
     summary: "Noisy targets that go below zero and above the ceiling.",
+  },
+  "uncertainty-logistic-reconcile-defaults-rate-changes-intervals-1000": {
+    group: "uncertainty",
+    title: "Defaults, ranges with changing growth",
+    summary:
+      "80% ranges from 1,000 simulated paths on the year of changing growth and 90 forecast days.",
+  },
+  "uncertainty-logistic-reconcile-defaults-rate-changes-intervals-1000-seed-7": {
+    group: "uncertainty",
+    title: "Defaults, ranges with changing growth, second seed",
+    summary:
+      "The same ranges from a different random seed, so one lucky draw cannot pass the case.",
   },
   "uncertainty-logistic-implicit-floor-minmax-full-samples-512": {
     group: "uncertainty",

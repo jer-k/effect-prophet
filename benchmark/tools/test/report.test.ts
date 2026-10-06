@@ -582,6 +582,13 @@ describe("benchmark reporting", () => {
     expect(missing.correctness[0]?.status).toBe("failed");
     expect(missing.timings).toEqual([]);
 
+    const intervals = Array.from({ length: 8 }, () => ({
+      trendLower: 1,
+      trendUpper: 1,
+      valueLower: 0.5,
+      valueUpper: 1.5,
+    }));
+
     const checks = {
       algorithm: "scalar",
       output: selected.workload.uncertainty.output,
@@ -590,30 +597,60 @@ describe("benchmark reporting", () => {
       replay: "passed",
       reduction: "passed",
       finite: "passed",
+      intervals,
     };
 
-    const accepted = buildBenchmarkReport(
-      manifest,
-      cases,
-      await Effect.runPromise(
-        parseImplementationResult({
-          ...effectInput,
-          correctness: [{ ...effectInput.correctness[0], uncertainty: checks }],
-        }),
-      ),
-      await Effect.runPromise(
-        parseImplementationResult({
-          ...pythonInput,
-          correctness: [{ ...pythonInput.correctness[0], uncertainty: checks }],
-        }),
-      ),
-      evidence,
-    );
+    type Checks = Omit<typeof checks, "intervals"> & { readonly intervals?: typeof intervals };
+
+    const reportWith = async (effectChecks: Checks, pythonChecks: Checks = checks) =>
+      buildBenchmarkReport(
+        manifest,
+        cases,
+        await Effect.runPromise(
+          parseImplementationResult({
+            ...effectInput,
+            correctness: [{ ...effectInput.correctness[0], uncertainty: effectChecks }],
+          }),
+        ),
+        await Effect.runPromise(
+          parseImplementationResult({
+            ...pythonInput,
+            correctness: [{ ...pythonInput.correctness[0], uncertainty: pythonChecks }],
+          }),
+        ),
+        evidence,
+      );
+
+    const accepted = await reportWith(checks);
 
     expect(accepted.correctness[0]?.status).toBe("passed");
     expect(accepted.correctness[0]?.comparison).toBe("scalar-process-different-public-work");
+    expect(accepted.correctness[0]?.intervalBoundRatio).toBe(0);
     expect(accepted.timings).toHaveLength(2);
     expect(accepted.timings[0]?.peakRssBytes).toBe(100_000);
+
+    const shifted = await reportWith({
+      ...checks,
+      intervals: intervals.map((row) => ({ ...row, valueUpper: 100 })),
+    });
+
+    expect(shifted.correctness[0]).toMatchObject({
+      status: "failed",
+      note: expect.stringContaining("interval bounds"),
+    });
+    expect(shifted.timings).toEqual([]);
+
+    const { intervals: _omitted, ...withoutIntervals } = checks;
+    const missingIntervals = await reportWith(withoutIntervals);
+
+    expect(missingIntervals.correctness[0]?.note).toBe(
+      "Uncertainty interval bounds are missing or misaligned.",
+    );
+
+    // Eight rows fit the sample budget, so they must be checked against reduced draws.
+    const streamedSmall = await reportWith({ ...checks, reduction: "streamed" });
+
+    expect(streamedSmall.correctness[0]?.status).toBe("failed");
   });
 
   it("rejects metadata disagreement before accepting timing rows", async () => {

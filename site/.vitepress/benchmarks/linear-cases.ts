@@ -24,7 +24,7 @@ export const linearGroups = [
     id: "uncertainty",
     title: "Uncertainty ranges",
     intro:
-      "Both libraries simulate possible futures with random draws, so individual values never match. These cases check the fitted model behind the simulation and time the work.",
+      "Both libraries simulate possible futures with random draws, so individual simulated values never match. Each range must still match Python's within the variation expected from that many draws.",
   },
   {
     id: "evaluation",
@@ -157,6 +157,18 @@ export const linearCaseDescriptions = {
     group: "features",
     title: "Repeated timestamps with features",
     summary: "Repeated dates whose regressor and condition values differ from row to row.",
+  },
+  "uncertainty-linear-defaults-long-history-intervals-1000": {
+    group: "uncertainty",
+    title: "Defaults, three years of ranges",
+    summary:
+      "80% ranges from 1,000 simulated paths, Python's default, on all 1,460 past and future dates of a three-year daily history.",
+  },
+  "uncertainty-linear-defaults-irregular-intervals-1000": {
+    group: "uncertainty",
+    title: "Defaults, ranges on irregular dates",
+    summary:
+      "80% ranges from 1,000 simulated paths on the unevenly spaced history and its 48 forecast dates.",
   },
   "uncertainty-training-duplicates-auto": {
     group: "uncertainty",
