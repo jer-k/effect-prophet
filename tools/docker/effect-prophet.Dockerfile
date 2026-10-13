@@ -4,6 +4,8 @@ FROM node:26.7.0-bookworm-slim@sha256:4db36457f406501e6f608802e5da617e5fbd0e80b7
 
 FROM rust:1.98.1-bookworm@sha256:9a73a5088750b4c95158ab26629c854c3d6fc4b173cb7bc8079ad252d8ed7bfa
 
+LABEL org.effect-prophet.fixtures=true
+
 COPY --from=node /usr/local/ /usr/local/
 
 RUN rustup target add wasm32-unknown-unknown \
@@ -16,8 +18,18 @@ WORKDIR /workspace
 COPY package.json package-lock.json ./
 RUN npm ci
 
-COPY . .
+# Only WASM build inputs invalidate the expensive Rust build; other source edits skip it.
+COPY rust-toolchain.toml ./
+COPY tools/prepare-wasm-package.ts ./tools/
+COPY rust/prophet-wasm/Cargo.toml rust/prophet-wasm/Cargo.lock ./rust/prophet-wasm/
+COPY rust/prophet-wasm/src ./rust/prophet-wasm/src
+COPY rust/prophet-wasm/third-party ./rust/prophet-wasm/third-party
 
-RUN npm run build:wasm
+# Reuse compilation state without baking a fresh Cargo target tree into every image.
+RUN --mount=type=cache,id=fixtures-cargo-target,target=/workspace/rust/prophet-wasm/target,sharing=locked \
+    --mount=type=cache,id=fixtures-cargo-registry,target=/usr/local/cargo/registry,sharing=locked \
+    npm run build:wasm
+
+COPY . .
 
 CMD ["npm", "exec", "--", "vitest", "run", "--dir", "integration/tests/prophet-1.4.0"]
