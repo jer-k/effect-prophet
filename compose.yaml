@@ -40,5 +40,8 @@ services:
     read_only: true
     tmpfs:
       - /tmp
+    environment:
+      # Vitest 5 writes an API token under the user data dir, which is read-only here.
+      XDG_DATA_HOME: /tmp/xdg-data
     volumes:
       - ./integration/fixtures/prophet-1.4.0:/workspace/integration/fixtures/prophet-1.4.0:ro
