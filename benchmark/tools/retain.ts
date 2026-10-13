@@ -4,8 +4,10 @@ import { fileURLToPath } from "node:url";
 import { Effect } from "effect";
 
 import { BenchmarkArtifactError } from "./artifacts.ts";
+import { assertCompleteSuites, loadCaseCatalog } from "./catalog.ts";
 import { retainRun } from "./retention.ts";
 import { setBaseline } from "./references.ts";
+import { loadRunEvidence } from "./stored-results.ts";
 
 const runId = process.argv[2];
 
@@ -27,6 +29,18 @@ await Effect.runPromise(
     }
 
     const root = fileURLToPath(new URL("../", import.meta.url));
+
+    // Check before copying anything, so a refused baseline leaves no retained folder behind.
+    if (process.argv[4] === "--baseline") {
+      const evidence = yield* loadRunEvidence(resolve(root, "results/runs", runId));
+      const catalog = yield* loadCaseCatalog();
+
+      yield* assertCompleteSuites(
+        catalog,
+        evidence.cases.map((item) => item.id),
+      );
+    }
+
     const destination = yield* retainRun(root, runId, scope);
 
     if (process.argv[4] === "--baseline")
