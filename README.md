@@ -6,11 +6,11 @@ trend, weekly and yearly patterns, and holidays each broken out.
 Effect Prophet uses the same model as [Prophet](https://facebook.github.io/prophet/), Meta's
 forecasting library, and is tested against Python Prophet 1.4.0.
 
-- **One dependency.** [`effect`](https://effect.website) is the only package it depends on.
-- **No Stan install.** Prophet's fitting runs on [Stan](https://mc-stan.org/). The
-  parts Prophet uses are ported to Rust and compiled to WebAssembly, which ships inside the
-  package. Attribution is in
-  [`NOTICE.txt`](rust/prophet-wasm/third-party/NOTICE.txt).
+- **One peer dependency.** [`effect`](https://effect.website) (`^4.0.0`) is the only package it
+  needs, and you install it yourself so your app and this library share one copy.
+- **No Stan install.** Prophet's fitting runs on [Stan](https://mc-stan.org/). The parts Prophet
+  uses are ported to Rust and compiled to WebAssembly, which ships inside the package.
+  Attribution is in [`NOTICE.txt`](rust/prophet-wasm/third-party/NOTICE.txt).
 
 **📖 [Documentation](https://jer-k.github.io/effect-prophet/)**
 
@@ -72,6 +72,7 @@ with no changes to how you call the library. Send them to Jaeger, Honeycomb, Gra
 OpenTelemetry backend using Effect's built-in exporter:
 
 ```ts
+// Continues the quick start: `fit`, `predict`, `history` and `nextWeek` are defined there.
 import { Effect, Layer } from "effect";
 import { FetchHttpClient } from "effect/http";
 import { OtlpSerialization, OtlpTracer } from "effect/observability";
@@ -102,7 +103,7 @@ then see [how close the results are](https://jer-k.github.io/effect-prophet/pyth
 ## AI disclosure
 
 Effect Prophet is a TypeScript port of Meta's Python [Prophet](https://facebook.github.io/prophet/),
-and most of the code was written with AI assistance. The forecasting maths is easy to get subtly
+and most of the code was written with AI assistance. The forecasting math is easy to get subtly
 wrong, so the project doesn't ask you to take correctness on trust. Results are checked against
 Python Prophet itself, and you can see how closely they match in the
 [benchmarks](https://jer-k.github.io/effect-prophet/benchmarks/) and the
