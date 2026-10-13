@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import { Effect } from "effect";
 
 import type { BenchmarkDataset } from "./case.ts";
-import { loadCaseCatalog, selectCases } from "./catalog.ts";
+import { casesInSuites, loadCaseCatalog, selectCases } from "./catalog.ts";
 import { loadInputDataset } from "./inputs.ts";
 import { loadRunEvidence } from "./stored-results.ts";
 import { resolveRunReference } from "./references.ts";
@@ -68,12 +68,14 @@ const sha256File = async (path: string): Promise<string> => {
 
 interface RunArguments {
   readonly caseIds: ReadonlyArray<string>;
+  readonly suites: ReadonlyArray<string>;
   readonly build: boolean;
   readonly replay: string | undefined;
 }
 
 const parseArguments = (): RunArguments => {
   const caseIds: Array<string> = [];
+  const suites: Array<string> = [];
   let build = true;
   let replay: string | undefined;
 
@@ -108,10 +110,26 @@ const parseArguments = (): RunArguments => {
       continue;
     }
 
+    if (argument === "--suite") {
+      const suite = process.argv[index + 1];
+
+      if (suite === undefined) {
+        throw new Error("--suite requires a trend suite: linear, flat or logistic");
+      }
+
+      suites.push(suite);
+      index += 1;
+      continue;
+    }
+
     throw new Error(`Unknown benchmark argument: ${argument ?? "undefined"}`);
   }
 
-  return { caseIds, build, replay };
+  if (replay !== undefined && suites.length > 0) {
+    throw new Error("--suite selects from the catalog; --replay reruns a recorded selection");
+  }
+
+  return { caseIds, suites, build, replay };
 };
 
 const timestampRunId = (): string =>
@@ -134,7 +152,12 @@ const main = async (): Promise<void> => {
           dataset: item.dataset.replace(/^generated\//u, "v1/"),
         }));
 
-  const declarations = await Effect.runPromise(selectCases(catalog, arguments_.caseIds));
+  const suiteCases = await Effect.runPromise(casesInSuites(catalog, arguments_.suites));
+
+  const declarations = await Effect.runPromise(
+    selectCases(catalog, [...arguments_.caseIds, ...suiteCases.map((item) => item.id)]),
+  );
+
   const selectedCases = declarations.map((item) => item.id);
 
   const cases = await Promise.all(

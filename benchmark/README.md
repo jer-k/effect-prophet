@@ -33,6 +33,7 @@ and adapters verify their recorded identities again before measuring.
 ```sh
 npm run benchmark
 npm run benchmark -- --case flat-level-minmax --case evaluation-flat-mixed-point
+npm run benchmark -- --suite flat
 npm run benchmark -- --no-build --case map-events-small
 ```
 
@@ -100,6 +101,71 @@ copy arbitrary local files. Failed cases may be retained deliberately; retention
 stamp. Naming an emulated or dirty snapshot does not make it a native/clean release baseline.
 `benchmark:baseline` is an alias for the retention command; baseline pointers change only with
 `--baseline`. Local comparisons are never included in the checked-in results overview.
+
+## Refresh release baselines
+
+Each trend has one named baseline (`linear-growth`, `flat-growth`, `logistic-growth`) that feeds
+the docs site's benchmark pages. Refresh all three together from a clean commit whenever fitting,
+prediction, uncertainty or a gate changes, and before each release. Baselines from a dirty tree
+are diagnostic only and must not replace these.
+
+1. **Commit everything first.** Code, adapters, case declarations and any new inputs must be in
+   `HEAD`; `git status` must print nothing. Retention also requires the shared inputs to be
+   committed. Do not edit files while a run is in progress.
+2. **Run the trends one at a time.** `--suite` selects every declared case of a trend, so a case
+   added since the last refresh is included without listing it. A case belongs to the suite of
+   the growth type it exercises; uncertainty and evaluation cases follow their source case.
+   Overlapping runs compete for CPU and distort timings. Each run builds the Rust/WASM and Python
+   images, so allow time for the first one:
+
+   ```sh
+   npm run benchmark -- --suite linear
+   npm run benchmark -- --suite flat
+   npm run benchmark -- --suite logistic
+   ```
+
+   (`--replay <baseline>` instead reruns exactly what a baseline recorded. It cannot add cases,
+   and it cannot be combined with `--suite`.)
+
+3. **Review each run** in `results/runs/<run-id>/`. The manifest must say `"gitDirty": false`
+   at the intended commit. Every case must pass, except intentional differences (today: the two
+   zero-span linear cases). Investigate anything else, including cases flagged
+   "investigate internal fit differences", before retaining. If a gate or declaration needs to
+   change, fix it, commit and start over: do not retain a run made on an older commit.
+4. **Retain and repoint.** `--baseline` moves the named pointer. It refuses a run that covers
+   only part of a suite it contains, or contains cases the catalog does not declare, and names the
+   missing cases; fix that by rerunning with `--suite` rather than by overriding the check:
+
+   ```sh
+   npm run benchmark:retain -- <linear-run-id> linear-growth --baseline
+   npm run benchmark:retain -- <flat-run-id> flat-growth --baseline
+   npm run benchmark:retain -- <logistic-run-id> logistic-growth --baseline
+   npm run benchmark:results
+   ```
+
+5. **Delete the superseded retained folders.** Keep only the directories `baselines.json` points
+   to, then run `npm run benchmark:results` again so `RESULTS.md` lists only what remains. Git
+   history keeps the old evidence.
+6. **Check the consumers.** The docs site builds its benchmark pages, counts and the overview
+   from the baselines, and fails the build if a case has no description (add one in
+   `site/.vitepress/benchmarks/<trend>-cases.ts`). Then run:
+
+   ```sh
+   npm run docs:build
+   npm run benchmark:typecheck
+   npm run benchmark:test
+   ```
+
+   The benchmark tests read the `flat-growth` baseline through `baselines.json`, so they follow
+   the pointer. If they fail, a declaration changed after the baseline was run: rerun it.
+
+7. **Commit the retained folders, `baselines.json`, `RESULTS.md` and any test or site changes**
+   together, in a commit after the one the runs were made on. The manifests record the code
+   commit that was measured.
+
+New cases follow the same path: declare them under `cases/`, add site descriptions, commit, and
+the next `--suite` run picks them up. Timings come from one machine; compare them only
+with runs from the same hardware.
 
 ## Maintain inputs and coverage
 

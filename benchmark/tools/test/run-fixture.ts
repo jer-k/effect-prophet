@@ -8,6 +8,7 @@ import { Effect } from "effect";
 
 import type { BenchmarkCase } from "../case.ts";
 import { buildBenchmarkReport, renderBenchmarkMarkdown } from "../report.ts";
+import { resolveRunReference } from "../references.ts";
 import { loadRunEvidence } from "../stored-results.ts";
 
 /** Create a real filesystem/git fixture from retained adapter evidence, without module mocks. */
@@ -15,8 +16,8 @@ export const makeRunFixture = async () => {
   const root = await mkdtemp(resolve(tmpdir(), "prophet-benchmark-layout-"));
   const benchmarkRoot = resolve(root, "benchmark");
 
-  const retained = fileURLToPath(
-    new URL("../../results/retained/flat-growth/2026-10-05T010915-213Z-730ead62/", import.meta.url),
+  const retained = await Effect.runPromise(
+    resolveRunReference(fileURLToPath(new URL("../../results/", import.meta.url)), "flat-growth"),
   );
 
   const evidence = await Effect.runPromise(loadRunEvidence(retained));
@@ -24,7 +25,11 @@ export const makeRunFixture = async () => {
 
   if (item === undefined) throw new Error("Missing retained case fixture");
 
-  const benchmarkCase = { ...item, dataset: item.dataset.replace("generated/", "v1/") };
+  const benchmarkCase = {
+    ...item,
+    dataset: item.dataset.replace("generated/", "v1/"),
+  };
+
   const inputRoot = fileURLToPath(new URL("../../inputs/", import.meta.url));
   await mkdir(resolve(benchmarkRoot, "inputs/v1"), { recursive: true });
   await cp(
@@ -96,7 +101,10 @@ export const makeRunFixture = async () => {
           options.failed
             ? {
                 ...entry,
-                forecasts: entry.forecasts.map((row) => ({ ...row, value: row.value + 100 })),
+                forecasts: entry.forecasts.map((row) => ({
+                  ...row,
+                  value: row.value + 100,
+                })),
               }
             : entry,
         ),

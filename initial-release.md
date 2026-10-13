@@ -11,7 +11,7 @@ cross-validation, model search and save/load.
 
 What's left is mostly **cleanup and release mechanics**:
 
-1. Rerun all three trend baselines from a clean commit, then finish the docs site's Python pages.
+1. Finish the docs site's Python pages.
 2. Settle packaging: version and publishing.
 
 ## Done
@@ -184,19 +184,34 @@ What's left is mostly **cleanup and release mechanics**:
   - Timing (focused rerun, a busier machine): Stan-path flat fits take 1.4–6.0 ms against Python's
     7.1–23.8 ms. The 96-row default-settings Newton case dropped from 20.8 ms to 6.0 ms, against
     Python's 13.9 ms.
+- **Baselines rerun from a clean commit.** All three trends were rerun on 2026-10-13 at `4f5ffaf`
+  with a clean tree (`gitDirty: false`) and saved as the current `linear-growth`, `flat-growth`
+  and `logistic-growth` baselines, replacing every dirty-tree snapshot (which are deleted).
+  - Linear: 35 cases, 33 pass; the 2 others are the intentional zero-span differences. Flat: 39
+    of 39. Logistic: 48 of 48. That is 122 cases, all of the catalog, and they include every
+    uncertainty interval case and the new default-settings cases.
+  - The docs site's overview, trend and feature pages regenerate from these baselines.
+  - `catalog.test.ts` and `run-fixture.ts` follow the `flat-growth` pointer in `baselines.json`
+    instead of a hardcoded run id, and the flat optimizer-pin workaround in the catalog test is
+    gone because the recorded run now includes the pin.
+  - The repeatable procedure is in the "Refresh release baselines" section of
+    `benchmark/README.md`. `npm run benchmark -- --suite <linear|flat|logistic>` runs a whole
+    trend, and `benchmark:retain --baseline` refuses a run that leaves out any declared case of a
+    suite it contains. A case's suite is its growth type (`suiteForCase`), not a separate field:
+    all 122 cases agree with their baselines, so a declared field would only duplicate it.
 
 ## Where things stand
 
-| Area                                                 | Works | Matches Python?                                                                              | Saved benchmark evidence                                                                                |
-| ---------------------------------------------------- | ----- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| Linear growth                                        | Yes   | Yes. Every linear fit now uses Prophet's MAP model.                                          | 31 of 33 pass (`linear-growth` baseline). The 2 others are zero-span inputs we reject on purpose.       |
-| Flat growth                                          | Yes   | Yes, including additive events, regressors and conditional seasonality on their own          | 34 of 34 pass (`flat-growth` baseline); 4 new cases pass locally, not yet in the saved baseline         |
-| Logistic growth                                      | Yes   | Yes, judged on outputs (forecasts must match; internal fit numbers are reported only)        | 45 of 45 pass (`logistic-growth` baseline)                                                              |
-| Seasonalities (auto, custom, conditional)            | Yes   | Yes                                                                                          | Fixtures, plus 31 of 31 feature cases across the three baselines (`/benchmarks/features`)               |
-| Events/holidays (custom), regressors, multiplicative | Yes   | Yes                                                                                          | Fixtures, plus 31 of 31 feature cases across the three baselines (`/benchmarks/features`)               |
-| Uncertainty intervals                                | Yes   | Same per-path method as Python's `vectorized=False` (decided); every interval bound is gated | 18 of 18 pass locally, including 5 default-settings cases; not yet in the saved baselines               |
-| Cross-validation, metrics, search, holdout reports   | Yes   | Yes where Python has an equivalent                                                           | 15 of 15 pass across the three baselines (linear 5, flat 5, logistic 5; `/benchmarks/cross-validation`) |
-| Save/load                                            | Yes   | Uses its own format. Python JSON is deliberately not supported.                              | Lifecycle tests                                                                                         |
+| Area                                                 | Works | Matches Python?                                                                              | Saved benchmark evidence                                                                                        |
+| ---------------------------------------------------- | ----- | -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Linear growth                                        | Yes   | Yes. Every linear fit now uses Prophet's MAP model.                                          | 33 of 35 pass (`linear-growth` baseline, clean commit). The 2 others are zero-span inputs we reject on purpose. |
+| Flat growth                                          | Yes   | Yes, including additive events, regressors and conditional seasonality on their own          | 39 of 39 pass (`flat-growth` baseline, clean commit)                                                            |
+| Logistic growth                                      | Yes   | Yes, judged on outputs (forecasts must match; internal fit numbers are reported only)        | 48 of 48 pass (`logistic-growth` baseline, clean commit)                                                        |
+| Seasonalities (auto, custom, conditional)            | Yes   | Yes                                                                                          | Fixtures, plus 35 of 35 feature cases across the three baselines (`/benchmarks/features`)                       |
+| Events/holidays (custom), regressors, multiplicative | Yes   | Yes                                                                                          | Fixtures, plus 35 of 35 feature cases across the three baselines (`/benchmarks/features`)                       |
+| Uncertainty intervals                                | Yes   | Same per-path method as Python's `vectorized=False` (decided); every interval bound is gated | 18 of 18 pass in the saved baselines, including 5 default-settings cases (`/benchmarks/uncertainty`)            |
+| Cross-validation, metrics, search, holdout reports   | Yes   | Yes where Python has an equivalent                                                           | 15 of 15 pass across the three baselines (linear 5, flat 5, logistic 5; `/benchmarks/cross-validation`)         |
+| Save/load                                            | Yes   | Uses its own format. Python JSON is deliberately not supported.                              | Lifecycle tests                                                                                                 |
 
 ### Not implemented (Python has these)
 
@@ -218,20 +233,8 @@ What's left is mostly **cleanup and release mechanics**:
 
 ## Must do before release
 
-### 1. Clean baselines, then fill in the Python pages
+### 1. Fill in the Python pages
 
-- Every saved run so far is from a dirty tree, including the current three baselines (commit
-  `d2a974c` with uncommitted changes). Before release, rerun all three from a clean commit.
-  `--replay <baseline>` reruns only the recorded selection, and `--case` can only narrow it, so
-  run each suite with an explicit `--case` list that includes the new cases:
-  linear `uncertainty-linear-defaults-long-history-intervals-1000` and
-  `uncertainty-linear-defaults-irregular-intervals-1000`; flat
-  `uncertainty-flat-defaults-seasonal-intervals-1000`, `flat-additive-components`,
-  `flat-additive-components-large`, `flat-correlated-regressors` and
-  `flat-mixed-components-absmax-defaults`; logistic
-  `logistic-reconcile-defaults-rate-changes` and
-  `uncertainty-logistic-reconcile-defaults-rate-changes-intervals-1000` (plus `-seed-7`). The
-  site's uncertainty intros describe the new interval gate, which old baselines did not run.
 - Write the remaining outline pages in `site/python/`: **Coming from Python** (a translation
   table) and **What's different** (the known gaps). **How close are the results?** is written and
   marks all three trends as matching.
