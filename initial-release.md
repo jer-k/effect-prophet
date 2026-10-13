@@ -11,8 +11,7 @@ cross-validation, model search and save/load.
 
 What's left is mostly **cleanup and release mechanics**:
 
-1. Finish the docs site's Python pages.
-2. Settle packaging: version and publishing.
+1. Settle packaging: version and publishing.
 
 ## Done
 
@@ -21,7 +20,7 @@ What's left is mostly **cleanup and release mechanics**:
 - **Docs site** in `site/`, built with VitePress and deployed to GitHub Pages by
   `.github/workflows/docs.yml`. It has a beginner guide and 11 example pages. Every code sample
   comes from a runnable script in `site/snippets/`, and CI type-checks and runs all of them on
-  every PR. The three Python pages are outlines for now.
+  every PR.
 - **README rewritten**: install, quick start, feature list, links to the site.
 - **Effect upgraded** from `4.0.0-beta.107` to stable `4.0.0`. No code changes were needed, and
   the full check suite passes.
@@ -82,6 +81,8 @@ What's left is mostly **cleanup and release mechanics**:
     All three baselines were rerun on 2026-10-05 after the speedups: Effect Prophet is faster
     than Python on every benchmarked fit (median warm fit: linear 5.1 ms vs 23.5 ms, flat 1.6 ms
     vs 7.9 ms, logistic 12.8 ms vs 20.6 ms), with the same pass/fail and flag results as before.
+- **Python pages written.** `site/python/` has Coming from Python (with a runnable `from-python.ts`
+  side-by-side example and translation tables) and What's different.
 - **Old `docs/` folder deleted.** Its 27 build-out notes were out of date, and several linked to
   benchmark snapshots the current baselines replaced. The docs site covers the user-facing parts,
   and git history keeps the rest. This file moved to the repository root. Benchmark READMEs,
@@ -233,13 +234,7 @@ What's left is mostly **cleanup and release mechanics**:
 
 ## Must do before release
 
-### 1. Fill in the Python pages
-
-- Write the remaining outline pages in `site/python/`: **Coming from Python** (a translation
-  table) and **What's different** (the known gaps). **How close are the results?** is written and
-  marks all three trends as matching.
-
-### 2. Packaging
+### 1. Packaging
 
 | Item       | Now                                                         | Needed                                                                                       |
 | ---------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
