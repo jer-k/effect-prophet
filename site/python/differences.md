@@ -1,26 +1,51 @@
 # What's different
 
-::: info Outline
-This page is an outline.
-:::
+Effect Prophet fits the same model as Python Prophet 1.4.0 (see
+[How close are the results?](./accuracy)). This page lists where the library does less than
+Python, where it differs on purpose, and the smaller behavior differences.
 
 ## Not available yet
 
-- Country holiday calendars (`add_country_holidays`)
+- Country holiday calendars (`add_country_holidays`). You can still list your own events.
 - Full Bayesian fitting (`mcmc_samples`)
-- Warm starts
-- Forecasting regressors with their own models
+- Warm starts (`warm_start_params`)
+- Forecasting regressors with their own models. Every future row must supply its regressor
+  values.
 - Monthly horizons and custom metrics in cross-validation
 
 ## Different on purpose
 
-- Plain data and typed errors instead of a mutable `Prophet` object and pandas dataframes
+- Plain data and typed errors instead of a mutable `Prophet` object and pandas dataframes. Rows
+  are `{ timestamp, value }` instead of `ds` and `y`.
 - Strict UTC timestamps; no guessing at formats or time zones
+- Missing values are rejected rather than silently dropped
 - You supply future dates; there is no `make_future_dataframe`
 - No built-in plotting
 - Saved models use their own format, not Python's JSON
-- Uncertainty ranges use Prophet's per-path simulation, not its default shortcut, and need a seed
+- Cross-validation and model search run one fold after another, with no worker parallelism
+- Uncertainty ranges are a separate [`predictUncertainty`](../examples/uncertainty) call, so
+  point forecasts never pay for simulations. They need a seed, so results are repeatable.
 
 ## Small behavior differences
 
-- To be listed once the remaining default-behavior fixes are settled
+- **Uncertainty simulation.** Ranges use Prophet's per-path simulation (`vectorized=False`), not
+  Python's default shortcut. The shortcut only allows trend changes at the requested rows and
+  assumes they are evenly spaced, but here you supply your own rows. On evenly spaced rows the
+  two agree: in our long-history benchmark, the average trend width of future ranges was 17.7
+  for the shortcut and 17.8 for the per-path method over eight seeds.
+- **Size limits on uncertainty.** One call takes up to 10,000 rows and 2,048 samples. Python has
+  no such limits. See [Uncertainty ranges](../examples/uncertainty) for details.
+- **Inputs that cannot be fitted return an error.** If every row has the same timestamp, there
+  is no way to draw a trend, so `fit` fails where Python returns `NaN` forecasts. These are the
+  [intentional differences](/benchmarks/linear#intentional-differences) in the benchmarks.
+- **Flat growth rejects changepoint options.** `map.changepoints` and
+  `map.changepointPriorScale` cannot affect a flat trend, so passing them is an error. Python
+  accepts and ignores them.
+- **Flat growth and the optimizer.** A flat model with only plain seasonality uses a faster,
+  exact fitter. Any flat model with events, regressors, conditional seasonalities or
+  multiplicative effects, or one with an explicit `map.optimizer`, is fitted with Prophet's own
+  objective like Python.
+- **Last-digit differences.** Fits stop when they are close enough, and rounding differs across
+  computers, so forecasts agree to many decimal places but not always all of them. For logistic
+  growth, the fitted internal numbers can differ slightly even when forecasts match; the
+  [benchmarks](/benchmarks/logistic) flag these cases.
