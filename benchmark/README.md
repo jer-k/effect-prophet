@@ -146,11 +146,15 @@ docker run --rm --network none --read-only --tmpfs /tmp \
 ## Docker storage
 
 `run --rm` removes containers, not images or BuildKit cache. Results are host mounts; no persistent
-runtime volumes are created. An optional isolated builder uses the checked-in GC budget:
+runtime volumes are created. `npm run benchmark` builds on the isolated `effect-prophet-benchmark`
+builder (created on first use from the checked-in GC budget, or the builder named by `BUILDX_BUILDER`).
+When it finishes, pass or fail, it trims that builder's cache to 8 GB and removes superseded benchmark
+images (`benchmark/tools/docker-cleanup.ts`). Cleanup is best-effort and never fails the run. To
+create the builder or inspect it by hand:
 
 ```sh
 npm run benchmark:builder
-npm run benchmark:contained -- --case flat-level-minmax
+npm run benchmark -- --case flat-level-minmax
 docker buildx du --builder effect-prophet-benchmark
 docker buildx prune --builder effect-prophet-benchmark --max-used-space 8GB
 docker image prune --filter label=org.effect-prophet.benchmark=true

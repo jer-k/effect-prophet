@@ -13,6 +13,8 @@ import { loadInputDataset } from "./inputs.ts";
 import { loadRunEvidence } from "./stored-results.ts";
 import { resolveRunReference } from "./references.ts";
 import { resolveContainerPlatform } from "./container-platform.ts";
+import { benchmarkBuilderName, ensureBenchmarkBuilder } from "./docker-builder.ts";
+import { cleanupDockerStorage } from "./docker-cleanup.ts";
 import type { RunManifest } from "./result.ts";
 
 const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
@@ -20,6 +22,8 @@ const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
 const benchmarkRoot = fileURLToPath(new URL("../", import.meta.url));
 
 const composePath = resolve(benchmarkRoot, "tools/runtime/compose.yaml");
+
+let dockerStorageUsed = false;
 
 const evidencePath = resolve(benchmarkRoot, "evidence/comparisons.json");
 
@@ -252,6 +256,12 @@ const main = async (): Promise<void> => {
     `BENCHMARK_REPORT_MODE=${stage === "correctness" ? "eligibility" : "final"} BENCHMARK_CONTAINER_PLATFORM=${containerPlatform} docker compose -f benchmark/tools/runtime/compose.yaml run --rm benchmark-report`,
   ]);
 
+  // Build on the GC-capped builder unless the caller picked one; cleanup inherits the same choice.
+  if (process.env.BUILDX_BUILDER === undefined) {
+    if (ensureBenchmarkBuilder()) process.env.BUILDX_BUILDER = benchmarkBuilderName;
+    else process.stderr.write("Docker builder unavailable; building on the active builder\n");
+  }
+
   const environment: NodeJS.ProcessEnv = {
     ...process.env,
     BENCHMARK_CASE_IDS: selectedCases.join(","),
@@ -261,6 +271,8 @@ const main = async (): Promise<void> => {
   };
 
   const compose = ["compose", "-f", composePath];
+
+  dockerStorageUsed = true;
 
   if (arguments_.build) {
     runCommand("docker", [...compose, "build"], environment);
@@ -332,4 +344,6 @@ try {
     `${error instanceof Error ? (error.stack ?? error.message) : String(error)}\n`,
   );
   process.exitCode = 1;
+} finally {
+  if (dockerStorageUsed) cleanupDockerStorage();
 }
