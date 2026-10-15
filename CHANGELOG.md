@@ -4,73 +4,35 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows
 [Semantic Versioning](https://semver.org/). Before 1.0, minor versions may include breaking changes.
 
-## [Unreleased]
+## [0.2.0] - Unreleased
 
 ### Added
 
-- **Country holiday calendars**, like Python Prophet's `add_country_holidays`. Pass
-  `countryHolidays: { country: "US" }` to `fit`, alongside any custom events. It works with every
-  trend type and with `holidaysMode`. Each holiday has a zero-day window and the given
-  `priorScale` (default 10).
-- An offline, versioned snapshot of 250 country-level calendars, generated with Python Prophet
-  1.4.0 and `holidays` 0.104 for request years 1995–2060. Codes and registered aliases such as
-  `USA`, `UK` and `TU` are accepted. No Python or network access is needed.
-- **`inspectCountryHolidays(selection, years)`** returns a calendar's dates, the snapshot and
-  provider identity, and its reviewed coverage issues, without fitting a model.
-- Known coverage gaps, such as India's Hindu date tables ending in 2035, are rejected by default.
-  `coverage: "allow-known-gaps"` accepts the provider's partial result and keeps its issues.
-- Fitted models keep the selected country's snapshot. `encodeFittedModel` and `decodeFittedModel`
-  carry it, and restored forecasts never switch to a newer snapshot from an updated package.
-- **`CountryHolidayError`**, with a `reason` for every calendar failure: an unknown or malformed
-  selection, a year outside the snapshot, a known coverage gap, an unreadable or corrupt packaged
-  file, or a conflict with your own events, seasonalities, conditions or regressors. `fit`,
-  `predict`, `predictUncertainty`, `decodeOptions`, `crossValidate`, `planRollingOrigin` and
-  `evaluateHoldout` can now fail with it.
-- `EvaluationSearchError` has a new `invalid-candidate` reason, naming the search candidate whose
-  country calendar is invalid. Recorded search failures can carry a `CountryHolidayError` tag and
-  reason.
-- New tracing spans: `Prophet.inspectCountryHolidays`, `Prophet.parseCountryHolidays`,
-  `Prophet.resolveCountryHolidays` and `effect-prophet.calendar.load-snapshot`.
+- **Country holiday calendars**, like Python Prophet's `add_country_holidays`. Add
+  `countryHolidays: { country: "US" }` to `fit` and the model learns an effect for each of that
+  country's public holidays, alongside any events you add yourself. Calendars for 250 countries
+  are included and work offline, for the years 1995–2060.
+- Some calendars have known gaps, such as India's Hindu holidays after 2035. These are rejected by
+  default; pass `coverage: "allow-known-gaps"` to use the calendar anyway.
+- **`inspectCountryHolidays`** lists a country's holiday dates and any known gaps for the years you
+  ask about, without fitting a model.
+- A saved model keeps the holiday dates it was trained with, so upgrading Effect Prophet never
+  changes the forecasts of a model you already saved.
+- **`CountryHolidayError`** reports every calendar problem, such as an unknown country, a year
+  outside 1995–2060 or a known gap, with a `reason` you can check.
+- Tracing spans for loading and resolving country calendars.
 
 ### Changed
 
-- `predict`, `predictUncertainty` and `encodeFittedModel` no longer re-validate a model that `fit`
-  or `decodeFittedModel` returned, which makes repeated predictions faster for every model. Fitted
-  models are now deeply frozen throughout, including `fitSummary.optimization`.
-- Faster forecasts for models with many events or holidays.
-- The npm package grows from about 350 KB to about 1.28 MB packed, for the bundled calendars and
-  their notices.
+- Faster predictions and model saving, for every model.
+- The npm package grows from about 350 KB to about 1.28 MB, for the bundled calendars.
 
 ### Benchmarks
 
-33 new country-calendar cases, each checked against Python Prophet's real `add_country_holidays`.
-No existing cases were removed or changed.
-
-- **US calendar with custom events**, for every trend and both holiday modes, each paired with an
-  explicit-events control that lists the same dates: `country-us-{linear,flat,logistic}-{additive,multiplicative}`
-  and `country-explicit-us-*` (12 cases).
-- **Calendar boundaries**: a 2010 history forecast into 2021 and 2060, covering observed-day
-  spillovers and holiday names that first appear after training (`country-boundary-linear`,
-  `country-boundary-flat`).
-- **Unusual calendars**: deliberately empty Bouvet Island with its no-calendar control
-  (`country-empty-bv-flat`, `country-explicit-empty-flat`), Singapore's estimated-name transition
-  (`country-estimated-sg-flat`) and India's partial coverage under `allow-known-gaps`
-  (`country-partial-in-flat`).
-- **Combined features**: country and custom events with conditional seasonality and a regressor
-  (`country-mixed-us-flat`), and seeded uncertainty intervals (`country-uncertainty-us-flat`).
-- **Scaling**: Sweden's many occurrences and China's many names over 730 and 2,190 training rows,
-  plus a 32-row prediction batch (`country-{se,cn}-flat-*`). Each has an explicit-events control
-  (`country-explicit-{se,cn}-flat-*`), and each dataset a no-calendar control
-  (`country-none-flat-*`) (13 cases).
-- `npm run benchmark:calendar-overhead -- runs/<run-id>` shows each country case beside its
-  controls, with each implementation's slowdown.
-- `npm run benchmark:compare` now opens with a **What changed** summary: added and removed cases,
-  outcome and contract changes, and investigation flag changes. It compares timings whenever a
-  case passed in both runs with an unchanged contract on matching hardware, and lists possible
-  regressions and improvements. A changed correctness gate no longer hides every timing; changed
-  gates and a changed timing harness are named instead.
-- The Python adapter now reports explicit events in Prophet's feature-column order, which matters
-  when one event name is a prefix of another.
+- New benchmarks for country holiday calendars, checked against Python Prophet, with controls
+  that measure what the calendars themselves cost.
+- `npm run benchmark:compare` now summarizes what changed between two runs and flags possible
+  speed regressions.
 
 ## [0.1.1] - 2026-10-14
 
@@ -231,5 +193,6 @@ These Python Prophet features are not implemented in this release:
 - Inputs that cannot define a trend, such as every row sharing one timestamp, return an error where
   Python returns `NaN` forecasts.
 
+[0.2.0]: https://github.com/jer-k/effect-prophet/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/jer-k/effect-prophet/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/jer-k/effect-prophet/releases/tag/v0.1.0

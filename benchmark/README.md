@@ -159,9 +159,10 @@ are diagnostic only and must not replace these.
    pull request description. Explain every outcome change, flag change and Effect regression
    there before retaining; fix a regression the change caused, then commit and start over.
 
-5. **Record new benchmarks in the changelog.** Add every case from the reports' **Added** lines
-   to the `Unreleased` section of the root `CHANGELOG.md`, under `### Benchmarks`, grouped by what
-   they measure. Note removed cases too, with the reason.
+5. **Record new benchmarks in the changelog.** Under `### Benchmarks` in the upcoming release's section
+   of the root `CHANGELOG.md`, say in a line or two what the reports' **Added** cases cover, in
+   terms a reader of the changelog understands, and why any cases were removed. Don't list case
+   IDs; the reports and `CASES.md` have them.
 6. **Retain and repoint.** `--baseline` moves the named pointer. It refuses a run that covers
    only part of a suite it contains, or contains cases the catalog does not declare, and names the
    missing cases; fix that by rerunning with `--suite` rather than by overriding the check:
