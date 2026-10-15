@@ -45,5 +45,5 @@ snapshot, so installing updated calendars never silently changes restored predic
 
 Use `inspectCountryHolidays` to inspect known limitations before fitting. Known gaps are rejected
 by default; `coverage: "allow-known-gaps"` explicitly accepts the provider's partial/empty result,
-not a completeness promise. See [Country holiday calendar limitations](/guide/holiday-calendars)
+not a completeness promise. See [Country holiday calendars](/guide/holiday-calendars)
 for the runnable example, pinned provider versions and 1995–2060 outer horizon.

@@ -578,6 +578,7 @@ try {
     assert.ok(missing instanceof CountryHolidayError);
     assert.equal(missing.reason, "snapshot-unavailable");
     const fitting = await Effect.runPromise(Effect.flip(fit(rows, { countryHolidays: { country: "US" } }).pipe(Effect.provide(prophetFittingBackendLayer))));
+    assert.ok(fitting instanceof CountryHolidayError);
     assert.equal(fitting.reason, "snapshot-unavailable");
   `,
     ],

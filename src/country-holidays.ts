@@ -1,6 +1,7 @@
 import { Effect, Schema } from "effect";
 
 import {
+  CountryHolidayFailureReasonSchema,
   ValidationIssueSchema,
   validationIssuesFromIssue,
   validationMessageFromIssue,
@@ -62,19 +63,14 @@ export const CountryHolidaysSchema = Schema.Struct({
 /** Parsed country selection, coverage policy and positive finite prior. */
 export type CountryHolidays = typeof CountryHolidaysSchema.Type;
 
-/** Typed selection, coverage, range or packaged-data failure from calendar operations. */
+/**
+ * Every country-calendar failure from inspection, option decoding, fitting and prediction: a bad
+ * selection, an unusable year or snapshot, or a conflict with the model's own events or features.
+ */
 export class CountryHolidayError extends Schema.TaggedError<CountryHolidayError>()(
   "CountryHolidayError",
   {
-    reason: Schema.Literals([
-      "unknown-country",
-      "invalid-selection",
-      "outside-snapshot-horizon",
-      "known-coverage-restriction",
-      "snapshot-unavailable",
-      "corrupt-snapshot",
-      "unsupported-snapshot-version",
-    ]),
+    reason: CountryHolidayFailureReasonSchema,
     issues: Schema.Array(ValidationIssueSchema),
     coverageIssues: Schema.Array(CountryHolidayCoverageIssueSchema),
     message: Schema.String,

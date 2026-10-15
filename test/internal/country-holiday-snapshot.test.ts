@@ -82,6 +82,51 @@ describe("compact country snapshot invariants", () => {
     }
   });
 
+  it("accepts only the evidence source paths the calendar generator accepts", async () => {
+    const withSource = (path: string) => ({
+      ...original,
+      coverage: {
+        ...original.coverage,
+        issues: [
+          {
+            country: "US",
+            firstYear: 2024,
+            lastYear: 2025,
+            reason: "source-accuracy",
+            disposition: "advisory",
+            rule: "test rule",
+            description: "test evidence",
+            sources: [
+              {
+                path,
+                symbol: "rule",
+                sha256: "a".repeat(64),
+                url: `https://github.com/vacanza/holidays/blob/v0.104/${path}`,
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    for (const path of [
+      "holidays/countries/united_states.py",
+      "holidays/calendars/gregorian.py",
+      "holidays/holiday_base.py",
+      "holidays/no_holiday_base.py",
+    ]) {
+      await Effect.runPromise(parseCountryHolidaySnapshot(withSource(path)));
+    }
+
+    for (const path of ["holidays/utils.py", "holidays/countries/../setup.py"]) {
+      const failure = await Effect.runPromise(
+        Effect.flip(parseCountryHolidaySnapshot(withSource(path))),
+      );
+
+      expect(failure).toBeInstanceOf(InvalidCountryHolidaySnapshot);
+    }
+  });
+
   it("preserves separate names on an overlapping date", async () => {
     const china = await Effect.runPromise(
       parseCountryHolidaySnapshot(

@@ -5,9 +5,9 @@ import {
   RetainedCountryHolidaySnapshotSchema,
   countryHolidayOccurrences,
   countryHolidayCoverageIssues,
+  CountryHolidayError,
   resolveCountryHolidays,
   type CountryHolidays,
-  type CountryHolidayError,
 } from "../country-holidays";
 import {
   EventCalendarSchema,
@@ -150,12 +150,55 @@ export const countryHolidayYears = (timestamps: ReadonlyArray<number>): Readonly
     ),
   );
 
-// Both inputs are parsed occurrences, so the calendar is built directly rather than re-parsed.
+/**
+ * Generated holidays all use the selection's prior, so the only possible prior conflict is a custom
+ * event that shares a generated holiday's name but uses a different prior.
+ */
+const conflictingPrior = (
+  customEvents: EventCalendar,
+  generated: ReadonlyArray<EventOccurrence>,
+  priorScale: number,
+): CountryHolidayError | undefined => {
+  const names = new Set(generated.map((occurrence) => occurrence.name));
+
+  const conflict = customEvents.occurrences.find(
+    (occurrence) => names.has(occurrence.name) && occurrence.priorScale !== priorScale,
+  );
+
+  if (conflict === undefined) {
+    return undefined;
+  }
+
+  return new CountryHolidayError({
+    reason: "conflicting-event-prior",
+    issues: [
+      {
+        path: ["priorScale"],
+        message: `Custom event '${conflict.name}' shares a country holiday's name but not its prior scale`,
+      },
+    ],
+    coverageIssues: [],
+    message: "A custom event and a country holiday with the same name must use one prior scale",
+  });
+};
+
+// Both inputs are parsed occurrences, so the calendar is built directly rather than re-parsed. With
+// prior conflicts ruled out beforehand, the only remaining failure is the event column limit.
 const mergeCountryEvents = (
   customEvents: EventCalendar,
   generated: ReadonlyArray<EventOccurrence>,
-): Effect.Effect<EventCalendar, InvalidEventCalendar> =>
-  eventCalendarFromOccurrences([...customEvents.occurrences, ...generated], customEvents.mode);
+): Effect.Effect<EventCalendar, CountryHolidayError> =>
+  eventCalendarFromOccurrences([...customEvents.occurrences, ...generated], customEvents.mode).pipe(
+    Effect.mapError(
+      (error) =>
+        new CountryHolidayError({
+          reason: "event-column-limit",
+          issues: error.issues,
+          coverageIssues: [],
+          message: "Country holidays and custom events together exceed the event column limit",
+        }),
+    ),
+  );
 
 /** Resolve full represented years and retain the entire selected-country payload. */
 export const fitCountryHolidayEvents = Effect.fnUntraced(function* (
@@ -164,9 +207,20 @@ export const fitCountryHolidayEvents = Effect.fnUntraced(function* (
   customEvents: EventCalendar,
 ): Effect.fn.Return<
   { readonly events: EventCalendar; readonly state: CountryHolidayModel },
-  CountryHolidayError | InvalidEventCalendar
+  CountryHolidayError
 > {
   const resolved = yield* resolveCountryHolidays(selection, countryHolidayYears(timestamps));
+
+  const conflict = conflictingPrior(
+    customEvents,
+    resolved.inspection.occurrences,
+    selection.priorScale,
+  );
+
+  if (conflict !== undefined) {
+    return yield* Effect.fail(conflict);
+  }
+
   const events = yield* mergeCountryEvents(customEvents, resolved.inspection.occurrences);
 
   // Every part is validated already: the resolved snapshot, its coverage issues and policy for these
@@ -235,7 +289,7 @@ export const predictCountryHolidayEvents = Effect.fnUntraced(function* (
   state: CountryHolidayModel,
   timestamps: ReadonlyArray<number>,
   fittedEvents: EventCalendar,
-): Effect.fn.Return<EventCalendar, CountryHolidayError | InvalidEventCalendar> {
+): Effect.fn.Return<EventCalendar, CountryHolidayError> {
   const resolved = yield* resolveCountryHolidays(
     state.selection,
     countryHolidayYears(timestamps),
@@ -248,12 +302,29 @@ export const predictCountryHolidayEvents = Effect.fnUntraced(function* (
     fittedNames.has(occurrence.name),
   );
 
-  // Same prior and deduplication rules as parsing, but the fitted columns are kept as they are,
-  // so re-parsing the merged calendar would only rebuild a layout that is then discarded.
+  // A name trained only as a custom event can first appear as a country holiday in a later year.
+  const conflict = conflictingPrior(state.customEvents, generated, state.selection.priorScale);
+
+  if (conflict !== undefined) {
+    return yield* Effect.fail(conflict);
+  }
+
+  // Same deduplication rules as parsing, but the fitted columns are kept as they are, so
+  // re-parsing the merged calendar would only rebuild a layout that is then discarded.
   const occurrences = yield* mergeEventOccurrences([
     ...state.customEvents.occurrences,
     ...generated,
-  ]);
+  ]).pipe(
+    Effect.mapError(
+      (error) =>
+        new CountryHolidayError({
+          reason: "conflicting-event-prior",
+          issues: error.issues,
+          coverageIssues: [],
+          message: error.message,
+        }),
+    ),
+  );
 
   return Object.freeze({ ...fittedEvents, occurrences });
 });

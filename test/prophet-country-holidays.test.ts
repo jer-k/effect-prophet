@@ -9,9 +9,8 @@ import {
   predict,
   predictUncertainty,
   prophetFittingBackendLayer,
-  InputValidationError,
+  CountryHolidayError,
   FittingError,
-  PredictionError,
   ModelSerializationError,
   type EncodedProphetOptions,
 } from "../src/index";
@@ -211,9 +210,12 @@ describe("country holiday model lifecycle", () => {
       ),
     );
 
-    expect(failure).toBeInstanceOf(InputValidationError);
-    expect(failure).toMatchObject({ input: "options" });
-    expect(failure.message).toContain("consistent prior");
+    expect(failure).toBeInstanceOf(CountryHolidayError);
+    expect(failure).toMatchObject({
+      reason: "conflicting-event-prior",
+      issues: [{ path: ["priorScale"] }],
+      coverageIssues: [],
+    });
 
     for (const options of [
       { seasonalities: [{ name: "Christmas Day", periodDays: 10, fourierOrder: 1 }] },
@@ -246,8 +248,8 @@ describe("country holiday model lifecycle", () => {
         ),
       );
 
-      expect(error).toBeInstanceOf(InputValidationError);
-      expect(error).toMatchObject({ input: "options" });
+      expect(error).toBeInstanceOf(CountryHolidayError);
+      expect(error).toMatchObject({ reason: "conflicting-feature-name" });
     }
   });
 
@@ -276,7 +278,7 @@ describe("country holiday model lifecycle", () => {
       const { spans, tracer } = collectTestSpans();
       const error = await Effect.runPromise(Effect.flip(operation.pipe(Effect.withTracer(tracer))));
 
-      expect(error).toBeInstanceOf(PredictionError);
+      expect(error).toBeInstanceOf(CountryHolidayError);
       expect(error).toMatchObject({ reason: "conflicting-event-prior" });
       expect(spans.some((span) => span.name.includes("wasm."))).toBe(false);
     }
@@ -358,7 +360,7 @@ describe("country holiday model lifecycle", () => {
         Effect.flip(operation.pipe(Effect.withTracer(tracer))),
       );
 
-      expect(failure).toBeInstanceOf(PredictionError);
+      expect(failure).toBeInstanceOf(CountryHolidayError);
       expect(failure).toMatchObject({ reason: "outside-snapshot-horizon" });
       expect(spans.some((span) => span.name.includes("wasm."))).toBe(false);
       expect(spans.some((span) => span.name === "effect-prophet.calendar.load-snapshot")).toBe(
@@ -374,7 +376,26 @@ describe("country holiday model lifecycle", () => {
     expect(spans.some((span) => span.name === "Prophet.resolveCountryHolidays")).toBe(false);
   });
 
-  it("translates fit and future restrictions without entering WASM", async () => {
+  it("fails unknown selections with CountryHolidayError before calendar lookup or fitting", async () => {
+    const { spans, tracer } = collectTestSpans();
+
+    const failure = await Effect.runPromise(
+      Effect.flip(
+        fit(history(), { countryHolidays: { country: "NA-X" } }).pipe(
+          Effect.provide(prophetFittingBackendLayer),
+          Effect.withTracer(tracer),
+        ),
+      ),
+    );
+
+    expect(failure).toBeInstanceOf(CountryHolidayError);
+    expect(failure).toMatchObject({ reason: "unknown-country", coverageIssues: [] });
+    expect(spans.some((span) => span.name === "effect-prophet.calendar.load-snapshot")).toBe(false);
+    expect(spans.some((span) => span.name === "Prophet.resolveCountryHolidays")).toBe(false);
+    expect(spans.some((span) => span.name.includes("wasm."))).toBe(false);
+  });
+
+  it("fails fit and future restrictions with CountryHolidayError without entering WASM", async () => {
     const { spans, tracer } = collectTestSpans();
 
     const failure = await Effect.runPromise(
@@ -385,7 +406,7 @@ describe("country holiday model lifecycle", () => {
       ),
     );
 
-    expect(failure).toBeInstanceOf(FittingError);
+    expect(failure).toBeInstanceOf(CountryHolidayError);
     expect(failure).toMatchObject({ reason: "known-coverage-restriction" });
     expect(spans.some((span) => span.name.includes("wasm."))).toBe(false);
     const resolution = spans.find((span) => span.name === "Prophet.resolveCountryHolidays");
@@ -403,8 +424,9 @@ describe("country holiday model lifecycle", () => {
     expect(ended.startTime).toBeGreaterThanOrEqual(parentEnded.startTime);
     expect(ended.endTime).toBeLessThanOrEqual(parentEnded.endTime);
 
-    if (Exit.isFailure(ended.exit) && failure instanceof FittingError) {
-      expect(Option.getOrUndefined(Cause.findErrorOption(ended.exit.cause))).toBe(failure.cause);
+    // The calendar span fails with the very error fit returns; nothing wraps it on the way out.
+    if (Exit.isFailure(ended.exit)) {
+      expect(Option.getOrUndefined(Cause.findErrorOption(ended.exit.cause))).toBe(failure);
     }
 
     const model = await runFit({ countryHolidays: { country: "LK" } });
@@ -415,7 +437,7 @@ describe("country holiday model lifecycle", () => {
     ]) {
       const error = await Effect.runPromise(Effect.flip(operation));
 
-      expect(error).toBeInstanceOf(PredictionError);
+      expect(error).toBeInstanceOf(CountryHolidayError);
       expect(error).toMatchObject({ reason: "known-coverage-restriction" });
     }
   });

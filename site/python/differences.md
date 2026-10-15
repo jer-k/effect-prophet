@@ -26,7 +26,7 @@ Python, where it differs on purpose, and the smaller behavior differences.
   `coverage: "allow-known-gaps"`; neither policy guarantees completeness. Only country-level
   defaults are supported, not subdivisions/languages/categories. Saved models embed their
   selected snapshot and never silently adopt installed updates. See
-  [Holiday calendar limitations](/guide/holiday-calendars).
+  [Country holiday calendars](/guide/holiday-calendars).
 - Cross-validation and model search run one fold after another, with no worker parallelism
 - Uncertainty ranges are a separate [`predictUncertainty`](../examples/uncertainty) call, so
   point forecasts never pay for simulations. They need a seed, so results are repeatable.

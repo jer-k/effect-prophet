@@ -13,7 +13,7 @@ import {
   type ValidationIssue,
 } from "./errors";
 import { eventCalendarsMatch, type EventCalendar } from "./event";
-import { type CountryHolidayError } from "./country-holidays";
+import { CountryHolidayError } from "./country-holidays";
 import {
   fitCountryHolidayEvents,
   predictCountryHolidayEvents,
@@ -68,8 +68,6 @@ import {
   checkExplicitChangepointBounds,
   checkOptionFeatureNames,
   decodeOptions,
-  optionsValidationErrorFromCountryHolidays,
-  optionsValidationErrorFromEvents,
   optionsValidationErrorFromSeasonality,
   type EncodedProphetOptions,
   type ProphetOptions,
@@ -267,48 +265,13 @@ const makeFitPlan = (
   });
 };
 
-const calendarFittingError = (
-  error: CountryHolidayError,
-  observationCount: number,
-): InputValidationError | FittingError => {
-  if (error.reason === "unknown-country" || error.reason === "invalid-selection") {
-    return optionsValidationErrorFromCountryHolidays(error);
-  }
-
-  return new FittingError(
-    { reason: error.reason, observationCount, message: error.message },
-    { cause: error },
-  );
-};
-
 const predictionEvents = (
   model: FittedProphet,
   timestamps: PredictionTimestamps,
-): Effect.Effect<EventCalendar, PredictionError> =>
+): Effect.Effect<EventCalendar, CountryHolidayError> =>
   model.countryHolidays === undefined
     ? Effect.succeed(model.events)
-    : predictCountryHolidayEvents(model.countryHolidays, timestamps, model.events).pipe(
-        Effect.mapError(
-          (error) =>
-            new PredictionError(
-              {
-                reason: Match.value(error).pipe(
-                  Match.tagsExhaustive({
-                    InvalidEventCalendar: () => "conflicting-event-prior" as const,
-                    CountryHolidayError: (calendarError) =>
-                      calendarError.reason === "unknown-country" ||
-                      calendarError.reason === "invalid-selection"
-                        ? ("invalid-model" as const)
-                        : calendarError.reason,
-                  }),
-                ),
-                timestamp: timestamps[0] ?? 0,
-                message: error.message,
-              },
-              { cause: error },
-            ),
-        ),
-      );
+    : predictCountryHolidayEvents(model.countryHolidays, timestamps, model.events);
 
 const featureConstructionError = (observationCount: number, message: string): FittingError =>
   new FittingError({
@@ -456,7 +419,11 @@ const regressorFeatureValidationError = (
 export const fit = Effect.fn("Prophet.fit")(function* (
   observationsInput: Parameters<typeof decodeObservations>[0],
   optionsInput?: EncodedProphetOptions,
-): Effect.fn.Return<FittedProphet, InputValidationError | FittingError, FittingBackend> {
+): Effect.fn.Return<
+  FittedProphet,
+  InputValidationError | FittingError | CountryHolidayError,
+  FittingBackend
+> {
   const observations = yield* decodeObservations(observationsInput);
   let options = yield* decodeOptions(optionsInput);
 
@@ -522,22 +489,27 @@ export const fit = Effect.fn("Prophet.fit")(function* (
       options.countryHolidays,
       timestamps,
       options.events,
-    ).pipe(
-      Effect.mapError((error) =>
-        Predicate.isTagged("InvalidEventCalendar")(error)
-          ? optionsValidationErrorFromEvents(error)
-          : calendarFittingError(error, observations.length),
-      ),
     );
 
     countryHolidays = resolvedCalendar.state;
     options = { ...options, events: resolvedCalendar.events };
 
-    // decodeOptions checked custom names; generated country names need the same global check.
+    // decodeOptions checked custom names, so any collision here involves a country holiday name.
     yield* checkOptionFeatureNames(
       resolved.layout.components.map((component) => component.definition),
       options.events,
       options.regressors,
+    ).pipe(
+      Effect.mapError(
+        (error) =>
+          new CountryHolidayError({
+            reason: "conflicting-feature-name",
+            issues: error.issues,
+            coverageIssues: [],
+            message:
+              "Country holiday names must be distinct from seasonality, condition and regressor names",
+          }),
+      ),
     );
   }
 
@@ -1079,7 +1051,7 @@ export const getRegressorCoefficients = (
 export const predict = Effect.fn("Prophet.predict")(function* (
   model: FittedProphet,
   rowsInput: Parameters<typeof decodePredictionRows>[0],
-): Effect.fn.Return<Forecasts, InputValidationError | PredictionError> {
+): Effect.fn.Return<Forecasts, InputValidationError | PredictionError | CountryHolidayError> {
   const rows = yield* decodePredictionRows(rowsInput);
   const firstRow = rows[0];
 
@@ -1168,7 +1140,10 @@ export const predictUncertainty = Effect.fn("Prophet.predictUncertainty")(functi
   model: FittedProphet,
   rowsInput: Parameters<typeof decodePredictionRows>[0],
   optionsInput: EncodedUncertaintyOptions,
-): Effect.fn.Return<UncertaintyResult, InputValidationError | PredictionError> {
+): Effect.fn.Return<
+  UncertaintyResult,
+  InputValidationError | PredictionError | CountryHolidayError
+> {
   const rows = yield* decodePredictionRows(rowsInput);
   const options = yield* parseUncertaintyOptions(optionsInput);
   const firstRow = rows[0];

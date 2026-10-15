@@ -1,4 +1,4 @@
-# Country holiday calendar limitations
+# Country holiday calendars
 
 Country calendars can help a forecast account for recurring holidays. They are not a guarantee
 that every holiday date is known, especially far into the future.
@@ -49,12 +49,34 @@ restored forecasts never replace embedded data with the installed package's newe
 to adopt an update. Each cross-validation fold resolves its own training years; model search and
 final holdout fitting preserve the selection/policy.
 
-Fit and prediction failures use the existing `FittingError` / `PredictionError` families with
-explicit calendar reasons such as `known-coverage-restriction` and `outside-snapshot-horizon`.
-A newly introduced country name already trained as a custom event must still have a compatible
-prior; otherwise prediction fails with `conflicting-event-prior`. Malformed selections are options validation failures. Empty predictions remain successful without
-calendar resolution. Only fitting and inspection read bundled calendar files; restored prediction
-requires neither those files, Python nor network access.
+Empty predictions remain successful without calendar resolution. Only fitting and inspection read
+bundled calendar files; restored prediction requires neither those files, Python nor network
+access.
+
+## Errors
+
+Every calendar failure, from `inspectCountryHolidays`, `decodeOptions`, `fit`, `predict` or
+`predictUncertainty`, is a `CountryHolidayError`. Branch on its `reason`:
+
+| `reason`                       | When                                                                             |
+| ------------------------------ | -------------------------------------------------------------------------------- |
+| `unknown-country`              | The code or alias is not registered (codes are case-sensitive)                   |
+| `invalid-selection`            | The selection or requested years are malformed, e.g. a non-positive `priorScale` |
+| `outside-snapshot-horizon`     | A training or prediction year falls outside 1995–2060                            |
+| `known-coverage-restriction`   | A year has reviewed missing coverage and `coverage` is `"reject-known-gaps"`     |
+| `snapshot-unavailable`         | The packaged calendar file can't be read                                         |
+| `corrupt-snapshot`             | The packaged calendar file fails its integrity or content checks                 |
+| `unsupported-snapshot-version` | The packaged calendar file uses an unknown format version                        |
+| `conflicting-event-prior`      | A custom event shares a country holiday's name but not its prior scale           |
+| `conflicting-feature-name`     | A country holiday name matches a seasonality, condition or regressor name        |
+| `event-column-limit`           | Country holidays and custom events together exceed the event column limit        |
+
+`coverageIssues` lists the reviewed limitations behind a `known-coverage-restriction`, and
+`issues` points at the offending field. A conflicting prior can surface at prediction time too:
+a name trained only as a custom event may first appear as a country holiday in a later year.
+Cross-validation reports a fold's calendar failure as an `EvaluationError` whose `cause` is the
+`CountryHolidayError`. Model search fails with `EvaluationSearchError` reason `invalid-candidate`,
+naming the candidate, when a candidate's selection is invalid.
 
 ## Why both past and future dates matter
 

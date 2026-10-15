@@ -4,6 +4,43 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows
 [Semantic Versioning](https://semver.org/). Before 1.0, minor versions may include breaking changes.
 
+## [Unreleased]
+
+### Added
+
+- **Country holiday calendars**, like Python Prophet's `add_country_holidays`. Pass
+  `countryHolidays: { country: "US" }` to `fit`, alongside any custom events. It works with every
+  trend type and with `holidaysMode`. Each holiday has a zero-day window and the given
+  `priorScale` (default 10).
+- An offline, versioned snapshot of 250 country-level calendars, generated with Python Prophet
+  1.4.0 and `holidays` 0.104 for request years 1995–2060. Codes and registered aliases such as
+  `USA`, `UK` and `TU` are accepted. No Python or network access is needed.
+- **`inspectCountryHolidays(selection, years)`** returns a calendar's dates, the snapshot and
+  provider identity, and its reviewed coverage issues, without fitting a model.
+- Known coverage gaps, such as India's Hindu date tables ending in 2035, are rejected by default.
+  `coverage: "allow-known-gaps"` accepts the provider's partial result and keeps its issues.
+- Fitted models keep the selected country's snapshot. `encodeFittedModel` and `decodeFittedModel`
+  carry it, and restored forecasts never switch to a newer snapshot from an updated package.
+- **`CountryHolidayError`**, with a `reason` for every calendar failure: an unknown or malformed
+  selection, a year outside the snapshot, a known coverage gap, an unreadable or corrupt packaged
+  file, or a conflict with your own events, seasonalities, conditions or regressors. `fit`,
+  `predict`, `predictUncertainty`, `decodeOptions`, `crossValidate`, `planRollingOrigin` and
+  `evaluateHoldout` can now fail with it.
+- `EvaluationSearchError` has a new `invalid-candidate` reason, naming the search candidate whose
+  country calendar is invalid. Recorded search failures can carry a `CountryHolidayError` tag and
+  reason.
+- New tracing spans: `Prophet.inspectCountryHolidays`, `Prophet.parseCountryHolidays`,
+  `Prophet.resolveCountryHolidays` and `effect-prophet.calendar.load-snapshot`.
+
+### Changed
+
+- `predict`, `predictUncertainty` and `encodeFittedModel` no longer re-validate a model that `fit`
+  or `decodeFittedModel` returned, which makes repeated predictions faster for every model. Fitted
+  models are now deeply frozen throughout, including `fitSummary.optimization`.
+- Faster forecasts for models with many events or holidays.
+- The npm package grows from about 350 KB to about 1.28 MB packed, for the bundled calendars and
+  their notices.
+
 ## [0.1.1] - 2026-10-14
 
 Documentation only. The published code and WebAssembly binary are unchanged from 0.1.0.

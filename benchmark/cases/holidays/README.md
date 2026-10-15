@@ -1,6 +1,6 @@
 # Country-calendar benchmark contract
 
-[`country-calendars.ts`](country-calendars.ts) declares 25 new country/control cases through the
+[`country-calendars.ts`](country-calendars.ts) declares 33 country/control cases through the
 existing public-API harness. Declarations are coverage, not release evidence. The snapshot/provider
 identity is frozen into each run's `cases.json`; its manifest, coverage inventory and compiled
 catalog are hashed with the gate sources. Python uses real `add_country_holidays` with Prophet
@@ -17,7 +17,10 @@ catalog are hashed with the gate sources. Python uses real `add_country_holidays
 - US country/custom events with conditional weekly seasonality and a regressor; seeded scalar
   uncertainty through the existing uncertainty owner and evidence class.
 - Sweden's occurrence-heavy and China's name-rich calendars: 730/2,190 daily training rows and
-  512-row prediction batches, plus Sweden's identical long history with 32 future rows.
+  512-row prediction batches, plus Sweden's identical long history with 32 future rows. Each
+  scaling dataset also has a no-calendar control (`country-none-flat-*`), and each country case
+  an explicit-event control (`country-explicit-{se,cn}-flat-*`) reproducing its training-year
+  dates and the trained names' future dates on the same dataset and phases.
 
 The eight `v5` datasets and one `v6` smaller-batch dataset have immutable bytes and checksum
 manifests. Observations are analytic, seedless signals with bounded noise, not synthesized from
@@ -28,7 +31,13 @@ npm run benchmark:setup -- v5
 npm run benchmark:setup -- v6
 npm run benchmark:catalog
 npm run benchmark -- --case country-us-linear-additive --case country-explicit-us-linear-additive
+npm run benchmark:calendar-overhead -- runs/<run-id>
 ```
+
+`benchmark:calendar-overhead` prints each passing country case's median per phase beside its
+passing same-dataset controls, for both implementations: the ratio to explicit events isolates
+calendar machinery, and the ratio to no events is the total calendar cost. Ratios compare cases
+within one implementation and run only.
 
 The original explicit-event quantity tolerances are reused unchanged. Linear/logistic cases retain
 the established default optimizers and output-first policy. Flat cases do not invent optimizer

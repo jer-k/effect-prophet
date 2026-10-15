@@ -18,6 +18,7 @@ import { makeWasmPiecewiseMapAdapter } from "../src/internal/wasm-piecewise-map-
 import { fixedPiecewiseParameters } from "./helpers/fixed-piecewise-model";
 import { makeTestFittingBackend } from "./internal/fitting-backend-test-layer";
 import { builtInSeasonalitiesOff } from "./helpers/built-in-seasonalities";
+import { expectInputValidationError } from "./helpers/input-validation-error";
 
 const featurelessOptions = { builtInSeasonalities: builtInSeasonalitiesOff };
 
@@ -34,7 +35,9 @@ const run = (days: ReadonlyArray<number>, input: Parameters<typeof planRollingOr
   Effect.runPromise(planRollingOrigin(history(days), featurelessOptions, input));
 
 const failure = (days: ReadonlyArray<number>, input: Parameters<typeof planRollingOrigin>[2]) =>
-  Effect.runPromise(Effect.flip(planRollingOrigin(history(days), {}, input)));
+  Effect.runPromise(Effect.flip(planRollingOrigin(history(days), {}, input))).then(
+    expectInputValidationError,
+  );
 
 describe("planRollingOrigin", () => {
   it("preserves duplicate training and assessment rows across public rolling-origin fits", async () => {
@@ -249,18 +252,20 @@ describe("planRollingOrigin", () => {
       value: index,
     }));
 
-    const historyError = await Effect.runPromise(
-      Effect.flip(
-        planRollingOrigin(
-          observations,
-          {},
-          {
-            horizonMs: 1,
-            cutoffs: {
-              mode: "explicit",
-              timestamps: [new Date(epoch + 1).toISOString()],
+    const historyError = expectInputValidationError(
+      await Effect.runPromise(
+        Effect.flip(
+          planRollingOrigin(
+            observations,
+            {},
+            {
+              horizonMs: 1,
+              cutoffs: {
+                mode: "explicit",
+                timestamps: [new Date(epoch + 1).toISOString()],
+              },
             },
-          },
+          ),
         ),
       ),
     );
@@ -271,15 +276,17 @@ describe("planRollingOrigin", () => {
       new Date(epoch + index + 1).toISOString(),
     );
 
-    const assessmentError = await Effect.runPromise(
-      Effect.flip(
-        planRollingOrigin(
-          observations.slice(0, 10_000),
-          {},
-          {
-            horizonMs: 9_000,
-            cutoffs: { mode: "explicit", timestamps: cutoffs },
-          },
+    const assessmentError = expectInputValidationError(
+      await Effect.runPromise(
+        Effect.flip(
+          planRollingOrigin(
+            observations.slice(0, 10_000),
+            {},
+            {
+              horizonMs: 9_000,
+              cutoffs: { mode: "explicit", timestamps: cutoffs },
+            },
+          ),
         ),
       ),
     );
@@ -292,15 +299,17 @@ describe("planRollingOrigin", () => {
       { timestamp: "+275760-09-12T00:00:00.000Z", value: 2 },
     ];
 
-    const overflow = await Effect.runPromise(
-      Effect.flip(
-        planRollingOrigin(
-          nearLimit,
-          {},
-          {
-            horizonMs: dayMs,
-            cutoffs: { mode: "generated", initialMs: 3_650 * dayMs },
-          },
+    const overflow = expectInputValidationError(
+      await Effect.runPromise(
+        Effect.flip(
+          planRollingOrigin(
+            nearLimit,
+            {},
+            {
+              horizonMs: dayMs,
+              cutoffs: { mode: "generated", initialMs: 3_650 * dayMs },
+            },
+          ),
         ),
       ),
     );
@@ -419,27 +428,33 @@ describe("planRollingOrigin", () => {
   });
 
   it("preserves history/options precedence and ignores target and feature values while planning", async () => {
-    const badRows = await Effect.runPromise(
-      Effect.flip(
-        planRollingOrigin(JSON.parse("[]"), JSON.parse('{"growth":"bad"}'), JSON.parse("{}")),
+    const badRows = expectInputValidationError(
+      await Effect.runPromise(
+        Effect.flip(
+          planRollingOrigin(JSON.parse("[]"), JSON.parse('{"growth":"bad"}'), JSON.parse("{}")),
+        ),
       ),
     );
 
-    const badOptions = await Effect.runPromise(
-      Effect.flip(
-        planRollingOrigin(history([0, 2, 3]), JSON.parse('{"growth":"bad"}'), JSON.parse("{}")),
+    const badOptions = expectInputValidationError(
+      await Effect.runPromise(
+        Effect.flip(
+          planRollingOrigin(history([0, 2, 3]), JSON.parse('{"growth":"bad"}'), JSON.parse("{}")),
+        ),
       ),
     );
 
     expect(badRows.input).toBe("observations");
     expect(badOptions.input).toBe("options");
 
-    const outsidePoint = await Effect.runPromise(
-      Effect.flip(
-        planRollingOrigin(
-          history([0, 2, 3]),
-          { map: { changepoints: { mode: "explicit", timestamps: [at(4)] } } },
-          JSON.parse("{}"),
+    const outsidePoint = expectInputValidationError(
+      await Effect.runPromise(
+        Effect.flip(
+          planRollingOrigin(
+            history([0, 2, 3]),
+            { map: { changepoints: { mode: "explicit", timestamps: [at(4)] } } },
+            JSON.parse("{}"),
+          ),
         ),
       ),
     );

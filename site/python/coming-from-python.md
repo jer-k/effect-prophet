@@ -96,7 +96,7 @@ The defaults are Prophet's, so a fit with no options produces the same model as 
 - **Country coverage is explicit.** The offline snapshot covers request years 1995–2060;
   reviewed gaps fail by default. Opting into `"allow-known-gaps"` accepts actual partial provider
   data, not complete coverage. Fitted models embed their selected snapshot; updates require a
-  refit. See [Holiday calendar limitations](/guide/holiday-calendars).
+  refit. See [Country holiday calendars](/guide/holiday-calendars).
 - **No plotting.** Forecasts are plain data for your own charts.
 
 See [What's different](./differences) for what isn't available yet and where behavior differs on

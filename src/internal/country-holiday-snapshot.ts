@@ -23,8 +23,11 @@ export type CanonicalCountry = typeof CanonicalCountrySchema.Type;
 const Digest = Schema.String.check(Schema.isPattern(/^[a-f0-9]{64}$/u));
 
 const EvidenceSource = Schema.Struct({
+  // The same source paths the calendar generator accepts for reviewed evidence.
   path: Schema.String.check(
-    Schema.isPattern(/^holidays\/(?:countries\/|calendars\/)?[a-z_]+\.py$/u),
+    Schema.isPattern(
+      /^holidays\/(?:(?:countries|calendars)\/[a-z_]+|holiday_base|no_holiday_base)\.py$/u,
+    ),
   ),
   symbol: Schema.NonEmptyString,
   sha256: Digest,

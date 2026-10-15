@@ -6,6 +6,7 @@ import { fixedPiecewiseParameters } from "./helpers/fixed-piecewise-model";
 import { makeTestFittingBackend } from "./internal/fitting-backend-test-layer";
 
 import {
+  CountryHolidayError,
   EvaluationError,
   EvaluationSearchError,
   InputValidationError,
@@ -192,6 +193,62 @@ describe("searchModels", () => {
       expect(requested).toEqual({ growth: "flat", scaling: "minmax" });
     },
   );
+
+  it("names the candidate whose country calendar is invalid and keeps the calendar error", async () => {
+    const failure = await Effect.runPromise(
+      Effect.flip(
+        search({
+          candidates: [
+            options[0]!,
+            { id: "narnia", options: { countryHolidays: { country: "NA-X" } } },
+          ],
+          plan,
+          objective,
+          failurePolicy: "record",
+        }),
+      ),
+    );
+
+    expect(failure).toBeInstanceOf(EvaluationSearchError);
+    expect(failure).toMatchObject({
+      reason: "invalid-candidate",
+      candidateIndex: 1,
+      candidateId: "narnia",
+    });
+
+    if (!(failure instanceof EvaluationSearchError)) throw new Error("Expected a search error");
+
+    expect(failure.cause).toBeInstanceOf(CountryHolidayError);
+    expect(failure.cause).toMatchObject({ reason: "unknown-country" });
+  });
+
+  it("records a candidate whose folds hit a calendar restriction as a portable calendar failure", async () => {
+    const result = await Effect.runPromise(
+      search({
+        candidates: [
+          options[0]!,
+          { id: "ukraine", options: { countryHolidays: { country: "UA" } } },
+        ],
+        plan,
+        objective,
+        failurePolicy: "record",
+      }),
+    );
+
+    expect(result.candidates[1]).toEqual({
+      kind: "failure",
+      id: "ukraine",
+      candidateIndex: 1,
+      failure: {
+        tag: "EvaluationError",
+        fold: 0,
+        stage: "fit",
+        reason: "fit-failed",
+        causeTag: "CountryHolidayError",
+        causeReason: "known-coverage-restriction",
+      },
+    });
+  });
 
   it("rejects invalid CV scaling before candidate or fold boundaries", async () => {
     const spans: Array<Tracer.Span> = [];

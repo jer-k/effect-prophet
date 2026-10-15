@@ -462,19 +462,6 @@ export const optionsValidationErrorFromEvents = (
     message: error.message,
   });
 
-/** Translate country selection failures at the public options seam. */
-export const optionsValidationErrorFromCountryHolidays = (
-  error: CountryHolidayError,
-): InputValidationError =>
-  new InputValidationError({
-    input: "options",
-    issues: error.issues.map((issue) => ({
-      message: issue.message,
-      path: ["countryHolidays", ...(issue.path ?? [])],
-    })),
-    message: error.message,
-  });
-
 const optionsValidationErrorFromRegressors = (error: InvalidRegressors): InputValidationError =>
   new InputValidationError({
     input: "options",
@@ -574,7 +561,7 @@ export const checkOptionFeatureNames = (
 /** Decode optional, untrusted fitting options and apply the documented defaults. */
 export const decodeOptions = Effect.fn("Prophet.decodeOptions")(function* (
   input?: Parameters<typeof decodeProphetOptionsSyntax>[0],
-): Effect.fn.Return<ProphetOptions, InputValidationError> {
+): Effect.fn.Return<ProphetOptions, InputValidationError | CountryHolidayError> {
   const encoded = input === undefined ? emptyOptions : input;
 
   const syntax = yield* decodeProphetOptionsSyntax(encoded).pipe(
@@ -584,9 +571,7 @@ export const decodeOptions = Effect.fn("Prophet.decodeOptions")(function* (
   const countryHolidays =
     syntax.countryHolidays === undefined
       ? undefined
-      : yield* parseCountryHolidays(syntax.countryHolidays).pipe(
-          Effect.mapError(optionsValidationErrorFromCountryHolidays),
-        );
+      : yield* parseCountryHolidays(syntax.countryHolidays);
 
   const seasonalities = yield* parseSeasonalities(
     syntax.seasonalities,

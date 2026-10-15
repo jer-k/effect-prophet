@@ -12,11 +12,11 @@ import {
   encodeFittedModel,
   decodeFittedModel,
   decodeOptions,
-  InputValidationError,
   ModelSerializationError,
   prophetFittingBackendLayer,
   FittingError,
 } from "../src/index";
+import { expectInputValidationError } from "./helpers/input-validation-error";
 
 const OracleSchema = Schema.Struct({
   cases: Schema.Array(
@@ -72,9 +72,10 @@ describe("public linear Stan optimizer lifecycle", () => {
   it.each([{ relativeTolerance: 1e-10 }, { absoluteTolerance: 1e-12 }])(
     "rejects obsolete linear controls through public option parsing: %j",
     async (optimizer) => {
-      const failure = await Effect.runPromise(Effect.flip(decodeOptions({ map: { optimizer } })));
+      const failure = expectInputValidationError(
+        await Effect.runPromise(Effect.flip(decodeOptions({ map: { optimizer } }))),
+      );
 
-      expect(failure).toBeInstanceOf(InputValidationError);
       expect(failure.input).toBe("options");
     },
   );

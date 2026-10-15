@@ -1,5 +1,6 @@
 import { Predicate, Schema, SchemaIssue } from "effect";
 
+import type { CountryHolidayError } from "./country-holidays";
 import type { BaselineForecastError } from "./evaluation-baseline";
 
 /** Runtime schema for one structured validation issue. */
@@ -21,16 +22,21 @@ const ValidationInputSchema = Schema.Literals([
   "evaluation-holdout",
 ]);
 
-const CalendarFailureReasons = [
+/** Why a country calendar could not be selected, resolved or combined with a model's features. */
+export const CountryHolidayFailureReasonSchema = Schema.Literals([
+  "unknown-country",
+  "invalid-selection",
   "outside-snapshot-horizon",
   "known-coverage-restriction",
   "snapshot-unavailable",
   "corrupt-snapshot",
   "unsupported-snapshot-version",
-] as const;
+  "conflicting-event-prior",
+  "conflicting-feature-name",
+  "event-column-limit",
+]);
 
 const FittingFailureReasonSchema = Schema.Literals([
-  ...CalendarFailureReasons,
   "insufficient-observations",
   "degenerate-observations",
   "rank-deficient",
@@ -41,8 +47,6 @@ const FittingFailureReasonSchema = Schema.Literals([
 ]);
 
 const PredictionFailureReasonSchema = Schema.Literals([
-  ...CalendarFailureReasons,
-  "conflicting-event-prior",
   "invalid-model",
   "non-finite-forecast",
   "backend-failure",
@@ -65,8 +69,9 @@ export type ValidationInput =
   | "evaluation-search"
   | "evaluation-holdout";
 
+export type CountryHolidayFailureReason = typeof CountryHolidayFailureReasonSchema.Type;
+
 export type FittingFailureReason =
-  | (typeof CalendarFailureReasons)[number]
   | "insufficient-observations"
   | "degenerate-observations"
   | "rank-deficient"
@@ -76,8 +81,6 @@ export type FittingFailureReason =
   | "backend-failure";
 
 export type PredictionFailureReason =
-  | (typeof CalendarFailureReasons)[number]
-  | "conflicting-event-prior"
   | "invalid-model"
   | "non-finite-forecast"
   | "backend-failure"
@@ -199,7 +202,11 @@ export class EvaluationError extends Schema.TaggedError<EvaluationError>()("Eval
   message: Schema.String,
 }) {
   /** The original typed failure, never encoded or enumerated. */
-  declare readonly cause?: InputValidationError | FittingError | PredictionError;
+  declare readonly cause?:
+    | InputValidationError
+    | FittingError
+    | PredictionError
+    | CountryHolidayError;
 
   /** Construct fold context without flattening the underlying expected failure. */
   constructor(
@@ -219,7 +226,7 @@ export class EvaluationError extends Schema.TaggedError<EvaluationError>()("Eval
       readonly message: string;
     },
     options?: {
-      readonly cause?: InputValidationError | FittingError | PredictionError;
+      readonly cause?: InputValidationError | FittingError | PredictionError | CountryHolidayError;
     },
   ) {
     super(fields);
@@ -247,6 +254,7 @@ export class HoldoutEvaluationError extends Schema.TaggedError<HoldoutEvaluation
     | InputValidationError
     | FittingError
     | PredictionError
+    | CountryHolidayError
     | EvaluationMetricError
     | EvaluationError
     | EvaluationReportError
@@ -269,6 +277,7 @@ export class HoldoutEvaluationError extends Schema.TaggedError<HoldoutEvaluation
         | InputValidationError
         | FittingError
         | PredictionError
+        | CountryHolidayError
         | EvaluationMetricError
         | EvaluationError
         | EvaluationReportError
@@ -333,10 +342,19 @@ export const PortableEvaluationFailureSchema = Schema.Union([
     ]),
     rowIndex: Schema.optionalKey(Schema.Natural.check(Schema.isLessThan(1_000_000))),
     causeTag: Schema.optionalKey(
-      Schema.Literals(["InputValidationError", "FittingError", "PredictionError"]),
+      Schema.Literals([
+        "InputValidationError",
+        "FittingError",
+        "PredictionError",
+        "CountryHolidayError",
+      ]),
     ),
     causeReason: Schema.optionalKey(
-      Schema.Union([FittingFailureReasonSchema, PredictionFailureReasonSchema]),
+      Schema.Union([
+        FittingFailureReasonSchema,
+        PredictionFailureReasonSchema,
+        CountryHolidayFailureReasonSchema,
+      ]),
     ),
   }),
   Schema.Struct({
@@ -354,6 +372,10 @@ export const PortableEvaluationFailureSchema = Schema.Union([
     stage: Schema.Literals(["input", "difference", "square", "division", "sum", "mean", "median"]),
   }),
   Schema.Struct({ tag: Schema.Literal("InputValidationError"), input: ValidationInputSchema }),
+  Schema.Struct({
+    tag: Schema.Literal("CountryHolidayError"),
+    reason: CountryHolidayFailureReasonSchema,
+  }),
 ]);
 
 /** Bounded expected-failure fields safe for caller-controlled result serialization. */
@@ -372,7 +394,7 @@ export type PortableCandidateOutcome = typeof PortableCandidateOutcomeSchema.Typ
 export class EvaluationSearchError extends Schema.TaggedError<EvaluationSearchError>()(
   "EvaluationSearchError",
   {
-    reason: Schema.Literals(["candidate-failed", "no-success"]),
+    reason: Schema.Literals(["invalid-candidate", "candidate-failed", "no-success"]),
     candidateIndex: Schema.optionalKey(
       Schema.Int.check(Schema.isGreaterThanOrEqualTo(0), Schema.isLessThan(32)),
     ),
@@ -382,19 +404,27 @@ export class EvaluationSearchError extends Schema.TaggedError<EvaluationSearchEr
   },
 ) {
   /** Original expected candidate failure, omitted from portable encoding. */
-  declare readonly cause?: InputValidationError | EvaluationError | EvaluationMetricError;
+  declare readonly cause?:
+    | InputValidationError
+    | EvaluationError
+    | EvaluationMetricError
+    | CountryHolidayError;
 
   /** Construct search context without serializing a runtime cause. */
   constructor(
     fields: {
-      readonly reason: "candidate-failed" | "no-success";
+      readonly reason: "invalid-candidate" | "candidate-failed" | "no-success";
       readonly candidateIndex?: number;
       readonly candidateId?: CandidateId;
       readonly outcomes?: ReadonlyArray<PortableCandidateOutcome>;
       readonly message: string;
     },
     options?: {
-      readonly cause?: InputValidationError | EvaluationError | EvaluationMetricError;
+      readonly cause?:
+        | InputValidationError
+        | EvaluationError
+        | EvaluationMetricError
+        | CountryHolidayError;
     },
   ) {
     super(fields);

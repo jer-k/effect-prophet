@@ -20,6 +20,7 @@ import {
   validationIssuesFromIssue,
   validationMessageFromIssue,
 } from "./errors";
+import type { CountryHolidayError } from "./country-holidays";
 import type { FittedProphet } from "./fitted-model";
 import type { FittingBackend } from "./internal/fitting-backend";
 import { copyFrozen, freezeOwned } from "./internal/owned-input";
@@ -598,7 +599,7 @@ export const evaluateHoldout = Effect.fn("Prophet.evaluateHoldout")(function* (
   input: HoldoutEvaluationInput,
 ): Effect.fn.Return<
   HoldoutEvaluationReport,
-  InputValidationError | EvaluationMetricError | HoldoutEvaluationError,
+  InputValidationError | EvaluationMetricError | HoldoutEvaluationError | CountryHolidayError,
   FittingBackend
 > {
   const development = yield* decodePartition(input.development, "development");
