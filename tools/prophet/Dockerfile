@@ -24,7 +24,9 @@ COPY tools/prophet/.python-version tools/prophet/pyproject.toml tools/prophet/uv
 
 RUN uv sync --project tools/prophet --frozen --no-dev --no-install-project
 
-COPY tools/prophet/generate.py tools/prophet/linear_optimizer_evidence.py tools/prophet/reference.json ./tools/prophet/
+COPY tools/prophet/generate.py tools/prophet/linear_optimizer_evidence.py tools/prophet/country_holiday_fixtures.py tools/prophet/reference.json ./tools/prophet/
+COPY tools/prophet/calendar_collection.py tools/prophet/generate_calendars.py tools/prophet/calendar-restrictions.json tools/prophet/Dockerfile ./tools/prophet/
+COPY rust/prophet-wasm/third-party/prophet-license.txt ./rust/prophet-wasm/third-party/
 # Preserve the fixture generator's image-local paths and generatorRevision without changing fixtures.
 COPY benchmark/inputs/v1/training-ordered.json benchmark/inputs/v1/training-unsorted.json ./benchmark/data/generated/
 # Logistic fitting oracles consume the frozen red-checkpoint inputs verbatim.

@@ -5,7 +5,7 @@ import { cpus, platform, release, totalmem } from "node:os";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { Effect, Schema } from "effect";
+import { Effect, Predicate, Schema } from "effect";
 import {
   decodeFittedModel,
   encodeFittedModel,
@@ -34,6 +34,7 @@ import {
 } from "../evaluation.ts";
 import { percentile } from "../uncertainty.ts";
 import {
+  maximumWorkerProtocolBytes,
   BenchmarkMeasurementSchema,
   CorrectnessProjectionSchema,
   ForecastProjectionSchema,
@@ -239,12 +240,23 @@ const prepareInput = (dataset: BenchmarkDataset): PreparedInput => ({
   predictionRows: dataset.predictionRows.map(preparePredictionRow),
 });
 
-const runFit = (input: PreparedInput, benchmarkCase: BenchmarkCase): FittedProphet =>
-  runWithoutTracing(
-    fit(input.observations, effectOptionsForCase(benchmarkCase)).pipe(
-      Effect.provide(prophetFittingBackendLayer),
-    ),
+const runFit = (
+  input: PreparedInput,
+  benchmarkCase: BenchmarkCase,
+): FittedProphet | Promise<FittedProphet> => {
+  const options = effectOptionsForCase(benchmarkCase);
+
+  const operation = fit(input.observations, options).pipe(
+    Effect.provide(prophetFittingBackendLayer),
+    Effect.withTracerEnabled(false),
   );
+
+  // Non-country calls keep their synchronous path. Country fitting awaits real filesystem
+  // lookup/decoding inside the public timer; there is no adapter-side preload or calendar cache.
+  return options?.countryHolidays === undefined
+    ? Effect.runSync(operation)
+    : Effect.runPromise(operation);
+};
 
 const fixedPredictionModel = (benchmarkCase: BenchmarkCase): FittedProphet => {
   if (benchmarkCase.workload.kind !== "fixed-linear-prediction") {
@@ -292,13 +304,27 @@ const fixedPredictionModel = (benchmarkCase: BenchmarkCase): FittedProphet => {
   );
 };
 
-const setupModel = (input: PreparedInput, benchmarkCase: BenchmarkCase): FittedProphet =>
+const setupModel = (
+  input: PreparedInput,
+  benchmarkCase: BenchmarkCase,
+): FittedProphet | Promise<FittedProphet> =>
   benchmarkCase.workload.kind === "fixed-linear-prediction"
     ? fixedPredictionModel(benchmarkCase)
     : runFit(input, benchmarkCase);
 
 const runPredict = (model: FittedProphet, input: PreparedInput): Forecasts =>
   runWithoutTracing(predict(model, input.predictionRows));
+
+const fitAndPredict = (
+  input: PreparedInput,
+  benchmarkCase: BenchmarkCase,
+): Forecasts | Promise<Forecasts> => {
+  const fitted = runFit(input, benchmarkCase);
+
+  return fitted instanceof Promise
+    ? fitted.then((model) => runPredict(model, input))
+    : runPredict(fitted, input);
+};
 
 const forecastProjection = (forecasts: Forecasts): ReadonlyArray<ForecastProjection> =>
   forecasts.map((forecast) => ({
@@ -428,7 +454,10 @@ const eventMetadata = (model: FittedProphet): CorrectnessProjection["events"] =>
     return {
       name: component.name,
       mode: component.mode,
-      dates: occurrences.map((occurrence) => occurrence.date),
+      dates:
+        model.countryHolidays === undefined
+          ? occurrences.map((occurrence) => occurrence.date)
+          : [...new Set(occurrences.map((occurrence) => occurrence.date))].sort(),
       lowerWindowDays: first.lowerWindowDays,
       upperWindowDays: first.upperWindowDays,
       priorScale: first.priorScale,
@@ -478,6 +507,7 @@ const metadataProjection = (
   | "changepointTimestamps"
   | "seasonalities"
   | "events"
+  | "eventColumnCount"
   | "regressors"
 > => {
   const metadata: Pick<
@@ -487,6 +517,7 @@ const metadataProjection = (
     | "changepointTimestamps"
     | "seasonalities"
     | "events"
+    | "eventColumnCount"
     | "regressors"
   > = {
     modelKind: model.model,
@@ -496,6 +527,7 @@ const metadataProjection = (
         : [],
     seasonalities: model.seasonalities.components.map(seasonalityMetadata),
     events: eventMetadata(model),
+    eventColumnCount: model.events.columns.length,
     regressors: regressorMetadata(model),
   };
 
@@ -841,6 +873,7 @@ const assertUncertainty = (
     {
       encoding: "utf8",
       env: process.env,
+      maxBuffer: maximumWorkerProtocolBytes,
       input: JSON.stringify({ model: runWithoutTracing(encodeFittedModel(model)), expected }),
       timeout: benchmarkCase.timeoutSeconds * 1_000,
     },
@@ -869,19 +902,39 @@ const assertUncertainty = (
   };
 };
 
-const correctnessProjection = (
+const correctnessProjection = async (
   benchmarkCase: BenchmarkCase,
   dataset: BenchmarkDataset,
   run: number,
-): CorrectnessProjection => {
+): Promise<CorrectnessProjection> => {
   const input = prepareInput(dataset);
-  const model = setupModel(input, benchmarkCase);
+  const model = await setupModel(input, benchmarkCase);
   const forecasts = forecastProjection(runPredict(model, input));
   const metadata = metadataProjection(model);
 
   assertForecasts(forecasts, benchmarkCase, dataset);
   assertFixedEquation(forecasts, benchmarkCase);
   assertMetadata(benchmarkCase, metadata, dataset.observations.length);
+
+  // Loaded only for this untimed check, so timing workers and fresh-process children don't pay
+  // for importing it at startup.
+  const { projectCountryHolidays } = await import("../country-holidays.ts");
+
+  const countryHolidays = await Effect.runPromise(
+    projectCountryHolidays(benchmarkCase, dataset, model, forecasts).pipe(
+      Effect.withTracerEnabled(false),
+    ),
+  );
+
+  const calendarMetadata: Pick<CorrectnessProjection, "countryHolidays" | "calendarSnapshotId"> =
+    {};
+
+  if (countryHolidays !== undefined) {
+    Object.assign(calendarMetadata, {
+      countryHolidays,
+      calendarSnapshotId: model.countryHolidays?.snapshot.snapshotId,
+    });
+  }
 
   const persistenceError = persistenceMaximumError(model, input, forecasts);
 
@@ -897,6 +950,7 @@ const correctnessProjection = (
     {
       encoding: "utf8",
       env: process.env,
+      maxBuffer: maximumWorkerProtocolBytes,
       input: JSON.stringify({
         model: runWithoutTracing(encodeFittedModel(model)),
         forecasts,
@@ -919,7 +973,12 @@ const correctnessProjection = (
     run,
     status: "locally-passed" as const,
     ...metadata,
+    ...calendarMetadata,
     forecasts,
+    serializedModelBytes: Buffer.byteLength(
+      JSON.stringify(runWithoutTracing(encodeFittedModel(model))),
+      "utf8",
+    ),
     persistenceMaximumAbsoluteError: persistenceError,
   };
 
@@ -942,12 +1001,12 @@ const correctnessProjection = (
   return withUncertainty;
 };
 
-const measure = <Value>(
+const measure = async <Value>(
   benchmarkCase: BenchmarkCase,
   operation: () => Value,
-): ReadonlyArray<number> => {
+): Promise<ReadonlyArray<number>> => {
   for (let index = 0; index < benchmarkCase.warmupIterations; index += 1) {
-    measurementSink = operation();
+    measurementSink = await operation();
   }
 
   const samples: Array<number> = [];
@@ -955,9 +1014,10 @@ const measure = <Value>(
   for (let index = 0; index < benchmarkCase.measuredIterations; index += 1) {
     const started = process.hrtime.bigint();
     const value = operation();
+    const completed = value instanceof Promise ? await value : value;
     const ended = process.hrtime.bigint();
 
-    measurementSink = value;
+    measurementSink = completed;
     samples.push(Number(ended - started));
   }
 
@@ -983,6 +1043,7 @@ const processSamples = (
       encoding: "utf8",
       env: process.env,
       input: serializedModel,
+      maxBuffer: maximumWorkerProtocolBytes,
       timeout: benchmarkCase.timeoutSeconds * 1_000,
     });
 
@@ -998,12 +1059,12 @@ const processSamples = (
   return samples;
 };
 
-const measurementForPhase = (
+const measurementForPhase = async (
   benchmarkCase: BenchmarkCase,
   dataset: BenchmarkDataset,
   run: number,
   phase: BenchmarkPhase,
-): BenchmarkMeasurement => {
+): Promise<BenchmarkMeasurement> => {
   if (benchmarkCase.workload.kind === "evaluation") {
     const operation =
       phase === "evaluation-input-conversion"
@@ -1013,7 +1074,7 @@ const measurementForPhase = (
     const samples =
       phase === "cold-first-evaluation"
         ? processSamples(benchmarkCase, "--cold-evaluation")
-        : measure(benchmarkCase, () => operation());
+        : await measure(benchmarkCase, () => operation());
 
     return {
       caseId: benchmarkCase.id,
@@ -1029,46 +1090,39 @@ const measurementForPhase = (
   }
 
   const prepared = prepareInput(dataset);
-  const model = setupModel(prepared, benchmarkCase);
+  const model = await setupModel(prepared, benchmarkCase);
   const forecasts = runPredict(model, prepared);
   const encodedJson = JSON.stringify(runWithoutTracing(encodeFittedModel(model)));
   let samples: ReadonlyArray<number>;
 
   switch (phase) {
     case "adapter-input-conversion":
-      samples = measure(benchmarkCase, () => prepareInput(dataset));
+      samples = await measure(benchmarkCase, () => prepareInput(dataset));
       break;
     case "warm-fit":
-      samples = measure(benchmarkCase, () => runFit(prepared, benchmarkCase));
+      samples = await measure(benchmarkCase, () => runFit(prepared, benchmarkCase));
       break;
     case "warm-predict":
-      samples = measure(benchmarkCase, () => runPredict(model, prepared));
+      samples = await measure(benchmarkCase, () => runPredict(model, prepared));
       break;
     case "warm-fit-predict":
-      samples = measure(benchmarkCase, () => {
-        const fitted = runFit(prepared, benchmarkCase);
-
-        return runPredict(fitted, prepared);
-      });
+      samples = await measure(benchmarkCase, () => fitAndPredict(prepared, benchmarkCase));
       break;
     case "warm-fit-predict-with-conversion":
-      samples = measure(benchmarkCase, () => {
-        const converted = prepareInput(dataset);
-        const fitted = runFit(converted, benchmarkCase);
-
-        return runPredict(fitted, converted);
-      });
+      samples = await measure(benchmarkCase, () =>
+        fitAndPredict(prepareInput(dataset), benchmarkCase),
+      );
       break;
     case "cold-first-forecast":
       samples = processSamples(benchmarkCase, "--cold");
       break;
     case "model-json-encode":
-      samples = measure(benchmarkCase, () =>
+      samples = await measure(benchmarkCase, () =>
         JSON.stringify(runWithoutTracing(encodeFittedModel(model))),
       );
       break;
     case "model-json-decode":
-      samples = measure(benchmarkCase, () => {
+      samples = await measure(benchmarkCase, () => {
         const decodedInput: unknown = JSON.parse(encodedJson);
 
         return runWithoutTracing(decodeFittedModel(decodedInput));
@@ -1078,10 +1132,10 @@ const measurementForPhase = (
       samples = processSamples(benchmarkCase, "--restored", encodedJson);
       break;
     case "uncertainty-input-conversion":
-      samples = measure(benchmarkCase, () => prepareInput(dataset));
+      samples = await measure(benchmarkCase, () => prepareInput(dataset));
       break;
     case "warm-uncertainty":
-      samples = measure(benchmarkCase, () => runUncertainty(model, prepared, benchmarkCase));
+      samples = await measure(benchmarkCase, () => runUncertainty(model, prepared, benchmarkCase));
       break;
     case "cold-first-uncertainty":
       samples = processSamples(benchmarkCase, "--cold-uncertainty");
@@ -1110,16 +1164,28 @@ const measurementForPhase = (
     correctness: "locally-passed",
   };
 
-  return phase === "warm-uncertainty"
+  return phase === "warm-uncertainty" || benchmarkCase.calendarSnapshot !== undefined
     ? { ...measurement, peakRssBytes: process.resourceUsage().maxRSS * 1_024 }
     : measurement;
 };
 
+/**
+ * Workers and fresh-process children need one case. The coordinator has already decoded and
+ * validated the whole file, so only the matching entry is decoded here: decoding every case made
+ * each child's startup, which fresh-process phases time, grow with the size of the suite.
+ */
 const findCase = async (caseId: string): Promise<BenchmarkCase> => {
-  const benchmarkCase = (await loadCases()).find((candidate) => candidate.id === caseId);
+  const path = process.env.BENCHMARK_CASES_PATH ?? defaultCasesPath;
+  const input: unknown = JSON.parse(await readFile(path, "utf8"));
 
-  if (benchmarkCase === undefined) {
-    throw new Error(`Unknown benchmark case: ${caseId}`);
+  const matches = Array.isArray(input)
+    ? input.filter((candidate) => Predicate.hasProperty(candidate, "id") && candidate.id === caseId)
+    : input;
+
+  const [benchmarkCase, ...others] = await Effect.runPromise(parseBenchmarkCases(matches));
+
+  if (benchmarkCase === undefined || others.length > 0) {
+    throw new Error(`Expected exactly one benchmark case: ${caseId}`);
   }
 
   return benchmarkCase;
@@ -1138,14 +1204,15 @@ const runWorker = async (
       ? undefined
       : benchmarkCase.workload.kind === "evaluation"
         ? evaluationCorrectness(benchmarkCase, dataset, run)
-        : correctnessProjection(benchmarkCase, dataset, run);
+        : await correctnessProjection(benchmarkCase, dataset, run);
 
-  const measurements =
-    stage === "correctness"
-      ? []
-      : benchmarkCase.phases.map((phase) =>
-          measurementForPhase(benchmarkCase, dataset, run, phase),
-        );
+  const measurements: Array<BenchmarkMeasurement> = [];
+
+  if (stage !== "correctness") {
+    for (const phase of benchmarkCase.phases) {
+      measurements.push(await measurementForPhase(benchmarkCase, dataset, run, phase));
+    }
+  }
 
   return correctness === undefined ? { measurements } : { measurements, correctness };
 };
@@ -1154,7 +1221,7 @@ const runColdWorker = async (caseId: string, uncertainty = false): Promise<void>
   const benchmarkCase = await findCase(caseId);
   const dataset = await loadDataset(benchmarkCase);
   const input = prepareInput(dataset);
-  const model = runFit(input, benchmarkCase);
+  const model = await runFit(input, benchmarkCase);
 
   if (uncertainty) {
     const result = runUncertainty(model, input, benchmarkCase);
@@ -1326,7 +1393,7 @@ const collectEnvironment = async (): Promise<BenchmarkEnvironment> => {
       { name: "collection-method", value: "node:os and cgroup-v2" },
     ],
     memoryMeasurement:
-      "warm-uncertainty/evaluation: worker high-water RSS via process.resourceUsage.maxRSS (Linux KiB); includes imports and previous operations; excludes subprocess peaks; heap/WASM-only peaks unavailable; Effect tracing disabled",
+      "warm-uncertainty/evaluation/country lifecycle: worker high-water RSS via process.resourceUsage.maxRSS (Linux KiB); includes imports and previous operations; excludes subprocess peaks; heap/WASM-only peaks unavailable; Effect tracing disabled",
   };
 };
 
@@ -1404,6 +1471,7 @@ const runCoordinator = async (): Promise<void> => {
         {
           encoding: "utf8",
           env: process.env,
+          maxBuffer: maximumWorkerProtocolBytes,
           timeout: benchmarkCase.timeoutSeconds * 1_000,
         },
       );
@@ -1425,7 +1493,9 @@ const runCoordinator = async (): Promise<void> => {
           implementation: "effect-prophet",
           run,
           stage: stageInput === "correctness" ? "correctness" : "runtime",
-          message: (worker.stderr || worker.stdout || "Worker failed").trim().slice(0, 4_000),
+          message: (worker.error?.message || worker.stderr || worker.stdout || "Worker failed")
+            .trim()
+            .slice(0, 4_000),
         });
         continue;
       }

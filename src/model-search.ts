@@ -14,6 +14,7 @@ import {
   type PortableCandidateOutcome,
   type PortableEvaluationFailure,
 } from "./errors";
+import { CountryHolidayError } from "./country-holidays";
 import { performanceMetrics, type MetricName, type MetricReport } from "./evaluation-metrics";
 import {
   crossValidateCandidate,
@@ -135,14 +136,18 @@ const searchInputContext = (
 ): InputValidationError => nestedInputValidationError("evaluation-search", error, path, message);
 
 const portableFailure = (
-  error: InputValidationError | EvaluationError | EvaluationMetricError,
+  error: InputValidationError | EvaluationError | EvaluationMetricError | CountryHolidayError,
 ): PortableEvaluationFailure => {
   if (error instanceof EvaluationError) {
     const cause = error.cause;
     const causeTag = cause?._tag;
 
     const causeReason =
-      cause instanceof FittingError || cause instanceof PredictionError ? cause.reason : undefined;
+      cause instanceof FittingError ||
+      cause instanceof PredictionError ||
+      cause instanceof CountryHolidayError
+        ? cause.reason
+        : undefined;
 
     const fields = {
       tag: "EvaluationError" as const,
@@ -171,8 +176,28 @@ const portableFailure = (
     });
   }
 
+  if (error instanceof CountryHolidayError) {
+    return Object.freeze({ tag: "CountryHolidayError", reason: error.reason });
+  }
+
   return Object.freeze({ tag: "InputValidationError", input: error.input });
 };
+
+/** A candidate's country calendar is unusable; the candidate is named, the calendar error kept. */
+const invalidCandidateCalendar = (
+  error: CountryHolidayError,
+  candidateIndex: number,
+  candidateId: CandidateId,
+): EvaluationSearchError =>
+  new EvaluationSearchError(
+    {
+      reason: "invalid-candidate",
+      candidateIndex,
+      candidateId,
+      message: "Search candidate's country calendar is invalid",
+    },
+    { cause: error },
+  );
 
 const planMatches = (left: RollingOriginPlanSummary, right: RollingOriginPlanSummary): boolean =>
   left.horizonMs === right.horizonMs &&
@@ -275,7 +300,13 @@ export const searchModels = Effect.fn("Prophet.searchModels")(function* (
     const parseOptions = (options: EncodedProphetOptions) =>
       decodeOptions(options).pipe(
         Effect.mapError((error) =>
-          searchInputContext(error, ["candidates", index, "options"], "Invalid candidate options"),
+          error instanceof CountryHolidayError
+            ? invalidCandidateCalendar(error, index, candidate.id)
+            : searchInputContext(
+                error,
+                ["candidates", index, "options"],
+                "Invalid candidate options",
+              ),
         ),
       );
 
@@ -325,14 +356,22 @@ export const searchModels = Effect.fn("Prophet.searchModels")(function* (
     return yield* Effect.die(new Error("Parsed search is missing its candidates"));
   }
 
-  yield* planRollingOrigin(observationsCopy, firstCandidate.options, input.plan);
+  yield* planRollingOrigin(observationsCopy, firstCandidate.options, input.plan).pipe(
+    Effect.catchTag("CountryHolidayError", (error) =>
+      Effect.fail(invalidCandidateCalendar(error, 0, firstCandidate.id)),
+    ),
+  );
   const planInput = ownedInput(input.plan);
   let sharedPlan: RollingOriginPlanSummary | undefined;
 
   for (const [index, candidate] of candidates.entries()) {
     // Python computes generated cutoffs using the model's seasonality settings. Preserve that
     // behavior per candidate, but refuse to compare scores on different resulting folds.
-    const planned = yield* planRollingOrigin(observationsCopy, candidate.options, planInput);
+    const planned = yield* planRollingOrigin(observationsCopy, candidate.options, planInput).pipe(
+      Effect.catchTag("CountryHolidayError", (error) =>
+        Effect.fail(invalidCandidateCalendar(error, index, candidate.id)),
+      ),
+    );
 
     if (sharedPlan !== undefined && !planMatches(sharedPlan, planned)) {
       return yield* Effect.fail(

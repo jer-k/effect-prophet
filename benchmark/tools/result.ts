@@ -2,6 +2,9 @@ import { Effect, Schema } from "effect";
 
 import { BenchmarkPhaseSchema } from "./case.ts";
 
+/** Bounded subprocess protocol capacity; name-rich correctness records can exceed Node's 1 MiB default. */
+export const maximumWorkerProtocolBytes = 64 * 1_048_576;
+
 const NonEmptyString = Schema.String.check(Schema.isMinLength(1));
 
 const NonNegativeInteger = Schema.Int.check(Schema.isGreaterThanOrEqualTo(0));
@@ -119,6 +122,27 @@ export const CorrectnessProjectionSchema = Schema.Struct({
   changepointTimestamps: Schema.Array(Schema.Int),
   seasonalities: Schema.Array(SeasonalityMetadataSchema),
   events: Schema.Array(EventMetadataSchema),
+  eventColumnCount: Schema.optionalKey(NonNegativeInteger),
+  calendarSnapshotId: Schema.optionalKey(NonEmptyString),
+  serializedModelBytes: Schema.optionalKey(NonNegativeInteger),
+  countryHolidays: Schema.optionalKey(
+    Schema.Struct({
+      country: NonEmptyString,
+      coverage: Schema.Literals(["reject-known-gaps", "allow-known-gaps"]),
+      priorScale: Schema.Finite.check(Schema.isGreaterThan(0)),
+      provider: Schema.Struct({
+        prophet: Schema.Literal("1.4.0"),
+        holidays: Schema.Literal("0.104"),
+      }),
+      trainingYears: Schema.Array(Schema.Int),
+      columns: Schema.Array(
+        Schema.Struct({ name: NonEmptyString, offsetDays: Schema.Int, priorScale: Schema.Finite }),
+      ),
+      trainingActivations: Schema.Array(Schema.Literals([0, 1])),
+      predictionActivations: Schema.Array(Schema.Literals([0, 1])),
+      ignoredPredictionNames: Schema.Array(NonEmptyString),
+    }),
+  ),
   regressors: Schema.Array(RegressorMetadataSchema),
   forecasts: Schema.Array(ForecastProjectionSchema),
   noiseScale: Schema.optionalKey(Schema.Finite),

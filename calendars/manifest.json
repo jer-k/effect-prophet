@@ -1,0 +1,4472 @@
+{
+  "aliases": {
+    "ABW": "AW",
+    "AFG": "AF",
+    "AGO": "AO",
+    "AIA": "AI",
+    "ALA": "AX",
+    "ALB": "AL",
+    "AND": "AD",
+    "ARE": "AE",
+    "ARG": "AR",
+    "ARM": "AM",
+    "ASM": "AS",
+    "ATA": "AQ",
+    "ATF": "TF",
+    "ATG": "AG",
+    "AUS": "AU",
+    "AUT": "AT",
+    "AZE": "AZ",
+    "BAH": "BH",
+    "BDI": "BI",
+    "BEL": "BE",
+    "BEN": "BJ",
+    "BES": "BQ",
+    "BFA": "BF",
+    "BGD": "BD",
+    "BHS": "BS",
+    "BIH": "BA",
+    "BLG": "BG",
+    "BLM": "BL",
+    "BLR": "BY",
+    "BLZ": "BZ",
+    "BMU": "BM",
+    "BOL": "BO",
+    "BRA": "BR",
+    "BRB": "BB",
+    "BRN": "BN",
+    "BTN": "BT",
+    "BVT": "BV",
+    "BWA": "BW",
+    "CAF": "CF",
+    "CAN": "CA",
+    "CCK": "CC",
+    "CHE": "CH",
+    "CHL": "CL",
+    "CHN": "CN",
+    "CIV": "CI",
+    "CMR": "CM",
+    "COD": "CD",
+    "COG": "CG",
+    "COK": "CK",
+    "COL": "CO",
+    "COM": "KM",
+    "CPV": "CV",
+    "CRI": "CR",
+    "CUB": "CU",
+    "CUW": "CW",
+    "CXR": "CX",
+    "CYM": "KY",
+    "CYP": "CY",
+    "CZE": "CZ",
+    "DEU": "DE",
+    "DJI": "DJ",
+    "DMA": "DM",
+    "DNK": "DK",
+    "DOM": "DO",
+    "DZA": "DZ",
+    "ECU": "EC",
+    "EGY": "EG",
+    "ERI": "ER",
+    "ESH": "EH",
+    "ESP": "ES",
+    "EST": "EE",
+    "ETH": "ET",
+    "FIN": "FI",
+    "FJI": "FJ",
+    "FLK": "FK",
+    "FRA": "FR",
+    "FRO": "FO",
+    "FSM": "FM",
+    "GAB": "GA",
+    "GBR": "GB",
+    "GEO": "GE",
+    "GGY": "GG",
+    "GHA": "GH",
+    "GIB": "GI",
+    "GIN": "GN",
+    "GLP": "GP",
+    "GMB": "GM",
+    "GNB": "GW",
+    "GNQ": "GQ",
+    "GRC": "GR",
+    "GRD": "GD",
+    "GRL": "GL",
+    "GUA": "GT",
+    "GUF": "GF",
+    "GUM": "GU",
+    "GUY": "GY",
+    "HKG": "HK",
+    "HMD": "HM",
+    "HND": "HN",
+    "HRV": "HR",
+    "HTI": "HT",
+    "HUN": "HU",
+    "IDN": "ID",
+    "IMN": "IM",
+    "IND": "IN",
+    "IOT": "IO",
+    "IRL": "IE",
+    "IRN": "IR",
+    "IRQ": "IQ",
+    "ISL": "IS",
+    "ISR": "IL",
+    "ITA": "IT",
+    "JAM": "JM",
+    "JEY": "JE",
+    "JOR": "JO",
+    "JPN": "JP",
+    "KAZ": "KZ",
+    "KEN": "KE",
+    "KGZ": "KG",
+    "KHM": "KH",
+    "KIR": "KI",
+    "KNA": "KN",
+    "KOR": "KR",
+    "KWT": "KW",
+    "LAO": "LA",
+    "LBN": "LB",
+    "LBR": "LR",
+    "LBY": "LY",
+    "LCA": "LC",
+    "LIE": "LI",
+    "LKA": "LK",
+    "LSO": "LS",
+    "LTU": "LT",
+    "LUX": "LU",
+    "LVA": "LV",
+    "MAC": "MO",
+    "MAF": "MF",
+    "MCO": "MC",
+    "MDA": "MD",
+    "MDG": "MG",
+    "MDV": "MV",
+    "MEX": "MX",
+    "MHL": "MH",
+    "MKD": "MK",
+    "MLI": "ML",
+    "MLT": "MT",
+    "MMR": "MM",
+    "MNE": "ME",
+    "MNG": "MN",
+    "MNP": "MP",
+    "MOR": "MA",
+    "MOZ": "MZ",
+    "MRT": "MR",
+    "MSR": "MS",
+    "MTQ": "MQ",
+    "MUS": "MU",
+    "MWI": "MW",
+    "MYS": "MY",
+    "MYT": "YT",
+    "NAM": "NA",
+    "NCL": "NC",
+    "NER": "NE",
+    "NFK": "NF",
+    "NGA": "NG",
+    "NIC": "NI",
+    "NIU": "NU",
+    "NLD": "NL",
+    "NOR": "NO",
+    "NPL": "NP",
+    "NRU": "NR",
+    "NZL": "NZ",
+    "OMN": "OM",
+    "PAK": "PK",
+    "PAN": "PA",
+    "PCN": "PN",
+    "PER": "PE",
+    "PHL": "PH",
+    "PLW": "PW",
+    "PNG": "PG",
+    "POL": "PL",
+    "PRI": "PR",
+    "PRK": "KP",
+    "PRT": "PT",
+    "PRY": "PY",
+    "PSE": "PS",
+    "PYF": "PF",
+    "QAT": "QA",
+    "REU": "RE",
+    "ROU": "RO",
+    "RUS": "RU",
+    "RWA": "RW",
+    "SAU": "SA",
+    "SDN": "SD",
+    "SEN": "SN",
+    "SGP": "SG",
+    "SGS": "GS",
+    "SHN": "SH",
+    "SJM": "SJ",
+    "SLB": "SB",
+    "SLE": "SL",
+    "SLV": "SV",
+    "SMR": "SM",
+    "SOM": "SO",
+    "SPM": "PM",
+    "SRB": "RS",
+    "SSD": "SS",
+    "STP": "ST",
+    "SUR": "SR",
+    "SVK": "SK",
+    "SVN": "SI",
+    "SWE": "SE",
+    "SXM": "SX",
+    "SYC": "SC",
+    "SYR": "SY",
+    "SZW": "SZ",
+    "TCA": "TC",
+    "TCD": "TD",
+    "TGO": "TG",
+    "THA": "TH",
+    "TJK": "TJ",
+    "TKL": "TK",
+    "TKM": "TM",
+    "TLS": "TL",
+    "TON": "TO",
+    "TTO": "TT",
+    "TU": "TR",
+    "TUN": "TN",
+    "TUR": "TR",
+    "TUV": "TV",
+    "TWN": "TW",
+    "TZA": "TZ",
+    "UGA": "UG",
+    "UK": "GB",
+    "UKR": "UA",
+    "UMI": "UM",
+    "URY": "UY",
+    "USA": "US",
+    "UZB": "UZ",
+    "VAT": "VA",
+    "VCT": "VC",
+    "VEN": "VE",
+    "VGB": "VG",
+    "VIR": "VI",
+    "VNM": "VN",
+    "VTU": "VU",
+    "WLF": "WF",
+    "WSM": "WS",
+    "XKK": "XK",
+    "YEM": "YE",
+    "ZAF": "ZA",
+    "ZMB": "ZM",
+    "ZWE": "ZW"
+  },
+  "checks": {
+    "aliasCalendarsEqual": true,
+    "compactRoundTripsEqual": true,
+    "partitionQueries": [
+      [
+        1995,
+        1996,
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2006,
+        2007,
+        2008,
+        2009,
+        2010,
+        2011,
+        2012,
+        2013,
+        2014,
+        2015,
+        2016,
+        2017,
+        2018,
+        2019,
+        2020,
+        2021,
+        2022,
+        2023,
+        2024,
+        2025,
+        2026,
+        2027,
+        2028,
+        2029,
+        2030,
+        2031,
+        2032,
+        2033,
+        2034,
+        2035,
+        2036,
+        2037,
+        2038,
+        2039,
+        2040,
+        2041,
+        2042,
+        2043,
+        2044,
+        2045,
+        2046,
+        2047,
+        2048,
+        2049,
+        2050,
+        2051,
+        2052,
+        2053,
+        2054,
+        2055,
+        2056,
+        2057,
+        2058,
+        2059,
+        2060
+      ],
+      [
+        1995,
+        1996,
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2006,
+        2007,
+        2008,
+        2009,
+        2010,
+        2011,
+        2012,
+        2013,
+        2014,
+        2015,
+        2016,
+        2017,
+        2018,
+        2019,
+        2020,
+        2021,
+        2022,
+        2023,
+        2024,
+        2025,
+        2026,
+        2027,
+        2028,
+        2029,
+        2030,
+        2031,
+        2032,
+        2033,
+        2034,
+        2035,
+        2036,
+        2037,
+        2038,
+        2039,
+        2040,
+        2041,
+        2042,
+        2043,
+        2044
+      ],
+      [
+        1995,
+        1997,
+        1999,
+        2001,
+        2003,
+        2005,
+        2007,
+        2009,
+        2011,
+        2013,
+        2015,
+        2017,
+        2019,
+        2021,
+        2023,
+        2025,
+        2027,
+        2029,
+        2031,
+        2033,
+        2035,
+        2037,
+        2039,
+        2041,
+        2043,
+        2045,
+        2047,
+        2049,
+        2051,
+        2053,
+        2055,
+        2057,
+        2059
+      ],
+      [
+        1996,
+        1998,
+        2000,
+        2002,
+        2004,
+        2006,
+        2008,
+        2010,
+        2012,
+        2014,
+        2016,
+        2018,
+        2020,
+        2022,
+        2024,
+        2026,
+        2028,
+        2030,
+        2032,
+        2034,
+        2036,
+        2038,
+        2040,
+        2042,
+        2044,
+        2046,
+        2048,
+        2050,
+        2052,
+        2054,
+        2056,
+        2058,
+        2060
+      ],
+      [
+        1995,
+        2060
+      ],
+      [
+        1995,
+        1996
+      ],
+      [
+        1996,
+        1997
+      ],
+      [
+        1997,
+        1998
+      ],
+      [
+        1998,
+        1999
+      ],
+      [
+        1999,
+        2000
+      ],
+      [
+        2000,
+        2001
+      ],
+      [
+        2001,
+        2002
+      ],
+      [
+        2002,
+        2003
+      ],
+      [
+        2003,
+        2004
+      ],
+      [
+        2004,
+        2005
+      ],
+      [
+        2005,
+        2006
+      ],
+      [
+        2006,
+        2007
+      ],
+      [
+        2007,
+        2008
+      ],
+      [
+        2008,
+        2009
+      ],
+      [
+        2009,
+        2010
+      ],
+      [
+        2010,
+        2011
+      ],
+      [
+        2011,
+        2012
+      ],
+      [
+        2012,
+        2013
+      ],
+      [
+        2013,
+        2014
+      ],
+      [
+        2014,
+        2015
+      ],
+      [
+        2015,
+        2016
+      ],
+      [
+        2016,
+        2017
+      ],
+      [
+        2017,
+        2018
+      ],
+      [
+        2018,
+        2019
+      ],
+      [
+        2019,
+        2020
+      ],
+      [
+        2020,
+        2021
+      ],
+      [
+        2021,
+        2022
+      ],
+      [
+        2022,
+        2023
+      ],
+      [
+        2023,
+        2024
+      ],
+      [
+        2024,
+        2025
+      ],
+      [
+        2025,
+        2026
+      ],
+      [
+        2026,
+        2027
+      ],
+      [
+        2027,
+        2028
+      ],
+      [
+        2028,
+        2029
+      ],
+      [
+        2029,
+        2030
+      ],
+      [
+        2030,
+        2031
+      ],
+      [
+        2031,
+        2032
+      ],
+      [
+        2032,
+        2033
+      ],
+      [
+        2033,
+        2034
+      ],
+      [
+        2034,
+        2035
+      ],
+      [
+        2035,
+        2036
+      ],
+      [
+        2036,
+        2037
+      ],
+      [
+        2037,
+        2038
+      ],
+      [
+        2038,
+        2039
+      ],
+      [
+        2039,
+        2040
+      ],
+      [
+        2040,
+        2041
+      ],
+      [
+        2041,
+        2042
+      ],
+      [
+        2042,
+        2043
+      ],
+      [
+        2043,
+        2044
+      ],
+      [
+        2044,
+        2045
+      ],
+      [
+        2045,
+        2046
+      ],
+      [
+        2046,
+        2047
+      ],
+      [
+        2047,
+        2048
+      ],
+      [
+        2048,
+        2049
+      ],
+      [
+        2049,
+        2050
+      ],
+      [
+        2050,
+        2051
+      ],
+      [
+        2051,
+        2052
+      ],
+      [
+        2052,
+        2053
+      ],
+      [
+        2053,
+        2054
+      ],
+      [
+        2054,
+        2055
+      ],
+      [
+        2055,
+        2056
+      ],
+      [
+        2056,
+        2057
+      ],
+      [
+        2057,
+        2058
+      ],
+      [
+        2058,
+        2059
+      ],
+      [
+        2059,
+        2060
+      ],
+      [
+        1999,
+        2007,
+        2016
+      ],
+      [
+        2003,
+        2036,
+        2039,
+        2045,
+        2050,
+        2053,
+        2057
+      ],
+      [
+        1999,
+        2004,
+        2015,
+        2020,
+        2021,
+        2023,
+        2028,
+        2030,
+        2031,
+        2046,
+        2048,
+        2049,
+        2052,
+        2054,
+        2056,
+        2060
+      ],
+      [
+        1996,
+        1997,
+        1999,
+        2001,
+        2004,
+        2007,
+        2008,
+        2010,
+        2011,
+        2012,
+        2013,
+        2014,
+        2018,
+        2019,
+        2027,
+        2031,
+        2032,
+        2033,
+        2034,
+        2037,
+        2039,
+        2041,
+        2042,
+        2043,
+        2045,
+        2046,
+        2047,
+        2048,
+        2050,
+        2054,
+        2056,
+        2059,
+        2060
+      ],
+      [
+        1995,
+        1996,
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2006,
+        2007,
+        2008,
+        2009,
+        2010,
+        2011,
+        2012,
+        2013,
+        2014,
+        2015,
+        2016,
+        2017,
+        2018,
+        2019,
+        2020,
+        2021,
+        2022,
+        2023,
+        2024,
+        2025,
+        2026,
+        2028,
+        2029,
+        2030,
+        2031,
+        2032,
+        2033,
+        2034,
+        2035,
+        2036,
+        2037,
+        2038,
+        2039,
+        2040,
+        2041,
+        2042,
+        2043,
+        2044,
+        2045,
+        2046,
+        2047,
+        2048,
+        2049,
+        2050,
+        2051,
+        2052,
+        2053,
+        2054,
+        2055,
+        2056,
+        2057,
+        2058,
+        2059,
+        2060
+      ]
+    ],
+    "partitionUnionsEqual": true
+  },
+  "countries": {
+    "AD": {
+      "bytes": 10002,
+      "file": "countries/AD.json",
+      "names": 14,
+      "partitionOccurrences": 924,
+      "sha256": "b3fad29eb47f20bb078b182399c28a839fcbbf40778020efab1cf8d096a559ca",
+      "uniqueOccurrences": 924,
+      "warnings": []
+    },
+    "AE": {
+      "bytes": 9810,
+      "file": "countries/AE.json",
+      "names": 20,
+      "partitionOccurrences": 856,
+      "sha256": "0c04c6ee154dc043b4b24b87b36e42f47f1e6857754c211c6b1fafad919ee003",
+      "uniqueOccurrences": 856,
+      "warnings": []
+    },
+    "AF": {
+      "bytes": 10751,
+      "file": "countries/AF.json",
+      "names": 20,
+      "partitionOccurrences": 969,
+      "sha256": "c62550e017e1ba3048c0cf0afbc86f00729b7f342a0ea56c0845add48ce39922",
+      "uniqueOccurrences": 969,
+      "warnings": []
+    },
+    "AG": {
+      "bytes": 9129,
+      "file": "countries/AG.json",
+      "names": 21,
+      "partitionOccurrences": 793,
+      "sha256": "31d08e06189eb88f44435069c0d6f78f49eb181ce1d2602ff4816f8a806a956b",
+      "uniqueOccurrences": 793,
+      "warnings": []
+    },
+    "AI": {
+      "bytes": 12531,
+      "file": "countries/AI.json",
+      "names": 29,
+      "partitionOccurrences": 1013,
+      "sha256": "c15de8db7bf704b483d16e368f58dc7f97c03194cfc2a109e3b54c43c31fa494",
+      "uniqueOccurrences": 1013,
+      "warnings": []
+    },
+    "AL": {
+      "bytes": 15081,
+      "file": "countries/AL.json",
+      "names": 35,
+      "partitionOccurrences": 1295,
+      "sha256": "e19ebc4532265dd9961e379d9d2b6343253e5f4c3af737a04914832cf7a45a31",
+      "uniqueOccurrences": 1295,
+      "warnings": []
+    },
+    "AM": {
+      "bytes": 13719,
+      "file": "countries/AM.json",
+      "names": 93,
+      "partitionOccurrences": 936,
+      "sha256": "ac802b924163cc7978a8983f9f2a7bd64f1e2ca2e6294ab570c4c2ce9a61c5a8",
+      "uniqueOccurrences": 936,
+      "warnings": []
+    },
+    "AO": {
+      "bytes": 11882,
+      "file": "countries/AO.json",
+      "names": 34,
+      "partitionOccurrences": 989,
+      "sha256": "da3642de5a846db554e512c3ff150498f1c7c74342e6a6b4697b9ff50256aba4",
+      "uniqueOccurrences": 989,
+      "warnings": []
+    },
+    "AQ": {
+      "bytes": 2842,
+      "file": "countries/AQ.json",
+      "names": 4,
+      "partitionOccurrences": 249,
+      "sha256": "4ba9cc376dc391c44e990f5bb949563c2b4179c4790172d20da48dfbb732fb39",
+      "uniqueOccurrences": 249,
+      "warnings": []
+    },
+    "AR": {
+      "bytes": 12959,
+      "file": "countries/AR.json",
+      "names": 29,
+      "partitionOccurrences": 1080,
+      "sha256": "95cb3700fba38b79d8c8824ade2cc379f3dbbeb27ba8f8fdd6211b9f592e98b6",
+      "uniqueOccurrences": 1080,
+      "warnings": []
+    },
+    "AS": {
+      "bytes": 11582,
+      "file": "countries/AS.json",
+      "names": 21,
+      "partitionOccurrences": 1021,
+      "sha256": "0aaf5d515eb7dbd45dd88c33211f310165c4d96b5e7a7b06cbf880ce89a51a4d",
+      "uniqueOccurrences": 1021,
+      "warnings": []
+    },
+    "AT": {
+      "bytes": 9260,
+      "file": "countries/AT.json",
+      "names": 13,
+      "partitionOccurrences": 858,
+      "sha256": "b56571bb4e2be5298be5454085480c9e3b07e062f47629eb2e0226d18ccaae00",
+      "uniqueOccurrences": 858,
+      "warnings": []
+    },
+    "AU": {
+      "bytes": 5058,
+      "file": "countries/AU.json",
+      "names": 8,
+      "partitionOccurrences": 463,
+      "sha256": "ed361da97c8ee630524364f231b16856b78df8f3520d89a9520b1e91cf8a7eb4",
+      "uniqueOccurrences": 463,
+      "warnings": []
+    },
+    "AW": {
+      "bytes": 7909,
+      "file": "countries/AW.json",
+      "names": 13,
+      "partitionOccurrences": 726,
+      "sha256": "4e65efb5d8bec1d2eb1f5ff0e607eb4648cfc6c1888956338db6833009bc90c0",
+      "uniqueOccurrences": 726,
+      "warnings": []
+    },
+    "AX": {
+      "bytes": 11472,
+      "file": "countries/AX.json",
+      "names": 16,
+      "partitionOccurrences": 1056,
+      "sha256": "94d0c101f1843ed49abe21bc26076a79add1a8b47496b18f6bbb701f2c246aac",
+      "uniqueOccurrences": 1056,
+      "warnings": []
+    },
+    "AZ": {
+      "bytes": 19140,
+      "file": "countries/AZ.json",
+      "names": 61,
+      "partitionOccurrences": 1546,
+      "sha256": "15ea11e11572a30b89f97872aec330ca2ddb6a7a20f3f3a5de662e0ae164d804",
+      "uniqueOccurrences": 1546,
+      "warnings": []
+    },
+    "BA": {
+      "bytes": 7125,
+      "file": "countries/BA.json",
+      "names": 10,
+      "partitionOccurrences": 664,
+      "sha256": "c973fb5d1b1f33b38c222e58a802dc5a3a2b4a4ae8d5e7632031af6dab6f198f",
+      "uniqueOccurrences": 664,
+      "warnings": []
+    },
+    "BB": {
+      "bytes": 9974,
+      "file": "countries/BB.json",
+      "names": 22,
+      "partitionOccurrences": 874,
+      "sha256": "0ccb5d47972f0b735982bc94f1d2af3d4b1faa14775acd9686baceb3f9dbb237",
+      "uniqueOccurrences": 874,
+      "warnings": []
+    },
+    "BD": {
+      "bytes": 13748,
+      "file": "countries/BD.json",
+      "names": 24,
+      "partitionOccurrences": 1244,
+      "sha256": "058463579c4a7d1da3f6fefc4a282795b720624c6fba458a12ed5781589abee9",
+      "uniqueOccurrences": 1244,
+      "warnings": []
+    },
+    "BE": {
+      "bytes": 8505,
+      "file": "countries/BE.json",
+      "names": 12,
+      "partitionOccurrences": 792,
+      "sha256": "d096a34ffaf8f17bde3912f841b303fae09659e90b297c58b96bed04841c45b0",
+      "uniqueOccurrences": 792,
+      "warnings": []
+    },
+    "BF": {
+      "bytes": 12166,
+      "file": "countries/BF.json",
+      "names": 28,
+      "partitionOccurrences": 1061,
+      "sha256": "6b21c9e77774b1641f4cf397420f383e5735380ae0b5fa4ddf9eb2170ef6ab3b",
+      "uniqueOccurrences": 1061,
+      "warnings": []
+    },
+    "BG": {
+      "bytes": 14180,
+      "file": "countries/BG.json",
+      "names": 69,
+      "partitionOccurrences": 1055,
+      "sha256": "5ee4b074860b2d2180b90f33e3b4fd27381c46efed85b7226553274c0a52408a",
+      "uniqueOccurrences": 1055,
+      "warnings": []
+    },
+    "BH": {
+      "bytes": 10086,
+      "file": "countries/BH.json",
+      "names": 13,
+      "partitionOccurrences": 944,
+      "sha256": "1a4ceddf83b5c01582c9391c715f94083f0f2aebab75774aa937ab62e97b8dd7",
+      "uniqueOccurrences": 944,
+      "warnings": []
+    },
+    "BI": {
+      "bytes": 12220,
+      "file": "countries/BI.json",
+      "names": 31,
+      "partitionOccurrences": 1018,
+      "sha256": "5b50a3b5e67a5b055fec468bb3fccce68ba2a2788affc0b2f0262a7f09cf66b1",
+      "uniqueOccurrences": 1018,
+      "warnings": []
+    },
+    "BJ": {
+      "bytes": 9715,
+      "file": "countries/BJ.json",
+      "names": 13,
+      "partitionOccurrences": 897,
+      "sha256": "dfb88f1daa3da02c0dbb6e7a632d38b1d3042bf0c5a71181d659159b3d639449",
+      "uniqueOccurrences": 897,
+      "warnings": []
+    },
+    "BL": {
+      "bytes": 7713,
+      "file": "countries/BL.json",
+      "names": 12,
+      "partitionOccurrences": 632,
+      "sha256": "32cfa80015018869ef1269120ff00d14e92b6e643d1387208e56be4a8eeff07a",
+      "uniqueOccurrences": 632,
+      "warnings": []
+    },
+    "BM": {
+      "bytes": 8567,
+      "file": "countries/BM.json",
+      "names": 22,
+      "partitionOccurrences": 746,
+      "sha256": "3dc2db3ac80bea7e404548cd209c65d7a9518dde43cd501291a3d9885f3e66fd",
+      "uniqueOccurrences": 746,
+      "warnings": []
+    },
+    "BN": {
+      "bytes": 15575,
+      "file": "countries/BN.json",
+      "names": 43,
+      "partitionOccurrences": 1293,
+      "sha256": "576a0e1e7a01e83c5c671cb30f7b579d6d9e0f54b9962091514f770bbf1ff57e",
+      "uniqueOccurrences": 1293,
+      "warnings": []
+    },
+    "BO": {
+      "bytes": 8882,
+      "file": "countries/BO.json",
+      "names": 18,
+      "partitionOccurrences": 794,
+      "sha256": "45af48d4653649571d9388d6210c76f1c803f2b317fbe665b1775d3f527eff22",
+      "uniqueOccurrences": 794,
+      "warnings": []
+    },
+    "BQ": {
+      "bytes": 6343,
+      "file": "countries/BQ.json",
+      "names": 11,
+      "partitionOccurrences": 500,
+      "sha256": "3c228705b15324cb8e58405603ead4064845ac00cdecb07402d261094bc24cb9",
+      "uniqueOccurrences": 500,
+      "warnings": []
+    },
+    "BR": {
+      "bytes": 6807,
+      "file": "countries/BR.json",
+      "names": 10,
+      "partitionOccurrences": 631,
+      "sha256": "f25e6829ee1d5ea5aa78a672cfd955dbbb7d622bd8ffb04073c2e5bda9238081",
+      "uniqueOccurrences": 631,
+      "warnings": []
+    },
+    "BS": {
+      "bytes": 9032,
+      "file": "countries/BS.json",
+      "names": 20,
+      "partitionOccurrences": 799,
+      "sha256": "062df572c9d2e2e2a668c9a26125714fbce406b10eb8372af13bea86900cd48f",
+      "uniqueOccurrences": 799,
+      "warnings": []
+    },
+    "BT": {
+      "bytes": 12374,
+      "file": "countries/BT.json",
+      "names": 16,
+      "partitionOccurrences": 944,
+      "sha256": "15535ef8022a7df3c1a8b109960e16d75ea2b92e21ededfc4c3e7aa33438f06d",
+      "uniqueOccurrences": 944,
+      "warnings": []
+    },
+    "BV": {
+      "bytes": 1116,
+      "file": "countries/BV.json",
+      "names": 0,
+      "partitionOccurrences": 0,
+      "sha256": "5235f23fd59b4b4dbc6b7bea0357c4778b1df217cf11188c64bca6bb262d0f9b",
+      "uniqueOccurrences": 0,
+      "warnings": []
+    },
+    "BW": {
+      "bytes": 11538,
+      "file": "countries/BW.json",
+      "names": 25,
+      "partitionOccurrences": 1010,
+      "sha256": "ca14f147cfae0799c36f4e533df9e39660fb167292d97f7763a9be6b4dd1e44d",
+      "uniqueOccurrences": 1010,
+      "warnings": []
+    },
+    "BY": {
+      "bytes": 13786,
+      "file": "countries/BY.json",
+      "names": 103,
+      "partitionOccurrences": 870,
+      "sha256": "a7c9d16b70b39468aeb162168ecb89beab42da4a3def9af6843083e567ae2eec",
+      "uniqueOccurrences": 870,
+      "warnings": []
+    },
+    "BZ": {
+      "bytes": 10543,
+      "file": "countries/BZ.json",
+      "names": 28,
+      "partitionOccurrences": 899,
+      "sha256": "3b392e5b1a60ffb9cdc8b7d0caf6973abaf15a7cb552c14a2fc4bae529b183e7",
+      "uniqueOccurrences": 899,
+      "warnings": []
+    },
+    "CA": {
+      "bytes": 4067,
+      "file": "countries/CA.json",
+      "names": 7,
+      "partitionOccurrences": 366,
+      "sha256": "51106af3cc1fd1bb40ed925817a668426e4d593e53fd0e7ce0f129f93252d055",
+      "uniqueOccurrences": 366,
+      "warnings": []
+    },
+    "CC": {
+      "bytes": 11719,
+      "file": "countries/CC.json",
+      "names": 33,
+      "partitionOccurrences": 1005,
+      "sha256": "ec04162d67249d02e9c3dc62513a2936f288e1ac4f92d4029a54bf34bf6430c0",
+      "uniqueOccurrences": 1005,
+      "warnings": []
+    },
+    "CD": {
+      "bytes": 10242,
+      "file": "countries/CD.json",
+      "names": 34,
+      "partitionOccurrences": 804,
+      "sha256": "2d2e9779f994fc4ebd5d2038ef07e48d16e65d4779554d637a45dfe508a21d2a",
+      "uniqueOccurrences": 804,
+      "warnings": []
+    },
+    "CF": {
+      "bytes": 9682,
+      "file": "countries/CF.json",
+      "names": 16,
+      "partitionOccurrences": 874,
+      "sha256": "9d21497935bdbe380d221a00549527b896e2f572781bb1522b2b69486eead379",
+      "uniqueOccurrences": 874,
+      "warnings": []
+    },
+    "CG": {
+      "bytes": 6886,
+      "file": "countries/CG.json",
+      "names": 10,
+      "partitionOccurrences": 645,
+      "sha256": "0c039cf7f855603794a9ea802bd2e3316fab92c627e021fc2c5d413a37e4094f",
+      "uniqueOccurrences": 645,
+      "warnings": []
+    },
+    "CH": {
+      "bytes": 2987,
+      "file": "countries/CH.json",
+      "names": 4,
+      "partitionOccurrences": 264,
+      "sha256": "60b8b1b3d0ce0426e92b024f72912e1402a24c3bfd6559e8592a82c81258c5c5",
+      "uniqueOccurrences": 264,
+      "warnings": []
+    },
+    "CI": {
+      "bytes": 11646,
+      "file": "countries/CI.json",
+      "names": 22,
+      "partitionOccurrences": 949,
+      "sha256": "94967056245d692d9092af3a4803221bceb196b8d63470adb62754d7ea82925b",
+      "uniqueOccurrences": 949,
+      "warnings": []
+    },
+    "CK": {
+      "bytes": 11982,
+      "file": "countries/CK.json",
+      "names": 39,
+      "partitionOccurrences": 930,
+      "sha256": "69f4c0a02a67376e58b38f8ff86a5e554277bf98590a604f49b11c1cf2d60529",
+      "uniqueOccurrences": 930,
+      "warnings": []
+    },
+    "CL": {
+      "bytes": 11831,
+      "file": "countries/CL.json",
+      "names": 22,
+      "partitionOccurrences": 1060,
+      "sha256": "5f538dbbb5b02e3f0c6b449f73ab54dc844160ab2a9f93348bf6519ffd11090e",
+      "uniqueOccurrences": 1060,
+      "warnings": []
+    },
+    "CM": {
+      "bytes": 9498,
+      "file": "countries/CM.json",
+      "names": 27,
+      "partitionOccurrences": 816,
+      "sha256": "101fed8c52fe8971e95c42c292d32c4bdb37e1c9a71400d5ba6d2811cb20771e",
+      "uniqueOccurrences": 816,
+      "warnings": []
+    },
+    "CN": {
+      "bytes": 21383,
+      "file": "countries/CN.json",
+      "names": 189,
+      "partitionOccurrences": 1155,
+      "sha256": "be8b25920873c67ad0aaa790a4e4379ff1e2876d61e3765e832905588265d7cc",
+      "uniqueOccurrences": 1155,
+      "warnings": []
+    },
+    "CO": {
+      "bytes": 13938,
+      "file": "countries/CO.json",
+      "names": 27,
+      "partitionOccurrences": 1223,
+      "sha256": "6e165f4a7beae2c76392c8bcb8543a045e7fb27c695814737d990c39890ca92c",
+      "uniqueOccurrences": 1223,
+      "warnings": []
+    },
+    "CR": {
+      "bytes": 7149,
+      "file": "countries/CR.json",
+      "names": 16,
+      "partitionOccurrences": 619,
+      "sha256": "82a65d659b505b9c396e38931780fc474d17c066d00aac9b9db5dfddcd8f5c2f",
+      "uniqueOccurrences": 619,
+      "warnings": []
+    },
+    "CU": {
+      "bytes": 7066,
+      "file": "countries/CU.json",
+      "names": 12,
+      "partitionOccurrences": 637,
+      "sha256": "fe2ba890858fd1b81f4059d44c2cee8c406338d1b1c7359a20b9df143377b864",
+      "uniqueOccurrences": 637,
+      "warnings": []
+    },
+    "CV": {
+      "bytes": 8407,
+      "file": "countries/CV.json",
+      "names": 12,
+      "partitionOccurrences": 777,
+      "sha256": "2d2503c131162e9cb206f898c49828686201a5f9411f956ccf998be236113496",
+      "uniqueOccurrences": 777,
+      "warnings": []
+    },
+    "CW": {
+      "bytes": 8682,
+      "file": "countries/CW.json",
+      "names": 15,
+      "partitionOccurrences": 794,
+      "sha256": "732a8ce933178238d093d464982c56e05d03f76978695e6caad807a71bf6d5e8",
+      "uniqueOccurrences": 794,
+      "warnings": []
+    },
+    "CX": {
+      "bytes": 9903,
+      "file": "countries/CX.json",
+      "names": 24,
+      "partitionOccurrences": 790,
+      "sha256": "73271b5dabad9eae4cba228e71e6e99d5b76ba08a8e9f53636dbdf5cdb5fe4c1",
+      "uniqueOccurrences": 790,
+      "warnings": []
+    },
+    "CY": {
+      "bytes": 10758,
+      "file": "countries/CY.json",
+      "names": 15,
+      "partitionOccurrences": 990,
+      "sha256": "570ba8fd01faae023e253265678a55d0a5cafd45667eff7670bdc66adc8a69b0",
+      "uniqueOccurrences": 990,
+      "warnings": []
+    },
+    "CZ": {
+      "bytes": 10016,
+      "file": "countries/CZ.json",
+      "names": 17,
+      "partitionOccurrences": 893,
+      "sha256": "087e60c795f5215fbc7e17776ea92b277b99b0617b602c5b69415372af31ea58",
+      "uniqueOccurrences": 893,
+      "warnings": []
+    },
+    "DE": {
+      "bytes": 6393,
+      "file": "countries/DE.json",
+      "names": 10,
+      "partitionOccurrences": 595,
+      "sha256": "45a03a2cc6e679664e1780bedf31083ce082ab99a4a0ce59e8fc9c18e7b0fed7",
+      "uniqueOccurrences": 595,
+      "warnings": []
+    },
+    "DJ": {
+      "bytes": 9542,
+      "file": "countries/DJ.json",
+      "names": 13,
+      "partitionOccurrences": 874,
+      "sha256": "a35563ffa8dbb287c8ec50c91b1747e04f127d3926a63addc0fa5022345cd294",
+      "uniqueOccurrences": 874,
+      "warnings": []
+    },
+    "DK": {
+      "bytes": 7408,
+      "file": "countries/DK.json",
+      "names": 11,
+      "partitionOccurrences": 689,
+      "sha256": "c9f9b1ab67fdc0635e502d9b203aefb5dfddd8b5befab76bdcfa9df357d21fec",
+      "uniqueOccurrences": 689,
+      "warnings": []
+    },
+    "DM": {
+      "bytes": 9547,
+      "file": "countries/DM.json",
+      "names": 21,
+      "partitionOccurrences": 843,
+      "sha256": "d08408a8ae4ee91ee0a77347cd84cdf805e505ee26f962ac87ebedbeda14bf5f",
+      "uniqueOccurrences": 843,
+      "warnings": []
+    },
+    "DO": {
+      "bytes": 8992,
+      "file": "countries/DO.json",
+      "names": 12,
+      "partitionOccurrences": 756,
+      "sha256": "e86f08a706563b0ed9533a5eba7a2b5d391ac66bf9b93b0a994c43ebf4ee5757",
+      "uniqueOccurrences": 756,
+      "warnings": []
+    },
+    "DZ": {
+      "bytes": 9199,
+      "file": "countries/DZ.json",
+      "names": 11,
+      "partitionOccurrences": 860,
+      "sha256": "4b8b8033ef670150b6d6688a0e8f63698b96ec3c8c4162652a5a6099ba840585",
+      "uniqueOccurrences": 860,
+      "warnings": []
+    },
+    "EC": {
+      "bytes": 10178,
+      "file": "countries/EC.json",
+      "names": 18,
+      "partitionOccurrences": 907,
+      "sha256": "7fd4919ba81335c68aec248a75c870308ad1c546674c3d7812d1fdfae8a79c40",
+      "uniqueOccurrences": 907,
+      "warnings": []
+    },
+    "EE": {
+      "bytes": 8396,
+      "file": "countries/EE.json",
+      "names": 12,
+      "partitionOccurrences": 779,
+      "sha256": "2d3fdb5ee0c6200e95dbdb8de576c568848d9ccc740554e2e4e26dbb6d2f3fd3",
+      "uniqueOccurrences": 779,
+      "warnings": []
+    },
+    "EG": {
+      "bytes": 12092,
+      "file": "countries/EG.json",
+      "names": 30,
+      "partitionOccurrences": 1040,
+      "sha256": "9888897b8352d736c83b92f0659de139ef588fa74cfce9efebce008adde10853",
+      "uniqueOccurrences": 1040,
+      "warnings": []
+    },
+    "EH": {
+      "bytes": 8047,
+      "file": "countries/EH.json",
+      "names": 11,
+      "partitionOccurrences": 663,
+      "sha256": "a3392d23be35b3f8c0ef68375d5f7565bea8bf167481f39e40963e6053e8c875",
+      "uniqueOccurrences": 663,
+      "warnings": []
+    },
+    "ER": {
+      "bytes": 10855,
+      "file": "countries/ER.json",
+      "names": 15,
+      "partitionOccurrences": 996,
+      "sha256": "19709d4d70dd4b624ed4cd331a5948a998995616c4c476a049a83404e6573fd3",
+      "uniqueOccurrences": 996,
+      "warnings": []
+    },
+    "ES": {
+      "bytes": 5839,
+      "file": "countries/ES.json",
+      "names": 10,
+      "partitionOccurrences": 461,
+      "sha256": "ac1e05497cb2c3c1c31e558a5741c5808cad2d282890873bc63e936fead1e8a4",
+      "uniqueOccurrences": 461,
+      "warnings": []
+    },
+    "ET": {
+      "bytes": 9215,
+      "file": "countries/ET.json",
+      "names": 16,
+      "partitionOccurrences": 827,
+      "sha256": "622487d4fabe2c54cf82bef67147e6126767e9c94f0981b817564aa54691c288",
+      "uniqueOccurrences": 827,
+      "warnings": []
+    },
+    "FI": {
+      "bytes": 10724,
+      "file": "countries/FI.json",
+      "names": 15,
+      "partitionOccurrences": 990,
+      "sha256": "e827d701aca4cd13c78fcfa4fa8ac71e183ff74c6b8de70a9083031437d174e4",
+      "uniqueOccurrences": 990,
+      "warnings": []
+    },
+    "FJ": {
+      "bytes": 8277,
+      "file": "countries/FJ.json",
+      "names": 23,
+      "partitionOccurrences": 527,
+      "sha256": "a1acf6b6b711589f798b5ed84fce9997396582677973e5cb4a8b3127871550bc",
+      "uniqueOccurrences": 527,
+      "warnings": []
+    },
+    "FK": {
+      "bytes": 7481,
+      "file": "countries/FK.json",
+      "names": 20,
+      "partitionOccurrences": 644,
+      "sha256": "6a2dfb358d4c9f1493fd7aa81e672e465b700d6d423b7bceb95ae9587395749b",
+      "uniqueOccurrences": 644,
+      "warnings": []
+    },
+    "FM": {
+      "bytes": 7132,
+      "file": "countries/FM.json",
+      "names": 16,
+      "partitionOccurrences": 614,
+      "sha256": "aacf62f97ed9957cd01bae952fdda7f56ecfec019bb2ac70626afebd8ae1bb08",
+      "uniqueOccurrences": 614,
+      "warnings": []
+    },
+    "FO": {
+      "bytes": 10002,
+      "file": "countries/FO.json",
+      "names": 14,
+      "partitionOccurrences": 924,
+      "sha256": "5e0ab12394a4e21423358b111742b509472afce48cc9329cf23dd9c205c37137",
+      "uniqueOccurrences": 924,
+      "warnings": []
+    },
+    "FR": {
+      "bytes": 7738,
+      "file": "countries/FR.json",
+      "names": 11,
+      "partitionOccurrences": 723,
+      "sha256": "ccb5439ee2ad1ba35bae381ec6a1a882625c7119f13e63197c04ef16cf494451",
+      "uniqueOccurrences": 723,
+      "warnings": []
+    },
+    "GA": {
+      "bytes": 11036,
+      "file": "countries/GA.json",
+      "names": 19,
+      "partitionOccurrences": 995,
+      "sha256": "47b306173fe7463faaa6f1bcf16153303642e3a2e9e8482b05d41c26c00ecf3f",
+      "uniqueOccurrences": 995,
+      "warnings": []
+    },
+    "GB": {
+      "bytes": 5410,
+      "file": "countries/GB.json",
+      "names": 16,
+      "partitionOccurrences": 458,
+      "sha256": "43658ae456dbf2e128b7af47f3ba5e8686ee5595b7e7da1a0543fb758c31dc9e",
+      "uniqueOccurrences": 458,
+      "warnings": []
+    },
+    "GD": {
+      "bytes": 11072,
+      "file": "countries/GD.json",
+      "names": 24,
+      "partitionOccurrences": 899,
+      "sha256": "45228461c6a5ad865cfd98d567b764e07f5993a595f0fc0e9f94672c6435e4e1",
+      "uniqueOccurrences": 899,
+      "warnings": []
+    },
+    "GE": {
+      "bytes": 12780,
+      "file": "countries/GE.json",
+      "names": 18,
+      "partitionOccurrences": 1160,
+      "sha256": "33c680ed1c9ed888c495efc4d46f64638b5e9a8b9665773cda50d4774ca96475",
+      "uniqueOccurrences": 1160,
+      "warnings": []
+    },
+    "GF": {
+      "bytes": 8482,
+      "file": "countries/GF.json",
+      "names": 12,
+      "partitionOccurrences": 789,
+      "sha256": "ddc14f88645ba8024b313ddd09deddf1d20ed938a25c5a806723ff6970350905",
+      "uniqueOccurrences": 789,
+      "warnings": []
+    },
+    "GG": {
+      "bytes": 7761,
+      "file": "countries/GG.json",
+      "names": 21,
+      "partitionOccurrences": 657,
+      "sha256": "50375f81e2ccbb27f8f67136c1009d492ac7104ad77416ece8276d4771181e35",
+      "uniqueOccurrences": 657,
+      "warnings": []
+    },
+    "GH": {
+      "bytes": 10148,
+      "file": "countries/GH.json",
+      "names": 22,
+      "partitionOccurrences": 829,
+      "sha256": "4d18d54fbe3df265610020b1100385a4d484c64c30ce499a35bc0c97407b4ab9",
+      "uniqueOccurrences": 829,
+      "warnings": []
+    },
+    "GI": {
+      "bytes": 10459,
+      "file": "countries/GI.json",
+      "names": 28,
+      "partitionOccurrences": 822,
+      "sha256": "71f3816b0a0c0c36bfdb12aeb5300d8a127ccecf8ef91ef9cf6f6044780e2ab4",
+      "uniqueOccurrences": 822,
+      "warnings": []
+    },
+    "GL": {
+      "bytes": 7778,
+      "file": "countries/GL.json",
+      "names": 11,
+      "partitionOccurrences": 726,
+      "sha256": "d5ef6e30d4f33708deb9c77b4c44432ff5571e409f76b013239fec926ca641d6",
+      "uniqueOccurrences": 726,
+      "warnings": []
+    },
+    "GM": {
+      "bytes": 14317,
+      "file": "countries/GM.json",
+      "names": 37,
+      "partitionOccurrences": 1225,
+      "sha256": "39d39c39cfe19d7c5a51ab148858ef005ba3584cc45f34fd9981cc016f62f650",
+      "uniqueOccurrences": 1225,
+      "warnings": []
+    },
+    "GN": {
+      "bytes": 9635,
+      "file": "countries/GN.json",
+      "names": 22,
+      "partitionOccurrences": 840,
+      "sha256": "5b20cb9c2afbdfdc6d53a71d1ad2469a8fee66d84913981af72d901c137ef6f0",
+      "uniqueOccurrences": 840,
+      "warnings": []
+    },
+    "GP": {
+      "bytes": 10702,
+      "file": "countries/GP.json",
+      "names": 15,
+      "partitionOccurrences": 987,
+      "sha256": "373a18018f489e20f02c0c84e36d9cb8fcac20f7fc5afe7faee741cbcb2cdf79",
+      "uniqueOccurrences": 987,
+      "warnings": []
+    },
+    "GQ": {
+      "bytes": 10363,
+      "file": "countries/GQ.json",
+      "names": 22,
+      "partitionOccurrences": 826,
+      "sha256": "64d5340d9fe24be14e1015772f3bcf08d1483c10e1830530d37172cf410b0015",
+      "uniqueOccurrences": 826,
+      "warnings": []
+    },
+    "GR": {
+      "bytes": 8732,
+      "file": "countries/GR.json",
+      "names": 13,
+      "partitionOccurrences": 804,
+      "sha256": "93391e104381d1c041aa7ee865af00dc6c000c250ff8f00f3b08bc6d814b7f42",
+      "uniqueOccurrences": 804,
+      "warnings": []
+    },
+    "GS": {
+      "bytes": 7890,
+      "file": "countries/GS.json",
+      "names": 27,
+      "partitionOccurrences": 577,
+      "sha256": "d5b6efe1d278934a94a1737c376b6535af75636b66024e7ab546e83a6d03638b",
+      "uniqueOccurrences": 577,
+      "warnings": []
+    },
+    "GT": {
+      "bytes": 7767,
+      "file": "countries/GT.json",
+      "names": 11,
+      "partitionOccurrences": 726,
+      "sha256": "08ec2ba07bdd5efa5e2f864885a97ffbb33717d6cbb52a05ea0d2559c1f7775e",
+      "uniqueOccurrences": 726,
+      "warnings": []
+    },
+    "GU": {
+      "bytes": 11798,
+      "file": "countries/GU.json",
+      "names": 20,
+      "partitionOccurrences": 1051,
+      "sha256": "13d6bb9591f9dfc54320f2ba5c9ca1a4e725e8d73ac59f1145180a8b9ebac956",
+      "uniqueOccurrences": 1051,
+      "warnings": []
+    },
+    "GW": {
+      "bytes": 5687,
+      "file": "countries/GW.json",
+      "names": 13,
+      "partitionOccurrences": 420,
+      "sha256": "bf5e7da7aa147d87d30a69643905a2354520ec1e55e2658f490c379c352c5589",
+      "uniqueOccurrences": 420,
+      "warnings": []
+    },
+    "GY": {
+      "bytes": 13338,
+      "file": "countries/GY.json",
+      "names": 31,
+      "partitionOccurrences": 977,
+      "sha256": "246f05252a3fb408cb12d4c90157e6f5372cbc4041576dd73724526ae7be8a44",
+      "uniqueOccurrences": 977,
+      "warnings": []
+    },
+    "HK": {
+      "bytes": 12516,
+      "file": "countries/HK.json",
+      "names": 33,
+      "partitionOccurrences": 1044,
+      "sha256": "412381291b7f2e56780c33cbcbfdc1d5ceb6d8aa864b52d1db32574b293aa0e0",
+      "uniqueOccurrences": 1044,
+      "warnings": []
+    },
+    "HM": {
+      "bytes": 1156,
+      "file": "countries/HM.json",
+      "names": 0,
+      "partitionOccurrences": 0,
+      "sha256": "cb324b71544b023e03708d5b692fb411a2a83a12b023c597cbec5a63e51a821a",
+      "uniqueOccurrences": 0,
+      "warnings": []
+    },
+    "HN": {
+      "bytes": 7847,
+      "file": "countries/HN.json",
+      "names": 12,
+      "partitionOccurrences": 726,
+      "sha256": "a2d364f70a4a3d08ef431a1299a4cbbd82dbfca65d99a89a184ef9c70d8be3ff",
+      "uniqueOccurrences": 726,
+      "warnings": []
+    },
+    "HR": {
+      "bytes": 9861,
+      "file": "countries/HR.json",
+      "names": 16,
+      "partitionOccurrences": 894,
+      "sha256": "af28c53edbc2bc4cd430e2680aab21b968a91c8af22e2123fa44851e5c080a0e",
+      "uniqueOccurrences": 894,
+      "warnings": []
+    },
+    "HT": {
+      "bytes": 13014,
+      "file": "countries/HT.json",
+      "names": 18,
+      "partitionOccurrences": 1188,
+      "sha256": "9ac00f76be06046c0795515a58e15de7218c1a0ac4c888e317b04ddb9377ae03",
+      "uniqueOccurrences": 1188,
+      "warnings": []
+    },
+    "HU": {
+      "bytes": 13404,
+      "file": "countries/HU.json",
+      "names": 89,
+      "partitionOccurrences": 909,
+      "sha256": "15bb57153b142702e0747aef2a01c8db61d4748db47424ddae3ccb8760bc9d7b",
+      "uniqueOccurrences": 909,
+      "warnings": []
+    },
+    "ID": {
+      "bytes": 12965,
+      "file": "countries/ID.json",
+      "names": 30,
+      "partitionOccurrences": 1063,
+      "sha256": "bcfed4a1eb4624422bb6edd52367e98d9d2ddae6e389226fd7566732aee0b694",
+      "uniqueOccurrences": 1063,
+      "warnings": []
+    },
+    "IE": {
+      "bytes": 7070,
+      "file": "countries/IE.json",
+      "names": 13,
+      "partitionOccurrences": 635,
+      "sha256": "bd4b3a87ef1ec805bf047f9ab04bfe70a1ce3d0ce39b1541142d2b1a47b15ceb",
+      "uniqueOccurrences": 635,
+      "warnings": []
+    },
+    "IL": {
+      "bytes": 6376,
+      "file": "countries/IL.json",
+      "names": 9,
+      "partitionOccurrences": 594,
+      "sha256": "142d11da0b271ffe27c962ae771c285bf6ddbf8aa27b9f134e4c5932bd96f453",
+      "uniqueOccurrences": 594,
+      "warnings": []
+    },
+    "IM": {
+      "bytes": 8315,
+      "file": "countries/IM.json",
+      "names": 20,
+      "partitionOccurrences": 722,
+      "sha256": "45d7147a7d9108b2856c86bc2e72e4fd2c94b2206fcbf6eb77befdaadc92c11a",
+      "uniqueOccurrences": 722,
+      "warnings": []
+    },
+    "IN": {
+      "bytes": 13147,
+      "file": "countries/IN.json",
+      "names": 24,
+      "partitionOccurrences": 962,
+      "sha256": "a4e3e78da704c79661852fe639b77f438fa22b0cadcece1321c01ea2161ef833",
+      "uniqueOccurrences": 962,
+      "warnings": [
+        {
+          "warnings": [
+            {
+              "category": "UserWarning",
+              "message": "Requested Holidays are available only from 2001 to 2035."
+            }
+          ],
+          "year": 1995
+        },
+        {
+          "warnings": [
+            {
+              "category": "UserWarning",
+              "message": "Requested Holidays are available only from 2001 to 2035."
+            }
+          ],
+          "year": 1996
+        },
+        {
+          "warnings": [
+            {
+              "category": "UserWarning",
+              "message": "Requested Holidays are available only from 2001 to 2035."
+            }
+          ],
+          "year": 1997
+        },
+        {
+          "warnings": [
+            {
+              "category": "UserWarning",
+              "message": "Requested Holidays are available only from 2001 to 2035."
+            }
+          ],
+          "year": 1998
+        },
+        {
+          "warnings": [
+            {
+              "category": "UserWarning",
+              "message": "Requested Holidays are available only from 2001 to 2035."
+            }
+          ],
+          "year": 1999
+        },
+        {
+          "warnings": [
+            {
+              "category": "UserWarning",
+              "message": "Requested Holidays are available only from 2001 to 2035."
+            }
+          ],
+          "year": 2000
+        },
+        {
+          "warnings": [
+            {
+              "category": "UserWarning",
+              "message": "Requested Holidays are available only from 2001 to 2035."
+            }
+          ],
+          "year": 2036
+        },
+        {
+          "warnings": [
+            {
+              "category": "UserWarning",
+              "message": "Requested Holidays are available only from 2001 to 2035."
+            }
+          ],
+          "year": 2037
+        },
+        {
+          "warnings": [
+            {
+              "category": "UserWarning",
+              "message": "Requested Holidays are available only from 2001 to 2035."
+            }
+          ],
+          "year": 2038
+        },
+        {
+          "warnings": [
+            {
+              "category": "UserWarning",
+              "message": "Requested Holidays are available only from 2001 to 2035."
+            }
+          ],
+          "year": 2039
+        },
+        {
+          "warnings": [
+            {
+              "category": "UserWarning",
+              "message": "Requested Holidays are available only from 2001 to 2035."
+            }
+          ],
+          "year": 2040
+        },
+        {
+          "warnings": [
+            {
+              "category": "UserWarning",
+              "message": "Requested Holidays are available only from 2001 to 2035."
+            }
+          ],
+          "year": 2041
+        },
+        {
+          "warnings": [
+            {
+              "category": "UserWarning",
+              "message": "Requested Holidays are available only from 2001 to 2035."
+            }
+          ],
+          "year": 2042
+        },
+        {
+          "warnings": [
+            {
+              "category": "UserWarning",
+              "message": "Requested Holidays are available only from 2001 to 2035."
+            }
+          ],
+          "year": 2043
+        },
+        {
+          "warnings": [
+            {
+              "category": "UserWarning",
+              "message": "Requested Holidays are available only from 2001 to 2035."
+            }
+          ],
+          "year": 2044
+        },
+        {
+          "warnings": [
+            {
+              "category": "UserWarning",
+              "message": "Requested Holidays are available only from 2001 to 2035."
+            }
+          ],
+          "year": 2045
+        },
+        {
+          "warnings": [
+            {
+              "category": "UserWarning",
+              "message": "Requested Holidays are available only from 2001 to 2035."
+            }
+          ],
+          "year": 2046
+        },
+        {
+          "warnings": [
+            {
+              "category": "UserWarning",
+              "message": "Requested Holidays are available only from 2001 to 2035."
+            }
+          ],
+          "year": 2047
+        },
+        {
+          "warnings": [
+            {
+              "category": "UserWarning",
+              "message": "Requested Holidays are available only from 2001 to 2035."
+            }
+          ],
+          "year": 2048
+        },
+        {
+          "warnings": [
+            {
+              "category": "UserWarning",
+              "message": "Requested Holidays are available only from 2001 to 2035."
+            }
+          ],
+          "year": 2049
+        },
+        {
+          "warnings": [
+            {
+              "category": "UserWarning",
+              "message": "Requested Holidays are available only from 2001 to 2035."
+            }
+          ],
+          "year": 2050
+        },
+        {
+          "warnings": [
+            {
+              "category": "UserWarning",
+              "message": "Requested Holidays are available only from 2001 to 2035."
+            }
+          ],
+          "year": 2051
+        },
+        {
+          "warnings": [
+            {
+              "category": "UserWarning",
+              "message": "Requested Holidays are available only from 2001 to 2035."
+            }
+          ],
+          "year": 2052
+        },
+        {
+          "warnings": [
+            {
+              "category": "UserWarning",
+              "message": "Requested Holidays are available only from 2001 to 2035."
+            }
+          ],
+          "year": 2053
+        },
+        {
+          "warnings": [
+            {
+              "category": "UserWarning",
+              "message": "Requested Holidays are available only from 2001 to 2035."
+            }
+          ],
+          "year": 2054
+        },
+        {
+          "warnings": [
+            {
+              "category": "UserWarning",
+              "message": "Requested Holidays are available only from 2001 to 2035."
+            }
+          ],
+          "year": 2055
+        },
+        {
+          "warnings": [
+            {
+              "category": "UserWarning",
+              "message": "Requested Holidays are available only from 2001 to 2035."
+            }
+          ],
+          "year": 2056
+        },
+        {
+          "warnings": [
+            {
+              "category": "UserWarning",
+              "message": "Requested Holidays are available only from 2001 to 2035."
+            }
+          ],
+          "year": 2057
+        },
+        {
+          "warnings": [
+            {
+              "category": "UserWarning",
+              "message": "Requested Holidays are available only from 2001 to 2035."
+            }
+          ],
+          "year": 2058
+        },
+        {
+          "warnings": [
+            {
+              "category": "UserWarning",
+              "message": "Requested Holidays are available only from 2001 to 2035."
+            }
+          ],
+          "year": 2059
+        },
+        {
+          "warnings": [
+            {
+              "category": "UserWarning",
+              "message": "Requested Holidays are available only from 2001 to 2035."
+            }
+          ],
+          "year": 2060
+        }
+      ]
+    },
+    "IO": {
+      "bytes": 1150,
+      "file": "countries/IO.json",
+      "names": 0,
+      "partitionOccurrences": 0,
+      "sha256": "faded449c44ad48ae11d39d8c33e1d6e4dd9bbe7783f7c23cb41ab06f8ac8f3b",
+      "uniqueOccurrences": 0,
+      "warnings": []
+    },
+    "IQ": {
+      "bytes": 12250,
+      "file": "countries/IQ.json",
+      "names": 22,
+      "partitionOccurrences": 1106,
+      "sha256": "34eb21e3e2b74056f93adff34337c38364a39afa79a492af723dfe12801e7013",
+      "uniqueOccurrences": 1106,
+      "warnings": []
+    },
+    "IR": {
+      "bytes": 21330,
+      "file": "countries/IR.json",
+      "names": 44,
+      "partitionOccurrences": 1841,
+      "sha256": "482ad18a2bce2581fd01a80b4e4a8ff3921a17310271021ca9d31f53656f3c63",
+      "uniqueOccurrences": 1841,
+      "warnings": []
+    },
+    "IS": {
+      "bytes": 9994,
+      "file": "countries/IS.json",
+      "names": 14,
+      "partitionOccurrences": 924,
+      "sha256": "dc475418b6939298e45e16cf517b42c98fccecd8c289954a2c7ebf0b2ea4487d",
+      "uniqueOccurrences": 924,
+      "warnings": []
+    },
+    "IT": {
+      "bytes": 9821,
+      "file": "countries/IT.json",
+      "names": 15,
+      "partitionOccurrences": 894,
+      "sha256": "f23c168ebf6f1fefa8ef379f3e3b0c4f0f4ffcbce1d7d94740b39da8fb13f06c",
+      "uniqueOccurrences": 894,
+      "warnings": []
+    },
+    "JE": {
+      "bytes": 7772,
+      "file": "countries/JE.json",
+      "names": 24,
+      "partitionOccurrences": 649,
+      "sha256": "f004ff0caf4da6f2860c74fe4061aaac27adfaf882fa0446bfb51ae9acacf2fb",
+      "uniqueOccurrences": 649,
+      "warnings": []
+    },
+    "JM": {
+      "bytes": 8081,
+      "file": "countries/JM.json",
+      "names": 16,
+      "partitionOccurrences": 723,
+      "sha256": "c161ff2ca71eaefc34d44d2947a0840521df12894ec5dcdaefaab5ca6e948eab",
+      "uniqueOccurrences": 723,
+      "warnings": []
+    },
+    "JO": {
+      "bytes": 10136,
+      "file": "countries/JO.json",
+      "names": 12,
+      "partitionOccurrences": 944,
+      "sha256": "bd101dd44140ed8ad3ec372306c39b481856396ce77e5976a2764a8d0722edaa",
+      "uniqueOccurrences": 944,
+      "warnings": []
+    },
+    "JP": {
+      "bytes": 12788,
+      "file": "countries/JP.json",
+      "names": 20,
+      "partitionOccurrences": 1159,
+      "sha256": "303d1146002d7f52901ce34cd576a36ee8de4304f714bc54d404bb78660d3abc",
+      "uniqueOccurrences": 1159,
+      "warnings": []
+    },
+    "KE": {
+      "bytes": 9573,
+      "file": "countries/KE.json",
+      "names": 36,
+      "partitionOccurrences": 800,
+      "sha256": "5745ef730a837d50f928d2650e53cf8365fea2e89653175b849cb355ee12ecad",
+      "uniqueOccurrences": 800,
+      "warnings": []
+    },
+    "KG": {
+      "bytes": 19420,
+      "file": "countries/KG.json",
+      "names": 122,
+      "partitionOccurrences": 1270,
+      "sha256": "dc6e10c683e58fbb7b016a59d5c83fbcae59ce50b0a72940ee9cb063c9ee26de",
+      "uniqueOccurrences": 1270,
+      "warnings": []
+    },
+    "KH": {
+      "bytes": 16927,
+      "file": "countries/KH.json",
+      "names": 23,
+      "partitionOccurrences": 1505,
+      "sha256": "5ea8a31043b67a964e8924c516c560c2643d12ce5f18e8b518ec878f386f38fe",
+      "uniqueOccurrences": 1505,
+      "warnings": []
+    },
+    "KI": {
+      "bytes": 11452,
+      "file": "countries/KI.json",
+      "names": 25,
+      "partitionOccurrences": 997,
+      "sha256": "d755549c07105d7e32ff29fd27921977353cdc6f4885caba89c5817db695bcc9",
+      "uniqueOccurrences": 997,
+      "warnings": []
+    },
+    "KM": {
+      "bytes": 10018,
+      "file": "countries/KM.json",
+      "names": 14,
+      "partitionOccurrences": 931,
+      "sha256": "06b44bfc50cac50867e5d22d18243d5dd35df4cf24449f452544837f82c3d7f9",
+      "uniqueOccurrences": 931,
+      "warnings": []
+    },
+    "KN": {
+      "bytes": 9814,
+      "file": "countries/KN.json",
+      "names": 23,
+      "partitionOccurrences": 849,
+      "sha256": "cb373fb8e7ef23567b217c57f654e667c7793f98459f96dc278324051f257ebf",
+      "uniqueOccurrences": 849,
+      "warnings": []
+    },
+    "KP": {
+      "bytes": 15222,
+      "file": "countries/KP.json",
+      "names": 23,
+      "partitionOccurrences": 1365,
+      "sha256": "874ae7bb9704bea0bddd478d1345b470fe42af1a99940471343ea911af827d8a",
+      "uniqueOccurrences": 1365,
+      "warnings": []
+    },
+    "KR": {
+      "bytes": 15172,
+      "file": "countries/KR.json",
+      "names": 35,
+      "partitionOccurrences": 1275,
+      "sha256": "148b42540a930dd6799f3c852b0f5bf4e3ed1600d0dd95be97c6360fc608d052",
+      "uniqueOccurrences": 1275,
+      "warnings": []
+    },
+    "KW": {
+      "bytes": 9396,
+      "file": "countries/KW.json",
+      "names": 11,
+      "partitionOccurrences": 878,
+      "sha256": "ccde413c219bcd5147612be8dc4f55ce9928892b4101e0690a0ece6ace1c5f14",
+      "uniqueOccurrences": 878,
+      "warnings": []
+    },
+    "KY": {
+      "bytes": 8885,
+      "file": "countries/KY.json",
+      "names": 23,
+      "partitionOccurrences": 700,
+      "sha256": "7b0b94021cdcccd61e906fb9619515b2935be4adf17ab196959bff7ad981287a",
+      "uniqueOccurrences": 700,
+      "warnings": []
+    },
+    "KZ": {
+      "bytes": 15818,
+      "file": "countries/KZ.json",
+      "names": 77,
+      "partitionOccurrences": 1178,
+      "sha256": "be6fafe04b281c72983fdfc515891ba91fa33a71aeefcda17840e616b4126b11",
+      "uniqueOccurrences": 1178,
+      "warnings": []
+    },
+    "LA": {
+      "bytes": 6558,
+      "file": "countries/LA.json",
+      "names": 12,
+      "partitionOccurrences": 586,
+      "sha256": "2ea14f0aee04d48ad184e0e24fc958842d1861bbc88c0c739a5b38d3aae63436",
+      "uniqueOccurrences": 586,
+      "warnings": []
+    },
+    "LB": {
+      "bytes": 14127,
+      "file": "countries/LB.json",
+      "names": 24,
+      "partitionOccurrences": 1269,
+      "sha256": "ec89b50fc2c37a74afc155984fbf66a4cefc082a036f5643794d8100fb5967cd",
+      "uniqueOccurrences": 1269,
+      "warnings": []
+    },
+    "LC": {
+      "bytes": 10448,
+      "file": "countries/LC.json",
+      "names": 21,
+      "partitionOccurrences": 931,
+      "sha256": "92d335fa482a460486c37b9dc34c14090b6216949b2491d74e6e50bb8a91e8a3",
+      "uniqueOccurrences": 931,
+      "warnings": []
+    },
+    "LI": {
+      "bytes": 12215,
+      "file": "countries/LI.json",
+      "names": 17,
+      "partitionOccurrences": 1122,
+      "sha256": "d5aa2ae979c8de78db9f16462f5c05baf73412a3be962505c1c8c83714ec643c",
+      "uniqueOccurrences": 1122,
+      "warnings": []
+    },
+    "LK": {
+      "bytes": 9075,
+      "file": "countries/LK.json",
+      "names": 31,
+      "partitionOccurrences": 622,
+      "sha256": "52a138961f7f0754ed8a1aecccfc993e0716dac1d63c844691cb1e8e4d47b29e",
+      "uniqueOccurrences": 622,
+      "warnings": []
+    },
+    "LR": {
+      "bytes": 7992,
+      "file": "countries/LR.json",
+      "names": 12,
+      "partitionOccurrences": 731,
+      "sha256": "91c2bd19492feb039351d0aa19839d1267866f4f0249c1e4094c08fec7936688",
+      "uniqueOccurrences": 731,
+      "warnings": []
+    },
+    "LS": {
+      "bytes": 8603,
+      "file": "countries/LS.json",
+      "names": 13,
+      "partitionOccurrences": 716,
+      "sha256": "3dac83115216737bd9aab857fa1db092a21805f4cc0a68d57dc9b1c93caae895",
+      "uniqueOccurrences": 716,
+      "warnings": []
+    },
+    "LT": {
+      "bytes": 11243,
+      "file": "countries/LT.json",
+      "names": 16,
+      "partitionOccurrences": 1023,
+      "sha256": "5efcc1b94b0d7150fcbc304f7fc0f349f89fe2587f244ad2af4f75a7893072cb",
+      "uniqueOccurrences": 1023,
+      "warnings": []
+    },
+    "LU": {
+      "bytes": 7536,
+      "file": "countries/LU.json",
+      "names": 11,
+      "partitionOccurrences": 702,
+      "sha256": "52bb726152690698ef96cce8427f810f2b75ef7130389377fb45ca9a55145e7a",
+      "uniqueOccurrences": 702,
+      "warnings": []
+    },
+    "LV": {
+      "bytes": 14407,
+      "file": "countries/LV.json",
+      "names": 59,
+      "partitionOccurrences": 1105,
+      "sha256": "906a896f3e9cd80a5328596c86272c6dbc59667f35b0715a4648922b7b0f0fda",
+      "uniqueOccurrences": 1105,
+      "warnings": []
+    },
+    "LY": {
+      "bytes": 10623,
+      "file": "countries/LY.json",
+      "names": 21,
+      "partitionOccurrences": 947,
+      "sha256": "65a0d11c28e0487fec223dd48c9e8629e659dd6f1134d1f4bddabf68ce897830",
+      "uniqueOccurrences": 947,
+      "warnings": []
+    },
+    "MA": {
+      "bytes": 11950,
+      "file": "countries/MA.json",
+      "names": 14,
+      "partitionOccurrences": 1107,
+      "sha256": "fee9fe456ebec834dfbfb5cdd2eef0b19dc6fb1edd17727c37c4596cd3971211",
+      "uniqueOccurrences": 1107,
+      "warnings": []
+    },
+    "MC": {
+      "bytes": 9588,
+      "file": "countries/MC.json",
+      "names": 20,
+      "partitionOccurrences": 854,
+      "sha256": "ab2fa811fea872cd507f68dfd88aae6a47a7734d401d4eb6c7ef9d13c110ce19",
+      "uniqueOccurrences": 854,
+      "warnings": []
+    },
+    "MD": {
+      "bytes": 9472,
+      "file": "countries/MD.json",
+      "names": 13,
+      "partitionOccurrences": 863,
+      "sha256": "f6a5071e55fa4d63cdb1e282111babaca54cde72ebbba5d1bd3ef5b35bac81df",
+      "uniqueOccurrences": 863,
+      "warnings": []
+    },
+    "ME": {
+      "bytes": 6644,
+      "file": "countries/ME.json",
+      "names": 10,
+      "partitionOccurrences": 536,
+      "sha256": "01248cadafc546b30daa24863d8e653f1c8c31c925a5746771999f00968f936b",
+      "uniqueOccurrences": 536,
+      "warnings": []
+    },
+    "MF": {
+      "bytes": 8268,
+      "file": "countries/MF.json",
+      "names": 13,
+      "partitionOccurrences": 681,
+      "sha256": "737fcd4544129148eb5828777e4f91744745eb89fa54d22dfc6f9edecd38f084",
+      "uniqueOccurrences": 681,
+      "warnings": []
+    },
+    "MG": {
+      "bytes": 11287,
+      "file": "countries/MG.json",
+      "names": 16,
+      "partitionOccurrences": 1040,
+      "sha256": "3feb52f7676169798db4fbc46ef0e3884e986f1d2c5b7d7f1f7b20005a9f632e",
+      "uniqueOccurrences": 1040,
+      "warnings": []
+    },
+    "MH": {
+      "bytes": 8395,
+      "file": "countries/MH.json",
+      "names": 17,
+      "partitionOccurrences": 747,
+      "sha256": "2b8d7e9296aefbcfeb163772e2b1b0a84b14a82c2077289272006334403db9d3",
+      "uniqueOccurrences": 747,
+      "warnings": []
+    },
+    "MK": {
+      "bytes": 9584,
+      "file": "countries/MK.json",
+      "names": 24,
+      "partitionOccurrences": 738,
+      "sha256": "0d106714808b8147f49fc3f5d50b8eb4297229908638fb7ded6c5285f586d5c8",
+      "uniqueOccurrences": 738,
+      "warnings": []
+    },
+    "ML": {
+      "bytes": 8637,
+      "file": "countries/ML.json",
+      "names": 16,
+      "partitionOccurrences": 778,
+      "sha256": "f30fbef68fe45cbbb2e76836462b7042e6a120a73f82948fb201cba47e1edac0",
+      "uniqueOccurrences": 778,
+      "warnings": []
+    },
+    "MM": {
+      "bytes": 20220,
+      "file": "countries/MM.json",
+      "names": 25,
+      "partitionOccurrences": 1787,
+      "sha256": "f5a556744ad5676a8014812caec05c3deff0dd16cfcc8f295e6bfcf8df9fa96f",
+      "uniqueOccurrences": 1787,
+      "warnings": []
+    },
+    "MN": {
+      "bytes": 9607,
+      "file": "countries/MN.json",
+      "names": 10,
+      "partitionOccurrences": 828,
+      "sha256": "669fffaf149a27072f88e2f92ceb365f92c3fbb261db1bee9be71fd3c32b9e5f",
+      "uniqueOccurrences": 828,
+      "warnings": []
+    },
+    "MO": {
+      "bytes": 7584,
+      "file": "countries/MO.json",
+      "names": 13,
+      "partitionOccurrences": 661,
+      "sha256": "7b793715f821be5fe3121cea89a43f3516e8abea8995c41f6df91a98b63847a0",
+      "uniqueOccurrences": 661,
+      "warnings": []
+    },
+    "MP": {
+      "bytes": 12894,
+      "file": "countries/MP.json",
+      "names": 24,
+      "partitionOccurrences": 1135,
+      "sha256": "6d171bfc759c146512ef36e669e492f78a9d79760cff2705ff0fb0f340382a1a",
+      "uniqueOccurrences": 1135,
+      "warnings": []
+    },
+    "MQ": {
+      "bytes": 9967,
+      "file": "countries/MQ.json",
+      "names": 14,
+      "partitionOccurrences": 921,
+      "sha256": "386c0cc201205b63ddf126ace37a439500f184a34299ef5b4c5eaeff188ac116",
+      "uniqueOccurrences": 921,
+      "warnings": []
+    },
+    "MR": {
+      "bytes": 7163,
+      "file": "countries/MR.json",
+      "names": 8,
+      "partitionOccurrences": 672,
+      "sha256": "bf9911c741108a98cf8045366368991d6c1c217d9664b534c9e77f644452aa5c",
+      "uniqueOccurrences": 672,
+      "warnings": []
+    },
+    "MS": {
+      "bytes": 7959,
+      "file": "countries/MS.json",
+      "names": 24,
+      "partitionOccurrences": 600,
+      "sha256": "9e59d0cbe7e12761daaaf7d9f95844f0644f28d36aa34f1537e24dc2f0f362ed",
+      "uniqueOccurrences": 600,
+      "warnings": []
+    },
+    "MT": {
+      "bytes": 10080,
+      "file": "countries/MT.json",
+      "names": 14,
+      "partitionOccurrences": 924,
+      "sha256": "eaeb8782db139095bf156094d5744b59b8a675ec1fed24e2967f8312c5c9287a",
+      "uniqueOccurrences": 924,
+      "warnings": []
+    },
+    "MU": {
+      "bytes": 11741,
+      "file": "countries/MU.json",
+      "names": 18,
+      "partitionOccurrences": 870,
+      "sha256": "7cd5843dedce7f744539fbe48dd746ff0806ff9a508696c41f3317be7ffe5914",
+      "uniqueOccurrences": 870,
+      "warnings": []
+    },
+    "MV": {
+      "bytes": 13133,
+      "file": "countries/MV.json",
+      "names": 15,
+      "partitionOccurrences": 1214,
+      "sha256": "1518160281fd49cbe746aeab6f175d4b2c55fc0cfe63bb2f6f4f7d61e3cf10a4",
+      "uniqueOccurrences": 1214,
+      "warnings": []
+    },
+    "MW": {
+      "bytes": 10122,
+      "file": "countries/MW.json",
+      "names": 20,
+      "partitionOccurrences": 826,
+      "sha256": "cb8f5e30d96fbb6d1e720319affad062c554e9aa407fc3c46ff6b2f2672121bf",
+      "uniqueOccurrences": 826,
+      "warnings": []
+    },
+    "MX": {
+      "bytes": 5164,
+      "file": "countries/MX.json",
+      "names": 8,
+      "partitionOccurrences": 473,
+      "sha256": "8b0836a795ab3a65ea199201f655f1f1c0645cfddc89598d6904ae270127fc0b",
+      "uniqueOccurrences": 473,
+      "warnings": []
+    },
+    "MY": {
+      "bytes": 12200,
+      "file": "countries/MY.json",
+      "names": 46,
+      "partitionOccurrences": 971,
+      "sha256": "5afd5fcdcc66ce71e70d803febf6b8b33dbbd64519906225c9c5738cfb7a90d3",
+      "uniqueOccurrences": 971,
+      "warnings": []
+    },
+    "MZ": {
+      "bytes": 7810,
+      "file": "countries/MZ.json",
+      "names": 18,
+      "partitionOccurrences": 675,
+      "sha256": "04bc9a0ac6ae551075eaf9a96385f966e95f12f90bc9dc55c6a119359e58b3d6",
+      "uniqueOccurrences": 675,
+      "warnings": []
+    },
+    "NA": {
+      "bytes": 10817,
+      "file": "countries/NA.json",
+      "names": 30,
+      "partitionOccurrences": 917,
+      "sha256": "94d5956b8bbbdfec2ab1c519fec0af1a048e4af0b6a21b321fd652844ecba498",
+      "uniqueOccurrences": 917,
+      "warnings": []
+    },
+    "NC": {
+      "bytes": 8560,
+      "file": "countries/NC.json",
+      "names": 13,
+      "partitionOccurrences": 789,
+      "sha256": "009e3d3e6015a2d76fa5cb0f5c706d40cfe1e5f9dda4cf6dbae4e914ab2edccd",
+      "uniqueOccurrences": 789,
+      "warnings": []
+    },
+    "NE": {
+      "bytes": 12171,
+      "file": "countries/NE.json",
+      "names": 37,
+      "partitionOccurrences": 1008,
+      "sha256": "cd6b2b7a98aef5e74f3c47276faf29b41b67c98c707402604c23c93355cba70e",
+      "uniqueOccurrences": 1008,
+      "warnings": []
+    },
+    "NF": {
+      "bytes": 7900,
+      "file": "countries/NF.json",
+      "names": 20,
+      "partitionOccurrences": 611,
+      "sha256": "cdf26704e25af686f11ad16dcebd7aab7ff492f824a17d31d112e6b2d16cefb9",
+      "uniqueOccurrences": 611,
+      "warnings": []
+    },
+    "NG": {
+      "bytes": 12387,
+      "file": "countries/NG.json",
+      "names": 39,
+      "partitionOccurrences": 1035,
+      "sha256": "19b780947fe6fb738c36ec2902e854aae417e29de8c19e757fd658b21f4b7e65",
+      "uniqueOccurrences": 1035,
+      "warnings": []
+    },
+    "NI": {
+      "bytes": 6781,
+      "file": "countries/NI.json",
+      "names": 10,
+      "partitionOccurrences": 633,
+      "sha256": "84b575cc539fe200bc3968e2148b1d49fdd060d1417b66f75657c41f00a8c580",
+      "uniqueOccurrences": 633,
+      "warnings": []
+    },
+    "NL": {
+      "bytes": 7286,
+      "file": "countries/NL.json",
+      "names": 12,
+      "partitionOccurrences": 674,
+      "sha256": "0923f2f7263cff7796cc3d4e4e302b3d3291098e8603a944ae2d0acffa2b950e",
+      "uniqueOccurrences": 674,
+      "warnings": []
+    },
+    "NO": {
+      "bytes": 8513,
+      "file": "countries/NO.json",
+      "names": 12,
+      "partitionOccurrences": 792,
+      "sha256": "b6354e67b8785c038bb4658a378a594154d6f6a153e9b8a560d9b6f68456dc6e",
+      "uniqueOccurrences": 792,
+      "warnings": []
+    },
+    "NP": {
+      "bytes": 15291,
+      "file": "countries/NP.json",
+      "names": 40,
+      "partitionOccurrences": 1024,
+      "sha256": "0cbed75b757636d2a681523f6e6b7a1cefc2f3c4f18941aab9da07232794bf36",
+      "uniqueOccurrences": 1024,
+      "warnings": []
+    },
+    "NR": {
+      "bytes": 11882,
+      "file": "countries/NR.json",
+      "names": 27,
+      "partitionOccurrences": 1032,
+      "sha256": "cba460661df26ee3dbe2b9de8e106bb50a214610cb961b1f6d8120ba43fb2d46",
+      "uniqueOccurrences": 1032,
+      "warnings": []
+    },
+    "NU": {
+      "bytes": 9736,
+      "file": "countries/NU.json",
+      "names": 20,
+      "partitionOccurrences": 858,
+      "sha256": "e8ebccf26652b2fee435099286432ea645d025b04d41a2fe2e002a12ef4348a8",
+      "uniqueOccurrences": 858,
+      "warnings": []
+    },
+    "NZ": {
+      "bytes": 8904,
+      "file": "countries/NZ.json",
+      "names": 19,
+      "partitionOccurrences": 792,
+      "sha256": "aec72911d91004b16a9cb17dc57ce853070d76ce68372cc34a7fa6647a680c7e",
+      "uniqueOccurrences": 792,
+      "warnings": []
+    },
+    "OM": {
+      "bytes": 10038,
+      "file": "countries/OM.json",
+      "names": 13,
+      "partitionOccurrences": 936,
+      "sha256": "ba66456074080e25b3fc313c6ccdae3caa9293c9d1a2db02bfc946785bd43016",
+      "uniqueOccurrences": 936,
+      "warnings": []
+    },
+    "PA": {
+      "bytes": 9690,
+      "file": "countries/PA.json",
+      "names": 23,
+      "partitionOccurrences": 848,
+      "sha256": "2461b30e1e558b69216ec786d69f2084e22637e1205ae40c946f2ffc33b15f16",
+      "uniqueOccurrences": 848,
+      "warnings": []
+    },
+    "PE": {
+      "bytes": 11170,
+      "file": "countries/PE.json",
+      "names": 17,
+      "partitionOccurrences": 1011,
+      "sha256": "ea285f51a27c3c73a4620170e8a4eaf03576f9fe20ebb2309d4b34d3e01405d2",
+      "uniqueOccurrences": 1011,
+      "warnings": []
+    },
+    "PF": {
+      "bytes": 10038,
+      "file": "countries/PF.json",
+      "names": 15,
+      "partitionOccurrences": 921,
+      "sha256": "85bb27b4263752af1f40cea8feb4aa67caa70e86dc5a66d4a0c6f2934fd5c57e",
+      "uniqueOccurrences": 921,
+      "warnings": []
+    },
+    "PG": {
+      "bytes": 9133,
+      "file": "countries/PG.json",
+      "names": 26,
+      "partitionOccurrences": 775,
+      "sha256": "5d4b80a49f65d93e911b285f017f270af8c5c655ded5255b5c34d457c4108618",
+      "uniqueOccurrences": 775,
+      "warnings": []
+    },
+    "PH": {
+      "bytes": 12979,
+      "file": "countries/PH.json",
+      "names": 26,
+      "partitionOccurrences": 1144,
+      "sha256": "5918d67756fc9a0251a59914ef15b6c2564fd9060587a72b8ba2a71bf0be5cfd",
+      "uniqueOccurrences": 1144,
+      "warnings": []
+    },
+    "PK": {
+      "bytes": 11141,
+      "file": "countries/PK.json",
+      "names": 15,
+      "partitionOccurrences": 1037,
+      "sha256": "67b90e837d04c9e0e468517d71b3d077768f2b7fa76f8279ae91426e5040ac61",
+      "uniqueOccurrences": 1037,
+      "warnings": []
+    },
+    "PL": {
+      "bytes": 9626,
+      "file": "countries/PL.json",
+      "names": 15,
+      "partitionOccurrences": 879,
+      "sha256": "b10f3c39c43f78b61ac97231d8f902378268c98539e9907dcb27b0e803ee7201",
+      "uniqueOccurrences": 879,
+      "warnings": []
+    },
+    "PM": {
+      "bytes": 7738,
+      "file": "countries/PM.json",
+      "names": 11,
+      "partitionOccurrences": 723,
+      "sha256": "ed8fadac52073ecade1ecbbd4f163c7b1ad0cccffd72691f6528b82c7a0207f2",
+      "uniqueOccurrences": 723,
+      "warnings": []
+    },
+    "PN": {
+      "bytes": 4837,
+      "file": "countries/PN.json",
+      "names": 9,
+      "partitionOccurrences": 360,
+      "sha256": "879db5d7a206a971b96bbb2b66f997740dcb88a968adb8574260398520a209a8",
+      "uniqueOccurrences": 360,
+      "warnings": []
+    },
+    "PR": {
+      "bytes": 14605,
+      "file": "countries/PR.json",
+      "names": 37,
+      "partitionOccurrences": 1223,
+      "sha256": "f9381a4230d32f0d3b54c5062bad76ce5602ff463270921d718353d6af46ba28",
+      "uniqueOccurrences": 1223,
+      "warnings": []
+    },
+    "PS": {
+      "bytes": 12489,
+      "file": "countries/PS.json",
+      "names": 12,
+      "partitionOccurrences": 1189,
+      "sha256": "54858e5a649893ef81818a7937af1fa29d173fefe4b1de186cc91403df7f8130",
+      "uniqueOccurrences": 1189,
+      "warnings": []
+    },
+    "PT": {
+      "bytes": 9187,
+      "file": "countries/PT.json",
+      "names": 13,
+      "partitionOccurrences": 846,
+      "sha256": "95becd9a325a80b33fbd9ce6358cb206d066b2e0f5458bd193b156a0758b45d0",
+      "uniqueOccurrences": 846,
+      "warnings": []
+    },
+    "PW": {
+      "bytes": 9165,
+      "file": "countries/PW.json",
+      "names": 21,
+      "partitionOccurrences": 797,
+      "sha256": "358daba5a99d5355ac3868d2dac21cd1e5dd38955173c6f66a4bcaabf868c842",
+      "uniqueOccurrences": 797,
+      "warnings": []
+    },
+    "PY": {
+      "bytes": 9677,
+      "file": "countries/PY.json",
+      "names": 15,
+      "partitionOccurrences": 885,
+      "sha256": "f786e5c64baa5454a4f3e13987f6abd6c8525f2904eae241a95843721807efa7",
+      "uniqueOccurrences": 885,
+      "warnings": []
+    },
+    "QA": {
+      "bytes": 5539,
+      "file": "countries/QA.json",
+      "names": 7,
+      "partitionOccurrences": 512,
+      "sha256": "992b11f33125ce1945dcdaf7b1771611630d3f09fc1aaa6389c2add7f7aecc85",
+      "uniqueOccurrences": 512,
+      "warnings": []
+    },
+    "RE": {
+      "bytes": 8482,
+      "file": "countries/RE.json",
+      "names": 12,
+      "partitionOccurrences": 789,
+      "sha256": "5236185f95775745465159bd65eb15021a87fa6fc09e9e3517dea02826194aaa",
+      "uniqueOccurrences": 789,
+      "warnings": []
+    },
+    "RO": {
+      "bytes": 10655,
+      "file": "countries/RO.json",
+      "names": 13,
+      "partitionOccurrences": 922,
+      "sha256": "67bda57b830515a887047517c1c7b3cab137a69641a65e54685ea04ab99af1aa",
+      "uniqueOccurrences": 922,
+      "warnings": []
+    },
+    "RS": {
+      "bytes": 8508,
+      "file": "countries/RS.json",
+      "names": 13,
+      "partitionOccurrences": 701,
+      "sha256": "af7a29ec0e8ff45b0d7c20d25806232bb541d299ed56d62a48db4cdabaa0990a",
+      "uniqueOccurrences": 701,
+      "warnings": []
+    },
+    "RU": {
+      "bytes": 16342,
+      "file": "countries/RU.json",
+      "names": 111,
+      "partitionOccurrences": 1028,
+      "sha256": "b9a7993363f89e06a452a2a2982b37cbc785900db7f44d03f2317347579f9179",
+      "uniqueOccurrences": 1028,
+      "warnings": []
+    },
+    "RW": {
+      "bytes": 10798,
+      "file": "countries/RW.json",
+      "names": 30,
+      "partitionOccurrences": 843,
+      "sha256": "9a7be6e7bb69f23e90b4eec7ff5c89167989464aa10efd81558b9fd6b2ca16d4",
+      "uniqueOccurrences": 843,
+      "warnings": []
+    },
+    "SA": {
+      "bytes": 8964,
+      "file": "countries/SA.json",
+      "names": 12,
+      "partitionOccurrences": 824,
+      "sha256": "426d7938ba42f5863a164872f469c430ddce6dd38775db6bec2d4e2c3de90c85",
+      "uniqueOccurrences": 824,
+      "warnings": []
+    },
+    "SB": {
+      "bytes": 7867,
+      "file": "countries/SB.json",
+      "names": 17,
+      "partitionOccurrences": 699,
+      "sha256": "6a8f6b2525f9a32afba4e330751e28f3c9f1860d083395bba99dd4cc8051b112",
+      "uniqueOccurrences": 699,
+      "warnings": []
+    },
+    "SC": {
+      "bytes": 11082,
+      "file": "countries/SC.json",
+      "names": 32,
+      "partitionOccurrences": 945,
+      "sha256": "112734a9d7a5fd28dde82e028ae725077ee7cc10b46754396cfd17ddb17f97c8",
+      "uniqueOccurrences": 945,
+      "warnings": []
+    },
+    "SD": {
+      "bytes": 10199,
+      "file": "countries/SD.json",
+      "names": 12,
+      "partitionOccurrences": 962,
+      "sha256": "190ee72a5debcfdcf9107442b7e92815d26041552c02a12bdafbf4374e6b3cd4",
+      "uniqueOccurrences": 962,
+      "warnings": []
+    },
+    "SE": {
+      "bytes": 47037,
+      "file": "countries/SE.json",
+      "names": 15,
+      "partitionOccurrences": 4302,
+      "sha256": "fb5dc447a940e37b19b576233688fbc2d35bce6b70807d86ac223ab5181b6f85",
+      "uniqueOccurrences": 4302,
+      "warnings": []
+    },
+    "SG": {
+      "bytes": 10696,
+      "file": "countries/SG.json",
+      "names": 29,
+      "partitionOccurrences": 831,
+      "sha256": "369b130f270b1799b30610bd1d9369c9c82b5028e8e0f1e92ee092d9c6da96cd",
+      "uniqueOccurrences": 831,
+      "warnings": []
+    },
+    "SH": {
+      "bytes": 4118,
+      "file": "countries/SH.json",
+      "names": 13,
+      "partitionOccurrences": 262,
+      "sha256": "65cd4065e3d9e26e6960c48d38ac6a07d62f768dd4d64a1a25e9345eb02b53b9",
+      "uniqueOccurrences": 262,
+      "warnings": []
+    },
+    "SI": {
+      "bytes": 10715,
+      "file": "countries/SI.json",
+      "names": 15,
+      "partitionOccurrences": 987,
+      "sha256": "a2a9cb8a1cff785589d2914bef8c703d3e4ac3fb3ccb5d207ce75015280d232a",
+      "uniqueOccurrences": 987,
+      "warnings": []
+    },
+    "SJ": {
+      "bytes": 8513,
+      "file": "countries/SJ.json",
+      "names": 12,
+      "partitionOccurrences": 792,
+      "sha256": "08b74cad592d97cc3c5b6a225b35032338431149aab299ea95b8426cdf67d019",
+      "uniqueOccurrences": 792,
+      "warnings": []
+    },
+    "SK": {
+      "bytes": 10193,
+      "file": "countries/SK.json",
+      "names": 16,
+      "partitionOccurrences": 908,
+      "sha256": "ed477b7b24fd5bc4936b71c8c972cac2ab0fbcaf729c2a390901667340afc98d",
+      "uniqueOccurrences": 908,
+      "warnings": []
+    },
+    "SL": {
+      "bytes": 11039,
+      "file": "countries/SL.json",
+      "names": 28,
+      "partitionOccurrences": 949,
+      "sha256": "7324665f306308c2731fc8ee53373c1a799a19747dc79d41aee39c8aa2d8cb3b",
+      "uniqueOccurrences": 949,
+      "warnings": []
+    },
+    "SM": {
+      "bytes": 13128,
+      "file": "countries/SM.json",
+      "names": 17,
+      "partitionOccurrences": 1188,
+      "sha256": "abb1796fc496a63a9607e62507b764a7b138683058b26513e568317358ad6862",
+      "uniqueOccurrences": 1188,
+      "warnings": []
+    },
+    "SN": {
+      "bytes": 10621,
+      "file": "countries/SN.json",
+      "names": 24,
+      "partitionOccurrences": 938,
+      "sha256": "5db95d1bce5d99c9d12265056cffa34d2d19f113020eca814944f764c3414dca",
+      "uniqueOccurrences": 938,
+      "warnings": []
+    },
+    "SO": {
+      "bytes": 7219,
+      "file": "countries/SO.json",
+      "names": 10,
+      "partitionOccurrences": 672,
+      "sha256": "d5cec6475740f29ea0f2e5f42ff83396bfc3e5e1959097dea031dbeb55e34b42",
+      "uniqueOccurrences": 672,
+      "warnings": []
+    },
+    "SR": {
+      "bytes": 11881,
+      "file": "countries/SR.json",
+      "names": 19,
+      "partitionOccurrences": 881,
+      "sha256": "9f2dd52f935c2296bc1442098caf55b9d180d0d498d354c5ac90db36b16ed3be",
+      "uniqueOccurrences": 881,
+      "warnings": []
+    },
+    "SS": {
+      "bytes": 9106,
+      "file": "countries/SS.json",
+      "names": 17,
+      "partitionOccurrences": 737,
+      "sha256": "a057b1e00a19767636a665613a2b0a60b7f5709de598d8271413caba49c6fd5c",
+      "uniqueOccurrences": 737,
+      "warnings": []
+    },
+    "ST": {
+      "bytes": 7013,
+      "file": "countries/ST.json",
+      "names": 18,
+      "partitionOccurrences": 525,
+      "sha256": "b14d8541b8027987ff7d392e5a468780b17482a432bddb25bd799fa272833e21",
+      "uniqueOccurrences": 525,
+      "warnings": []
+    },
+    "SV": {
+      "bytes": 7396,
+      "file": "countries/SV.json",
+      "names": 11,
+      "partitionOccurrences": 687,
+      "sha256": "379f872f2258fbeb561c61a61bddb7955a361c370be621cd16fc738625892d1f",
+      "uniqueOccurrences": 687,
+      "warnings": []
+    },
+    "SX": {
+      "bytes": 8584,
+      "file": "countries/SX.json",
+      "names": 16,
+      "partitionOccurrences": 699,
+      "sha256": "3c5a37d6c6052cb137777a80f1dfc15cfec664362684870332c7b004bea6cfe0",
+      "uniqueOccurrences": 699,
+      "warnings": []
+    },
+    "SY": {
+      "bytes": 13500,
+      "file": "countries/SY.json",
+      "names": 20,
+      "partitionOccurrences": 1151,
+      "sha256": "cf46d47e801ad7812cd21573a3604feba7bf675b5a5ccd302e659ba0a0f4582d",
+      "uniqueOccurrences": 1151,
+      "warnings": []
+    },
+    "SZ": {
+      "bytes": 8728,
+      "file": "countries/SZ.json",
+      "names": 20,
+      "partitionOccurrences": 772,
+      "sha256": "400c7f64b17cdd0d98d584b6b5c776af2ff31fb86024e6522a099b062d3f69da",
+      "uniqueOccurrences": 772,
+      "warnings": []
+    },
+    "TC": {
+      "bytes": 9941,
+      "file": "countries/TC.json",
+      "names": 20,
+      "partitionOccurrences": 882,
+      "sha256": "45cce3fc1c9dd6c455bc48ae715163261a0f79998824d2dc4bc219df7b98801d",
+      "uniqueOccurrences": 882,
+      "warnings": []
+    },
+    "TD": {
+      "bytes": 9751,
+      "file": "countries/TD.json",
+      "names": 22,
+      "partitionOccurrences": 855,
+      "sha256": "892639deafd5521b0f80d2fb77511f4b5ef3f2446ab02b65c051c8778b764cd9",
+      "uniqueOccurrences": 855,
+      "warnings": []
+    },
+    "TF": {
+      "bytes": 7738,
+      "file": "countries/TF.json",
+      "names": 11,
+      "partitionOccurrences": 723,
+      "sha256": "c289612a7d3d562d23c1bd0e4d8ff95c6489fff38ae68eabd590f9ce1a82b27d",
+      "uniqueOccurrences": 723,
+      "warnings": []
+    },
+    "TG": {
+      "bytes": 9812,
+      "file": "countries/TG.json",
+      "names": 17,
+      "partitionOccurrences": 883,
+      "sha256": "7dacff04eb526fe25e30729c286490515e60c17bb011e887366bde772dcacb3f",
+      "uniqueOccurrences": 883,
+      "warnings": []
+    },
+    "TH": {
+      "bytes": 22756,
+      "file": "countries/TH.json",
+      "names": 59,
+      "partitionOccurrences": 1854,
+      "sha256": "9a2b40c195840f99510408cf39fea3a4ee99a364e3d5a91407a6d61740c93ead",
+      "uniqueOccurrences": 1854,
+      "warnings": []
+    },
+    "TJ": {
+      "bytes": 8609,
+      "file": "countries/TJ.json",
+      "names": 12,
+      "partitionOccurrences": 796,
+      "sha256": "c01950f456ba6d80d1ce00760fa8c697847d59f2e48447b2824d8303dee9186d",
+      "uniqueOccurrences": 796,
+      "warnings": []
+    },
+    "TK": {
+      "bytes": 4636,
+      "file": "countries/TK.json",
+      "names": 6,
+      "partitionOccurrences": 348,
+      "sha256": "b33282f5ae671ffb49835ff7b60930ee234e4f515fbf15bbff2ef1215e40e4ce",
+      "uniqueOccurrences": 348,
+      "warnings": []
+    },
+    "TL": {
+      "bytes": 11597,
+      "file": "countries/TL.json",
+      "names": 20,
+      "partitionOccurrences": 954,
+      "sha256": "70d8b7f3927eed347ef4c9b3865d76faa53b1abd3be675cbdda9edf256fc2a3f",
+      "uniqueOccurrences": 954,
+      "warnings": []
+    },
+    "TM": {
+      "bytes": 9757,
+      "file": "countries/TM.json",
+      "names": 31,
+      "partitionOccurrences": 791,
+      "sha256": "10283f4c1db3f455e26ea0cf4279f36bc5e629225377c447f0834f0103686f00",
+      "uniqueOccurrences": 791,
+      "warnings": []
+    },
+    "TN": {
+      "bytes": 12326,
+      "file": "countries/TN.json",
+      "names": 15,
+      "partitionOccurrences": 1140,
+      "sha256": "0c522e01a83f62a47e29ba353e274812f30d8682936459869cc822a8ccb2b409",
+      "uniqueOccurrences": 1140,
+      "warnings": []
+    },
+    "TO": {
+      "bytes": 9206,
+      "file": "countries/TO.json",
+      "names": 23,
+      "partitionOccurrences": 766,
+      "sha256": "5cd885a89ef7bc78bd91287b964845ef93de23d4d2372722a117427f99120b03",
+      "uniqueOccurrences": 766,
+      "warnings": []
+    },
+    "TR": {
+      "bytes": 10253,
+      "file": "countries/TR.json",
+      "names": 12,
+      "partitionOccurrences": 903,
+      "sha256": "5350c32f7aa234e3727513807050a4492476d2b3fbbad9cb36f1e6648a913794",
+      "uniqueOccurrences": 903,
+      "warnings": []
+    },
+    "TT": {
+      "bytes": 12151,
+      "file": "countries/TT.json",
+      "names": 30,
+      "partitionOccurrences": 1051,
+      "sha256": "e009a556549e4e73bdc14c016520c6335c4a754bc4212053d8b5a4f01fd58ab5",
+      "uniqueOccurrences": 1051,
+      "warnings": []
+    },
+    "TV": {
+      "bytes": 9460,
+      "file": "countries/TV.json",
+      "names": 17,
+      "partitionOccurrences": 847,
+      "sha256": "84ccd2abf1aa4db3050cb79db2df50521b378d7ac688c9406cbabbd0e23624e5",
+      "uniqueOccurrences": 847,
+      "warnings": []
+    },
+    "TW": {
+      "bytes": 15573,
+      "file": "countries/TW.json",
+      "names": 70,
+      "partitionOccurrences": 1140,
+      "sha256": "97105f43c4ca7a8efa8cc547b1d1816f7e3a6c665de5653634444cfe9d024c8a",
+      "uniqueOccurrences": 1140,
+      "warnings": []
+    },
+    "TZ": {
+      "bytes": 14644,
+      "file": "countries/TZ.json",
+      "names": 40,
+      "partitionOccurrences": 1228,
+      "sha256": "53c41c14972f643dcc0344ff14918fd63a9a399b6b596a6dc1a1ecc6e381608b",
+      "uniqueOccurrences": 1228,
+      "warnings": []
+    },
+    "UA": {
+      "bytes": 11082,
+      "file": "countries/UA.json",
+      "names": 120,
+      "partitionOccurrences": 493,
+      "sha256": "14b38f03c53cc4daaac244c783b103cb571a8815bf7970c52efd9b1d7267a5ab",
+      "uniqueOccurrences": 493,
+      "warnings": []
+    },
+    "UG": {
+      "bytes": 9905,
+      "file": "countries/UG.json",
+      "names": 15,
+      "partitionOccurrences": 903,
+      "sha256": "5dc9cff0248ba0a570ec96e3cf4b45ec3b1c51b48b5f9619911bd7ac0e1584cf",
+      "uniqueOccurrences": 903,
+      "warnings": []
+    },
+    "UM": {
+      "bytes": 8082,
+      "file": "countries/UM.json",
+      "names": 15,
+      "partitionOccurrences": 721,
+      "sha256": "f45deba95e465720d034da94cb9580b93c77cf7d4f8bef6d80bbec63fab8317a",
+      "uniqueOccurrences": 721,
+      "warnings": []
+    },
+    "US": {
+      "bytes": 8821,
+      "file": "countries/US.json",
+      "names": 16,
+      "partitionOccurrences": 787,
+      "sha256": "6c8434ad9d66b47c4280a16e98c7bf0983f0f2a2b9d16083d54d1dfd2a7da90b",
+      "uniqueOccurrences": 787,
+      "warnings": []
+    },
+    "UY": {
+      "bytes": 3767,
+      "file": "countries/UY.json",
+      "names": 6,
+      "partitionOccurrences": 336,
+      "sha256": "7034937df9efbef319adbd58a248600244e923c5ccc1d4672a7d7c8f403b0074",
+      "uniqueOccurrences": 336,
+      "warnings": []
+    },
+    "UZ": {
+      "bytes": 10073,
+      "file": "countries/UZ.json",
+      "names": 52,
+      "partitionOccurrences": 751,
+      "sha256": "128c355421e04e27823733905d6f613ded01ce598b19013210d147a742587465",
+      "uniqueOccurrences": 751,
+      "warnings": []
+    },
+    "VA": {
+      "bytes": 21292,
+      "file": "countries/VA.json",
+      "names": 29,
+      "partitionOccurrences": 1912,
+      "sha256": "86aae0fdf6b190645612b0c0e5bbd12f638288f9b5a32b2e27830fc30313adfb",
+      "uniqueOccurrences": 1912,
+      "warnings": []
+    },
+    "VC": {
+      "bytes": 10099,
+      "file": "countries/VC.json",
+      "names": 21,
+      "partitionOccurrences": 895,
+      "sha256": "9341e2c11a4172e53a2c8d1ae791af2cd49a3588ca8d3f4e8315467d31b9586a",
+      "uniqueOccurrences": 895,
+      "warnings": []
+    },
+    "VE": {
+      "bytes": 11234,
+      "file": "countries/VE.json",
+      "names": 20,
+      "partitionOccurrences": 991,
+      "sha256": "6af259633804528649a86307314fcdc533fe3814a82562e3358a27308b8ccc18",
+      "uniqueOccurrences": 991,
+      "warnings": []
+    },
+    "VG": {
+      "bytes": 11465,
+      "file": "countries/VG.json",
+      "names": 28,
+      "partitionOccurrences": 992,
+      "sha256": "54802e79a419ff31a05e89aec9ac9cc45a2d1667d005cf06f9a39c99caadf490",
+      "uniqueOccurrences": 992,
+      "warnings": []
+    },
+    "VI": {
+      "bytes": 14688,
+      "file": "countries/VI.json",
+      "names": 24,
+      "partitionOccurrences": 1315,
+      "sha256": "e7e56a8bd8b4deb10f332cb321d4d1e228203c68171b06273f625c0464693900",
+      "uniqueOccurrences": 1315,
+      "warnings": []
+    },
+    "VN": {
+      "bytes": 10576,
+      "file": "countries/VN.json",
+      "names": 29,
+      "partitionOccurrences": 854,
+      "sha256": "9665c13fbd9c866b323b7acaef2f2de27bb322ff568ede76fc6b8d1d69b3d93b",
+      "uniqueOccurrences": 854,
+      "warnings": []
+    },
+    "VU": {
+      "bytes": 11677,
+      "file": "countries/VU.json",
+      "names": 26,
+      "partitionOccurrences": 1027,
+      "sha256": "5c603bc47db6d8dbab155d6f638ea67dc1c6e689253c78a2808dbea392593d3a",
+      "uniqueOccurrences": 1027,
+      "warnings": []
+    },
+    "WF": {
+      "bytes": 9980,
+      "file": "countries/WF.json",
+      "names": 14,
+      "partitionOccurrences": 921,
+      "sha256": "ccb27836342db83a33d1bc99b96073e4644f8c82b3f65079b5c72e154bef8f33",
+      "uniqueOccurrences": 921,
+      "warnings": []
+    },
+    "WS": {
+      "bytes": 7803,
+      "file": "countries/WS.json",
+      "names": 11,
+      "partitionOccurrences": 726,
+      "sha256": "d2fd1f6fbb63f8e47dfcd126eaff1a33fdf52a581e440f755efadcf7d04fe818",
+      "uniqueOccurrences": 726,
+      "warnings": []
+    },
+    "XK": {
+      "bytes": 10936,
+      "file": "countries/XK.json",
+      "names": 22,
+      "partitionOccurrences": 878,
+      "sha256": "9ec819bb4ab90c75af07b33b46ad31d3d2e6c1f1f3809958d96b0ef818d666cf",
+      "uniqueOccurrences": 878,
+      "warnings": []
+    },
+    "YE": {
+      "bytes": 13312,
+      "file": "countries/YE.json",
+      "names": 24,
+      "partitionOccurrences": 1210,
+      "sha256": "d881bc45751dbca04bb87ff912edb4a3b83828f1fcc8846cbb24ec36dbe150cc",
+      "uniqueOccurrences": 1210,
+      "warnings": []
+    },
+    "YT": {
+      "bytes": 8481,
+      "file": "countries/YT.json",
+      "names": 12,
+      "partitionOccurrences": 789,
+      "sha256": "f3a60252cf8779048d9f6abe6f70c625d3721301d1befe2d902cad134f937d1b",
+      "uniqueOccurrences": 789,
+      "warnings": []
+    },
+    "ZA": {
+      "bytes": 10252,
+      "file": "countries/ZA.json",
+      "names": 27,
+      "partitionOccurrences": 895,
+      "sha256": "0d93f809ac145c5702c10d83b99bb7f6abc84f66913b06000a677f0543b17ca3",
+      "uniqueOccurrences": 895,
+      "warnings": []
+    },
+    "ZM": {
+      "bytes": 12698,
+      "file": "countries/ZM.json",
+      "names": 34,
+      "partitionOccurrences": 1092,
+      "sha256": "8892579cce44084b4694142f0bad6bf5b4748ce0ea5c6a2554569b5ecfd20d50",
+      "uniqueOccurrences": 1092,
+      "warnings": []
+    },
+    "ZW": {
+      "bytes": 10213,
+      "file": "countries/ZW.json",
+      "names": 21,
+      "partitionOccurrences": 906,
+      "sha256": "56a3b5b719b1d7e3b37332381727f72b01f97f1de3bec3420ed30441673ffaff",
+      "uniqueOccurrences": 906,
+      "warnings": []
+    }
+  },
+  "counts": {
+    "aliases": 252,
+    "countries": 250,
+    "partitionOccurrences": 220692,
+    "uniqueOccurrences": 220692
+  },
+  "coverage": {
+    "completeOfficialCoverageVerified": false,
+    "file": "coverage.json",
+    "inventoryVersion": 1,
+    "reviewScope": "Targeted source review of all provider-declared bounds intersecting 1995\u20132060, known Hindu/Nepal/Nyepi table limits, and documented empty/policy/estimate examples. Not an exhaustive legal, rule-table, subdivision, or accuracy audit."
+  },
+  "environment": {
+    "baseImage": "python:3.12.11-slim-bookworm@sha256:519591d6871b7bc437060736b9f7456b8731f1499a57e22e6c285135ae657bf7",
+    "packages": {
+      "holidays": "0.104",
+      "numpy": "2.5.3",
+      "pandas": "3.0.5",
+      "prophet": "1.4.0",
+      "python-dateutil": "2.9.0.post0"
+    },
+    "platform": "linux/amd64",
+    "pythonVersion": "3.12.11",
+    "uvVersion": "0.8.15"
+  },
+  "files": {
+    "calendars/countries/AD.json": {
+      "bytes": 10002,
+      "sha256": "b3fad29eb47f20bb078b182399c28a839fcbbf40778020efab1cf8d096a559ca"
+    },
+    "calendars/countries/AE.json": {
+      "bytes": 9810,
+      "sha256": "0c04c6ee154dc043b4b24b87b36e42f47f1e6857754c211c6b1fafad919ee003"
+    },
+    "calendars/countries/AF.json": {
+      "bytes": 10751,
+      "sha256": "c62550e017e1ba3048c0cf0afbc86f00729b7f342a0ea56c0845add48ce39922"
+    },
+    "calendars/countries/AG.json": {
+      "bytes": 9129,
+      "sha256": "31d08e06189eb88f44435069c0d6f78f49eb181ce1d2602ff4816f8a806a956b"
+    },
+    "calendars/countries/AI.json": {
+      "bytes": 12531,
+      "sha256": "c15de8db7bf704b483d16e368f58dc7f97c03194cfc2a109e3b54c43c31fa494"
+    },
+    "calendars/countries/AL.json": {
+      "bytes": 15081,
+      "sha256": "e19ebc4532265dd9961e379d9d2b6343253e5f4c3af737a04914832cf7a45a31"
+    },
+    "calendars/countries/AM.json": {
+      "bytes": 13719,
+      "sha256": "ac802b924163cc7978a8983f9f2a7bd64f1e2ca2e6294ab570c4c2ce9a61c5a8"
+    },
+    "calendars/countries/AO.json": {
+      "bytes": 11882,
+      "sha256": "da3642de5a846db554e512c3ff150498f1c7c74342e6a6b4697b9ff50256aba4"
+    },
+    "calendars/countries/AQ.json": {
+      "bytes": 2842,
+      "sha256": "4ba9cc376dc391c44e990f5bb949563c2b4179c4790172d20da48dfbb732fb39"
+    },
+    "calendars/countries/AR.json": {
+      "bytes": 12959,
+      "sha256": "95cb3700fba38b79d8c8824ade2cc379f3dbbeb27ba8f8fdd6211b9f592e98b6"
+    },
+    "calendars/countries/AS.json": {
+      "bytes": 11582,
+      "sha256": "0aaf5d515eb7dbd45dd88c33211f310165c4d96b5e7a7b06cbf880ce89a51a4d"
+    },
+    "calendars/countries/AT.json": {
+      "bytes": 9260,
+      "sha256": "b56571bb4e2be5298be5454085480c9e3b07e062f47629eb2e0226d18ccaae00"
+    },
+    "calendars/countries/AU.json": {
+      "bytes": 5058,
+      "sha256": "ed361da97c8ee630524364f231b16856b78df8f3520d89a9520b1e91cf8a7eb4"
+    },
+    "calendars/countries/AW.json": {
+      "bytes": 7909,
+      "sha256": "4e65efb5d8bec1d2eb1f5ff0e607eb4648cfc6c1888956338db6833009bc90c0"
+    },
+    "calendars/countries/AX.json": {
+      "bytes": 11472,
+      "sha256": "94d0c101f1843ed49abe21bc26076a79add1a8b47496b18f6bbb701f2c246aac"
+    },
+    "calendars/countries/AZ.json": {
+      "bytes": 19140,
+      "sha256": "15ea11e11572a30b89f97872aec330ca2ddb6a7a20f3f3a5de662e0ae164d804"
+    },
+    "calendars/countries/BA.json": {
+      "bytes": 7125,
+      "sha256": "c973fb5d1b1f33b38c222e58a802dc5a3a2b4a4ae8d5e7632031af6dab6f198f"
+    },
+    "calendars/countries/BB.json": {
+      "bytes": 9974,
+      "sha256": "0ccb5d47972f0b735982bc94f1d2af3d4b1faa14775acd9686baceb3f9dbb237"
+    },
+    "calendars/countries/BD.json": {
+      "bytes": 13748,
+      "sha256": "058463579c4a7d1da3f6fefc4a282795b720624c6fba458a12ed5781589abee9"
+    },
+    "calendars/countries/BE.json": {
+      "bytes": 8505,
+      "sha256": "d096a34ffaf8f17bde3912f841b303fae09659e90b297c58b96bed04841c45b0"
+    },
+    "calendars/countries/BF.json": {
+      "bytes": 12166,
+      "sha256": "6b21c9e77774b1641f4cf397420f383e5735380ae0b5fa4ddf9eb2170ef6ab3b"
+    },
+    "calendars/countries/BG.json": {
+      "bytes": 14180,
+      "sha256": "5ee4b074860b2d2180b90f33e3b4fd27381c46efed85b7226553274c0a52408a"
+    },
+    "calendars/countries/BH.json": {
+      "bytes": 10086,
+      "sha256": "1a4ceddf83b5c01582c9391c715f94083f0f2aebab75774aa937ab62e97b8dd7"
+    },
+    "calendars/countries/BI.json": {
+      "bytes": 12220,
+      "sha256": "5b50a3b5e67a5b055fec468bb3fccce68ba2a2788affc0b2f0262a7f09cf66b1"
+    },
+    "calendars/countries/BJ.json": {
+      "bytes": 9715,
+      "sha256": "dfb88f1daa3da02c0dbb6e7a632d38b1d3042bf0c5a71181d659159b3d639449"
+    },
+    "calendars/countries/BL.json": {
+      "bytes": 7713,
+      "sha256": "32cfa80015018869ef1269120ff00d14e92b6e643d1387208e56be4a8eeff07a"
+    },
+    "calendars/countries/BM.json": {
+      "bytes": 8567,
+      "sha256": "3dc2db3ac80bea7e404548cd209c65d7a9518dde43cd501291a3d9885f3e66fd"
+    },
+    "calendars/countries/BN.json": {
+      "bytes": 15575,
+      "sha256": "576a0e1e7a01e83c5c671cb30f7b579d6d9e0f54b9962091514f770bbf1ff57e"
+    },
+    "calendars/countries/BO.json": {
+      "bytes": 8882,
+      "sha256": "45af48d4653649571d9388d6210c76f1c803f2b317fbe665b1775d3f527eff22"
+    },
+    "calendars/countries/BQ.json": {
+      "bytes": 6343,
+      "sha256": "3c228705b15324cb8e58405603ead4064845ac00cdecb07402d261094bc24cb9"
+    },
+    "calendars/countries/BR.json": {
+      "bytes": 6807,
+      "sha256": "f25e6829ee1d5ea5aa78a672cfd955dbbb7d622bd8ffb04073c2e5bda9238081"
+    },
+    "calendars/countries/BS.json": {
+      "bytes": 9032,
+      "sha256": "062df572c9d2e2e2a668c9a26125714fbce406b10eb8372af13bea86900cd48f"
+    },
+    "calendars/countries/BT.json": {
+      "bytes": 12374,
+      "sha256": "15535ef8022a7df3c1a8b109960e16d75ea2b92e21ededfc4c3e7aa33438f06d"
+    },
+    "calendars/countries/BV.json": {
+      "bytes": 1116,
+      "sha256": "5235f23fd59b4b4dbc6b7bea0357c4778b1df217cf11188c64bca6bb262d0f9b"
+    },
+    "calendars/countries/BW.json": {
+      "bytes": 11538,
+      "sha256": "ca14f147cfae0799c36f4e533df9e39660fb167292d97f7763a9be6b4dd1e44d"
+    },
+    "calendars/countries/BY.json": {
+      "bytes": 13786,
+      "sha256": "a7c9d16b70b39468aeb162168ecb89beab42da4a3def9af6843083e567ae2eec"
+    },
+    "calendars/countries/BZ.json": {
+      "bytes": 10543,
+      "sha256": "3b392e5b1a60ffb9cdc8b7d0caf6973abaf15a7cb552c14a2fc4bae529b183e7"
+    },
+    "calendars/countries/CA.json": {
+      "bytes": 4067,
+      "sha256": "51106af3cc1fd1bb40ed925817a668426e4d593e53fd0e7ce0f129f93252d055"
+    },
+    "calendars/countries/CC.json": {
+      "bytes": 11719,
+      "sha256": "ec04162d67249d02e9c3dc62513a2936f288e1ac4f92d4029a54bf34bf6430c0"
+    },
+    "calendars/countries/CD.json": {
+      "bytes": 10242,
+      "sha256": "2d2e9779f994fc4ebd5d2038ef07e48d16e65d4779554d637a45dfe508a21d2a"
+    },
+    "calendars/countries/CF.json": {
+      "bytes": 9682,
+      "sha256": "9d21497935bdbe380d221a00549527b896e2f572781bb1522b2b69486eead379"
+    },
+    "calendars/countries/CG.json": {
+      "bytes": 6886,
+      "sha256": "0c039cf7f855603794a9ea802bd2e3316fab92c627e021fc2c5d413a37e4094f"
+    },
+    "calendars/countries/CH.json": {
+      "bytes": 2987,
+      "sha256": "60b8b1b3d0ce0426e92b024f72912e1402a24c3bfd6559e8592a82c81258c5c5"
+    },
+    "calendars/countries/CI.json": {
+      "bytes": 11646,
+      "sha256": "94967056245d692d9092af3a4803221bceb196b8d63470adb62754d7ea82925b"
+    },
+    "calendars/countries/CK.json": {
+      "bytes": 11982,
+      "sha256": "69f4c0a02a67376e58b38f8ff86a5e554277bf98590a604f49b11c1cf2d60529"
+    },
+    "calendars/countries/CL.json": {
+      "bytes": 11831,
+      "sha256": "5f538dbbb5b02e3f0c6b449f73ab54dc844160ab2a9f93348bf6519ffd11090e"
+    },
+    "calendars/countries/CM.json": {
+      "bytes": 9498,
+      "sha256": "101fed8c52fe8971e95c42c292d32c4bdb37e1c9a71400d5ba6d2811cb20771e"
+    },
+    "calendars/countries/CN.json": {
+      "bytes": 21383,
+      "sha256": "be8b25920873c67ad0aaa790a4e4379ff1e2876d61e3765e832905588265d7cc"
+    },
+    "calendars/countries/CO.json": {
+      "bytes": 13938,
+      "sha256": "6e165f4a7beae2c76392c8bcb8543a045e7fb27c695814737d990c39890ca92c"
+    },
+    "calendars/countries/CR.json": {
+      "bytes": 7149,
+      "sha256": "82a65d659b505b9c396e38931780fc474d17c066d00aac9b9db5dfddcd8f5c2f"
+    },
+    "calendars/countries/CU.json": {
+      "bytes": 7066,
+      "sha256": "fe2ba890858fd1b81f4059d44c2cee8c406338d1b1c7359a20b9df143377b864"
+    },
+    "calendars/countries/CV.json": {
+      "bytes": 8407,
+      "sha256": "2d2503c131162e9cb206f898c49828686201a5f9411f956ccf998be236113496"
+    },
+    "calendars/countries/CW.json": {
+      "bytes": 8682,
+      "sha256": "732a8ce933178238d093d464982c56e05d03f76978695e6caad807a71bf6d5e8"
+    },
+    "calendars/countries/CX.json": {
+      "bytes": 9903,
+      "sha256": "73271b5dabad9eae4cba228e71e6e99d5b76ba08a8e9f53636dbdf5cdb5fe4c1"
+    },
+    "calendars/countries/CY.json": {
+      "bytes": 10758,
+      "sha256": "570ba8fd01faae023e253265678a55d0a5cafd45667eff7670bdc66adc8a69b0"
+    },
+    "calendars/countries/CZ.json": {
+      "bytes": 10016,
+      "sha256": "087e60c795f5215fbc7e17776ea92b277b99b0617b602c5b69415372af31ea58"
+    },
+    "calendars/countries/DE.json": {
+      "bytes": 6393,
+      "sha256": "45a03a2cc6e679664e1780bedf31083ce082ab99a4a0ce59e8fc9c18e7b0fed7"
+    },
+    "calendars/countries/DJ.json": {
+      "bytes": 9542,
+      "sha256": "a35563ffa8dbb287c8ec50c91b1747e04f127d3926a63addc0fa5022345cd294"
+    },
+    "calendars/countries/DK.json": {
+      "bytes": 7408,
+      "sha256": "c9f9b1ab67fdc0635e502d9b203aefb5dfddd8b5befab76bdcfa9df357d21fec"
+    },
+    "calendars/countries/DM.json": {
+      "bytes": 9547,
+      "sha256": "d08408a8ae4ee91ee0a77347cd84cdf805e505ee26f962ac87ebedbeda14bf5f"
+    },
+    "calendars/countries/DO.json": {
+      "bytes": 8992,
+      "sha256": "e86f08a706563b0ed9533a5eba7a2b5d391ac66bf9b93b0a994c43ebf4ee5757"
+    },
+    "calendars/countries/DZ.json": {
+      "bytes": 9199,
+      "sha256": "4b8b8033ef670150b6d6688a0e8f63698b96ec3c8c4162652a5a6099ba840585"
+    },
+    "calendars/countries/EC.json": {
+      "bytes": 10178,
+      "sha256": "7fd4919ba81335c68aec248a75c870308ad1c546674c3d7812d1fdfae8a79c40"
+    },
+    "calendars/countries/EE.json": {
+      "bytes": 8396,
+      "sha256": "2d3fdb5ee0c6200e95dbdb8de576c568848d9ccc740554e2e4e26dbb6d2f3fd3"
+    },
+    "calendars/countries/EG.json": {
+      "bytes": 12092,
+      "sha256": "9888897b8352d736c83b92f0659de139ef588fa74cfce9efebce008adde10853"
+    },
+    "calendars/countries/EH.json": {
+      "bytes": 8047,
+      "sha256": "a3392d23be35b3f8c0ef68375d5f7565bea8bf167481f39e40963e6053e8c875"
+    },
+    "calendars/countries/ER.json": {
+      "bytes": 10855,
+      "sha256": "19709d4d70dd4b624ed4cd331a5948a998995616c4c476a049a83404e6573fd3"
+    },
+    "calendars/countries/ES.json": {
+      "bytes": 5839,
+      "sha256": "ac1e05497cb2c3c1c31e558a5741c5808cad2d282890873bc63e936fead1e8a4"
+    },
+    "calendars/countries/ET.json": {
+      "bytes": 9215,
+      "sha256": "622487d4fabe2c54cf82bef67147e6126767e9c94f0981b817564aa54691c288"
+    },
+    "calendars/countries/FI.json": {
+      "bytes": 10724,
+      "sha256": "e827d701aca4cd13c78fcfa4fa8ac71e183ff74c6b8de70a9083031437d174e4"
+    },
+    "calendars/countries/FJ.json": {
+      "bytes": 8277,
+      "sha256": "a1acf6b6b711589f798b5ed84fce9997396582677973e5cb4a8b3127871550bc"
+    },
+    "calendars/countries/FK.json": {
+      "bytes": 7481,
+      "sha256": "6a2dfb358d4c9f1493fd7aa81e672e465b700d6d423b7bceb95ae9587395749b"
+    },
+    "calendars/countries/FM.json": {
+      "bytes": 7132,
+      "sha256": "aacf62f97ed9957cd01bae952fdda7f56ecfec019bb2ac70626afebd8ae1bb08"
+    },
+    "calendars/countries/FO.json": {
+      "bytes": 10002,
+      "sha256": "5e0ab12394a4e21423358b111742b509472afce48cc9329cf23dd9c205c37137"
+    },
+    "calendars/countries/FR.json": {
+      "bytes": 7738,
+      "sha256": "ccb5439ee2ad1ba35bae381ec6a1a882625c7119f13e63197c04ef16cf494451"
+    },
+    "calendars/countries/GA.json": {
+      "bytes": 11036,
+      "sha256": "47b306173fe7463faaa6f1bcf16153303642e3a2e9e8482b05d41c26c00ecf3f"
+    },
+    "calendars/countries/GB.json": {
+      "bytes": 5410,
+      "sha256": "43658ae456dbf2e128b7af47f3ba5e8686ee5595b7e7da1a0543fb758c31dc9e"
+    },
+    "calendars/countries/GD.json": {
+      "bytes": 11072,
+      "sha256": "45228461c6a5ad865cfd98d567b764e07f5993a595f0fc0e9f94672c6435e4e1"
+    },
+    "calendars/countries/GE.json": {
+      "bytes": 12780,
+      "sha256": "33c680ed1c9ed888c495efc4d46f64638b5e9a8b9665773cda50d4774ca96475"
+    },
+    "calendars/countries/GF.json": {
+      "bytes": 8482,
+      "sha256": "ddc14f88645ba8024b313ddd09deddf1d20ed938a25c5a806723ff6970350905"
+    },
+    "calendars/countries/GG.json": {
+      "bytes": 7761,
+      "sha256": "50375f81e2ccbb27f8f67136c1009d492ac7104ad77416ece8276d4771181e35"
+    },
+    "calendars/countries/GH.json": {
+      "bytes": 10148,
+      "sha256": "4d18d54fbe3df265610020b1100385a4d484c64c30ce499a35bc0c97407b4ab9"
+    },
+    "calendars/countries/GI.json": {
+      "bytes": 10459,
+      "sha256": "71f3816b0a0c0c36bfdb12aeb5300d8a127ccecf8ef91ef9cf6f6044780e2ab4"
+    },
+    "calendars/countries/GL.json": {
+      "bytes": 7778,
+      "sha256": "d5ef6e30d4f33708deb9c77b4c44432ff5571e409f76b013239fec926ca641d6"
+    },
+    "calendars/countries/GM.json": {
+      "bytes": 14317,
+      "sha256": "39d39c39cfe19d7c5a51ab148858ef005ba3584cc45f34fd9981cc016f62f650"
+    },
+    "calendars/countries/GN.json": {
+      "bytes": 9635,
+      "sha256": "5b20cb9c2afbdfdc6d53a71d1ad2469a8fee66d84913981af72d901c137ef6f0"
+    },
+    "calendars/countries/GP.json": {
+      "bytes": 10702,
+      "sha256": "373a18018f489e20f02c0c84e36d9cb8fcac20f7fc5afe7faee741cbcb2cdf79"
+    },
+    "calendars/countries/GQ.json": {
+      "bytes": 10363,
+      "sha256": "64d5340d9fe24be14e1015772f3bcf08d1483c10e1830530d37172cf410b0015"
+    },
+    "calendars/countries/GR.json": {
+      "bytes": 8732,
+      "sha256": "93391e104381d1c041aa7ee865af00dc6c000c250ff8f00f3b08bc6d814b7f42"
+    },
+    "calendars/countries/GS.json": {
+      "bytes": 7890,
+      "sha256": "d5b6efe1d278934a94a1737c376b6535af75636b66024e7ab546e83a6d03638b"
+    },
+    "calendars/countries/GT.json": {
+      "bytes": 7767,
+      "sha256": "08ec2ba07bdd5efa5e2f864885a97ffbb33717d6cbb52a05ea0d2559c1f7775e"
+    },
+    "calendars/countries/GU.json": {
+      "bytes": 11798,
+      "sha256": "13d6bb9591f9dfc54320f2ba5c9ca1a4e725e8d73ac59f1145180a8b9ebac956"
+    },
+    "calendars/countries/GW.json": {
+      "bytes": 5687,
+      "sha256": "bf5e7da7aa147d87d30a69643905a2354520ec1e55e2658f490c379c352c5589"
+    },
+    "calendars/countries/GY.json": {
+      "bytes": 13338,
+      "sha256": "246f05252a3fb408cb12d4c90157e6f5372cbc4041576dd73724526ae7be8a44"
+    },
+    "calendars/countries/HK.json": {
+      "bytes": 12516,
+      "sha256": "412381291b7f2e56780c33cbcbfdc1d5ceb6d8aa864b52d1db32574b293aa0e0"
+    },
+    "calendars/countries/HM.json": {
+      "bytes": 1156,
+      "sha256": "cb324b71544b023e03708d5b692fb411a2a83a12b023c597cbec5a63e51a821a"
+    },
+    "calendars/countries/HN.json": {
+      "bytes": 7847,
+      "sha256": "a2d364f70a4a3d08ef431a1299a4cbbd82dbfca65d99a89a184ef9c70d8be3ff"
+    },
+    "calendars/countries/HR.json": {
+      "bytes": 9861,
+      "sha256": "af28c53edbc2bc4cd430e2680aab21b968a91c8af22e2123fa44851e5c080a0e"
+    },
+    "calendars/countries/HT.json": {
+      "bytes": 13014,
+      "sha256": "9ac00f76be06046c0795515a58e15de7218c1a0ac4c888e317b04ddb9377ae03"
+    },
+    "calendars/countries/HU.json": {
+      "bytes": 13404,
+      "sha256": "15bb57153b142702e0747aef2a01c8db61d4748db47424ddae3ccb8760bc9d7b"
+    },
+    "calendars/countries/ID.json": {
+      "bytes": 12965,
+      "sha256": "bcfed4a1eb4624422bb6edd52367e98d9d2ddae6e389226fd7566732aee0b694"
+    },
+    "calendars/countries/IE.json": {
+      "bytes": 7070,
+      "sha256": "bd4b3a87ef1ec805bf047f9ab04bfe70a1ce3d0ce39b1541142d2b1a47b15ceb"
+    },
+    "calendars/countries/IL.json": {
+      "bytes": 6376,
+      "sha256": "142d11da0b271ffe27c962ae771c285bf6ddbf8aa27b9f134e4c5932bd96f453"
+    },
+    "calendars/countries/IM.json": {
+      "bytes": 8315,
+      "sha256": "45d7147a7d9108b2856c86bc2e72e4fd2c94b2206fcbf6eb77befdaadc92c11a"
+    },
+    "calendars/countries/IN.json": {
+      "bytes": 13147,
+      "sha256": "a4e3e78da704c79661852fe639b77f438fa22b0cadcece1321c01ea2161ef833"
+    },
+    "calendars/countries/IO.json": {
+      "bytes": 1150,
+      "sha256": "faded449c44ad48ae11d39d8c33e1d6e4dd9bbe7783f7c23cb41ab06f8ac8f3b"
+    },
+    "calendars/countries/IQ.json": {
+      "bytes": 12250,
+      "sha256": "34eb21e3e2b74056f93adff34337c38364a39afa79a492af723dfe12801e7013"
+    },
+    "calendars/countries/IR.json": {
+      "bytes": 21330,
+      "sha256": "482ad18a2bce2581fd01a80b4e4a8ff3921a17310271021ca9d31f53656f3c63"
+    },
+    "calendars/countries/IS.json": {
+      "bytes": 9994,
+      "sha256": "dc475418b6939298e45e16cf517b42c98fccecd8c289954a2c7ebf0b2ea4487d"
+    },
+    "calendars/countries/IT.json": {
+      "bytes": 9821,
+      "sha256": "f23c168ebf6f1fefa8ef379f3e3b0c4f0f4ffcbce1d7d94740b39da8fb13f06c"
+    },
+    "calendars/countries/JE.json": {
+      "bytes": 7772,
+      "sha256": "f004ff0caf4da6f2860c74fe4061aaac27adfaf882fa0446bfb51ae9acacf2fb"
+    },
+    "calendars/countries/JM.json": {
+      "bytes": 8081,
+      "sha256": "c161ff2ca71eaefc34d44d2947a0840521df12894ec5dcdaefaab5ca6e948eab"
+    },
+    "calendars/countries/JO.json": {
+      "bytes": 10136,
+      "sha256": "bd101dd44140ed8ad3ec372306c39b481856396ce77e5976a2764a8d0722edaa"
+    },
+    "calendars/countries/JP.json": {
+      "bytes": 12788,
+      "sha256": "303d1146002d7f52901ce34cd576a36ee8de4304f714bc54d404bb78660d3abc"
+    },
+    "calendars/countries/KE.json": {
+      "bytes": 9573,
+      "sha256": "5745ef730a837d50f928d2650e53cf8365fea2e89653175b849cb355ee12ecad"
+    },
+    "calendars/countries/KG.json": {
+      "bytes": 19420,
+      "sha256": "dc6e10c683e58fbb7b016a59d5c83fbcae59ce50b0a72940ee9cb063c9ee26de"
+    },
+    "calendars/countries/KH.json": {
+      "bytes": 16927,
+      "sha256": "5ea8a31043b67a964e8924c516c560c2643d12ce5f18e8b518ec878f386f38fe"
+    },
+    "calendars/countries/KI.json": {
+      "bytes": 11452,
+      "sha256": "d755549c07105d7e32ff29fd27921977353cdc6f4885caba89c5817db695bcc9"
+    },
+    "calendars/countries/KM.json": {
+      "bytes": 10018,
+      "sha256": "06b44bfc50cac50867e5d22d18243d5dd35df4cf24449f452544837f82c3d7f9"
+    },
+    "calendars/countries/KN.json": {
+      "bytes": 9814,
+      "sha256": "cb373fb8e7ef23567b217c57f654e667c7793f98459f96dc278324051f257ebf"
+    },
+    "calendars/countries/KP.json": {
+      "bytes": 15222,
+      "sha256": "874ae7bb9704bea0bddd478d1345b470fe42af1a99940471343ea911af827d8a"
+    },
+    "calendars/countries/KR.json": {
+      "bytes": 15172,
+      "sha256": "148b42540a930dd6799f3c852b0f5bf4e3ed1600d0dd95be97c6360fc608d052"
+    },
+    "calendars/countries/KW.json": {
+      "bytes": 9396,
+      "sha256": "ccde413c219bcd5147612be8dc4f55ce9928892b4101e0690a0ece6ace1c5f14"
+    },
+    "calendars/countries/KY.json": {
+      "bytes": 8885,
+      "sha256": "7b0b94021cdcccd61e906fb9619515b2935be4adf17ab196959bff7ad981287a"
+    },
+    "calendars/countries/KZ.json": {
+      "bytes": 15818,
+      "sha256": "be6fafe04b281c72983fdfc515891ba91fa33a71aeefcda17840e616b4126b11"
+    },
+    "calendars/countries/LA.json": {
+      "bytes": 6558,
+      "sha256": "2ea14f0aee04d48ad184e0e24fc958842d1861bbc88c0c739a5b38d3aae63436"
+    },
+    "calendars/countries/LB.json": {
+      "bytes": 14127,
+      "sha256": "ec89b50fc2c37a74afc155984fbf66a4cefc082a036f5643794d8100fb5967cd"
+    },
+    "calendars/countries/LC.json": {
+      "bytes": 10448,
+      "sha256": "92d335fa482a460486c37b9dc34c14090b6216949b2491d74e6e50bb8a91e8a3"
+    },
+    "calendars/countries/LI.json": {
+      "bytes": 12215,
+      "sha256": "d5aa2ae979c8de78db9f16462f5c05baf73412a3be962505c1c8c83714ec643c"
+    },
+    "calendars/countries/LK.json": {
+      "bytes": 9075,
+      "sha256": "52a138961f7f0754ed8a1aecccfc993e0716dac1d63c844691cb1e8e4d47b29e"
+    },
+    "calendars/countries/LR.json": {
+      "bytes": 7992,
+      "sha256": "91c2bd19492feb039351d0aa19839d1267866f4f0249c1e4094c08fec7936688"
+    },
+    "calendars/countries/LS.json": {
+      "bytes": 8603,
+      "sha256": "3dac83115216737bd9aab857fa1db092a21805f4cc0a68d57dc9b1c93caae895"
+    },
+    "calendars/countries/LT.json": {
+      "bytes": 11243,
+      "sha256": "5efcc1b94b0d7150fcbc304f7fc0f349f89fe2587f244ad2af4f75a7893072cb"
+    },
+    "calendars/countries/LU.json": {
+      "bytes": 7536,
+      "sha256": "52bb726152690698ef96cce8427f810f2b75ef7130389377fb45ca9a55145e7a"
+    },
+    "calendars/countries/LV.json": {
+      "bytes": 14407,
+      "sha256": "906a896f3e9cd80a5328596c86272c6dbc59667f35b0715a4648922b7b0f0fda"
+    },
+    "calendars/countries/LY.json": {
+      "bytes": 10623,
+      "sha256": "65a0d11c28e0487fec223dd48c9e8629e659dd6f1134d1f4bddabf68ce897830"
+    },
+    "calendars/countries/MA.json": {
+      "bytes": 11950,
+      "sha256": "fee9fe456ebec834dfbfb5cdd2eef0b19dc6fb1edd17727c37c4596cd3971211"
+    },
+    "calendars/countries/MC.json": {
+      "bytes": 9588,
+      "sha256": "ab2fa811fea872cd507f68dfd88aae6a47a7734d401d4eb6c7ef9d13c110ce19"
+    },
+    "calendars/countries/MD.json": {
+      "bytes": 9472,
+      "sha256": "f6a5071e55fa4d63cdb1e282111babaca54cde72ebbba5d1bd3ef5b35bac81df"
+    },
+    "calendars/countries/ME.json": {
+      "bytes": 6644,
+      "sha256": "01248cadafc546b30daa24863d8e653f1c8c31c925a5746771999f00968f936b"
+    },
+    "calendars/countries/MF.json": {
+      "bytes": 8268,
+      "sha256": "737fcd4544129148eb5828777e4f91744745eb89fa54d22dfc6f9edecd38f084"
+    },
+    "calendars/countries/MG.json": {
+      "bytes": 11287,
+      "sha256": "3feb52f7676169798db4fbc46ef0e3884e986f1d2c5b7d7f1f7b20005a9f632e"
+    },
+    "calendars/countries/MH.json": {
+      "bytes": 8395,
+      "sha256": "2b8d7e9296aefbcfeb163772e2b1b0a84b14a82c2077289272006334403db9d3"
+    },
+    "calendars/countries/MK.json": {
+      "bytes": 9584,
+      "sha256": "0d106714808b8147f49fc3f5d50b8eb4297229908638fb7ded6c5285f586d5c8"
+    },
+    "calendars/countries/ML.json": {
+      "bytes": 8637,
+      "sha256": "f30fbef68fe45cbbb2e76836462b7042e6a120a73f82948fb201cba47e1edac0"
+    },
+    "calendars/countries/MM.json": {
+      "bytes": 20220,
+      "sha256": "f5a556744ad5676a8014812caec05c3deff0dd16cfcc8f295e6bfcf8df9fa96f"
+    },
+    "calendars/countries/MN.json": {
+      "bytes": 9607,
+      "sha256": "669fffaf149a27072f88e2f92ceb365f92c3fbb261db1bee9be71fd3c32b9e5f"
+    },
+    "calendars/countries/MO.json": {
+      "bytes": 7584,
+      "sha256": "7b793715f821be5fe3121cea89a43f3516e8abea8995c41f6df91a98b63847a0"
+    },
+    "calendars/countries/MP.json": {
+      "bytes": 12894,
+      "sha256": "6d171bfc759c146512ef36e669e492f78a9d79760cff2705ff0fb0f340382a1a"
+    },
+    "calendars/countries/MQ.json": {
+      "bytes": 9967,
+      "sha256": "386c0cc201205b63ddf126ace37a439500f184a34299ef5b4c5eaeff188ac116"
+    },
+    "calendars/countries/MR.json": {
+      "bytes": 7163,
+      "sha256": "bf9911c741108a98cf8045366368991d6c1c217d9664b534c9e77f644452aa5c"
+    },
+    "calendars/countries/MS.json": {
+      "bytes": 7959,
+      "sha256": "9e59d0cbe7e12761daaaf7d9f95844f0644f28d36aa34f1537e24dc2f0f362ed"
+    },
+    "calendars/countries/MT.json": {
+      "bytes": 10080,
+      "sha256": "eaeb8782db139095bf156094d5744b59b8a675ec1fed24e2967f8312c5c9287a"
+    },
+    "calendars/countries/MU.json": {
+      "bytes": 11741,
+      "sha256": "7cd5843dedce7f744539fbe48dd746ff0806ff9a508696c41f3317be7ffe5914"
+    },
+    "calendars/countries/MV.json": {
+      "bytes": 13133,
+      "sha256": "1518160281fd49cbe746aeab6f175d4b2c55fc0cfe63bb2f6f4f7d61e3cf10a4"
+    },
+    "calendars/countries/MW.json": {
+      "bytes": 10122,
+      "sha256": "cb8f5e30d96fbb6d1e720319affad062c554e9aa407fc3c46ff6b2f2672121bf"
+    },
+    "calendars/countries/MX.json": {
+      "bytes": 5164,
+      "sha256": "8b0836a795ab3a65ea199201f655f1f1c0645cfddc89598d6904ae270127fc0b"
+    },
+    "calendars/countries/MY.json": {
+      "bytes": 12200,
+      "sha256": "5afd5fcdcc66ce71e70d803febf6b8b33dbbd64519906225c9c5738cfb7a90d3"
+    },
+    "calendars/countries/MZ.json": {
+      "bytes": 7810,
+      "sha256": "04bc9a0ac6ae551075eaf9a96385f966e95f12f90bc9dc55c6a119359e58b3d6"
+    },
+    "calendars/countries/NA.json": {
+      "bytes": 10817,
+      "sha256": "94d5956b8bbbdfec2ab1c519fec0af1a048e4af0b6a21b321fd652844ecba498"
+    },
+    "calendars/countries/NC.json": {
+      "bytes": 8560,
+      "sha256": "009e3d3e6015a2d76fa5cb0f5c706d40cfe1e5f9dda4cf6dbae4e914ab2edccd"
+    },
+    "calendars/countries/NE.json": {
+      "bytes": 12171,
+      "sha256": "cd6b2b7a98aef5e74f3c47276faf29b41b67c98c707402604c23c93355cba70e"
+    },
+    "calendars/countries/NF.json": {
+      "bytes": 7900,
+      "sha256": "cdf26704e25af686f11ad16dcebd7aab7ff492f824a17d31d112e6b2d16cefb9"
+    },
+    "calendars/countries/NG.json": {
+      "bytes": 12387,
+      "sha256": "19b780947fe6fb738c36ec2902e854aae417e29de8c19e757fd658b21f4b7e65"
+    },
+    "calendars/countries/NI.json": {
+      "bytes": 6781,
+      "sha256": "84b575cc539fe200bc3968e2148b1d49fdd060d1417b66f75657c41f00a8c580"
+    },
+    "calendars/countries/NL.json": {
+      "bytes": 7286,
+      "sha256": "0923f2f7263cff7796cc3d4e4e302b3d3291098e8603a944ae2d0acffa2b950e"
+    },
+    "calendars/countries/NO.json": {
+      "bytes": 8513,
+      "sha256": "b6354e67b8785c038bb4658a378a594154d6f6a153e9b8a560d9b6f68456dc6e"
+    },
+    "calendars/countries/NP.json": {
+      "bytes": 15291,
+      "sha256": "0cbed75b757636d2a681523f6e6b7a1cefc2f3c4f18941aab9da07232794bf36"
+    },
+    "calendars/countries/NR.json": {
+      "bytes": 11882,
+      "sha256": "cba460661df26ee3dbe2b9de8e106bb50a214610cb961b1f6d8120ba43fb2d46"
+    },
+    "calendars/countries/NU.json": {
+      "bytes": 9736,
+      "sha256": "e8ebccf26652b2fee435099286432ea645d025b04d41a2fe2e002a12ef4348a8"
+    },
+    "calendars/countries/NZ.json": {
+      "bytes": 8904,
+      "sha256": "aec72911d91004b16a9cb17dc57ce853070d76ce68372cc34a7fa6647a680c7e"
+    },
+    "calendars/countries/OM.json": {
+      "bytes": 10038,
+      "sha256": "ba66456074080e25b3fc313c6ccdae3caa9293c9d1a2db02bfc946785bd43016"
+    },
+    "calendars/countries/PA.json": {
+      "bytes": 9690,
+      "sha256": "2461b30e1e558b69216ec786d69f2084e22637e1205ae40c946f2ffc33b15f16"
+    },
+    "calendars/countries/PE.json": {
+      "bytes": 11170,
+      "sha256": "ea285f51a27c3c73a4620170e8a4eaf03576f9fe20ebb2309d4b34d3e01405d2"
+    },
+    "calendars/countries/PF.json": {
+      "bytes": 10038,
+      "sha256": "85bb27b4263752af1f40cea8feb4aa67caa70e86dc5a66d4a0c6f2934fd5c57e"
+    },
+    "calendars/countries/PG.json": {
+      "bytes": 9133,
+      "sha256": "5d4b80a49f65d93e911b285f017f270af8c5c655ded5255b5c34d457c4108618"
+    },
+    "calendars/countries/PH.json": {
+      "bytes": 12979,
+      "sha256": "5918d67756fc9a0251a59914ef15b6c2564fd9060587a72b8ba2a71bf0be5cfd"
+    },
+    "calendars/countries/PK.json": {
+      "bytes": 11141,
+      "sha256": "67b90e837d04c9e0e468517d71b3d077768f2b7fa76f8279ae91426e5040ac61"
+    },
+    "calendars/countries/PL.json": {
+      "bytes": 9626,
+      "sha256": "b10f3c39c43f78b61ac97231d8f902378268c98539e9907dcb27b0e803ee7201"
+    },
+    "calendars/countries/PM.json": {
+      "bytes": 7738,
+      "sha256": "ed8fadac52073ecade1ecbbd4f163c7b1ad0cccffd72691f6528b82c7a0207f2"
+    },
+    "calendars/countries/PN.json": {
+      "bytes": 4837,
+      "sha256": "879db5d7a206a971b96bbb2b66f997740dcb88a968adb8574260398520a209a8"
+    },
+    "calendars/countries/PR.json": {
+      "bytes": 14605,
+      "sha256": "f9381a4230d32f0d3b54c5062bad76ce5602ff463270921d718353d6af46ba28"
+    },
+    "calendars/countries/PS.json": {
+      "bytes": 12489,
+      "sha256": "54858e5a649893ef81818a7937af1fa29d173fefe4b1de186cc91403df7f8130"
+    },
+    "calendars/countries/PT.json": {
+      "bytes": 9187,
+      "sha256": "95becd9a325a80b33fbd9ce6358cb206d066b2e0f5458bd193b156a0758b45d0"
+    },
+    "calendars/countries/PW.json": {
+      "bytes": 9165,
+      "sha256": "358daba5a99d5355ac3868d2dac21cd1e5dd38955173c6f66a4bcaabf868c842"
+    },
+    "calendars/countries/PY.json": {
+      "bytes": 9677,
+      "sha256": "f786e5c64baa5454a4f3e13987f6abd6c8525f2904eae241a95843721807efa7"
+    },
+    "calendars/countries/QA.json": {
+      "bytes": 5539,
+      "sha256": "992b11f33125ce1945dcdaf7b1771611630d3f09fc1aaa6389c2add7f7aecc85"
+    },
+    "calendars/countries/RE.json": {
+      "bytes": 8482,
+      "sha256": "5236185f95775745465159bd65eb15021a87fa6fc09e9e3517dea02826194aaa"
+    },
+    "calendars/countries/RO.json": {
+      "bytes": 10655,
+      "sha256": "67bda57b830515a887047517c1c7b3cab137a69641a65e54685ea04ab99af1aa"
+    },
+    "calendars/countries/RS.json": {
+      "bytes": 8508,
+      "sha256": "af7a29ec0e8ff45b0d7c20d25806232bb541d299ed56d62a48db4cdabaa0990a"
+    },
+    "calendars/countries/RU.json": {
+      "bytes": 16342,
+      "sha256": "b9a7993363f89e06a452a2a2982b37cbc785900db7f44d03f2317347579f9179"
+    },
+    "calendars/countries/RW.json": {
+      "bytes": 10798,
+      "sha256": "9a7be6e7bb69f23e90b4eec7ff5c89167989464aa10efd81558b9fd6b2ca16d4"
+    },
+    "calendars/countries/SA.json": {
+      "bytes": 8964,
+      "sha256": "426d7938ba42f5863a164872f469c430ddce6dd38775db6bec2d4e2c3de90c85"
+    },
+    "calendars/countries/SB.json": {
+      "bytes": 7867,
+      "sha256": "6a8f6b2525f9a32afba4e330751e28f3c9f1860d083395bba99dd4cc8051b112"
+    },
+    "calendars/countries/SC.json": {
+      "bytes": 11082,
+      "sha256": "112734a9d7a5fd28dde82e028ae725077ee7cc10b46754396cfd17ddb17f97c8"
+    },
+    "calendars/countries/SD.json": {
+      "bytes": 10199,
+      "sha256": "190ee72a5debcfdcf9107442b7e92815d26041552c02a12bdafbf4374e6b3cd4"
+    },
+    "calendars/countries/SE.json": {
+      "bytes": 47037,
+      "sha256": "fb5dc447a940e37b19b576233688fbc2d35bce6b70807d86ac223ab5181b6f85"
+    },
+    "calendars/countries/SG.json": {
+      "bytes": 10696,
+      "sha256": "369b130f270b1799b30610bd1d9369c9c82b5028e8e0f1e92ee092d9c6da96cd"
+    },
+    "calendars/countries/SH.json": {
+      "bytes": 4118,
+      "sha256": "65cd4065e3d9e26e6960c48d38ac6a07d62f768dd4d64a1a25e9345eb02b53b9"
+    },
+    "calendars/countries/SI.json": {
+      "bytes": 10715,
+      "sha256": "a2a9cb8a1cff785589d2914bef8c703d3e4ac3fb3ccb5d207ce75015280d232a"
+    },
+    "calendars/countries/SJ.json": {
+      "bytes": 8513,
+      "sha256": "08b74cad592d97cc3c5b6a225b35032338431149aab299ea95b8426cdf67d019"
+    },
+    "calendars/countries/SK.json": {
+      "bytes": 10193,
+      "sha256": "ed477b7b24fd5bc4936b71c8c972cac2ab0fbcaf729c2a390901667340afc98d"
+    },
+    "calendars/countries/SL.json": {
+      "bytes": 11039,
+      "sha256": "7324665f306308c2731fc8ee53373c1a799a19747dc79d41aee39c8aa2d8cb3b"
+    },
+    "calendars/countries/SM.json": {
+      "bytes": 13128,
+      "sha256": "abb1796fc496a63a9607e62507b764a7b138683058b26513e568317358ad6862"
+    },
+    "calendars/countries/SN.json": {
+      "bytes": 10621,
+      "sha256": "5db95d1bce5d99c9d12265056cffa34d2d19f113020eca814944f764c3414dca"
+    },
+    "calendars/countries/SO.json": {
+      "bytes": 7219,
+      "sha256": "d5cec6475740f29ea0f2e5f42ff83396bfc3e5e1959097dea031dbeb55e34b42"
+    },
+    "calendars/countries/SR.json": {
+      "bytes": 11881,
+      "sha256": "9f2dd52f935c2296bc1442098caf55b9d180d0d498d354c5ac90db36b16ed3be"
+    },
+    "calendars/countries/SS.json": {
+      "bytes": 9106,
+      "sha256": "a057b1e00a19767636a665613a2b0a60b7f5709de598d8271413caba49c6fd5c"
+    },
+    "calendars/countries/ST.json": {
+      "bytes": 7013,
+      "sha256": "b14d8541b8027987ff7d392e5a468780b17482a432bddb25bd799fa272833e21"
+    },
+    "calendars/countries/SV.json": {
+      "bytes": 7396,
+      "sha256": "379f872f2258fbeb561c61a61bddb7955a361c370be621cd16fc738625892d1f"
+    },
+    "calendars/countries/SX.json": {
+      "bytes": 8584,
+      "sha256": "3c5a37d6c6052cb137777a80f1dfc15cfec664362684870332c7b004bea6cfe0"
+    },
+    "calendars/countries/SY.json": {
+      "bytes": 13500,
+      "sha256": "cf46d47e801ad7812cd21573a3604feba7bf675b5a5ccd302e659ba0a0f4582d"
+    },
+    "calendars/countries/SZ.json": {
+      "bytes": 8728,
+      "sha256": "400c7f64b17cdd0d98d584b6b5c776af2ff31fb86024e6522a099b062d3f69da"
+    },
+    "calendars/countries/TC.json": {
+      "bytes": 9941,
+      "sha256": "45cce3fc1c9dd6c455bc48ae715163261a0f79998824d2dc4bc219df7b98801d"
+    },
+    "calendars/countries/TD.json": {
+      "bytes": 9751,
+      "sha256": "892639deafd5521b0f80d2fb77511f4b5ef3f2446ab02b65c051c8778b764cd9"
+    },
+    "calendars/countries/TF.json": {
+      "bytes": 7738,
+      "sha256": "c289612a7d3d562d23c1bd0e4d8ff95c6489fff38ae68eabd590f9ce1a82b27d"
+    },
+    "calendars/countries/TG.json": {
+      "bytes": 9812,
+      "sha256": "7dacff04eb526fe25e30729c286490515e60c17bb011e887366bde772dcacb3f"
+    },
+    "calendars/countries/TH.json": {
+      "bytes": 22756,
+      "sha256": "9a2b40c195840f99510408cf39fea3a4ee99a364e3d5a91407a6d61740c93ead"
+    },
+    "calendars/countries/TJ.json": {
+      "bytes": 8609,
+      "sha256": "c01950f456ba6d80d1ce00760fa8c697847d59f2e48447b2824d8303dee9186d"
+    },
+    "calendars/countries/TK.json": {
+      "bytes": 4636,
+      "sha256": "b33282f5ae671ffb49835ff7b60930ee234e4f515fbf15bbff2ef1215e40e4ce"
+    },
+    "calendars/countries/TL.json": {
+      "bytes": 11597,
+      "sha256": "70d8b7f3927eed347ef4c9b3865d76faa53b1abd3be675cbdda9edf256fc2a3f"
+    },
+    "calendars/countries/TM.json": {
+      "bytes": 9757,
+      "sha256": "10283f4c1db3f455e26ea0cf4279f36bc5e629225377c447f0834f0103686f00"
+    },
+    "calendars/countries/TN.json": {
+      "bytes": 12326,
+      "sha256": "0c522e01a83f62a47e29ba353e274812f30d8682936459869cc822a8ccb2b409"
+    },
+    "calendars/countries/TO.json": {
+      "bytes": 9206,
+      "sha256": "5cd885a89ef7bc78bd91287b964845ef93de23d4d2372722a117427f99120b03"
+    },
+    "calendars/countries/TR.json": {
+      "bytes": 10253,
+      "sha256": "5350c32f7aa234e3727513807050a4492476d2b3fbbad9cb36f1e6648a913794"
+    },
+    "calendars/countries/TT.json": {
+      "bytes": 12151,
+      "sha256": "e009a556549e4e73bdc14c016520c6335c4a754bc4212053d8b5a4f01fd58ab5"
+    },
+    "calendars/countries/TV.json": {
+      "bytes": 9460,
+      "sha256": "84ccd2abf1aa4db3050cb79db2df50521b378d7ac688c9406cbabbd0e23624e5"
+    },
+    "calendars/countries/TW.json": {
+      "bytes": 15573,
+      "sha256": "97105f43c4ca7a8efa8cc547b1d1816f7e3a6c665de5653634444cfe9d024c8a"
+    },
+    "calendars/countries/TZ.json": {
+      "bytes": 14644,
+      "sha256": "53c41c14972f643dcc0344ff14918fd63a9a399b6b596a6dc1a1ecc6e381608b"
+    },
+    "calendars/countries/UA.json": {
+      "bytes": 11082,
+      "sha256": "14b38f03c53cc4daaac244c783b103cb571a8815bf7970c52efd9b1d7267a5ab"
+    },
+    "calendars/countries/UG.json": {
+      "bytes": 9905,
+      "sha256": "5dc9cff0248ba0a570ec96e3cf4b45ec3b1c51b48b5f9619911bd7ac0e1584cf"
+    },
+    "calendars/countries/UM.json": {
+      "bytes": 8082,
+      "sha256": "f45deba95e465720d034da94cb9580b93c77cf7d4f8bef6d80bbec63fab8317a"
+    },
+    "calendars/countries/US.json": {
+      "bytes": 8821,
+      "sha256": "6c8434ad9d66b47c4280a16e98c7bf0983f0f2a2b9d16083d54d1dfd2a7da90b"
+    },
+    "calendars/countries/UY.json": {
+      "bytes": 3767,
+      "sha256": "7034937df9efbef319adbd58a248600244e923c5ccc1d4672a7d7c8f403b0074"
+    },
+    "calendars/countries/UZ.json": {
+      "bytes": 10073,
+      "sha256": "128c355421e04e27823733905d6f613ded01ce598b19013210d147a742587465"
+    },
+    "calendars/countries/VA.json": {
+      "bytes": 21292,
+      "sha256": "86aae0fdf6b190645612b0c0e5bbd12f638288f9b5a32b2e27830fc30313adfb"
+    },
+    "calendars/countries/VC.json": {
+      "bytes": 10099,
+      "sha256": "9341e2c11a4172e53a2c8d1ae791af2cd49a3588ca8d3f4e8315467d31b9586a"
+    },
+    "calendars/countries/VE.json": {
+      "bytes": 11234,
+      "sha256": "6af259633804528649a86307314fcdc533fe3814a82562e3358a27308b8ccc18"
+    },
+    "calendars/countries/VG.json": {
+      "bytes": 11465,
+      "sha256": "54802e79a419ff31a05e89aec9ac9cc45a2d1667d005cf06f9a39c99caadf490"
+    },
+    "calendars/countries/VI.json": {
+      "bytes": 14688,
+      "sha256": "e7e56a8bd8b4deb10f332cb321d4d1e228203c68171b06273f625c0464693900"
+    },
+    "calendars/countries/VN.json": {
+      "bytes": 10576,
+      "sha256": "9665c13fbd9c866b323b7acaef2f2de27bb322ff568ede76fc6b8d1d69b3d93b"
+    },
+    "calendars/countries/VU.json": {
+      "bytes": 11677,
+      "sha256": "5c603bc47db6d8dbab155d6f638ea67dc1c6e689253c78a2808dbea392593d3a"
+    },
+    "calendars/countries/WF.json": {
+      "bytes": 9980,
+      "sha256": "ccb27836342db83a33d1bc99b96073e4644f8c82b3f65079b5c72e154bef8f33"
+    },
+    "calendars/countries/WS.json": {
+      "bytes": 7803,
+      "sha256": "d2fd1f6fbb63f8e47dfcd126eaff1a33fdf52a581e440f755efadcf7d04fe818"
+    },
+    "calendars/countries/XK.json": {
+      "bytes": 10936,
+      "sha256": "9ec819bb4ab90c75af07b33b46ad31d3d2e6c1f1f3809958d96b0ef818d666cf"
+    },
+    "calendars/countries/YE.json": {
+      "bytes": 13312,
+      "sha256": "d881bc45751dbca04bb87ff912edb4a3b83828f1fcc8846cbb24ec36dbe150cc"
+    },
+    "calendars/countries/YT.json": {
+      "bytes": 8481,
+      "sha256": "f3a60252cf8779048d9f6abe6f70c625d3721301d1befe2d902cad134f937d1b"
+    },
+    "calendars/countries/ZA.json": {
+      "bytes": 10252,
+      "sha256": "0d93f809ac145c5702c10d83b99bb7f6abc84f66913b06000a677f0543b17ca3"
+    },
+    "calendars/countries/ZM.json": {
+      "bytes": 12698,
+      "sha256": "8892579cce44084b4694142f0bad6bf5b4748ce0ea5c6a2554569b5ecfd20d50"
+    },
+    "calendars/countries/ZW.json": {
+      "bytes": 10213,
+      "sha256": "56a3b5b719b1d7e3b37332381727f72b01f97f1de3bec3420ed30441673ffaff"
+    },
+    "calendars/coverage.json": {
+      "bytes": 65787,
+      "sha256": "dd712b18745c9d999676033f108d690a1989d09425c32bd93cbbccb24d49a290"
+    },
+    "third-party/calendars/CONTRIBUTORS": {
+      "bytes": 3300,
+      "sha256": "f7d9e2dc5a4617036dcf257c0108bdbe2167b3964bdbe15151379171f206b4ef"
+    },
+    "third-party/calendars/LICENSE": {
+      "bytes": 1246,
+      "sha256": "a9a45b34c5338850f987329f35102934ec96d2b3a44563998bccc01bd9c9e3e9"
+    },
+    "third-party/calendars/NOTICE.txt": {
+      "bytes": 408,
+      "sha256": "0d5e2d6232dcaa256da597e4d9dd229380f184398e720f9ae46f47a071813f11"
+    },
+    "third-party/calendars/prophet-license.txt": {
+      "bytes": 1186,
+      "sha256": "7e9237b71006a727a5d6b0d8727113230ad6bcf0029160529ce894df189a0dc3"
+    }
+  },
+  "generation": {
+    "categories": "provider-default",
+    "epoch": "1970-01-01",
+    "expand": false,
+    "firstYear": 1995,
+    "language": "en_US",
+    "lastYear": 2060,
+    "observed": true,
+    "occurrenceFields": [
+      "epochDay",
+      "nameIndex"
+    ],
+    "partitionMembership": "requested generation year; union exact date/name pairs",
+    "subdivision": null
+  },
+  "generatorSources": {
+    "tools/prophet/calendar_collection.py": "7d7c3ae653df9d21211a61e39496ff7553bcd9d01809a9e89e17b241fc1adec3",
+    "tools/prophet/generate.py": "ca27955b7803cb8a5b231a9c94571cbba20cc9617fcff56b53bc9f9f9611f5d5",
+    "tools/prophet/generate_calendars.py": "25c5be803eedd9133af6eb22858e898084cf6f4faf10d0e399c87b370a93147f",
+    "tools/prophet/linear_optimizer_evidence.py": "66db5f89eed91f87a524e6f1f34781b25fe1976a7a162b0751320eaca023a72f"
+  },
+  "inputSources": {
+    "tools/prophet/.python-version": "43fd694bd564dd2215f51a6b23f6a3712834850225e629d7781c81c71076092d",
+    "tools/prophet/Dockerfile": "744256fe73584533ad5f3e4199936c246237c43b23e1380bc1772d56dad599da",
+    "tools/prophet/calendar-restrictions.json": "9d5634018b977811637b28ade871245b6b6e4b68f84ba3cbc5c028bb0e8f87e7",
+    "tools/prophet/pyproject.toml": "a5b02093f95f7ca4e26c6b45399b23cbb44712bf78502764eb41738e7d8e83ec",
+    "tools/prophet/reference.json": "5cc0d008e81d2c924658c0e63571de7cab4524b76374cb19d6373d9c4f83ef27",
+    "tools/prophet/uv.lock": "a7f8d37d6e0bac80c9ee848255a16bbbd02764a5ba4023647f674b11a7e030ca"
+  },
+  "provider": {
+    "name": "holidays",
+    "version": "0.104"
+  },
+  "reference": {
+    "distribution": "prophet",
+    "repository": "https://github.com/facebook/prophet",
+    "sourceCommit": "abf69a215604afcaa7ecb4359f592d13bf6dea9f",
+    "tag": "v1.4.0",
+    "version": "1.4.0"
+  },
+  "schemaVersion": 1,
+  "snapshotId": "sha256:71ee8daf33ec4d527ad865201555a2205f3bf5059a863e7c96da068855adcdb6"
+}

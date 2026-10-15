@@ -1,6 +1,20 @@
 export { type ComponentMode } from "./component-mode";
 
 export {
+  inspectCountryHolidays,
+  parseCountryHolidays,
+  CountryHolidayError,
+  type CanonicalCountry,
+  type CountryHolidays,
+  type EncodedCountryHolidays,
+  type CountryHolidayCoveragePolicy,
+  type CountryHolidayCoverageIssue,
+  type CountryHolidayInspection,
+} from "./country-holidays";
+
+export type { CountryHolidayModel } from "./internal/country-holiday-model";
+
+export {
   comparePerformance,
   crossValidateBaseline,
   type BaselineCrossValidationResult,

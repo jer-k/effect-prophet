@@ -1,4 +1,20 @@
-import { Predicate, type Tracer } from "effect";
+import { Predicate, Tracer } from "effect";
+
+/** Collect real native spans without exporters, sleeps or module mocks. */
+export const collectTestSpans = () => {
+  const spans: Array<Tracer.Span> = [];
+
+  const tracer = Tracer.make({
+    span: (options) => {
+      const span = new Tracer.NativeSpan(options);
+      spans.push(span);
+
+      return span;
+    },
+  });
+
+  return { spans, tracer };
+};
 
 type EndedSpanStatus = Extract<Tracer.SpanStatus, { readonly _tag: "Ended" }>;
 

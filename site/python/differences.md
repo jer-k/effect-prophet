@@ -6,7 +6,6 @@ Python, where it differs on purpose, and the smaller behavior differences.
 
 ## Not available yet
 
-- Country holiday calendars (`add_country_holidays`). You can still list your own events.
 - Full Bayesian fitting (`mcmc_samples`)
 - Warm starts (`warm_start_params`)
 - Forecasting regressors with their own models. Every future row must supply its regressor
@@ -22,6 +21,12 @@ Python, where it differs on purpose, and the smaller behavior differences.
 - You supply future dates; there is no `make_future_dataframe`
 - No built-in plotting
 - Saved models use their own format, not Python's JSON
+- Country calendars are offline Prophet 1.4.0 / `holidays` 0.104 snapshots with an outer
+  1995–2060 horizon. Known missing coverage is rejected unless explicitly accepted with
+  `coverage: "allow-known-gaps"`; neither policy guarantees completeness. Only country-level
+  defaults are supported, not subdivisions/languages/categories. Saved models embed their
+  selected snapshot and never silently adopt installed updates. See
+  [Country holiday calendars](/guide/holiday-calendars).
 - Cross-validation and model search run one fold after another, with no worker parallelism
 - Uncertainty ranges are a separate [`predictUncertainty`](../examples/uncertainty) call, so
   point forecasts never pay for simulations. They need a seed, so results are repeatable.

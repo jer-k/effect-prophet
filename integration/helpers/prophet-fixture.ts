@@ -1094,6 +1094,62 @@ const MixedMapReferenceFileSchema = Schema.Struct({
   fittedCases: Schema.NonEmptyArray(MixedMapFittedCaseSchema),
 });
 
+const CountryHolidayFeaturesSchema = Schema.Struct({
+  columnNames: Schema.Array(Schema.String),
+  eventNames: Schema.Array(Schema.String),
+  ignoredCountryNames: Schema.Array(Schema.String),
+  priorScales: Schema.Array(PositiveFinite),
+  trainingRowMajor: Schema.Array(Schema.Literals([0, 1])),
+  predictionRowMajor: Schema.Array(Schema.Literals([0, 1])),
+});
+
+const CountryHolidayReferenceFileSchema = Schema.Struct({
+  provider: Schema.Struct({ prophet: Schema.Literal("1.4.0"), holidays: Schema.Literal("0.104") }),
+  featureCases: Schema.NonEmptyArray(
+    Schema.Struct({
+      id: Schema.NonEmptyString,
+      country: Schema.String,
+      observations: Schema.NonEmptyArray(ObservationSchema),
+      predictionTimestamps: Schema.Array(CanonicalTimestamp),
+      expected: CountryHolidayFeaturesSchema,
+    }),
+  ),
+  fittedCases: Schema.NonEmptyArray(
+    Schema.Struct({
+      id: Schema.NonEmptyString,
+      country: Schema.String,
+      growth: Schema.Literals(["linear", "flat", "logistic"]),
+      mode: Schema.Literals(["additive", "multiplicative"]),
+      observations: Schema.NonEmptyArray(
+        Schema.Struct({
+          timestamp: CanonicalTimestamp,
+          value: Schema.Finite,
+          capacity: Schema.optionalKey(Schema.Finite),
+          floor: Schema.optionalKey(Schema.Finite),
+        }),
+      ),
+      predictionRows: Schema.Array(
+        Schema.Struct({
+          timestamp: CanonicalTimestamp,
+          capacity: Schema.optionalKey(Schema.Finite),
+          floor: Schema.optionalKey(Schema.Finite),
+        }),
+      ),
+      events: Schema.Array(
+        Schema.Struct({ name: Schema.String, date: Schema.String, priorScale: PositiveFinite }),
+      ),
+      expected: Schema.Struct({
+        ...CountryHolidayFeaturesSchema.fields,
+        trend: Schema.Array(Schema.Finite),
+        value: Schema.Array(Schema.Finite),
+        additive: Schema.Array(Schema.Finite),
+        multiplicative: Schema.Array(Schema.Finite),
+      }),
+      tolerance: NumericToleranceSchema,
+    }),
+  ),
+});
+
 const ArtifactPath = Schema.String.check(
   Schema.makeFilter(
     (value) =>
@@ -1270,6 +1326,7 @@ const FixtureManifestSchema = Schema.Struct({
       "conditional-map-fit.json",
       "target-scaling.json",
       "mixed-map.json",
+      "country-holidays.json",
       "logistic-map.json",
       "map-uncertainty.json",
       "stan-linear-optimizer.json",
@@ -1919,6 +1976,29 @@ export const loadProphetFixtureBundle = Effect.fn("ProphetFixture.loadBundle")(f
   });
 
   const mixedMap = yield* decodeMixedMapReference(mixedMapInput, mixedMapPath);
+
+  const countryHolidaysPath = nodePath.join(root, "country-holidays.json");
+  const countryHolidaysContents = yield* readFixtureText(countryHolidaysPath);
+
+  const countryHolidaysInput: unknown = yield* Effect.try({
+    try: () => JSON.parse(countryHolidaysContents),
+    catch: (cause) => invalidJson(countryHolidaysPath, cause),
+  });
+
+  const countryHolidays = yield* Schema.decodeUnknownEffect(CountryHolidayReferenceFileSchema)(
+    countryHolidaysInput,
+  ).pipe(
+    Effect.mapError(
+      (cause) =>
+        new FixtureLoadError({
+          operation: "schema",
+          fixturePath: countryHolidaysPath,
+          message: formatSchemaIssue(cause.issue),
+          cause,
+        }),
+    ),
+  );
+
   const mapUncertaintyPath = nodePath.join(root, "map-uncertainty.json");
   const mapUncertaintyContents = yield* readFixtureText(mapUncertaintyPath);
 
@@ -1957,6 +2037,7 @@ export const loadProphetFixtureBundle = Effect.fn("ProphetFixture.loadBundle")(f
     mapUncertainty,
     manifest,
     mixedMap,
+    countryHolidays,
     piecewiseLinear,
     seasonalityResolution,
     targetScaling,

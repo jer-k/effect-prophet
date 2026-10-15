@@ -84,21 +84,23 @@ That makes traces safe to send to a shared backend, even when your data is sensi
 
 Each of these functions creates a span named after it:
 
-| Span                                                                                               | Created by                                |
-| -------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| `Prophet.fit`                                                                                      | `fit`                                     |
-| `Prophet.predict`                                                                                  | `predict`                                 |
-| `Prophet.predictUncertainty`                                                                       | `predictUncertainty`                      |
-| `Prophet.crossValidate`                                                                            | `crossValidate`                           |
-| `Prophet.planRollingOrigin`                                                                        | `planRollingOrigin`                       |
-| `Prophet.searchModels`                                                                             | `searchModels`                            |
-| `Prophet.evaluateHoldout`                                                                          | `evaluateHoldout`                         |
-| `Prophet.crossValidateBaseline`                                                                    | `crossValidateBaseline`                   |
-| `Prophet.comparePerformance`                                                                       | `comparePerformance`                      |
-| `Prophet.encodeFittedModel`, `Prophet.decodeFittedModel`                                           | Saving and loading models                 |
-| `Prophet.encodeEvaluationReport`, `Prophet.decodeEvaluationReport`                                 | Saving and loading evaluation reports     |
-| `Prophet.decodeObservations`, `Prophet.decodeOptions`                                              | Checking input, also called inside `fit`  |
-| `Prophet.parseEventCalendar`, `Prophet.parseRegressorDefinitions`, `Prophet.decodeLinearOptimizer` | Checking settings, inside `decodeOptions` |
+| Span                                                                                               | Created by                                                                                  |
+| -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `Prophet.fit`                                                                                      | `fit`                                                                                       |
+| `Prophet.predict`                                                                                  | `predict`                                                                                   |
+| `Prophet.predictUncertainty`                                                                       | `predictUncertainty`                                                                        |
+| `Prophet.crossValidate`                                                                            | `crossValidate`                                                                             |
+| `Prophet.planRollingOrigin`                                                                        | `planRollingOrigin`                                                                         |
+| `Prophet.searchModels`                                                                             | `searchModels`                                                                              |
+| `Prophet.evaluateHoldout`                                                                          | `evaluateHoldout`                                                                           |
+| `Prophet.crossValidateBaseline`                                                                    | `crossValidateBaseline`                                                                     |
+| `Prophet.comparePerformance`                                                                       | `comparePerformance`                                                                        |
+| `Prophet.encodeFittedModel`, `Prophet.decodeFittedModel`                                           | Saving and loading models                                                                   |
+| `Prophet.encodeEvaluationReport`, `Prophet.decodeEvaluationReport`                                 | Saving and loading evaluation reports                                                       |
+| `Prophet.decodeObservations`, `Prophet.decodeOptions`                                              | Checking input, also called inside `fit`                                                    |
+| `Prophet.inspectCountryHolidays`                                                                   | `inspectCountryHolidays`                                                                    |
+| `Prophet.parseCountryHolidays`                                                                     | Checking a `countryHolidays` selection, inside `decodeOptions` and `inspectCountryHolidays` |
+| `Prophet.parseEventCalendar`, `Prophet.parseRegressorDefinitions`, `Prophet.decodeLinearOptimizer` | Checking settings, inside `decodeOptions`                                                   |
 
 ### Engine and evaluation steps
 
@@ -114,6 +116,17 @@ Each of these functions creates a span named after it:
 Input that fails validation, or a request with nothing to do, such as an empty list of dates,
 returns before reaching the engine and creates no engine span.
 
+### Country calendar steps
+
+| Span                                    | Covers                                                                                                                                                |
+| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Prophet.resolveCountryHolidays`        | Resolving a country calendar's dates and coverage for the requested years, inside `fit`, `predict`, `predictUncertainty` and `inspectCountryHolidays` |
+| `effect-prophet.calendar.load-snapshot` | Reading and checking a packaged country calendar file, inside a resolution for `fit` or `inspectCountryHolidays`                                      |
+
+Prediction resolves dates from the snapshot saved in the model, so it reads no file and creates no
+`effect-prophet.calendar.load-snapshot` span. A malformed selection or year list fails before
+resolution and creates no calendar step span; an empty prediction creates none either.
+
 ### Attributes
 
 Every attribute name starts with `effect_prophet.`.
@@ -126,7 +139,7 @@ Every attribute name starts with `effect_prophet.`.
 | `seasonality.builtin.enabled.count`                    | Built-in seasonalities (yearly, weekly, daily) in use                                                                                           |
 | `seasonality.builtin.{yearly,weekly,daily}.resolution` | Why each was used or skipped: `explicitly-enabled`, `automatic-enabled`, `explicitly-disabled`, `insufficient-history` or `sampling-too-sparse` |
 | `regressor.count`                                      | Extra factors (regressors). Only present when there are some.                                                                                   |
-| `event.count`                                          | Holidays and events. Only present when there are some.                                                                                          |
+| `event.count`                                          | Holidays and events, including country holidays. Only present when there are some.                                                              |
 | `seasonality.condition.count`                          | Conditions used by conditional seasonalities. Only present when there are some.                                                                 |
 
 **`effect-prophet.wasm.fit`**
@@ -153,6 +166,15 @@ Every attribute name starts with `effect_prophet.`.
 | `seasonality.count`, `scaling.mode` | As for fitting (`predict` only)                                      |
 | `output.kind`, `sample.count`       | `intervals` or `samples`, and simulations per date (`simulate` only) |
 | `wasm.cold_start`                   | `true` only for the call that loaded the engine                      |
+
+**Country calendars**
+
+| Span                                    | Attributes                                                                                                                                                                      |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Prophet.resolveCountryHolidays`        | `calendar.source` (`bundled` from the package, `embedded` from a fitted model), `calendar.coverage`, `calendar.year.count`, `calendar.occurrence.count`, `calendar.issue.count` |
+| `effect-prophet.calendar.load-snapshot` | `calendar.source` (always `bundled`), `calendar.name.count`, `calendar.partition.count`                                                                                         |
+
+`calendar.occurrence.count` and `calendar.issue.count` are set only when resolution succeeds.
 
 **Evaluation**
 

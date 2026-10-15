@@ -76,10 +76,21 @@ npm run benchmark:compare -- runs/<before-id> runs/<after-id>
 ```
 
 References are baseline names or `runs/...` / `retained/...` paths relative to `results/`.
-Comparison shows recorded validity even when timing cannot be compared. Timing columns require
-both gates to pass, unchanged case/input contracts, matching gate implementation identities and
-compatible hardware/runtime metadata. Legacy snapshots without gate source hashes require
-identical recorded images.
+Each comparison opens with a **What changed** summary: added and removed cases, outcome and
+contract changes, and investigation flags that appeared, cleared or changed value.
+
+Timings are compared for every case that passed in both runs with an unchanged contract and
+input, on matching hardware and runtime metadata, using medians recomputed from all raw samples.
+The header names changed **correctness gates** (`case.ts`, `report.ts`, `report-cli.ts`,
+`comparisons.json`, `country-holidays.ts`, `result.ts`) and a changed **timing harness** (the
+adapters, `effect-case.ts`, `evaluation.ts`). Changed gates alter how outcomes are judged, not
+how long work takes, so they never hide timings. A changed harness can shift timings by itself,
+so read flagged phases with it in mind.
+
+**Possible regressions** lists phases where every new sample is slower than every old sample and
+the median is at least 5% slower; **Possible improvements** is the mirror image. With six samples
+per side, an unchanged phase lands in either list by chance about 0.2% of the time. Python Prophet
+is pinned, so flagged Python rows point to machine noise rather than a code change.
 No cross-language speed ratios are calculated. Dirty-tree comparisons are diagnostic evidence.
 Legacy snapshots without frozen cases cannot be replayed or compared with this tool. Historical
 `generated/` references map to shared `v1/` inputs only when recorded bytes match; otherwise
@@ -132,7 +143,27 @@ are diagnostic only and must not replace these.
    zero-span linear cases). Investigate anything else, including cases flagged
    "investigate internal fit differences", before retaining. If a gate or declaration needs to
    change, fix it, commit and start over: do not retain a run made on an older commit.
-4. **Retain and repoint.** `--baseline` moves the named pointer. It refuses a run that covers
+4. **Report what changed.** Before repointing anything, compare each run with the baseline it
+   replaces. The baseline names still point at the previous runs at this stage:
+
+   ```sh
+   npm run benchmark:compare -- linear-growth runs/<linear-run-id>
+   npm run benchmark:compare -- flat-growth runs/<flat-run-id>
+   npm run benchmark:compare -- logistic-growth runs/<logistic-run-id>
+   ```
+
+   Each report starts with **What changed**: cases added and removed, changed outcomes, cases
+   whose contract or input changed, and investigation flags that appeared, cleared or changed
+   value. Then come **Possible regressions** and **Possible improvements**, every case, and all
+   compared medians. Put the three **What changed** summaries and any possible regressions in the
+   pull request description. Explain every outcome change, flag change and Effect regression
+   there before retaining; fix a regression the change caused, then commit and start over.
+
+5. **Record new benchmarks in the changelog.** Under `### Benchmarks` in the upcoming release's section
+   of the root `CHANGELOG.md`, say in a line or two what the reports' **Added** cases cover, in
+   terms a reader of the changelog understands, and why any cases were removed. Don't list case
+   IDs; the reports and `CASES.md` have them.
+6. **Retain and repoint.** `--baseline` moves the named pointer. It refuses a run that covers
    only part of a suite it contains, or contains cases the catalog does not declare, and names the
    missing cases; fix that by rerunning with `--suite` rather than by overriding the check:
 
@@ -143,10 +174,10 @@ are diagnostic only and must not replace these.
    npm run benchmark:results
    ```
 
-5. **Delete the superseded retained folders.** Keep only the directories `baselines.json` points
+7. **Delete the superseded retained folders.** Keep only the directories `baselines.json` points
    to, then run `npm run benchmark:results` again so `RESULTS.md` lists only what remains. Git
    history keeps the old evidence.
-6. **Check the consumers.** The docs site builds its benchmark pages, counts and the overview
+8. **Check the consumers.** The docs site builds its benchmark pages, counts and the overview
    from the baselines, and fails the build if a case has no description (add one in
    `site/.vitepress/benchmarks/<trend>-cases.ts`). Then run:
 
@@ -159,7 +190,7 @@ are diagnostic only and must not replace these.
    The benchmark tests read the `flat-growth` baseline through `baselines.json`, so they follow
    the pointer. If they fail, a declaration changed after the baseline was run: rerun it.
 
-7. **Commit the retained folders, `baselines.json`, `RESULTS.md` and any test or site changes**
+9. **Commit the retained folders, `baselines.json`, `RESULTS.md`, the changelog and any test or site changes**
    together, in a commit after the one the runs were made on. The manifests record the code
    commit that was measured.
 
@@ -178,6 +209,11 @@ Generation is explicit maintenance. Existing version bytes cannot be overwritten
 require a new version and updated case references. Commit inputs before retaining dependent
 runs. Cases have one primary capability owner; mixed-feature cases reuse declarations and
 lifecycle serialization phases instead of being copied into every feature folder.
+
+Country calendars add pinned-provider parity, dynamic future-year activations, explicit-event
+controls and model byte/RSS reporting through this same harness. See the
+[country benchmark contract](cases/holidays/README.md); coverage-policy rejections are intentional
+differences, not comparable timing work. Country snapshots are not preloaded into measured fits.
 
 See the [Python-default logistic reconciliation](cases/growth/logistic/README.md),
 [flat coverage gaps](cases/growth/flat/README.md),
@@ -204,6 +240,7 @@ docker run --rm --network none --read-only --tmpfs /tmp \
   -v "$PWD/benchmark/tools/adapters:/workspace/benchmark/tools/adapters:ro" \
   -v "$PWD/benchmark/tools/test/adapters:/workspace/benchmark/tools/test/adapters:ro" \
   -v "$PWD/benchmark/inputs:/workspace/benchmark/inputs:ro" \
+  -v "$PWD/benchmark/cases:/workspace/benchmark/cases:ro" \
   effect-prophet/benchmark-python:1.4.0 \
   /opt/effect-prophet-benchmark/bin/python \
   /workspace/benchmark/tools/test/adapters/python-prophet.test.py

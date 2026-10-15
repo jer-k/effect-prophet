@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "files": [
+    {
+      "file": "country-scaling-2190-batch-32.json",
+      "recipe": "country-v5:country-scaling-2190-batch-32:level+jan1(3)+jan5(1.4)+bounded-noise:n=2190:future=32:year=2020",
+      "sha256": "43ee3004c6b1f2ddf63fc1e092d2faf230e1d7683f3809d7cb3192df59adbe6c"
+    }
+  ]
+}

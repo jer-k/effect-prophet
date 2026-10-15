@@ -6,6 +6,7 @@ import { fixedPiecewiseParameters } from "./helpers/fixed-piecewise-model";
 import { makeTestFittingBackend } from "./internal/fitting-backend-test-layer";
 
 import {
+  CountryHolidayError,
   EvaluationError,
   EvaluationSearchError,
   InputValidationError,
@@ -82,6 +83,31 @@ const search = (input: ModelSearchInput) =>
   searchModels(rows, input).pipe(Effect.provide(prophetFittingBackendLayer));
 
 describe("searchModels", () => {
+  it("owns country selection and coverage policy in candidate options", async () => {
+    const countryHolidays = { country: "US", coverage: "allow-known-gaps" as const, priorScale: 7 };
+
+    const result = await Effect.runPromise(
+      search({
+        candidates: [{ id: "country", options: { growth: "flat", countryHolidays } }],
+        plan,
+        objective,
+        failurePolicy: "record",
+        includeCrossValidation: true,
+      }),
+    );
+
+    const candidate = result.candidates[0];
+
+    if (candidate?.kind !== "success") throw new Error("Expected country candidate success");
+
+    expect(candidate.options.countryHolidays).toEqual(countryHolidays);
+    expect(candidate.crossValidation?.folds).toHaveLength(2);
+    expect(Object.isFrozen(candidate.options.countryHolidays)).toBe(true);
+    expect(Object.isFrozen(countryHolidays)).toBe(false);
+    countryHolidays.country = "GB";
+    expect(candidate.options.countryHolidays?.country).toBe("US");
+  });
+
   it("ranks three real MAP configurations using the same folds and independent CV scores", async () => {
     const result = await Effect.runPromise(
       search({ candidates: options, plan, objective, failurePolicy: "record" }),
@@ -167,6 +193,62 @@ describe("searchModels", () => {
       expect(requested).toEqual({ growth: "flat", scaling: "minmax" });
     },
   );
+
+  it("names the candidate whose country calendar is invalid and keeps the calendar error", async () => {
+    const failure = await Effect.runPromise(
+      Effect.flip(
+        search({
+          candidates: [
+            options[0]!,
+            { id: "narnia", options: { countryHolidays: { country: "NA-X" } } },
+          ],
+          plan,
+          objective,
+          failurePolicy: "record",
+        }),
+      ),
+    );
+
+    expect(failure).toBeInstanceOf(EvaluationSearchError);
+    expect(failure).toMatchObject({
+      reason: "invalid-candidate",
+      candidateIndex: 1,
+      candidateId: "narnia",
+    });
+
+    if (!(failure instanceof EvaluationSearchError)) throw new Error("Expected a search error");
+
+    expect(failure.cause).toBeInstanceOf(CountryHolidayError);
+    expect(failure.cause).toMatchObject({ reason: "unknown-country" });
+  });
+
+  it("records a candidate whose folds hit a calendar restriction as a portable calendar failure", async () => {
+    const result = await Effect.runPromise(
+      search({
+        candidates: [
+          options[0]!,
+          { id: "ukraine", options: { countryHolidays: { country: "UA" } } },
+        ],
+        plan,
+        objective,
+        failurePolicy: "record",
+      }),
+    );
+
+    expect(result.candidates[1]).toEqual({
+      kind: "failure",
+      id: "ukraine",
+      candidateIndex: 1,
+      failure: {
+        tag: "EvaluationError",
+        fold: 0,
+        stage: "fit",
+        reason: "fit-failed",
+        causeTag: "CountryHolidayError",
+        causeReason: "known-coverage-restriction",
+      },
+    });
+  });
 
   it("rejects invalid CV scaling before candidate or fold boundaries", async () => {
     const spans: Array<Tracer.Span> = [];

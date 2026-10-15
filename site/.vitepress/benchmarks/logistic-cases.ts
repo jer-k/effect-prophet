@@ -1,7 +1,9 @@
+import { countryCalendarGroup, countryDescriptionsFor } from "./country-cases.ts";
 import type { CaseDescription } from "./suite.ts";
 
 /** Reader-facing groups for the logistic growth benchmark page, in display order. */
 export const logisticGroups = [
+  countryCalendarGroup,
   {
     id: "defaults",
     title: "Default settings",
@@ -57,6 +59,7 @@ const scaled = (scaling: "absmax" | "minmax", detail: string): string =>
 
 /** One entry per benchmarked case ID. The site build fails if a run contains a case without one. */
 export const logisticCaseDescriptions = {
+  ...countryDescriptionsFor("logistic"),
   "logistic-reconcile-defaults-96": {
     group: "defaults",
     title: "Defaults, three months of daily data",

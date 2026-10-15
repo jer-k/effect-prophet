@@ -18,6 +18,7 @@ import { makeWasmPiecewiseMapAdapter } from "../src/internal/wasm-piecewise-map-
 import { fixedPiecewiseParameters } from "./helpers/fixed-piecewise-model";
 import { makeTestFittingBackend } from "./internal/fitting-backend-test-layer";
 import { builtInSeasonalitiesOff } from "./helpers/built-in-seasonalities";
+import { expectInputValidationError } from "./helpers/input-validation-error";
 
 const featurelessOptions = { builtInSeasonalities: builtInSeasonalitiesOff };
 
@@ -34,7 +35,9 @@ const run = (days: ReadonlyArray<number>, input: Parameters<typeof planRollingOr
   Effect.runPromise(planRollingOrigin(history(days), featurelessOptions, input));
 
 const failure = (days: ReadonlyArray<number>, input: Parameters<typeof planRollingOrigin>[2]) =>
-  Effect.runPromise(Effect.flip(planRollingOrigin(history(days), {}, input)));
+  Effect.runPromise(Effect.flip(planRollingOrigin(history(days), {}, input))).then(
+    expectInputValidationError,
+  );
 
 describe("planRollingOrigin", () => {
   it("preserves duplicate training and assessment rows across public rolling-origin fits", async () => {
@@ -249,18 +252,20 @@ describe("planRollingOrigin", () => {
       value: index,
     }));
 
-    const historyError = await Effect.runPromise(
-      Effect.flip(
-        planRollingOrigin(
-          observations,
-          {},
-          {
-            horizonMs: 1,
-            cutoffs: {
-              mode: "explicit",
-              timestamps: [new Date(epoch + 1).toISOString()],
+    const historyError = expectInputValidationError(
+      await Effect.runPromise(
+        Effect.flip(
+          planRollingOrigin(
+            observations,
+            {},
+            {
+              horizonMs: 1,
+              cutoffs: {
+                mode: "explicit",
+                timestamps: [new Date(epoch + 1).toISOString()],
+              },
             },
-          },
+          ),
         ),
       ),
     );
@@ -271,15 +276,17 @@ describe("planRollingOrigin", () => {
       new Date(epoch + index + 1).toISOString(),
     );
 
-    const assessmentError = await Effect.runPromise(
-      Effect.flip(
-        planRollingOrigin(
-          observations.slice(0, 10_000),
-          {},
-          {
-            horizonMs: 9_000,
-            cutoffs: { mode: "explicit", timestamps: cutoffs },
-          },
+    const assessmentError = expectInputValidationError(
+      await Effect.runPromise(
+        Effect.flip(
+          planRollingOrigin(
+            observations.slice(0, 10_000),
+            {},
+            {
+              horizonMs: 9_000,
+              cutoffs: { mode: "explicit", timestamps: cutoffs },
+            },
+          ),
         ),
       ),
     );
@@ -292,15 +299,17 @@ describe("planRollingOrigin", () => {
       { timestamp: "+275760-09-12T00:00:00.000Z", value: 2 },
     ];
 
-    const overflow = await Effect.runPromise(
-      Effect.flip(
-        planRollingOrigin(
-          nearLimit,
-          {},
-          {
-            horizonMs: dayMs,
-            cutoffs: { mode: "generated", initialMs: 3_650 * dayMs },
-          },
+    const overflow = expectInputValidationError(
+      await Effect.runPromise(
+        Effect.flip(
+          planRollingOrigin(
+            nearLimit,
+            {},
+            {
+              horizonMs: dayMs,
+              cutoffs: { mode: "generated", initialMs: 3_650 * dayMs },
+            },
+          ),
         ),
       ),
     );
@@ -419,27 +428,33 @@ describe("planRollingOrigin", () => {
   });
 
   it("preserves history/options precedence and ignores target and feature values while planning", async () => {
-    const badRows = await Effect.runPromise(
-      Effect.flip(
-        planRollingOrigin(JSON.parse("[]"), JSON.parse('{"growth":"bad"}'), JSON.parse("{}")),
+    const badRows = expectInputValidationError(
+      await Effect.runPromise(
+        Effect.flip(
+          planRollingOrigin(JSON.parse("[]"), JSON.parse('{"growth":"bad"}'), JSON.parse("{}")),
+        ),
       ),
     );
 
-    const badOptions = await Effect.runPromise(
-      Effect.flip(
-        planRollingOrigin(history([0, 2, 3]), JSON.parse('{"growth":"bad"}'), JSON.parse("{}")),
+    const badOptions = expectInputValidationError(
+      await Effect.runPromise(
+        Effect.flip(
+          planRollingOrigin(history([0, 2, 3]), JSON.parse('{"growth":"bad"}'), JSON.parse("{}")),
+        ),
       ),
     );
 
     expect(badRows.input).toBe("observations");
     expect(badOptions.input).toBe("options");
 
-    const outsidePoint = await Effect.runPromise(
-      Effect.flip(
-        planRollingOrigin(
-          history([0, 2, 3]),
-          { map: { changepoints: { mode: "explicit", timestamps: [at(4)] } } },
-          JSON.parse("{}"),
+    const outsidePoint = expectInputValidationError(
+      await Effect.runPromise(
+        Effect.flip(
+          planRollingOrigin(
+            history([0, 2, 3]),
+            { map: { changepoints: { mode: "explicit", timestamps: [at(4)] } } },
+            JSON.parse("{}"),
+          ),
         ),
       ),
     );
@@ -471,6 +486,104 @@ describe("planRollingOrigin", () => {
 });
 
 describe("crossValidate", () => {
+  it("resolves each fold's represented country years through the real backend", async () => {
+    const rows = Array.from({ length: 32 }, (_, index) => ({
+      timestamp: new Date(Date.UTC(2020, 11, 10 + index)).toISOString(),
+      value: 10 + Math.sin(index) * 0.1 + index * 0.02,
+    }));
+
+    const plans: Array<FitPlan> = [];
+
+    const result = await Effect.runPromise(
+      Effect.gen(function* () {
+        const backend = yield* FittingBackend;
+
+        return yield* crossValidate(
+          rows,
+          {
+            growth: "flat",
+            builtInSeasonalities: builtInSeasonalitiesOff,
+            countryHolidays: { country: "US" },
+          },
+          {
+            horizonMs: 5 * dayMs,
+            cutoffs: {
+              mode: "explicit",
+              timestamps: ["2020-12-30T00:00:00.000Z", "2021-01-04T00:00:00.000Z"],
+            },
+          },
+        ).pipe(
+          Effect.provideService(FittingBackend, {
+            fit: (input, plan) =>
+              backend.fit(input, plan).pipe(Effect.tap(() => Effect.sync(() => plans.push(plan)))),
+          }),
+        );
+      }).pipe(Effect.provide(prophetFittingBackendLayer)),
+    );
+
+    expect(result.folds).toHaveLength(2);
+    expect(plans).toHaveLength(2);
+
+    const names = plans.map((plan) =>
+      Predicate.isTagged("FlatStanMap")(plan)
+        ? plan.events.columns.map((column) => column.eventName)
+        : [],
+    );
+
+    expect(names[0]?.some((name) => name.includes("Juneteenth"))).toBe(false);
+    expect(names[1]?.some((name) => name.includes("Juneteenth"))).toBe(true);
+
+    const independent = await Effect.runPromise(
+      fit(rows.slice(0, 21), {
+        growth: "flat",
+        builtInSeasonalities: builtInSeasonalitiesOff,
+        countryHolidays: { country: "US" },
+      }).pipe(Effect.provide(prophetFittingBackendLayer)),
+    );
+
+    const assessment = result.rows.filter((row) => row.fold === 0);
+
+    const expected = await Effect.runPromise(
+      predict(
+        independent,
+        assessment.map((row) => new Date(row.timestamp).toISOString()),
+      ),
+    );
+
+    expect(assessment.map((row) => row.predicted)).toEqual(expected.map((row) => row.value));
+  });
+
+  it("retains calendar coverage failures in their evaluation stage", async () => {
+    const rows = Array.from({ length: 10 }, (_, index) => ({
+      timestamp: new Date(Date.UTC(2026, 11, 26 + index)).toISOString(),
+      value: 10 + index * 0.1,
+    }));
+
+    const error = await Effect.runPromise(
+      Effect.flip(
+        crossValidate(
+          rows,
+          {
+            growth: "flat",
+            builtInSeasonalities: builtInSeasonalitiesOff,
+            countryHolidays: { country: "LK" },
+          },
+          {
+            horizonMs: 3 * dayMs,
+            cutoffs: { mode: "explicit", timestamps: ["2026-12-31T00:00:00.000Z"] },
+          },
+        ).pipe(Effect.provide(prophetFittingBackendLayer)),
+      ),
+    );
+
+    expect(error).toBeInstanceOf(EvaluationError);
+    expect(error).toMatchObject({
+      stage: "predict",
+      reason: "prediction-failed",
+      cause: { reason: "known-coverage-restriction" },
+    });
+  });
+
   const plan = {
     horizonMs: 2 * dayMs,
     cutoffs: { mode: "explicit", timestamps: [at(2), at(3)] },

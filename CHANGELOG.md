@@ -4,6 +4,36 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows
 [Semantic Versioning](https://semver.org/). Before 1.0, minor versions may include breaking changes.
 
+## [0.2.0] - Unreleased
+
+### Added
+
+- **Country holiday calendars**, like Python Prophet's `add_country_holidays`. Add
+  `countryHolidays: { country: "US" }` to `fit` and the model learns an effect for each of that
+  country's public holidays, alongside any events you add yourself. Calendars for 250 countries
+  are included and work offline, for the years 1995–2060.
+- Some calendars have known gaps, such as India's Hindu holidays after 2035. These are rejected by
+  default; pass `coverage: "allow-known-gaps"` to use the calendar anyway.
+- **`inspectCountryHolidays`** lists a country's holiday dates and any known gaps for the years you
+  ask about, without fitting a model.
+- A saved model keeps the holiday dates it was trained with, so upgrading Effect Prophet never
+  changes the forecasts of a model you already saved.
+- **`CountryHolidayError`** reports every calendar problem, such as an unknown country, a year
+  outside 1995–2060 or a known gap, with a `reason` you can check.
+- Tracing spans for loading and resolving country calendars.
+
+### Changed
+
+- Faster predictions and model saving, for every model.
+- The npm package grows from about 350 KB to about 1.28 MB, for the bundled calendars.
+
+### Benchmarks
+
+- New benchmarks for country holiday calendars, checked against Python Prophet, with controls
+  that measure what the calendars themselves cost.
+- `npm run benchmark:compare` now summarizes what changed between two runs and flags possible
+  speed regressions.
+
 ## [0.1.1] - 2026-10-14
 
 Documentation only. The published code and WebAssembly binary are unchanged from 0.1.0.
@@ -163,5 +193,6 @@ These Python Prophet features are not implemented in this release:
 - Inputs that cannot define a trend, such as every row sharing one timestamp, return an error where
   Python returns `NaN` forecasts.
 
+[0.2.0]: https://github.com/jer-k/effect-prophet/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/jer-k/effect-prophet/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/jer-k/effect-prophet/releases/tag/v0.1.0

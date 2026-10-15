@@ -28,6 +28,7 @@ export default defineConfig({
           { text: "Getting started", link: "/guide/getting-started" },
           { text: "Effect in five minutes", link: "/guide/effect-basics" },
           { text: "Preparing your data", link: "/guide/your-data" },
+          { text: "Country holiday calendars", link: "/guide/holiday-calendars" },
           { text: "Reading a forecast", link: "/guide/reading-forecasts" },
           { text: "Tracing", link: "/guide/tracing" },
         ],

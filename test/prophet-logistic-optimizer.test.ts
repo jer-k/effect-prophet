@@ -12,6 +12,7 @@ import { type EncodedLinearOptimizer } from "../src/linear-optimizer";
 import { decodeOptions } from "../src/options";
 import { builtInSeasonalitiesOff } from "./helpers/built-in-seasonalities";
 import { requireEndedSpan } from "./internal/tracing-test-helpers";
+import { expectInputValidationError } from "./helpers/input-validation-error";
 
 const day = 86_400_000;
 
@@ -210,11 +211,10 @@ describe("public logistic Stan optimizer lifecycle", () => {
   it.each([{ algorithm: "proximal" }, { relativeTolerance: 1e-7 }, { absoluteTolerance: 1e-9 }])(
     "rejects removed proximal controls through public option parsing: %j",
     async (optimizer) => {
-      const failure = await Effect.runPromise(
-        Effect.flip(decodeOptions({ ...options, map: { optimizer } })),
+      const failure = expectInputValidationError(
+        await Effect.runPromise(Effect.flip(decodeOptions({ ...options, map: { optimizer } }))),
       );
 
-      expect(failure).toBeInstanceOf(InputValidationError);
       expect(failure.input).toBe("options");
     },
   );

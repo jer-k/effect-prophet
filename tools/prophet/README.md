@@ -58,6 +58,170 @@ npm run test:integration:prophet
 
 The suite is intentionally excluded from ordinary `npm test`.
 
+## Production country-calendar generation (#69)
+
+The first data-delivery slice is implemented separately from the exploratory experiment:
+
+```sh
+npm run calendars:generate
+npm run calendars:check
+npm run calendars:verify
+```
+
+See [CALENDARS.md](CALENDARS.md) for the versioned artifact format, generation-year parity checks,
+reviewed historical/future coverage inventory, notices, provenance, and provider update process.
+Artifacts live in `calendars/` and `third-party/calendars/`, with a derived TypeScript allowlist.
+Public `parseCountryHolidays`/`inspectCountryHolidays` support offline inspection, coverage policy
+and typed lookup failures. The npm artifact includes these files and notices. `countryHolidays`
+fit options integrate with all trends, prediction, uncertainty, embedded JSON persistence and
+fold/search/holdout evaluation. Country compatibility fixtures use real `add_country_holidays`
+and the pinned provider. Native correctness-gated benchmark release evidence remains pending.
+
+## Country-calendar size experiment (#69)
+
+[`measure_holidays.py`](measure_holidays.py) generates an exploratory **1995–2044 inclusive**
+country-level snapshot through the installed Prophet `make_holidays_df` helper. It does not
+modify compatibility fixtures or add calendars to the published package. Generated files belong
+in the ignored `.generated/` directory.
+
+Run with the same pinned reference image (the output directory must be empty):
+
+```sh
+docker compose --profile fixtures-generate build prophet-fixtures-generate
+mkdir -p .generated/holidays-1995-2044
+
+docker run --rm --platform linux/amd64 --network none --read-only --tmpfs /tmp \
+  -e PYTHONHASHSEED=0 \
+  -v "$PWD/tools/prophet:/workspace/tools/prophet:ro" \
+  -v "$PWD/rust/prophet-wasm/third-party:/workspace/rust/prophet-wasm/third-party:ro" \
+  -v "$PWD/.generated/holidays-1995-2044:/snapshot" \
+  --entrypoint /opt/effect-prophet-reference/bin/python \
+  effect-prophet/reference-fixtures:1.4.0 \
+  tools/prophet/measure_holidays.py --output /snapshot
+```
+
+The generator verifies the installed package versions against `uv.lock`, preserves Unicode and
+all dates returned by Prophet, checks alias equivalence through the real helper, and verifies
+compact-encoding and gzip round trips. `manifest.json` records counts, file hashes, country-level
+sizes, provider warnings, generator/lock hashes, and environment provenance. Provider license and
+contributor files are copied from the exact installed wheel; Prophet's existing license is also
+included. There is no optimizer invocation or CPU-sensitive fitted arithmetic in this experiment.
+
+### Measured results
+
+With **Prophet 1.4.0 / holidays 0.104**, the provider advertises 501 country codes. Adding Prophet's
+legacy `TU` alias produces **502 codes**, resolving to **250 canonical country calendars and 252
+aliases**. The deduplicated snapshot contains **165,673 occurrences**, **2,304 distinct names**, and
+5,730 country/name pairs. The actual returned date range is 1995-01-01 through 2044-12-31.
+
+All sizes below are exact bytes. JSON uses UTF-8 without formatting whitespace. Gzip uses level 9
+with a zero timestamp; the separately measured Brotli column uses Node's quality 11.
+
+| Representation                                                                 | JSON bytes | Gzip bytes | Brotli bytes |
+| ------------------------------------------------------------------------------ | ---------: | ---------: | -----------: |
+| Per-country `{date, name}` events + alias map                                  |  8,270,406 |    645,832 |      310,163 |
+| Per-country names dictionary + `[epochDay, nameIndex]` occurrences + alias map |  1,890,690 |    585,904 |      347,493 |
+| Repeated events for every code, like the R generator's code inventory          | 16,586,303 |  1,162,575 |      322,407 |
+
+`compact.json` is about **1.80 MiB raw / 572 KiB gzipped**. The compact representation wins on raw
+size but not on Brotli size; these measurements do not establish a final storage format.
+`events.json` provides a readable semantic baseline and `all-codes.events.json` quantifies alias
+duplication. The compact format uses integer UTC days since 1970-01-01, preserving name identity
+and simultaneous occurrences. It is not yet a public persistence schema.
+
+Individual compact files in `countries/` total 1,886,544 raw bytes or 649,370 bytes when gzipped
+separately (excluding the alias map and manifest). The median country is **7,294.5 bytes raw /
+2,580.5 bytes gzipped**; the US is 6,492 / 2,366 bytes. Sweden is the largest at 35,459 / 8,862 bytes.
+Combining files before compression avoids much of the separate-file compression overhead.
+
+Exploratory deterministic tar+gzip archives containing the compact data, research manifest, and
+all four third-party files measured **606,771 bytes combined** or **616,587 bytes partitioned**
+in the original size-only experiment (before adding the coverage census).
+These are data-only archive measurements, **not** the size or incremental size of an npm package.
+They exclude generated `.gz` duplicates and the alternative event representations.
+
+### Coverage and reproducibility caveats
+
+- `BV`, `HM`, and `IO` return empty country calendars. Recognized country codes must not be
+  advertised as necessarily having nonempty holiday coverage.
+- India's calendar emits `Requested Holidays are available only from 2001 to 2035.` The manifest
+  retains that warning and its affected country. A 50-year generation request does not prove that
+  every holiday rule has 50-year coverage.
+- Defaults are exactly Prophet's: `en_US`, observed dates enabled, provider-default categories,
+  and no subdivision. English can fall back to the provider's original language. Future dates are
+  a versioned rule snapshot, not guaranteed official announcements.
+- Two independent generations, including every JSON, gzip, manifest, license, and contributor
+  file, were byte-identical. To repeat that check, run the command with a second empty host output
+  directory, then use `diff -rq` between the two directories.
+
+**Conclusion:** all-country bundling looks reasonable by size, especially with optional
+country-level loading. Coverage policy, future-date updates, public API integration, persistence,
+and package notice placement remain implementation decisions for #69.
+
+### Extension through 2060: dates are available, completeness is not uniform
+
+The CLI now accepts `--first-year`, `--last-year`, and `--future-from` (defaults: 1995, 2044,
+and 2026). To reproduce the extension, use `.generated/holidays-1995-2060` as the empty host
+output directory in the command above and add `--last-year 2060` to the Python arguments.
+
+The **1995–2060 inclusive** snapshot contains **220,692 occurrences** across the same 250
+canonical calendars, with the same 2,304 distinct names. Every 1995–2044 calendar and alias was
+preserved exactly. Two independent extension runs with different Python hash seeds produced
+byte-identical artifacts, including the coverage census.
+
+| Representation                                | JSON bytes | Gzip bytes |
+| --------------------------------------------- | ---------: | ---------: |
+| Per-country `{date, name}` events + alias map | 11,036,920 |    865,891 |
+| Compact dictionaries + alias map              |  2,466,399 |    782,920 |
+| Repeated events for every country code        | 22,136,928 |  1,669,058 |
+
+The compact snapshot is **2.35 MiB raw / 765 KiB gzipped**, an increase of just **197,016
+compressed bytes** (about 192 KiB) over the 2044 snapshot. Storage is not the principal constraint.
+
+`coverage.json` records all 66 requested years for every country, year-by-year occurrence counts,
+provider-declared year bounds, empty years, and warnings from separate single-year Prophet
+queries. It also flags recurring names that disappear after 2035 or 2050; these are investigative
+flags, **not** a general completeness detector. They can reflect name changes or a particular
+observed-day variant, and cannot establish whether a future date is officially confirmed.
+
+**245 calendars have at least one generated occurrence in every year from 2026 through 2060.**
+That is not the same as 245 complete calendars. Only India emits an availability warning, yet
+source review confirms several silent gaps:
+
+| Calendar                                                                                 | Finding in the pinned `holidays` 0.104 source and generated dates                                                                                                                        |
+| ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Sri Lanka (`LK`)                                                                         | Explicit `end_year = 2026`; returns no dates from 2027 onward. Poya calendars are approved annually.                                                                                     |
+| India (`IN`)                                                                             | Many Hindu tables stop at 2035: Holi, India-specific Diwali, Dussehra, and others vanish after that year. Other holidays continue.                                                       |
+| Nepal (`NP`)                                                                             | Several local date tables end in 2032/2033; many Hindu tables end in 2035. Generated occurrences fall from 30 in 2035 to 6 in 2036, without a warning.                                   |
+| Bhutan, Fiji, Guyana, Mauritius, Suriname (`BT`, `FJ`, `GY`, `MU`, `SR`)                 | Also consume Hindu tables ending in 2035. Affected names include Dassain, India-specific Diwali, Holi, and other country-specific subsets.                                               |
+| Indonesia (`ID`)                                                                         | Nyepi / Day of Silence is table-backed only through 2050 and is silently absent afterward. Other holidays continue.                                                                      |
+| Ukraine (`UA`)                                                                           | Default public-holiday category returns no future dates: the provider carries martial-law suspension forward. This is provider policy, not proof there will be no holidays through 2060. |
+| Bouvet Island, Heard/McDonald Islands, British Indian Ocean Territory (`BV`, `HM`, `IO`) | Empty calendars throughout the requested range.                                                                                                                                          |
+
+US, UK, Germany, Canada, and Japan generate dates in every future year with no provider warnings.
+This is a useful rule-projection check, **not** an audit of all statutory holidays or subdivisions.
+China's source requires annual checks for official arrangements; Thailand likewise documents
+annual announcements. Singapore documents estimated moving holidays from 2028 onward. These
+limitations cannot be resolved simply by precomputing more years.
+
+The name-disappearance flags also include Turkey and Malaysia, but those must not be classified
+as confirmed table omissions from the flag alone. Turkey's Eid dates continue with an
+`(estimated)` name suffix after the source's confirmed range ends in 2032; Malaysia's Vesak
+base holiday continues despite a disappearing observed-name variant. Exact provider names matter
+because Prophet uses them as feature identities; blindly stripping suffixes would change parity.
+
+Source review used the **installed, lockfile-pinned wheel**, not a moving upstream branch. Relevant
+files are `holidays/calendars/hindu.py`, `holidays/calendars/balinese_saka.py`,
+`holidays/countries/{sri_lanka,india,nepal,ukraine}.py`, and the affected country implementations.
+The generated census is reproducible but the source review is targeted, not an exhaustive
+country-by-country legal or accuracy audit.
+
+**Recommendation:** keep 2060 as an outer snapshot horizon, but publish explicit per-country/rule
+coverage limitations. Reject or require an explicit partial-calendar opt-in where known tables
+run out, preserve distinctions between missing data and deliberately empty provider calendars,
+and allow custom calendars to supply missing future dates. A blanket “all countries supported
+through 2060” claim is not justified by this provider version.
+
 ## What the generator evaluates
 
 [`generate.py`](generate.py) verifies the installed distribution is exactly the version in

@@ -9,6 +9,7 @@ import {
 import {
   FeatureNameSchema,
   featureNameDelimiter,
+  comparePythonStrings,
   parseFeatureName,
   type FeatureName,
 } from "./feature-name";
@@ -20,6 +21,9 @@ import {
 } from "./internal/additional-features";
 import { PositiveFinite } from "./internal/numeric-schemas";
 import { millisecondsPerDay } from "./internal/time";
+
+/** Prophet-compatible default prior for custom and generated holiday occurrences. */
+export const defaultEventPriorScale = 10;
 
 const maximumExpandedColumns = 10_000;
 
@@ -86,7 +90,9 @@ const EncodedEventOccurrenceSchema = Schema.Struct({
   date: Schema.String,
   lowerWindowDays: WindowInteger.pipe(Schema.withDecodingDefaultKey(Effect.succeed(0))),
   upperWindowDays: WindowInteger.pipe(Schema.withDecodingDefaultKey(Effect.succeed(0))),
-  priorScale: PositiveFinite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(10))),
+  priorScale: PositiveFinite.pipe(
+    Schema.withDecodingDefaultKey(Effect.succeed(defaultEventPriorScale)),
+  ),
 });
 
 const EncodedEventCalendarSchema = Schema.Array(EncodedEventOccurrenceSchema);
@@ -162,7 +168,8 @@ const invalidFromFeatureName = (
 const invalidFromLayout = (error: InvalidAdditionalFeatures): InvalidEventCalendar =>
   invalid(error.path, error.message);
 
-const parseEpochDay = (date: string): EpochDay | undefined => {
+/** Parse a zero-padded Gregorian event date into an integer UTC day without normalization. */
+export const parseEpochDay = (date: string): EpochDay | undefined => {
   const match = calendarDatePattern.exec(date);
 
   if (match === null) {
@@ -288,21 +295,62 @@ export const EventCalendarSchema = EventCalendarFieldsSchema.check(consistentEve
 const eventColumnKey = (name: string, offset: number): string =>
   `${name}${featureNameDelimiter}${offset >= 0 ? "+" : ""}${offset}`;
 
-const comparePythonStrings = (left: string, right: string): number => {
-  const leftPoints = Array.from(left, (value) => value.codePointAt(0) ?? 0);
-  const rightPoints = Array.from(right, (value) => value.codePointAt(0) ?? 0);
-  const sharedLength = Math.min(leftPoints.length, rightPoints.length);
+/** Project parsed occurrences back to the shared event parsing boundary. */
+export const encodeEventOccurrences = (
+  occurrences: ReadonlyArray<EventOccurrence>,
+): ReadonlyArray<EncodedEventOccurrence> =>
+  occurrences.map((occurrence) => ({
+    name: occurrence.name,
+    date: occurrence.date,
+    lowerWindowDays: occurrence.lowerWindowDays,
+    upperWindowDays: occurrence.upperWindowDays,
+    priorScale: occurrence.priorScale,
+  }));
 
-  for (let index = 0; index < sharedLength; index += 1) {
-    const difference = (leftPoints[index] ?? 0) - (rightPoints[index] ?? 0);
+/** Exact canonical event-state alignment, including occurrence provenance and column order. */
+export const eventCalendarsMatch = (left: EventCalendar, right: EventCalendar): boolean =>
+  left.mode === right.mode &&
+  left.occurrences.length === right.occurrences.length &&
+  left.occurrences.every((occurrence, index) => {
+    const other = right.occurrences[index];
 
-    if (difference !== 0) {
-      return difference;
-    }
-  }
+    return (
+      other !== undefined &&
+      occurrence.name === other.name &&
+      occurrence.date === other.date &&
+      occurrence.epochDay === other.epochDay &&
+      occurrence.lowerWindowDays === other.lowerWindowDays &&
+      occurrence.upperWindowDays === other.upperWindowDays &&
+      occurrence.priorScale === other.priorScale
+    );
+  }) &&
+  left.columns.length === right.columns.length &&
+  left.columns.every((column, index) => {
+    const other = right.columns[index];
 
-  return leftPoints.length - rightPoints.length;
-};
+    return (
+      other !== undefined &&
+      column.eventName === other.eventName &&
+      column.offsetDays === other.offsetDays &&
+      column.priorScale === other.priorScale
+    );
+  }) &&
+  left.layout.coefficientCount === right.layout.coefficientCount &&
+  left.layout.priorScales.length === right.layout.priorScales.length &&
+  left.layout.priorScales.every((prior, index) => prior === right.layout.priorScales[index]) &&
+  left.layout.components.length === right.layout.components.length &&
+  left.layout.components.every((component, index) => {
+    const other = right.layout.components[index];
+
+    return (
+      other !== undefined &&
+      component.kind === other.kind &&
+      component.name === other.name &&
+      component.mode === other.mode &&
+      component.coefficientOffset === other.coefficientOffset &&
+      component.coefficientCount === other.coefficientCount
+    );
+  });
 
 /** Canonical deeply frozen empty event calendar. */
 export const emptyEventCalendar: EventCalendar = Object.freeze({
@@ -316,6 +364,173 @@ export const emptyEventCalendar: EventCalendar = Object.freeze({
   }),
 });
 
+interface CalendarBuilder {
+  readonly occurrences: Array<EventOccurrence>;
+  readonly priorsByName: Map<string, number>;
+  readonly keys: Set<string>;
+  readonly columnsByKey: Map<string, EventFeatureColumn>;
+}
+
+const makeCalendarBuilder = (): CalendarBuilder => ({
+  occurrences: [],
+  priorsByName: new Map(),
+  keys: new Set(),
+  columnsByKey: new Map(),
+});
+
+/** Add one parsed occurrence, rejecting an inconsistent prior and skipping exact duplicates. */
+const collectOccurrence = (
+  builder: CalendarBuilder,
+  occurrence: EventOccurrence,
+  index: number,
+): InvalidEventCalendar | undefined => {
+  const previousPrior = builder.priorsByName.get(occurrence.name);
+
+  if (previousPrior !== undefined && previousPrior !== occurrence.priorScale) {
+    return invalid(
+      [index, "priorScale"],
+      `Event '${occurrence.name}' must use one consistent prior scale`,
+    );
+  }
+
+  builder.priorsByName.set(occurrence.name, occurrence.priorScale);
+
+  const key = `${occurrence.name}\u0000${occurrence.epochDay}\u0000${occurrence.lowerWindowDays}\u0000${occurrence.upperWindowDays}`;
+
+  if (!builder.keys.has(key)) {
+    builder.occurrences.push(occurrence);
+    builder.keys.add(key);
+  }
+
+  return undefined;
+};
+
+/** Collect one parsed occurrence and every column its window covers. */
+const addOccurrence = (
+  builder: CalendarBuilder,
+  occurrence: EventOccurrence,
+  index: number,
+): InvalidEventCalendar | undefined => {
+  const collected = collectOccurrence(builder, occurrence, index);
+
+  if (collected !== undefined) {
+    return collected;
+  }
+
+  for (let offset = occurrence.lowerWindowDays; offset <= occurrence.upperWindowDays; offset += 1) {
+    const key = eventColumnKey(occurrence.name, offset);
+    builder.columnsByKey.set(
+      key,
+      Object.freeze({
+        eventName: occurrence.name,
+        offsetDays: offset,
+        priorScale: occurrence.priorScale,
+      }),
+    );
+
+    if (builder.columnsByKey.size > maximumExpandedColumns) {
+      return invalid([], `An event calendar cannot exceed ${maximumExpandedColumns} columns`);
+    }
+  }
+
+  return undefined;
+};
+
+/** Order collected columns as Python Prophet does and derive their grouped feature layout. */
+const finishCalendar = (
+  builder: CalendarBuilder,
+  mode: ComponentMode,
+): Effect.Effect<EventCalendar, InvalidEventCalendar> => {
+  const columns = Array.from(builder.columnsByKey.entries())
+    .sort(([left], [right]) => comparePythonStrings(left, right))
+    .map(([, column]) => column);
+
+  const components: Array<{
+    readonly kind: "event";
+    readonly name: FeatureName;
+    readonly coefficientOffset: number;
+    readonly coefficientCount: number;
+    readonly mode: ComponentMode;
+  }> = [];
+
+  for (const [index, column] of columns.entries()) {
+    const previous = components.at(-1);
+
+    if (previous?.name === column.eventName) {
+      components[components.length - 1] = {
+        ...previous,
+        coefficientCount: previous.coefficientCount + 1,
+      };
+    } else {
+      components.push({
+        kind: "event",
+        name: column.eventName,
+        coefficientOffset: index,
+        coefficientCount: 1,
+        mode,
+      });
+    }
+  }
+
+  return createAdditionalFeatureLayout(
+    components,
+    columns.map((column) => column.priorScale),
+  ).pipe(
+    Effect.mapError(invalidFromLayout),
+    Effect.map((layout) =>
+      columns.length === 0 && mode === "additive"
+        ? emptyEventCalendar
+        : Object.freeze({
+            mode,
+            occurrences: Object.freeze(builder.occurrences),
+            columns: Object.freeze(columns),
+            layout,
+          }),
+    ),
+  );
+};
+
+/**
+ * Build a calendar from already-parsed occurrences under the parser's prior, duplicate and column
+ * rules, skipping the syntax, name and date parsing they already passed.
+ */
+export const eventCalendarFromOccurrences = (
+  occurrences: ReadonlyArray<EventOccurrence>,
+  mode: ComponentMode,
+): Effect.Effect<EventCalendar, InvalidEventCalendar> => {
+  const builder = makeCalendarBuilder();
+
+  for (const [index, occurrence] of occurrences.entries()) {
+    const added = addOccurrence(builder, occurrence, index);
+
+    if (added !== undefined) {
+      return Effect.fail(added);
+    }
+  }
+
+  return finishCalendar(builder, mode);
+};
+
+/**
+ * Merge already-parsed occurrences under the parser's prior and duplicate rules, without
+ * rebuilding columns. Prediction keeps its fitted column layout and needs only the occurrences.
+ */
+export const mergeEventOccurrences = (
+  occurrences: ReadonlyArray<EventOccurrence>,
+): Effect.Effect<ReadonlyArray<EventOccurrence>, InvalidEventCalendar> => {
+  const builder = makeCalendarBuilder();
+
+  for (const [index, occurrence] of occurrences.entries()) {
+    const collected = collectOccurrence(builder, occurrence, index);
+
+    if (collected !== undefined) {
+      return Effect.fail(collected);
+    }
+  }
+
+  return Effect.succeed(Object.freeze(builder.occurrences));
+};
+
 /** Parse event occurrences and derive their deterministic Prophet-compatible column layout. */
 export const parseEventCalendar = Effect.fn("Prophet.parseEventCalendar")(function* (
   input: Parameters<typeof decodeEventCalendarSyntax>[0],
@@ -325,10 +540,7 @@ export const parseEventCalendar = Effect.fn("Prophet.parseEventCalendar")(functi
     Effect.mapError((error) => invalidFromIssue(error.issue)),
   );
 
-  const occurrences: Array<EventOccurrence> = [];
-  const priorsByName = new Map<string, number>();
-  const columnsByKey = new Map<string, EventFeatureColumn>();
-  const occurrenceKeys = new Set<string>();
+  const builder = makeCalendarBuilder();
 
   for (const [index, occurrence] of encoded.entries()) {
     const name = yield* parseFeatureName(occurrence.name).pipe(
@@ -375,95 +587,23 @@ export const parseEventCalendar = Effect.fn("Prophet.parseEventCalendar")(functi
       );
     }
 
-    const previousPrior = priorsByName.get(name);
+    const added = addOccurrence(
+      builder,
+      Object.freeze({
+        name,
+        date: occurrence.date,
+        epochDay,
+        lowerWindowDays: occurrence.lowerWindowDays,
+        upperWindowDays: occurrence.upperWindowDays,
+        priorScale: occurrence.priorScale,
+      }),
+      index,
+    );
 
-    if (previousPrior !== undefined && previousPrior !== occurrence.priorScale) {
-      return yield* Effect.fail(
-        invalid([index, "priorScale"], `Event '${name}' must use one consistent prior scale`),
-      );
-    }
-
-    priorsByName.set(name, occurrence.priorScale);
-
-    const occurrenceKey = `${name}\u0000${epochDay}\u0000${occurrence.lowerWindowDays}\u0000${occurrence.upperWindowDays}`;
-
-    if (!occurrenceKeys.has(occurrenceKey)) {
-      occurrences.push(
-        Object.freeze({
-          name,
-          date: occurrence.date,
-          epochDay,
-          lowerWindowDays: occurrence.lowerWindowDays,
-          upperWindowDays: occurrence.upperWindowDays,
-          priorScale: occurrence.priorScale,
-        }),
-      );
-      occurrenceKeys.add(occurrenceKey);
-    }
-
-    for (
-      let offset = occurrence.lowerWindowDays;
-      offset <= occurrence.upperWindowDays;
-      offset += 1
-    ) {
-      const key = eventColumnKey(name, offset);
-      columnsByKey.set(
-        key,
-        Object.freeze({ eventName: name, offsetDays: offset, priorScale: occurrence.priorScale }),
-      );
-
-      if (columnsByKey.size > maximumExpandedColumns) {
-        return yield* Effect.fail(
-          invalid([], `An event calendar cannot exceed ${maximumExpandedColumns} columns`),
-        );
-      }
+    if (added !== undefined) {
+      return yield* Effect.fail(added);
     }
   }
 
-  const columns = Array.from(columnsByKey.entries())
-    .sort(([left], [right]) => comparePythonStrings(left, right))
-    .map(([, column]) => column);
-
-  const components: Array<{
-    readonly kind: "event";
-    readonly name: FeatureName;
-    readonly coefficientOffset: number;
-    readonly coefficientCount: number;
-    readonly mode: ComponentMode;
-  }> = [];
-
-  for (const [index, column] of columns.entries()) {
-    const previous = components.at(-1);
-
-    if (previous?.name === column.eventName) {
-      components[components.length - 1] = {
-        ...previous,
-        coefficientCount: previous.coefficientCount + 1,
-      };
-    } else {
-      components.push({
-        kind: "event",
-        name: column.eventName,
-        coefficientOffset: index,
-        coefficientCount: 1,
-        mode,
-      });
-    }
-  }
-
-  const layout = yield* createAdditionalFeatureLayout(
-    components,
-    columns.map((column) => column.priorScale),
-  ).pipe(Effect.mapError(invalidFromLayout));
-
-  if (columns.length === 0 && mode === "additive") {
-    return emptyEventCalendar;
-  }
-
-  return Object.freeze({
-    mode,
-    occurrences: Object.freeze(occurrences),
-    columns: Object.freeze(columns),
-    layout,
-  });
+  return yield* finishCalendar(builder, mode);
 });

@@ -30,6 +30,7 @@ import {
 } from "./options";
 import { fit, predict, predictUncertainty } from "./prophet";
 import { exceedsSimulationBudget, simulationIdentity } from "./uncertainty";
+import type { CountryHolidayError } from "./country-holidays";
 import type { FittedProphet } from "./fitted-model";
 import type { SeasonalityLayout } from "./seasonality";
 import {
@@ -511,7 +512,7 @@ export const planRollingOrigin = Effect.fn("Prophet.planRollingOrigin")(function
   observationsInput: Parameters<typeof decodeObservations>[0],
   optionsInput: EncodedProphetOptions,
   input: RollingOriginPlanInput,
-): Effect.fn.Return<RollingOriginPlanSummary, InputValidationError> {
+): Effect.fn.Return<RollingOriginPlanSummary, InputValidationError | CountryHolidayError> {
   const { foldPlan } = yield* prepareRollingOrigin(observationsInput, optionsInput, input);
 
   return foldPlan.summary;
@@ -549,7 +550,11 @@ export const resolveBaselinePlan = (
     );
 
     // Explicit planning shares the same fold-index and resource checks as model CV.
-    const options = yield* decodeOptions({});
+    // Empty options select no country calendar, so only option validation can fail here.
+    const options = yield* decodeOptions({}).pipe(
+      Effect.catchTag("CountryHolidayError", (error) => Effect.die(error)),
+    );
+
     const resolved = yield* planRollingOriginIndexes(observations, options, plan);
 
     for (const [index, fold] of resolved.summary.folds.entries()) {
@@ -612,7 +617,7 @@ const foldOptions = (
 const foldFailure = (
   fold: EvaluationFoldIndexes,
   stage: "fit" | "predict" | "result" | "uncertainty" | "interval-result",
-  cause: InputValidationError | FittingError | PredictionError,
+  cause: InputValidationError | FittingError | PredictionError | CountryHolidayError,
   rowIndex?: number,
 ): EvaluationError => {
   const reason = {
@@ -641,7 +646,11 @@ const crossValidateOperation = Effect.fn("Prophet.crossValidate")(function* (
   input: RollingOriginPlanInput,
   modeInput?: CrossValidationInput,
   candidateId = "",
-): Effect.fn.Return<CrossValidationResult, InputValidationError | EvaluationError, FittingBackend> {
+): Effect.fn.Return<
+  CrossValidationResult,
+  InputValidationError | EvaluationError | CountryHolidayError,
+  FittingBackend
+> {
   const { observations, options, fitOptions, controls, foldPlan, uncertainty } =
     yield* prepareRollingOrigin(observationsInput, optionsInput, input, modeInput);
 
@@ -893,8 +902,11 @@ export const crossValidateCandidate = (
   input: RollingOriginPlanInput,
   candidateId: string,
   modeInput?: CrossValidationInput,
-): Effect.Effect<CrossValidationResult, InputValidationError | EvaluationError, FittingBackend> =>
-  crossValidateOperation(observationsInput, optionsInput, input, modeInput, candidateId);
+): Effect.Effect<
+  CrossValidationResult,
+  InputValidationError | EvaluationError | CountryHolidayError,
+  FittingBackend
+> => crossValidateOperation(observationsInput, optionsInput, input, modeInput, candidateId);
 
 /** Point CV defaults to absmax; the fourth argument overrides fold scaling or enables intervals. */
 export function crossValidate(
@@ -904,7 +916,7 @@ export function crossValidate(
   controls?: CrossValidationPointInput,
 ): Effect.Effect<
   PointCrossValidationResult,
-  InputValidationError | EvaluationError,
+  InputValidationError | EvaluationError | CountryHolidayError,
   FittingBackend
 >;
 export function crossValidate(
@@ -914,7 +926,7 @@ export function crossValidate(
   mode: CrossValidationIntervalInput,
 ): Effect.Effect<
   IntervalCrossValidationResult,
-  InputValidationError | EvaluationError,
+  InputValidationError | EvaluationError | CountryHolidayError,
   FittingBackend
 >;
 export function crossValidate(
@@ -922,12 +934,20 @@ export function crossValidate(
   optionsInput: EncodedProphetOptions,
   input: RollingOriginPlanInput,
   controls?: CrossValidationInput,
-): Effect.Effect<CrossValidationResult, InputValidationError | EvaluationError, FittingBackend>;
+): Effect.Effect<
+  CrossValidationResult,
+  InputValidationError | EvaluationError | CountryHolidayError,
+  FittingBackend
+>;
 export function crossValidate(
   observationsInput: Parameters<typeof decodeObservations>[0],
   optionsInput: EncodedProphetOptions,
   input: RollingOriginPlanInput,
   mode?: CrossValidationInput,
-): Effect.Effect<CrossValidationResult, InputValidationError | EvaluationError, FittingBackend> {
+): Effect.Effect<
+  CrossValidationResult,
+  InputValidationError | EvaluationError | CountryHolidayError,
+  FittingBackend
+> {
   return crossValidateOperation(observationsInput, optionsInput, input, mode);
 }

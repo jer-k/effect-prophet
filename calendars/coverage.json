@@ -1,0 +1,1530 @@
+{
+  "inventoryVersion": 1,
+  "issues": [
+    {
+      "country": "AI",
+      "description": "The provider does not populate years before 2001. This describes its implementation boundary, not the legal existence of this country or its holidays.",
+      "disposition": "restriction",
+      "firstYear": 1995,
+      "lastYear": 2000,
+      "reason": "provider-year-bound",
+      "rule": "country calendar",
+      "sources": [
+        {
+          "path": "holidays/countries/anguilla.py",
+          "sha256": "cb24e9638e8bc2674f995735653a359a05a954c1c35b6338fe59fa89551a2d87",
+          "symbol": "start_year",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/anguilla.py"
+        },
+        {
+          "path": "holidays/holiday_base.py",
+          "sha256": "191c2e7c6966f3c6424cd568f033332cdc39fbfabc7b9d39c914b8660276f5c5",
+          "symbol": "HolidayBase._populate",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/holiday_base.py"
+        }
+      ]
+    },
+    {
+      "country": "BL",
+      "description": "The provider does not populate years before 2008. This describes its implementation boundary, not the legal existence of this country or its holidays.",
+      "disposition": "restriction",
+      "firstYear": 1995,
+      "lastYear": 2007,
+      "reason": "provider-year-bound",
+      "rule": "country calendar",
+      "sources": [
+        {
+          "path": "holidays/countries/saint_barthelemy.py",
+          "sha256": "97ce4015aa4ce568e3ba58af50f9b354d36d6ce74fd5ef7af684738aade8fa9a",
+          "symbol": "start_year",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/saint_barthelemy.py"
+        },
+        {
+          "path": "holidays/holiday_base.py",
+          "sha256": "191c2e7c6966f3c6424cd568f033332cdc39fbfabc7b9d39c914b8660276f5c5",
+          "symbol": "HolidayBase._populate",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/holiday_base.py"
+        }
+      ]
+    },
+    {
+      "country": "BQ",
+      "description": "The provider does not populate years before 2011. This describes its implementation boundary, not the legal existence of this country or its holidays.",
+      "disposition": "restriction",
+      "firstYear": 1995,
+      "lastYear": 2010,
+      "reason": "provider-year-bound",
+      "rule": "country calendar",
+      "sources": [
+        {
+          "path": "holidays/countries/bonaire_sint_eustatius_and_saba.py",
+          "sha256": "fbab92d7b6a5662e28684f86a6e4ce51057d36070fccef33da39d32a58548f42",
+          "symbol": "start_year",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/bonaire_sint_eustatius_and_saba.py"
+        },
+        {
+          "path": "holidays/holiday_base.py",
+          "sha256": "191c2e7c6966f3c6424cd568f033332cdc39fbfabc7b9d39c914b8660276f5c5",
+          "symbol": "HolidayBase._populate",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/holiday_base.py"
+        }
+      ]
+    },
+    {
+      "country": "BT",
+      "description": "The provider does not populate years before 2007. This describes its implementation boundary, not the legal existence of this country or its holidays.",
+      "disposition": "restriction",
+      "firstYear": 1995,
+      "lastYear": 2006,
+      "reason": "provider-year-bound",
+      "rule": "country calendar",
+      "sources": [
+        {
+          "path": "holidays/countries/bhutan.py",
+          "sha256": "7eb60450f0b8bdba35dc633dd4bc813f4a9b5d26ab6c5526a44031020926a57f",
+          "symbol": "start_year",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/bhutan.py"
+        },
+        {
+          "path": "holidays/holiday_base.py",
+          "sha256": "191c2e7c6966f3c6424cd568f033332cdc39fbfabc7b9d39c914b8660276f5c5",
+          "symbol": "HolidayBase._populate",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/holiday_base.py"
+        }
+      ]
+    },
+    {
+      "country": "BT",
+      "description": "These rules use finite Hindu tables ending in 2035; unrelated holidays may still be returned. Exact/estimated name changes alone are not evidence of missing dates.",
+      "disposition": "restriction",
+      "firstYear": 2036,
+      "lastYear": 2060,
+      "reason": "missing-rule-table",
+      "rule": "Dassain",
+      "sources": [
+        {
+          "path": "holidays/countries/bhutan.py",
+          "sha256": "7eb60450f0b8bdba35dc633dd4bc813f4a9b5d26ab6c5526a44031020926a57f",
+          "symbol": "_populate_public_holidays",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/bhutan.py"
+        },
+        {
+          "path": "holidays/calendars/hindu.py",
+          "sha256": "cc37bb0625720350afeaf308a3b2e7006c2b26e94e9819e0798a3f01670c80ba",
+          "symbol": "_HinduLunisolar",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/calendars/hindu.py"
+        },
+        {
+          "path": "holidays/calendars/hindu.py",
+          "sha256": "cc37bb0625720350afeaf308a3b2e7006c2b26e94e9819e0798a3f01670c80ba",
+          "symbol": "_HinduLunisolar._get_holiday",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/calendars/hindu.py"
+        }
+      ]
+    },
+    {
+      "country": "BV",
+      "description": "The registered provider deliberately inherits NoHolidayBase and returns no dates. This is not treated as a missing-table restriction.",
+      "disposition": "advisory",
+      "firstYear": 1995,
+      "lastYear": 2060,
+      "reason": "deliberately-empty",
+      "rule": "country calendar",
+      "sources": [
+        {
+          "path": "holidays/countries/bouvet_island.py",
+          "sha256": "7e800c909064db530078aeaa24b83cfb282fd88a863cf0070a0c5ae6e8661757",
+          "symbol": "NoHolidayBase",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/bouvet_island.py"
+        },
+        {
+          "path": "holidays/no_holiday_base.py",
+          "sha256": "b55a4584095f32542096d368834ba6d3becad7249accd1e9ec33e3703f8d20f6",
+          "symbol": "NoHolidayBase",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/no_holiday_base.py"
+        }
+      ]
+    },
+    {
+      "country": "CI",
+      "description": "The provider does not populate years before 1997. This describes its implementation boundary, not the legal existence of this country or its holidays.",
+      "disposition": "restriction",
+      "firstYear": 1995,
+      "lastYear": 1996,
+      "reason": "provider-year-bound",
+      "rule": "country calendar",
+      "sources": [
+        {
+          "path": "holidays/countries/ivory_coast.py",
+          "sha256": "1770c954f25ec0b5027a46a8f68a410a2650e545f507927e0e67658e1ca14595",
+          "symbol": "start_year",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/ivory_coast.py"
+        },
+        {
+          "path": "holidays/holiday_base.py",
+          "sha256": "191c2e7c6966f3c6424cd568f033332cdc39fbfabc7b9d39c914b8660276f5c5",
+          "symbol": "HolidayBase._populate",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/holiday_base.py"
+        }
+      ]
+    },
+    {
+      "country": "CK",
+      "description": "The provider does not populate years before 2000. This describes its implementation boundary, not the legal existence of this country or its holidays.",
+      "disposition": "restriction",
+      "firstYear": 1995,
+      "lastYear": 1999,
+      "reason": "provider-year-bound",
+      "rule": "country calendar",
+      "sources": [
+        {
+          "path": "holidays/countries/cook_islands.py",
+          "sha256": "c038c485ee419a5ffa55a1bc5ee980832f20c10aa139bd4b99413e0348e22c31",
+          "symbol": "start_year",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/cook_islands.py"
+        },
+        {
+          "path": "holidays/holiday_base.py",
+          "sha256": "191c2e7c6966f3c6424cd568f033332cdc39fbfabc7b9d39c914b8660276f5c5",
+          "symbol": "HolidayBase._populate",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/holiday_base.py"
+        }
+      ]
+    },
+    {
+      "country": "CN",
+      "description": "Official arrangements require annual announcements/checks. Projected recurring dates do not establish official completeness.",
+      "disposition": "advisory",
+      "firstYear": 2026,
+      "lastYear": 2060,
+      "reason": "annual-announcements",
+      "rule": "official holiday arrangements",
+      "sources": [
+        {
+          "path": "holidays/countries/china.py",
+          "sha256": "086d2904a4131131fff4773dac966ed7847bf3deb706f9c89c0c808922cd1580",
+          "symbol": "China",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/china.py"
+        }
+      ]
+    },
+    {
+      "country": "CX",
+      "description": "The provider does not populate years before 2007. This describes its implementation boundary, not the legal existence of this country or its holidays.",
+      "disposition": "restriction",
+      "firstYear": 1995,
+      "lastYear": 2006,
+      "reason": "provider-year-bound",
+      "rule": "country calendar",
+      "sources": [
+        {
+          "path": "holidays/countries/christmas_island.py",
+          "sha256": "9c2f314c2fed7fba19c400112b9a95f069bdb68ec9f0d2636c32b88935360858",
+          "symbol": "start_year",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/christmas_island.py"
+        },
+        {
+          "path": "holidays/holiday_base.py",
+          "sha256": "191c2e7c6966f3c6424cd568f033332cdc39fbfabc7b9d39c914b8660276f5c5",
+          "symbol": "HolidayBase._populate",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/holiday_base.py"
+        }
+      ]
+    },
+    {
+      "country": "DO",
+      "description": "The provider does not populate years before 1998. This describes its implementation boundary, not the legal existence of this country or its holidays.",
+      "disposition": "restriction",
+      "firstYear": 1995,
+      "lastYear": 1997,
+      "reason": "provider-year-bound",
+      "rule": "country calendar",
+      "sources": [
+        {
+          "path": "holidays/countries/dominican_republic.py",
+          "sha256": "d500d8c6bc57904d3e55dbc0f29098d1e830e054d25ada82b98043082dac4b07",
+          "symbol": "start_year",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/dominican_republic.py"
+        },
+        {
+          "path": "holidays/holiday_base.py",
+          "sha256": "191c2e7c6966f3c6424cd568f033332cdc39fbfabc7b9d39c914b8660276f5c5",
+          "symbol": "HolidayBase._populate",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/holiday_base.py"
+        }
+      ]
+    },
+    {
+      "country": "EH",
+      "description": "The provider does not populate years before 2000. This describes its implementation boundary, not the legal existence of this country or its holidays.",
+      "disposition": "restriction",
+      "firstYear": 1995,
+      "lastYear": 1999,
+      "reason": "provider-year-bound",
+      "rule": "country calendar",
+      "sources": [
+        {
+          "path": "holidays/countries/western_sahara.py",
+          "sha256": "b2d74a6a399e9a7c21307d3f6cd022e0db31307d2dd0325a1dc4c20ebc9f399a",
+          "symbol": "start_year",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/western_sahara.py"
+        },
+        {
+          "path": "holidays/holiday_base.py",
+          "sha256": "191c2e7c6966f3c6424cd568f033332cdc39fbfabc7b9d39c914b8660276f5c5",
+          "symbol": "HolidayBase._populate",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/holiday_base.py"
+        }
+      ]
+    },
+    {
+      "country": "ES",
+      "description": "The provider does not populate years before 2008. This describes its implementation boundary, not the legal existence of this country or its holidays.",
+      "disposition": "restriction",
+      "firstYear": 1995,
+      "lastYear": 2007,
+      "reason": "provider-year-bound",
+      "rule": "country calendar",
+      "sources": [
+        {
+          "path": "holidays/countries/spain.py",
+          "sha256": "f3c3de677248dd8a442fbdd941e6f412d5c08a11d9a59015da9be06ffb8f1ab9",
+          "symbol": "start_year",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/spain.py"
+        },
+        {
+          "path": "holidays/holiday_base.py",
+          "sha256": "191c2e7c6966f3c6424cd568f033332cdc39fbfabc7b9d39c914b8660276f5c5",
+          "symbol": "HolidayBase._populate",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/holiday_base.py"
+        }
+      ]
+    },
+    {
+      "country": "FJ",
+      "description": "The provider does not populate years before 2016. This describes its implementation boundary, not the legal existence of this country or its holidays.",
+      "disposition": "restriction",
+      "firstYear": 1995,
+      "lastYear": 2015,
+      "reason": "provider-year-bound",
+      "rule": "country calendar",
+      "sources": [
+        {
+          "path": "holidays/countries/fiji.py",
+          "sha256": "4ee8169e76437d7298de96b5da40dae8e77ed1c03170ee7c38e946aaa04b52be",
+          "symbol": "start_year",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/fiji.py"
+        },
+        {
+          "path": "holidays/holiday_base.py",
+          "sha256": "191c2e7c6966f3c6424cd568f033332cdc39fbfabc7b9d39c914b8660276f5c5",
+          "symbol": "HolidayBase._populate",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/holiday_base.py"
+        }
+      ]
+    },
+    {
+      "country": "FJ",
+      "description": "These rules use finite Hindu tables ending in 2035; unrelated holidays may still be returned. Exact/estimated name changes alone are not evidence of missing dates.",
+      "disposition": "restriction",
+      "firstYear": 2036,
+      "lastYear": 2060,
+      "reason": "missing-rule-table",
+      "rule": "Diwali",
+      "sources": [
+        {
+          "path": "holidays/countries/fiji.py",
+          "sha256": "4ee8169e76437d7298de96b5da40dae8e77ed1c03170ee7c38e946aaa04b52be",
+          "symbol": "_populate_public_holidays",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/fiji.py"
+        },
+        {
+          "path": "holidays/calendars/hindu.py",
+          "sha256": "cc37bb0625720350afeaf308a3b2e7006c2b26e94e9819e0798a3f01670c80ba",
+          "symbol": "_HinduLunisolar",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/calendars/hindu.py"
+        },
+        {
+          "path": "holidays/calendars/hindu.py",
+          "sha256": "cc37bb0625720350afeaf308a3b2e7006c2b26e94e9819e0798a3f01670c80ba",
+          "symbol": "_HinduLunisolar._get_holiday",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/calendars/hindu.py"
+        }
+      ]
+    },
+    {
+      "country": "GD",
+      "description": "The provider does not populate years before 2000. This describes its implementation boundary, not the legal existence of this country or its holidays.",
+      "disposition": "restriction",
+      "firstYear": 1995,
+      "lastYear": 1999,
+      "reason": "provider-year-bound",
+      "rule": "country calendar",
+      "sources": [
+        {
+          "path": "holidays/countries/grenada.py",
+          "sha256": "f08c48e2431c2f77f9e7098bfe5949543e8be59642c8293305404e1d4554bdc0",
+          "symbol": "start_year",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/grenada.py"
+        },
+        {
+          "path": "holidays/holiday_base.py",
+          "sha256": "191c2e7c6966f3c6424cd568f033332cdc39fbfabc7b9d39c914b8660276f5c5",
+          "symbol": "HolidayBase._populate",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/holiday_base.py"
+        }
+      ]
+    },
+    {
+      "country": "GH",
+      "description": "The provider does not populate years before 2002. This describes its implementation boundary, not the legal existence of this country or its holidays.",
+      "disposition": "restriction",
+      "firstYear": 1995,
+      "lastYear": 2001,
+      "reason": "provider-year-bound",
+      "rule": "country calendar",
+      "sources": [
+        {
+          "path": "holidays/countries/ghana.py",
+          "sha256": "553815fa43623948e09cf6e3565c01b7fba5b279cc22e91e181a893d41c3c9dc",
+          "symbol": "start_year",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/ghana.py"
+        },
+        {
+          "path": "holidays/holiday_base.py",
+          "sha256": "191c2e7c6966f3c6424cd568f033332cdc39fbfabc7b9d39c914b8660276f5c5",
+          "symbol": "HolidayBase._populate",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/holiday_base.py"
+        }
+      ]
+    },
+    {
+      "country": "GI",
+      "description": "The provider does not populate years before 2000. This describes its implementation boundary, not the legal existence of this country or its holidays.",
+      "disposition": "restriction",
+      "firstYear": 1995,
+      "lastYear": 1999,
+      "reason": "provider-year-bound",
+      "rule": "country calendar",
+      "sources": [
+        {
+          "path": "holidays/countries/gibraltar.py",
+          "sha256": "247c16a01708b784fdb56891712e07192bf120aa292d03c6b7c4af78e4b6d5b6",
+          "symbol": "start_year",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/gibraltar.py"
+        },
+        {
+          "path": "holidays/holiday_base.py",
+          "sha256": "191c2e7c6966f3c6424cd568f033332cdc39fbfabc7b9d39c914b8660276f5c5",
+          "symbol": "HolidayBase._populate",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/holiday_base.py"
+        }
+      ]
+    },
+    {
+      "country": "GQ",
+      "description": "The provider does not populate years before 2007. This describes its implementation boundary, not the legal existence of this country or its holidays.",
+      "disposition": "restriction",
+      "firstYear": 1995,
+      "lastYear": 2006,
+      "reason": "provider-year-bound",
+      "rule": "country calendar",
+      "sources": [
+        {
+          "path": "holidays/countries/equatorial_guinea.py",
+          "sha256": "a9e5e9a789c23a978bb57304866670f98fc3fd9a3c4a25eef32e29ac9811fa9f",
+          "symbol": "start_year",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/equatorial_guinea.py"
+        },
+        {
+          "path": "holidays/holiday_base.py",
+          "sha256": "191c2e7c6966f3c6424cd568f033332cdc39fbfabc7b9d39c914b8660276f5c5",
+          "symbol": "HolidayBase._populate",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/holiday_base.py"
+        }
+      ]
+    },
+    {
+      "country": "GS",
+      "description": "The provider does not populate years before 2012. This describes its implementation boundary, not the legal existence of this country or its holidays.",
+      "disposition": "restriction",
+      "firstYear": 1995,
+      "lastYear": 2011,
+      "reason": "provider-year-bound",
+      "rule": "country calendar",
+      "sources": [
+        {
+          "path": "holidays/countries/south_georgia_and_the_south_sandwich_islands.py",
+          "sha256": "1e8d0fb647f9b82acacaabb363c75061cc818d13e51e5d9e81a2ee96705d6061",
+          "symbol": "start_year",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/south_georgia_and_the_south_sandwich_islands.py"
+        },
+        {
+          "path": "holidays/holiday_base.py",
+          "sha256": "191c2e7c6966f3c6424cd568f033332cdc39fbfabc7b9d39c914b8660276f5c5",
+          "symbol": "HolidayBase._populate",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/holiday_base.py"
+        }
+      ]
+    },
+    {
+      "country": "GW",
+      "description": "The provider does not populate years before 2023. This describes its implementation boundary, not the legal existence of this country or its holidays.",
+      "disposition": "restriction",
+      "firstYear": 1995,
+      "lastYear": 2022,
+      "reason": "provider-year-bound",
+      "rule": "country calendar",
+      "sources": [
+        {
+          "path": "holidays/countries/guinea_bissau.py",
+          "sha256": "302b03d1630aa5197bc7dce79a57fa3d7f5f550699192d56f97cf1f596aff882",
+          "symbol": "start_year",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/guinea_bissau.py"
+        },
+        {
+          "path": "holidays/holiday_base.py",
+          "sha256": "191c2e7c6966f3c6424cd568f033332cdc39fbfabc7b9d39c914b8660276f5c5",
+          "symbol": "HolidayBase._populate",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/holiday_base.py"
+        }
+      ]
+    },
+    {
+      "country": "GY",
+      "description": "These rules use Hindu tables beginning in 2001; unrelated holidays may still be returned.",
+      "disposition": "restriction",
+      "firstYear": 1995,
+      "lastYear": 2000,
+      "reason": "missing-rule-table",
+      "rule": "Phagwah, Deepavali",
+      "sources": [
+        {
+          "path": "holidays/countries/guyana.py",
+          "sha256": "52cae8d85c405e9e1e341e199545fae22e3c9b8920a8b9d255c78b3e3ae5062a",
+          "symbol": "_populate_public_holidays",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/guyana.py"
+        },
+        {
+          "path": "holidays/calendars/hindu.py",
+          "sha256": "cc37bb0625720350afeaf308a3b2e7006c2b26e94e9819e0798a3f01670c80ba",
+          "symbol": "_HinduLunisolar",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/calendars/hindu.py"
+        },
+        {
+          "path": "holidays/calendars/hindu.py",
+          "sha256": "cc37bb0625720350afeaf308a3b2e7006c2b26e94e9819e0798a3f01670c80ba",
+          "symbol": "_HinduLunisolar._get_holiday",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/calendars/hindu.py"
+        }
+      ]
+    },
+    {
+      "country": "GY",
+      "description": "These rules use finite Hindu tables ending in 2035; unrelated holidays may still be returned. Exact/estimated name changes alone are not evidence of missing dates.",
+      "disposition": "restriction",
+      "firstYear": 2036,
+      "lastYear": 2060,
+      "reason": "missing-rule-table",
+      "rule": "Phagwah, Deepavali",
+      "sources": [
+        {
+          "path": "holidays/countries/guyana.py",
+          "sha256": "52cae8d85c405e9e1e341e199545fae22e3c9b8920a8b9d255c78b3e3ae5062a",
+          "symbol": "_populate_public_holidays",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/guyana.py"
+        },
+        {
+          "path": "holidays/calendars/hindu.py",
+          "sha256": "cc37bb0625720350afeaf308a3b2e7006c2b26e94e9819e0798a3f01670c80ba",
+          "symbol": "_HinduLunisolar",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/calendars/hindu.py"
+        },
+        {
+          "path": "holidays/calendars/hindu.py",
+          "sha256": "cc37bb0625720350afeaf308a3b2e7006c2b26e94e9819e0798a3f01670c80ba",
+          "symbol": "_HinduLunisolar._get_holiday",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/calendars/hindu.py"
+        }
+      ]
+    },
+    {
+      "country": "HM",
+      "description": "The registered provider deliberately inherits NoHolidayBase and returns no dates. This is not treated as a missing-table restriction.",
+      "disposition": "advisory",
+      "firstYear": 1995,
+      "lastYear": 2060,
+      "reason": "deliberately-empty",
+      "rule": "country calendar",
+      "sources": [
+        {
+          "path": "holidays/countries/heard_island_and_mcdonald_islands.py",
+          "sha256": "c1e0141d51e825fd219d247de7169e3d6710f080d54cc7d9d52be6e84c3e1238",
+          "symbol": "NoHolidayBase",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/heard_island_and_mcdonald_islands.py"
+        },
+        {
+          "path": "holidays/no_holiday_base.py",
+          "sha256": "b55a4584095f32542096d368834ba6d3becad7249accd1e9ec33e3703f8d20f6",
+          "symbol": "NoHolidayBase",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/no_holiday_base.py"
+        }
+      ]
+    },
+    {
+      "country": "ID",
+      "description": "Nyepi uses a finite Balinese Saka table ending in 2050; other holidays continue.",
+      "disposition": "restriction",
+      "firstYear": 2051,
+      "lastYear": 2060,
+      "reason": "missing-rule-table",
+      "rule": "Day of Silence (Nyepi)",
+      "sources": [
+        {
+          "path": "holidays/calendars/balinese_saka.py",
+          "sha256": "a82e106f77160585415d095b2807713db48ec3c15035528174af804576a6e40a",
+          "symbol": "_BalineseSakaLunar.NYEPI_DATES",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/calendars/balinese_saka.py"
+        },
+        {
+          "path": "holidays/countries/indonesia.py",
+          "sha256": "4a9c3145f95dd10e23ea00fd548f9fe28137d17451ca4837dcff4fd3a2250bd7",
+          "symbol": "_populate_public_holidays",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/indonesia.py"
+        }
+      ]
+    },
+    {
+      "country": "IN",
+      "description": "These rules use Hindu tables beginning in 2001; unrelated holidays may still be returned.",
+      "disposition": "restriction",
+      "firstYear": 1995,
+      "lastYear": 2000,
+      "reason": "missing-rule-table",
+      "rule": "Holi, Maha Shivaratri, Ram Navami, Mahavir Jayanti, Buddha Purnima, Janmashtami, Dussehra, Diwali (Deepavali), Guru Nanak Jayanti",
+      "sources": [
+        {
+          "path": "holidays/countries/india.py",
+          "sha256": "0eee95b73be2bc0aa1125424b8d1f8b479cc76ea848baa20cc5dad35de596c7b",
+          "symbol": "_populate_public_holidays",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/india.py"
+        },
+        {
+          "path": "holidays/calendars/hindu.py",
+          "sha256": "cc37bb0625720350afeaf308a3b2e7006c2b26e94e9819e0798a3f01670c80ba",
+          "symbol": "_HinduLunisolar",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/calendars/hindu.py"
+        },
+        {
+          "path": "holidays/calendars/hindu.py",
+          "sha256": "cc37bb0625720350afeaf308a3b2e7006c2b26e94e9819e0798a3f01670c80ba",
+          "symbol": "_HinduLunisolar._get_holiday",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/calendars/hindu.py"
+        }
+      ]
+    },
+    {
+      "country": "IN",
+      "description": "These rules use finite Hindu tables ending in 2035; unrelated holidays may still be returned. Exact/estimated name changes alone are not evidence of missing dates.",
+      "disposition": "restriction",
+      "firstYear": 2036,
+      "lastYear": 2060,
+      "reason": "missing-rule-table",
+      "rule": "Holi, Maha Shivaratri, Ram Navami, Mahavir Jayanti, Buddha Purnima, Janmashtami, Dussehra, Diwali (Deepavali), Guru Nanak Jayanti",
+      "sources": [
+        {
+          "path": "holidays/countries/india.py",
+          "sha256": "0eee95b73be2bc0aa1125424b8d1f8b479cc76ea848baa20cc5dad35de596c7b",
+          "symbol": "_populate_public_holidays",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/india.py"
+        },
+        {
+          "path": "holidays/calendars/hindu.py",
+          "sha256": "cc37bb0625720350afeaf308a3b2e7006c2b26e94e9819e0798a3f01670c80ba",
+          "symbol": "_HinduLunisolar",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/calendars/hindu.py"
+        },
+        {
+          "path": "holidays/calendars/hindu.py",
+          "sha256": "cc37bb0625720350afeaf308a3b2e7006c2b26e94e9819e0798a3f01670c80ba",
+          "symbol": "_HinduLunisolar._get_holiday",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/calendars/hindu.py"
+        }
+      ]
+    },
+    {
+      "country": "IO",
+      "description": "The registered provider deliberately inherits NoHolidayBase and returns no dates. This is not treated as a missing-table restriction.",
+      "disposition": "advisory",
+      "firstYear": 1995,
+      "lastYear": 2060,
+      "reason": "deliberately-empty",
+      "rule": "country calendar",
+      "sources": [
+        {
+          "path": "holidays/countries/british_indian_ocean_territory.py",
+          "sha256": "88efd77c3e001c40ce097380e97eeabbbe0fa878b0bbaed1d3a78a1b30272848",
+          "symbol": "NoHolidayBase",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/british_indian_ocean_territory.py"
+        },
+        {
+          "path": "holidays/no_holiday_base.py",
+          "sha256": "b55a4584095f32542096d368834ba6d3becad7249accd1e9ec33e3703f8d20f6",
+          "symbol": "NoHolidayBase",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/no_holiday_base.py"
+        }
+      ]
+    },
+    {
+      "country": "KY",
+      "description": "The provider does not populate years before 2006. This describes its implementation boundary, not the legal existence of this country or its holidays.",
+      "disposition": "restriction",
+      "firstYear": 1995,
+      "lastYear": 2005,
+      "reason": "provider-year-bound",
+      "rule": "country calendar",
+      "sources": [
+        {
+          "path": "holidays/countries/cayman_islands.py",
+          "sha256": "60d13c970334778fff26ef53336bbafb47867e77f801e6317193bb67168862bf",
+          "symbol": "start_year",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/cayman_islands.py"
+        },
+        {
+          "path": "holidays/holiday_base.py",
+          "sha256": "191c2e7c6966f3c6424cd568f033332cdc39fbfabc7b9d39c914b8660276f5c5",
+          "symbol": "HolidayBase._populate",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/holiday_base.py"
+        }
+      ]
+    },
+    {
+      "country": "LK",
+      "description": "The provider does not populate years before 2003. This describes its implementation boundary, not the legal existence of this country or its holidays.",
+      "disposition": "restriction",
+      "firstYear": 1995,
+      "lastYear": 2002,
+      "reason": "provider-year-bound",
+      "rule": "country calendar",
+      "sources": [
+        {
+          "path": "holidays/countries/sri_lanka.py",
+          "sha256": "eef27af00a1b50da83a03e1ad54e30707aa990d6b82fbee22bc295a9b950defa",
+          "symbol": "start_year",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/sri_lanka.py"
+        },
+        {
+          "path": "holidays/holiday_base.py",
+          "sha256": "191c2e7c6966f3c6424cd568f033332cdc39fbfabc7b9d39c914b8660276f5c5",
+          "symbol": "HolidayBase._populate",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/holiday_base.py"
+        }
+      ]
+    },
+    {
+      "country": "LK",
+      "description": "The provider stops after 2026; Poya calendars require annual approval.",
+      "disposition": "restriction",
+      "firstYear": 2027,
+      "lastYear": 2060,
+      "reason": "provider-year-bound",
+      "rule": "country calendar",
+      "sources": [
+        {
+          "path": "holidays/countries/sri_lanka.py",
+          "sha256": "eef27af00a1b50da83a03e1ad54e30707aa990d6b82fbee22bc295a9b950defa",
+          "symbol": "end_year",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/sri_lanka.py"
+        }
+      ]
+    },
+    {
+      "country": "LS",
+      "description": "The provider does not populate years before 1996. This describes its implementation boundary, not the legal existence of this country or its holidays.",
+      "disposition": "restriction",
+      "firstYear": 1995,
+      "lastYear": 1995,
+      "reason": "provider-year-bound",
+      "rule": "country calendar",
+      "sources": [
+        {
+          "path": "holidays/countries/lesotho.py",
+          "sha256": "3a94a47fb5963e0bd85b56ab192c5b3260a5737a9c8d25d1edf46d1ebdd76056",
+          "symbol": "start_year",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/lesotho.py"
+        },
+        {
+          "path": "holidays/holiday_base.py",
+          "sha256": "191c2e7c6966f3c6424cd568f033332cdc39fbfabc7b9d39c914b8660276f5c5",
+          "symbol": "HolidayBase._populate",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/holiday_base.py"
+        }
+      ]
+    },
+    {
+      "country": "ME",
+      "description": "The provider does not populate years before 2007. This describes its implementation boundary, not the legal existence of this country or its holidays.",
+      "disposition": "restriction",
+      "firstYear": 1995,
+      "lastYear": 2006,
+      "reason": "provider-year-bound",
+      "rule": "country calendar",
+      "sources": [
+        {
+          "path": "holidays/countries/montenegro.py",
+          "sha256": "81c03cd887c04bd2a358c856bf0644a42102e92720d92436eb8253c8245f4b4a",
+          "symbol": "start_year",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/montenegro.py"
+        },
+        {
+          "path": "holidays/holiday_base.py",
+          "sha256": "191c2e7c6966f3c6424cd568f033332cdc39fbfabc7b9d39c914b8660276f5c5",
+          "symbol": "HolidayBase._populate",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/holiday_base.py"
+        }
+      ]
+    },
+    {
+      "country": "MF",
+      "description": "The provider does not populate years before 2008. This describes its implementation boundary, not the legal existence of this country or its holidays.",
+      "disposition": "restriction",
+      "firstYear": 1995,
+      "lastYear": 2007,
+      "reason": "provider-year-bound",
+      "rule": "country calendar",
+      "sources": [
+        {
+          "path": "holidays/countries/saint_martin.py",
+          "sha256": "8d990a733d5f1a63e87ef0dbf20374c782fce27891666816f7076ca10d44892f",
+          "symbol": "start_year",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/saint_martin.py"
+        },
+        {
+          "path": "holidays/holiday_base.py",
+          "sha256": "191c2e7c6966f3c6424cd568f033332cdc39fbfabc7b9d39c914b8660276f5c5",
+          "symbol": "HolidayBase._populate",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/holiday_base.py"
+        }
+      ]
+    },
+    {
+      "country": "MK",
+      "description": "The provider does not populate years before 1999. This describes its implementation boundary, not the legal existence of this country or its holidays.",
+      "disposition": "restriction",
+      "firstYear": 1995,
+      "lastYear": 1998,
+      "reason": "provider-year-bound",
+      "rule": "country calendar",
+      "sources": [
+        {
+          "path": "holidays/countries/north_macedonia.py",
+          "sha256": "2bf09f22ba609c78cc103ce6ad77db053f0cc9b7338b4d69392f279ce27a68eb",
+          "symbol": "start_year",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/north_macedonia.py"
+        },
+        {
+          "path": "holidays/holiday_base.py",
+          "sha256": "191c2e7c6966f3c6424cd568f033332cdc39fbfabc7b9d39c914b8660276f5c5",
+          "symbol": "HolidayBase._populate",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/holiday_base.py"
+        }
+      ]
+    },
+    {
+      "country": "MN",
+      "description": "The provider does not populate years before 2004. This describes its implementation boundary, not the legal existence of this country or its holidays.",
+      "disposition": "restriction",
+      "firstYear": 1995,
+      "lastYear": 2003,
+      "reason": "provider-year-bound",
+      "rule": "country calendar",
+      "sources": [
+        {
+          "path": "holidays/countries/mongolia.py",
+          "sha256": "a89ed1c870a1c924d250a8f1b03cd21a73f232dcae63cdf88799446e1127b32e",
+          "symbol": "start_year",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/mongolia.py"
+        },
+        {
+          "path": "holidays/holiday_base.py",
+          "sha256": "191c2e7c6966f3c6424cd568f033332cdc39fbfabc7b9d39c914b8660276f5c5",
+          "symbol": "HolidayBase._populate",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/holiday_base.py"
+        }
+      ]
+    },
+    {
+      "country": "MS",
+      "description": "The provider does not populate years before 2017. This describes its implementation boundary, not the legal existence of this country or its holidays.",
+      "disposition": "restriction",
+      "firstYear": 1995,
+      "lastYear": 2016,
+      "reason": "provider-year-bound",
+      "rule": "country calendar",
+      "sources": [
+        {
+          "path": "holidays/countries/montserrat.py",
+          "sha256": "4f2ac1cd2009f2da81409738861b477b6d15ca823a65e1123f50cf73b94eba0a",
+          "symbol": "start_year",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/montserrat.py"
+        },
+        {
+          "path": "holidays/holiday_base.py",
+          "sha256": "191c2e7c6966f3c6424cd568f033332cdc39fbfabc7b9d39c914b8660276f5c5",
+          "symbol": "HolidayBase._populate",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/holiday_base.py"
+        }
+      ]
+    },
+    {
+      "country": "MU",
+      "description": "These rules use Hindu tables beginning in 2001; unrelated holidays may still be returned.",
+      "disposition": "restriction",
+      "firstYear": 1995,
+      "lastYear": 2000,
+      "reason": "missing-rule-table",
+      "rule": "Maha Shivaratree, Ougadi, Ganesh Chaturthi, Divali",
+      "sources": [
+        {
+          "path": "holidays/countries/mauritius.py",
+          "sha256": "b45542ae3e8419851a3c2f2dd286a0050e842608d03ef611f7c80784937c1e3c",
+          "symbol": "_populate_public_holidays",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/mauritius.py"
+        },
+        {
+          "path": "holidays/calendars/hindu.py",
+          "sha256": "cc37bb0625720350afeaf308a3b2e7006c2b26e94e9819e0798a3f01670c80ba",
+          "symbol": "_HinduLunisolar",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/calendars/hindu.py"
+        },
+        {
+          "path": "holidays/calendars/hindu.py",
+          "sha256": "cc37bb0625720350afeaf308a3b2e7006c2b26e94e9819e0798a3f01670c80ba",
+          "symbol": "_HinduLunisolar._get_holiday",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/calendars/hindu.py"
+        }
+      ]
+    },
+    {
+      "country": "MU",
+      "description": "These rules use finite Hindu tables ending in 2035; unrelated holidays may still be returned. Exact/estimated name changes alone are not evidence of missing dates.",
+      "disposition": "restriction",
+      "firstYear": 2036,
+      "lastYear": 2060,
+      "reason": "missing-rule-table",
+      "rule": "Maha Shivaratree, Ougadi, Ganesh Chaturthi, Divali",
+      "sources": [
+        {
+          "path": "holidays/countries/mauritius.py",
+          "sha256": "b45542ae3e8419851a3c2f2dd286a0050e842608d03ef611f7c80784937c1e3c",
+          "symbol": "_populate_public_holidays",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/mauritius.py"
+        },
+        {
+          "path": "holidays/calendars/hindu.py",
+          "sha256": "cc37bb0625720350afeaf308a3b2e7006c2b26e94e9819e0798a3f01670c80ba",
+          "symbol": "_HinduLunisolar",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/calendars/hindu.py"
+        },
+        {
+          "path": "holidays/calendars/hindu.py",
+          "sha256": "cc37bb0625720350afeaf308a3b2e7006c2b26e94e9819e0798a3f01670c80ba",
+          "symbol": "_HinduLunisolar._get_holiday",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/calendars/hindu.py"
+        }
+      ]
+    },
+    {
+      "country": "MW",
+      "description": "The provider does not populate years before 2000. This describes its implementation boundary, not the legal existence of this country or its holidays.",
+      "disposition": "restriction",
+      "firstYear": 1995,
+      "lastYear": 1999,
+      "reason": "provider-year-bound",
+      "rule": "country calendar",
+      "sources": [
+        {
+          "path": "holidays/countries/malawi.py",
+          "sha256": "45856200f9e9f62bba78c0b6ee0e8d5082e5d75d8a0de304f5a92458aad4a775",
+          "symbol": "start_year",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/malawi.py"
+        },
+        {
+          "path": "holidays/holiday_base.py",
+          "sha256": "191c2e7c6966f3c6424cd568f033332cdc39fbfabc7b9d39c914b8660276f5c5",
+          "symbol": "HolidayBase._populate",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/holiday_base.py"
+        }
+      ]
+    },
+    {
+      "country": "NF",
+      "description": "The provider does not populate years before 2016. This describes its implementation boundary, not the legal existence of this country or its holidays.",
+      "disposition": "restriction",
+      "firstYear": 1995,
+      "lastYear": 2015,
+      "reason": "provider-year-bound",
+      "rule": "country calendar",
+      "sources": [
+        {
+          "path": "holidays/countries/norfolk_island.py",
+          "sha256": "43ece5f6900c562b8556535e3afd2f6fe386d91d46555f790d45a0d22ea4c15b",
+          "symbol": "start_year",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/norfolk_island.py"
+        },
+        {
+          "path": "holidays/holiday_base.py",
+          "sha256": "191c2e7c6966f3c6424cd568f033332cdc39fbfabc7b9d39c914b8660276f5c5",
+          "symbol": "HolidayBase._populate",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/holiday_base.py"
+        }
+      ]
+    },
+    {
+      "country": "NP",
+      "description": "The provider does not populate years before 2010. This describes its implementation boundary, not the legal existence of this country or its holidays.",
+      "disposition": "restriction",
+      "firstYear": 1995,
+      "lastYear": 2009,
+      "reason": "provider-year-bound",
+      "rule": "country calendar",
+      "sources": [
+        {
+          "path": "holidays/countries/nepal.py",
+          "sha256": "32eadc496872dd5eeba957b6a8aabf437dc2b6316784603d9f7630355de71a74",
+          "symbol": "start_year",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/nepal.py"
+        },
+        {
+          "path": "holidays/holiday_base.py",
+          "sha256": "191c2e7c6966f3c6424cd568f033332cdc39fbfabc7b9d39c914b8660276f5c5",
+          "symbol": "HolidayBase._populate",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/holiday_base.py"
+        }
+      ]
+    },
+    {
+      "country": "NP",
+      "description": "Local Republic Day and Constitution Day tables and the shared Tamu Losar table end in 2032.",
+      "disposition": "restriction",
+      "firstYear": 2033,
+      "lastYear": 2060,
+      "reason": "missing-rule-table",
+      "rule": "Republic Day, Constitution Day, Tamu Lhochhar",
+      "sources": [
+        {
+          "path": "holidays/countries/nepal.py",
+          "sha256": "32eadc496872dd5eeba957b6a8aabf437dc2b6316784603d9f7630355de71a74",
+          "symbol": "_add_non_continuous_holidays",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/nepal.py"
+        },
+        {
+          "path": "holidays/countries/nepal.py",
+          "sha256": "32eadc496872dd5eeba957b6a8aabf437dc2b6316784603d9f7630355de71a74",
+          "symbol": "_populate_public_holidays",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/nepal.py"
+        },
+        {
+          "path": "holidays/calendars/hindu.py",
+          "sha256": "cc37bb0625720350afeaf308a3b2e7006c2b26e94e9819e0798a3f01670c80ba",
+          "symbol": "_HinduLunisolar.TAMU_LOSAR_DATES",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/calendars/hindu.py"
+        }
+      ]
+    },
+    {
+      "country": "NP",
+      "description": "Local date tables end in 2033.",
+      "disposition": "restriction",
+      "firstYear": 2034,
+      "lastYear": 2060,
+      "reason": "missing-rule-table",
+      "rule": "Martyr's Day, National Democracy Day",
+      "sources": [
+        {
+          "path": "holidays/countries/nepal.py",
+          "sha256": "32eadc496872dd5eeba957b6a8aabf437dc2b6316784603d9f7630355de71a74",
+          "symbol": "_add_non_continuous_holidays",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/nepal.py"
+        }
+      ]
+    },
+    {
+      "country": "NP",
+      "description": "These rules use finite Hindu tables ending in 2035; unrelated holidays may still be returned. Exact/estimated name changes alone are not evidence of missing dates.",
+      "disposition": "restriction",
+      "firstYear": 2036,
+      "lastYear": 2060,
+      "reason": "missing-rule-table",
+      "rule": "Hindu table-backed holidays",
+      "sources": [
+        {
+          "path": "holidays/countries/nepal.py",
+          "sha256": "32eadc496872dd5eeba957b6a8aabf437dc2b6316784603d9f7630355de71a74",
+          "symbol": "_populate_public_holidays",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/nepal.py"
+        },
+        {
+          "path": "holidays/calendars/hindu.py",
+          "sha256": "cc37bb0625720350afeaf308a3b2e7006c2b26e94e9819e0798a3f01670c80ba",
+          "symbol": "_HinduLunisolar",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/calendars/hindu.py"
+        },
+        {
+          "path": "holidays/calendars/hindu.py",
+          "sha256": "cc37bb0625720350afeaf308a3b2e7006c2b26e94e9819e0798a3f01670c80ba",
+          "symbol": "_HinduLunisolar._get_holiday",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/calendars/hindu.py"
+        }
+      ]
+    },
+    {
+      "country": "PN",
+      "description": "The provider does not populate years before 2016. This describes its implementation boundary, not the legal existence of this country or its holidays.",
+      "disposition": "restriction",
+      "firstYear": 1995,
+      "lastYear": 2015,
+      "reason": "provider-year-bound",
+      "rule": "country calendar",
+      "sources": [
+        {
+          "path": "holidays/countries/pitcairn_islands.py",
+          "sha256": "ed194a387688891c816adc8ecb49de552206937469be1ed8791d336c75befe20",
+          "symbol": "start_year",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/pitcairn_islands.py"
+        },
+        {
+          "path": "holidays/holiday_base.py",
+          "sha256": "191c2e7c6966f3c6424cd568f033332cdc39fbfabc7b9d39c914b8660276f5c5",
+          "symbol": "HolidayBase._populate",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/holiday_base.py"
+        }
+      ]
+    },
+    {
+      "country": "RO",
+      "description": "The provider does not populate years before 1997. This describes its implementation boundary, not the legal existence of this country or its holidays.",
+      "disposition": "restriction",
+      "firstYear": 1995,
+      "lastYear": 1996,
+      "reason": "provider-year-bound",
+      "rule": "country calendar",
+      "sources": [
+        {
+          "path": "holidays/countries/romania.py",
+          "sha256": "30a4194e3d32c7e40a93acd23e818c7c27a4319a907857cd06fedfa88122882a",
+          "symbol": "start_year",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/romania.py"
+        },
+        {
+          "path": "holidays/holiday_base.py",
+          "sha256": "191c2e7c6966f3c6424cd568f033332cdc39fbfabc7b9d39c914b8660276f5c5",
+          "symbol": "HolidayBase._populate",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/holiday_base.py"
+        }
+      ]
+    },
+    {
+      "country": "RS",
+      "description": "The provider does not populate years before 2007. This describes its implementation boundary, not the legal existence of this country or its holidays.",
+      "disposition": "restriction",
+      "firstYear": 1995,
+      "lastYear": 2006,
+      "reason": "provider-year-bound",
+      "rule": "country calendar",
+      "sources": [
+        {
+          "path": "holidays/countries/serbia.py",
+          "sha256": "f272e2cbaceeb169617094559e7e5ea369afb233a13b03ec1a5e438afbf7e4e1",
+          "symbol": "start_year",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/serbia.py"
+        },
+        {
+          "path": "holidays/holiday_base.py",
+          "sha256": "191c2e7c6966f3c6424cd568f033332cdc39fbfabc7b9d39c914b8660276f5c5",
+          "symbol": "HolidayBase._populate",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/holiday_base.py"
+        }
+      ]
+    },
+    {
+      "country": "RW",
+      "description": "The provider does not populate years before 2012. This describes its implementation boundary, not the legal existence of this country or its holidays.",
+      "disposition": "restriction",
+      "firstYear": 1995,
+      "lastYear": 2011,
+      "reason": "provider-year-bound",
+      "rule": "country calendar",
+      "sources": [
+        {
+          "path": "holidays/countries/rwanda.py",
+          "sha256": "eb60dcbfda938a3120546ca957ed97bf2aec0ab7c3b739eac8cce19d18a68701",
+          "symbol": "start_year",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/rwanda.py"
+        },
+        {
+          "path": "holidays/holiday_base.py",
+          "sha256": "191c2e7c6966f3c6424cd568f033332cdc39fbfabc7b9d39c914b8660276f5c5",
+          "symbol": "HolidayBase._populate",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/holiday_base.py"
+        }
+      ]
+    },
+    {
+      "country": "SG",
+      "description": "The provider documents that holidays prior to 2000 may not be accurate.",
+      "disposition": "advisory",
+      "firstYear": 1995,
+      "lastYear": 1999,
+      "reason": "source-accuracy",
+      "rule": "country calendar",
+      "sources": [
+        {
+          "path": "holidays/countries/singapore.py",
+          "sha256": "3d4793271f86c9e826bac5ae67fd256f8c410acabb9123b1de900c9956f19233",
+          "symbol": "Singapore.Limitations",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/singapore.py"
+        }
+      ]
+    },
+    {
+      "country": "SG",
+      "description": "The provider documents moving holidays as estimated from 2028; estimates are not known missing dates.",
+      "disposition": "advisory",
+      "firstYear": 2028,
+      "lastYear": 2060,
+      "reason": "estimated-dates",
+      "rule": "Hari Raya Puasa, Hari Raya Haji, Vesak Day, Deepavali",
+      "sources": [
+        {
+          "path": "holidays/countries/singapore.py",
+          "sha256": "3d4793271f86c9e826bac5ae67fd256f8c410acabb9123b1de900c9956f19233",
+          "symbol": "Singapore.Limitations",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/singapore.py"
+        }
+      ]
+    },
+    {
+      "country": "SH",
+      "description": "The provider does not populate years before 2015. This describes its implementation boundary, not the legal existence of this country or its holidays.",
+      "disposition": "restriction",
+      "firstYear": 1995,
+      "lastYear": 2014,
+      "reason": "provider-year-bound",
+      "rule": "country calendar",
+      "sources": [
+        {
+          "path": "holidays/countries/saint_helena_ascension_and_tristan_da_cunha.py",
+          "sha256": "b6f1319e89d0f46bb3f0364bfb2f4a44f5a893d2630a9aced9a09f407e6762e9",
+          "symbol": "start_year",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/saint_helena_ascension_and_tristan_da_cunha.py"
+        },
+        {
+          "path": "holidays/holiday_base.py",
+          "sha256": "191c2e7c6966f3c6424cd568f033332cdc39fbfabc7b9d39c914b8660276f5c5",
+          "symbol": "HolidayBase._populate",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/holiday_base.py"
+        }
+      ]
+    },
+    {
+      "country": "SR",
+      "description": "These rules use Hindu tables beginning in 2001; unrelated holidays may still be returned.",
+      "disposition": "restriction",
+      "firstYear": 1995,
+      "lastYear": 2000,
+      "reason": "missing-rule-table",
+      "rule": "Holi-Phagwa",
+      "sources": [
+        {
+          "path": "holidays/countries/suriname.py",
+          "sha256": "7c37727dbd509be52cebd082f7a695cb9cd49020261294b774aabdcaf3ff70e3",
+          "symbol": "_populate_public_holidays",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/suriname.py"
+        },
+        {
+          "path": "holidays/calendars/hindu.py",
+          "sha256": "cc37bb0625720350afeaf308a3b2e7006c2b26e94e9819e0798a3f01670c80ba",
+          "symbol": "_HinduLunisolar",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/calendars/hindu.py"
+        },
+        {
+          "path": "holidays/calendars/hindu.py",
+          "sha256": "cc37bb0625720350afeaf308a3b2e7006c2b26e94e9819e0798a3f01670c80ba",
+          "symbol": "_HinduLunisolar._get_holiday",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/calendars/hindu.py"
+        }
+      ]
+    },
+    {
+      "country": "SR",
+      "description": "These rules use finite Hindu tables ending in 2035; unrelated holidays may still be returned. Exact/estimated name changes alone are not evidence of missing dates.",
+      "disposition": "restriction",
+      "firstYear": 2036,
+      "lastYear": 2060,
+      "reason": "missing-rule-table",
+      "rule": "Holi-Phagwa",
+      "sources": [
+        {
+          "path": "holidays/countries/suriname.py",
+          "sha256": "7c37727dbd509be52cebd082f7a695cb9cd49020261294b774aabdcaf3ff70e3",
+          "symbol": "_populate_public_holidays",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/suriname.py"
+        },
+        {
+          "path": "holidays/calendars/hindu.py",
+          "sha256": "cc37bb0625720350afeaf308a3b2e7006c2b26e94e9819e0798a3f01670c80ba",
+          "symbol": "_HinduLunisolar",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/calendars/hindu.py"
+        },
+        {
+          "path": "holidays/calendars/hindu.py",
+          "sha256": "cc37bb0625720350afeaf308a3b2e7006c2b26e94e9819e0798a3f01670c80ba",
+          "symbol": "_HinduLunisolar._get_holiday",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/calendars/hindu.py"
+        }
+      ]
+    },
+    {
+      "country": "SS",
+      "description": "The provider does not populate years before 2012. This describes its implementation boundary, not the legal existence of this country or its holidays.",
+      "disposition": "restriction",
+      "firstYear": 1995,
+      "lastYear": 2011,
+      "reason": "provider-year-bound",
+      "rule": "country calendar",
+      "sources": [
+        {
+          "path": "holidays/countries/south_sudan.py",
+          "sha256": "a6fd54ad866063c9b3521218a4b2a1b14660bd69611bde662e59fbadf752a51e",
+          "symbol": "start_year",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/south_sudan.py"
+        },
+        {
+          "path": "holidays/holiday_base.py",
+          "sha256": "191c2e7c6966f3c6424cd568f033332cdc39fbfabc7b9d39c914b8660276f5c5",
+          "symbol": "HolidayBase._populate",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/holiday_base.py"
+        }
+      ]
+    },
+    {
+      "country": "ST",
+      "description": "The provider does not populate years before 2014. This describes its implementation boundary, not the legal existence of this country or its holidays.",
+      "disposition": "restriction",
+      "firstYear": 1995,
+      "lastYear": 2013,
+      "reason": "provider-year-bound",
+      "rule": "country calendar",
+      "sources": [
+        {
+          "path": "holidays/countries/sao_tome_and_principe.py",
+          "sha256": "e1982feaf98fb862e79325ae8fdad534388e0a8684a9d5ff2e3a1027832813b4",
+          "symbol": "start_year",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/sao_tome_and_principe.py"
+        },
+        {
+          "path": "holidays/holiday_base.py",
+          "sha256": "191c2e7c6966f3c6424cd568f033332cdc39fbfabc7b9d39c914b8660276f5c5",
+          "symbol": "HolidayBase._populate",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/holiday_base.py"
+        }
+      ]
+    },
+    {
+      "country": "SX",
+      "description": "The provider does not populate years before 2011. This describes its implementation boundary, not the legal existence of this country or its holidays.",
+      "disposition": "restriction",
+      "firstYear": 1995,
+      "lastYear": 2010,
+      "reason": "provider-year-bound",
+      "rule": "country calendar",
+      "sources": [
+        {
+          "path": "holidays/countries/sint_maarten.py",
+          "sha256": "7bf85c8d390ea583848eebcfca448310e1ad351956c7bfca06378f2d049b2314",
+          "symbol": "start_year",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/sint_maarten.py"
+        },
+        {
+          "path": "holidays/holiday_base.py",
+          "sha256": "191c2e7c6966f3c6424cd568f033332cdc39fbfabc7b9d39c914b8660276f5c5",
+          "symbol": "HolidayBase._populate",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/holiday_base.py"
+        }
+      ]
+    },
+    {
+      "country": "SY",
+      "description": "The provider does not populate years before 2004. This describes its implementation boundary, not the legal existence of this country or its holidays.",
+      "disposition": "restriction",
+      "firstYear": 1995,
+      "lastYear": 2003,
+      "reason": "provider-year-bound",
+      "rule": "country calendar",
+      "sources": [
+        {
+          "path": "holidays/countries/syrian_arab_republic.py",
+          "sha256": "ea340362a92701bd6f28ef5e3c3135d85373341efb2bf7107857a2ece467af19",
+          "symbol": "start_year",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/syrian_arab_republic.py"
+        },
+        {
+          "path": "holidays/holiday_base.py",
+          "sha256": "191c2e7c6966f3c6424cd568f033332cdc39fbfabc7b9d39c914b8660276f5c5",
+          "symbol": "HolidayBase._populate",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/holiday_base.py"
+        }
+      ]
+    },
+    {
+      "country": "TH",
+      "description": "Official arrangements require annual announcements/checks. Projected recurring dates do not establish official completeness.",
+      "disposition": "advisory",
+      "firstYear": 2026,
+      "lastYear": 2060,
+      "reason": "annual-announcements",
+      "rule": "official holiday arrangements",
+      "sources": [
+        {
+          "path": "holidays/countries/thailand.py",
+          "sha256": "02bcd0e17d4ff2b72f2846766a961f223cc3da85fd2dfb5f7283552f0b529a75",
+          "symbol": "Thailand",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/thailand.py"
+        }
+      ]
+    },
+    {
+      "country": "TK",
+      "description": "The provider does not populate years before 2003. This describes its implementation boundary, not the legal existence of this country or its holidays.",
+      "disposition": "restriction",
+      "firstYear": 1995,
+      "lastYear": 2002,
+      "reason": "provider-year-bound",
+      "rule": "country calendar",
+      "sources": [
+        {
+          "path": "holidays/countries/tokelau.py",
+          "sha256": "5133331d93bdc847181a23a7a808887c91e2d0f6d9f3c04953fd3733d2121a41",
+          "symbol": "start_year",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/tokelau.py"
+        },
+        {
+          "path": "holidays/holiday_base.py",
+          "sha256": "191c2e7c6966f3c6424cd568f033332cdc39fbfabc7b9d39c914b8660276f5c5",
+          "symbol": "HolidayBase._populate",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/holiday_base.py"
+        }
+      ]
+    },
+    {
+      "country": "TL",
+      "description": "The provider does not populate years before 2006. This describes its implementation boundary, not the legal existence of this country or its holidays.",
+      "disposition": "restriction",
+      "firstYear": 1995,
+      "lastYear": 2005,
+      "reason": "provider-year-bound",
+      "rule": "country calendar",
+      "sources": [
+        {
+          "path": "holidays/countries/timor_leste.py",
+          "sha256": "9929432b4d4e00aec495a28edabe3837d23c1d481a7c707c1741258fdf4b0941",
+          "symbol": "start_year",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/timor_leste.py"
+        },
+        {
+          "path": "holidays/holiday_base.py",
+          "sha256": "191c2e7c6966f3c6424cd568f033332cdc39fbfabc7b9d39c914b8660276f5c5",
+          "symbol": "HolidayBase._populate",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/holiday_base.py"
+        }
+      ]
+    },
+    {
+      "country": "TR",
+      "description": "Dates continue beyond the confirmed range with an estimated suffix. Preserve those distinct feature names; this is not a missing-table restriction.",
+      "disposition": "advisory",
+      "firstYear": 2033,
+      "lastYear": 2060,
+      "reason": "estimated-dates",
+      "rule": "Eid holidays",
+      "sources": [
+        {
+          "path": "holidays/countries/turkey.py",
+          "sha256": "127e7ce4343254302d7925a61e2b47d83a48babb7b01fc038b76f649b02b8e6c",
+          "symbol": "TurkeyIslamicHolidays",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/turkey.py"
+        }
+      ]
+    },
+    {
+      "country": "TW",
+      "description": "The provider does not populate years before 1998. This describes its implementation boundary, not the legal existence of this country or its holidays.",
+      "disposition": "restriction",
+      "firstYear": 1995,
+      "lastYear": 1997,
+      "reason": "provider-year-bound",
+      "rule": "country calendar",
+      "sources": [
+        {
+          "path": "holidays/countries/taiwan.py",
+          "sha256": "822a4b8c592f951cac5dc6b543aafcf14cbbca5461e20b6b76b48eebbb8bfcf8",
+          "symbol": "start_year",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/taiwan.py"
+        },
+        {
+          "path": "holidays/holiday_base.py",
+          "sha256": "191c2e7c6966f3c6424cd568f033332cdc39fbfabc7b9d39c914b8660276f5c5",
+          "symbol": "HolidayBase._populate",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/holiday_base.py"
+        }
+      ]
+    },
+    {
+      "country": "UA",
+      "description": "The provider suspends public holidays during martial law: partial in 2022, empty from 2023. This is provider policy, not evidence of no future holidays.",
+      "disposition": "restriction",
+      "firstYear": 2022,
+      "lastYear": 2060,
+      "reason": "provider-category-policy",
+      "rule": "default PUBLIC category",
+      "sources": [
+        {
+          "path": "holidays/countries/ukraine.py",
+          "sha256": "608f16722644f4ab6a71a563f3769182ac839267988c18a8adfe6261e80be44e",
+          "symbol": "_populate_common",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/ukraine.py"
+        }
+      ]
+    },
+    {
+      "country": "XK",
+      "description": "The provider does not populate years before 2009. This describes its implementation boundary, not the legal existence of this country or its holidays.",
+      "disposition": "restriction",
+      "firstYear": 1995,
+      "lastYear": 2008,
+      "reason": "provider-year-bound",
+      "rule": "country calendar",
+      "sources": [
+        {
+          "path": "holidays/countries/kosovo.py",
+          "sha256": "e0799bb0edea43708f16e1d2b4f6c640acde0123c0ce8a2288ab9da434bbcfb6",
+          "symbol": "start_year",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/countries/kosovo.py"
+        },
+        {
+          "path": "holidays/holiday_base.py",
+          "sha256": "191c2e7c6966f3c6424cd568f033332cdc39fbfabc7b9d39c914b8660276f5c5",
+          "symbol": "HolidayBase._populate",
+          "url": "https://github.com/vacanza/holidays/blob/v0.104/holidays/holiday_base.py"
+        }
+      ]
+    }
+  ],
+  "provider": {
+    "name": "holidays",
+    "version": "0.104"
+  },
+  "reviewScope": "Targeted source review of all provider-declared bounds intersecting 1995\u20132060, known Hindu/Nepal/Nyepi table limits, and documented empty/policy/estimate examples. Not an exhaustive legal, rule-table, subdivision, or accuracy audit.",
+  "schemaVersion": 1
+}

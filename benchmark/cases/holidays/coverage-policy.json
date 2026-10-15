@@ -1,0 +1,18 @@
+[
+  {
+    "country": "IN",
+    "year": 2036,
+    "effectReason": "known-coverage-restriction",
+    "pythonBehavior": "returns-provider-result",
+    "comparison": "intentional-difference",
+    "note": "Default reviewed-gap rejection is not comparable timing work. Explicit allow-known-gaps returns the pinned partial calendar, not a completeness guarantee."
+  },
+  {
+    "country": "US",
+    "year": 2061,
+    "effectReason": "outside-snapshot-horizon",
+    "pythonBehavior": "returns-provider-result",
+    "comparison": "intentional-difference",
+    "note": "The bundled request-year horizon ends at 2060; the Python provider is not the portable snapshot contract."
+  }
+]

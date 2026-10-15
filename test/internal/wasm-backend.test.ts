@@ -6,22 +6,7 @@ import {
   loadProphetWasmModule,
 } from "../../src/internal/prophet-wasm-module";
 import { attemptWasmFitting, attemptWasmPrediction } from "../../src/internal/wasm-backend";
-import { requireEndedSpan } from "./tracing-test-helpers";
-
-const collectSpans = () => {
-  const spans: Array<Tracer.Span> = [];
-
-  const tracer = Tracer.make({
-    span: (options) => {
-      const span = new Tracer.NativeSpan(options);
-      spans.push(span);
-
-      return span;
-    },
-  });
-
-  return { spans, tracer };
-};
+import { collectTestSpans, requireEndedSpan } from "./tracing-test-helpers";
 
 const coldStartOf = (span: Tracer.Span | undefined) =>
   span === undefined
@@ -31,7 +16,7 @@ const coldStartOf = (span: Tracer.Span | undefined) =>
 describe("WASM load tracing", () => {
   // Vitest isolates each test file, so this file owns the process's first real WASM load.
   it("marks only the load that initializes the generated module as a cold start", async () => {
-    const { spans, tracer } = collectSpans();
+    const { spans, tracer } = collectTestSpans();
 
     const fitLoad = <Bindings>(name: string, loader: () => Bindings) =>
       attemptWasmFitting(loader, 4, { phase: "load", message: "load failed" }).pipe(
@@ -69,7 +54,7 @@ describe("WASM load tracing", () => {
   });
 
   it("does not mark execute steps or failed loads", async () => {
-    const { spans, tracer } = collectSpans();
+    const { spans, tracer } = collectTestSpans();
 
     await Effect.runPromise(
       attemptWasmFitting(() => 1, 4, { phase: "execute", message: "execute failed" }).pipe(

@@ -8,6 +8,7 @@ import {
 } from "./errors";
 import {
   parseEventCalendar,
+  encodeEventOccurrences,
   type EncodedEventOccurrence,
   type InvalidEventCalendar,
 } from "./event";
@@ -27,6 +28,12 @@ import {
   type PiecewiseMapParameters,
 } from "./fitted-model";
 import type { LogisticTargetScaling } from "./logistic";
+import {
+  CountryHolidayModelSchema,
+  decodedCountryHolidayFields,
+  encodedCountryHolidayFields,
+  type CountryHolidayModel,
+} from "./internal/country-holiday-model";
 import type {
   EncodedRegressorStandardization,
   FittedRegressor,
@@ -48,6 +55,7 @@ export interface EncodedFittedRegressor {
 export interface EncodedFlatMapModel {
   /** Identifies the reduced flat MAP prediction equation. */
   readonly modelKind: "flat-map";
+  readonly countryHolidays?: CountryHolidayModel;
 
   /** Complete train-derived target scaling; absent only in legacy payloads. */
   readonly targetScaling?: TargetScaling;
@@ -84,6 +92,7 @@ export interface EncodedFlatMapModel {
 /** Portable representation of a linear piecewise MAP model. */
 export interface EncodedPiecewiseMapModel {
   readonly modelKind: "linear-piecewise-map";
+  readonly countryHolidays?: CountryHolidayModel;
   readonly targetScaling?: TargetScaling;
   readonly coefficients: {
     readonly intercept: number;
@@ -116,6 +125,7 @@ export interface EncodedPiecewiseMapModel {
 /** Portable representation of a floor-aware logistic piecewise MAP model. */
 export interface EncodedLogisticMapModel {
   readonly modelKind: "logistic-piecewise-map";
+  readonly countryHolidays?: CountryHolidayModel;
   readonly targetScaling: LogisticTargetScaling;
   readonly parameters: {
     readonly rate: number;
@@ -179,6 +189,7 @@ const EncodedFittedRegressorSchema = Schema.Struct({
 
 const EncodedFlatMapModelSchema = Schema.Struct({
   modelKind: Schema.Literal("flat-map"),
+  countryHolidays: Schema.optionalKey(CountryHolidayModelSchema),
   targetScaling: Schema.optionalKey(TargetScalingSchema),
   coefficients: Schema.Struct({
     level: Schema.Number,
@@ -207,6 +218,7 @@ const EncodedFlatMapModelSchema = Schema.Struct({
 
 const EncodedPiecewiseMapModelSchema = Schema.Struct({
   modelKind: Schema.Literal("linear-piecewise-map"),
+  countryHolidays: Schema.optionalKey(CountryHolidayModelSchema),
   targetScaling: Schema.optionalKey(TargetScalingSchema),
   coefficients: Schema.Struct({
     intercept: Schema.Number,
@@ -242,6 +254,7 @@ const EncodedPiecewiseMapModelSchema = Schema.Struct({
 
 const EncodedLogisticMapModelSchema = Schema.Struct({
   modelKind: Schema.Literal("logistic-piecewise-map"),
+  countryHolidays: Schema.optionalKey(CountryHolidayModelSchema),
   targetScaling: Schema.Struct({
     mode: Schema.Literals(["absmax", "minmax"]),
     scale: Schema.Number,
@@ -441,6 +454,7 @@ const encodeSeasonalityDefinition = (
 
 const encodeFlatMapModel = (model: FittedFlatMapProphet): EncodedFlatMapModel => ({
   modelKind: "flat-map",
+  ...encodedCountryHolidayFields(model.countryHolidays),
   targetScaling: { ...model.targetScaling },
   coefficients: {
     level: model.level,
@@ -449,13 +463,7 @@ const encodeFlatMapModel = (model: FittedFlatMapProphet): EncodedFlatMapModel =>
     regressors: model.regressors.map((regressor) => regressor.coefficient),
   },
   holidaysMode: model.events.mode,
-  events: model.events.occurrences.map((occurrence) => ({
-    name: occurrence.name,
-    date: occurrence.date,
-    lowerWindowDays: occurrence.lowerWindowDays,
-    upperWindowDays: occurrence.upperWindowDays,
-    priorScale: occurrence.priorScale,
-  })),
+  events: encodeEventOccurrences(model.events.occurrences),
   regressors: encodeFittedRegressors(model.regressors),
   seasonalities: model.seasonalities.components.map(encodeSeasonalityDefinition),
   noiseScale: model.noiseScale,
@@ -464,6 +472,7 @@ const encodeFlatMapModel = (model: FittedFlatMapProphet): EncodedFlatMapModel =>
 
 const encodePiecewiseMapModel = (model: FittedPiecewiseMapProphet): EncodedPiecewiseMapModel => ({
   modelKind: "linear-piecewise-map",
+  ...encodedCountryHolidayFields(model.countryHolidays),
   targetScaling: { ...model.targetScaling },
   coefficients: {
     intercept: model.intercept,
@@ -475,13 +484,7 @@ const encodePiecewiseMapModel = (model: FittedPiecewiseMapProphet): EncodedPiece
   },
   regressors: encodeFittedRegressors(model.regressors),
   holidaysMode: model.events.mode,
-  events: model.events.occurrences.map((occurrence) => ({
-    name: occurrence.name,
-    date: occurrence.date,
-    lowerWindowDays: occurrence.lowerWindowDays,
-    upperWindowDays: occurrence.upperWindowDays,
-    priorScale: occurrence.priorScale,
-  })),
+  events: encodeEventOccurrences(model.events.occurrences),
   timeScaling: { origin: model.timeOrigin, scale: model.timeScale },
   changepointTimestamps: Array.from(model.changepointTimestamps),
   seasonalities: model.seasonalities.components.map(encodeSeasonalityDefinition),
@@ -491,6 +494,7 @@ const encodePiecewiseMapModel = (model: FittedPiecewiseMapProphet): EncodedPiece
 
 const encodeLogisticMapModel = (model: FittedLogisticMapProphet): EncodedLogisticMapModel => ({
   modelKind: "logistic-piecewise-map",
+  ...encodedCountryHolidayFields(model.countryHolidays),
   targetScaling: {
     mode: model.targetScaling.mode,
     scale: model.targetScaling.scale,
@@ -506,13 +510,7 @@ const encodeLogisticMapModel = (model: FittedLogisticMapProphet): EncodedLogisti
     events: Array.from(model.eventCoefficients),
     regressors: model.regressors.map((regressor) => regressor.coefficient),
   },
-  events: model.events.occurrences.map((occurrence) => ({
-    name: occurrence.name,
-    date: occurrence.date,
-    lowerWindowDays: occurrence.lowerWindowDays,
-    upperWindowDays: occurrence.upperWindowDays,
-    priorScale: occurrence.priorScale,
-  })),
+  events: encodeEventOccurrences(model.events.occurrences),
   holidaysMode: model.events.mode,
   regressors: encodeFittedRegressors(model.regressors),
   timeScaling: { origin: model.timeOrigin, scale: model.timeScale },
@@ -597,6 +595,7 @@ const decodeFlatMapModel = Effect.fnUntraced(function* (
 
   return yield* parseFlatMapModel({
     model: "flat-map",
+    ...decodedCountryHolidayFields(encoded.countryHolidays),
     targetScaling,
     level: encoded.coefficients.level,
     seasonalities,
@@ -639,6 +638,7 @@ const decodePiecewiseMapModel = Effect.fnUntraced(function* (
 
   return yield* parsePiecewiseMapModel({
     model: "linear-piecewise-map",
+    ...decodedCountryHolidayFields(encoded.countryHolidays),
     targetScaling,
     intercept: encoded.coefficients.intercept,
     slope: encoded.coefficients.slope,
@@ -682,6 +682,7 @@ const decodeLogisticMapModel = Effect.fnUntraced(function* (
 
   return yield* parseLogisticMapModel({
     model: "logistic-piecewise-map",
+    ...decodedCountryHolidayFields(encoded.countryHolidays),
     targetScaling: encoded.targetScaling,
     rate: encoded.parameters.rate,
     offset: encoded.parameters.offset,

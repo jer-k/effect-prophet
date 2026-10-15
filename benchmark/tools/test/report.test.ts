@@ -5,7 +5,11 @@ import { parseBenchmarkCases, type BenchmarkCase } from "../case.ts";
 import { linearGrowthEdgeCases } from "../../cases/growth/linear/edge-cases.ts";
 import { uncertaintyCases } from "../../cases/uncertainty/public-api.ts";
 import { buildBenchmarkReport, renderBenchmarkMarkdown } from "../report.ts";
-import { parseImplementationResult, parseRunManifest } from "../result.ts";
+import {
+  parseImplementationResult,
+  parseRunManifest,
+  type CorrectnessProjection,
+} from "../result.ts";
 
 const environment = {
   runtime: "test",
@@ -394,6 +398,139 @@ describe("linear fit-quality acceptance with deferred stationarity", () => {
 });
 
 describe("benchmark reporting", () => {
+  it("requires country proof and pinned identity even when both adapters omit it", async () => {
+    const snapshot = {
+      snapshotId: `sha256:${"a".repeat(64)}`,
+      prophet: "1.4.0",
+      holidays: "0.104",
+    };
+
+    const proof: NonNullable<CorrectnessProjection["countryHolidays"]> = {
+      country: "BV",
+      coverage: "reject-known-gaps",
+      priorScale: 10,
+      provider: { prophet: "1.4.0", holidays: "0.104" },
+      trainingYears: [2024],
+      columns: [],
+      trainingActivations: [],
+      predictionActivations: [],
+      ignoredPredictionNames: [],
+    };
+
+    const declarations = await Effect.runPromise(
+      parseBenchmarkCases([
+        {
+          ...caseInput,
+          calendarSnapshot: snapshot,
+          workload: {
+            kind: "stage-f-map",
+            comparison: { kind: "equivalent-objective", evidenceId: "country-calendar-public-v1" },
+            configuration: {
+              growth: "flat",
+              scaling: "absmax",
+              seasonalityMode: "additive",
+              holidaysMode: "additive",
+              changepoints: { mode: "explicit", timestamps: [] },
+              changepointPriorScale: 0.05,
+              seasonalities: [],
+              events: [],
+              regressors: [],
+              countryHolidays: { country: "BV", coverage: "reject-known-gaps", priorScale: 10 },
+            },
+            pythonOptimizer: { algorithm: "Auto", maxIterations: 10000, newtonFallback: true },
+          },
+        },
+      ]),
+    );
+
+    const manifest = await Effect.runPromise(parseRunManifest(manifestInput));
+    const evidence = new Set(["country-calendar-public-v1"]);
+
+    const result = async (
+      implementation: "effect-prophet" | "python-prophet",
+      metadata: Pick<
+        CorrectnessProjection,
+        "countryHolidays" | "calendarSnapshotId" | "eventColumnCount"
+      >,
+    ) => {
+      const input = makeResultInput(implementation, 100);
+
+      return Effect.runPromise(
+        parseImplementationResult({
+          ...input,
+          measurements: input.measurements.map((entry) => ({
+            ...entry,
+            comparison: "equivalent-objective",
+            evidenceId: "country-calendar-public-v1",
+          })),
+          correctness: [
+            {
+              ...correctness,
+              modelKind: "flat-map",
+              fitQuality: [{ name: "objective", value: 1 }],
+              eventColumnCount: 0,
+              serializedModelBytes: implementation === "effect-prophet" ? 2000 : 1000,
+              ...metadata,
+            },
+          ],
+        }),
+      );
+    };
+
+    const python = await result("python-prophet", { countryHolidays: proof });
+
+    const effect = await result("effect-prophet", {
+      countryHolidays: proof,
+      calendarSnapshotId: snapshot.snapshotId,
+    });
+
+    const passing = buildBenchmarkReport(manifest, declarations, effect, python, evidence);
+
+    expect(passing.correctness[0], JSON.stringify(passing.correctness[0])).toMatchObject({
+      status: "passed",
+    });
+    expect(passing.calendars[0]).toMatchObject({
+      country: "BV",
+      embedded: true,
+      eventColumns: 0,
+      effectModelBytes: 2000,
+      pythonModelBytes: 1000,
+    });
+    expect(renderBenchmarkMarkdown(passing)).toContain("Effect model bytes");
+
+    const omitted = buildBenchmarkReport(
+      manifest,
+      declarations,
+      await result("effect-prophet", {}),
+      await result("python-prophet", {}),
+      evidence,
+    );
+
+    expect(omitted.correctness[0]?.status).toBe("failed");
+    expect(omitted.timings).toEqual([]);
+
+    for (const metadata of [
+      { countryHolidays: proof, calendarSnapshotId: `sha256:${"b".repeat(64)}` },
+      { countryHolidays: proof, calendarSnapshotId: snapshot.snapshotId, eventColumnCount: 1 },
+      { countryHolidays: { ...proof, country: "US" }, calendarSnapshotId: snapshot.snapshotId },
+      {
+        countryHolidays: { ...proof, predictionActivations: [1] as const },
+        calendarSnapshotId: snapshot.snapshotId,
+      },
+    ]) {
+      const failed = buildBenchmarkReport(
+        manifest,
+        declarations,
+        await result("effect-prophet", metadata),
+        python,
+        evidence,
+      );
+
+      expect(failed.correctness[0]?.status).toBe("failed");
+      expect(failed.timings).toEqual([]);
+    }
+  });
+
   it("reports accepted absolute timings and native provenance without rankings", async () => {
     const [cases, manifest, effectResult, pythonResult] = await Promise.all([
       Effect.runPromise(parseBenchmarkCases([caseInput])),

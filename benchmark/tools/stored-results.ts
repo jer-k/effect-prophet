@@ -16,6 +16,18 @@ const StoredReportSchema = Schema.Struct({
       status: Schema.Literals(["passed", "failed"]),
       comparison: Schema.String,
       note: Schema.String,
+      investigations: Schema.optionalKey(
+        Schema.Array(
+          Schema.Struct({
+            name: Schema.String,
+            run: Schema.Int,
+            effectValue: Schema.Finite,
+            pythonValue: Schema.Finite,
+            difference: Schema.Finite,
+            threshold: Schema.Finite,
+          }),
+        ),
+      ),
     }),
   ),
   timings: Schema.Array(

@@ -4,17 +4,19 @@ import { describe, expect, it } from "vitest";
 import { emptyEventCalendar } from "../src/event";
 import { defaultLinearOptimizer } from "../src/linear-optimizer";
 import {
-  InputValidationError,
+  CountryHolidayError,
   decodeOptions,
   defaultAutomaticMapOptions,
   defaultProphetOptions,
   type EncodedProphetOptions,
 } from "../src/index";
+import { expectInputValidationError } from "./helpers/input-validation-error";
 
 const expectOptionsFailure = async (input: Parameters<typeof decodeOptions>[0]) => {
-  const error = await Effect.runPromise(Effect.flip(decodeOptions(input)));
+  const error = expectInputValidationError(
+    await Effect.runPromise(Effect.flip(decodeOptions(input))),
+  );
 
-  expect(error).toBeInstanceOf(InputValidationError);
   expect(error._tag).toBe("InputValidationError");
   expect(error.input).toBe("options");
 
@@ -22,6 +24,19 @@ const expectOptionsFailure = async (input: Parameters<typeof decodeOptions>[0]) 
 };
 
 describe("decodeOptions", () => {
+  it.each([
+    [{ country: "NA-X" }, "unknown-country"],
+    [{ country: "US", priorScale: 0 }, "invalid-selection"],
+    [{ country: "US", subdivision: "CA" }, "invalid-selection"],
+  ] as const)("fails country selection %j with CountryHolidayError", async (selection, reason) => {
+    const error = await Effect.runPromise(
+      Effect.flip(decodeOptions(JSON.parse(JSON.stringify({ countryHolidays: selection })))),
+    );
+
+    expect(error).toBeInstanceOf(CountryHolidayError);
+    expect(error).toMatchObject({ reason, coverageIssues: [] });
+  });
+
   it("applies defaults when options are omitted", async () => {
     const options = await Effect.runPromise(decodeOptions());
 

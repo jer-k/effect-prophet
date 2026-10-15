@@ -12,7 +12,14 @@ import {
   type ValidationInput,
   type ValidationIssue,
 } from "./errors";
-import type { EventCalendar } from "./event";
+import { eventCalendarsMatch, type EventCalendar } from "./event";
+import { CountryHolidayError } from "./country-holidays";
+import {
+  fitCountryHolidayEvents,
+  predictCountryHolidayEvents,
+  countryHolidayModelFields,
+  type CountryHolidayModel,
+} from "./internal/country-holiday-model";
 import {
   parseFittedModel,
   requiresFlatStanMap,
@@ -59,6 +66,7 @@ import { defaultLinearOptimizer } from "./linear-optimizer";
 import { decodeObservations, type Observations } from "./observation";
 import {
   checkExplicitChangepointBounds,
+  checkOptionFeatureNames,
   decodeOptions,
   optionsValidationErrorFromSeasonality,
   type EncodedProphetOptions,
@@ -257,6 +265,14 @@ const makeFitPlan = (
   });
 };
 
+const predictionEvents = (
+  model: FittedProphet,
+  timestamps: PredictionTimestamps,
+): Effect.Effect<EventCalendar, CountryHolidayError> =>
+  model.countryHolidays === undefined
+    ? Effect.succeed(model.events)
+    : predictCountryHolidayEvents(model.countryHolidays, timestamps, model.events);
+
 const featureConstructionError = (observationCount: number, message: string): FittingError =>
   new FittingError({
     reason: "backend-failure",
@@ -403,9 +419,13 @@ const regressorFeatureValidationError = (
 export const fit = Effect.fn("Prophet.fit")(function* (
   observationsInput: Parameters<typeof decodeObservations>[0],
   optionsInput?: EncodedProphetOptions,
-): Effect.fn.Return<FittedProphet, InputValidationError | FittingError, FittingBackend> {
+): Effect.fn.Return<
+  FittedProphet,
+  InputValidationError | FittingError | CountryHolidayError,
+  FittingBackend
+> {
   const observations = yield* decodeObservations(observationsInput);
-  const options = yield* decodeOptions(optionsInput);
+  let options = yield* decodeOptions(optionsInput);
 
   const resolved = yield* resolveSeasonalities(observations, options).pipe(
     Effect.mapError(optionsValidationErrorFromSeasonality),
@@ -462,6 +482,36 @@ export const fit = Effect.fn("Prophet.fit")(function* (
   );
 
   const timestamps = observations.map((observation) => observation.timestamp);
+  let countryHolidays: CountryHolidayModel | undefined;
+
+  if (options.countryHolidays !== undefined) {
+    const resolvedCalendar = yield* fitCountryHolidayEvents(
+      options.countryHolidays,
+      timestamps,
+      options.events,
+    );
+
+    countryHolidays = resolvedCalendar.state;
+    options = { ...options, events: resolvedCalendar.events };
+
+    // decodeOptions checked custom names, so any collision here involves a country holiday name.
+    yield* checkOptionFeatureNames(
+      resolved.layout.components.map((component) => component.definition),
+      options.events,
+      options.regressors,
+    ).pipe(
+      Effect.mapError(
+        (error) =>
+          new CountryHolidayError({
+            reason: "conflicting-feature-name",
+            issues: error.issues,
+            coverageIssues: [],
+            message:
+              "Country holiday names must be distinct from seasonality, condition and regressor names",
+          }),
+      ),
+    );
+  }
 
   const eventMatrix = yield* createEventFeatures(timestamps, options.events).pipe(
     Effect.mapError((error) => featureConstructionError(observations.length, error.message)),
@@ -524,30 +574,48 @@ export const fit = Effect.fn("Prophet.fit")(function* (
   const backend = yield* FittingBackend;
   const parameters = yield* backend.fit(input, fitPlan);
 
+  const invalidParameters = new FittingError({
+    reason: "backend-failure",
+    observationCount: observations.length,
+    message: "Fitting backend returned invalid fitted-model parameters",
+  });
+
   const fittedModel = yield* parseFittedModel(parameters).pipe(
-    Effect.mapError(
-      () =>
-        new FittingError({
-          reason: "backend-failure",
-          observationCount: observations.length,
-          message: "Fitting backend returned invalid fitted-model parameters",
-        }),
-    ),
+    Effect.mapError(() => invalidParameters),
   );
 
   const returnedRegressors = fittedModel.regressors;
 
-  if (!fittedRegressorsMatch(regressorFeatures.regressors, returnedRegressors)) {
+  // Reduced flat fitting has no event input for empty calendars; its empty mode is incidental.
+  const eventsMatch =
+    options.events.columns.length === 0
+      ? fittedModel.events.columns.length === 0 && fittedModel.events.occurrences.length === 0
+      : eventCalendarsMatch(options.events, fittedModel.events);
+
+  if (
+    fittedModel.countryHolidays !== undefined ||
+    !fittedRegressorsMatch(regressorFeatures.regressors, returnedRegressors) ||
+    !eventsMatch
+  ) {
     return yield* Effect.fail(
       new FittingError({
         reason: "backend-failure",
         observationCount: observations.length,
-        message: "Fitting backend returned misaligned regressor metadata",
+        message: "Fitting backend returned misaligned feature metadata",
       }),
     );
   }
 
-  return fittedModel;
+  if (countryHolidays === undefined) {
+    return fittedModel;
+  }
+
+  // The orchestrator, never the numerical backend, owns selected-country provenance.
+  return yield* parseFittedModel({
+    ...fittedModel,
+    events: options.events,
+    ...countryHolidayModelFields(countryHolidays),
+  }).pipe(Effect.mapError(() => invalidParameters));
 });
 
 type FittedSeasonalProphet =
@@ -710,64 +778,76 @@ const forecastsFromMixedBatch = (
         );
       }
 
+      // Synchronous per component: yielding an Effect for every row and component dominated
+      // event-heavy predictions. Only a missing backend value enters the failure channel.
       const project = (
         name: string,
         mode: "additive" | "multiplicative",
         componentIndex: number,
-      ): Effect.Effect<ForecastComponent, PredictionError> => {
+      ): ForecastComponent | PredictionError => {
         const effect = batch.values[rowOffset + 4 + componentIndex];
 
         if (effect === undefined) {
-          return Effect.fail(
-            new PredictionError({
-              reason: "backend-failure",
-              timestamp,
-              message: "WASM mixed MAP prediction backend omitted a named component",
-            }),
-          );
+          return new PredictionError({
+            reason: "backend-failure",
+            timestamp,
+            message: "WASM mixed MAP prediction backend omitted a named component",
+          });
         }
 
         if (mode === "additive") {
-          return Effect.succeed({ name, mode, value: effect });
+          return { name, mode, value: effect };
         }
 
         const contribution = batch.contributions[row * batch.componentCount + componentIndex];
 
         return contribution === undefined
-          ? Effect.fail(
-              new PredictionError({
-                reason: "backend-failure",
-                timestamp,
-                message: "WASM mixed MAP backend omitted a projected component contribution",
-              }),
-            )
-          : Effect.succeed({ name, mode, factor: effect, contribution });
+          ? new PredictionError({
+              reason: "backend-failure",
+              timestamp,
+              message: "WASM mixed MAP backend omitted a projected component contribution",
+            })
+          : { name, mode, factor: effect, contribution };
       };
 
       const seasonalities: Array<SeasonalForecastComponent> = [];
 
       for (const [index, component] of model.seasonalities.components.entries()) {
-        seasonalities.push(
-          yield* project(component.definition.name, component.definition.mode, index),
-        );
+        const projected = project(component.definition.name, component.definition.mode, index);
+
+        if (projected instanceof PredictionError) {
+          return yield* Effect.fail(projected);
+        }
+
+        seasonalities.push(projected);
       }
 
       const events: Array<EventForecastComponent> = [];
 
       for (const [index, component] of model.events.layout.components.entries()) {
-        events.push(yield* project(component.name, component.mode, seasonalComponentCount + index));
+        const projected = project(component.name, component.mode, seasonalComponentCount + index);
+
+        if (projected instanceof PredictionError) {
+          return yield* Effect.fail(projected);
+        }
+
+        events.push(projected);
       }
 
       const regressors: Array<RegressorForecastComponent> = [];
 
       for (const [index, regressor] of model.regressors.entries()) {
-        regressors.push(
-          yield* project(
-            regressor.definition.name,
-            regressor.definition.mode,
-            seasonalComponentCount + eventComponentCount + index,
-          ),
+        const projected = project(
+          regressor.definition.name,
+          regressor.definition.mode,
+          seasonalComponentCount + eventComponentCount + index,
         );
+
+        if (projected instanceof PredictionError) {
+          return yield* Effect.fail(projected);
+        }
+
+        regressors.push(projected);
       }
 
       forecasts.push({
@@ -850,6 +930,7 @@ const predictPiecewiseMapForecasts = (
   timestamps: PredictionTimestamps,
   alignedRegressorValues: ReadonlyArray<ReadonlyArray<number>>,
   masks: SeasonalityMaskMatrix,
+  events: EventCalendar,
 ): Effect.Effect<Forecasts, PredictionError | InputValidationError> =>
   model.events.layout.coefficientCount === 0 &&
   model.regressors.length === 0 &&
@@ -864,7 +945,7 @@ const predictPiecewiseMapForecasts = (
           timestamps,
           alignedRegressorValues,
           masks,
-          model.events,
+          events,
           model.regressors,
         );
 
@@ -883,13 +964,14 @@ const predictMixedMapForecasts = (
   timestamps: PredictionTimestamps,
   alignedRegressorValues: ReadonlyArray<ReadonlyArray<number>>,
   masks: SeasonalityMaskMatrix,
+  events: EventCalendar,
 ): Effect.Effect<Forecasts, PredictionError | InputValidationError> =>
   Effect.gen(function* () {
     const { features } = yield* makePredictionFeatures(
       timestamps,
       alignedRegressorValues,
       masks,
-      model.events,
+      events,
       model.regressors,
     );
 
@@ -907,13 +989,14 @@ const predictLogisticMapForecasts = (
   bounds: Parameters<typeof predictLogisticMapWithWasm>[2],
   alignedRegressorValues: ReadonlyArray<ReadonlyArray<number>>,
   masks: SeasonalityMaskMatrix,
+  events: EventCalendar,
 ): Effect.Effect<Forecasts, PredictionError | InputValidationError> =>
   Effect.gen(function* () {
     const { features } = yield* makePredictionFeatures(
       timestamps,
       alignedRegressorValues,
       masks,
-      model.events,
+      events,
       model.regressors,
     );
 
@@ -931,14 +1014,21 @@ const predictFittedSeasonalModel = (
   timestamps: PredictionTimestamps,
   alignedRegressorValues: ReadonlyArray<ReadonlyArray<number>>,
   masks: SeasonalityMaskMatrix,
+  events: EventCalendar,
 ): Effect.Effect<Forecasts, PredictionError | InputValidationError> =>
   usesMixedPrediction(model)
-    ? predictMixedMapForecasts(model, timestamps, alignedRegressorValues, masks)
+    ? predictMixedMapForecasts(model, timestamps, alignedRegressorValues, masks, events)
     : Match.value(model).pipe(
         Match.discriminatorsExhaustive("model")({
           "flat-map": (flatModel) => predictFlatMapForecasts(flatModel, timestamps),
           "linear-piecewise-map": (piecewiseModel) =>
-            predictPiecewiseMapForecasts(piecewiseModel, timestamps, alignedRegressorValues, masks),
+            predictPiecewiseMapForecasts(
+              piecewiseModel,
+              timestamps,
+              alignedRegressorValues,
+              masks,
+              events,
+            ),
         }),
       );
 
@@ -961,7 +1051,7 @@ export const getRegressorCoefficients = (
 export const predict = Effect.fn("Prophet.predict")(function* (
   model: FittedProphet,
   rowsInput: Parameters<typeof decodePredictionRows>[0],
-): Effect.fn.Return<Forecasts, InputValidationError | PredictionError> {
+): Effect.fn.Return<Forecasts, InputValidationError | PredictionError | CountryHolidayError> {
   const rows = yield* decodePredictionRows(rowsInput);
   const firstRow = rows[0];
 
@@ -1008,6 +1098,7 @@ export const predict = Effect.fn("Prophet.predict")(function* (
   );
 
   const timestamps = rows.map((row) => row.timestamp);
+  const events = yield* predictionEvents(parsedModel, timestamps);
 
   const masks = yield* createSeasonalityMasks(
     parsedModel.seasonalities,
@@ -1031,10 +1122,17 @@ export const predict = Effect.fn("Prophet.predict")(function* (
       logisticBounds,
       alignedRegressorValues,
       masks,
+      events,
     );
   }
 
-  return yield* predictFittedSeasonalModel(parsedModel, timestamps, alignedRegressorValues, masks);
+  return yield* predictFittedSeasonalModel(
+    parsedModel,
+    timestamps,
+    alignedRegressorValues,
+    masks,
+    events,
+  );
 });
 
 /** Simulate seeded MAP predictive samples or intervals for complete MAP rows. */
@@ -1042,7 +1140,10 @@ export const predictUncertainty = Effect.fn("Prophet.predictUncertainty")(functi
   model: FittedProphet,
   rowsInput: Parameters<typeof decodePredictionRows>[0],
   optionsInput: EncodedUncertaintyOptions,
-): Effect.fn.Return<UncertaintyResult, InputValidationError | PredictionError> {
+): Effect.fn.Return<
+  UncertaintyResult,
+  InputValidationError | PredictionError | CountryHolidayError
+> {
   const rows = yield* decodePredictionRows(rowsInput);
   const options = yield* parseUncertaintyOptions(optionsInput);
   const firstRow = rows[0];
@@ -1099,6 +1200,7 @@ export const predictUncertainty = Effect.fn("Prophet.predictUncertainty")(functi
   );
 
   const timestamps = rows.map((row) => row.timestamp);
+  const events = yield* predictionEvents(parsedModel, timestamps);
 
   const masks = yield* createSeasonalityMasks(parsedModel.seasonalities, alignedConditions).pipe(
     Effect.mapError((error) => conditionValidationError("prediction-rows", error)),
@@ -1128,7 +1230,7 @@ export const predictUncertainty = Effect.fn("Prophet.predictUncertainty")(functi
     timestamps,
     alignedRegressors,
     masks,
-    parsedModel.events,
+    events,
     parsedModel.regressors,
   );
 

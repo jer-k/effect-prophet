@@ -34,5 +34,16 @@ December 13.
 
 ## Country holidays
 
-Built-in country holiday calendars, like Python Prophet's `add_country_holidays`, are not
-available yet. For now, list the holidays you care about as events.
+Add `countryHolidays: { country: "US" }` to fitting options to supplement custom events with
+an offline country calendar. It works with linear, flat and logistic growth and uses `holidaysMode`.
+Country dates have zero-day windows and a default prior of 10. Shared country/custom names must
+use the same prior.
+
+Fitting freezes the represented training years' feature layout; future predictions and uncertainty
+use the selected country's embedded snapshot without changing columns. Saved models retain that
+snapshot, so installing updated calendars never silently changes restored predictions.
+
+Use `inspectCountryHolidays` to inspect known limitations before fitting. Known gaps are rejected
+by default; `coverage: "allow-known-gaps"` explicitly accepts the provider's partial/empty result,
+not a completeness promise. See [Country holiday calendars](/guide/holiday-calendars)
+for the runnable example, pinned provider versions and 1995–2060 outer horizon.

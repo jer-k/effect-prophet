@@ -1,0 +1,6 @@
+Country holiday calendars generated from Prophet 1.4.0's make_holidays_df using holidays 0.104.
+https://github.com/facebook/prophet
+https://github.com/vacanza/holidays
+The holidays provider is MIT licensed; its LICENSE and CONTRIBUTORS are included.
+Prophet's MIT license is included as prophet-license.txt.
+Offline versioned rule snapshot; not a guarantee of complete or officially confirmed holiday dates.

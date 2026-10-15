@@ -1,6 +1,12 @@
 import { Effect, Schema } from "effect";
 
 import { ComponentModeSchema, type ComponentMode } from "./component-mode";
+import {
+  parseCountryHolidays,
+  type CountryHolidayError,
+  type CountryHolidays,
+  type EncodedCountryHolidays,
+} from "./country-holidays";
 import { InputValidationError, inputValidationErrorFromIssue } from "./errors";
 import {
   emptyEventCalendar,
@@ -70,6 +76,7 @@ export interface BuiltInSeasonalities {
 }
 
 interface EncodedBuiltInOptions {
+  readonly countryHolidays?: EncodedCountryHolidays;
   readonly seasonalityMode?: ComponentMode;
   readonly holidaysMode?: ComponentMode;
   readonly builtInSeasonalities?: EncodedBuiltInSeasonalities;
@@ -205,6 +212,7 @@ export type EncodedProphetOptions =
   | EncodedLogisticOptions;
 
 interface ParsedBuiltInOptions {
+  readonly countryHolidays?: CountryHolidays;
   readonly seasonalityMode: ComponentMode;
   readonly holidaysMode: ComponentMode;
   readonly builtInSeasonalities: BuiltInSeasonalities;
@@ -368,6 +376,7 @@ const MapOptionsSchema = Schema.Struct({
 });
 
 const ProphetOptionsSyntaxSchema = Schema.Struct({
+  countryHolidays: Schema.optionalKey(Schema.Unknown),
   growth: GrowthSchema.pipe(
     Schema.withDecodingDefaultKey(Effect.succeed(defaultProphetOptions.growth)),
   ),
@@ -440,7 +449,10 @@ export const optionsValidationErrorFromSeasonality = (
     message: error.message,
   });
 
-const optionsValidationErrorFromEvents = (error: InvalidEventCalendar): InputValidationError =>
+/** Translate custom/country event merge failures at the public options seam. */
+export const optionsValidationErrorFromEvents = (
+  error: InvalidEventCalendar,
+): InputValidationError =>
   new InputValidationError({
     input: "options",
     issues: error.issues.map((issue) => ({
@@ -460,15 +472,106 @@ const optionsValidationErrorFromRegressors = (error: InvalidRegressors): InputVa
     message: error.message,
   });
 
+/** Recheck global identities after training-derived seasonalities and events are resolved. */
+export const checkOptionFeatureNames = (
+  seasonalities: ReadonlyArray<SeasonalityDefinition>,
+  events: EventCalendar,
+  regressors: ReadonlyArray<RegressorDefinition>,
+): Effect.Effect<void, InputValidationError> =>
+  Effect.gen(function* () {
+    const seasonalityNames = new Set(seasonalities.map((seasonality) => seasonality.name));
+    const conditionNames = new Set<string>();
+
+    for (const [index, seasonality] of seasonalities.entries()) {
+      const conditionName = seasonality.conditionName;
+
+      if (conditionName === undefined) {
+        continue;
+      }
+
+      if (seasonalityNames.has(conditionName)) {
+        return yield* Effect.fail(
+          new InputValidationError({
+            input: "options",
+            issues: [
+              {
+                path: ["seasonalities", index, "conditionName"],
+                message: `Condition name '${conditionName}' collides with a seasonality`,
+              },
+            ],
+            message: "Condition and seasonality names must be distinct",
+          }),
+        );
+      }
+
+      conditionNames.add(conditionName);
+    }
+
+    for (const [index, occurrence] of events.occurrences.entries()) {
+      const collision = seasonalityNames.has(occurrence.name)
+        ? "a seasonality"
+        : conditionNames.has(occurrence.name)
+          ? "a condition"
+          : undefined;
+
+      if (collision !== undefined) {
+        return yield* Effect.fail(
+          new InputValidationError({
+            input: "options",
+            issues: [
+              {
+                path: ["events", index, "name"],
+                message: `Feature name '${occurrence.name}' collides with ${collision}`,
+              },
+            ],
+            message: "Event names must be globally distinct",
+          }),
+        );
+      }
+    }
+
+    const eventNames = new Set(events.occurrences.map((occurrence) => occurrence.name));
+
+    for (const [index, regressor] of regressors.entries()) {
+      const collision = seasonalityNames.has(regressor.name)
+        ? "a seasonality"
+        : eventNames.has(regressor.name)
+          ? "an event"
+          : conditionNames.has(regressor.name)
+            ? "a condition"
+            : undefined;
+
+      if (collision !== undefined) {
+        return yield* Effect.fail(
+          new InputValidationError({
+            input: "options",
+            issues: [
+              {
+                path: ["regressors", index, "name"],
+                message: `Feature name '${regressor.name}' collides with ${collision}`,
+              },
+            ],
+            message: "Regressor names must be globally distinct",
+          }),
+        );
+      }
+    }
+  });
+
 /** Decode optional, untrusted fitting options and apply the documented defaults. */
 export const decodeOptions = Effect.fn("Prophet.decodeOptions")(function* (
   input?: Parameters<typeof decodeProphetOptionsSyntax>[0],
-): Effect.fn.Return<ProphetOptions, InputValidationError> {
+): Effect.fn.Return<ProphetOptions, InputValidationError | CountryHolidayError> {
   const encoded = input === undefined ? emptyOptions : input;
 
   const syntax = yield* decodeProphetOptionsSyntax(encoded).pipe(
     Effect.mapError((error) => inputValidationErrorFromIssue("options", error.issue)),
   );
+
+  const countryHolidays =
+    syntax.countryHolidays === undefined
+      ? undefined
+      : yield* parseCountryHolidays(syntax.countryHolidays);
 
   const seasonalities = yield* parseSeasonalities(
     syntax.seasonalities,
@@ -486,83 +589,7 @@ export const decodeOptions = Effect.fn("Prophet.decodeOptions")(function* (
     syntax.seasonalityMode,
   ).pipe(Effect.mapError(optionsValidationErrorFromRegressors));
 
-  const seasonalityNames = new Set(seasonalities.map((seasonality) => seasonality.name));
-  const conditionNames = new Set<string>();
-
-  for (const [index, seasonality] of seasonalities.entries()) {
-    const conditionName = seasonality.conditionName;
-
-    if (conditionName === undefined) {
-      continue;
-    }
-
-    if (seasonalityNames.has(conditionName)) {
-      return yield* Effect.fail(
-        new InputValidationError({
-          input: "options",
-          issues: [
-            {
-              path: ["seasonalities", index, "conditionName"],
-              message: `Condition name '${conditionName}' collides with a seasonality`,
-            },
-          ],
-          message: "Condition and seasonality names must be distinct",
-        }),
-      );
-    }
-
-    conditionNames.add(conditionName);
-  }
-
-  for (const [index, occurrence] of events.occurrences.entries()) {
-    const collision = seasonalityNames.has(occurrence.name)
-      ? "a seasonality"
-      : conditionNames.has(occurrence.name)
-        ? "a condition"
-        : undefined;
-
-    if (collision !== undefined) {
-      return yield* Effect.fail(
-        new InputValidationError({
-          input: "options",
-          issues: [
-            {
-              path: ["events", index, "name"],
-              message: `Feature name '${occurrence.name}' collides with ${collision}`,
-            },
-          ],
-          message: "Event names must be globally distinct",
-        }),
-      );
-    }
-  }
-
-  const eventNames = new Set(events.occurrences.map((occurrence) => occurrence.name));
-
-  for (const [index, regressor] of regressors.entries()) {
-    const collision = seasonalityNames.has(regressor.name)
-      ? "a seasonality"
-      : eventNames.has(regressor.name)
-        ? "an event"
-        : conditionNames.has(regressor.name)
-          ? "a condition"
-          : undefined;
-
-    if (collision !== undefined) {
-      return yield* Effect.fail(
-        new InputValidationError({
-          input: "options",
-          issues: [
-            {
-              path: ["regressors", index, "name"],
-              message: `Feature name '${regressor.name}' collides with ${collision}`,
-            },
-          ],
-          message: "Regressor names must be globally distinct",
-        }),
-      );
-    }
-  }
+  yield* checkOptionFeatureNames(seasonalities, events, regressors);
 
   const flatChangepointIssues =
     syntax.growth === "flat"
@@ -604,7 +631,14 @@ export const decodeOptions = Effect.fn("Prophet.decodeOptions")(function* (
 
   const scaling = syntax.scaling === undefined ? {} : { scaling: syntax.scaling };
 
+  const calendarOptions: Pick<ParsedBuiltInOptions, "countryHolidays"> = {};
+
+  if (countryHolidays !== undefined) {
+    Object.assign(calendarOptions, { countryHolidays });
+  }
+
   const resolvedModes = {
+    ...calendarOptions,
     seasonalityMode: syntax.seasonalityMode,
     holidaysMode,
   } as const;

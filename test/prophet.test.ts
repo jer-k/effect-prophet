@@ -4,6 +4,7 @@ import { describe, expect, expectTypeOf, it } from "vitest";
 import {
   FittingError,
   InputValidationError,
+  type CountryHolidayError,
   PredictionError,
   fit,
   predict,
@@ -29,7 +30,11 @@ const linearForecastPrecisionDigits = 6;
 describe("linear MAP Prophet integration", () => {
   it("exposes validation and numerical failures precisely", () => {
     expectTypeOf(fit(observations)).toEqualTypeOf<
-      Effect.Effect<FittedProphet, InputValidationError | FittingError, FittingBackend>
+      Effect.Effect<
+        FittedProphet,
+        InputValidationError | FittingError | CountryHolidayError,
+        FittingBackend
+      >
     >();
   });
 

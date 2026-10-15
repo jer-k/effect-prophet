@@ -1,0 +1,303 @@
+{
+  "schemaVersion": 1,
+  "runId": "2026-10-15T043106-340Z-34951879",
+  "createdAt": "2026-10-15T04:31:10.043Z",
+  "gitRevision": "3495187941a358227641e3c27fd1dc6602b1f96f",
+  "gitDirty": false,
+  "hostPlatform": "darwin",
+  "hostRelease": "25.5.0",
+  "hostArchitecture": "arm64",
+  "hostProcessor": "Apple M4 Pro",
+  "containerPlatform": "linux/arm64",
+  "emulated": false,
+  "selectedCases": [
+    "fixed-linear-prediction-medium",
+    "map-explicit-break-small",
+    "map-seasonal-breaks-irregular-medium",
+    "map-mixed-features-explicit-small",
+    "map-mixed-features-automatic-large",
+    "map-events-small",
+    "map-regressors-medium",
+    "map-conditional-seasonalities-medium",
+    "country-us-linear-additive",
+    "country-explicit-us-linear-additive",
+    "country-us-linear-multiplicative",
+    "country-explicit-us-linear-multiplicative",
+    "country-boundary-linear",
+    "linear-defaults-small",
+    "linear-defaults-medium",
+    "linear-defaults-irregular",
+    "map-training-ordered-explicit",
+    "map-training-ordered-auto",
+    "map-training-unsorted-explicit",
+    "map-training-unsorted-auto",
+    "map-training-duplicates-explicit",
+    "map-training-duplicates-auto",
+    "map-training-duplicate-features-auto",
+    "uncertainty-training-duplicates-auto",
+    "map-training-zero-span-linear-varied",
+    "map-training-zero-span-linear-constant",
+    "evaluation-training-duplicates",
+    "linear-offset-scaling-absmax",
+    "linear-offset-scaling-minmax",
+    "linear-mixed-components",
+    "uncertainty-linear-defaults-long-history-intervals-1000",
+    "uncertainty-linear-defaults-irregular-intervals-1000",
+    "uncertainty-linear-offset-scaling-absmax-historical-intervals-128",
+    "uncertainty-linear-offset-scaling-absmax-one-future-samples-128",
+    "uncertainty-linear-mixed-components-mixed-intervals-128",
+    "uncertainty-linear-mixed-components-mixed-samples-512",
+    "evaluation-linear-point",
+    "evaluation-linear-intervals",
+    "evaluation-linear-search",
+    "evaluation-linear-failure-search"
+  ],
+  "commands": [
+    "BENCHMARK_STAGE=correctness BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/tools/runtime/compose.yaml run --rm effect-prophet-benchmark",
+    "BENCHMARK_STAGE=correctness BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/tools/runtime/compose.yaml run --rm python-prophet-benchmark",
+    "BENCHMARK_REPORT_MODE=eligibility BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/tools/runtime/compose.yaml run --rm benchmark-report",
+    "BENCHMARK_STAGE=timing BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/tools/runtime/compose.yaml run --rm effect-prophet-benchmark",
+    "BENCHMARK_STAGE=timing BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/tools/runtime/compose.yaml run --rm python-prophet-benchmark",
+    "BENCHMARK_REPORT_MODE=final BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/tools/runtime/compose.yaml run --rm benchmark-report"
+  ],
+  "inputHashes": [
+    {
+      "name": "benchmark/cases/growth/linear/public-api.json",
+      "value": "525b2342abbbfa4f107f6ad410f3d7a11b80d3981b40f885e1004ebc75a8b68b"
+    },
+    {
+      "name": "benchmark/cases/holidays/public-api.json",
+      "value": "68bfd246325a715a3803ea0ca134aafe32c82297325c922b9d7d33b5bd442a17"
+    },
+    {
+      "name": "benchmark/cases/holidays/country-calendars.ts",
+      "value": "2eea24a47cb6d55c1ed4f5aa6c5b7b62a0ef8c638e21a39af5053c2dd830ea7c"
+    },
+    {
+      "name": "benchmark/cases/holidays/coverage-policy.json",
+      "value": "39e9a632477d46a3af3d22e50d825262d085024e99c1009c37c154bd18c94871"
+    },
+    {
+      "name": "calendars/manifest.json",
+      "value": "514beb709c3a91b3a699731758d244dccc1ada370e07ec0e6e928497b14a79d4"
+    },
+    {
+      "name": "calendars/coverage.json",
+      "value": "dd712b18745c9d999676033f108d690a1989d09425c32bd93cbbccb24d49a290"
+    },
+    {
+      "name": "src/internal/country-holiday-catalog.ts",
+      "value": "5899de3e90c9fb071e58ea7efc46132d301719a1110f2fbfa10ff8180650e026"
+    },
+    {
+      "name": "benchmark/cases/regressors/public-api.json",
+      "value": "93a51dfa8e4985e2e3aa1d0bf3568416cf5ba40138b97a2c06225455d3ae6fac"
+    },
+    {
+      "name": "benchmark/cases/seasonalities/public-api.json",
+      "value": "04acddf65c3852ecafcadbe3ebd2f87d1b8dab9922ad364c876aa64db165d00d"
+    },
+    {
+      "name": "benchmark/cases/growth/linear/scenarios.json",
+      "value": "32966f95e4488ab5c9224704518a58474d9c4050f300073585a0f35ae8f017a7"
+    },
+    {
+      "name": "benchmark/cases/growth/linear/edge-cases.ts",
+      "value": "71108a0cc6553e562c868cc801f739333fa66dfb1431e99c8bdf3042251126d9"
+    },
+    {
+      "name": "benchmark/cases/growth/linear/controls.ts",
+      "value": "883c3c441bf4203ad63500e636a554222e34d83140b0a33f73216efb30f20d18"
+    },
+    {
+      "name": "benchmark/cases/growth/defaults.ts",
+      "value": "a2957e494244ae18209a5089912747f1aee8d8deb58f01e397ddd9b9c1cac02c"
+    },
+    {
+      "name": "tools/prophet/linear_optimizer_evidence.py",
+      "value": "66db5f89eed91f87a524e6f1f34781b25fe1976a7a162b0751320eaca023a72f"
+    },
+    {
+      "name": "benchmark/cases/growth/mixed-map.ts",
+      "value": "ba3235a5f4e3bddb758858c0103bb9b23223b9b68b22f7b385ddb392dda097b7"
+    },
+    {
+      "name": "benchmark/cases/uncertainty/public-api.ts",
+      "value": "7749e592552a34a189a725f1cea187d1b7db192259d4efb368acb50681c9d54e"
+    },
+    {
+      "name": "benchmark/cases/uncertainty/controls.ts",
+      "value": "54d47e3af8a30c19ed95b1b468b8dc0c37ae42c5ef7381a7922fac6f9d7b0665"
+    },
+    {
+      "name": "benchmark/cases/diagnostics/evaluation.ts",
+      "value": "f8fef3a7ae9d6a3d5cf094f40d0a4a876aadcc25ae8c12e07b07c5c86791058c"
+    },
+    {
+      "name": "benchmark/cases/growth/flat/public-api.ts",
+      "value": "ece6a2e2591b0187abfb72ade1b7d73380a6b885c7abd4f245f59cc451b00dc0"
+    },
+    {
+      "name": "benchmark/cases/growth/logistic/public-api.ts",
+      "value": "6636c414cba4ef94f44c740e0619ef24c9fbe23e74dd2f728e4710338c5a05f3"
+    },
+    {
+      "name": "benchmark/tools/effect-case.ts",
+      "value": "cd9fb9b38fd8f2e6637c488c120441e4db79bef4e94a9b6ed2cd983d12cc87ca"
+    },
+    {
+      "name": "benchmark/tools/country-holidays.ts",
+      "value": "f3e0cd7d95a56210c3f510b75c7f5a44ce17daa677a3c7465a6bb56cf7669798"
+    },
+    {
+      "name": "benchmark/tools/result.ts",
+      "value": "de27dd299cbd088708fd14e1ea2bef0e7da5e77851f5c954f2cb6d5762867df6"
+    },
+    {
+      "name": "benchmark/tools/adapters/effect-prophet.ts",
+      "value": "6452921fd3ca72169e523687b2988e954cbb6496e5a7d786d08e9a30c68bd382"
+    },
+    {
+      "name": "benchmark/tools/adapters/python-prophet.py",
+      "value": "26f28c24175bc5ba8e8ab6f1a31c2cc537e9f720bd8b7f41da448b2a8776df5b"
+    },
+    {
+      "name": "benchmark/tools/catalog.ts",
+      "value": "d9364f809b11990fbbbfaf980f40e807964ffb86e84d682d3780e0387dc734ff"
+    },
+    {
+      "name": "benchmark/tools/case.ts",
+      "value": "f0587aa19b4c295f00d5a16e3434280ac9f4f81580544d666ed6ec638e9219ac"
+    },
+    {
+      "name": "benchmark/tools/report.ts",
+      "value": "381f14e5b99550047989b8245961fbee040a4b42e12d653c4f23eb317b4a812d"
+    },
+    {
+      "name": "benchmark/tools/report-cli.ts",
+      "value": "7d44074f1d29bb2f62389d4957be4c53d17d6e09c8a5eeec37cbfbf50387a3a8"
+    },
+    {
+      "name": "benchmark/tools/evaluation.ts",
+      "value": "eb8802508227d8bc9052b17d743d3fa61eacb139e60077acca7294cbaf1afa07"
+    },
+    {
+      "name": "benchmark/tools/adapters/evaluation.py",
+      "value": "025bcf9f3210e9a2a91c2e70ac43b23cb385952d180603287d4c9d087561c278"
+    },
+    {
+      "name": "benchmark/results/runs/2026-10-15T043106-340Z-34951879/cases.json",
+      "value": "172f0371a5b857fb559766fd781f212461e5365a94a3c2daa05bc40c39c93b8c"
+    },
+    {
+      "name": "benchmark/evidence/comparisons.json",
+      "value": "b8dcc7c785a47b31641ceab260b581491abde3549eadbc95cc230d7cb86f8593"
+    },
+    {
+      "name": "benchmark/tools/runtime/python/uv.lock",
+      "value": "c90f2464e1d50dbe489bdcdaf8350f04c162f6c617559cfb75d6977b0f430ab1"
+    },
+    {
+      "name": "benchmark/inputs/v1/manifest.json",
+      "value": "2ed4d034e5fb034e7faf1c9a5160ff4e2e28562b51dc8b06bb50a48dbf4960c1"
+    },
+    {
+      "name": "benchmark/inputs/v5/manifest.json",
+      "value": "f8c2bd8ce0d7679a6cda41942e9a34c6904c38deeb114ae1775e6f9328987d21"
+    },
+    {
+      "name": "benchmark/inputs/v3/manifest.json",
+      "value": "e82d8958680c7c36e8b19e8b70038324f2dfee936f93bcb49d8bd17b73dfa267"
+    },
+    {
+      "name": "package-lock.json",
+      "value": "44aa1bcb2ca82ccc081d3ce74586543d0c82a154844357fc5051a6fc180427fc"
+    },
+    {
+      "name": "benchmark/inputs/v1/linear-medium.json",
+      "value": "5f69f47c9189c3587fe9c4d72a1c885d2b16d5bd72fa693b49c46ca5ad6381fc"
+    },
+    {
+      "name": "benchmark/inputs/v1/linear-small.json",
+      "value": "bd04fc739211e1968ad47cae0a56d6ce776b0e9ea93dd2d38d89047bac60a5c3"
+    },
+    {
+      "name": "benchmark/inputs/v1/map-irregular-medium.json",
+      "value": "62f195edf2bc788b67f26471e00eee77ec55c61670a7c61be3c23230664418a1"
+    },
+    {
+      "name": "benchmark/inputs/v1/map-mixed-features-explicit-small.json",
+      "value": "c02bbf7954cf0b048e5413f5d00a2f23a664882225bb8c18a4996d68921a63ed"
+    },
+    {
+      "name": "benchmark/inputs/v1/map-mixed-features-automatic-large.json",
+      "value": "7a24d6ad1f87032a320eed898a00a41bc90a4b0c7febb7c42801715c86c664b5"
+    },
+    {
+      "name": "benchmark/inputs/v1/map-events-small.json",
+      "value": "124c5aa9e78f09a3c2bb549106cf57f4a4b30793e52f044b2dd384b9eaded665"
+    },
+    {
+      "name": "benchmark/inputs/v1/map-regressors-medium.json",
+      "value": "804afd5985e47268a8ddae3301fffcdaaf9a2afca3f3cdbdab8e3d028286f525"
+    },
+    {
+      "name": "benchmark/inputs/v1/map-conditional-seasonalities-medium.json",
+      "value": "301d2619b93f949d41e43a8ea36bbd74007f10d3151944668dc92b8235fbf968"
+    },
+    {
+      "name": "benchmark/inputs/v5/country-basic-96.json",
+      "value": "9ff002c94ecdaa2f78ad32094f4af7cf5cbbe377f19cfdb5b3100e29005151f8"
+    },
+    {
+      "name": "benchmark/inputs/v5/country-boundary-96.json",
+      "value": "b098fbafdcd307f49ceaa225193e3050e2747a419a8a63ec102062f954231345"
+    },
+    {
+      "name": "benchmark/inputs/v1/training-ordered.json",
+      "value": "26225e1a04e8d87fbc01f0cbcbe1053c72b87e0ef2c1d0efca3d15a1a448668c"
+    },
+    {
+      "name": "benchmark/inputs/v1/training-unsorted.json",
+      "value": "f7bd2722b293c4d2d94d63d48023d3788bc701bf2fb1b3d6b96a738cf74a05e9"
+    },
+    {
+      "name": "benchmark/inputs/v1/training-duplicates.json",
+      "value": "4cb336b1befb59c6e212152cf9f292da82dca61867da485e29840acad55a2926"
+    },
+    {
+      "name": "benchmark/inputs/v1/training-duplicate-features.json",
+      "value": "ce3a031ede4894710f5fd128a31ca6b69ef8eee8be461984e62b67b9b71cf98b"
+    },
+    {
+      "name": "benchmark/inputs/v1/training-zero-span-varied.json",
+      "value": "e307813127392e6c95ea82ca8a1c37e2689b01e18f42cb17ec0a882857617f8b"
+    },
+    {
+      "name": "benchmark/inputs/v1/training-zero-span-constant.json",
+      "value": "47f06ea5accdb781bc8381967f1d0df9452af3afd5216a95861961a9ee95a2ec"
+    },
+    {
+      "name": "benchmark/inputs/v1/linear-offset-scaling.json",
+      "value": "bfea515181446ef72eeed2acaef46db63d6fcee5cd1d6af177ad886a6c973b5e"
+    },
+    {
+      "name": "benchmark/inputs/v1/linear-mixed-components.json",
+      "value": "48c87b33c9ffb95217c18f0dc10baf441141cf937b79d1081d16f29057cd6b1c"
+    },
+    {
+      "name": "benchmark/inputs/v3/linear-long-history.json",
+      "value": "30f02c063165126f62a0964a83fef842d557b54fab6300c692ef69225bb94d41"
+    }
+  ],
+  "containerImages": [
+    {
+      "name": "effect-prophet/benchmark-effect:local",
+      "value": "sha256:63bcd28b405bd9562482d4dad56cb4c04d26a520fb2c193f7695937290e30522"
+    },
+    {
+      "name": "effect-prophet/benchmark-python:1.4.0",
+      "value": "sha256:dd23f2a2f63224aebf0f4bd6ab4e9f68dc44c64f3dedf4214bc6c3086c8ebf50"
+    }
+  ]
+}
