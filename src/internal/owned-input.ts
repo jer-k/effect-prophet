@@ -10,8 +10,16 @@ export const freezeOwned = <T>(owned: T): T => {
   const freeze = (value: object): void => {
     if (deeplyFrozen.has(value)) return;
 
-    for (const child of Object.values(value)) {
-      if (Predicate.isObjectKeyword(child)) freeze(child);
+    // Walk arrays in place: `Object.values` would copy every array, including long numeric
+    // coefficient arrays, only to look for nested objects.
+    if (Array.isArray(value)) {
+      for (const child of value) {
+        if (Predicate.isObjectKeyword(child)) freeze(child);
+      }
+    } else {
+      for (const child of Object.values(value)) {
+        if (Predicate.isObjectKeyword(child)) freeze(child);
+      }
     }
 
     Object.freeze(value);

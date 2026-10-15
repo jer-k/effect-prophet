@@ -5,7 +5,7 @@ import { cpus, platform, release, totalmem } from "node:os";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { Effect, Schema } from "effect";
+import { Effect, Predicate, Schema } from "effect";
 import {
   decodeFittedModel,
   encodeFittedModel,
@@ -27,7 +27,6 @@ import {
   type BenchmarkPhase,
 } from "../case.ts";
 import { effectOptionsForCase } from "../effect-case.ts";
-import { projectCountryHolidays } from "../country-holidays.ts";
 import {
   evaluationCorrectness,
   evaluationOperation,
@@ -917,6 +916,10 @@ const correctnessProjection = async (
   assertFixedEquation(forecasts, benchmarkCase);
   assertMetadata(benchmarkCase, metadata, dataset.observations.length);
 
+  // Loaded only for this untimed check, so timing workers and fresh-process children don't pay
+  // for importing it at startup.
+  const { projectCountryHolidays } = await import("../country-holidays.ts");
+
   const countryHolidays = await Effect.runPromise(
     projectCountryHolidays(benchmarkCase, dataset, model, forecasts).pipe(
       Effect.withTracerEnabled(false),
@@ -1166,11 +1169,23 @@ const measurementForPhase = async (
     : measurement;
 };
 
+/**
+ * Workers and fresh-process children need one case. The coordinator has already decoded and
+ * validated the whole file, so only the matching entry is decoded here: decoding every case made
+ * each child's startup, which fresh-process phases time, grow with the size of the suite.
+ */
 const findCase = async (caseId: string): Promise<BenchmarkCase> => {
-  const benchmarkCase = (await loadCases()).find((candidate) => candidate.id === caseId);
+  const path = process.env.BENCHMARK_CASES_PATH ?? defaultCasesPath;
+  const input: unknown = JSON.parse(await readFile(path, "utf8"));
 
-  if (benchmarkCase === undefined) {
-    throw new Error(`Unknown benchmark case: ${caseId}`);
+  const matches = Array.isArray(input)
+    ? input.filter((candidate) => Predicate.hasProperty(candidate, "id") && candidate.id === caseId)
+    : input;
+
+  const [benchmarkCase, ...others] = await Effect.runPromise(parseBenchmarkCases(matches));
+
+  if (benchmarkCase === undefined || others.length > 0) {
+    throw new Error(`Expected exactly one benchmark case: ${caseId}`);
   }
 
   return benchmarkCase;
