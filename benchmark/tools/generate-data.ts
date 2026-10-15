@@ -50,6 +50,7 @@ type DatasetRecipe = {
   readonly noiseMultiplier?: number;
   readonly trend?: (index: number, observationCount: number) => number;
   readonly trainingTimestamp?: (index: number) => string;
+  readonly predictionTimestamp?: (index: number) => string;
   readonly covariates: (index: number) => Covariates;
   readonly additive: (index: number, covariates: Covariates) => number;
 };
@@ -75,7 +76,7 @@ const makeDataset = (recipe: DatasetRecipe): BenchmarkDataset => {
     const index = recipe.observationCount + offset;
 
     return {
-      timestamp: timestampAt(index, recipe.irregular),
+      timestamp: recipe.predictionTimestamp?.(offset) ?? timestampAt(index, recipe.irregular),
       ...recipe.covariates(index),
     };
   });
@@ -683,11 +684,110 @@ export const generateBenchmarkData = Effect.fn("benchmark.inputs.generate")(func
   }).pipe(Effect.withSpan("benchmark.inputs.generate-filesystem"));
 });
 
+const countryRecipe = (
+  id: string,
+  year: number,
+  observationCount: number,
+  future: ReadonlyArray<string>,
+  covariates: DatasetRecipe["covariates"] = noCovariates,
+  trend: NonNullable<DatasetRecipe["trend"]> = () => 20,
+): BenchmarkDataset =>
+  makeDataset({
+    id,
+    observationCount,
+    predictionCount: future.length,
+    recipe: `country-v5:${id}:level+jan1(3)+jan5(1.4)+bounded-noise:n=${observationCount}:future=${future.length}:year=${year}`,
+    trainingTimestamp: (index) => new Date(Date.UTC(year, 0, index + 1)).toISOString(),
+    predictionTimestamp: (index) => {
+      const timestamp = future[index];
+
+      if (timestamp === undefined) throw new Error("Country recipe lost its authored future row");
+
+      return timestamp;
+    },
+    covariates,
+    trend,
+    additive: (index, row) => {
+      const day = new Date(Date.UTC(year, 0, index + 1));
+      const january = day.getUTCMonth() === 0;
+
+      return (
+        (january && day.getUTCDate() === 1 ? 3 : 0) +
+        (january && day.getUTCDate() === 5 ? 1.4 : 0) +
+        (row.conditions?.active === true ? weekly(index) : 0) +
+        0.4 * (row.regressors?.promotion ?? 0)
+      );
+    },
+  });
+
+const countryFuture = ["2024-12-25", "2025-01-01", "2025-01-02", "2025-01-05"].map(
+  (date) => `${date}T00:00:00.000Z`,
+);
+
+/** Frozen country workloads: sparse future years, estimates, partial coverage and scaling. */
+export const countryHolidayDatasets: ReadonlyArray<BenchmarkDataset> = [
+  countryRecipe("country-basic-96", 2024, 96, countryFuture),
+  countryRecipe(
+    "country-logistic-96",
+    2024,
+    96,
+    countryFuture,
+    () => ({ capacity: 80, floor: 0 }),
+    (index) => 10 + 50 / (1 + Math.exp(-(index - 40) / 25)),
+  ),
+  countryRecipe("country-mixed-96", 2024, 96, countryFuture, (index) => ({
+    conditions: { active: index % 4 !== 1 },
+    regressors: { promotion: index % 3 === 0 ? 1 : 0 },
+  })),
+  countryRecipe(
+    "country-boundary-96",
+    2010,
+    96,
+    ["2021-06-18", "2021-06-19", "2021-12-31", "2060-01-01"].map((date) => `${date}T00:00:00.000Z`),
+  ),
+  countryRecipe(
+    "country-estimated-96",
+    2024,
+    96,
+    Array.from({ length: 366 }, (_, index) => new Date(Date.UTC(2028, 0, index + 1)).toISOString()),
+  ),
+  countryRecipe(
+    "country-partial-96",
+    2036,
+    96,
+    ["2037-01-01", "2037-01-26", "2037-08-15"].map((date) => `${date}T00:00:00.000Z`),
+  ),
+  ...[730, 2190].map((count) =>
+    countryRecipe(
+      `country-scaling-${count}`,
+      2020,
+      count,
+      Array.from({ length: 512 }, (_, index) =>
+        new Date(Date.UTC(2020, 0, count + index + 1)).toISOString(),
+      ),
+    ),
+  ),
+];
+
+/** A smaller prediction batch shares the long training history without revising frozen v5 bytes. */
+export const countryHolidayBatchDatasets: ReadonlyArray<BenchmarkDataset> = [
+  countryRecipe(
+    "country-scaling-2190-batch-32",
+    2020,
+    2190,
+    Array.from({ length: 32 }, (_, index) =>
+      new Date(Date.UTC(2020, 0, 2190 + index + 1)).toISOString(),
+    ),
+  ),
+];
+
 /** Later versions add datasets; v1 is the default recipe list. */
 const versionDatasets = new Map<string, ReadonlyArray<BenchmarkDataset>>([
   ["v2", logisticReconciliationDatasets],
   ["v3", uncertaintyDatasets],
   ["v4", correlatedRegressorDatasets],
+  ["v5", countryHolidayDatasets],
+  ["v6", countryHolidayBatchDatasets],
 ]);
 
 const entrypoint = process.argv[1];

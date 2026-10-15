@@ -33,7 +33,14 @@ export const effectOptionsForCase = (
       ? undefined
       : ([firstSeasonality, ...configuration.seasonalities.slice(1)] as const);
 
+  const calendarOptions: Pick<EncodedProphetOptions, "countryHolidays"> = {};
+
+  if (configuration.countryHolidays !== undefined) {
+    Object.assign(calendarOptions, { countryHolidays: configuration.countryHolidays });
+  }
+
   const common = {
+    ...calendarOptions,
     builtInSeasonalities: {
       daily: "off" as const,
       weekly: "off" as const,

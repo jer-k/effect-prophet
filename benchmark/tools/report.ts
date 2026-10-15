@@ -88,6 +88,18 @@ export interface BenchmarkReport {
     readonly policy: FitQualityPolicy;
     readonly followUp: "EP-097" | undefined;
   }>;
+  readonly calendars: ReadonlyArray<{
+    readonly caseId: string;
+    readonly run: number;
+    readonly country: string | undefined;
+    readonly coverage: string | undefined;
+    readonly snapshot: BenchmarkCase["calendarSnapshot"];
+    readonly embedded: boolean;
+    readonly trainingYears: ReadonlyArray<number>;
+    readonly eventColumns: number | undefined;
+    readonly effectModelBytes: number | undefined;
+    readonly pythonModelBytes: number | undefined;
+  }>;
   readonly workloads: ReadonlyArray<{
     readonly id: string;
     readonly dataset: string;
@@ -304,6 +316,8 @@ const stableMetadata = (projection: CorrectnessProjection) => ({
     projection.modelKind === "flat-map" ? [] : projection.changepointTimestamps,
   seasonalities: projection.seasonalities,
   events: projection.events,
+  eventColumnCount: projection.eventColumnCount,
+  countryHolidays: projection.countryHolidays,
   regressors: projection.regressors.map((regressor) => ({
     name: regressor.name,
     priorScale: regressor.priorScale,
@@ -319,7 +333,32 @@ const stableMetadata = (projection: CorrectnessProjection) => ({
 const compareProjection = (
   effectProjection: CorrectnessProjection,
   pythonProjection: CorrectnessProjection,
+  benchmarkCase: BenchmarkCase,
 ): QuantityDifferences | undefined => {
+  const country =
+    benchmarkCase.workload.kind === "fixed-linear-prediction"
+      ? undefined
+      : benchmarkCase.workload.configuration.countryHolidays;
+
+  if (
+    country !== undefined &&
+    (effectProjection.countryHolidays === undefined ||
+      pythonProjection.countryHolidays === undefined ||
+      effectProjection.calendarSnapshotId !== benchmarkCase.calendarSnapshot?.snapshotId ||
+      effectProjection.countryHolidays.country !== country.country ||
+      effectProjection.countryHolidays.coverage !== country.coverage ||
+      effectProjection.countryHolidays.priorScale !== country.priorScale ||
+      effectProjection.eventColumnCount !== effectProjection.countryHolidays.columns.length ||
+      pythonProjection.eventColumnCount !== pythonProjection.countryHolidays.columns.length ||
+      effectProjection.countryHolidays.predictionActivations.length !==
+        effectProjection.forecasts.length * effectProjection.countryHolidays.columns.length ||
+      (benchmarkCase.datasetIdentity !== undefined &&
+        effectProjection.countryHolidays.trainingActivations.length !==
+          benchmarkCase.datasetIdentity.trainingRows *
+            effectProjection.countryHolidays.columns.length))
+  )
+    return undefined;
+
   if (
     effectProjection.forecasts.length !== pythonProjection.forecasts.length ||
     JSON.stringify(stableMetadata(effectProjection)) !==
@@ -829,7 +868,7 @@ const correctnessForCase = (
       };
     }
 
-    const differences = compareProjection(effectProjection, pythonProjection);
+    const differences = compareProjection(effectProjection, pythonProjection, benchmarkCase);
 
     if (differences === undefined) {
       return {
@@ -1010,6 +1049,37 @@ export const buildBenchmarkReport = (
         ];
       });
     }),
+    calendars: cases.flatMap((benchmarkCase) => {
+      if (benchmarkCase.calendarSnapshot === undefined) return [];
+
+      return Array.from({ length: benchmarkCase.independentRuns }, (_, run) => {
+        const effect = effectResult.correctness.find(
+          (entry) => entry.caseId === benchmarkCase.id && entry.run === run,
+        );
+
+        const python = pythonResult.correctness.find(
+          (entry) => entry.caseId === benchmarkCase.id && entry.run === run,
+        );
+
+        const selection =
+          benchmarkCase.workload.kind === "fixed-linear-prediction"
+            ? undefined
+            : benchmarkCase.workload.configuration.countryHolidays;
+
+        return {
+          caseId: benchmarkCase.id,
+          run,
+          country: selection?.country,
+          coverage: selection?.coverage,
+          snapshot: benchmarkCase.calendarSnapshot,
+          embedded: effect?.calendarSnapshotId !== undefined,
+          trainingYears: effect?.countryHolidays?.trainingYears ?? [],
+          eventColumns: effect?.eventColumnCount,
+          effectModelBytes: effect?.serializedModelBytes,
+          pythonModelBytes: python?.serializedModelBytes,
+        };
+      });
+    }),
     workloads: cases.flatMap((benchmarkCase) => {
       const uncertainty =
         benchmarkCase.workload.kind === "stage-f-map"
@@ -1033,8 +1103,10 @@ export const buildBenchmarkReport = (
                       (count, item) => count + 2 * item.fourierOrder,
                       0,
                     ) +
-                    new Set(benchmarkCase.workload.configuration.events.map((item) => item.name))
-                      .size +
+                    (effectResult.correctness.find((entry) => entry.caseId === benchmarkCase.id)
+                      ?.eventColumnCount ??
+                      new Set(benchmarkCase.workload.configuration.events.map((item) => item.name))
+                        .size) +
                     benchmarkCase.workload.configuration.regressors.length
                   : 0,
               changepoints:
@@ -1132,6 +1204,22 @@ export const renderBenchmarkMarkdown = (report: BenchmarkReport): string => {
 
     lines.push(
       `| ${escapeTableCell(summary.caseId)} | ${summary.comparison} | ${summary.status} | ${differences?.trend.toExponential(3) ?? "n/a"} | ${differences?.component.toExponential(3) ?? "n/a"} | ${differences?.additive.toExponential(3) ?? "n/a"} | ${differences?.forecast.toExponential(3) ?? "n/a"} | ${differences?.noiseScale.toExponential(3) ?? "n/a"} | ${summary.intervalBoundRatio?.toFixed(3) ?? "n/a"} | ${escapeTableCell(summary.note)} |`,
+    );
+  }
+
+  if (report.calendars.length > 0) {
+    lines.push(
+      "",
+      "## Country calendars and serialized models",
+      "",
+      "Country fits include bundled lookup/decoding; prediction and restoration use embedded per-country data without replacing the saved snapshot. Explicit controls use identical fitted names, occurrences, priors and modes. Bytes are UTF-8 public model JSON, not gzip or per-call allocation. Empty/partial provider output is not completeness evidence. Failed cases remain visible; missing measurements are n/a.",
+      "",
+      "| Case | Run | Country / coverage | Provider | Snapshot | Embedded country | Represented training years | Event columns | Effect model bytes | Python model bytes |",
+      "| --- | ---: | --- | --- | --- | --- | --- | ---: | ---: | ---: |",
+      ...report.calendars.map(
+        (item) =>
+          `| ${item.caseId} | ${item.run} | ${item.country ?? "explicit"} / ${item.coverage ?? "n/a"} | ${item.snapshot?.prophet ?? "n/a"} / ${item.snapshot?.holidays ?? "n/a"} | ${item.snapshot?.snapshotId ?? "n/a"} | ${item.embedded} | ${item.trainingYears.join(", ") || "n/a"} | ${item.eventColumns ?? "n/a"} | ${item.effectModelBytes ?? "n/a"} | ${item.pythonModelBytes ?? "n/a"} |`,
+      ),
     );
   }
 

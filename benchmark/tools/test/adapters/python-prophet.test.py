@@ -47,6 +47,16 @@ class PythonProphetInputTest(unittest.TestCase):
         self.assertEqual(prediction["floor"].dtype, np.dtype("float64"))
         self.assertEqual(prediction["active"].dtype, np.dtype("bool"))
 
+    def test_fixed_equation_projection_retains_zero_holiday_columns(self):
+        declarations = json.loads((BENCHMARK_ROOT / "cases" / "growth" / "linear" / "public-api.json").read_text())
+        case = next(item for item in declarations if item["workload"]["kind"] == "fixed-linear-prediction")
+        dataset = json.loads((BENCHMARK_ROOT / "inputs" / case["dataset"].replace("generated/", "v1/")).read_text())
+        training, _ = adapter["prepare_input"](dataset)
+        model = adapter["fixed_prediction_model"](training, case)
+        metadata = adapter["metadata_projection"](model, case)
+        self.assertEqual(metadata["eventColumnCount"], 0)
+        self.assertEqual(metadata["events"], [])
+
     def test_empty_frames_keep_float_targets_only_when_requested(self):
         training = adapter["records_frame"]([], include_value=True)
         prediction = adapter["records_frame"]([], include_value=False)
@@ -177,6 +187,104 @@ class LaplaceStationarityTest(unittest.TestCase):
         delta = 2 * LAPLACE_KINK_TOLERANCE
         self.assertEqual(laplace_stationarity_residual(delta, smooth - 1 / tau, tau),
                          abs(smooth - 1 / tau))
+
+
+class PythonCountryReferenceTest(unittest.TestCase):
+    def case(self, country="US", growth="flat", mode="additive", coverage="reject-known-gaps"):
+        case = copy.deepcopy(json.loads((BENCHMARK_ROOT / "cases" / "holidays" / "public-api.json").read_text())[0])
+        case["id"] = "country-reference-test"
+        case.pop("optimizerQuality", None)
+        case["workload"]["kind"] = "stage-f-map"
+        case["workload"]["configuration"].update({
+            "growth": growth, "scaling": "absmax", "holidaysMode": mode,
+            "changepoints": {"mode": "explicit", "timestamps": []} if growth == "flat" else {"mode": "auto", "count": 2, "range": 0.8},
+            "seasonalities": [], "events": [], "regressors": [],
+            "countryHolidays": {"country": country, "coverage": coverage, "priorScale": 4},
+        })
+        return case
+
+    def test_real_add_country_holidays_preserves_all_growths_modes_priors_and_restoration(self):
+        for growth in ("linear", "flat", "logistic"):
+            data = "country-logistic-96" if growth == "logistic" else "country-basic-96"
+            dataset = json.loads((BENCHMARK_ROOT / "inputs" / "v5" / f"{data}.json").read_text())
+            training, future = adapter["prepare_input"](dataset)
+            for mode in ("additive", "multiplicative"):
+                with self.subTest(growth=growth, mode=mode):
+                    case = self.case("USA", growth, mode)
+                    model = adapter["fit_model"](training, case)
+                    self.assertEqual(model.country_holidays, "USA")
+                    self.assertEqual(model.holidays_prior_scale, 4)
+                    self.assertEqual(model.holidays_mode, mode)
+                    before = adapter["model_to_json"](model)
+                    _, forecasts = adapter["forecast_projection"](model, future)
+                    adapter["assert_forecasts"](case, dataset, forecasts, model)
+                    projection = adapter["country_projection"](model, future, case, forecasts)
+                    self.assertEqual(projection["country"], "US")
+                    self.assertEqual(projection["trainingYears"], [2024])
+                    self.assertEqual(projection["provider"], {"prophet": "1.4.0", "holidays": "0.104"})
+                    self.assertTrue(all(column["priorScale"] == 4 for column in projection["columns"]))
+                    self.assertEqual(adapter["model_to_json"](model), before)
+                    restored = adapter["model_from_json"](before)
+                    np.testing.assert_array_equal(restored.predict(future)["yhat"], model.predict(future)["yhat"])
+
+    def test_actual_future_features_include_observed_spillovers_but_ignore_unseen_names(self):
+        dataset = json.loads((BENCHMARK_ROOT / "inputs" / "v5" / "country-boundary-96.json").read_text())
+        training, future = adapter["prepare_input"](dataset)
+        case = self.case()
+        model = adapter["fit_model"](training, case)
+        _, forecasts = adapter["forecast_projection"](model, future)
+        adapter["assert_forecasts"](case, dataset, forecasts, model)
+        projection = adapter["country_projection"](model, future, case, forecasts)
+        self.assertEqual(projection["trainingYears"], [2010])
+        self.assertIn("Juneteenth National Independence Day", projection["ignoredPredictionNames"])
+        observed = next(index for index, column in enumerate(projection["columns"])
+                        if column["name"] == "New Year's Day (observed)")
+        self.assertEqual(projection["predictionActivations"][2 * len(projection["columns"]) + observed], 1)
+
+    def test_estimated_names_and_deliberately_empty_provider_results_are_not_normalized(self):
+        for country, data in (("SG", "country-estimated-96"), ("BV", "country-basic-96")):
+            with self.subTest(country=country):
+                dataset = json.loads((BENCHMARK_ROOT / "inputs" / "v5" / f"{data}.json").read_text())
+                training, future = adapter["prepare_input"](dataset)
+                case = self.case(country)
+                model = adapter["fit_model"](training, case)
+                _, forecasts = adapter["forecast_projection"](model, future)
+                adapter["assert_forecasts"](case, dataset, forecasts, model)
+                projection = adapter["country_projection"](model, future, case, forecasts)
+                if country == "SG":
+                    self.assertIn("Chinese New Year (estimated)", projection["ignoredPredictionNames"])
+                else:
+                    self.assertEqual(projection["columns"], [])
+                    self.assertEqual(projection["trainingActivations"], [])
+                    self.assertEqual(projection["predictionActivations"], [])
+
+    def test_explicit_event_names_follow_prophet_feature_column_order(self):
+        dataset = json.loads((BENCHMARK_ROOT / "inputs" / "v5" / "country-basic-96.json").read_text())
+        training, _ = adapter["prepare_input"](dataset)
+        case = self.case()
+        configuration = case["workload"]["configuration"]
+        configuration.pop("countryHolidays")
+        # A space sorts before Prophet's `_delim_` separator, so the longer name's column comes first.
+        configuration["events"] = [
+            {"name": name, "date": date, "lowerWindowDays": 0, "upperWindowDays": 0, "priorScale": 10}
+            for name, date in (("Festival", "2024-01-10"), ("Festival (observed)", "2024-01-11"))
+        ]
+        model = adapter["fit_model"](training, case)
+        features, _, _ = model.make_holiday_features(
+            model.history["ds"], model.construct_holiday_dataframe(model.history["ds"])
+        )
+        expected = list(dict.fromkeys(column.rsplit("_delim_", 1)[0] for column in features.columns))
+        self.assertEqual(expected, ["Festival (observed)", "Festival"])
+        self.assertEqual(adapter["event_names"](model), expected)
+
+    def test_declared_effect_policy_rejections_are_real_python_semantic_differences(self):
+        from prophet.make_holidays import make_holidays_df
+
+        policies = json.loads((BENCHMARK_ROOT / "cases" / "holidays" / "coverage-policy.json").read_text())
+        for policy in policies:
+            frame = make_holidays_df(year_list=[policy["year"]], country=policy["country"])
+            self.assertEqual(policy["comparison"], "intentional-difference")
+            self.assertGreater(len(frame), 0)
 
 
 if __name__ == "__main__":

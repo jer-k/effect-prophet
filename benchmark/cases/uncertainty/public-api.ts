@@ -3,14 +3,10 @@ import { defaultCase, flatDefaultCases, linearDefaultCases } from "../growth/def
 import { logisticReconciliationCases } from "../growth/logistic/public-api.ts";
 import { growthScalingAndMixedMapCases } from "../growth/mixed-map.ts";
 
-const phases = [
-  "uncertainty-input-conversion",
-  "warm-uncertainty",
-  "cold-first-uncertainty",
-  "model-json-encode",
-  "model-json-decode",
-  "fresh-process-restored-uncertainty",
-] as const;
+import {
+  scalarUncertaintyControls as controls,
+  uncertaintyLifecyclePhases as phases,
+} from "./controls.ts";
 
 const source = (id: string): BenchmarkCase => {
   const found = growthScalingAndMixedMapCases.find((candidate) => candidate.id === id);
@@ -21,16 +17,6 @@ const source = (id: string): BenchmarkCase => {
 
   return found;
 };
-
-const controls = (output: "intervals" | "samples", samples: number, seed = 19) => ({
-  seed,
-  samples,
-  intervalWidth: 0.8,
-  output,
-  algorithm: "scalar-continuous-time" as const,
-  evidence: "docs/validation/uncertainty.md#evidence-classes",
-  samplerMemoryLimitBytes: 64 * 1_048_576,
-});
 
 const makeCase = (
   sourceId: string,

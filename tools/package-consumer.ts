@@ -1,5 +1,10 @@
 import {
   crossValidate,
+  inspectCountryHolidays,
+  parseCountryHolidays,
+  type CountryHolidayInspection,
+  type CountryHolidayModel,
+  type EncodedCountryHolidays,
   fit,
   planRollingOrigin,
   predictUncertainty,
@@ -18,6 +23,20 @@ import {
   type RegressorCoefficient,
   type TargetScaling,
 } from "effect-prophet";
+
+const countrySelection: EncodedCountryHolidays = { country: "UK" };
+
+const countryInspection = inspectCountryHolidays(countrySelection, [2024, 2060]);
+
+const countryParsing = parseCountryHolidays(countrySelection);
+
+const calendar: CountryHolidayInspection | undefined = undefined;
+
+void countryInspection;
+
+void countryParsing;
+
+void calendar;
 
 const planOperation = planRollingOrigin(
   [{ timestamp: "2024-01-01T00:00:00.000Z", value: 1 }],
@@ -92,6 +111,7 @@ const intervalValue = (result: CrossValidationResult): number | undefined =>
 const operation = fit([{ timestamp: "2024-01-01T00:00:00.000Z", value: 1 }], {
   growth: "flat",
   scaling: "minmax",
+  countryHolidays: { country: "US", coverage: "allow-known-gaps", priorScale: 7 },
 });
 
 const forecast: Forecast | undefined = undefined;
@@ -107,6 +127,10 @@ const coefficient: RegressorCoefficient | undefined = undefined;
 const targetScaling: TargetScaling = { mode: "minmax", offset: 1, scale: 1 };
 
 declare const fittedModel: FittedProphet;
+
+const retainedCalendar: CountryHolidayModel | undefined = fittedModel.countryHolidays;
+
+void retainedCalendar;
 
 const simulation = predictUncertainty(fittedModel, rows, { seed: 42 });
 

@@ -184,7 +184,14 @@ def configure_model(benchmark_case: dict[str, Any]) -> Prophet:
     else:
         common["n_changepoints"] = changepoints["count"]
         common["changepoint_range"] = changepoints["range"]
+    country = configuration.get("countryHolidays")
+    if country is not None:
+        if importlib.metadata.version("holidays") != "0.104":
+            raise ValueError("Country benchmarks require holidays 0.104")
+        common["holidays_prior_scale"] = country["priorScale"]
     model = Prophet(**common)
+    if country is not None:
+        model.add_country_holidays(country_name=country["country"])
     for seasonality in configuration["seasonalities"]:
         model.add_seasonality(
             name=seasonality["name"],
@@ -267,7 +274,10 @@ def event_names(model: Prophet) -> list[str]:
     """Return fitted grouped event names in Prophet feature order."""
 
     names = model.train_holiday_names
-    return [] if names is None else [str(value) for value in names.tolist()]
+    result = [] if names is None else [str(value) for value in names.tolist()]
+    # Prophet sorts holiday feature columns, while train_holiday_names keeps insertion order. Every
+    # window includes offset zero, so each name's first column is its `_delim_+0` column.
+    return sorted(result, key=lambda name: f"{name}_delim_+0")
 
 
 def forecast_projection(
@@ -325,12 +335,21 @@ def component_sum(forecast: dict[str, Any], mode: str) -> float:
     )
 
 
+def constructed_holiday_frame(model: Prophet, dates: pd.Series) -> pd.DataFrame:
+    """Normalize optional holiday fields after real Prophet year-partition construction."""
+
+    return model.construct_holiday_dataframe(dates).reindex(
+        columns=["ds", "holiday", "lower_window", "upper_window", "prior_scale"]
+    ).fillna({"lower_window": 0, "upper_window": 0, "prior_scale": model.holidays_prior_scale})
+
+
 def assert_forecasts(
     benchmark_case: dict[str, Any],
     dataset: dict[str, Any],
     projections: list[dict[str, Any]],
+    model: Prophet | None = None,
 ) -> None:
-    """Check row identity, decomposition, masks, and event activation."""
+    """Check row identity, decomposition, masks, and dynamic event activation."""
 
     rows = dataset["predictionRows"]
     if len(projections) != len(rows):
@@ -341,6 +360,13 @@ def assert_forecasts(
         item["name"]: item for item in configuration.get("seasonalities", [])
     }
     events = configuration.get("events", [])
+    if configuration.get("countryHolidays") is not None:
+        if model is None:
+            raise ValueError("Country activation checks require the fitted model")
+        dates = pd.Series(pd.to_datetime([row["timestamp"] for row in rows], utc=True).tz_localize(None))
+        frame = constructed_holiday_frame(model, dates)
+        events = [{"name": row.holiday, "date": row.ds, "lowerWindowDays": row.lower_window, "upperWindowDays": row.upper_window}
+                  for row in frame.itertuples() if pd.notna(row.ds)]
     for index, forecast in enumerate(projections):
         row = rows[index]
         expected_timestamp = int(pd.Timestamp(row["timestamp"]).value // 1_000_000)
@@ -396,17 +422,22 @@ def assert_fixed_equation(
 def event_metadata(model: Prophet) -> list[dict[str, Any]]:
     """Project persisted holidays metadata in grouped feature order."""
 
-    if model.holidays is None:
+    frame = model.holidays
+    if model.country_holidays is not None:
+        frame = constructed_holiday_frame(model, model.history["ds"])
+    if frame is None or frame.empty:
         return []
     result: list[dict[str, Any]] = []
     for name in event_names(model):
-        rows = model.holidays[model.holidays["holiday"] == name]
+        rows = frame[frame["holiday"] == name]
         first = rows.iloc[0]
         result.append(
             {
                 "name": name,
                 "mode": model.holidays_mode,
-                "dates": [pd.Timestamp(value).strftime("%Y-%m-%d") for value in rows["ds"]],
+                "dates": (sorted({pd.Timestamp(value).strftime("%Y-%m-%d") for value in rows["ds"]})
+                          if model.country_holidays is not None else
+                          [pd.Timestamp(value).strftime("%Y-%m-%d") for value in rows["ds"]]),
                 "lowerWindowDays": int(first["lower_window"]),
                 "upperWindowDays": int(first["upper_window"]),
                 "priorScale": float(first["prior_scale"]),
@@ -464,6 +495,50 @@ def regressor_metadata(
     return result
 
 
+def country_projection(model: Prophet, prediction: pd.DataFrame, benchmark_case: dict[str, Any], forecasts: list[dict[str, Any]]) -> dict[str, Any]:
+    """Independent real-Prophet frozen holiday features and grouped-effect checks, untimed."""
+
+    from prophet.make_holidays import get_country_holidays_class, make_holidays_df
+
+    training_holidays = constructed_holiday_frame(model, model.history["ds"])
+    future_holidays = constructed_holiday_frame(model, prediction["ds"])
+    training, priors, _ = model.make_holiday_features(model.history["ds"], training_holidays)
+    future, _, _ = model.make_holiday_features(prediction["ds"], future_holidays)
+    if training.columns.tolist() != future.columns.tolist():
+        raise ValueError("Country prediction changed its frozen holiday columns")
+    columns = []
+    for column, prior in zip(training.columns, priors, strict=True):
+        name, offset = column.rsplit("_delim_", 1)
+        columns.append({"name": name, "offsetDays": int(offset), "priorScale": float(prior)})
+    full_training, _, _, _ = model.make_all_seasonality_features(model.history)
+    beta = np.asarray(model.params["beta"][0], dtype=float)
+    for row, forecast in enumerate(forecasts):
+        if [item["name"] for item in forecast["events"]] != event_names(model):
+            raise ValueError("Country forecast changed grouped event identity")
+        for component in forecast["events"]:
+            expected = sum(float(future.iloc[row][column]) * float(beta[full_training.columns.get_loc(column)])
+                           for column, metadata in zip(training.columns, columns, strict=True)
+                           if metadata["name"] == component["name"])
+            if model.holidays_mode == "additive":
+                expected *= model.y_scale
+            if abs(expected - component.get("value", component.get("factor"))) > 1e-8:
+                raise ValueError("Country grouped effects do not match actual Prophet holiday features")
+    names = set(event_names(model))
+    requested_years = sorted(set(prediction["ds"].dt.year))
+    future_names = set(make_holidays_df(year_list=requested_years, country=model.country_holidays)["holiday"])
+    selection = benchmark_case["workload"]["configuration"]["countryHolidays"]
+    return {
+        "country": get_country_holidays_class(model.country_holidays).country,
+        "coverage": selection["coverage"], "priorScale": model.holidays_prior_scale,
+        "provider": {"prophet": importlib.metadata.version("prophet"), "holidays": importlib.metadata.version("holidays")},
+        "trainingYears": sorted(set(model.history["ds"].dt.year)),
+        "columns": columns,
+        "trainingActivations": training.to_numpy(dtype=int).ravel().tolist(),
+        "predictionActivations": future.to_numpy(dtype=int).ravel().tolist(),
+        "ignoredPredictionNames": sorted(future_names - names),
+    }
+
+
 def metadata_projection(model: Prophet, benchmark_case: dict[str, Any]) -> dict[str, Any]:
     """Project fitted configuration and resolved state."""
 
@@ -474,6 +549,7 @@ def metadata_projection(model: Prophet, benchmark_case: dict[str, Any]) -> dict[
             "changepointTimestamps": [],
             "seasonalities": [],
             "events": [],
+            "eventColumnCount": 0,
             "regressors": [],
         }
     seasonalities = []
@@ -497,6 +573,7 @@ def metadata_projection(model: Prophet, benchmark_case: dict[str, Any]) -> dict[
         ],
         "seasonalities": seasonalities,
         "events": event_metadata(model),
+        "eventColumnCount": int(model.train_component_cols["holidays"].sum()) if "holidays" in model.train_component_cols else 0,
         "regressors": regressor_metadata(model, benchmark_case),
     }
 
@@ -695,7 +772,7 @@ def correctness_projection(
     model = setup_model(training, benchmark_case)
     _, projections = forecast_projection(model, prediction_frame)
     metadata = metadata_projection(model, benchmark_case)
-    assert_forecasts(benchmark_case, dataset, projections)
+    assert_forecasts(benchmark_case, dataset, projections, model)
     assert_fixed_equation(benchmark_case, projections)
     assert_metadata(benchmark_case, metadata, len(training))
     verified = subprocess.run(
@@ -720,6 +797,9 @@ def correctness_projection(
         "status": "locally-passed",
         **metadata,
         "forecasts": projections,
+        "serializedModelBytes": len(model_to_json(model).encode("utf-8")),
+        **({"countryHolidays": country_projection(model, prediction_frame, benchmark_case, projections)}
+           if model.country_holidays is not None else {}),
         "persistenceMaximumAbsoluteError": persistence_maximum_error(
             model, prediction_frame, projections
         ),
@@ -868,7 +948,7 @@ def measurement_for_phase(
         "implementation": "python-prophet",
         "phase": phase,
         **({"peakRssBytes": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024}
-           if phase == "warm-uncertainty" else {}),
+           if phase == "warm-uncertainty" or benchmark_case.get("calendarSnapshot") is not None else {}),
         "comparison": ("scalar-process-different-public-work"
                        if benchmark_case["workload"].get("uncertainty") is not None
                        else comparison["kind"]),
@@ -1004,7 +1084,7 @@ def collect_environment() -> dict[str, Any]:
             {"name": "collection-method", "value": "python-os and cgroup-v2"},
         ],
         "memoryMeasurement": (
-            "warm-uncertainty/evaluation: worker high-water RSS via resource.RUSAGE_SELF.ru_maxrss "
+            "warm-uncertainty/evaluation/country lifecycle: worker high-water RSS via resource.RUSAGE_SELF.ru_maxrss "
             "(Linux KiB); includes imports and previous operations; excludes CmdStan fit child "
             "and cold subprocesses; heap-only peaks unavailable"
         ),

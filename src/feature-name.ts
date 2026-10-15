@@ -6,6 +6,23 @@ import {
   validationMessageFromIssue,
 } from "./errors";
 
+/** Compare feature identities using Python Unicode code-point ordering rather than UTF-16 ordering. */
+export const comparePythonStrings = (left: string, right: string): number => {
+  const leftPoints = Array.from(left, (value) => value.codePointAt(0) ?? 0);
+  const rightPoints = Array.from(right, (value) => value.codePointAt(0) ?? 0);
+  const sharedLength = Math.min(leftPoints.length, rightPoints.length);
+
+  for (let index = 0; index < sharedLength; index += 1) {
+    const difference = (leftPoints[index] ?? 0) - (rightPoints[index] ?? 0);
+
+    if (difference !== 0) {
+      return difference;
+    }
+  }
+
+  return leftPoints.length - rightPoints.length;
+};
+
 /** Separator used by Prophet when constructing event-offset feature identities. */
 export const featureNameDelimiter = "_delim_";
 

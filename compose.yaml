@@ -12,6 +12,30 @@ x-prophet-reference: &prophet-reference
     - /tmp
 
 services:
+  prophet-calendars-generate:
+    <<: *prophet-reference
+    profiles: [calendars-generate]
+    entrypoint: [/opt/effect-prophet-reference/bin/python, tools/prophet/generate_calendars.py]
+    command: [generate, --output, /artifacts]
+    environment:
+      PYTHONHASHSEED: "0"
+    volumes:
+      - ./calendars:/artifacts/calendars
+      - ./third-party/calendars:/artifacts/third-party/calendars
+      - ./src/internal/country-holiday-catalog.ts:/artifacts/src/internal/country-holiday-catalog.ts
+
+  prophet-calendars-check:
+    <<: *prophet-reference
+    profiles: [calendars-check]
+    entrypoint: [/opt/effect-prophet-reference/bin/python, tools/prophet/generate_calendars.py]
+    command: [check, --output, /artifacts]
+    environment:
+      PYTHONHASHSEED: "1"
+    volumes:
+      - ./calendars:/artifacts/calendars:ro
+      - ./third-party/calendars:/artifacts/third-party/calendars:ro
+      - ./src/internal/country-holiday-catalog.ts:/artifacts/src/internal/country-holiday-catalog.ts:ro
+
   prophet-fixtures-generate:
     <<: *prophet-reference
     profiles: [fixtures-generate]

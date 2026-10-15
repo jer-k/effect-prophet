@@ -82,6 +82,31 @@ const search = (input: ModelSearchInput) =>
   searchModels(rows, input).pipe(Effect.provide(prophetFittingBackendLayer));
 
 describe("searchModels", () => {
+  it("owns country selection and coverage policy in candidate options", async () => {
+    const countryHolidays = { country: "US", coverage: "allow-known-gaps" as const, priorScale: 7 };
+
+    const result = await Effect.runPromise(
+      search({
+        candidates: [{ id: "country", options: { growth: "flat", countryHolidays } }],
+        plan,
+        objective,
+        failurePolicy: "record",
+        includeCrossValidation: true,
+      }),
+    );
+
+    const candidate = result.candidates[0];
+
+    if (candidate?.kind !== "success") throw new Error("Expected country candidate success");
+
+    expect(candidate.options.countryHolidays).toEqual(countryHolidays);
+    expect(candidate.crossValidation?.folds).toHaveLength(2);
+    expect(Object.isFrozen(candidate.options.countryHolidays)).toBe(true);
+    expect(Object.isFrozen(countryHolidays)).toBe(false);
+    countryHolidays.country = "GB";
+    expect(candidate.options.countryHolidays?.country).toBe("US");
+  });
+
   it("ranks three real MAP configurations using the same folds and independent CV scores", async () => {
     const result = await Effect.runPromise(
       search({ candidates: options, plan, objective, failurePolicy: "record" }),

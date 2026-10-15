@@ -1,4 +1,4 @@
-import { Effect, Match, Schema, type SchemaIssue } from "effect";
+import { Effect, Match, Predicate, Schema, type SchemaIssue } from "effect";
 
 import {
   ValidationIssueSchema,
@@ -8,7 +8,12 @@ import {
 import { EventCalendarSchema, emptyEventCalendar } from "./event";
 import { FittedRegressorSchema } from "./regressor";
 import { SeasonalityLayoutSchema } from "./seasonality";
+import {
+  ParsedCountryHolidayModelSchema,
+  countryHolidayTrainingEventsMatch,
+} from "./internal/country-holiday-model";
 import { PositiveFinite } from "./internal/numeric-schemas";
+import { freezeOwned } from "./internal/owned-input";
 import { LogisticTargetScalingSchema } from "./logistic";
 import { TargetScalingSchema } from "./target-scaling";
 
@@ -125,6 +130,7 @@ export const FlatMapFitSummarySchema = Schema.Union([
 
 const FlatMapParametersFieldsSchema = Schema.Struct({
   model: FlatMapModel,
+  countryHolidays: Schema.optionalKey(ParsedCountryHolidayModelSchema),
   targetScaling: TargetScalingSchema,
   level: Schema.Finite,
   seasonalities: SeasonalityLayoutSchema,
@@ -336,6 +342,7 @@ export const StanMapFitSummarySchema = Schema.Union([
 
 const PiecewiseMapParametersFieldsSchema = Schema.Struct({
   model: PiecewiseMapModel,
+  countryHolidays: Schema.optionalKey(ParsedCountryHolidayModelSchema),
   targetScaling: TargetScalingSchema,
   intercept: Schema.Finite,
   slope: Schema.Finite,
@@ -481,6 +488,7 @@ const PiecewiseMapParametersSchema = PiecewiseMapParametersFieldsSchema.check(
 
 const LogisticMapParametersFieldsSchema = Schema.Struct({
   model: LogisticMapModel,
+  countryHolidays: Schema.optionalKey(ParsedCountryHolidayModelSchema),
   targetScaling: LogisticTargetScalingSchema,
   rate: Schema.Finite,
   offset: Schema.Finite,
@@ -665,68 +673,70 @@ const decodeFittedModel = Schema.decodeUnknownEffect(FittedProphetSchema, {
   errors: "all",
 });
 
+// Models parsed here, keyed by identity. Each is a deeply frozen fresh decode, so its contents
+// cannot have changed since validation and re-parsing it would only repeat the same work.
+const parsedModels = new WeakMap<object, FittedProphet>();
+
+const previouslyParsed = (
+  input:
+    | FirstArgument<typeof decodeFittedModel>
+    | FirstArgument<typeof decodeFlatMapModel>
+    | FirstArgument<typeof decodePiecewiseMapModel>
+    | FirstArgument<typeof decodeLogisticMapModel>,
+): FittedProphet | undefined => (Predicate.isObject(input) ? parsedModels.get(input) : undefined);
+
 const freezeFeatureModel = <
   Model extends FittedFlatMapProphet | FittedPiecewiseMapProphet | FittedLogisticMapProphet,
 >(
   model: Model,
 ): Model => {
-  for (const component of model.seasonalities.components) {
-    Object.freeze(component.definition);
-    Object.freeze(component);
-  }
+  // Decoding produced a fresh tree, so it is frozen in place rather than cloned.
+  const frozen = freezeOwned(model);
 
-  Object.freeze(model.seasonalities.components);
-  Object.freeze(model.seasonalities);
-  Object.freeze(model.coefficients);
+  parsedModels.set(frozen, frozen);
 
-  if (
-    model.model === "flat-map" ||
-    model.model === "linear-piecewise-map" ||
-    model.model === "logistic-piecewise-map"
-  ) {
-    for (const occurrence of model.events.occurrences) {
-      Object.freeze(occurrence);
-    }
-
-    for (const column of model.events.columns) {
-      Object.freeze(column);
-    }
-
-    for (const component of model.events.layout.components) {
-      Object.freeze(component);
-    }
-
-    Object.freeze(model.events.occurrences);
-    Object.freeze(model.events.columns);
-    Object.freeze(model.events.layout.components);
-    Object.freeze(model.events.layout.priorScales);
-    Object.freeze(model.events.layout);
-    Object.freeze(model.events);
-    Object.freeze(model.eventCoefficients);
-
-    for (const regressor of model.regressors) {
-      Object.freeze(regressor.definition);
-      Object.freeze(regressor.transform);
-      Object.freeze(regressor);
-    }
-
-    Object.freeze(model.regressors);
-  }
-
-  if (model.model === "linear-piecewise-map" || model.model === "logistic-piecewise-map") {
-    Object.freeze(model.changepointTimestamps);
-    Object.freeze(model.deltas);
-  }
-
-  if (model.model === "logistic-piecewise-map") {
-    Object.freeze(model.targetScaling.floorPolicy);
-  }
-
-  Object.freeze(model.targetScaling);
-  Object.freeze(model.fitSummary);
-
-  return Object.freeze(model);
+  return frozen;
 };
+
+const checkCountryHolidayModel = <Model extends FittedProphet>(
+  model: Model,
+): Effect.Effect<Model, InvalidFittedModel> =>
+  Effect.gen(function* () {
+    const state = model.countryHolidays;
+
+    if (state === undefined) {
+      return model;
+    }
+
+    const invalidState = new InvalidFittedModel({
+      issues: [
+        {
+          path: ["countryHolidays"],
+          message: "Embedded calendar provenance must match the complete training event state",
+        },
+      ],
+      message: "Embedded calendar provenance must match the complete training event state",
+    });
+
+    const matches = yield* countryHolidayTrainingEventsMatch(state, model.events).pipe(
+      Effect.mapError(() => invalidState),
+    );
+
+    if (!matches) {
+      return yield* Effect.fail(invalidState);
+    }
+
+    if (model.model !== "flat-map") {
+      const firstYear = new Date(model.timeOrigin).getUTCFullYear();
+      const lastYear = new Date(model.timeOrigin + model.timeScale).getUTCFullYear();
+
+      if (state.trainingYears[0] !== firstYear || state.trainingYears.at(-1) !== lastYear) {
+        return yield* Effect.fail(invalidState);
+      }
+    }
+
+    return model;
+  });
 
 const freezeFittedModel = (model: FittedProphet): FittedProphet => freezeFeatureModel(model);
 
@@ -745,11 +755,19 @@ type FirstArgument<Function> = Function extends (
  */
 export const parseFlatMapModel = (
   input: FirstArgument<typeof decodeFlatMapModel>,
-): Effect.Effect<FittedFlatMapProphet, InvalidFittedModel> =>
-  decodeFlatMapModel(input).pipe(
-    Effect.map(freezeFeatureModel),
+): Effect.Effect<FittedFlatMapProphet, InvalidFittedModel> => {
+  const parsed = previouslyParsed(input);
+
+  if (parsed?.model === "flat-map") {
+    return Effect.succeed(parsed);
+  }
+
+  return decodeFlatMapModel(input).pipe(
     Effect.mapError((error) => invalidFittedModelFromIssue(error.issue)),
+    Effect.flatMap(checkCountryHolidayModel),
+    Effect.map(freezeFeatureModel),
   );
+};
 
 /**
  * Parse complete linear piecewise MAP state into a fresh, deeply frozen model.
@@ -759,32 +777,57 @@ export const parseFlatMapModel = (
  */
 export const parsePiecewiseMapModel = (
   input: FirstArgument<typeof decodePiecewiseMapModel>,
-): Effect.Effect<FittedPiecewiseMapProphet, InvalidFittedModel> =>
-  decodePiecewiseMapModel(input).pipe(
-    Effect.map(freezeFeatureModel),
+): Effect.Effect<FittedPiecewiseMapProphet, InvalidFittedModel> => {
+  const parsed = previouslyParsed(input);
+
+  if (parsed?.model === "linear-piecewise-map") {
+    return Effect.succeed(parsed);
+  }
+
+  return decodePiecewiseMapModel(input).pipe(
     Effect.mapError((error) => invalidFittedModelFromIssue(error.issue)),
+    Effect.flatMap(checkCountryHolidayModel),
+    Effect.map(freezeFeatureModel),
   );
+};
 
 /** Parse complete logistic MAP state into a fresh, deeply frozen model. */
 export const parseLogisticMapModel = (
   input: FirstArgument<typeof decodeLogisticMapModel>,
-): Effect.Effect<FittedLogisticMapProphet, InvalidFittedModel> =>
-  decodeLogisticMapModel(input).pipe(
-    Effect.map(freezeFeatureModel),
+): Effect.Effect<FittedLogisticMapProphet, InvalidFittedModel> => {
+  const parsed = previouslyParsed(input);
+
+  if (parsed?.model === "logistic-piecewise-map") {
+    return Effect.succeed(parsed);
+  }
+
+  return decodeLogisticMapModel(input).pipe(
     Effect.mapError((error) => invalidFittedModelFromIssue(error.issue)),
+    Effect.flatMap(checkCountryHolidayModel),
+    Effect.map(freezeFeatureModel),
   );
+};
 
 /**
- * Parse untrusted parameters into a fresh, frozen fitted-model union.
+ * Parse untrusted parameters into a fresh, frozen fitted-model union. A model previously
+ * returned by a parser is already validated and deeply frozen, so it is returned unchanged.
  *
  * @param input - Values at a fitting, prediction, or serialization trust boundary.
  * @returns A trusted fitted model or structured fitted-model issues.
  */
 export const parseFittedModel = (
   input: FirstArgument<typeof decodeFittedModel>,
-): Effect.Effect<FittedProphet, InvalidFittedModel> =>
-  decodeModelDiscriminant(input).pipe(
+): Effect.Effect<FittedProphet, InvalidFittedModel> => {
+  const parsed = previouslyParsed(input);
+
+  if (parsed !== undefined) {
+    return Effect.succeed(parsed);
+  }
+
+  return decodeModelDiscriminant(input).pipe(
     Effect.flatMap(() => decodeFittedModel(input)),
-    Effect.map(freezeFittedModel),
     Effect.mapError((error) => invalidFittedModelFromIssue(error.issue)),
+    Effect.flatMap(checkCountryHolidayModel),
+    Effect.map(freezeFittedModel),
   );
+};

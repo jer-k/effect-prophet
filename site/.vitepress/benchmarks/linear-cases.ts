@@ -1,7 +1,9 @@
+import { countryCalendarGroup, countryDescriptionsFor } from "./country-cases.ts";
 import type { CaseDescription } from "./suite.ts";
 
 /** Reader-facing groups for the linear growth benchmark page, in display order. */
 export const linearGroups = [
+  countryCalendarGroup,
   {
     id: "defaults",
     title: "Default settings",
@@ -45,6 +47,7 @@ const trainingRows =
 
 /** One entry per benchmarked case ID. The site build fails if a run contains a case without one. */
 export const linearCaseDescriptions = {
+  ...countryDescriptionsFor("linear"),
   "linear-defaults-small": {
     group: "defaults",
     title: "Defaults, one month of daily data",

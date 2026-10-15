@@ -59,6 +59,7 @@ the [five-minute introduction](../guide/effect-basics).
 | `add_seasonality(name, period, fourier_order, prior_scale, mode, condition_name)` | an entry in `seasonalities`: `{ name, periodDays, fourierOrder, priorScale, mode, conditionName }`                  |
 | `add_regressor(name, prior_scale, standardize, mode)`                             | an entry in `regressors`: `{ name, priorScale, standardization, mode }`                                             |
 | `holidays` dataframe                                                              | `events`: one `{ name, date, lowerWindowDays, upperWindowDays, priorScale }` per occurrence                         |
+| `add_country_holidays(country_name="US")`                                         | `countryHolidays: { country: "US", coverage, priorScale }`                                                          |
 
 The defaults are Prophet's, so a fit with no options produces the same model as Python. See
 [How close are the results?](./accuracy) for the evidence.
@@ -92,6 +93,10 @@ The defaults are Prophet's, so a fit with no options produces the same model as 
   them.
 - **Models are immutable.** Fitting returns a new model. There is nothing to mutate, and no
   `warm_start_params`.
+- **Country coverage is explicit.** The offline snapshot covers request years 1995–2060;
+  reviewed gaps fail by default. Opting into `"allow-known-gaps"` accepts actual partial provider
+  data, not complete coverage. Fitted models embed their selected snapshot; updates require a
+  refit. See [Holiday calendar limitations](/guide/holiday-calendars).
 - **No plotting.** Forecasts are plain data for your own charts.
 
 See [What's different](./differences) for what isn't available yet and where behavior differs on

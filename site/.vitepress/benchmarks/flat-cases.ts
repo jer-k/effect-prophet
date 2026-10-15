@@ -1,7 +1,9 @@
+import { countryCalendarGroup, countryDescriptionsFor } from "./country-cases.ts";
 import type { CaseDescription } from "./suite.ts";
 
 /** Reader-facing groups for the flat growth benchmark page, in display order. */
 export const flatGroups = [
+  countryCalendarGroup,
   {
     id: "defaults",
     title: "Default settings",
@@ -45,6 +47,7 @@ const prefix = (days: number, scaling: string, length: number): CaseDescription 
 
 /** One entry per benchmarked case ID. The site build fails if a run contains a case without one. */
 export const flatCaseDescriptions = {
+  ...countryDescriptionsFor("flat"),
   "flat-defaults-level": {
     group: "defaults",
     title: "Defaults, steady level",

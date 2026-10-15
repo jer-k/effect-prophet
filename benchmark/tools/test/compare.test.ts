@@ -49,6 +49,52 @@ describe("benchmark developer comparisons", () => {
     }
   });
 
+  it("withholds country/control timing comparisons when calendar gate sources change or are unbound", async () => {
+    const fixture = await makeRunFixture();
+
+    try {
+      const countryControl = {
+        ...fixture.benchmarkCase,
+        calendarSnapshot: {
+          snapshotId: `sha256:${"a".repeat(64)}`,
+          prophet: "1.4.0",
+          holidays: "0.104",
+        },
+      } as const;
+
+      const before = await fixture.writeRun("before", {
+        case: countryControl,
+        gateHash: "base",
+        calendarGateHash: "calendar",
+      });
+
+      const matched = await fixture.writeRun("matched", {
+        case: countryControl,
+        gateHash: "base",
+        calendarGateHash: "calendar",
+      });
+
+      expect(await Effect.runPromise(compareRuns(before, matched))).toContain("| eligible |");
+
+      for (const calendarGateHash of ["changed", undefined]) {
+        const options: Parameters<typeof fixture.writeRun>[1] = {
+          case: countryControl,
+          gateHash: "base",
+        };
+
+        if (calendarGateHash !== undefined) Object.assign(options, { calendarGateHash });
+
+        const changed = await fixture.writeRun(`after-${calendarGateHash ?? "unbound"}`, options);
+        const comparison = await Effect.runPromise(compareRuns(before, changed));
+
+        expect(comparison).toContain("gate implementation changed or unavailable");
+        expect(comparison).not.toContain("| warm-fit |");
+      }
+    } finally {
+      await rm(fixture.root, { recursive: true, force: true });
+    }
+  });
+
   it("traces real comparison reads through successful and failed operations", async () => {
     const fixture = await makeRunFixture();
     const successTrace = makeRecordingTracer();

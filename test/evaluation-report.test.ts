@@ -99,6 +99,48 @@ const run = (request: HoldoutEvaluationInput) =>
   evaluateHoldout(request).pipe(Effect.provide(prophetFittingBackendLayer));
 
 describe("evaluateHoldout", () => {
+  it("preserves country options through search, final fitting and portable reports", async () => {
+    const options = {
+      growth: "flat",
+      countryHolidays: { country: "USA", coverage: "allow-known-gaps", priorScale: 7 },
+    } as const;
+
+    const search = await Effect.runPromise(
+      searchModels(observations, {
+        candidates: [{ id: "country", options }],
+        plan: {
+          horizonMs: 2 * day,
+          cutoffs: { mode: "explicit", timestamps: [timestamp(11), timestamp(14)] },
+        },
+        objective: { metric: "mae", aggregation: { kind: "overall" }, direction: "minimize" },
+        failurePolicy: "record",
+      }).pipe(Effect.provide(prophetFittingBackendLayer)),
+    );
+
+    const request = {
+      ...input(search),
+      holdout: [{ timestamp: "2025-01-01T00:00:00.000Z", value: 5 }],
+      baselines: [{ kind: "last-observation" as const }],
+    };
+
+    const report = await Effect.runPromise(run(request));
+
+    const model = await Effect.runPromise(
+      fit(observations, { ...options, scaling: "absmax" }).pipe(
+        Effect.provide(prophetFittingBackendLayer),
+      ),
+    );
+
+    const expected = await Effect.runPromise(predict(model, ["2025-01-01T00:00:00.000Z"]));
+
+    expect(report.selected.options.countryHolidays).toEqual(options.countryHolidays);
+    expect(report.forecasts[0]?.predicted).toBe(expected[0]?.value);
+    const encoded = await Effect.runPromise(encodeEvaluationReport(report));
+    expect(
+      await Effect.runPromise(decodeEvaluationReport(JSON.parse(JSON.stringify(encoded)))),
+    ).toEqual(report);
+  });
+
   it("stably orders duplicate holdout rows and roundtrips every assessment independently", async () => {
     const search = await find();
     const request = input(search);

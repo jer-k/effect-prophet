@@ -2,6 +2,7 @@ import { fileURLToPath } from "node:url";
 
 import { Effect } from "effect";
 
+import { countryHolidayCases } from "../cases/holidays/country-calendars.ts";
 import { evaluationCases } from "../cases/diagnostics/evaluation.ts";
 import { flatGrowthCases } from "../cases/growth/flat/public-api.ts";
 import { flatDefaultCases, linearDefaultCases } from "../cases/growth/defaults.ts";
@@ -34,9 +35,20 @@ export const loadCoreCases = Effect.fn("benchmark.catalog.core")(function* () {
 /** Load and parse the complete runnable catalog. */
 export const loadCaseCatalog = Effect.fn("benchmark.catalog.load")(function* () {
   const originals = yield* loadCoreCases();
+  const template = originals.find((item) => item.id === "map-events-small");
+
+  if (template === undefined)
+    return yield* Effect.fail(
+      new BenchmarkArtifactError({
+        message: "Country cases require the core explicit-event lifecycle declaration",
+      }),
+    );
+
+  const countries = yield* countryHolidayCases(template);
 
   return yield* parseBenchmarkCases([
     ...originals,
+    ...countries,
     ...linearDefaultCases,
     ...linearGrowthEdgeCases,
     ...growthScalingAndMixedMapCases,
@@ -84,7 +96,7 @@ export const capabilityForCase = (item: BenchmarkCase): string => {
   if (item.workload.kind === "stage-f-map" && item.workload.uncertainty !== undefined)
     return "uncertainty";
 
-  if (item.id.startsWith("map-events-")) return "holidays";
+  if (item.id.startsWith("map-events-") || item.id.startsWith("country-")) return "holidays";
 
   if (item.id.startsWith("map-regressors-")) return "regressors";
 

@@ -471,6 +471,104 @@ describe("planRollingOrigin", () => {
 });
 
 describe("crossValidate", () => {
+  it("resolves each fold's represented country years through the real backend", async () => {
+    const rows = Array.from({ length: 32 }, (_, index) => ({
+      timestamp: new Date(Date.UTC(2020, 11, 10 + index)).toISOString(),
+      value: 10 + Math.sin(index) * 0.1 + index * 0.02,
+    }));
+
+    const plans: Array<FitPlan> = [];
+
+    const result = await Effect.runPromise(
+      Effect.gen(function* () {
+        const backend = yield* FittingBackend;
+
+        return yield* crossValidate(
+          rows,
+          {
+            growth: "flat",
+            builtInSeasonalities: builtInSeasonalitiesOff,
+            countryHolidays: { country: "US" },
+          },
+          {
+            horizonMs: 5 * dayMs,
+            cutoffs: {
+              mode: "explicit",
+              timestamps: ["2020-12-30T00:00:00.000Z", "2021-01-04T00:00:00.000Z"],
+            },
+          },
+        ).pipe(
+          Effect.provideService(FittingBackend, {
+            fit: (input, plan) =>
+              backend.fit(input, plan).pipe(Effect.tap(() => Effect.sync(() => plans.push(plan)))),
+          }),
+        );
+      }).pipe(Effect.provide(prophetFittingBackendLayer)),
+    );
+
+    expect(result.folds).toHaveLength(2);
+    expect(plans).toHaveLength(2);
+
+    const names = plans.map((plan) =>
+      Predicate.isTagged("FlatStanMap")(plan)
+        ? plan.events.columns.map((column) => column.eventName)
+        : [],
+    );
+
+    expect(names[0]?.some((name) => name.includes("Juneteenth"))).toBe(false);
+    expect(names[1]?.some((name) => name.includes("Juneteenth"))).toBe(true);
+
+    const independent = await Effect.runPromise(
+      fit(rows.slice(0, 21), {
+        growth: "flat",
+        builtInSeasonalities: builtInSeasonalitiesOff,
+        countryHolidays: { country: "US" },
+      }).pipe(Effect.provide(prophetFittingBackendLayer)),
+    );
+
+    const assessment = result.rows.filter((row) => row.fold === 0);
+
+    const expected = await Effect.runPromise(
+      predict(
+        independent,
+        assessment.map((row) => new Date(row.timestamp).toISOString()),
+      ),
+    );
+
+    expect(assessment.map((row) => row.predicted)).toEqual(expected.map((row) => row.value));
+  });
+
+  it("retains calendar coverage failures in their evaluation stage", async () => {
+    const rows = Array.from({ length: 10 }, (_, index) => ({
+      timestamp: new Date(Date.UTC(2026, 11, 26 + index)).toISOString(),
+      value: 10 + index * 0.1,
+    }));
+
+    const error = await Effect.runPromise(
+      Effect.flip(
+        crossValidate(
+          rows,
+          {
+            growth: "flat",
+            builtInSeasonalities: builtInSeasonalitiesOff,
+            countryHolidays: { country: "LK" },
+          },
+          {
+            horizonMs: 3 * dayMs,
+            cutoffs: { mode: "explicit", timestamps: ["2026-12-31T00:00:00.000Z"] },
+          },
+        ).pipe(Effect.provide(prophetFittingBackendLayer)),
+      ),
+    );
+
+    expect(error).toBeInstanceOf(EvaluationError);
+    expect(error).toMatchObject({
+      stage: "predict",
+      reason: "prediction-failed",
+      cause: { reason: "known-coverage-restriction" },
+    });
+  });
+
   const plan = {
     horizonMs: 2 * dayMs,
     cutoffs: { mode: "explicit", timestamps: [at(2), at(3)] },

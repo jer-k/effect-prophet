@@ -48,6 +48,8 @@ export const createEventFeatures = (
     }
   }
 
+  const rowsByDay = new Map<number, Array<number>>();
+
   for (let row = 0; row < epochMilliseconds.length; row += 1) {
     const timestamp = epochMilliseconds[row];
 
@@ -66,17 +68,40 @@ export const createEventFeatures = (
 
     const epochDay = Math.floor(timestamp / millisecondsPerDay);
 
-    for (const [columnIndex, column] of calendar.columns.entries()) {
-      // A column at offset o is active when this row's day equals occurrence day + o.
-      const matchingOccurrences = calendar.occurrences.some(
-        (occurrence) =>
-          occurrence.name === column.eventName &&
-          column.offsetDays >= occurrence.lowerWindowDays &&
-          column.offsetDays <= occurrence.upperWindowDays &&
-          epochDay === occurrence.epochDay + column.offsetDays,
-      );
+    const rows = rowsByDay.get(epochDay);
 
-      values[row * columnCount + columnIndex] = matchingOccurrences ? 1 : 0;
+    if (rows === undefined) {
+      rowsByDay.set(epochDay, [row]);
+    } else {
+      rows.push(row);
+    }
+  }
+
+  const occurrencesByName = new Map<string, Array<EventCalendar["occurrences"][number]>>();
+
+  for (const occurrence of calendar.occurrences) {
+    const occurrences = occurrencesByName.get(occurrence.name);
+
+    if (occurrences === undefined) {
+      occurrencesByName.set(occurrence.name, [occurrence]);
+    } else {
+      occurrences.push(occurrence);
+    }
+  }
+
+  for (const [columnIndex, column] of calendar.columns.entries()) {
+    for (const occurrence of occurrencesByName.get(column.eventName) ?? []) {
+      if (
+        column.offsetDays < occurrence.lowerWindowDays ||
+        column.offsetDays > occurrence.upperWindowDays
+      ) {
+        continue;
+      }
+
+      // Duplicate rows and simultaneous occurrences remain binary, in caller row order.
+      for (const row of rowsByDay.get(occurrence.epochDay + column.offsetDays) ?? []) {
+        values[row * columnCount + columnIndex] = 1;
+      }
     }
   }
 

@@ -130,6 +130,38 @@ Serialization is exercised by lifecycle phases rather than copied into separate 
 | Case | Input | Contract | Phases |
 | --- | --- | --- | ---: |
 | `map-events-small` | [v1/map-events-small.json](inputs/v1/map-events-small.json) | equivalent-objective | 9 |
+| `country-us-linear-additive` | [v5/country-basic-96.json](inputs/v5/country-basic-96.json) | equivalent-objective | 9 |
+| `country-explicit-us-linear-additive` | [v5/country-basic-96.json](inputs/v5/country-basic-96.json) | equivalent-objective | 9 |
+| `country-us-linear-multiplicative` | [v5/country-basic-96.json](inputs/v5/country-basic-96.json) | equivalent-objective | 9 |
+| `country-explicit-us-linear-multiplicative` | [v5/country-basic-96.json](inputs/v5/country-basic-96.json) | equivalent-objective | 9 |
+| `country-us-flat-additive` | [v5/country-basic-96.json](inputs/v5/country-basic-96.json) | equivalent-objective | 9 |
+| `country-explicit-us-flat-additive` | [v5/country-basic-96.json](inputs/v5/country-basic-96.json) | equivalent-objective | 9 |
+| `country-us-flat-multiplicative` | [v5/country-basic-96.json](inputs/v5/country-basic-96.json) | equivalent-objective | 9 |
+| `country-explicit-us-flat-multiplicative` | [v5/country-basic-96.json](inputs/v5/country-basic-96.json) | equivalent-objective | 9 |
+| `country-us-logistic-additive` | [v5/country-logistic-96.json](inputs/v5/country-logistic-96.json) | equivalent-objective | 9 |
+| `country-explicit-us-logistic-additive` | [v5/country-logistic-96.json](inputs/v5/country-logistic-96.json) | equivalent-objective | 9 |
+| `country-us-logistic-multiplicative` | [v5/country-logistic-96.json](inputs/v5/country-logistic-96.json) | equivalent-objective | 9 |
+| `country-explicit-us-logistic-multiplicative` | [v5/country-logistic-96.json](inputs/v5/country-logistic-96.json) | equivalent-objective | 9 |
+| `country-boundary-linear` | [v5/country-boundary-96.json](inputs/v5/country-boundary-96.json) | equivalent-objective | 9 |
+| `country-boundary-flat` | [v5/country-boundary-96.json](inputs/v5/country-boundary-96.json) | equivalent-objective | 9 |
+| `country-empty-bv-flat` | [v5/country-basic-96.json](inputs/v5/country-basic-96.json) | equivalent-objective | 9 |
+| `country-explicit-empty-flat` | [v5/country-basic-96.json](inputs/v5/country-basic-96.json) | equivalent-objective | 9 |
+| `country-estimated-sg-flat` | [v5/country-estimated-96.json](inputs/v5/country-estimated-96.json) | equivalent-objective | 9 |
+| `country-partial-in-flat` | [v5/country-partial-96.json](inputs/v5/country-partial-96.json) | equivalent-objective | 9 |
+| `country-mixed-us-flat` | [v5/country-mixed-96.json](inputs/v5/country-mixed-96.json) | equivalent-objective | 9 |
+| `country-none-flat-730` | [v5/country-scaling-730.json](inputs/v5/country-scaling-730.json) | equivalent-objective | 5 |
+| `country-se-flat-730` | [v5/country-scaling-730.json](inputs/v5/country-scaling-730.json) | equivalent-objective | 5 |
+| `country-explicit-se-flat-730` | [v5/country-scaling-730.json](inputs/v5/country-scaling-730.json) | equivalent-objective | 5 |
+| `country-cn-flat-730` | [v5/country-scaling-730.json](inputs/v5/country-scaling-730.json) | equivalent-objective | 5 |
+| `country-explicit-cn-flat-730` | [v5/country-scaling-730.json](inputs/v5/country-scaling-730.json) | equivalent-objective | 5 |
+| `country-none-flat-2190` | [v5/country-scaling-2190.json](inputs/v5/country-scaling-2190.json) | equivalent-objective | 5 |
+| `country-se-flat-2190` | [v5/country-scaling-2190.json](inputs/v5/country-scaling-2190.json) | equivalent-objective | 5 |
+| `country-explicit-se-flat-2190` | [v5/country-scaling-2190.json](inputs/v5/country-scaling-2190.json) | equivalent-objective | 5 |
+| `country-cn-flat-2190` | [v5/country-scaling-2190.json](inputs/v5/country-scaling-2190.json) | equivalent-objective | 5 |
+| `country-explicit-cn-flat-2190` | [v5/country-scaling-2190.json](inputs/v5/country-scaling-2190.json) | equivalent-objective | 5 |
+| `country-none-flat-2190-batch-32` | [v6/country-scaling-2190-batch-32.json](inputs/v6/country-scaling-2190-batch-32.json) | equivalent-objective | 5 |
+| `country-se-flat-2190-batch-32` | [v6/country-scaling-2190-batch-32.json](inputs/v6/country-scaling-2190-batch-32.json) | equivalent-objective | 5 |
+| `country-explicit-se-flat-2190-batch-32` | [v6/country-scaling-2190-batch-32.json](inputs/v6/country-scaling-2190-batch-32.json) | equivalent-objective | 5 |
 
 ## regressors
 
@@ -147,6 +179,7 @@ Serialization is exercised by lifecycle phases rather than copied into separate 
 
 | Case | Input | Contract | Phases |
 | --- | --- | --- | ---: |
+| `country-uncertainty-us-flat` | [v5/country-basic-96.json](inputs/v5/country-basic-96.json) | equivalent-objective | 6 |
 | `uncertainty-training-duplicates-auto` | [v1/training-duplicates.json](inputs/v1/training-duplicates.json) | equivalent-objective | 2 |
 | `uncertainty-linear-defaults-long-history-intervals-1000` | [v3/linear-long-history.json](inputs/v3/linear-long-history.json) | equivalent-objective | 6 |
 | `uncertainty-linear-defaults-irregular-intervals-1000` | [v1/map-irregular-medium.json](inputs/v1/map-irregular-medium.json) | equivalent-objective | 6 |

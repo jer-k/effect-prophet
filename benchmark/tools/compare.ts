@@ -44,7 +44,7 @@ export const compareRuns = Effect.fn("benchmark.results.compare")(function* (
       gateHash(before.manifest, name) !== undefined && gateHash(after.manifest, name) !== undefined,
   );
 
-  const gateImplementationMatches = hasGateHashes
+  const baseGateImplementationMatches = hasGateHashes
     ? gateFiles.every((name) => gateHash(before.manifest, name) === gateHash(after.manifest, name))
     : gateFiles
         .slice(0, 3)
@@ -57,6 +57,24 @@ export const compareRuns = Effect.fn("benchmark.results.compare")(function* (
       JSON.stringify(before.manifest.containerImages) ===
         JSON.stringify(after.manifest.containerImages) &&
       before.manifest.containerImages.length > 0;
+
+  const countryWork = [...before.cases, ...after.cases].some(
+    (item) => item.calendarSnapshot !== undefined,
+  );
+
+  const calendarGateFiles = ["benchmark/tools/country-holidays.ts", "benchmark/tools/result.ts"];
+
+  const calendarGateImplementationMatches =
+    !countryWork ||
+    calendarGateFiles.every((name) => {
+      const oldHash = gateHash(before.manifest, name);
+      const newHash = gateHash(after.manifest, name);
+
+      return oldHash !== undefined && oldHash === newHash;
+    });
+
+  const gateImplementationMatches =
+    baseGateImplementationMatches && calendarGateImplementationMatches;
 
   const lines = [
     "# Benchmark run comparison",

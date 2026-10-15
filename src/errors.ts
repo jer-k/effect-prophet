@@ -21,7 +21,16 @@ const ValidationInputSchema = Schema.Literals([
   "evaluation-holdout",
 ]);
 
+const CalendarFailureReasons = [
+  "outside-snapshot-horizon",
+  "known-coverage-restriction",
+  "snapshot-unavailable",
+  "corrupt-snapshot",
+  "unsupported-snapshot-version",
+] as const;
+
 const FittingFailureReasonSchema = Schema.Literals([
+  ...CalendarFailureReasons,
   "insufficient-observations",
   "degenerate-observations",
   "rank-deficient",
@@ -32,6 +41,8 @@ const FittingFailureReasonSchema = Schema.Literals([
 ]);
 
 const PredictionFailureReasonSchema = Schema.Literals([
+  ...CalendarFailureReasons,
+  "conflicting-event-prior",
   "invalid-model",
   "non-finite-forecast",
   "backend-failure",
@@ -55,6 +66,7 @@ export type ValidationInput =
   | "evaluation-holdout";
 
 export type FittingFailureReason =
+  | (typeof CalendarFailureReasons)[number]
   | "insufficient-observations"
   | "degenerate-observations"
   | "rank-deficient"
@@ -64,6 +76,8 @@ export type FittingFailureReason =
   | "backend-failure";
 
 export type PredictionFailureReason =
+  | (typeof CalendarFailureReasons)[number]
+  | "conflicting-event-prior"
   | "invalid-model"
   | "non-finite-forecast"
   | "backend-failure"

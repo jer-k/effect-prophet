@@ -1,5 +1,9 @@
 import assert from "node:assert/strict";
-import { readFile, readdir } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { mkdir, mkdtemp, readFile, readdir, rm, symlink } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 
 import { Effect, Schema } from "effect";
@@ -15,6 +19,7 @@ import {
   performanceMetrics,
   prophetFittingBackendLayer,
   searchModels,
+  inspectCountryHolidays,
 } from "effect-prophet";
 
 const projectRoot = new URL("../", import.meta.url);
@@ -53,6 +58,7 @@ const expectedJavaScriptFiles = sourceFiles.flatMap((sourceFile) => {
 
 const expectedDeclarationFiles = [
   "dist/component-mode.d.ts",
+  "dist/country-holidays.d.ts",
   "dist/errors.d.ts",
   "dist/evaluation.d.ts",
   "dist/evaluation-baseline.d.ts",
@@ -64,6 +70,8 @@ const expectedDeclarationFiles = [
   "dist/index.d.ts",
   "dist/internal/additional-features.d.ts",
   "dist/internal/cross-validation-options.d.ts",
+  "dist/internal/country-holiday-snapshot.d.ts",
+  "dist/internal/country-holiday-model.d.ts",
   "dist/internal/fitting-backend.d.ts",
   "dist/internal/prophet-fitting-backend.d.ts",
   "dist/linear-optimizer.d.ts",
@@ -123,6 +131,9 @@ assert.equal(
 
 const PackResultsSchema = Schema.Array(
   Schema.Struct({
+    filename: Schema.String,
+    size: Schema.Natural,
+    unpackedSize: Schema.Natural,
     files: Schema.Array(Schema.Struct({ path: Schema.String })),
   }),
 );
@@ -137,6 +148,29 @@ assert.ok(packResult);
 
 const packedFiles = packResult.files.map(({ path }) => path).sort();
 
+const calendarManifest = Schema.decodeUnknownSync(
+  Schema.Struct({
+    snapshotId: Schema.String,
+    files: Schema.Record(
+      Schema.String,
+      Schema.Struct({ sha256: Schema.String, bytes: Schema.Natural }),
+    ),
+  }),
+)(JSON.parse(await readFile(new URL("calendars/manifest.json", projectRoot), "utf8")));
+
+const expectedCalendarFiles = ["calendars/manifest.json", ...Object.keys(calendarManifest.files)];
+
+for (const [filename, identity] of Object.entries(calendarManifest.files)) {
+  const bytes = await readFile(new URL(filename, projectRoot));
+
+  assert.equal(bytes.length, identity.bytes, `Calendar artifact byte count: ${filename}`);
+  assert.equal(
+    createHash("sha256").update(bytes).digest("hex"),
+    identity.sha256,
+    `Calendar artifact hash: ${filename}`,
+  );
+}
+
 const expectedPackedFiles = [
   "LICENSE",
   "README.md",
@@ -144,6 +178,7 @@ const expectedPackedFiles = [
   ...expectedDeclarationFiles,
   ...expectedJavaScriptFiles,
   ...expectedWasmFiles,
+  ...expectedCalendarFiles,
 ].sort();
 
 assert.deepEqual(
@@ -437,5 +472,145 @@ const [logisticForecast] = await Effect.runPromise(
 assert.ok(logisticForecast !== undefined && logisticForecast.trend > 0);
 
 assert.ok(logisticForecast.trend < 12);
+
+const calendar = await Effect.runPromise(inspectCountryHolidays({ country: "UK" }, [2060]));
+
+assert.equal(calendar.country, "GB");
+
+assert.equal(calendar.snapshotId, calendarManifest.snapshotId);
+
+assert.ok(calendar.occurrences.length > 0);
+
+// Exercise the actual packed artifact, not self-reference resolution in the source tree.
+// Reuse only the application's installed peer Effect; all library code/data come from the tarball.
+const application = await mkdtemp(join(tmpdir(), "effect-prophet-packed-"));
+
+try {
+  const actualPack = spawnSync(
+    "npm",
+    ["pack", "--json", "--ignore-scripts", "--pack-destination", application],
+    {
+      cwd: projectRoot,
+      encoding: "utf8",
+    },
+  );
+
+  assert.equal(actualPack.status, 0, actualPack.stderr || actualPack.stdout);
+
+  const artifact = Schema.decodeUnknownSync(PackResultsSchema)(JSON.parse(actualPack.stdout)).at(0);
+
+  assert.ok(artifact);
+  assert.deepEqual(artifact.files.map(({ path }) => path).sort(), expectedPackedFiles);
+
+  const installed = join(application, "node_modules/effect-prophet");
+
+  await mkdir(installed, { recursive: true });
+  await symlink(
+    fileURLToPath(new URL("node_modules/effect", projectRoot)),
+    join(application, "node_modules/effect"),
+    "dir",
+  );
+
+  const extract = spawnSync(
+    "tar",
+    ["-xzf", join(application, artifact.filename), "--strip-components=1", "-C", installed],
+    { encoding: "utf8" },
+  );
+
+  assert.equal(extract.status, 0, extract.stderr || extract.stdout);
+
+  for (const [filename, identity] of Object.entries(calendarManifest.files)) {
+    const bytes = await readFile(join(installed, filename));
+
+    assert.equal(
+      createHash("sha256").update(bytes).digest("hex"),
+      identity.sha256,
+      `Packed calendar/notice hash: ${filename}`,
+    );
+  }
+
+  const fresh = spawnSync(
+    process.execPath,
+    [
+      "--input-type=module",
+      "-e",
+      `
+    import assert from "node:assert/strict";
+    import { rm, writeFile } from "node:fs/promises";
+    import { Effect } from "effect";
+    import { CountryHolidayError, inspectCountryHolidays, fit, predict, predictUncertainty, encodeFittedModel, prophetFittingBackendLayer } from "effect-prophet";
+
+    const calendar = await Effect.runPromise(inspectCountryHolidays({ country: "USA" }, [2021, 2060]));
+    assert.equal(calendar.country, "US");
+    assert.equal(calendar.provider.holidays, "0.104");
+    assert.ok(calendar.occurrences.some((event) => event.date === "2060-12-25"));
+    assert.ok(calendar.occurrences.some((event) => event.date === "2021-12-31" && event.name === "New Year's Day (observed)"));
+
+    const rejected = await Effect.runPromise(Effect.flip(inspectCountryHolidays({ country: "LK" }, [2027])));
+    assert.ok(rejected instanceof CountryHolidayError);
+    assert.equal(rejected.reason, "known-coverage-restriction");
+    const allowed = await Effect.runPromise(inspectCountryHolidays({ country: "LK", coverage: "allow-known-gaps" }, [2027]));
+    assert.deepEqual(allowed.occurrences, []);
+    assert.deepEqual(allowed.issues, rejected.coverageIssues);
+
+    const rows = Array.from({ length: 80 }, (_, index) => ({
+      timestamp: new Date(Date.UTC(2024, 0, index + 1, 12)).toISOString(),
+      value: 20 + index * 0.03 + Math.sin(index) * 0.15 + (index === 0 ? 5 : 0),
+    }));
+    const model = await Effect.runPromise(fit(rows, {
+      countryHolidays: { country: "US" },
+      builtInSeasonalities: { daily: "off", weekly: "off", yearly: "off" },
+    }).pipe(Effect.provide(prophetFittingBackendLayer)));
+    const future = ["2025-01-01T12:00:00.000Z", "2025-01-02T12:00:00.000Z"];
+    const forecasts = await Effect.runPromise(predict(model, future));
+    const uncertainty = await Effect.runPromise(predictUncertainty(model, future, { seed: 19, samples: 8 }));
+    const encoded = await Effect.runPromise(encodeFittedModel(model));
+    assert.equal(encoded.countryHolidays.selection.country, "US");
+    await writeFile("saved-calendar-model.json", JSON.stringify({ encoded, future, forecasts, uncertainty }));
+
+    const path = "node_modules/effect-prophet/calendars/countries/US.json";
+    await writeFile(path, '{"schemaVersion":2}');
+    const version = await Effect.runPromise(Effect.flip(inspectCountryHolidays({ country: "US" }, [2024])));
+    assert.ok(version instanceof CountryHolidayError);
+    assert.equal(version.reason, "unsupported-snapshot-version");
+    await rm(path);
+    const missing = await Effect.runPromise(Effect.flip(inspectCountryHolidays({ country: "US" }, [2024])));
+    assert.ok(missing instanceof CountryHolidayError);
+    assert.equal(missing.reason, "snapshot-unavailable");
+    const fitting = await Effect.runPromise(Effect.flip(fit(rows, { countryHolidays: { country: "US" } }).pipe(Effect.provide(prophetFittingBackendLayer))));
+    assert.equal(fitting.reason, "snapshot-unavailable");
+  `,
+    ],
+    { cwd: application, encoding: "utf8" },
+  );
+
+  assert.equal(fresh.status, 0, fresh.stderr || fresh.stdout);
+
+  const restored = spawnSync(
+    process.execPath,
+    [
+      "--input-type=module",
+      "-e",
+      `
+    import assert from "node:assert/strict";
+    import { readFile } from "node:fs/promises";
+    import { Effect } from "effect";
+    import { decodeFittedModel, predict, predictUncertainty } from "effect-prophet";
+    const saved = JSON.parse(await readFile("saved-calendar-model.json", "utf8"));
+    const model = await Effect.runPromise(decodeFittedModel(saved.encoded));
+    assert.deepEqual(await Effect.runPromise(predict(model, saved.future)), saved.forecasts);
+    assert.deepEqual(await Effect.runPromise(predictUncertainty(model, saved.future, { seed: 19, samples: 8 })), saved.uncertainty);
+  `,
+    ],
+    { cwd: application, encoding: "utf8" },
+  );
+
+  assert.equal(restored.status, 0, restored.stderr || restored.stdout);
+  console.log(
+    `Packed calendar lookup passed (${artifact.size} packed bytes / ${artifact.unpackedSize} unpacked bytes)`,
+  );
+} finally {
+  await rm(application, { recursive: true, force: true });
+}
 
 console.log(`Package artifact smoke test passed (${packedFiles.length} files)`);

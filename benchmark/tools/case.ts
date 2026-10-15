@@ -1,5 +1,10 @@
 import { Effect, Schema } from "effect";
-import { LinearOptimizerSchema, maximumSampleCells, maximumSimulationRows } from "effect-prophet";
+import {
+  LinearOptimizerSchema,
+  maximumSampleCells,
+  maximumSimulationRows,
+  parseCountryHolidays,
+} from "effect-prophet";
 
 const NonEmptyString = Schema.String.check(Schema.isMinLength(1));
 
@@ -122,11 +127,18 @@ const BenchmarkChangepointsSchema = Schema.Union([
   }),
 ]);
 
+const CountryHolidaysSchema = Schema.Struct({
+  country: NonEmptyString,
+  coverage: Schema.Literals(["reject-known-gaps", "allow-known-gaps"]),
+  priorScale: PositiveFinite,
+});
+
 const LinearMapWorkloadSchema = Schema.Struct({
   kind: Schema.Literal("linear-map"),
   comparison: EquivalentObjectiveComparisonSchema,
   configuration: Schema.Struct({
     effectMap: Schema.Literals(["explicit", "omitted"]),
+    countryHolidays: Schema.optionalKey(CountryHolidaysSchema),
     changepoints: BenchmarkChangepointsSchema,
     changepointPriorScale: PositiveFinite,
     seasonalities: Schema.Array(BenchmarkSeasonalitySchema),
@@ -148,6 +160,7 @@ const StageFMapWorkloadSchema = Schema.Struct({
   fitRequest: Schema.optionalKey(Schema.Literal("growth-only")),
   configuration: Schema.Struct({
     growth: Schema.Literals(["linear", "flat", "logistic"]),
+    countryHolidays: Schema.optionalKey(CountryHolidaysSchema),
     scaling: Schema.Literals(["absmax", "minmax"]),
     seasonalityMode: Schema.Literals(["additive", "multiplicative"]),
     holidaysMode: Schema.Literals(["additive", "multiplicative"]),
@@ -238,6 +251,13 @@ export const CorrectnessTolerancesSchema = Schema.Struct({
 export const BenchmarkCaseSchema = Schema.Struct({
   id: NonEmptyString,
   dataset: NonEmptyString,
+  calendarSnapshot: Schema.optionalKey(
+    Schema.Struct({
+      snapshotId: Schema.String.check(Schema.isPattern(/^sha256:[a-f0-9]{64}$/u)),
+      prophet: Schema.Literal("1.4.0"),
+      holidays: Schema.Literal("0.104"),
+    }),
+  ),
   workload: BenchmarkWorkloadSchema,
   phases: Schema.Array(BenchmarkPhaseSchema),
   warmupIterations: NonNegativeInteger,
@@ -549,6 +569,7 @@ const validateCaseRelationships = (
           ? points.mode !== "explicit" || points.timestamps.length !== 0
           : points.mode !== "auto" || points.count !== 25 || points.range !== 0.8) ||
         configuration.events.length !== 0 ||
+        configuration.countryHolidays !== undefined ||
         configuration.regressors.length !== 0 ||
         effectOptimizer !== undefined ||
         pythonOptimizer.algorithm !== "Auto" ||
@@ -594,6 +615,37 @@ export const parseBenchmarkCases = (
   decodeCases(input).pipe(
     Effect.mapError((error) => new BenchmarkInputError({ input: "cases", message: String(error) })),
     Effect.flatMap(validateCaseRelationships),
+    Effect.flatMap((cases) =>
+      Effect.forEach(cases, (item) => {
+        if (item.workload.kind === "fixed-linear-prediction") return Effect.succeed(item);
+
+        const workload = item.workload;
+        const selection = workload.configuration.countryHolidays;
+
+        if (selection === undefined) return Effect.succeed(item);
+
+        if (item.calendarSnapshot === undefined) {
+          return Effect.fail(
+            new BenchmarkInputError({
+              input: "cases",
+              message: `Country case ${item.id} must pin snapshot/provider identity`,
+            }),
+          );
+        }
+
+        return parseCountryHolidays(selection).pipe(
+          Effect.mapError(
+            (error) => new BenchmarkInputError({ input: "cases", message: error.message }),
+          ),
+          Effect.map((countryHolidays): BenchmarkCase => ({
+            ...item,
+            workload: Object.assign({}, workload, {
+              configuration: Object.assign({}, workload.configuration, { countryHolidays }),
+            }),
+          })),
+        );
+      }),
+    ),
   );
 
 const validateDatasetRelationships = (

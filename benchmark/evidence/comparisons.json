@@ -2,6 +2,22 @@
   "schemaVersion": 1,
   "evidence": [
     {
+      "id": "country-calendar-public-v1",
+      "classification": "equivalent-objective",
+      "statement": "Pinned Prophet 1.4.0/holidays 0.104 country calendars use real add_country_holidays in Python and snapshot-backed public country options in Effect. Matching represented-year training partitions freeze fitted columns; future partitions ignore unseen names. Explicit controls include identical custom and generated occurrences only for fitted names, preserving priors and modes. Existing output-first numerical policy and the original explicit-event quantity tolerances remain unchanged. Reviewed-gap/horizon rejection is separately declared as an intentional difference; opted-in partial results are not completeness evidence.",
+      "prerequisiteFixtures": ["country-holidays.json", "events.json", "mixed-map.json"],
+      "checks": [
+        "pinned provider and Effect snapshot identity",
+        "represented training years and frozen columns",
+        "exact binary training and dynamic future activations",
+        "observed spillovers and retained estimated suffixes",
+        "grouped event effects and reconstructed forecasts",
+        "forecast, components and noise scale",
+        "public JSON and fresh-process persistence",
+        "seeded uncertainty replay under the established scalar evidence class"
+      ]
+    },
+    {
       "id": "flat-growth-reduced-v1",
       "classification": "equivalent-objective",
       "statement": "Featureless or ordinary additive-seasonal flat MAP uses matching absmax/minmax scaling, level/feature/noise priors and exact-constant shortcuts. Fitted output and persistence gates remain required. The Python input adapter explicitly maps shared numeric cells to float64, including integer-spelled constant targets, without altering numeric values or fitted/serialized state.",

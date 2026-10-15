@@ -115,6 +115,32 @@ describe("fitted model domain", () => {
     expect(Object.isFrozen(model.targetScaling)).toBe(true);
   });
 
+  it("returns its own deeply frozen models unchanged and still parses fresh copies", async () => {
+    const parameters = await validPiecewiseMapParameters();
+    const model = await Effect.runPromise(parsePiecewiseMapModel(parameters));
+
+    // Every nested part is frozen, so a remembered model cannot change after validation.
+    expect(Object.isFrozen(model.fitSummary)).toBe(true);
+
+    if (model.fitSummary.method !== "piecewise-map-stan-v2")
+      throw new Error("Expected Stan MAP fit summary");
+
+    expect(Object.isFrozen(model.fitSummary.optimization)).toBe(true);
+    expect(Object.isFrozen(model.seasonalities.components)).toBe(true);
+    expect(await Effect.runPromise(parseFittedModel(model))).toBe(model);
+    expect(await Effect.runPromise(parsePiecewiseMapModel(model))).toBe(model);
+
+    // A remembered model of another kind is not accepted by a narrower parser.
+    await expectInvalidModel(parseFlatMapModel(model), "model");
+
+    // Copies are new identities, so they receive full validation.
+    const copy = await Effect.runPromise(parseFittedModel({ ...model }));
+
+    expect(copy).not.toBe(model);
+    expect(copy).toEqual(model);
+    await expectInvalidModel(parseFittedModel({ ...model, deltas: [] }), "deltas");
+  });
+
   it("rejects inconsistent piecewise MAP state", async () => {
     const parameters = await validPiecewiseMapParameters();
 

@@ -1,9 +1,20 @@
 import { Effect } from "effect";
 import { describe, expect, it } from "vitest";
 
-import { InvalidFeatureName, parseFeatureName } from "../src/feature-name";
+import { comparePythonStrings, InvalidFeatureName, parseFeatureName } from "../src/feature-name";
 
 describe("feature names", () => {
+  it("orders scalar Unicode feature identities like Python, including supplementary characters", () => {
+    expect(["😀", "\uffff", "a😀", "a\uffff", "a"].sort(comparePythonStrings)).toEqual([
+      "a",
+      "a\uffff",
+      "a😀",
+      "\uffff",
+      "😀",
+    ]);
+    expect(comparePythonStrings("same", "same")).toBe(0);
+  });
+
   it("preserves case and whitespace without normalization", async () => {
     const name = await Effect.runPromise(parseFeatureName(" Launch "));
 

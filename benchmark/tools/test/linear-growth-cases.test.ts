@@ -74,7 +74,11 @@ describe("linear-growth benchmark scenario catalog", () => {
         });
       }
 
-      expect(benchmarkCase.workload.comparison.evidenceId).toBe("linear-output-first-v4");
+      expect(benchmarkCase.workload.comparison.evidenceId).toBe(
+        benchmarkCase.id.startsWith("country-")
+          ? "country-calendar-public-v1"
+          : "linear-output-first-v4",
+      );
       expect(benchmarkCase.optimizerQuality).toEqual(outputFirstQuality);
     }
   });

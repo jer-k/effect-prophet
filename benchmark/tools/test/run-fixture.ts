@@ -64,6 +64,7 @@ export const makeRunFixture = async () => {
       readonly case?: BenchmarkCase;
       readonly processor?: string;
       readonly gateHash?: string;
+      readonly calendarGateHash?: string;
     } = {},
   ) => {
     const selectedCase = options.case ?? benchmarkCase;
@@ -74,15 +75,22 @@ export const makeRunFixture = async () => {
       runId,
       selectedCases: [selectedCase.id],
       hostProcessor: options.processor ?? evidence.manifest.hostProcessor,
-      inputHashes:
-        options.gateHash === undefined
+      inputHashes: [
+        ...(options.gateHash === undefined
           ? evidence.manifest.inputHashes
           : [
               "benchmark/tools/case.ts",
               "benchmark/tools/report.ts",
               "benchmark/tools/report-cli.ts",
               "benchmark/evidence/comparisons.json",
-            ].map((name) => ({ name, value: options.gateHash ?? "" })),
+            ].map((name) => ({ name, value: options.gateHash ?? "" }))),
+        ...(options.calendarGateHash === undefined
+          ? []
+          : ["benchmark/tools/country-holidays.ts", "benchmark/tools/result.ts"].map((name) => ({
+              name,
+              value: options.calendarGateHash ?? "",
+            }))),
+      ],
     };
 
     const effect = {

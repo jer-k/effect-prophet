@@ -179,6 +179,11 @@ require a new version and updated case references. Commit inputs before retainin
 runs. Cases have one primary capability owner; mixed-feature cases reuse declarations and
 lifecycle serialization phases instead of being copied into every feature folder.
 
+Country calendars add pinned-provider parity, dynamic future-year activations, explicit-event
+controls and model byte/RSS reporting through this same harness. See the
+[country benchmark contract](cases/holidays/README.md); coverage-policy rejections are intentional
+differences, not comparable timing work. Country snapshots are not preloaded into measured fits.
+
 See the [Python-default logistic reconciliation](cases/growth/logistic/README.md),
 [flat coverage gaps](cases/growth/flat/README.md),
 [linear input-policy cases](cases/growth/linear/README.md),
@@ -204,6 +209,7 @@ docker run --rm --network none --read-only --tmpfs /tmp \
   -v "$PWD/benchmark/tools/adapters:/workspace/benchmark/tools/adapters:ro" \
   -v "$PWD/benchmark/tools/test/adapters:/workspace/benchmark/tools/test/adapters:ro" \
   -v "$PWD/benchmark/inputs:/workspace/benchmark/inputs:ro" \
+  -v "$PWD/benchmark/cases:/workspace/benchmark/cases:ro" \
   effect-prophet/benchmark-python:1.4.0 \
   /opt/effect-prophet-benchmark/bin/python \
   /workspace/benchmark/tools/test/adapters/python-prophet.test.py

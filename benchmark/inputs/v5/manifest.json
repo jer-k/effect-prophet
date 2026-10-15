@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "files": [
+    {
+      "file": "country-basic-96.json",
+      "recipe": "country-v5:country-basic-96:level+jan1(3)+jan5(1.4)+bounded-noise:n=96:future=4:year=2024",
+      "sha256": "9ff002c94ecdaa2f78ad32094f4af7cf5cbbe377f19cfdb5b3100e29005151f8"
+    },
+    {
+      "file": "country-logistic-96.json",
+      "recipe": "country-v5:country-logistic-96:level+jan1(3)+jan5(1.4)+bounded-noise:n=96:future=4:year=2024",
+      "sha256": "2c6a223d34c60eee57933519606ff337838e37613f0268b7fa21a49623d6cd3c"
+    },
+    {
+      "file": "country-mixed-96.json",
+      "recipe": "country-v5:country-mixed-96:level+jan1(3)+jan5(1.4)+bounded-noise:n=96:future=4:year=2024",
+      "sha256": "7d30e8d671a13442a476a9132e8cd08a79539a02deaf095fd8d15cb8493658a5"
+    },
+    {
+      "file": "country-boundary-96.json",
+      "recipe": "country-v5:country-boundary-96:level+jan1(3)+jan5(1.4)+bounded-noise:n=96:future=4:year=2010",
+      "sha256": "b098fbafdcd307f49ceaa225193e3050e2747a419a8a63ec102062f954231345"
+    },
+    {
+      "file": "country-estimated-96.json",
+      "recipe": "country-v5:country-estimated-96:level+jan1(3)+jan5(1.4)+bounded-noise:n=96:future=366:year=2024",
+      "sha256": "b090652e3da6e2001c3fbab32e9fe9997cb9d221efcce584c297148e4be03d5b"
+    },
+    {
+      "file": "country-partial-96.json",
+      "recipe": "country-v5:country-partial-96:level+jan1(3)+jan5(1.4)+bounded-noise:n=96:future=3:year=2036",
+      "sha256": "7cedc0bf9b3fb75901c4061c482ff406544f12ac4ae5fc000f1000679eff674a"
+    },
+    {
+      "file": "country-scaling-730.json",
+      "recipe": "country-v5:country-scaling-730:level+jan1(3)+jan5(1.4)+bounded-noise:n=730:future=512:year=2020",
+      "sha256": "81d0a3a3b3a405724652eea89c5ddd60d60b252418c54a97cfd9b7d54c217b08"
+    },
+    {
+      "file": "country-scaling-2190.json",
+      "recipe": "country-v5:country-scaling-2190:level+jan1(3)+jan5(1.4)+bounded-noise:n=2190:future=512:year=2020",
+      "sha256": "8fed3fc3fc5022ff7f09471dec6adf4f4db1bd8f72f7a7315225679a102c14cc"
+    }
+  ]
+}

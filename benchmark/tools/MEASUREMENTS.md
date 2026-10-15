@@ -43,6 +43,23 @@ Effect's fixed optimizer; declarations must not invent unsupported flat optimize
 | `model-json-decode`                | Parse/public model decode                                                   | File reads             |
 | `fresh-process-restored-predict`   | Fresh imports, model decode, row conversion, prediction and protocol output | Fit/Docker startup     |
 
+## Country calendars
+
+Country declarations are owned by [the holiday suite](../cases/holidays/README.md). Python calls
+real `add_country_holidays` with the declared prior/mode and pinned provider. Country correctness
+also compares canonical selection/provider metadata, represented training years, ordered frozen
+columns and binary training/future activations. Exact observed/estimated suffixes and ignored
+future-only names are retained. Grouped effects and fresh-process persistence gate timing.
+Reviewed coverage/horizon rejection is separately declared as an intentional difference; opted-in
+partial output is not completeness evidence.
+
+Country `warm-fit`/fit-predict calls include and await filesystem lookup, integrity checks,
+decoding/copying and all numerical work. Non-country calls keep their synchronous path. The common
+clock consumes resolved values; no adapter snapshot cache or measured-fit preload is introduced.
+Warm and restored prediction use the fitted embedded payload with no bundled-calendar lookup.
+Explicit controls have identical occurrences, priors, modes and training names, without embedded
+data. Reported model sizes are actual UTF-8 public JSON bytes, not research gzip estimates.
+
 ## Uncertainty
 
 Uncertainty phases use the same workers, eligibility gate and reports. Warm public calls exclude
@@ -91,6 +108,7 @@ counts; small samples do not establish stable tails. Absolute timings are descri
 cross-language rankings or thresholds.
 
 Worker RSS is OS high-water accounting: imports, previous operations and fit/setup contribute.
+Country lifecycle/control phases record the same high-water accounting as uncertainty/evaluation.
 Python CmdStan child processes are excluded. It is neither per-call allocation nor process-tree,
 WASM-only or simulation-only memory. Cold/heap/process-tree peaks are not inferred. Source,
 lockfile, image, environment and dataset identities are retained so scope limitations remain

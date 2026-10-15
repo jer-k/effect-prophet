@@ -21,7 +21,9 @@
   },
   "files": [
     "dist",
-    "wasm"
+    "wasm",
+    "calendars",
+    "third-party/calendars"
   ],
   "type": "module",
   "main": "./dist/index.js",
@@ -54,6 +56,9 @@
     "docs:typecheck": "tsc --noEmit -p site/tsconfig.json",
     "docs:examples": "npm run build && node site/scripts/run-snippets.ts",
     "test:integration:prophet": "npm run build:wasm:production && vitest run --dir integration/tests/prophet-1.4.0",
+    "calendars:generate": "docker compose --profile calendars-generate run --rm --build prophet-calendars-generate; status=$?; npm run --silent docker:clean; if [ $status -ne 0 ]; then exit $status; fi; npm run calendars:verify",
+    "calendars:check": "docker compose --profile calendars-check run --rm --build prophet-calendars-check; status=$?; npm run --silent docker:clean; if [ $status -ne 0 ]; then exit $status; fi; npm run calendars:verify",
+    "calendars:verify": "vitest run test/tools/prophet/generate-calendars.test.ts",
     "fixtures:generate": "docker compose --profile fixtures-generate run --rm --build prophet-fixtures-generate; status=$?; npm run --silent docker:clean; exit $status",
     "fixtures:check": "(docker compose --profile fixtures-check run --rm --build prophet-fixtures-check && docker compose --profile fixtures-check run --rm --build --no-deps effect-prophet-fixtures); status=$?; npm run --silent docker:clean; exit $status",
     "docker:clean": "node benchmark/tools/docker-cleanup-cli.ts",
@@ -67,6 +72,7 @@
     "benchmark:catalog": "node benchmark/tools/catalog-cli.ts",
     "benchmark:results": "node benchmark/tools/results-cli.ts",
     "benchmark:compare": "node benchmark/tools/compare-cli.ts",
+    "benchmark:calendar-overhead": "node benchmark/tools/calendar-overhead-cli.ts",
     "test:rust": "cargo test --manifest-path rust/prophet-wasm/Cargo.toml",
     "test:wasm": "npm run build:wasm:production && node --test rust/prophet-wasm/node-tests/*.test.ts",
     "test:wasm:optimizer": "wasm-pack test --node --release rust/prophet-wasm --locked",

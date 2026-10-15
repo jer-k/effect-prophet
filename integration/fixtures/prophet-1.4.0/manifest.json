@@ -49,6 +49,10 @@
       "sha256": "6773439d5be0b8b6ff8a3e68d52fc8d61b53cfbd6a8b725df8eebf52c13b4ef2"
     },
     {
+      "path": "country-holidays.json",
+      "sha256": "90737eebdca4d63e8396aa46de3b292a2cf946d81c414596d352a0fd040a519d"
+    },
+    {
       "path": "logistic-map.json",
       "sha256": "b8710f7b996c0f92497518b146b3c5f245bbd2f39b964a423d3dd09ec8e92884"
     },
@@ -86,7 +90,7 @@
     "platform": "linux/amd64",
     "uvVersion": "0.8.15"
   },
-  "generatorRevision": "c558cee415739fb145c4d82b2109cd081d11a42dae027888d4dd21d8850e4093",
+  "generatorRevision": "aa7e7626b4cc0cb914ece93a97c5158b9107eecad0fde50d5fe52bfff4d9d533",
   "numericalEnvironment": [
     {
       "name": "cmdstanpy",
