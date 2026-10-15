@@ -41,6 +41,37 @@ All notable changes to this project are documented here. The format follows
 - The npm package grows from about 350 KB to about 1.28 MB packed, for the bundled calendars and
   their notices.
 
+### Benchmarks
+
+33 new country-calendar cases, each checked against Python Prophet's real `add_country_holidays`.
+No existing cases were removed or changed.
+
+- **US calendar with custom events**, for every trend and both holiday modes, each paired with an
+  explicit-events control that lists the same dates: `country-us-{linear,flat,logistic}-{additive,multiplicative}`
+  and `country-explicit-us-*` (12 cases).
+- **Calendar boundaries**: a 2010 history forecast into 2021 and 2060, covering observed-day
+  spillovers and holiday names that first appear after training (`country-boundary-linear`,
+  `country-boundary-flat`).
+- **Unusual calendars**: deliberately empty Bouvet Island with its no-calendar control
+  (`country-empty-bv-flat`, `country-explicit-empty-flat`), Singapore's estimated-name transition
+  (`country-estimated-sg-flat`) and India's partial coverage under `allow-known-gaps`
+  (`country-partial-in-flat`).
+- **Combined features**: country and custom events with conditional seasonality and a regressor
+  (`country-mixed-us-flat`), and seeded uncertainty intervals (`country-uncertainty-us-flat`).
+- **Scaling**: Sweden's many occurrences and China's many names over 730 and 2,190 training rows,
+  plus a 32-row prediction batch (`country-{se,cn}-flat-*`). Each has an explicit-events control
+  (`country-explicit-{se,cn}-flat-*`), and each dataset a no-calendar control
+  (`country-none-flat-*`) (13 cases).
+- `npm run benchmark:calendar-overhead -- runs/<run-id>` shows each country case beside its
+  controls, with each implementation's slowdown.
+- `npm run benchmark:compare` now opens with a **What changed** summary: added and removed cases,
+  outcome and contract changes, and investigation flag changes. It compares timings whenever a
+  case passed in both runs with an unchanged contract on matching hardware, and lists possible
+  regressions and improvements. A changed correctness gate no longer hides every timing; changed
+  gates and a changed timing harness are named instead.
+- The Python adapter now reports explicit events in Prophet's feature-column order, which matters
+  when one event name is a prefix of another.
+
 ## [0.1.1] - 2026-10-14
 
 Documentation only. The published code and WebAssembly binary are unchanged from 0.1.0.

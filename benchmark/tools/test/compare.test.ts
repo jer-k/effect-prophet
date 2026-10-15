@@ -1,4 +1,4 @@
-import { mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import { Effect, Exit, Predicate } from "effect";
@@ -19,12 +19,14 @@ describe("benchmark developer comparisons", () => {
       const before = await fixture.writeRun("before");
       const after = await fixture.writeRun("after");
       const matching = await Effect.runPromise(compareRuns(before, after));
-      expect(matching).toContain("| eligible |");
+      expect(matching).toContain("| compared |");
       expect(matching).toContain("| warm-fit |");
+      expect(matching).toContain("Correctness gates: **unchanged**");
+      expect(matching).toContain("Timing harness: **unchanged**");
 
       const failed = await fixture.writeRun("failed", { failed: true });
       expect(await Effect.runPromise(compareRuns(before, failed))).toContain(
-        "| passed | failed | gate did not pass |",
+        "| passed | failed | did not pass in both runs |",
       );
 
       const changed = await fixture.writeRun("changed", {
@@ -39,17 +41,127 @@ describe("benchmark developer comparisons", () => {
       expect(report).toContain("environment differs");
       expect(report).not.toContain("| warm-fit |");
 
+      // Changed correctness gates alter how outcomes are judged, not timings, so timings remain.
       const oldGate = await fixture.writeRun("old-gate", { gateHash: "old-gate-hash" });
       const newGate = await fixture.writeRun("new-gate", { gateHash: "new-gate-hash" });
       const changedGate = await Effect.runPromise(compareRuns(oldGate, newGate));
-      expect(changedGate).toContain("gate implementation changed or unavailable");
-      expect(changedGate).not.toContain("| warm-fit |");
+      expect(changedGate).toContain("Correctness gates: **changed (`benchmark/tools/case.ts`");
+      expect(changedGate).toContain("| compared |");
+      expect(changedGate).toContain("| warm-fit |");
     } finally {
       await rm(fixture.root, { recursive: true, force: true });
     }
   });
 
-  it("withholds country/control timing comparisons when calendar gate sources change or are unbound", async () => {
+  it("flags consistently slower or faster phases and names a changed timing harness", async () => {
+    const fixture = await makeRunFixture();
+
+    try {
+      const before = await fixture.writeRun("before");
+      const same = await fixture.writeRun("same");
+      const slower = await fixture.writeRun("slower", { effectSampleScale: 3, harnessHash: "new" });
+      const faster = await fixture.writeRun("faster", { effectSampleScale: 0.3 });
+
+      const unchanged = await Effect.runPromise(compareRuns(before, same));
+
+      expect(unchanged).toMatch(/## Possible regressions\n\n[^\n]*\n\nNone\./u);
+      expect(unchanged).toMatch(/## Possible improvements\n\nNone\./u);
+
+      const regressed = await Effect.runPromise(compareRuns(before, slower));
+
+      const regressions = regressed.slice(
+        regressed.indexOf("## Possible regressions"),
+        regressed.indexOf("## Possible improvements"),
+      );
+
+      expect(regressed).toContain(
+        "Timing harness: **changed (`benchmark/tools/adapters/effect-prophet.ts`)",
+      );
+      expect(regressions).toContain("| effect-prophet | warm-fit |");
+      expect(regressions).toContain("| 3.00× |");
+      // Python's samples did not change, so none of its phases is flagged.
+      expect(regressions).not.toContain("| python-prophet |");
+
+      const improved = await Effect.runPromise(compareRuns(before, faster));
+
+      const improvements = improved.slice(
+        improved.indexOf("## Possible improvements"),
+        improved.indexOf("## Cases"),
+      );
+
+      expect(improvements).toContain("| effect-prophet | warm-fit |");
+      expect(improvements).toContain("| 0.30× |");
+    } finally {
+      await rm(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  it("summarizes changed outcomes, contracts and investigation flags between two runs", async () => {
+    const fixture = await makeRunFixture();
+
+    const withFlags = async (
+      directory: string,
+      flags: ReadonlyArray<{ readonly name: string; readonly effectValue: number }>,
+    ) => {
+      const path = resolve(directory, "report.json");
+      const report = JSON.parse(await readFile(path, "utf8"));
+
+      report.correctness[0].investigations = flags.map((flag) => ({
+        run: 0,
+        pythonValue: 1,
+        difference: flag.effectValue - 1,
+        threshold: 0.01,
+        ...flag,
+      }));
+
+      await writeFile(path, JSON.stringify(report));
+    };
+
+    try {
+      const id = fixture.benchmarkCase.id;
+      const before = await fixture.writeRun("before");
+      const after = await fixture.writeRun("after");
+
+      await withFlags(before, [
+        { name: "objective", effectValue: 2 },
+        { name: "stationarity-residual", effectValue: 3 },
+      ]);
+
+      await withFlags(after, [
+        { name: "objective", effectValue: 2 },
+        { name: "stationarity-residual", effectValue: 4 },
+        { name: "noise", effectValue: 5 },
+      ]);
+
+      const flagged = await Effect.runPromise(compareRuns(before, after));
+
+      expect(flagged).toContain("- Added: none.");
+      expect(flagged).toContain("- Outcome changes: none.");
+      expect(flagged).toContain("- Investigation flags: 2 changed, 1 unchanged.");
+      expect(flagged).toContain(`- New flag: \`${id}\` run 0 noise`);
+      expect(flagged).toContain(
+        `- Changed flag: \`${id}\` run 0 stationarity-residual: 3.000000e+0 vs 1.000000e+0 → 4.000000e+0 vs 1.000000e+0`,
+      );
+
+      const failed = await fixture.writeRun("failed", { failed: true });
+
+      expect(await Effect.runPromise(compareRuns(after, failed))).toContain(
+        `- Outcome changes: \`${id}\` passed → failed.`,
+      );
+
+      const changed = await fixture.writeRun("changed", {
+        case: { ...fixture.benchmarkCase, timeoutSeconds: 777 },
+      });
+
+      expect(await Effect.runPromise(compareRuns(before, changed))).toContain(
+        `- Case contract or input changes: \`${id}\`.`,
+      );
+    } finally {
+      await rm(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  it("names changed calendar gate sources without withholding country/control timings", async () => {
     const fixture = await makeRunFixture();
 
     try {
@@ -74,7 +186,7 @@ describe("benchmark developer comparisons", () => {
         calendarGateHash: "calendar",
       });
 
-      expect(await Effect.runPromise(compareRuns(before, matched))).toContain("| eligible |");
+      expect(await Effect.runPromise(compareRuns(before, matched))).toContain("| compared |");
 
       for (const calendarGateHash of ["changed", undefined]) {
         const options: Parameters<typeof fixture.writeRun>[1] = {
@@ -87,8 +199,8 @@ describe("benchmark developer comparisons", () => {
         const changed = await fixture.writeRun(`after-${calendarGateHash ?? "unbound"}`, options);
         const comparison = await Effect.runPromise(compareRuns(before, changed));
 
-        expect(comparison).toContain("gate implementation changed or unavailable");
-        expect(comparison).not.toContain("| warm-fit |");
+        expect(comparison).toContain("`benchmark/tools/country-holidays.ts`");
+        expect(comparison).toContain("| warm-fit |");
       }
     } finally {
       await rm(fixture.root, { recursive: true, force: true });

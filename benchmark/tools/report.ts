@@ -146,7 +146,7 @@ const quantile = (sorted: ReadonlyArray<number>, probability: number): number =>
   return sorted[index] ?? sorted.at(-1) ?? 0;
 };
 
-const summarizeMeasurements = (
+export const summarizeMeasurements = (
   measurements: ReadonlyArray<BenchmarkMeasurement>,
 ): ReadonlyArray<TimingSummary> => {
   const grouped = new Map<string, Array<number>>();

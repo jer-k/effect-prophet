@@ -65,6 +65,8 @@ export const makeRunFixture = async () => {
       readonly processor?: string;
       readonly gateHash?: string;
       readonly calendarGateHash?: string;
+      readonly harnessHash?: string;
+      readonly effectSampleScale?: number;
     } = {},
   ) => {
     const selectedCase = options.case ?? benchmarkCase;
@@ -77,7 +79,11 @@ export const makeRunFixture = async () => {
       hostProcessor: options.processor ?? evidence.manifest.hostProcessor,
       inputHashes: [
         ...(options.gateHash === undefined
-          ? evidence.manifest.inputHashes
+          ? evidence.manifest.inputHashes.filter(
+              (entry) =>
+                options.harnessHash === undefined ||
+                entry.name.replace(/^\//u, "") !== "benchmark/tools/adapters/effect-prophet.ts",
+            )
           : [
               "benchmark/tools/case.ts",
               "benchmark/tools/report.ts",
@@ -90,15 +96,26 @@ export const makeRunFixture = async () => {
               name,
               value: options.calendarGateHash ?? "",
             }))),
+        ...(options.harnessHash === undefined
+          ? []
+          : ["benchmark/tools/adapters/effect-prophet.ts"].map((name) => ({
+              name,
+              value: options.harnessHash ?? "",
+            }))),
       ],
     };
 
     const effect = {
       ...evidence.effect,
       correctness: evidence.effect.correctness.filter((entry) => entry.caseId === selectedCase.id),
-      measurements: evidence.effect.measurements.filter(
-        (entry) => entry.caseId === selectedCase.id,
-      ),
+      measurements: evidence.effect.measurements
+        .filter((entry) => entry.caseId === selectedCase.id)
+        .map((entry) => ({
+          ...entry,
+          samplesNanoseconds: entry.samplesNanoseconds.map((sample) =>
+            Math.round(sample * (options.effectSampleScale ?? 1)),
+          ),
+        })),
     };
 
     const python = {
