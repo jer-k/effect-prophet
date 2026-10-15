@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "runId": "2026-10-13T180643-584Z-4f5ffaf9",
-  "createdAt": "2026-10-13T18:06:47.816Z",
-  "gitRevision": "4f5ffaf996e4159ada941b6d0d6d3e4e2b1f1ba5",
+  "runId": "2026-10-15T140835-733Z-34951879",
+  "createdAt": "2026-10-15T14:08:40.247Z",
+  "gitRevision": "3495187941a358227641e3c27fd1dc6602b1f96f",
   "gitDirty": false,
   "hostPlatform": "darwin",
   "hostRelease": "25.5.0",
@@ -11,6 +11,30 @@
   "containerPlatform": "linux/arm64",
   "emulated": false,
   "selectedCases": [
+    "country-us-flat-additive",
+    "country-explicit-us-flat-additive",
+    "country-us-flat-multiplicative",
+    "country-explicit-us-flat-multiplicative",
+    "country-boundary-flat",
+    "country-empty-bv-flat",
+    "country-explicit-empty-flat",
+    "country-estimated-sg-flat",
+    "country-partial-in-flat",
+    "country-mixed-us-flat",
+    "country-none-flat-730",
+    "country-se-flat-730",
+    "country-explicit-se-flat-730",
+    "country-cn-flat-730",
+    "country-explicit-cn-flat-730",
+    "country-none-flat-2190",
+    "country-se-flat-2190",
+    "country-explicit-se-flat-2190",
+    "country-cn-flat-2190",
+    "country-explicit-cn-flat-2190",
+    "country-none-flat-2190-batch-32",
+    "country-se-flat-2190-batch-32",
+    "country-explicit-se-flat-2190-batch-32",
+    "country-uncertainty-us-flat",
     "map-training-zero-span-flat-varied",
     "map-training-zero-span-flat-constant",
     "flat-mixed-components",
@@ -69,6 +93,26 @@
       "value": "68bfd246325a715a3803ea0ca134aafe32c82297325c922b9d7d33b5bd442a17"
     },
     {
+      "name": "benchmark/cases/holidays/country-calendars.ts",
+      "value": "2eea24a47cb6d55c1ed4f5aa6c5b7b62a0ef8c638e21a39af5053c2dd830ea7c"
+    },
+    {
+      "name": "benchmark/cases/holidays/coverage-policy.json",
+      "value": "39e9a632477d46a3af3d22e50d825262d085024e99c1009c37c154bd18c94871"
+    },
+    {
+      "name": "calendars/manifest.json",
+      "value": "514beb709c3a91b3a699731758d244dccc1ada370e07ec0e6e928497b14a79d4"
+    },
+    {
+      "name": "calendars/coverage.json",
+      "value": "dd712b18745c9d999676033f108d690a1989d09425c32bd93cbbccb24d49a290"
+    },
+    {
+      "name": "src/internal/country-holiday-catalog.ts",
+      "value": "5899de3e90c9fb071e58ea7efc46132d301719a1110f2fbfa10ff8180650e026"
+    },
+    {
       "name": "benchmark/cases/regressors/public-api.json",
       "value": "93a51dfa8e4985e2e3aa1d0bf3568416cf5ba40138b97a2c06225455d3ae6fac"
     },
@@ -102,7 +146,11 @@
     },
     {
       "name": "benchmark/cases/uncertainty/public-api.ts",
-      "value": "19a05efeacc5d5aedeb2489d4d2131906e446b6c947e0bf2a9c72083f5351d16"
+      "value": "7749e592552a34a189a725f1cea187d1b7db192259d4efb368acb50681c9d54e"
+    },
+    {
+      "name": "benchmark/cases/uncertainty/controls.ts",
+      "value": "54d47e3af8a30c19ed95b1b468b8dc0c37ae42c5ef7381a7922fac6f9d7b0665"
     },
     {
       "name": "benchmark/cases/diagnostics/evaluation.ts",
@@ -118,27 +166,35 @@
     },
     {
       "name": "benchmark/tools/effect-case.ts",
-      "value": "9d15b4daec8c56157b1c9c7976ead87c4cd3f388660ce8974bb54de809c57852"
+      "value": "cd9fb9b38fd8f2e6637c488c120441e4db79bef4e94a9b6ed2cd983d12cc87ca"
+    },
+    {
+      "name": "benchmark/tools/country-holidays.ts",
+      "value": "f3e0cd7d95a56210c3f510b75c7f5a44ce17daa677a3c7465a6bb56cf7669798"
+    },
+    {
+      "name": "benchmark/tools/result.ts",
+      "value": "de27dd299cbd088708fd14e1ea2bef0e7da5e77851f5c954f2cb6d5762867df6"
     },
     {
       "name": "benchmark/tools/adapters/effect-prophet.ts",
-      "value": "886d27587deea322af4dd3672ae92c4e29165a8c2fefc8997533305182acb295"
+      "value": "6452921fd3ca72169e523687b2988e954cbb6496e5a7d786d08e9a30c68bd382"
     },
     {
       "name": "benchmark/tools/adapters/python-prophet.py",
-      "value": "8e7d1d7354cef511c4ae260a137870ec258a481e26f0fcec9c1cb119b5ad62a7"
+      "value": "26f28c24175bc5ba8e8ab6f1a31c2cc537e9f720bd8b7f41da448b2a8776df5b"
     },
     {
       "name": "benchmark/tools/catalog.ts",
-      "value": "41644263f3a38a0ffbe8199275e470dacf252863f7866e911e60cd77705428d7"
+      "value": "d9364f809b11990fbbbfaf980f40e807964ffb86e84d682d3780e0387dc734ff"
     },
     {
       "name": "benchmark/tools/case.ts",
-      "value": "5feb7d2b8a863fc9416772af6e99cfefe8d93657a399196e5841c8803cc8cbe6"
+      "value": "f0587aa19b4c295f00d5a16e3434280ac9f4f81580544d666ed6ec638e9219ac"
     },
     {
       "name": "benchmark/tools/report.ts",
-      "value": "7d1bab06196cfd67a0862838591c3dff4590690f7db92ebd1bbd624e1937ce69"
+      "value": "381f14e5b99550047989b8245961fbee040a4b42e12d653c4f23eb317b4a812d"
     },
     {
       "name": "benchmark/tools/report-cli.ts",
@@ -153,16 +209,24 @@
       "value": "025bcf9f3210e9a2a91c2e70ac43b23cb385952d180603287d4c9d087561c278"
     },
     {
-      "name": "benchmark/results/runs/2026-10-13T180643-584Z-4f5ffaf9/cases.json",
-      "value": "0feacc49abc3532f5736768e7ff1a5d7363b50597af7d80b5f942e2ca65fc2be"
+      "name": "benchmark/results/runs/2026-10-15T140835-733Z-34951879/cases.json",
+      "value": "847f52986959ad54f81ed14951768161dc3da8400bcec258a4ecc47a3bacd1b1"
     },
     {
       "name": "benchmark/evidence/comparisons.json",
-      "value": "618929604768d82d52ca69d4c346fcf55b9a088ead712628082cdfd5fff4c3cb"
+      "value": "b8dcc7c785a47b31641ceab260b581491abde3549eadbc95cc230d7cb86f8593"
     },
     {
       "name": "benchmark/tools/runtime/python/uv.lock",
       "value": "c90f2464e1d50dbe489bdcdaf8350f04c162f6c617559cfb75d6977b0f430ab1"
+    },
+    {
+      "name": "benchmark/inputs/v5/manifest.json",
+      "value": "f8c2bd8ce0d7679a6cda41942e9a34c6904c38deeb114ae1775e6f9328987d21"
+    },
+    {
+      "name": "benchmark/inputs/v6/manifest.json",
+      "value": "ca4bbeb10aae91dd7454904f04984bd4a8fd3ace79c261ff5317feaa82a09cb3"
     },
     {
       "name": "benchmark/inputs/v1/manifest.json",
@@ -174,7 +238,39 @@
     },
     {
       "name": "package-lock.json",
-      "value": "01491b0d79e828036d01198abe4a8d36d058ea69cfb8e63db429a6b481838539"
+      "value": "44aa1bcb2ca82ccc081d3ce74586543d0c82a154844357fc5051a6fc180427fc"
+    },
+    {
+      "name": "benchmark/inputs/v5/country-basic-96.json",
+      "value": "9ff002c94ecdaa2f78ad32094f4af7cf5cbbe377f19cfdb5b3100e29005151f8"
+    },
+    {
+      "name": "benchmark/inputs/v5/country-boundary-96.json",
+      "value": "b098fbafdcd307f49ceaa225193e3050e2747a419a8a63ec102062f954231345"
+    },
+    {
+      "name": "benchmark/inputs/v5/country-estimated-96.json",
+      "value": "b090652e3da6e2001c3fbab32e9fe9997cb9d221efcce584c297148e4be03d5b"
+    },
+    {
+      "name": "benchmark/inputs/v5/country-partial-96.json",
+      "value": "7cedc0bf9b3fb75901c4061c482ff406544f12ac4ae5fc000f1000679eff674a"
+    },
+    {
+      "name": "benchmark/inputs/v5/country-mixed-96.json",
+      "value": "7d30e8d671a13442a476a9132e8cd08a79539a02deaf095fd8d15cb8493658a5"
+    },
+    {
+      "name": "benchmark/inputs/v5/country-scaling-730.json",
+      "value": "81d0a3a3b3a405724652eea89c5ddd60d60b252418c54a97cfd9b7d54c217b08"
+    },
+    {
+      "name": "benchmark/inputs/v5/country-scaling-2190.json",
+      "value": "8fed3fc3fc5022ff7f09471dec6adf4f4db1bd8f72f7a7315225679a102c14cc"
+    },
+    {
+      "name": "benchmark/inputs/v6/country-scaling-2190-batch-32.json",
+      "value": "43ee3004c6b1f2ddf63fc1e092d2faf230e1d7683f3809d7cb3192df59adbe6c"
     },
     {
       "name": "benchmark/inputs/v1/training-zero-span-varied.json",
@@ -236,11 +332,11 @@
   "containerImages": [
     {
       "name": "effect-prophet/benchmark-effect:local",
-      "value": "sha256:51ab5e440765ab69603e6c4e39bc1600d05b2f4c02478795aa57d310c8a475af"
+      "value": "sha256:63bcd28b405bd9562482d4dad56cb4c04d26a520fb2c193f7695937290e30522"
     },
     {
       "name": "effect-prophet/benchmark-python:1.4.0",
-      "value": "sha256:9ecbb1d6fc43605464860e35230c82ee75838d3406c020a0d4d381327304cdb5"
+      "value": "sha256:dd23f2a2f63224aebf0f4bd6ab4e9f68dc44c64f3dedf4214bc6c3086c8ebf50"
     }
   ]
 }

@@ -6,18 +6,42 @@ Recorded historical outcomes are not recomputed using current gates. Architectur
 
 | Scope | Run | Passed | Failed | Provenance | Report |
 | --- | --- | ---: | ---: | --- | --- |
-| flat-growth | `2026-10-13T180643-584Z-4f5ffaf9` | 39 | 0 | clean tree | [results](retained/flat-growth/2026-10-13T180643-584Z-4f5ffaf9/report.md) |
-| linear-growth | `2026-10-13T175256-063Z-4f5ffaf9` | 33 | 2 | clean tree | [results](retained/linear-growth/2026-10-13T175256-063Z-4f5ffaf9/report.md) |
-| logistic-growth | `2026-10-13T181940-090Z-4f5ffaf9` | 48 | 0 | clean tree | [results](retained/logistic-growth/2026-10-13T181940-090Z-4f5ffaf9/report.md) |
+| flat-growth | `2026-10-15T140835-733Z-34951879` | 63 | 0 | clean tree | [results](retained/flat-growth/2026-10-15T140835-733Z-34951879/report.md) |
+| linear-growth | `2026-10-15T043106-340Z-34951879` | 38 | 2 | clean tree | [results](retained/linear-growth/2026-10-15T043106-340Z-34951879/report.md) |
+| logistic-growth | `2026-10-15T143246-160Z-34951879` | 52 | 0 | clean tree | [results](retained/logistic-growth/2026-10-15T143246-160Z-34951879/report.md) |
 
 ## Case outcomes
 
 Only passed gates admit timing. Diagnostic invalid-domain cases remain failed; they are not relabeled as successful fits.
 
-### flat-growth/2026-10-13T180643-584Z-4f5ffaf9
+### flat-growth/2026-10-15T140835-733Z-34951879
 
 | Case | Outcome | Contract |
 | --- | --- | --- |
+| `country-us-flat-additive` | passed | equivalent-objective |
+| `country-explicit-us-flat-additive` | passed | equivalent-objective |
+| `country-us-flat-multiplicative` | passed | equivalent-objective |
+| `country-explicit-us-flat-multiplicative` | passed | equivalent-objective |
+| `country-boundary-flat` | passed | equivalent-objective |
+| `country-empty-bv-flat` | passed | equivalent-objective |
+| `country-explicit-empty-flat` | passed | equivalent-objective |
+| `country-estimated-sg-flat` | passed | equivalent-objective |
+| `country-partial-in-flat` | passed | equivalent-objective |
+| `country-mixed-us-flat` | passed | equivalent-objective |
+| `country-none-flat-730` | passed | equivalent-objective |
+| `country-se-flat-730` | passed | equivalent-objective |
+| `country-explicit-se-flat-730` | passed | equivalent-objective |
+| `country-cn-flat-730` | passed | equivalent-objective |
+| `country-explicit-cn-flat-730` | passed | equivalent-objective |
+| `country-none-flat-2190` | passed | equivalent-objective |
+| `country-se-flat-2190` | passed | equivalent-objective |
+| `country-explicit-se-flat-2190` | passed | equivalent-objective |
+| `country-cn-flat-2190` | passed | equivalent-objective |
+| `country-explicit-cn-flat-2190` | passed | equivalent-objective |
+| `country-none-flat-2190-batch-32` | passed | equivalent-objective |
+| `country-se-flat-2190-batch-32` | passed | equivalent-objective |
+| `country-explicit-se-flat-2190-batch-32` | passed | equivalent-objective |
+| `country-uncertainty-us-flat` | passed | scalar-process-different-public-work |
 | `map-training-zero-span-flat-varied` | passed | equivalent-objective |
 | `map-training-zero-span-flat-constant` | passed | equivalent-objective |
 | `flat-mixed-components` | passed | equivalent-objective |
@@ -58,7 +82,7 @@ Only passed gates admit timing. Diagnostic invalid-domain cases remain failed; t
 | `flat-mixed-components-absmax-defaults` | passed | equivalent-objective |
 | `flat-correlated-regressors` | passed | equivalent-objective |
 
-### linear-growth/2026-10-13T175256-063Z-4f5ffaf9
+### linear-growth/2026-10-15T043106-340Z-34951879
 
 | Case | Outcome | Contract |
 | --- | --- | --- |
@@ -70,6 +94,11 @@ Only passed gates admit timing. Diagnostic invalid-domain cases remain failed; t
 | `map-events-small` | passed | equivalent-objective |
 | `map-regressors-medium` | passed | equivalent-objective |
 | `map-conditional-seasonalities-medium` | passed | equivalent-objective |
+| `country-us-linear-additive` | passed | equivalent-objective |
+| `country-explicit-us-linear-additive` | passed | equivalent-objective |
+| `country-us-linear-multiplicative` | passed | equivalent-objective |
+| `country-explicit-us-linear-multiplicative` | passed | equivalent-objective |
+| `country-boundary-linear` | passed | equivalent-objective |
 | `linear-defaults-small` | passed | equivalent-objective |
 | `linear-defaults-medium` | passed | equivalent-objective |
 | `linear-defaults-irregular` | passed | equivalent-objective |
@@ -98,10 +127,14 @@ Only passed gates admit timing. Diagnostic invalid-domain cases remain failed; t
 | `evaluation-linear-search` | passed | different-public-work |
 | `evaluation-linear-failure-search` | passed | different-public-work |
 
-### logistic-growth/2026-10-13T181940-090Z-4f5ffaf9
+### logistic-growth/2026-10-15T143246-160Z-34951879
 
 | Case | Outcome | Contract |
 | --- | --- | --- |
+| `country-us-logistic-additive` | passed | equivalent-objective |
+| `country-explicit-us-logistic-additive` | passed | equivalent-objective |
+| `country-us-logistic-multiplicative` | passed | equivalent-objective |
+| `country-explicit-us-logistic-multiplicative` | passed | equivalent-objective |
 | `logistic-implicit-floor-absmax` | passed | equivalent-objective |
 | `logistic-implicit-floor-minmax` | passed | equivalent-objective |
 | `logistic-explicit-floor-absmax` | passed | equivalent-objective |

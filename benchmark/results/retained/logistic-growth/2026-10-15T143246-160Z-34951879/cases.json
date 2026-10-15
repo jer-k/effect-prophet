@@ -1,5 +1,871 @@
 [
   {
+    "id": "country-us-logistic-additive",
+    "dataset": "v5/country-logistic-96.json",
+    "calendarSnapshot": {
+      "snapshotId": "sha256:71ee8daf33ec4d527ad865201555a2205f3bf5059a863e7c96da068855adcdb6",
+      "prophet": "1.4.0",
+      "holidays": "0.104"
+    },
+    "workload": {
+      "kind": "stage-f-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "country-calendar-public-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "countryHolidays": {
+          "country": "US",
+          "coverage": "reject-known-gaps",
+          "priorScale": 10
+        },
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "auto",
+          "count": 2,
+          "range": 0.8
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [],
+        "events": [
+          {
+            "name": "launch",
+            "date": "2024-01-01",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "launch",
+            "date": "2024-01-05",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "launch",
+            "date": "2025-01-01",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "launch",
+            "date": "2025-01-05",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          }
+        ],
+        "regressors": []
+      },
+      "effectOptimizer": {
+        "algorithm": "auto",
+        "maxIterations": 10000,
+        "fallback": "newton",
+        "lbfgs": {
+          "historySize": 5,
+          "initAlpha": 0.001,
+          "tolObj": 1e-12,
+          "tolRelObj": 10000,
+          "tolGrad": 1e-8,
+          "tolRelGrad": 10000000,
+          "tolParam": 1e-8
+        }
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      }
+    },
+    "phases": [
+      "adapter-input-conversion",
+      "warm-fit",
+      "warm-predict",
+      "warm-fit-predict",
+      "warm-fit-predict-with-conversion",
+      "cold-first-forecast",
+      "model-json-encode",
+      "model-json-decode",
+      "fresh-process-restored-predict"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 3,
+    "independentRuns": 2,
+    "timeoutSeconds": 300,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.08,
+        "relative": 0.006
+      },
+      "component": {
+        "absolute": 0.08,
+        "relative": 0.01
+      },
+      "additive": {
+        "absolute": 0.1,
+        "relative": 0.01
+      },
+      "forecast": {
+        "absolute": 0.1,
+        "relative": 0.006
+      },
+      "noiseScale": {
+        "absolute": 0.03,
+        "relative": 0.08
+      },
+      "persistence": {
+        "absolute": 1e-10,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "country-v5:country-logistic-96:level+jan1(3)+jan5(1.4)+bounded-noise:n=96:future=4:year=2024",
+      "sha256": "2c6a223d34c60eee57933519606ff337838e37613f0268b7fa21a49623d6cd3c",
+      "trainingRows": 96,
+      "predictionRows": 4,
+      "futureRows": 4,
+      "horizonDays": 275
+    }
+  },
+  {
+    "id": "country-explicit-us-logistic-additive",
+    "dataset": "v5/country-logistic-96.json",
+    "calendarSnapshot": {
+      "snapshotId": "sha256:71ee8daf33ec4d527ad865201555a2205f3bf5059a863e7c96da068855adcdb6",
+      "prophet": "1.4.0",
+      "holidays": "0.104"
+    },
+    "workload": {
+      "kind": "stage-f-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "country-calendar-public-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "auto",
+          "count": 2,
+          "range": 0.8
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [],
+        "events": [
+          {
+            "name": "launch",
+            "date": "2024-01-01",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "launch",
+            "date": "2024-01-05",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "launch",
+            "date": "2025-01-01",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "launch",
+            "date": "2025-01-05",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "New Year's Day",
+            "date": "2024-01-01",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "Martin Luther King Jr. Day",
+            "date": "2024-01-15",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "Washington's Birthday",
+            "date": "2024-02-19",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "Memorial Day",
+            "date": "2024-05-27",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "Juneteenth National Independence Day",
+            "date": "2024-06-19",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "Independence Day",
+            "date": "2024-07-04",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "Labor Day",
+            "date": "2024-09-02",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "Columbus Day",
+            "date": "2024-10-14",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "Veterans Day",
+            "date": "2024-11-11",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "Thanksgiving Day",
+            "date": "2024-11-28",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "Christmas Day",
+            "date": "2024-12-25",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "New Year's Day",
+            "date": "2025-01-01",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "Martin Luther King Jr. Day",
+            "date": "2025-01-20",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "Washington's Birthday",
+            "date": "2025-02-17",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "Memorial Day",
+            "date": "2025-05-26",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "Juneteenth National Independence Day",
+            "date": "2025-06-19",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "Independence Day",
+            "date": "2025-07-04",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "Labor Day",
+            "date": "2025-09-01",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "Columbus Day",
+            "date": "2025-10-13",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "Veterans Day",
+            "date": "2025-11-11",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "Thanksgiving Day",
+            "date": "2025-11-27",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "Christmas Day",
+            "date": "2025-12-25",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          }
+        ],
+        "regressors": []
+      },
+      "effectOptimizer": {
+        "algorithm": "auto",
+        "maxIterations": 10000,
+        "fallback": "newton",
+        "lbfgs": {
+          "historySize": 5,
+          "initAlpha": 0.001,
+          "tolObj": 1e-12,
+          "tolRelObj": 10000,
+          "tolGrad": 1e-8,
+          "tolRelGrad": 10000000,
+          "tolParam": 1e-8
+        }
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      }
+    },
+    "phases": [
+      "adapter-input-conversion",
+      "warm-fit",
+      "warm-predict",
+      "warm-fit-predict",
+      "warm-fit-predict-with-conversion",
+      "cold-first-forecast",
+      "model-json-encode",
+      "model-json-decode",
+      "fresh-process-restored-predict"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 3,
+    "independentRuns": 2,
+    "timeoutSeconds": 300,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.08,
+        "relative": 0.006
+      },
+      "component": {
+        "absolute": 0.08,
+        "relative": 0.01
+      },
+      "additive": {
+        "absolute": 0.1,
+        "relative": 0.01
+      },
+      "forecast": {
+        "absolute": 0.1,
+        "relative": 0.006
+      },
+      "noiseScale": {
+        "absolute": 0.03,
+        "relative": 0.08
+      },
+      "persistence": {
+        "absolute": 1e-10,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "country-v5:country-logistic-96:level+jan1(3)+jan5(1.4)+bounded-noise:n=96:future=4:year=2024",
+      "sha256": "2c6a223d34c60eee57933519606ff337838e37613f0268b7fa21a49623d6cd3c",
+      "trainingRows": 96,
+      "predictionRows": 4,
+      "futureRows": 4,
+      "horizonDays": 275
+    }
+  },
+  {
+    "id": "country-us-logistic-multiplicative",
+    "dataset": "v5/country-logistic-96.json",
+    "calendarSnapshot": {
+      "snapshotId": "sha256:71ee8daf33ec4d527ad865201555a2205f3bf5059a863e7c96da068855adcdb6",
+      "prophet": "1.4.0",
+      "holidays": "0.104"
+    },
+    "workload": {
+      "kind": "stage-f-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "country-calendar-public-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "countryHolidays": {
+          "country": "US",
+          "coverage": "reject-known-gaps",
+          "priorScale": 10
+        },
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "multiplicative",
+        "changepoints": {
+          "mode": "auto",
+          "count": 2,
+          "range": 0.8
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [],
+        "events": [
+          {
+            "name": "launch",
+            "date": "2024-01-01",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "launch",
+            "date": "2024-01-05",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "launch",
+            "date": "2025-01-01",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "launch",
+            "date": "2025-01-05",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          }
+        ],
+        "regressors": []
+      },
+      "effectOptimizer": {
+        "algorithm": "auto",
+        "maxIterations": 10000,
+        "fallback": "newton",
+        "lbfgs": {
+          "historySize": 5,
+          "initAlpha": 0.001,
+          "tolObj": 1e-12,
+          "tolRelObj": 10000,
+          "tolGrad": 1e-8,
+          "tolRelGrad": 10000000,
+          "tolParam": 1e-8
+        }
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      }
+    },
+    "phases": [
+      "adapter-input-conversion",
+      "warm-fit",
+      "warm-predict",
+      "warm-fit-predict",
+      "warm-fit-predict-with-conversion",
+      "cold-first-forecast",
+      "model-json-encode",
+      "model-json-decode",
+      "fresh-process-restored-predict"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 3,
+    "independentRuns": 2,
+    "timeoutSeconds": 300,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.08,
+        "relative": 0.006
+      },
+      "component": {
+        "absolute": 0.08,
+        "relative": 0.01
+      },
+      "additive": {
+        "absolute": 0.1,
+        "relative": 0.01
+      },
+      "forecast": {
+        "absolute": 0.1,
+        "relative": 0.006
+      },
+      "noiseScale": {
+        "absolute": 0.03,
+        "relative": 0.08
+      },
+      "persistence": {
+        "absolute": 1e-10,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "country-v5:country-logistic-96:level+jan1(3)+jan5(1.4)+bounded-noise:n=96:future=4:year=2024",
+      "sha256": "2c6a223d34c60eee57933519606ff337838e37613f0268b7fa21a49623d6cd3c",
+      "trainingRows": 96,
+      "predictionRows": 4,
+      "futureRows": 4,
+      "horizonDays": 275
+    }
+  },
+  {
+    "id": "country-explicit-us-logistic-multiplicative",
+    "dataset": "v5/country-logistic-96.json",
+    "calendarSnapshot": {
+      "snapshotId": "sha256:71ee8daf33ec4d527ad865201555a2205f3bf5059a863e7c96da068855adcdb6",
+      "prophet": "1.4.0",
+      "holidays": "0.104"
+    },
+    "workload": {
+      "kind": "stage-f-map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "country-calendar-public-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "multiplicative",
+        "changepoints": {
+          "mode": "auto",
+          "count": 2,
+          "range": 0.8
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [],
+        "events": [
+          {
+            "name": "launch",
+            "date": "2024-01-01",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "launch",
+            "date": "2024-01-05",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "launch",
+            "date": "2025-01-01",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "launch",
+            "date": "2025-01-05",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "New Year's Day",
+            "date": "2024-01-01",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "Martin Luther King Jr. Day",
+            "date": "2024-01-15",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "Washington's Birthday",
+            "date": "2024-02-19",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "Memorial Day",
+            "date": "2024-05-27",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "Juneteenth National Independence Day",
+            "date": "2024-06-19",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "Independence Day",
+            "date": "2024-07-04",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "Labor Day",
+            "date": "2024-09-02",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "Columbus Day",
+            "date": "2024-10-14",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "Veterans Day",
+            "date": "2024-11-11",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "Thanksgiving Day",
+            "date": "2024-11-28",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "Christmas Day",
+            "date": "2024-12-25",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "New Year's Day",
+            "date": "2025-01-01",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "Martin Luther King Jr. Day",
+            "date": "2025-01-20",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "Washington's Birthday",
+            "date": "2025-02-17",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "Memorial Day",
+            "date": "2025-05-26",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "Juneteenth National Independence Day",
+            "date": "2025-06-19",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "Independence Day",
+            "date": "2025-07-04",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "Labor Day",
+            "date": "2025-09-01",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "Columbus Day",
+            "date": "2025-10-13",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "Veterans Day",
+            "date": "2025-11-11",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "Thanksgiving Day",
+            "date": "2025-11-27",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          },
+          {
+            "name": "Christmas Day",
+            "date": "2025-12-25",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          }
+        ],
+        "regressors": []
+      },
+      "effectOptimizer": {
+        "algorithm": "auto",
+        "maxIterations": 10000,
+        "fallback": "newton",
+        "lbfgs": {
+          "historySize": 5,
+          "initAlpha": 0.001,
+          "tolObj": 1e-12,
+          "tolRelObj": 10000,
+          "tolGrad": 1e-8,
+          "tolRelGrad": 10000000,
+          "tolParam": 1e-8
+        }
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      }
+    },
+    "phases": [
+      "adapter-input-conversion",
+      "warm-fit",
+      "warm-predict",
+      "warm-fit-predict",
+      "warm-fit-predict-with-conversion",
+      "cold-first-forecast",
+      "model-json-encode",
+      "model-json-decode",
+      "fresh-process-restored-predict"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 3,
+    "independentRuns": 2,
+    "timeoutSeconds": 300,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.08,
+        "relative": 0.006
+      },
+      "component": {
+        "absolute": 0.08,
+        "relative": 0.01
+      },
+      "additive": {
+        "absolute": 0.1,
+        "relative": 0.01
+      },
+      "forecast": {
+        "absolute": 0.1,
+        "relative": 0.006
+      },
+      "noiseScale": {
+        "absolute": 0.03,
+        "relative": 0.08
+      },
+      "persistence": {
+        "absolute": 1e-10,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "country-v5:country-logistic-96:level+jan1(3)+jan5(1.4)+bounded-noise:n=96:future=4:year=2024",
+      "sha256": "2c6a223d34c60eee57933519606ff337838e37613f0268b7fa21a49623d6cd3c",
+      "trainingRows": 96,
+      "predictionRows": 4,
+      "futureRows": 4,
+      "horizonDays": 275
+    }
+  },
+  {
     "id": "logistic-implicit-floor-absmax",
     "dataset": "v1/logistic-implicit-floor.json",
     "workload": {

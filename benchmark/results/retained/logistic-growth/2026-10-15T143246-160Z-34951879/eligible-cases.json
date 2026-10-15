@@ -1,6 +1,10 @@
 {
   "schemaVersion": 1,
   "caseIds": [
+    "country-us-logistic-additive",
+    "country-explicit-us-logistic-additive",
+    "country-us-logistic-multiplicative",
+    "country-explicit-us-logistic-multiplicative",
     "logistic-implicit-floor-absmax",
     "logistic-implicit-floor-minmax",
     "logistic-explicit-floor-absmax",
