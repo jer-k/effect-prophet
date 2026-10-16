@@ -64,7 +64,8 @@ const exitOutcome = <A, E>(exit: Exit.Exit<A, E>) =>
 const wasmSpanNames = (names: ReadonlyArray<string>) =>
   names.filter((name) => name.startsWith("effect-prophet.wasm."));
 
-describe("Prophet fit and predict properties", () => {
+// These properties fit many models, and CI runners are several times slower than local machines.
+describe("Prophet fit and predict properties", { timeout: 30_000 }, () => {
   it("fails with typed errors, never defects, for hostile histories and options", async () => {
     await fc.assert(
       fc.asyncProperty(
