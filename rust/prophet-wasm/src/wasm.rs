@@ -7,3 +7,6 @@ pub(crate) mod map;
 pub(crate) mod map_uncertainty;
 pub(crate) mod mixed_map;
 pub(crate) mod protocol;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+mod properties;

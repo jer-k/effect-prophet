@@ -14,5 +14,8 @@ wasm-bindgen = "=0.2.128"
 [dev-dependencies]
 serde_json = { version = "=1.0.151", features = ["float_roundtrip"] }
 
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+proptest = { version = "=1.11.0", default-features = false, features = ["std"] }
+
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
 wasm-bindgen-test = "=0.3.78"
