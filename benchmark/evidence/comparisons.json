@@ -61,7 +61,7 @@
       ]
     },
     {
-      "id": "stage-h-evaluation-v1",
+      "id": "rolling-origin-evaluation-v1",
       "classification": "different-public-work",
       "statement": "Explicit shared rolling-origin folds use public evaluation entrypoints but differ in fitted-model setup, uncertainty algorithm, metrics policy, and report shape; absolute timings only.",
       "checks": [
@@ -195,7 +195,7 @@
       ]
     },
     {
-      "id": "stage-f-scaling-v1",
+      "id": "linear-map-target-scaling-v1",
       "classification": "equivalent-objective",
       "statement": "The same large-offset linear MAP rows are fit separately with matching absmax or minmax target scaling, explicit changepoint and additive Fourier priors; scaling variants are not equated with each other.",
       "prerequisiteFixtures": ["target-scaling.json", "linear-map-fit.json"],
@@ -208,7 +208,7 @@
       ]
     },
     {
-      "id": "stage-f-flat-mixed-v1",
+      "id": "flat-map-mixed-v1",
       "classification": "equivalent-objective",
       "statement": "Flat MAP with minmax scaling and a conditional multiplicative seasonality, additive event and regressor; Python's prior-only trend parameters are at their MAP modes.",
       "prerequisiteFixtures": ["target-scaling.json", "mixed-map.json", "conditional-map-fit.json"],
@@ -222,7 +222,7 @@
       ]
     },
     {
-      "id": "stage-f-flat-additive-v1",
+      "id": "flat-map-additive-v1",
       "classification": "equivalent-objective",
       "statement": "Flat MAP with only additive features: conditional seasonalities, events and regressors, including regressors nearly or exactly collinear with the level or a seasonality. Both libraries optimize Prophet's Stan density with the trend fixed at its level; the unused rate and changepoint parameters stay at zero.",
       "prerequisiteFixtures": ["target-scaling.json", "mixed-map.json", "conditional-map-fit.json"],
@@ -235,7 +235,7 @@
       ]
     },
     {
-      "id": "stage-f-linear-mixed-v1",
+      "id": "linear-map-mixed-v1",
       "classification": "equivalent-objective",
       "statement": "Linear MAP with nonzero target offset, inherited multiplicative seasonality and explicit additive event/regressor overrides.",
       "prerequisiteFixtures": ["mixed-map.json", "target-scaling.json"],
@@ -264,7 +264,7 @@
       ]
     },
     {
-      "id": "stage-f-logistic-v1",
+      "id": "logistic-map-v1",
       "classification": "equivalent-objective",
       "statement": "Nonsingular logistic MAP with nonempty explicit or automatic changepoints, changing capacities, matched floor and scaling policy, additive Fourier effects and optional multiplicative regressor; no empty-point or singular-rate parity claim.",
       "prerequisiteFixtures": ["logistic-map.json", "mixed-map.json", "target-scaling.json"],

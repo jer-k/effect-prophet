@@ -73,7 +73,7 @@ export const linearGrowthEdgeCases: ReadonlyArray<BenchmarkCase> = [
       id: `map-training-${variant}-${points}`,
       dataset: `v1/training-${variant}.json`,
       workload: {
-        kind: "stage-f-map" as const,
+        kind: "map" as const,
         comparison: linearComparison,
         configuration: {
           ...configuration,
@@ -90,7 +90,7 @@ export const linearGrowthEdgeCases: ReadonlyArray<BenchmarkCase> = [
     id: "map-training-duplicate-features-auto",
     dataset: "v1/training-duplicate-features.json",
     workload: {
-      kind: "stage-f-map",
+      kind: "map",
       comparison: linearComparison,
       configuration: { ...configuration, ...features },
       ...linearOptimizers,
@@ -103,7 +103,7 @@ export const linearGrowthEdgeCases: ReadonlyArray<BenchmarkCase> = [
     id: "uncertainty-training-duplicates-auto",
     dataset: "v1/training-duplicates.json",
     workload: {
-      kind: "stage-f-map",
+      kind: "map",
       comparison: linearComparison,
       configuration,
       ...linearOptimizers,
@@ -130,7 +130,7 @@ export const linearGrowthEdgeCases: ReadonlyArray<BenchmarkCase> = [
       };
 
       const workload = {
-        kind: "stage-f-map" as const,
+        kind: "map" as const,
         configuration: {
           ...configuration,
           growth,
@@ -161,7 +161,7 @@ export const linearGrowthEdgeCases: ReadonlyArray<BenchmarkCase> = [
     dataset: "v1/training-duplicates.json",
     workload: {
       kind: "evaluation",
-      comparison: { kind: "different-public-work", evidenceId: "stage-h-evaluation-v1" },
+      comparison: { kind: "different-public-work", evidenceId: "rolling-origin-evaluation-v1" },
       configuration: { ...configuration, changepoints: explicit },
       ...linearOptimizers,
       plan: {

@@ -5,6 +5,7 @@ target/
 rust/prophet-wasm/pkg/
 /wasm/
 benchmark/results/runs/
+benchmark/results/differential/
 *.tsbuildinfo
 .DS_Store
 .venv/

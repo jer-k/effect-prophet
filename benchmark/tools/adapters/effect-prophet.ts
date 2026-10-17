@@ -568,9 +568,7 @@ const assertMetadata = (
   const configuration = benchmarkCase.workload.configuration;
 
   const growth =
-    benchmarkCase.workload.kind === "stage-f-map"
-      ? benchmarkCase.workload.configuration.growth
-      : "linear";
+    benchmarkCase.workload.kind === "map" ? benchmarkCase.workload.configuration.growth : "linear";
 
   const expectedKind = {
     flat: "flat-map",
@@ -583,7 +581,7 @@ const assertMetadata = (
   }
 
   const inheritedMode =
-    benchmarkCase.workload.kind === "stage-f-map"
+    benchmarkCase.workload.kind === "map"
       ? benchmarkCase.workload.configuration.seasonalityMode
       : "additive";
 
@@ -741,7 +739,7 @@ const runUncertainty = (
   output?: "intervals" | "samples",
 ) => {
   const controls =
-    benchmarkCase.workload.kind === "stage-f-map" ? benchmarkCase.workload.uncertainty : undefined;
+    benchmarkCase.workload.kind === "map" ? benchmarkCase.workload.uncertainty : undefined;
 
   if (controls === undefined) {
     throw new Error("Uncertainty phase requires explicit controls");
@@ -774,7 +772,7 @@ const assertUncertainty = (
   benchmarkCase: BenchmarkCase,
 ): NonNullable<CorrectnessProjection["uncertainty"]> => {
   const controls =
-    benchmarkCase.workload.kind === "stage-f-map" ? benchmarkCase.workload.uncertainty : undefined;
+    benchmarkCase.workload.kind === "map" ? benchmarkCase.workload.uncertainty : undefined;
 
   if (controls === undefined) {
     throw new Error("Missing uncertainty controls");
@@ -939,8 +937,7 @@ const correctnessProjection = async (
   const persistenceError = persistenceMaximumError(model, input, forecasts);
 
   const uncertainty =
-    benchmarkCase.workload.kind === "stage-f-map" &&
-    benchmarkCase.workload.uncertainty !== undefined
+    benchmarkCase.workload.kind === "map" && benchmarkCase.workload.uncertainty !== undefined
       ? assertUncertainty(model, input, benchmarkCase)
       : undefined;
 
@@ -1154,8 +1151,7 @@ const measurementForPhase = async (
     implementation: "effect-prophet",
     phase,
     comparison:
-      benchmarkCase.workload.kind === "stage-f-map" &&
-      benchmarkCase.workload.uncertainty !== undefined
+      benchmarkCase.workload.kind === "map" && benchmarkCase.workload.uncertainty !== undefined
         ? "scalar-process-different-public-work"
         : benchmarkCase.workload.comparison.kind,
     evidenceId: benchmarkCase.workload.comparison.evidenceId,

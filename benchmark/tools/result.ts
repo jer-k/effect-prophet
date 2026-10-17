@@ -1,6 +1,6 @@
 import { Effect, Schema } from "effect";
 
-import { BenchmarkPhaseSchema } from "./case.ts";
+import { BenchmarkPhaseSchema, EvidenceIdSchema } from "./case.ts";
 
 /** Bounded subprocess protocol capacity; name-rich correctness records can exceed Node's 1 MiB default. */
 export const maximumWorkerProtocolBytes = 64 * 1_048_576;
@@ -204,7 +204,7 @@ export const BenchmarkMeasurementSchema = Schema.Struct({
     "scalar-process-different-public-work",
     "different-public-work",
   ]),
-  evidenceId: NonEmptyString,
+  evidenceId: EvidenceIdSchema,
   run: NonNegativeInteger,
   samplesNanoseconds: Schema.Array(PositiveInteger).check(Schema.isMinLength(1)),
   correctness: Schema.Literal("locally-passed"),

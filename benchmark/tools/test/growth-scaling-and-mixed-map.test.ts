@@ -24,9 +24,9 @@ describe("growth, scaling, and mixed-component MAP benchmark workloads", () => {
 
     for (const benchmarkCase of cases) {
       const workload = benchmarkCase.workload;
-      expect(workload.kind).toBe("stage-f-map");
+      expect(workload.kind).toBe("map");
 
-      if (workload.kind !== "stage-f-map") continue;
+      if (workload.kind !== "map") continue;
 
       expect(ids.has(workload.comparison.evidenceId)).toBe(true);
       expect(benchmarkCase.phases).toContain("fresh-process-restored-predict");
@@ -49,7 +49,7 @@ describe("growth, scaling, and mixed-component MAP benchmark workloads", () => {
       (benchmarkCase) => benchmarkCase.id === "flat-mixed-components",
     );
 
-    if (logistic?.workload.kind !== "stage-f-map" || flat?.workload.kind !== "stage-f-map") {
+    if (logistic?.workload.kind !== "map" || flat?.workload.kind !== "map") {
       throw new Error("Missing growth and mixed-component MAP cases");
     }
 
@@ -115,7 +115,7 @@ describe("growth, scaling, and mixed-component MAP benchmark workloads", () => {
         const dataset = await Effect.runPromise(parseBenchmarkDataset(input));
         const workload = benchmarkCase.workload;
 
-        if (workload.kind !== "stage-f-map") continue;
+        if (workload.kind !== "map") continue;
 
         expect(dataset.observations.length).toBeGreaterThan(20);
         expect(dataset.predictionRows.length).toBeGreaterThan(0);

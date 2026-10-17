@@ -28,7 +28,7 @@ describe("flat-growth reconciliation catalog", () => {
 
       expect(options?.growth).toBe("flat");
 
-      if (item.workload.kind === "stage-f-map" || item.workload.kind === "evaluation") {
+      if (item.workload.kind === "map" || item.workload.kind === "evaluation") {
         const featured = item.workload.configuration.regressors.length > 0;
 
         expect(item.workload.effectOptimizer?.algorithm).toBe(featured ? "lbfgs" : undefined);

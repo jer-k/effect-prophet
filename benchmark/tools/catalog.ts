@@ -93,8 +93,7 @@ export const suiteForCase = (item: BenchmarkCase): BenchmarkSuiteId =>
 export const capabilityForCase = (item: BenchmarkCase): string => {
   if (item.workload.kind === "evaluation") return "diagnostics";
 
-  if (item.workload.kind === "stage-f-map" && item.workload.uncertainty !== undefined)
-    return "uncertainty";
+  if (item.workload.kind === "map" && item.workload.uncertainty !== undefined) return "uncertainty";
 
   if (item.id.startsWith("map-events-") || item.id.startsWith("country-")) return "holidays";
 

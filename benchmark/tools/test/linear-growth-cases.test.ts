@@ -38,7 +38,7 @@ describe("linear-growth benchmark scenario catalog", () => {
     const fitted = catalog.filter(
       (benchmarkCase) =>
         benchmarkCase.workload.kind === "linear-map" ||
-        (benchmarkCase.workload.kind === "stage-f-map" &&
+        (benchmarkCase.workload.kind === "map" &&
           benchmarkCase.workload.configuration.growth === "linear"),
     );
 
@@ -54,7 +54,7 @@ describe("linear-growth benchmark scenario catalog", () => {
       }
 
       if (
-        benchmarkCase.workload.kind === "stage-f-map" &&
+        benchmarkCase.workload.kind === "map" &&
         benchmarkCase.workload.fitRequest === "growth-only"
       ) {
         // Default probes pass no options at all, so neither library's settings are overridden.

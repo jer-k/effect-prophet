@@ -1,4 +1,3 @@
-import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { cpus, platform, release } from "node:os";
@@ -9,6 +8,7 @@ import { Effect } from "effect";
 
 import type { BenchmarkDataset } from "./case.ts";
 import { casesInSuites, loadCaseCatalog, selectCases } from "./catalog.ts";
+import { commandOutput, projectRoot, runCommand } from "./commands.ts";
 import { loadInputDataset } from "./inputs.ts";
 import { loadRunEvidence } from "./stored-results.ts";
 import { resolveRunReference } from "./references.ts";
@@ -16,8 +16,6 @@ import { resolveContainerPlatform } from "./container-platform.ts";
 import { benchmarkBuilderName, ensureBenchmarkBuilder } from "./docker-builder.ts";
 import { cleanupDockerStorage } from "./docker-cleanup.ts";
 import type { RunManifest } from "./result.ts";
-
-const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
 
 const benchmarkRoot = fileURLToPath(new URL("../", import.meta.url));
 
@@ -28,37 +26,6 @@ let dockerStorageUsed = false;
 const evidencePath = resolve(benchmarkRoot, "evidence/comparisons.json");
 
 const inputRoot = resolve(benchmarkRoot, "inputs");
-
-const commandOutput = (command: string, args: ReadonlyArray<string>): string => {
-  const result = spawnSync(command, args, {
-    cwd: projectRoot,
-    encoding: "utf8",
-  });
-
-  if (result.status !== 0) {
-    throw new Error(result.stderr || result.stdout || `${command} failed`);
-  }
-
-  return result.stdout.trim();
-};
-
-const runCommand = (
-  command: string,
-  args: ReadonlyArray<string>,
-  environment: NodeJS.ProcessEnv,
-): void => {
-  const result = spawnSync(command, args, {
-    cwd: projectRoot,
-    env: environment,
-    stdio: "inherit",
-  });
-
-  if (result.status !== 0) {
-    throw new Error(
-      `${command} ${args.join(" ")} failed with status ${result.status ?? "unknown"}`,
-    );
-  }
-};
 
 const sha256File = async (path: string): Promise<string> => {
   const contents = await readFile(path);

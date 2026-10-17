@@ -12,9 +12,9 @@ describe("public uncertainty benchmark declarations", () => {
     const outputs = new Set<string>();
 
     for (const benchmarkCase of cases) {
-      expect(benchmarkCase.workload.kind).toBe("stage-f-map");
+      expect(benchmarkCase.workload.kind).toBe("map");
 
-      if (benchmarkCase.workload.kind !== "stage-f-map") continue;
+      if (benchmarkCase.workload.kind !== "map") continue;
 
       growth.add(benchmarkCase.workload.configuration.growth);
 

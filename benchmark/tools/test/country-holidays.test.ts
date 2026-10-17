@@ -62,7 +62,7 @@ describe("country benchmark contract", () => {
           (item) => item.id === `country-explicit-us-${growth}-${mode}`,
         );
 
-        if (country?.workload.kind !== "stage-f-map" || explicit?.workload.kind !== "stage-f-map")
+        if (country?.workload.kind !== "map" || explicit?.workload.kind !== "map")
           throw new Error("Missing authored paired case");
 
         expect(explicit.correctnessTolerances).toEqual(country.correctnessTolerances);
@@ -93,9 +93,9 @@ describe("country benchmark contract", () => {
       );
 
       if (
-        scaled?.workload.kind !== "stage-f-map" ||
-        none?.workload.kind !== "stage-f-map" ||
-        explicit?.workload.kind !== "stage-f-map"
+        scaled?.workload.kind !== "map" ||
+        none?.workload.kind !== "map" ||
+        explicit?.workload.kind !== "map"
       )
         throw new Error("Missing scaling control case");
 
@@ -122,8 +122,7 @@ describe("country benchmark contract", () => {
   it("parses registered aliases and rejects unpinned or invalid selections before calendar loading", async () => {
     const { benchmarkCase } = await prepare("country-us-flat-additive");
 
-    if (benchmarkCase.workload.kind !== "stage-f-map")
-      throw new Error("Expected authored MAP case");
+    if (benchmarkCase.workload.kind !== "map") throw new Error("Expected authored MAP case");
 
     const workload = benchmarkCase.workload;
 

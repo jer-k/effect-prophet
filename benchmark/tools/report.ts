@@ -216,7 +216,8 @@ export const summarizeMeasurements = (
   );
 };
 
-const emptyDifferences = () => ({
+/** Zero maximum differences, raised in place by `compareForecast`. */
+export const emptyDifferences = () => ({
   trend: 0,
   component: 0,
   additive: 0,
@@ -241,7 +242,11 @@ const sameNames = (
 ): boolean =>
   left.length === right.length && left.every((value, index) => value.name === right[index]?.name);
 
-const compareForecast = (
+/**
+ * Raise each quantity's maximum difference for one aligned forecast pair. Returns false when the
+ * rows are not comparable: different timestamps, component names or component modes.
+ */
+export const compareForecast = (
   effectForecast: ForecastProjection,
   pythonForecast: ForecastProjection,
   differences: ReturnType<typeof emptyDifferences>,
@@ -463,6 +468,38 @@ const projectionsForCase = (
     .filter((projection) => projection.caseId === caseId)
     .sort((left, right) => left.run - right.run);
 
+/** Largest magnitude of one forecast quantity, which scales its relative tolerance. */
+export const forecastQuantityScale = (
+  quantity: Exclude<keyof QuantityDifferences, "noiseScale">,
+  forecasts: ReadonlyArray<ForecastProjection>,
+): number => {
+  let scale = 0;
+
+  for (const forecast of forecasts) {
+    if (quantity === "forecast") {
+      scale = Math.max(scale, Math.abs(forecast.value));
+    } else if (quantity === "trend") {
+      scale = Math.max(scale, Math.abs(forecast.trend));
+    } else if (quantity === "additive") {
+      scale = Math.max(scale, Math.abs(forecast.additive));
+    } else {
+      for (const component of [
+        ...forecast.seasonalities,
+        ...forecast.events,
+        ...forecast.regressors,
+      ]) {
+        scale = Math.max(
+          scale,
+          Math.abs(component.mode === "additive" ? component.value : component.contribution),
+          Math.abs(component.mode === "multiplicative" ? component.factor : 0),
+        );
+      }
+    }
+  }
+
+  return scale;
+};
+
 const quantityAllowance = (
   quantity: keyof QuantityDifferences,
   benchmarkCase: BenchmarkCase,
@@ -473,32 +510,12 @@ const quantityAllowance = (
   let scale = 0;
 
   for (const projection of [...effectProjections, ...pythonProjections]) {
-    if (quantity === "noiseScale") {
-      scale = Math.max(scale, Math.abs(projection.noiseScale ?? 0));
-      continue;
-    }
-
-    for (const forecast of projection.forecasts) {
-      if (quantity === "forecast") {
-        scale = Math.max(scale, Math.abs(forecast.value));
-      } else if (quantity === "trend") {
-        scale = Math.max(scale, Math.abs(forecast.trend));
-      } else if (quantity === "additive") {
-        scale = Math.max(scale, Math.abs(forecast.additive));
-      } else {
-        for (const component of [
-          ...forecast.seasonalities,
-          ...forecast.events,
-          ...forecast.regressors,
-        ]) {
-          scale = Math.max(
-            scale,
-            Math.abs(component.mode === "additive" ? component.value : component.contribution),
-            Math.abs(component.mode === "multiplicative" ? component.factor : 0),
-          );
-        }
-      }
-    }
+    scale = Math.max(
+      scale,
+      quantity === "noiseScale"
+        ? Math.abs(projection.noiseScale ?? 0)
+        : forecastQuantityScale(quantity, projection.forecasts),
+    );
   }
 
   return tolerance.absolute + tolerance.relative * scale;
@@ -557,8 +574,7 @@ const correctnessForCase = (
   );
 
   const comparison =
-    benchmarkCase.workload.kind === "stage-f-map" &&
-    benchmarkCase.workload.uncertainty !== undefined
+    benchmarkCase.workload.kind === "map" && benchmarkCase.workload.uncertainty !== undefined
       ? ("scalar-process-different-public-work" as const)
       : benchmarkCase.workload.comparison.kind;
 
@@ -824,7 +840,7 @@ const correctnessForCase = (
   }
 
   const controls =
-    benchmarkCase.workload.kind === "stage-f-map" ? benchmarkCase.workload.uncertainty : undefined;
+    benchmarkCase.workload.kind === "map" ? benchmarkCase.workload.uncertainty : undefined;
 
   if (
     controls !== undefined &&
@@ -1082,9 +1098,7 @@ export const buildBenchmarkReport = (
     }),
     workloads: cases.flatMap((benchmarkCase) => {
       const uncertainty =
-        benchmarkCase.workload.kind === "stage-f-map"
-          ? benchmarkCase.workload.uncertainty
-          : undefined;
+        benchmarkCase.workload.kind === "map" ? benchmarkCase.workload.uncertainty : undefined;
 
       return uncertainty === undefined
         ? []
@@ -1098,7 +1112,7 @@ export const buildBenchmarkReport = (
               evidence: uncertainty.evidence,
               samplerMemoryLimitBytes: uncertainty.samplerMemoryLimitBytes,
               featureColumns:
-                benchmarkCase.workload.kind === "stage-f-map"
+                benchmarkCase.workload.kind === "map"
                   ? benchmarkCase.workload.configuration.seasonalities.reduce(
                       (count, item) => count + 2 * item.fourierOrder,
                       0,
@@ -1110,7 +1124,7 @@ export const buildBenchmarkReport = (
                     benchmarkCase.workload.configuration.regressors.length
                   : 0,
               changepoints:
-                benchmarkCase.workload.kind === "stage-f-map"
+                benchmarkCase.workload.kind === "map"
                   ? benchmarkCase.workload.configuration.changepoints.mode === "explicit"
                     ? benchmarkCase.workload.configuration.changepoints.timestamps.length
                     : benchmarkCase.workload.configuration.changepoints.count

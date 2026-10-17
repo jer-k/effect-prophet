@@ -52,3 +52,21 @@ services:
       <<: *runtime-environment
       BENCHMARK_RUN_DIRECTORY: /results
       BENCHMARK_EVIDENCE_PATH: /workspace/benchmark/evidence/comparisons.json
+
+  # Differential runs reuse the benchmark images; the run directory holds cases and outcomes.
+  effect-prophet-differential:
+    <<: *runtime
+    image: effect-prophet/benchmark-effect:local
+    command: [node, benchmark/tools/adapters/effect-differential.ts]
+    environment:
+      <<: *runtime-environment
+      DIFFERENTIAL_RUN_DIRECTORY: /results
+
+  python-prophet-differential:
+    <<: *runtime
+    image: effect-prophet/benchmark-python:1.4.0
+    command:
+      [/opt/effect-prophet-benchmark/bin/python, benchmark/tools/adapters/python-differential.py]
+    environment:
+      <<: *runtime-environment
+      DIFFERENTIAL_RUN_DIRECTORY: /results

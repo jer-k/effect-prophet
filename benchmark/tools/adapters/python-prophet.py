@@ -152,7 +152,7 @@ def configure_model(benchmark_case: dict[str, Any]) -> Prophet:
     """Construct a fresh public Prophet model with the shared configuration."""
 
     workload = benchmark_case["workload"]
-    if workload["kind"] not in ("linear-map", "stage-f-map", "evaluation"):
+    if workload["kind"] not in ("linear-map", "map", "evaluation"):
         raise ValueError(f"Case {benchmark_case['id']} is not a fitting workload")
     if workload.get("fitRequest") == "growth-only":
         # Leave every fitting/seasonality default with Prophet; uncertainty is set per call.
@@ -160,8 +160,8 @@ def configure_model(benchmark_case: dict[str, Any]) -> Prophet:
 
     configuration = workload["configuration"]
     changepoints = configuration["changepoints"]
-    stage_f = workload["kind"] in ("stage-f-map", "evaluation")
-    growth = configuration["growth"] if stage_f else "linear"
+    configurable_growth = workload["kind"] in ("map", "evaluation")
+    growth = configuration["growth"] if configurable_growth else "linear"
     common: dict[str, Any] = {
         "growth": growth,
         "changepoint_prior_scale": configuration["changepointPriorScale"],
@@ -591,7 +591,7 @@ def assert_metadata(
     """Verify public Prophet retained the declared benchmark configuration."""
 
     workload = benchmark_case["workload"]
-    if workload["kind"] not in ("linear-map", "stage-f-map"):
+    if workload["kind"] not in ("linear-map", "map"):
         return
     configuration = workload["configuration"]
     expected_seasonalities = [
@@ -807,7 +807,7 @@ def correctness_projection(
            if uncertainty is not None else {}),
     }
     sigma = model.params.get("sigma_obs")
-    if benchmark_case["workload"]["kind"] in ("linear-map", "stage-f-map"):
+    if benchmark_case["workload"]["kind"] in ("linear-map", "map"):
         if sigma is None or model.y_scale is None:
             raise ValueError("Prophet MAP fit omitted its noise scale")
         result["noiseScale"] = float(np.asarray(sigma).reshape(-1)[0] * model.y_scale)

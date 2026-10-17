@@ -73,6 +73,7 @@
     "benchmark:results": "node benchmark/tools/results-cli.ts",
     "benchmark:compare": "node benchmark/tools/compare-cli.ts",
     "benchmark:calendar-overhead": "node benchmark/tools/calendar-overhead-cli.ts",
+    "differential": "node benchmark/tools/differential-cli.ts",
     "test:rust": "cargo test --manifest-path rust/prophet-wasm/Cargo.toml",
     "test:wasm": "npm run build:wasm:production && node --test rust/prophet-wasm/node-tests/*.test.ts",
     "test:wasm:optimizer": "wasm-pack test --node --release rust/prophet-wasm --locked",

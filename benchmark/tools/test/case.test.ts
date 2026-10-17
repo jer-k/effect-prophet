@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 import { describe, expect, it } from "vitest";
 
-import { loadCoreCases } from "../catalog.ts";
+import { loadCaseCatalog, loadCoreCases } from "../catalog.ts";
 
 import { parseBenchmarkCases, parseBenchmarkDataset } from "../case.ts";
 
@@ -171,6 +171,34 @@ describe("benchmark case parsing", () => {
     }
 
     expect(JSON.stringify(cases)).not.toContain("different-objective");
+  });
+
+  it("decodes the kind and evidence IDs that retained runs recorded before their renames", async () => {
+    const catalog = await Effect.runPromise(loadCaseCatalog());
+
+    const current = catalog.find(
+      (benchmarkCase) =>
+        benchmarkCase.workload.kind === "map" &&
+        benchmarkCase.workload.comparison.evidenceId === "flat-map-mixed-v1",
+    );
+
+    if (current === undefined || current.workload.kind !== "map") {
+      throw new Error("Expected a flat mixed map case in the catalog");
+    }
+
+    const legacy = {
+      ...current,
+      workload: {
+        ...current.workload,
+        kind: "stage-f-map" as const,
+        comparison: { kind: "equivalent-objective" as const, evidenceId: "stage-f-flat-mixed-v1" },
+      },
+    };
+
+    const decoded = await Effect.runPromise(parseBenchmarkCases([legacy]));
+
+    expect(decoded).toEqual([current]);
+    expect(JSON.stringify(decoded)).not.toContain("stage-f");
   });
 });
 
