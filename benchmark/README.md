@@ -15,6 +15,7 @@ optimality, interval calibration, a speed ranking or a RAM comparison.
 | [inputs/](inputs/README.md)              | Committed versioned datasets, complete future covariates and checksum manifests   |
 | `results/runs/`                          | Gitignored developer runs, including failures and partial attempts                |
 | `results/comparisons/`                   | Gitignored developer comparison reports                                           |
+| `results/differential/`                  | Gitignored [differential comparison](#differential-comparison) runs               |
 | `results/retained/<scope>/<run-id>/`     | Explicitly reviewed, checked-in evidence                                          |
 | `results/baselines.json`                 | Named pointers to retained evidence, never duplicate snapshots                    |
 | [results/RESULTS.md](results/RESULTS.md) | Generated human-readable retained outcomes and report links                       |
@@ -219,6 +220,69 @@ See the [Python-default logistic reconciliation](cases/growth/logistic/README.md
 [flat coverage gaps](cases/growth/flat/README.md),
 [linear input-policy cases](cases/growth/linear/README.md),
 and [measurement contracts](tools/MEASUREMENTS.md).
+
+## Differential comparison
+
+The benchmarks compare fixed, reviewed cases. The differential comparison generates new inputs
+on every run instead, to find parity gaps those cases miss. It requires a built package
+(`npm run build`) and Docker, like a benchmark run.
+
+```sh
+npm run differential                       # 200 cases from a fresh root seed
+npm run differential -- --seed 60 --cases 500
+npm run differential -- --case-seed 123456 --case-seed 789  # replay individual cases
+npm run differential -- --no-build --seed 60
+```
+
+`tools/differential-generate.ts` turns each case seed into a `map` workload and dataset with
+`fast-check`, so a seed always regenerates the same case. Cases vary growth, cadence (hourly,
+daily, weekly), length (2 to 800 rows), gaps, duplicate and unsorted timestamps, outliers,
+noiseless targets, target magnitudes, scaling, component modes, custom and conditional
+seasonalities, events, regressors, logistic capacities and floors, and explicit or automatic
+changepoints. About one case in six uses only library defaults. Both libraries run through the
+benchmark images: Effect via `effectOptionsForCase` and Python via the benchmark adapter's
+`configure_model`, `fit_model` and `forecast_projection`, so a case means the same thing here as
+in a benchmark. Nothing is timed.
+
+Each case is judged by `tools/differential.ts`. Forecast, trend, additive and component
+differences are divided by the training target's span, because generated targets range from
+0.01 to 10⁶ and offsets far from zero would hide real differences under a value-relative
+tolerance. When forecasts differ by more than 10⁻³ of the span, the fitted noise scales decide.
+Both are MAP estimates of the residual scale in target units, so equal noise means both
+libraries explain the training data equally well and differ only where the data does not
+determine the model: extrapolation from an ill-conditioned design, or how a fit splits into
+trend and components.
+
+| Verdict            | Meaning                                                                  | Parity failure |
+| ------------------ | ------------------------------------------------------------------------ | -------------- |
+| `match`            | Forecasts and components agree within tolerance                          | no             |
+| `equivalent-fit`   | They differ, but both noise scales agree within 10⁻³ of the span         | no             |
+| `python-worse-fit` | They differ, and Python's noise scale is larger                          | no             |
+| `neither-fits`     | Both noise scales exceed the span, so neither fit resolves the data      | no             |
+| `mismatch`         | They differ, and Effect's noise scale is larger: Effect fits worse       | yes            |
+| `incomparable`     | Both fitted, but rows, component names or modes differ                   | yes            |
+| `effect-failed`    | Python fitted; Effect failed with a fitting/prediction error or a defect | yes            |
+| `effect-rejected`  | Python fitted; Effect rejected the input as invalid                      | no, listed     |
+| `python-failed`    | Effect fitted; Python failed                                             | no, listed     |
+| `both-failed`      | Neither fitted                                                           | no             |
+
+Fit objectives are not compared. On near-noiseless data they are dominated by `log σ` and move by
+hundreds while forecasts agree to 10⁻¹², and the two libraries' objective constants differ for
+some configurations. One case in five is deliberately ill-posed (`ill-posed` trait): it keeps
+seasonalities longer than the history and Fourier orders close to the row count, which exercises
+the triage. The rest keep only seasonalities with two full periods of history, as Prophet's
+automatic seasonalities do. With `minmax` scaling and multiplicative components, Prophet's
+prediction applies multiplicative terms in data units rather than the scaled units it fitted in,
+so in-sample predictions can differ from the fit on both sides; Effect reproduces this.
+
+Runs are written to the gitignored `results/differential/<run-id>/`: `cases.json`,
+`manifest.json` (root seed and every case seed), both implementations' JSON-lines outcomes,
+`report.json`, `report.md`, and one file per parity failure under `mismatches/` with the complete
+input and both outcomes. The weekly
+[Differential workflow](../.github/workflows/differential.yml) runs 200 cases on a new root seed,
+writes `report.md` to the job summary and uploads the run directory. Parity failures never fail
+the job. When one exposes a real bug, fix it and promote the input to a deterministic fixture
+with `npm run fixtures:generate`; generated cases are never committed on their own.
 
 ## Tests
 

@@ -53,7 +53,7 @@ COPY --from=build /workspace/dist ./dist
 COPY --from=build /workspace/wasm ./wasm
 COPY calendars ./calendars
 COPY --from=build /build-tools ./build-tools
-COPY benchmark/tools/artifacts.ts benchmark/tools/case.ts benchmark/tools/effect-case.ts benchmark/tools/country-holidays.ts benchmark/tools/evaluation.ts benchmark/tools/result.ts benchmark/tools/report.ts benchmark/tools/report-cli.ts benchmark/tools/uncertainty.ts ./benchmark/tools/
-COPY benchmark/tools/adapters/effect-prophet.ts ./benchmark/tools/adapters/
+COPY benchmark/tools/artifacts.ts benchmark/tools/case.ts benchmark/tools/differential.ts benchmark/tools/effect-case.ts benchmark/tools/country-holidays.ts benchmark/tools/evaluation.ts benchmark/tools/result.ts benchmark/tools/report.ts benchmark/tools/report-cli.ts benchmark/tools/uncertainty.ts ./benchmark/tools/
+COPY benchmark/tools/adapters/effect-prophet.ts benchmark/tools/adapters/effect-differential.ts ./benchmark/tools/adapters/
 
 CMD ["node", "benchmark/tools/adapters/effect-prophet.ts"]

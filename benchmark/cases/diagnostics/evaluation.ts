@@ -6,14 +6,14 @@ const dayMs = 86_400_000;
 const base = (id: string): BenchmarkCase => {
   const found = growthScalingAndMixedMapCases.find((item) => item.id === id);
 
-  if (found === undefined || found.workload.kind !== "stage-f-map") {
+  if (found === undefined || found.workload.kind !== "map") {
     throw new Error(`Missing benchmark source case: ${id}`);
   }
 
   return found;
 };
 
-/** Deterministic evaluation work on already-versioned, complete-row Stage F datasets. */
+/** Deterministic evaluation work on already-versioned, complete-row MAP datasets. */
 export const evaluationCases: ReadonlyArray<BenchmarkCase> = [
   { id: "linear", source: "linear-offset-scaling-absmax" },
   { id: "flat-mixed", source: "flat-mixed-components" },
@@ -25,8 +25,8 @@ export const evaluationCases: ReadonlyArray<BenchmarkCase> = [
   const original = base(source);
   const workload = original.workload;
 
-  if (workload.kind !== "stage-f-map") {
-    throw new Error("Evaluation source must be a Stage F MAP case");
+  if (workload.kind !== "map") {
+    throw new Error("Evaluation source must be a MAP case");
   }
 
   // Evaluation compares cross-validation rows, not one fit's optimizer endpoint.
@@ -42,7 +42,10 @@ export const evaluationCases: ReadonlyArray<BenchmarkCase> = [
 
   const configuration = {
     kind: "evaluation" as const,
-    comparison: { kind: "different-public-work" as const, evidenceId: "stage-h-evaluation-v1" },
+    comparison: {
+      kind: "different-public-work" as const,
+      evidenceId: "rolling-origin-evaluation-v1",
+    },
     configuration: workload.configuration,
     pythonOptimizer: workload.pythonOptimizer,
     metricAggregation: id.endsWith("large")

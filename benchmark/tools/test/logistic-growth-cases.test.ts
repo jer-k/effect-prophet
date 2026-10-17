@@ -25,7 +25,7 @@ describe("logistic Python reconciliation catalog", () => {
     expect(cases).toHaveLength(29);
 
     for (const item of cases) {
-      if (item.workload.kind !== "stage-f-map") throw new Error("Expected Stage F workload");
+      if (item.workload.kind !== "map") throw new Error("Expected a MAP workload");
       expect(item.workload.pythonOptimizer).toEqual({
         algorithm: "Auto",
         maxIterations: 10_000,
@@ -115,7 +115,7 @@ describe("logistic Python reconciliation catalog", () => {
   it("rejects hidden overrides in growth-only requests", async () => {
     const item = (await parsedCases()).find((candidate) => candidate.id.endsWith("defaults-96"));
 
-    if (item?.workload.kind !== "stage-f-map") throw new Error("Missing default case");
+    if (item?.workload.kind !== "map") throw new Error("Missing default case");
 
     for (const configuration of [
       { ...item.workload.configuration, scaling: "minmax" },

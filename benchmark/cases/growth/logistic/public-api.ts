@@ -36,10 +36,7 @@ const configuration = {
   regressors: [],
 } as const;
 
-type Configuration = Extract<
-  BenchmarkCase["workload"],
-  { readonly kind: "stage-f-map" }
->["configuration"];
+type Configuration = Extract<BenchmarkCase["workload"], { readonly kind: "map" }>["configuration"];
 
 const configuredCase = (
   id: string,
@@ -49,7 +46,7 @@ const configuredCase = (
   id: `logistic-reconcile-${id}`,
   dataset: `v2/${dataset}.json`,
   workload: {
-    kind: "stage-f-map",
+    kind: "map",
     comparison: { kind: "equivalent-objective", evidenceId: "logistic-python-reconciliation-v1" },
     configuration: settings,
     pythonOptimizer,
@@ -74,7 +71,7 @@ const configuredCase = (
 const defaultsCase = (id: string, dataset: string): BenchmarkCase => {
   const original = configuredCase(`defaults-${id}`, "");
 
-  if (original.workload.kind !== "stage-f-map") throw new Error("Expected logistic fitting case");
+  if (original.workload.kind !== "map") throw new Error("Expected logistic fitting case");
 
   return {
     ...original,

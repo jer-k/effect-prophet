@@ -80,7 +80,7 @@ class PythonProphetInputTest(unittest.TestCase):
                 case = {
                     "id": f"flat-constant-{scaling}",
                     "workload": {
-                        "kind": "stage-f-map",
+                        "kind": "map",
                         "configuration": {
                             "growth": "flat", "scaling": scaling,
                             "changepoints": {"mode": "explicit", "timestamps": []},
@@ -114,7 +114,7 @@ class PythonLogisticReferenceTest(unittest.TestCase):
         return {
             "id": "logistic-reference-test",
             "workload": {
-                "kind": "stage-f-map",
+                "kind": "map",
                 **({"fitRequest": "growth-only"} if defaults else {}),
                 "configuration": {
                     "growth": "logistic", "scaling": "absmax",
@@ -194,7 +194,7 @@ class PythonCountryReferenceTest(unittest.TestCase):
         case = copy.deepcopy(json.loads((BENCHMARK_ROOT / "cases" / "holidays" / "public-api.json").read_text())[0])
         case["id"] = "country-reference-test"
         case.pop("optimizerQuality", None)
-        case["workload"]["kind"] = "stage-f-map"
+        case["workload"]["kind"] = "map"
         case["workload"]["configuration"].update({
             "growth": growth, "scaling": "absmax", "holidaysMode": mode,
             "changepoints": {"mode": "explicit", "timestamps": []} if growth == "flat" else {"mode": "auto", "count": 2, "range": 0.8},

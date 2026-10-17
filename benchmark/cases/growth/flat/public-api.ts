@@ -6,7 +6,7 @@ export const flatGrowthCases: ReadonlyArray<BenchmarkCase> = growthScalingAndMix
   (original) => {
     const workload = original.workload;
 
-    if (workload.kind !== "stage-f-map" || workload.configuration.growth !== "flat") {
+    if (workload.kind !== "map" || workload.configuration.growth !== "flat") {
       return [];
     }
 

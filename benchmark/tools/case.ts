@@ -1,4 +1,4 @@
-import { Effect, Schema } from "effect";
+import { Effect, Schema, SchemaGetter } from "effect";
 import {
   LinearOptimizerSchema,
   maximumSampleCells,
@@ -57,14 +57,32 @@ export const BenchmarkPhaseSchema = Schema.Literals([
 /** A phase measured by the public benchmark adapters. */
 export type BenchmarkPhase = typeof BenchmarkPhaseSchema.Type;
 
+/** Development-era evidence IDs recorded by retained runs, and the names that replaced them. */
+const retiredEvidenceIds: ReadonlyMap<string, string> = new Map([
+  ["stage-f-scaling-v1", "linear-map-target-scaling-v1"],
+  ["stage-f-flat-mixed-v1", "flat-map-mixed-v1"],
+  ["stage-f-flat-additive-v1", "flat-map-additive-v1"],
+  ["stage-f-linear-mixed-v1", "linear-map-mixed-v1"],
+  ["stage-f-logistic-v1", "logistic-map-v1"],
+  ["stage-h-evaluation-v1", "rolling-origin-evaluation-v1"],
+]);
+
+/** A comparison evidence ID; retired IDs in retained runs decode to their current names. */
+export const EvidenceIdSchema = NonEmptyString.pipe(
+  Schema.decodeTo(NonEmptyString, {
+    decode: SchemaGetter.transform((id) => retiredEvidenceIds.get(id) ?? id),
+    encode: SchemaGetter.transform((id) => id),
+  }),
+);
+
 const EquivalentEquationComparisonSchema = Schema.Struct({
   kind: Schema.Literal("equivalent-equation"),
-  evidenceId: NonEmptyString,
+  evidenceId: EvidenceIdSchema,
 });
 
 const EquivalentObjectiveComparisonSchema = Schema.Struct({
   kind: Schema.Literal("equivalent-objective"),
-  evidenceId: NonEmptyString,
+  evidenceId: EvidenceIdSchema,
 });
 
 /** Why two measurements may be viewed together and which correctness evidence is required. */
@@ -154,8 +172,17 @@ const LinearMapWorkloadSchema = Schema.Struct({
   }),
 });
 
-const StageFMapWorkloadSchema = Schema.Struct({
-  kind: Schema.Literal("stage-f-map"),
+/** Retained runs recorded before the rename spell this kind `stage-f-map`; both decode as `map`. */
+const MapWorkloadKind = Schema.Literals(["map", "stage-f-map"]).pipe(
+  Schema.decodeTo(Schema.Literal("map"), {
+    decode: SchemaGetter.transform(() => "map" as const),
+    encode: SchemaGetter.transform((kind) => kind),
+  }),
+);
+
+/** A public MAP fit and prediction with any growth, scaling, modes and features. */
+export const MapWorkloadSchema = Schema.Struct({
+  kind: MapWorkloadKind,
   comparison: EquivalentObjectiveComparisonSchema,
   fitRequest: Schema.optionalKey(Schema.Literal("growth-only")),
   configuration: Schema.Struct({
@@ -189,9 +216,9 @@ const EvaluationWorkloadSchema = Schema.Struct({
   kind: Schema.Literal("evaluation"),
   comparison: Schema.Struct({
     kind: Schema.Literal("different-public-work"),
-    evidenceId: NonEmptyString,
+    evidenceId: EvidenceIdSchema,
   }),
-  configuration: StageFMapWorkloadSchema.fields.configuration,
+  configuration: MapWorkloadSchema.fields.configuration,
   effectOptimizer: Schema.optionalKey(LinearMapWorkloadSchema.fields.effectOptimizer),
   pythonOptimizer: LinearMapWorkloadSchema.fields.pythonOptimizer,
   plan: Schema.Struct({
@@ -225,7 +252,7 @@ export const BenchmarkWorkloadSchema = Schema.Union([
   EvaluationWorkloadSchema,
   FixedLinearPredictionWorkloadSchema,
   LinearMapWorkloadSchema,
-  StageFMapWorkloadSchema,
+  MapWorkloadSchema,
 ]);
 
 /** A public forecasting workload understood by both language adapters. */
@@ -425,9 +452,7 @@ const validateCaseRelationships = (
     }
 
     const uncertainty =
-      benchmarkCase.workload.kind === "stage-f-map"
-        ? benchmarkCase.workload.uncertainty
-        : undefined;
+      benchmarkCase.workload.kind === "map" ? benchmarkCase.workload.uncertainty : undefined;
 
     const uncertaintyPhases = benchmarkCase.phases.filter(
       (phase) => phase.endsWith("uncertainty") || phase === "uncertainty-input-conversion",
@@ -522,10 +547,7 @@ const validateCaseRelationships = (
       }
     }
 
-    if (
-      benchmarkCase.workload.kind === "stage-f-map" ||
-      benchmarkCase.workload.kind === "evaluation"
-    ) {
+    if (benchmarkCase.workload.kind === "map" || benchmarkCase.workload.kind === "evaluation") {
       const configuration = benchmarkCase.workload.configuration;
       const points = configuration.changepoints;
       const flat = configuration.growth === "flat";
@@ -534,7 +556,7 @@ const validateCaseRelationships = (
         points.mode === "explicit" ? points.timestamps.length === 0 : points.count === 0;
 
       const growthOnly =
-        benchmarkCase.workload.kind === "stage-f-map" &&
+        benchmarkCase.workload.kind === "map" &&
         benchmarkCase.workload.fitRequest === "growth-only";
 
       if (
@@ -553,7 +575,7 @@ const validateCaseRelationships = (
     }
 
     if (
-      benchmarkCase.workload.kind === "stage-f-map" &&
+      benchmarkCase.workload.kind === "map" &&
       benchmarkCase.workload.fitRequest === "growth-only"
     ) {
       const { configuration, pythonOptimizer, effectOptimizer } = benchmarkCase.workload;

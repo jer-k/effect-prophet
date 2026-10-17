@@ -72,7 +72,7 @@ const result = (
       implementation,
       phase: "evaluation-point",
       comparison: "different-public-work",
-      evidenceId: "stage-h-evaluation-v1",
+      evidenceId: "rolling-origin-evaluation-v1",
       run: 0,
       samplesNanoseconds: [100, 200],
       correctness: "locally-passed",
@@ -89,7 +89,7 @@ const report = (left: CorrectnessProjection, right: CorrectnessProjection) =>
     [testCase],
     result("effect-prophet", left),
     result("python-prophet", right),
-    new Set(["stage-h-evaluation-v1"]),
+    new Set(["rolling-origin-evaluation-v1"]),
   );
 
 describe("evaluation public benchmark", () => {

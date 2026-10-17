@@ -4,7 +4,7 @@ import type { BenchmarkCase } from "./case.ts";
 
 /** Translate a shared equivalent workload into the built package's public options. */
 export const effectOptionsForCase = (
-  benchmarkCase: BenchmarkCase,
+  benchmarkCase: Pick<BenchmarkCase, "workload">,
 ): EncodedProphetOptions | undefined => {
   const workload = benchmarkCase.workload;
 
@@ -12,7 +12,7 @@ export const effectOptionsForCase = (
     return undefined;
   }
 
-  if (workload.kind === "stage-f-map" && workload.fitRequest === "growth-only") {
+  if (workload.kind === "map" && workload.fitRequest === "growth-only") {
     // Linear is the default growth, so a linear defaults probe passes no options at all.
     switch (workload.configuration.growth) {
       case "linear":
@@ -50,7 +50,7 @@ export const effectOptionsForCase = (
     regressors: configuration.regressors,
   };
 
-  if (workload.kind === "stage-f-map" || workload.kind === "evaluation") {
+  if (workload.kind === "map" || workload.kind === "evaluation") {
     const options = {
       ...common,
       scaling: workload.configuration.scaling,

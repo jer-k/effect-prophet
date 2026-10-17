@@ -56,16 +56,16 @@ const campaign = {
 const flatDefaultsCase = (
   id: string,
   dataset: string,
-  evidenceId: "stage-f-flat-additive-v1" | "stage-f-flat-mixed-v1",
+  evidenceId: "flat-map-additive-v1" | "flat-map-mixed-v1",
   configuration: Pick<
-    Extract<BenchmarkCase["workload"], { kind: "stage-f-map" }>["configuration"],
+    Extract<BenchmarkCase["workload"], { kind: "map" }>["configuration"],
     "scaling" | "seasonalities" | "events" | "regressors"
   >,
 ): BenchmarkCase => ({
   id,
   dataset,
   workload: {
-    kind: "stage-f-map",
+    kind: "map",
     comparison: { kind: "equivalent-objective", evidenceId },
     configuration: {
       growth: "flat",
@@ -98,7 +98,7 @@ export const growthScalingAndMixedMapCases: ReadonlyArray<BenchmarkCase> = [
     id: `linear-offset-scaling-${scaling}`,
     dataset: "v1/linear-offset-scaling.json",
     workload: {
-      kind: "stage-f-map" as const,
+      kind: "map" as const,
       comparison: linearComparison,
       configuration: {
         growth: "linear" as const,
@@ -125,8 +125,8 @@ export const growthScalingAndMixedMapCases: ReadonlyArray<BenchmarkCase> = [
     id: "flat-mixed-components",
     dataset: "v1/flat-mixed-components.json",
     workload: {
-      kind: "stage-f-map",
-      comparison: { kind: "equivalent-objective", evidenceId: "stage-f-flat-mixed-v1" },
+      kind: "map",
+      comparison: { kind: "equivalent-objective", evidenceId: "flat-map-mixed-v1" },
       configuration: {
         growth: "flat",
         scaling: "minmax",
@@ -151,7 +151,7 @@ export const growthScalingAndMixedMapCases: ReadonlyArray<BenchmarkCase> = [
     id: "linear-mixed-components",
     dataset: "v1/linear-mixed-components.json",
     workload: {
-      kind: "stage-f-map",
+      kind: "map",
       comparison: linearComparison,
       configuration: {
         growth: "linear",
@@ -178,8 +178,8 @@ export const growthScalingAndMixedMapCases: ReadonlyArray<BenchmarkCase> = [
     id: "flat-mixed-components-large",
     dataset: "v1/flat-mixed-components-large.json",
     workload: {
-      kind: "stage-f-map",
-      comparison: { kind: "equivalent-objective", evidenceId: "stage-f-flat-mixed-v1" },
+      kind: "map",
+      comparison: { kind: "equivalent-objective", evidenceId: "flat-map-mixed-v1" },
       configuration: {
         growth: "flat",
         scaling: "minmax",
@@ -205,8 +205,8 @@ export const growthScalingAndMixedMapCases: ReadonlyArray<BenchmarkCase> = [
       id: `logistic-${floorPolicy}-floor-${scaling}`,
       dataset: `v1/logistic-${floorPolicy}-floor.json`,
       workload: {
-        kind: "stage-f-map" as const,
-        comparison: { kind: "equivalent-objective" as const, evidenceId: "stage-f-logistic-v1" },
+        kind: "map" as const,
+        comparison: { kind: "equivalent-objective" as const, evidenceId: "logistic-map-v1" },
         configuration: {
           growth: "logistic" as const,
           scaling,
@@ -234,8 +234,8 @@ export const growthScalingAndMixedMapCases: ReadonlyArray<BenchmarkCase> = [
     id: "logistic-implicit-floor-auto-changepoints",
     dataset: "v1/logistic-implicit-floor.json",
     workload: {
-      kind: "stage-f-map",
-      comparison: { kind: "equivalent-objective", evidenceId: "stage-f-logistic-v1" },
+      kind: "map",
+      comparison: { kind: "equivalent-objective", evidenceId: "logistic-map-v1" },
       configuration: {
         growth: "logistic",
         scaling: "minmax",
@@ -261,8 +261,8 @@ export const growthScalingAndMixedMapCases: ReadonlyArray<BenchmarkCase> = [
     id: "logistic-implicit-floor-large",
     dataset: "v1/logistic-implicit-floor-large.json",
     workload: {
-      kind: "stage-f-map",
-      comparison: { kind: "equivalent-objective", evidenceId: "stage-f-logistic-v1" },
+      kind: "map",
+      comparison: { kind: "equivalent-objective", evidenceId: "logistic-map-v1" },
       configuration: {
         growth: "logistic",
         scaling: "minmax",
@@ -294,19 +294,19 @@ export const flatDefaultOptimizerCases: ReadonlyArray<BenchmarkCase> = [
   flatDefaultsCase(
     "flat-additive-components",
     "v1/flat-mixed-components.json",
-    "stage-f-flat-additive-v1",
+    "flat-map-additive-v1",
     additiveFlatComponents,
   ),
   flatDefaultsCase(
     "flat-additive-components-large",
     "v1/flat-mixed-components-large.json",
-    "stage-f-flat-additive-v1",
+    "flat-map-additive-v1",
     additiveFlatComponents,
   ),
   flatDefaultsCase(
     "flat-mixed-components-absmax-defaults",
     "v1/flat-mixed-components.json",
-    "stage-f-flat-mixed-v1",
+    "flat-map-mixed-v1",
     {
       scaling: "absmax",
       seasonalities: [{ ...weekly, conditionName: "active", mode: "multiplicative" }],
@@ -317,7 +317,7 @@ export const flatDefaultOptimizerCases: ReadonlyArray<BenchmarkCase> = [
   flatDefaultsCase(
     "flat-correlated-regressors",
     "v4/flat-correlated-regressors.json",
-    "stage-f-flat-additive-v1",
+    "flat-map-additive-v1",
     {
       scaling: "absmax",
       seasonalities: [

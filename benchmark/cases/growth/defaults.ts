@@ -32,7 +32,7 @@ export const defaultCase = (
     id: `${growth}-defaults-${id}`,
     dataset,
     workload: {
-      kind: "stage-f-map",
+      kind: "map",
       comparison:
         growth === "linear"
           ? linearComparison

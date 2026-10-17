@@ -423,7 +423,7 @@ describe("benchmark reporting", () => {
           ...caseInput,
           calendarSnapshot: snapshot,
           workload: {
-            kind: "stage-f-map",
+            kind: "map",
             comparison: { kind: "equivalent-objective", evidenceId: "country-calendar-public-v1" },
             configuration: {
               growth: "flat",
@@ -668,7 +668,7 @@ describe("benchmark reporting", () => {
 
     if (
       selected === undefined ||
-      selected.workload.kind !== "stage-f-map" ||
+      selected.workload.kind !== "map" ||
       selected.workload.uncertainty === undefined
     ) {
       throw new Error("Missing declared uncertainty case");

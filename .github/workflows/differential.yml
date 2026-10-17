@@ -1,0 +1,62 @@
+name: Differential
+
+# Compares effect-prophet with pinned Python Prophet 1.4.0 on freshly generated inputs. Each
+# scheduled run draws a new root seed, so coverage accumulates across weeks. Parity failures are
+# reported in the job summary and the uploaded run directory; they never fail the job.
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+    inputs:
+      seed:
+        description: "Root seed to rerun (blank draws a new one)"
+        required: false
+      cases:
+        description: "Number of generated cases"
+        required: false
+        default: "200"
+
+permissions:
+  contents: read
+
+jobs:
+  python-prophet:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: ".tool-versions"
+          cache: npm
+
+      - name: Install pinned npm version
+        run: npm install --global "$(node --print 'require("./package.json").packageManager')"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install pinned wasm-pack version
+        run: cargo install wasm-pack --version 0.15.0 --locked
+
+      # The host generates cases with the built package's defaults; the images build their own copy.
+      - name: Build package
+        run: npm run build
+
+      - name: Compare against Python Prophet
+        env:
+          SEED: ${{ inputs.seed }}
+          CASES: ${{ inputs.cases || '200' }}
+        run: npm run differential -- ${SEED:+--seed "$SEED"} --cases "$CASES"
+
+      - name: Upload run directory
+        if: always()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: differential
+          path: benchmark/results/differential/
+          retention-days: 30
+          if-no-files-found: ignore

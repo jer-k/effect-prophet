@@ -11,7 +11,7 @@ import {
 const source = (id: string): BenchmarkCase => {
   const found = growthScalingAndMixedMapCases.find((candidate) => candidate.id === id);
 
-  if (found === undefined || found.workload.kind !== "stage-f-map") {
+  if (found === undefined || found.workload.kind !== "map") {
     throw new Error(`Missing MAP benchmark source: ${id}`);
   }
 
@@ -27,7 +27,7 @@ const makeCase = (
 ): BenchmarkCase => {
   const base = source(sourceId);
 
-  if (base.workload.kind !== "stage-f-map") {
+  if (base.workload.kind !== "map") {
     throw new Error("Uncertainty requires a MAP model");
   }
 
@@ -74,7 +74,7 @@ const defaultsCase = (
   seed = 19,
   rowSelection?: BenchmarkCase["rowSelection"],
 ): BenchmarkCase => {
-  if (base.workload.kind !== "stage-f-map" || base.workload.fitRequest !== "growth-only") {
+  if (base.workload.kind !== "map" || base.workload.fitRequest !== "growth-only") {
     throw new Error("Defaults uncertainty requires a growth-only MAP case");
   }
 
@@ -99,7 +99,7 @@ const defaultsCase = (
 const longHistoryCase = (): BenchmarkCase => {
   const base = defaultCase("linear", "long-history", "v3/linear-long-history.json");
 
-  if (base.workload.kind !== "stage-f-map") {
+  if (base.workload.kind !== "map") {
     throw new Error("Uncertainty requires a MAP model");
   }
 
@@ -149,7 +149,7 @@ const defaultsCases: ReadonlyArray<BenchmarkCase> = [
   ),
 ];
 
-/** Public MAP uncertainty workloads over shared, versioned Stage F synthetic datasets. */
+/** Public MAP uncertainty workloads over shared, versioned synthetic MAP datasets. */
 export const uncertaintyCases: ReadonlyArray<BenchmarkCase> = [
   ...defaultsCases,
   makeCase("linear-offset-scaling-absmax", "historical", "intervals", 128, {
@@ -181,7 +181,7 @@ export const uncertaintyCases: ReadonlyArray<BenchmarkCase> = [
   ...(["intervals", "samples"] as const).map((output) => {
     const base = makeCase("logistic-explicit-floor-minmax", "mixed-conditions-events", output, 128);
 
-    if (base.workload.kind !== "stage-f-map") {
+    if (base.workload.kind !== "map") {
       throw new Error("Expected logistic MAP workload");
     }
 

@@ -6,7 +6,7 @@ import { scalarUncertaintyControls, uncertaintyLifecyclePhases } from "../uncert
 import { linearOptimizers } from "../growth/linear/controls.ts";
 import { pythonDefaultOptimizer } from "../prophet-defaults.ts";
 
-type Configuration = Extract<BenchmarkCase["workload"], { kind: "stage-f-map" }>["configuration"];
+type Configuration = Extract<BenchmarkCase["workload"], { kind: "map" }>["configuration"];
 
 type Years = readonly [number, ...Array<number>];
 
@@ -84,7 +84,7 @@ export const countryHolidayCases = Effect.fn("benchmark.catalog.country-holidays
       dataset,
       calendarSnapshot: snapshot,
       workload: {
-        kind: "stage-f-map",
+        kind: "map",
         comparison: { kind: "equivalent-objective", evidenceId: "country-calendar-public-v1" },
         configuration: {
           growth,
@@ -248,7 +248,7 @@ export const countryHolidayCases = Effect.fn("benchmark.catalog.country-holidays
 
   const uncertainty = make("uncertainty-us-flat", "v5/country-basic-96.json", "flat", fields);
 
-  if (uncertainty.workload.kind !== "stage-f-map")
+  if (uncertainty.workload.kind !== "map")
     throw new Error("Expected authored country MAP workload");
 
   cases.push({
