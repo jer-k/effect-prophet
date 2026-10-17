@@ -30,7 +30,10 @@ Copyright the nalgebra authors, including Sebastien Crozet.
 Apache-2.0 terms are reproduced in apache-2.0-license.txt.
 The symmetric QR iteration in symmetric_eigen.rs is adapted from nalgebra's
 symmetric_eigen.rs, simplified to f64. Its Householder tridiagonalization
-reuses the pinned nalgebra crate.
+adapts linalg/{symmetric_tridiagonal,householder}.rs and geometry/reflection.rs,
+with contiguous lower-triangle updates and Q assembly. Normalization and dot
+reductions still reuse the pinned nalgebra crate. The test-only frozen oracle
+in src/symmetric_eigen/reference.rs preserves the earlier implementation.
 The QR iteration follows Eigen 3.4.0's dynamic SelfAdjointEigenSolver and
 real JacobiRotation arithmetic, including its scaled deflation criterion.
 Householder tridiagonalization still comes from nalgebra, so this is not a
