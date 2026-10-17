@@ -75,6 +75,10 @@
     {
       "path": "stan-logistic-lbfgs.json",
       "sha256": "062a407eb72c7d06e7a22300f2b617f0aefa87e4e72b2e6fdead22b6b1f8fcc9"
+    },
+    {
+      "path": "large-fourier-stan.json",
+      "sha256": "8e0796493011ba403c239f3384fb7f29447ef61cda22d2ff38d405a65dab39ec"
     }
   ],
   "backendArtifacts": [
@@ -90,7 +94,7 @@
     "platform": "linux/amd64",
     "uvVersion": "0.8.15"
   },
-  "generatorRevision": "aa7e7626b4cc0cb914ece93a97c5158b9107eecad0fde50d5fe52bfff4d9d533",
+  "generatorRevision": "1c4e56f390f6620f48018824e9317d8cf0fe40c30bcbbe8ba95fda1d16efbce9",
   "numericalEnvironment": [
     {
       "name": "cmdstanpy",

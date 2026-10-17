@@ -223,15 +223,23 @@ pub fn fit_mixed_map(
       .map_err(crate::piecewise_map::map_objective_error)?
       .fit_model(controls)
     }
-    MixedTrendInput::Flat => crate::map_objective::StanFlatObjective::new(
-      &design,
-      &target,
-      &feature_priors,
-      column_modes,
-      changepoint_prior_scale,
-    )
-    .map_err(crate::piecewise_map::map_objective_error)?
-    .fit_model(controls),
+    MixedTrendInput::Flat => {
+      let points = crate::piecewise_map::resolve_automatic_changepoints(
+        timestamps,
+        crate::piecewise_map::DEFAULT_CHANGEPOINT_COUNT,
+        crate::piecewise_map::DEFAULT_CHANGEPOINT_RANGE,
+      )?;
+      crate::map_objective::StanFlatObjective::new(
+        &design,
+        &target,
+        points.len(),
+        &feature_priors,
+        column_modes,
+        changepoint_prior_scale,
+      )
+      .map_err(crate::piecewise_map::map_objective_error)?
+      .fit_model(controls)
+    }
   }
   .map_err(PiecewiseMapError::Optimizer)?;
 
@@ -806,6 +814,86 @@ mod tests {
     match model.trend {
       MixedTrendModel::Flat { level } => level,
       MixedTrendModel::Linear(_) => panic!("expected a flat trend"),
+    }
+  }
+
+  #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+  #[cfg_attr(not(target_arch = "wasm32"), test)]
+  fn large_flat_newton_retains_private_state_and_converges_at_python_scale() {
+    use crate::stan::linear_optimizer::{
+      LinearAlgorithm, LinearOptimizerChoice, LinearTermination,
+    };
+
+    let timestamps = [0.0, DAY, 2.0 * DAY, 3.0 * DAY];
+    let values = [1.0, 2.0, 1.5, 3.0];
+    let seasonalities = [SeasonalitySpec {
+      period_days: 7.0,
+      fourier_order: 128,
+      prior_scale: 10.0,
+    }];
+    let masks = SeasonalityMaskView {
+      row_count: 4,
+      component_count: 1,
+      values: &[1, 1, 1, 1],
+    };
+    let matrix = FeatureMatrixView {
+      row_count: 4,
+      column_count: 0,
+      values: &[],
+    };
+    let layout = AdditionalFeatureLayoutView {
+      prior_scales: &[],
+      component_offsets: &[],
+      component_counts: &[],
+    };
+    let options = LinearOptimizerOptions::parse(1000, LinearOptimizerChoice::Newton).unwrap();
+    let model = fit_mixed_map(
+      &timestamps,
+      &values,
+      MixedTrendInput::Flat,
+      &seasonalities,
+      masks,
+      matrix,
+      layout,
+      &vec![ComponentMode::Additive; 256],
+      0.05,
+      options,
+      ScalingMode::AbsMax,
+    )
+    .unwrap();
+
+    let MapTermination::Stan(summary) = model.summary.termination else {
+      panic!("expected Stan fit")
+    };
+    assert_eq!(summary.algorithm, LinearAlgorithm::Newton);
+    assert!(summary.iterations < 1000);
+    assert_ne!(summary.termination, LinearTermination::IterationLimit);
+    // Pinned Python takes 244 ARM64 / 288 AMD64 steps. Its endpoint log
+    // densities are 73.2024123934 / 72.8888943529, despite indistinguishable
+    // training fits. Allow 0.02 log-density units (0.005 per observation), much
+    // narrower than that CPU spread; same-point tests use tight tolerances.
+    assert!(
+      -model.summary.objective >= 72.8888943529 - 0.02,
+      "objective {}",
+      model.summary.objective
+    );
+
+    let prediction = predict_mixed_map(
+      &timestamps,
+      model.target_scaling,
+      &model.trend,
+      model.noise_scale,
+      &seasonalities,
+      &model.coefficients,
+      masks,
+      matrix,
+      layout,
+      &[],
+      &model.column_modes,
+    )
+    .unwrap();
+    for (row, expected) in prediction.values().as_chunks::<5>().0.iter().zip(values) {
+      assert!((row[3] - expected).abs() <= 1e-6);
     }
   }
 

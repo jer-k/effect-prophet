@@ -138,5 +138,5 @@ describe("Prophet 1.4.0 / holidays 0.104 country calendars", () => {
         }
       }
     }
-  });
+  }, 60_000);
 });

@@ -214,7 +214,10 @@ pub(crate) fn finite_difference_hessian(
   Ok(hessian)
 }
 
-fn spectral_direction(hessian: &[f64], gradient: &[f64]) -> Result<Vec<f64>, NewtonError> {
+pub(crate) fn spectral_direction(
+  hessian: &[f64],
+  gradient: &[f64],
+) -> Result<Vec<f64>, NewtonError> {
   let dimension = gradient.len();
   let matrix = DMatrix::from_row_slice(dimension, dimension, hessian);
   // Preserve the symmetric spectral action without flooring eigenvalues.

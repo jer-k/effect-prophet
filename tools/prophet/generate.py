@@ -27,7 +27,7 @@ from prophet.diagnostics import generate_cutoffs, performance_metrics
 
 from linear_optimizer_evidence import (
     linear_optimizer_evidence, map_optimizer_evidence, stan_curvature_probe,
-    stan_optimization_completion, stan_unconstrained_probe,
+    stan_optimization_completion, stan_unconstrained_probe, stan_unconstrained_batch,
 )
 
 
@@ -55,6 +55,7 @@ STAN_LINEAR_OPTIMIZER_FILENAME = "stan-linear-optimizer.json"
 STAN_LOGISTIC_OBJECTIVE_FILENAME = "stan-logistic-objective.json"
 LOGISTIC_PREDICTION_STATE_FILENAME = "logistic-prediction-state.json"
 STAN_LOGISTIC_LBFGS_FILENAME = "stan-logistic-lbfgs.json"
+LARGE_FOURIER_STAN_FILENAME = "large-fourier-stan.json"
 MANIFEST_FILENAME = "manifest.json"
 ROOT = Path(__file__).resolve().parents[2]
 REFERENCE_PATH = ROOT / "tools" / "prophet" / "reference.json"
@@ -3170,6 +3171,86 @@ def numerical_environment() -> list[dict[str, str]]:
     return [{"name": name, "version": importlib.metadata.version(name)} for name in names]
 
 
+def make_large_fourier_stan_fixture() -> dict[str, Any]:
+    """Portable same-point evidence, separate from ill-conditioned fitted endpoints."""
+    cases = []
+    frame = pd.DataFrame({
+        "ds": pd.date_range("1970-01-01", periods=4), "y": [1.0, 2.0, 1.5, 3.0],
+    })
+
+    for growth in ("flat", "linear"):
+        for order in (128, 256):
+            model = Prophet(growth=growth, yearly_seasonality=False,
+                            weekly_seasonality=False, daily_seasonality=False)
+            model.add_seasonality("custom", period=7, fourier_order=order, prior_scale=10)
+            inputs = model.preprocess(frame)
+            initial = model.calculate_initial_params(inputs.K)
+            inits, data = model.stan_backend.prepare_data(initial.__dict__, inputs.__dict__)
+            data["X"] = [[canonical_fourier_float(value) for value in row] for row in data["X"]]
+            inits["k"] = canonical_fitted_float(inits["k"])
+            inits["m"] = canonical_fitted_float(inits["m"])
+            point = [inits["k"], inits["m"], *inits["delta"], 0.0, *inits["beta"]]
+            dimension = len(point)
+            points = [point]
+
+            for column in range(dimension):
+                for perturbation in (-0.002, -0.001, 0.001, 0.002):
+                    trial = list(point)
+                    trial[column] += perturbation
+                    points.append(trial)
+
+            evidence = stan_unconstrained_batch(model, data, points)
+            curvature = np.zeros((dimension, dimension))
+
+            for column in range(dimension):
+                for index, weight in enumerate((1 / 12, -2 / 3, 2 / 3, -1 / 12)):
+                    for row, derivative in enumerate(evidence[1 + column * 4 + index][1:]):
+                        increment = 0.0005 * weight * derivative
+                        curvature[column, row] += increment
+                        curvature[row, column] += increment
+
+            fitted = model.stan_backend.model.optimize(
+                data=data, inits=inits, algorithm="Newton", iter=1,
+                seed=12345, sig_figs=12,
+            ).optimized_params_dict
+            next_point = [fitted["k"], fitted["m"],
+                          *[fitted[f"delta[{index + 1}]"] for index in range(data["S"])],
+                          float(np.log(fitted["sigma_obs"])),
+                          *[fitted[f"beta[{index + 1}]"] for index in range(data["K"])]]
+            # Only identify the power-of-two line-search step with LAPACK. The
+            # stored action comes from Stan's actual accepted parameters.
+            values, vectors = np.linalg.eigh(curvature)
+            action = vectors @ (-(vectors.T @ np.asarray(evidence[0][1:])) / np.abs(values))
+            coordinate = int(np.argmax(np.abs(action)))
+            ratio = (point[coordinate] - next_point[coordinate]) / action[coordinate]
+            step = 2.0 ** round(float(np.log2(ratio)))
+            if abs(ratio / step - 1) > 0.001:
+                fail("Unable to identify the pinned Newton line-search step")
+            action = [(before - after) / step for before, after in zip(point, next_point)]
+            sigma = 2 + data["S"]
+            indices = [0, 1, 2, sigma, sigma + 1, sigma + 2, dimension - 1]
+            canonical = canonical_fitted_float
+            cases.append({
+                "growth": growth, "order": order, "target": data["y"],
+                "times": data["t"], "changepoints": data["t_change"],
+                "features": data["X"], "point": [canonical(value) for value in point],
+                "density": canonical(evidence[0][0]),
+                "gradient": [canonical(value) for value in evidence[0][1:]],
+                "curvature": [{"row": row, "column": column,
+                               "value": canonical(curvature[row, column], zero_threshold=0.0)}
+                              for row in indices for column in indices],
+                "action": [canonical(value) for value in action], "step": step,
+                "next": [canonical(value) for value in next_point],
+                "nextDensity": canonical(fitted["lp__"]),
+            })
+
+    return {"cases": cases, "tolerances": {
+        "densityAbsolute": 2e-10, "gradientAbsolute": 2e-10,
+        "curvatureAbsolute": 2e-12, "actionRelativeNorm": 2e-9,
+        "nextAbsolute": 2e-8,
+    }}
+
+
 def write_outputs(output: Path, execution: dict[str, str], reference: dict[str, str]) -> None:
     """Write the fixture artifact and its provenance manifest."""
 
@@ -3251,6 +3332,9 @@ def write_outputs(output: Path, execution: dict[str, str], reference: dict[str, 
     stan_logistic_lbfgs_path = output / STAN_LOGISTIC_LBFGS_FILENAME
     stan_logistic_lbfgs_path.write_bytes(stable_json(make_stan_logistic_lbfgs_fixture()))
 
+    large_fourier_path = output / LARGE_FOURIER_STAN_FILENAME
+    large_fourier_path.write_bytes(stable_json(make_large_fourier_stan_fixture()))
+
     model_path = find_prophet_model()
     manifest = {
         "artifacts": [
@@ -3330,6 +3414,7 @@ def write_outputs(output: Path, execution: dict[str, str], reference: dict[str, 
                 "path": STAN_LOGISTIC_LBFGS_FILENAME,
                 "sha256": sha256_file(stan_logistic_lbfgs_path),
             },
+            {"path": LARGE_FOURIER_STAN_FILENAME, "sha256": sha256_file(large_fourier_path)},
         ],
         "backendArtifacts": [
             {
@@ -3360,6 +3445,7 @@ def compare_outputs(generated: Path, committed: Path) -> None:
     differences: list[str] = []
 
     for filename in (
+        LARGE_FOURIER_STAN_FILENAME,
         LINEAR_TREND_FILENAME,
         FOURIER_FILENAME,
         PIECEWISE_LINEAR_FILENAME,

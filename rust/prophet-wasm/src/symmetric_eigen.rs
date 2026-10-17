@@ -343,7 +343,7 @@ mod tests {
         linear_design.extend_from_slice(values);
       }
 
-      let flat = StanFlatObjective::new(&flat_design, &target, &priors, &modes, 0.05).unwrap();
+      let flat = StanFlatObjective::new(&flat_design, &target, 0, &priors, &modes, 0.05).unwrap();
       let initial = flat.initial_parameters();
       let hessian = finite_difference_hessian(&initial, &|point| flat.evaluate(point)).unwrap();
       assert_reference_bits(DMatrix::from_row_slice(
