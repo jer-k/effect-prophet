@@ -76,6 +76,24 @@ pub fn optimize_newton(
   max_iterations: usize,
   evaluate: impl Fn(&[f64]) -> Result<LogDensityEvaluation, MapObjectiveError>,
 ) -> Result<NewtonResult, NewtonError> {
+  optimize_newton_with_hessian(
+    initial,
+    initial_log_density,
+    max_iterations,
+    &evaluate,
+    |parameters, _| finite_difference_hessian(parameters, &evaluate),
+  )
+}
+
+/// Reuse the same Newton loop with a domain-specific, numerically identical stencil.
+/// The complete state, spectral action, line search and termination stay shared.
+pub(crate) fn optimize_newton_with_hessian(
+  initial: &[f64],
+  initial_log_density: f64,
+  max_iterations: usize,
+  evaluate: impl Fn(&[f64]) -> Result<LogDensityEvaluation, MapObjectiveError>,
+  hessian: impl Fn(&[f64], &LogDensityEvaluation) -> Result<Vec<f64>, NewtonError>,
+) -> Result<NewtonResult, NewtonError> {
   if initial.is_empty()
     || initial.iter().any(|value| !value.is_finite())
     || !initial_log_density.is_finite()
@@ -92,7 +110,7 @@ pub fn optimize_newton(
 
   for iteration in 1..=max_iterations {
     let current = checked_evaluation(&parameters, &evaluate)?;
-    let hessian = finite_difference_hessian(&parameters, &evaluate)?;
+    let hessian = hessian(&parameters, &current)?;
     let direction = spectral_direction(&hessian, &current.gradient)?;
     let mut step = 2.0;
     let mut proposal = vec![0.0; dimension];
@@ -185,6 +203,17 @@ pub(crate) fn finite_difference_hessian(
   parameters: &[f64],
   evaluate: &impl Fn(&[f64]) -> Result<LogDensityEvaluation, MapObjectiveError>,
 ) -> Result<Vec<f64>, NewtonError> {
+  finite_difference_hessian_from_gradients(parameters, |state, _| {
+    checked_evaluation(state, evaluate).map(|evaluation| evaluation.gradient)
+  })
+}
+
+/// Accumulate the pinned four-point stencil, including its rounded off-diagonal
+/// entries. The callback supplies a checked full gradient for each perturbation.
+pub(crate) fn finite_difference_hessian_from_gradients(
+  parameters: &[f64],
+  gradient: impl Fn(&[f64], usize) -> Result<Vec<f64>, NewtonError>,
+) -> Result<Vec<f64>, NewtonError> {
   let dimension = parameters.len();
   let count = checked_element_count(dimension, dimension).map_err(|_| NewtonError::SizeOverflow)?;
   let mut hessian = vec![0.0; count];
@@ -195,10 +224,13 @@ pub(crate) fn finite_difference_hessian(
   for column in 0..dimension {
     for (perturbation, weight) in perturbations.into_iter().zip(weights) {
       perturbed[column] = parameters[column] + perturbation * HESSIAN_EPSILON;
-      let evaluation = checked_evaluation(&perturbed, evaluate)?;
+      let gradient = gradient(&perturbed, column)?;
+      if gradient.len() != dimension {
+        return Err(NewtonError::InvalidConfiguration);
+      }
 
       for row in 0..dimension {
-        let increment = 0.5 * HESSIAN_EPSILON * weight * evaluation.gradient[row];
+        let increment = 0.5 * HESSIAN_EPSILON * weight * gradient[row];
         hessian[column * dimension + row] += increment;
         hessian[row * dimension + column] += increment;
       }

@@ -795,6 +795,48 @@ impl<'a> StanFlatObjective<'a> {
 }
 
 impl StanMapObjective for StanFlatObjective<'_> {
+  fn newton_hessian(
+    &self,
+    parameters: &[f64],
+    current: &LogDensityEvaluation,
+  ) -> Result<Vec<f64>, NewtonError> {
+    use crate::stan::optimizer::{
+      checked_evaluation, finite_difference_hessian, finite_difference_hessian_from_gradients,
+    };
+
+    if self
+      .linear
+      .active_changepoints
+      .iter()
+      .any(|&active| active != 0)
+    {
+      return finite_difference_hessian(parameters, &|state| self.evaluate(state));
+    }
+
+    // Flat likelihoods ignore k/delta. Reuse the current likelihood gradient
+    // for their perturbations, changing only the original prior arithmetic.
+    // Keep the FULL stencil and eigensystem: analytically zeroing these blocks
+    // would discard rounded cross entries and change the fitted trajectory.
+    let sigma_index = self.linear.sigma_index();
+    finite_difference_hessian_from_gradients(parameters, |state, column| {
+      if column != 0 && !(2..sigma_index).contains(&column) {
+        return checked_evaluation(state, &|state| self.evaluate(state))
+          .map(|evaluation| evaluation.gradient);
+      }
+
+      let mut gradient = current.gradient.clone();
+      gradient[column] = if column == 0 {
+        -(state[0] * 0.2) * 0.2
+      } else {
+        let mut prior = -laplace_derivative(state[column], self.linear.changepoint_prior);
+        prior += 0.0;
+        prior += -self.linear.changepoint_points[column - 2] * 0.0;
+        prior
+      };
+      Ok(gradient)
+    })
+  }
+
   fn observation_count(&self) -> usize {
     self.linear.observation_count()
   }

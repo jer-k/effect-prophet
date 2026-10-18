@@ -22,6 +22,15 @@ pub trait StanMapObjective {
   /// Proportional density and unconstrained gradient, without a Jacobian.
   fn evaluate(&self, parameters: &[f64]) -> Result<LogDensityEvaluation, MapObjectiveError>;
 
+  /// Complete finite-difference curvature in the pinned unconstrained coordinates.
+  fn newton_hessian(
+    &self,
+    parameters: &[f64],
+    _current: &LogDensityEvaluation,
+  ) -> Result<Vec<f64>, StanOptimizerError> {
+    crate::stan::optimizer::finite_difference_hessian(parameters, &|state| self.evaluate(state))
+  }
+
   /// Run the existing Newton machinery from the original initialization.
   fn fit_newton(&self, max_iterations: usize) -> Result<NewtonResult, StanOptimizerError> {
     if max_iterations == 0 {
@@ -32,11 +41,12 @@ pub trait StanMapObjective {
     let density = self
       .evaluate(&initial)
       .map_err(StanOptimizerError::Objective)?;
-    crate::stan::optimizer::optimize_newton(
+    crate::stan::optimizer::optimize_newton_with_hessian(
       &initial,
       density.value + self.log_density_constant(),
       max_iterations,
       |parameters| self.evaluate(parameters),
+      |parameters, current| self.newton_hessian(parameters, current),
     )
   }
 }

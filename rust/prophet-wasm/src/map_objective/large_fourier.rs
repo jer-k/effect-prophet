@@ -125,3 +125,63 @@ fn large_fourier_same_point_matches_stan() {
     );
   }
 }
+
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
+fn flat_cached_prior_stencil_preserves_every_bit() {
+  let target: Vec<_> = (0..28)
+    .map(|row| 0.6 + (row as f64 * 1.7).sin() * 0.03)
+    .collect();
+  let design: Vec<_> = (0..28)
+    .flat_map(|row| [1.0, 0.0, (row as f64).sin(), (row as f64).cos()])
+    .collect();
+  let modes = [ComponentMode::Additive, ComponentMode::Multiplicative];
+  let objective = StanFlatObjective::new(&design, &target, 21, &[10.0, 5.0], &modes, 0.05).unwrap();
+
+  for sign in [-1.0, 0.0, 1.0] {
+    let mut point = objective.initial_parameters();
+    point[0] = sign * 1e-17;
+    for (index, delta) in point[2..23].iter_mut().enumerate() {
+      *delta = sign * (index as f64 + 1.0) * 1e-18;
+    }
+    point[23] = -0.8;
+    point[24] = 0.01;
+    point[25] = -0.02;
+    let evaluation = objective.evaluate(&point).unwrap();
+    let expected = finite_difference_hessian(&point, &|state| objective.evaluate(state)).unwrap();
+    let actual = objective.newton_hessian(&point, &evaluation).unwrap();
+
+    for (index, (actual, expected)) in actual.iter().zip(&expected).enumerate() {
+      assert_eq!(
+        actual.to_bits(),
+        expected.to_bits(),
+        "stencil entry {index}"
+      );
+    }
+
+    let expected = optimize_newton(
+      &point,
+      evaluation.value + objective.log_density_constant(),
+      8,
+      |state| objective.evaluate(state),
+    )
+    .unwrap();
+    let actual = crate::stan::optimizer::optimize_newton_with_hessian(
+      &point,
+      evaluation.value + objective.log_density_constant(),
+      8,
+      |state| objective.evaluate(state),
+      |state, current| objective.newton_hessian(state, current),
+    )
+    .unwrap();
+    assert_eq!(actual.iterations, expected.iterations);
+    assert_eq!(actual.termination, expected.termination);
+    assert_eq!(
+      actual.evaluation.value.to_bits(),
+      expected.evaluation.value.to_bits()
+    );
+    for (actual, expected) in actual.parameters.iter().zip(&expected.parameters) {
+      assert_eq!(actual.to_bits(), expected.to_bits());
+    }
+  }
+}
