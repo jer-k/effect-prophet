@@ -1334,6 +1334,7 @@ const FixtureManifestSchema = Schema.Struct({
       "logistic-prediction-state.json",
       "stan-logistic-lbfgs.json",
       "large-fourier-stan.json",
+      "flat-low-order-stan.json",
     ]) {
       if (!paths.has(requiredPath)) {
         return {

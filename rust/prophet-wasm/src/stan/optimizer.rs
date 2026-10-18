@@ -2,7 +2,7 @@
 //! `1357c136bf22e3f0d25ed3529fea55fe76842eac`. See `third-party/stan-license.txt`.
 //! This is a pure numerical boundary, not an Effect operation or a tracing site.
 
-use nalgebra::{DMatrix, DVector};
+use nalgebra::DMatrix;
 
 use crate::fourier::checked_element_count;
 use crate::map_objective::MapObjectiveError;
@@ -256,25 +256,31 @@ pub(crate) fn spectral_direction(
   // The bounded owner follows Eigen's QR arithmetic and deflation.
   let max_iterations = dimension.checked_mul(30).ok_or(NewtonError::SizeOverflow)?;
   let (eigenvectors, eigenvalues) = crate::symmetric_eigen::decompose(matrix, max_iterations)?;
-  let mut projected = DVector::from_iterator(
-    dimension,
-    (0..dimension).map(|column| {
-      crate::stan::reductions::matrix_row_sum(dimension, |row| {
+  let projected: Vec<f64> = (0..dimension)
+    .map(|column| {
+      let projection = crate::stan::reductions::matrix_row_sum(dimension, |row| {
         eigenvectors[(row, column)] * gradient[row]
+      });
+
+      -projection / eigenvalues[column].abs()
+    })
+    .collect();
+
+  // Eigen's column-major GEMV restarts its accumulator at the pinned cache
+  // block boundary. nalgebra's uninterrupted sum changes the spectral action
+  // once the state has 128 coordinates, including its prior-only coordinates.
+  let direction = (0..dimension)
+    .map(|row| {
+      crate::stan::reductions::matrix_column_sum(dimension, dimension, |column| {
+        eigenvectors[(row, column)] * projected[column]
       })
-    }),
-  );
-
-  for column in 0..dimension {
-    projected[column] = -projected[column] / eigenvalues[column].abs();
-  }
-
-  let direction = eigenvectors * projected;
+    })
+    .collect();
 
   // Stan does not reject an infinite/NaN spectral action here. Such proposals
   // fail the model's domain checks during backtracking, which returns the last
   // finite state at the minimum step. Keep that source no-progress completion.
-  Ok(direction.as_slice().to_vec())
+  Ok(direction)
 }
 
 #[cfg(test)]

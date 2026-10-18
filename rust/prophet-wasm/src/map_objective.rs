@@ -503,9 +503,15 @@ impl<'a> StanLinearObjective<'a> {
     gradient[0] = -(parameters[0] * 0.2) * 0.2;
     gradient[1] = -(parameters[1] * 0.2) * 0.2;
     if self.flat_trend {
-      // Stan's flat_trend broadcasts one scalar. Its reverse pass reduces the
-      // vector adjoint before adding it to m, unlike linear_trend's row tape.
-      gradient[1] += crate::stan::reductions::sum(count, |row| trend_scores[row]);
+      // flat_trend's matrix-of-var adjoints have no packet access. Accumulate
+      // its scalar broadcast in row order before adding the prior adjoint.
+      // A double-packet reduction changes near-cancelling gradients and can
+      // turn tens of Newton steps into thousands on minmax histories.
+      let mut adjoint = 0.0;
+      for &score in &trend_scores {
+        adjoint += score;
+      }
+      gradient[1] += adjoint;
     } else {
       for (row, score) in trend_scores.iter().enumerate() {
         gradient[0] += self.design[row * self.column_count + 1] * score;
@@ -1423,4 +1429,4 @@ mod tests {
 }
 
 #[cfg(test)]
-mod large_fourier;
+mod newton_parity;
