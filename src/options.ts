@@ -85,7 +85,7 @@ interface EncodedBuiltInOptions {
   readonly scaling?: TargetScalingMode;
 }
 
-/** Public explicit or automatic changepoint configuration for linear MAP fitting. */
+/** Public explicit or automatic changepoint configuration for MAP fitting. */
 export type EncodedChangepointSetting =
   | {
       readonly mode: "explicit";
@@ -104,10 +104,14 @@ export interface EncodedMapOptions {
   readonly optimizer?: EncodedLinearOptimizer;
 }
 
-/** Public flat-growth MAP controls: a flat trend has no changepoints to configure. */
-export interface EncodedFlatMapOptions {
-  readonly optimizer?: EncodedLinearOptimizer;
-}
+/**
+ * Public flat-growth MAP controls.
+ *
+ * Prophet resolves changepoints for flat growth too. The flat trend ignores them, but each
+ * adds a prior-only rate adjustment to Stan's optimizer state, scaled by
+ * `changepointPriorScale`. They never move the fitted level or forecasts directly.
+ */
+export type EncodedFlatMapOptions = EncodedMapOptions;
 
 /** Parsed explicit or automatic changepoint request. */
 export type ChangepointSetting =
@@ -126,11 +130,7 @@ export const checkExplicitChangepointBounds = (
   observations: Observations,
   options: ProphetOptions,
 ): Effect.Effect<void, InputValidationError> => {
-  if (
-    observations.length < 2 ||
-    options.growth === "flat" ||
-    options.map.changepoints.mode !== "explicit"
-  ) {
+  if (observations.length < 2 || options.map.changepoints.mode !== "explicit") {
     return Effect.void;
   }
 
@@ -236,27 +236,29 @@ export interface LinearAdditiveOptions extends ParsedBuiltInOptions {
 }
 
 /**
- * Parsed flat-growth controls, present only when an optimizer was requested.
+ * Parsed flat-growth controls with Prophet's changepoint defaults.
  *
- * An explicit optimizer always fits through Prophet's Stan density, as Python's
- * `fit(algorithm=...)` does, even where the exact reduced fitter would otherwise apply.
+ * `optimizer` is present only when requested; otherwise Prophet's selection policy applies.
+ * Changepoint settings shape only the Stan state, never the flat trend.
  */
 export interface FlatMapOptions {
-  readonly optimizer: LinearOptimizer;
+  readonly changepoints: ChangepointSetting;
+  readonly changepointPriorScale: number;
+  readonly optimizer?: LinearOptimizer;
 }
 
 /** Parsed flat-growth MAP options without configured custom seasonalities. */
 export interface FlatTrendOptions extends ParsedBuiltInOptions {
   readonly growth: "flat";
   readonly seasonalities: readonly [];
-  readonly map?: FlatMapOptions;
+  readonly map: FlatMapOptions;
 }
 
 /** Parsed flat-growth MAP options with at least one configured custom seasonality. */
 export interface FlatAdditiveOptions extends ParsedBuiltInOptions {
   readonly growth: "flat";
   readonly seasonalities: readonly [SeasonalityDefinition, ...ReadonlyArray<SeasonalityDefinition>];
-  readonly map?: FlatMapOptions;
+  readonly map: FlatMapOptions;
 }
 
 /** Parsed logistic-growth MAP configuration. */
@@ -276,8 +278,6 @@ export type ProphetOptions =
 
 const emptySeasonalities: readonly [] = Object.freeze([]);
 
-const flatChangepointMessage = "Changepoint options require linear or logistic growth";
-
 const emptyRegressors: readonly [] = Object.freeze([]);
 
 const defaultBuiltInSeasonalities: BuiltInSeasonalities = Object.freeze({
@@ -292,7 +292,7 @@ const defaultAutomaticChangepoints = Object.freeze({
   range: 0.8,
 } as const);
 
-/** Default automatic changepoint controls for linear and logistic MAP requests. */
+/** Default automatic changepoint controls, matching Prophet's for every growth. */
 export const defaultAutomaticMapOptions: MapOptions = Object.freeze({
   changepoints: defaultAutomaticChangepoints,
   changepointPriorScale: 0.05,
@@ -591,25 +591,6 @@ export const decodeOptions = Effect.fn("Prophet.decodeOptions")(function* (
 
   yield* checkOptionFeatureNames(seasonalities, events, regressors);
 
-  const flatChangepointIssues =
-    syntax.growth === "flat"
-      ? (["changepoints", "changepointPriorScale"] as const).flatMap((key) =>
-          syntax.map?.[key] === undefined
-            ? []
-            : [{ path: ["map", key], message: flatChangepointMessage }],
-        )
-      : [];
-
-  if (flatChangepointIssues.length > 0) {
-    return yield* Effect.fail(
-      new InputValidationError({
-        input: "options",
-        issues: flatChangepointIssues,
-        message: flatChangepointMessage,
-      }),
-    );
-  }
-
   const builtInSeasonalities = freezeBuiltInSeasonalities(syntax.builtInSeasonalities);
 
   const optimizer =
@@ -627,7 +608,13 @@ export const decodeOptions = Effect.fn("Prophet.decodeOptions")(function* (
           optimizer: optimizer ?? defaultAutomaticMapOptions.optimizer,
         });
 
-  const flatMap = optimizer === undefined ? {} : { map: Object.freeze({ optimizer }) };
+  const { optimizer: requestedOptimizer, ...flatChangepoints } = map;
+
+  const flatMap: FlatMapOptions = Object.freeze(
+    optimizer === undefined
+      ? flatChangepoints
+      : { ...flatChangepoints, optimizer: requestedOptimizer },
+  );
 
   const scaling = syntax.scaling === undefined ? {} : { scaling: syntax.scaling };
 
@@ -667,7 +654,7 @@ export const decodeOptions = Effect.fn("Prophet.decodeOptions")(function* (
         builtInSeasonalities,
         events,
         regressors,
-        ...flatMap,
+        map: flatMap,
         ...scaling,
       };
     }
@@ -697,7 +684,7 @@ export const decodeOptions = Effect.fn("Prophet.decodeOptions")(function* (
       builtInSeasonalities,
       events,
       regressors,
-      ...flatMap,
+      map: flatMap,
       ...scaling,
     };
   }

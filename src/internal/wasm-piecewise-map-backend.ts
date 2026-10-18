@@ -33,6 +33,7 @@ import {
   decodeSeasonalPredictions,
   failWasmFitting,
   packKnownAdditiveFeatures,
+  packChangepointsForFit,
   packSeasonalitiesForFit,
   packSeasonalitiesForPrediction,
   readWasmStatus,
@@ -319,14 +320,7 @@ export const makeWasmPiecewiseMapAdapter = (
     const observationCount = input.values.length;
     const componentCount = seasonalities.components.length;
     const coefficientCount = seasonalities.coefficientCount;
-    const explicit = changepoints.mode === "explicit";
-
-    const explicitTimestamps = explicit
-      ? new Float64Array(changepoints.timestamps)
-      : new Float64Array();
-
-    const automaticCount = explicit ? 0 : changepoints.count;
-    const automaticRange = explicit ? 0 : changepoints.range;
+    const packedChangepoints = packChangepointsForFit(changepoints);
 
     return Effect.gen(function* () {
       yield* annotateLinearRequest(optimizer);
@@ -344,10 +338,10 @@ export const makeWasmPiecewiseMapAdapter = (
             input.timestamps,
             input.values,
             targetScalingModeCode(scaling),
-            explicit ? 0 : 1,
-            explicitTimestamps,
-            automaticCount,
-            automaticRange,
+            packedChangepoints.mode,
+            packedChangepoints.timestamps,
+            packedChangepoints.count,
+            packedChangepoints.range,
             periods,
             orders,
             priors,
@@ -397,14 +391,7 @@ export const makeWasmPiecewiseMapAdapter = (
     regressors,
   ) => {
     const observationCount = input.values.length;
-    const explicit = changepoints.mode === "explicit";
-
-    const explicitTimestamps = explicit
-      ? new Float64Array(changepoints.timestamps)
-      : new Float64Array();
-
-    const automaticCount = explicit ? 0 : changepoints.count;
-    const automaticRange = explicit ? 0 : changepoints.range;
+    const packedChangepoints = packChangepointsForFit(changepoints);
     const componentCount = seasonalities.components.length + features.layout.components.length;
     const coefficientCount = seasonalities.coefficientCount + features.layout.coefficientCount;
 
@@ -439,10 +426,10 @@ export const makeWasmPiecewiseMapAdapter = (
             input.timestamps,
             input.values,
             targetScalingModeCode(scaling),
-            explicit ? 0 : 1,
-            explicitTimestamps,
-            automaticCount,
-            automaticRange,
+            packedChangepoints.mode,
+            packedChangepoints.timestamps,
+            packedChangepoints.count,
+            packedChangepoints.range,
             periods,
             orders,
             seasonalPriors,

@@ -34,7 +34,19 @@ pub enum MixedTrendInput<'a> {
   Linear { changepoints: &'a [f64] },
 
   /// A single flat level: Prophet's linear density with its time column fixed at zero.
-  Flat,
+  ///
+  /// Prophet resolves changepoints for flat growth too. Its trend ignores them,
+  /// but each one adds a prior-only `delta` coordinate to Stan's state.
+  Flat { changepoints: &'a [f64] },
+}
+
+impl<'a> MixedTrendInput<'a> {
+  /// Resolved changepoint timestamps, which size the Stan state for either trend.
+  fn changepoints(self) -> &'a [f64] {
+    match self {
+      Self::Linear { changepoints } | Self::Flat { changepoints } => changepoints,
+    }
+  }
 }
 
 /// Stored output-unit mixed trend state.
@@ -121,11 +133,12 @@ pub fn fit_mixed_map(
   let feature_count = seasonal_count
     .checked_add(additional_features.column_count)
     .ok_or(PiecewiseMapError::SizeOverflow)?;
+  // Flat rows keep `[1, 0]`: the flat objective adds its own prior-only delta columns.
   let trend_count = match trend_input {
     MixedTrendInput::Linear { changepoints } => 2_usize
       .checked_add(changepoints.len())
       .ok_or(PiecewiseMapError::SizeOverflow)?,
-    MixedTrendInput::Flat => 2,
+    MixedTrendInput::Flat { .. } => 2,
   };
   let feature_values = make_combined_features(
     timestamps,
@@ -165,7 +178,7 @@ pub fn fit_mixed_map(
         changepoint_timestamps: changepoints.to_vec(),
         deltas: vec![0.0; changepoints.len()],
       }),
-      MixedTrendInput::Flat => MixedTrendModel::Flat {
+      MixedTrendInput::Flat { .. } => MixedTrendModel::Flat {
         level: scaled_level * value_scale,
       },
     };
@@ -223,30 +236,23 @@ pub fn fit_mixed_map(
       .map_err(crate::piecewise_map::map_objective_error)?
       .fit_model(controls)
     }
-    MixedTrendInput::Flat => {
-      let points = crate::piecewise_map::resolve_automatic_changepoints(
-        timestamps,
-        crate::piecewise_map::DEFAULT_CHANGEPOINT_COUNT,
-        crate::piecewise_map::DEFAULT_CHANGEPOINT_RANGE,
-      )?;
-      crate::map_objective::StanFlatObjective::new(
-        &design,
-        &target,
-        points.len(),
-        &feature_priors,
-        column_modes,
-        changepoint_prior_scale,
-      )
-      .map_err(crate::piecewise_map::map_objective_error)?
-      .fit_model(controls)
-    }
+    MixedTrendInput::Flat { changepoints } => crate::map_objective::StanFlatObjective::new(
+      &design,
+      &target,
+      changepoints.len(),
+      &feature_priors,
+      column_modes,
+      changepoint_prior_scale,
+    )
+    .map_err(crate::piecewise_map::map_objective_error)?
+    .fit_model(controls),
   }
   .map_err(PiecewiseMapError::Optimizer)?;
 
   // A flat fit never moves its rate; only the level is trend state.
   let fitted_trend_count = match trend_input {
     MixedTrendInput::Linear { .. } => trend_count,
-    MixedTrendInput::Flat => 1,
+    MixedTrendInput::Flat { .. } => 1,
   };
 
   finish_model(
@@ -452,22 +458,25 @@ fn validate_common(
     return Err(PiecewiseMapError::InvalidConfiguration);
   }
 
-  if let MixedTrendInput::Linear { changepoints } = trend_input {
-    let start = timestamps[0];
-    let end = timestamps[timestamps.len() - 1];
+  let start = timestamps[0];
+  let end = timestamps[timestamps.len() - 1];
 
-    if !((end - start).is_finite() && end > start) {
-      return Err(PiecewiseMapError::ZeroTimeRange);
-    }
+  // A flat trend never reads time, so only linear growth needs a positive range.
+  if matches!(trend_input, MixedTrendInput::Linear { .. })
+    && !((end - start).is_finite() && end > start)
+  {
+    return Err(PiecewiseMapError::ZeroTimeRange);
+  }
 
-    if changepoints.iter().any(|value| !value.is_finite())
-      || changepoints.windows(2).any(|pair| pair[1] < pair[0])
-      || changepoints
-        .iter()
-        .any(|value| *value < start || *value > end)
-    {
-      return Err(PiecewiseMapError::InvalidConfiguration);
-    }
+  let changepoints = trend_input.changepoints();
+
+  if changepoints.iter().any(|value| !value.is_finite())
+    || changepoints.windows(2).any(|pair| pair[1] < pair[0])
+    || changepoints
+      .iter()
+      .any(|value| *value < start || *value > end)
+  {
+    return Err(PiecewiseMapError::InvalidConfiguration);
   }
 
   masks
@@ -605,7 +614,7 @@ fn make_trend_design(
   let mut design = vec![0.0; count];
 
   match trend_input {
-    MixedTrendInput::Flat => {
+    MixedTrendInput::Flat { .. } => {
       for row in design.chunks_exact_mut(trend_count) {
         row[0] = 1.0;
       }
@@ -701,7 +710,7 @@ fn finish_model(
       changepoint_timestamps: changepoints.to_vec(),
       deltas: output_trend[2..].to_vec(),
     }),
-    MixedTrendInput::Flat => MixedTrendModel::Flat {
+    MixedTrendInput::Flat { .. } => MixedTrendModel::Flat {
       level: output_trend[0],
     },
   };
@@ -808,6 +817,16 @@ mod tests {
   use crate::stan::linear_optimizer::LinearOptimizerOptions;
   use crate::target_scaling::ScalingMode;
 
+  /// Prophet's default grid, which sizes the flat state when no changepoints are configured.
+  fn default_changepoints(timestamps: &[f64]) -> Vec<f64> {
+    crate::piecewise_map::resolve_automatic_changepoints(
+      timestamps,
+      crate::piecewise_map::DEFAULT_CHANGEPOINT_COUNT,
+      crate::piecewise_map::DEFAULT_CHANGEPOINT_RANGE,
+    )
+    .unwrap()
+  }
+
   const DAY: f64 = 86_400_000.0;
 
   fn flat_level(model: &super::MixedMapModel) -> f64 {
@@ -825,7 +844,9 @@ mod tests {
     let model = fit_mixed_map(
       &timestamps,
       &values,
-      MixedTrendInput::Flat,
+      MixedTrendInput::Flat {
+        changepoints: &default_changepoints(&timestamps),
+      },
       &[],
       SeasonalityMaskView {
         row_count: 6,
@@ -933,7 +954,9 @@ mod tests {
     let result = fit_mixed_map(
       &[0.0, 1.0],
       &[1.0, 2.0],
-      MixedTrendInput::Flat,
+      MixedTrendInput::Flat {
+        changepoints: &default_changepoints(&[0.0, 1.0]),
+      },
       &[SeasonalitySpec {
         period_days: 7.0,
         fourier_order: 1,
@@ -984,7 +1007,9 @@ mod tests {
     let stan = fit_mixed_map(
       &timestamps,
       &values,
-      MixedTrendInput::Flat,
+      MixedTrendInput::Flat {
+        changepoints: &default_changepoints(&timestamps),
+      },
       &weekly,
       SeasonalityMaskView {
         row_count: 42,
@@ -1072,7 +1097,9 @@ mod tests {
     let model = fit_mixed_map(
       &timestamps,
       &values,
-      MixedTrendInput::Flat,
+      MixedTrendInput::Flat {
+        changepoints: &default_changepoints(&timestamps),
+      },
       &[],
       SeasonalityMaskView {
         row_count: 8,

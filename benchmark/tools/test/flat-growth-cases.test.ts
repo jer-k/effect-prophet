@@ -32,11 +32,21 @@ describe("flat-growth reconciliation catalog", () => {
         const featured = item.workload.configuration.regressors.length > 0;
 
         expect(item.workload.effectOptimizer?.algorithm).toBe(featured ? "lbfgs" : undefined);
-        expect(options !== undefined && "map" in options).toBe(featured);
         expect(item.workload.configuration.changepoints).toEqual({
           mode: "explicit",
           timestamps: [],
         });
+
+        if (options?.growth !== "flat") {
+          throw new Error("Expected flat options");
+        }
+
+        // Effect receives Python's changepoint settings; only features pin an optimizer.
+        expect(options.map).toMatchObject({
+          changepoints: { mode: "explicit", timestamps: [] },
+          changepointPriorScale: item.workload.configuration.changepointPriorScale,
+        });
+        expect(options.map?.optimizer).toEqual(item.workload.effectOptimizer);
       }
     }
 

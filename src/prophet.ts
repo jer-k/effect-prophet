@@ -207,7 +207,9 @@ const makeFitPlan = (
   return FitPlan.FlatStanMap({
     scaling: options.scaling ?? defaultTargetScalingMode,
     seasonalities: layout,
-    optimizer: options.map?.optimizer ?? defaultLinearOptimizer,
+    changepoints: options.map.changepoints,
+    changepointPriorScale: options.map.changepointPriorScale,
+    optimizer: options.map.optimizer ?? defaultLinearOptimizer,
     seasonalityMasks: masks,
     additionalFeatures,
     events: options.events,

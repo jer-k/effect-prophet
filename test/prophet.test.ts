@@ -9,6 +9,7 @@ import {
   fit,
   predict,
   prophetFittingBackendLayer,
+  type EncodedProphetOptions,
   type FittedProphet,
 } from "../src/index";
 import { parsePiecewiseMapModel, type PiecewiseMapParameters } from "../src/fitted-model";
@@ -610,6 +611,98 @@ describe("flat MAP Prophet integration", () => {
         expect(model.fitSummary.termination).toBe("constant-target-shortcut");
       }
     }
+  });
+
+  it("sizes Prophet's flat Stan state from its changepoint settings", async () => {
+    const rows = Array.from({ length: 12 }, (_, index) => ({
+      timestamp: new Date(Date.UTC(2024, 0, index + 1)).toISOString(),
+      value: 10 + Math.sin(index) + (index % 3),
+      regressors: { promotion: index % 2 },
+    }));
+
+    const plans: Array<FitPlan> = [];
+
+    const flatOptions = {
+      growth: "flat",
+      builtInSeasonalities: { daily: "off", weekly: "off", yearly: "off" },
+      regressors: [{ name: "promotion" }],
+    } as const;
+
+    const fitFlat = (options: EncodedProphetOptions) =>
+      Effect.gen(function* () {
+        const backend = yield* FittingBackend;
+
+        return yield* fit(rows, options).pipe(
+          Effect.provideService(FittingBackend, {
+            fit: (input, plan) =>
+              backend.fit(input, plan).pipe(Effect.tap(() => Effect.sync(() => plans.push(plan)))),
+          }),
+        );
+      }).pipe(Effect.provide(prophetFittingBackendLayer));
+
+    const defaults = await Effect.runPromise(fitFlat(flatOptions));
+
+    const configured = await Effect.runPromise(
+      fitFlat({
+        ...flatOptions,
+        map: { changepoints: { mode: "auto", count: 3 }, changepointPriorScale: 0.5 },
+      }),
+    );
+
+    const [defaultPlan, configuredPlan] = plans;
+
+    if (!FitPlan.$is("FlatStanMap")(defaultPlan) || !FitPlan.$is("FlatStanMap")(configuredPlan)) {
+      throw new Error("Expected flat Stan plans");
+    }
+
+    // Python Prophet's defaults apply when nothing is configured, as they do for linear growth.
+    expect(defaultPlan.changepoints).toEqual(defaultAutomaticMapOptions.changepoints);
+    expect(defaultPlan.changepointPriorScale).toBe(0.05);
+    expect(configuredPlan.changepoints).toEqual({ mode: "auto", count: 3, range: 0.8 });
+    expect(configuredPlan.changepointPriorScale).toBe(0.5);
+
+    for (const model of [defaults, configured]) {
+      if (model.model !== "flat-map") {
+        throw new Error("Expected flat-map models");
+      }
+
+      const forecasts = await Effect.runPromise(
+        predict(
+          model,
+          rows.map(({ timestamp, regressors }) => ({ timestamp, regressors })),
+        ),
+      );
+
+      expect(forecasts.every((forecast) => forecast.trend === model.level)).toBe(true);
+    }
+  });
+
+  it("fits a seasonal-only flat model through Stan with its configured prior", async () => {
+    const backend = makeTestFittingBackend(
+      Result.fail(
+        new FittingError({
+          reason: "backend-failure",
+          observationCount: syntheticObservations.length,
+          message: "captured",
+        }),
+      ),
+    );
+
+    await Effect.runPromiseExit(
+      fit(syntheticObservations, {
+        ...additiveOptions,
+        growth: "flat",
+        map: { changepointPriorScale: 0.5 },
+      }).pipe(Effect.provide(backend.layer)),
+    );
+
+    const [plan] = backend.invocations.map((invocation) => invocation.options);
+
+    if (!FitPlan.$is("FlatStanMap")(plan)) {
+      throw new Error("Expected a flat Stan plan");
+    }
+
+    expect(plan.changepointPriorScale).toBe(0.5);
   });
 });
 

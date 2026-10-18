@@ -13,8 +13,11 @@ use crate::target_scaling::{
   ScalingMode, TargetScaling, TargetScalingError, resolve_target_scaling,
 };
 
-/// Prophet's default private changepoint grid, also present in flat Stan data.
+/// Prophet's default changepoint grid. Callers resolve it before fitting, so only tests
+/// reproduce it here to fit the state Prophet's defaults describe.
+#[cfg(test)]
 pub(crate) const DEFAULT_CHANGEPOINT_COUNT: usize = 25;
+#[cfg(test)]
 pub(crate) const DEFAULT_CHANGEPOINT_RANGE: f64 = 0.8;
 
 const TREND_PRIOR_SCALE: f64 = 5.0;
@@ -864,7 +867,12 @@ mod tests {
       vec![2.0, 5.0]
     );
     assert_eq!(
-      resolve_automatic_changepoints(&timestamps, 25, 0.8).unwrap(),
+      resolve_automatic_changepoints(
+        &timestamps,
+        super::DEFAULT_CHANGEPOINT_COUNT,
+        super::DEFAULT_CHANGEPOINT_RANGE
+      )
+      .unwrap(),
       vec![1.0, 2.0, 3.0]
     );
   }

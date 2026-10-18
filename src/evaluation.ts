@@ -592,11 +592,7 @@ const foldOptions = (
   options: ProphetOptions,
   lastTrainingTimestamp: number,
 ): EncodedProphetOptions => {
-  if (
-    input.growth === "flat" ||
-    options.growth === "flat" ||
-    options.map?.changepoints.mode !== "explicit"
-  ) {
+  if (options.map.changepoints.mode !== "explicit") {
     return input;
   }
 

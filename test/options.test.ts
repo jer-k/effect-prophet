@@ -74,9 +74,12 @@ describe("decodeOptions", () => {
         regressors: [],
       };
 
-      expect(options).toEqual(
-        growth === "linear" ? { ...expected, map: defaultAutomaticMapOptions } : expected,
-      );
+      const { optimizer: _optimizer, ...flatMap } = defaultAutomaticMapOptions;
+
+      expect(options).toEqual({
+        ...expected,
+        map: growth === "linear" ? defaultAutomaticMapOptions : flatMap,
+      });
     },
   );
 
@@ -120,6 +123,10 @@ describe("decodeOptions", () => {
       builtInSeasonalities: { daily: "auto", weekly: "auto", yearly: "auto" },
       events: emptyEventCalendar,
       regressors: [],
+      map: {
+        changepoints: defaultAutomaticMapOptions.changepoints,
+        changepointPriorScale: defaultAutomaticMapOptions.changepointPriorScale,
+      },
     });
   });
 
@@ -424,25 +431,27 @@ describe("decodeOptions", () => {
     });
   });
 
-  it("rejects changepoint options with flat growth", async () => {
-    const error = await expectOptionsFailure({
-      growth: "flat",
-      map: { changepoints: { mode: "explicit", timestamps: [] }, changepointPriorScale: 0.5 },
-    });
+  it("accepts Prophet's changepoint options with flat growth", async () => {
+    const configured = await Effect.runPromise(
+      decodeOptions({
+        growth: "flat",
+        map: { changepoints: { mode: "explicit", timestamps: [] }, changepointPriorScale: 0.5 },
+      }),
+    );
 
-    expect(error.issues).toEqual([
-      {
-        path: ["map", "changepoints"],
-        message: "Changepoint options require linear or logistic growth",
-      },
-      {
-        path: ["map", "changepointPriorScale"],
-        message: "Changepoint options require linear or logistic growth",
-      },
-    ]);
+    if (configured.growth !== "flat") {
+      throw new Error("Expected flat options");
+    }
+
+    expect(configured.map).toEqual({
+      changepoints: { mode: "explicit", timestamps: [] },
+      changepointPriorScale: 0.5,
+    });
+    expect(Object.isFrozen(configured.map)).toBe(true);
+    expect(Object.isFrozen(configured.map.changepoints)).toBe(true);
   });
 
-  it("accepts an explicit flat-growth optimizer and omits flat controls otherwise", async () => {
+  it("accepts an explicit flat-growth optimizer and defaults flat changepoints like Prophet", async () => {
     const requested = await Effect.runPromise(
       decodeOptions({ growth: "flat", map: { optimizer: { algorithm: "newton" } } }),
     );
@@ -453,9 +462,13 @@ describe("decodeOptions", () => {
       throw new Error("Expected flat options");
     }
 
-    expect(requested.map?.optimizer.algorithm).toBe("newton");
+    expect(requested.map.optimizer?.algorithm).toBe("newton");
     expect(Object.isFrozen(requested.map)).toBe(true);
-    expect(unrequested.map).toBeUndefined();
+    expect(unrequested.map).toEqual({
+      changepoints: defaultAutomaticMapOptions.changepoints,
+      changepointPriorScale: defaultAutomaticMapOptions.changepointPriorScale,
+    });
+    expect(unrequested.map.optimizer).toBeUndefined();
   });
 
   it("parses built-in controls and applies per-component defaults", async () => {

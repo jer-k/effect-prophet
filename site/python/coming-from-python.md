@@ -88,9 +88,6 @@ The defaults are Prophet's, so a fit with no options produces the same model as 
 - **The seed is required** for uncertainty ranges, so results are repeatable.
 - **Intervals are a separate call.** `predict` returns point forecasts only, so you never pay for
   simulations you didn't ask for.
-- **Flat growth ignores changepoints.** `map.changepoints` and `map.changepointPriorScale` are
-  rejected with `growth: "flat"`, because a flat trend cannot use them. Python silently ignores
-  them.
 - **Models are immutable.** Fitting returns a new model. There is nothing to mutate, and no
   `warm_start_params`.
 - **Country coverage is explicit.** The offline snapshot covers request years 1995–2060;

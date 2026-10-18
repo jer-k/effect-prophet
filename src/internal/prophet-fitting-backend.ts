@@ -79,6 +79,8 @@ export const prophetFittingBackendLayer: Layer.Layer<FittingBackend> = Layer.suc
         FlatStanMap: ({
           scaling,
           seasonalities,
+          changepoints,
+          changepointPriorScale,
           optimizer,
           seasonalityMasks,
           additionalFeatures,
@@ -89,6 +91,8 @@ export const prophetFittingBackendLayer: Layer.Layer<FittingBackend> = Layer.suc
             input,
             scaling,
             seasonalities,
+            changepoints,
+            changepointPriorScale,
             optimizer,
             seasonalityMasks,
             additionalFeatures,

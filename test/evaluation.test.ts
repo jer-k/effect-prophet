@@ -553,6 +553,57 @@ describe("crossValidate", () => {
     expect(assessment.map((row) => row.predicted)).toEqual(expected.map((row) => row.value));
   });
 
+  it("drops explicit flat changepoints after each fold's training history", async () => {
+    const rows = Array.from({ length: 30 }, (_, index) => ({
+      timestamp: new Date(Date.UTC(2021, 0, 1 + index)).toISOString(),
+      value: 10 + Math.sin(index) * 0.1,
+      regressors: { promotion: index % 2 },
+    }));
+
+    const plans: Array<FitPlan> = [];
+
+    await Effect.runPromise(
+      Effect.gen(function* () {
+        const backend = yield* FittingBackend;
+
+        return yield* crossValidate(
+          rows,
+          {
+            growth: "flat",
+            builtInSeasonalities: builtInSeasonalitiesOff,
+            regressors: [{ name: "promotion" }],
+            map: {
+              changepoints: {
+                mode: "explicit",
+                timestamps: ["2021-01-05T00:00:00.000Z", "2021-01-22T00:00:00.000Z"],
+              },
+            },
+          },
+          {
+            horizonMs: 3 * dayMs,
+            cutoffs: { mode: "explicit", timestamps: ["2021-01-20T00:00:00.000Z"] },
+          },
+        ).pipe(
+          Effect.provideService(FittingBackend, {
+            fit: (input, plan) =>
+              backend.fit(input, plan).pipe(Effect.tap(() => Effect.sync(() => plans.push(plan)))),
+          }),
+        );
+      }).pipe(Effect.provide(prophetFittingBackendLayer)),
+    );
+
+    const [plan] = plans;
+
+    if (!Predicate.isTagged("FlatStanMap")(plan)) {
+      throw new Error("Expected a flat Stan plan");
+    }
+
+    expect(plan.changepoints).toEqual({
+      mode: "explicit",
+      timestamps: [Date.parse("2021-01-05T00:00:00.000Z")],
+    });
+  });
+
   it("retains calendar coverage failures in their evaluation stage", async () => {
     const rows = Array.from({ length: 10 }, (_, index) => ({
       timestamp: new Date(Date.UTC(2026, 11, 26 + index)).toISOString(),
