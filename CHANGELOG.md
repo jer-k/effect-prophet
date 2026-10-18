@@ -13,6 +13,12 @@ All notable changes to this project are documented here. The format follows
   flat trend still ignores them, but they size and scale the prior-only parameters Prophet's
   flat model optimizes, so they change the fit exactly as they do in Python.
 
+### Benchmarks
+
+- The differential comparison reruns Python Prophet with one-ulp input changes when the noise
+  scales disagree, and labels a case `oracle-sensitive` when Python's own results spread over
+  Effect's. These cases are counted separately from parity failures.
+
 ## [0.2.0] - 2026-10-15
 
 ### Added

@@ -242,6 +242,60 @@ const sameNames = (
 ): boolean =>
   left.length === right.length && left.every((value, index) => value.name === right[index]?.name);
 
+/** One compared forecast quantity, in the order `compareForecast` visits them. */
+export interface ForecastQuantityValue {
+  readonly quantity: Exclude<keyof QuantityDifferences, "noiseScale">;
+  readonly value: number;
+}
+
+/** Every compared quantity of one forecast row: totals, then each component's values. */
+export const forecastQuantityValues = (
+  forecast: ForecastProjection,
+): ReadonlyArray<ForecastQuantityValue> => {
+  const values: Array<ForecastQuantityValue> = [
+    { quantity: "forecast", value: forecast.value },
+    { quantity: "trend", value: forecast.trend },
+    { quantity: "additive", value: forecast.additive },
+    { quantity: "component", value: forecast.multiplicative ?? 0 },
+  ];
+
+  for (const component of [...forecast.seasonalities, ...forecast.events, ...forecast.regressors]) {
+    if (component.mode === "additive") {
+      values.push({ quantity: "component", value: component.value });
+    } else {
+      values.push(
+        { quantity: "component", value: component.factor },
+        { quantity: "component", value: component.contribution },
+      );
+    }
+  }
+
+  return values;
+};
+
+const componentLayout = (forecast: ForecastProjection) =>
+  [...forecast.seasonalities, ...forecast.events, ...forecast.regressors].map(
+    (component) => component.mode,
+  );
+
+/** Whether two rows share a timestamp and the same named components in the same modes. */
+export const sameForecastLayout = (
+  left: ForecastProjection,
+  right: ForecastProjection,
+): boolean => {
+  const leftModes = componentLayout(left);
+  const rightModes = componentLayout(right);
+
+  return (
+    left.timestamp === right.timestamp &&
+    sameNames(left.seasonalities, right.seasonalities) &&
+    sameNames(left.events, right.events) &&
+    sameNames(left.regressors, right.regressors) &&
+    leftModes.length === rightModes.length &&
+    leftModes.every((mode, index) => mode === rightModes[index])
+  );
+};
+
 /**
  * Raise each quantity's maximum difference for one aligned forecast pair. Returns false when the
  * rows are not comparable: different timestamps, component names or component modes.
@@ -251,62 +305,14 @@ export const compareForecast = (
   pythonForecast: ForecastProjection,
   differences: ReturnType<typeof emptyDifferences>,
 ): boolean => {
-  if (
-    effectForecast.timestamp !== pythonForecast.timestamp ||
-    !sameNames(effectForecast.seasonalities, pythonForecast.seasonalities) ||
-    !sameNames(effectForecast.events, pythonForecast.events) ||
-    !sameNames(effectForecast.regressors, pythonForecast.regressors)
-  ) {
+  if (!sameForecastLayout(effectForecast, pythonForecast)) {
     return false;
   }
 
-  includeDifference(differences, "forecast", effectForecast.value, pythonForecast.value);
-  includeDifference(differences, "trend", effectForecast.trend, pythonForecast.trend);
-  includeDifference(differences, "additive", effectForecast.additive, pythonForecast.additive);
-  includeDifference(
-    differences,
-    "component",
-    effectForecast.multiplicative ?? 0,
-    pythonForecast.multiplicative ?? 0,
-  );
+  const pythonValues = forecastQuantityValues(pythonForecast);
 
-  const effectComponents = [
-    ...effectForecast.seasonalities,
-    ...effectForecast.events,
-    ...effectForecast.regressors,
-  ];
-
-  const pythonComponents = [
-    ...pythonForecast.seasonalities,
-    ...pythonForecast.events,
-    ...pythonForecast.regressors,
-  ];
-
-  for (const [index, effectComponent] of effectComponents.entries()) {
-    const pythonComponent = pythonComponents[index];
-
-    if (pythonComponent === undefined) {
-      return false;
-    }
-
-    if (effectComponent.mode !== pythonComponent.mode) {
-      return false;
-    }
-
-    if (effectComponent.mode === "additive" && pythonComponent.mode === "additive") {
-      includeDifference(differences, "component", effectComponent.value, pythonComponent.value);
-    } else if (
-      effectComponent.mode === "multiplicative" &&
-      pythonComponent.mode === "multiplicative"
-    ) {
-      includeDifference(differences, "component", effectComponent.factor, pythonComponent.factor);
-      includeDifference(
-        differences,
-        "component",
-        effectComponent.contribution,
-        pythonComponent.contribution,
-      );
-    }
+  for (const [index, { quantity, value }] of forecastQuantityValues(effectForecast).entries()) {
+    includeDifference(differences, quantity, value, pythonValues[index]?.value ?? Number.NaN);
   }
 
   return true;

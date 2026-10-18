@@ -1,7 +1,13 @@
 import { Schema } from "effect";
 
 import { BenchmarkDatasetSchema, MapWorkloadSchema, type BenchmarkDataset } from "./case.ts";
-import { compareForecast, emptyDifferences, type QuantityDifferences } from "./report.ts";
+import {
+  compareForecast,
+  emptyDifferences,
+  forecastQuantityValues,
+  sameForecastLayout,
+  type QuantityDifferences,
+} from "./report.ts";
 import { ForecastProjectionSchema, type ForecastProjection } from "./result.ts";
 
 const NonNegativeFinite = Schema.Finite.check(Schema.isGreaterThanOrEqualTo(0));
@@ -45,12 +51,55 @@ export const DifferentialOutcomeSchema = Schema.Union([FittedOutcomeSchema, Fail
 /** What one implementation returned for one case. */
 export type DifferentialOutcome = typeof DifferentialOutcomeSchema.Type;
 
-/** Decode one JSON-lines outcome file written by an implementation runner. */
-export const parseOutcomeLines = (contents: string): ReadonlyArray<DifferentialOutcome> =>
+const decodeJsonLines = <Line>(
+  schema: Schema.Codec<Line, unknown>,
+  contents: string,
+): ReadonlyArray<Line> =>
   contents
     .split("\n")
     .filter((line) => line.trim() !== "")
-    .map((line) => Schema.decodeUnknownSync(DifferentialOutcomeSchema)(JSON.parse(line)));
+    .map((line) => Schema.decodeUnknownSync(schema)(JSON.parse(line)));
+
+/** Decode one JSON-lines outcome file written by an implementation runner. */
+export const parseOutcomeLines = (contents: string): ReadonlyArray<DifferentialOutcome> =>
+  decodeJsonLines(DifferentialOutcomeSchema, contents);
+
+/**
+ * One-ulp changes the unchanged CmdStan oracle is rerun with, in order. `m` is Prophet's
+ * initial offset; `y` is the scaled training target passed to Stan. Every model setting and
+ * optimizer control stays as Prophet chose it.
+ */
+export const oraclePerturbations = [
+  "m-down",
+  "m-up",
+  "first-y-down",
+  "first-y-up",
+  "last-y-down",
+  "last-y-up",
+  "all-y-down",
+  "all-y-up",
+] as const;
+
+/** One deterministic one-ulp change to the oracle's initialization or scaled targets. */
+export type OraclePerturbation = (typeof oraclePerturbations)[number];
+
+const PerturbedOutcomeSchema = Schema.Union([
+  Schema.Struct({
+    ...FittedOutcomeSchema.fields,
+    perturbation: Schema.Literals(oraclePerturbations),
+  }),
+  Schema.Struct({
+    ...FailedOutcomeSchema.fields,
+    perturbation: Schema.Literals(oraclePerturbations),
+  }),
+]);
+
+/** What the perturbed CmdStan oracle returned for one case and one perturbation. */
+export type PerturbedOutcome = typeof PerturbedOutcomeSchema.Type;
+
+/** Decode the JSON-lines file written by the perturbed Python oracle. */
+export const parsePerturbedOutcomeLines = (contents: string): ReadonlyArray<PerturbedOutcome> =>
+  decodeJsonLines(PerturbedOutcomeSchema, contents);
 
 /** Forecast differences are measured in units of the training target's span. */
 type ForecastQuantity = Exclude<keyof QuantityDifferences, "noiseScale">;
@@ -79,7 +128,7 @@ export const defaultDifferentialTolerances: DifferentialTolerances = {
 
 /**
  * How a case was judged. Only `mismatch`, `incomparable` and `effect-failed` count as parity
- * failures; the rest are agreement or triaged divergence.
+ * failures; the rest are agreement, triaged divergence, or oracle sensitivity.
  *
  * When forecasts differ, the fitted noise scales decide. Both are MAP estimates of the residual
  * scale in target units, so equal noise means both libraries explain the training data equally
@@ -93,6 +142,8 @@ export const defaultDifferentialTolerances: DifferentialTolerances = {
  * - `python-worse-fit`: forecasts differ, and Python's fit has the larger noise scale.
  * - `neither-fits`: both noise scales exceed the target span, so neither fit resolves the data.
  * - `mismatch`: forecasts differ, and Effect's fit has the larger noise scale.
+ * - `oracle-sensitive`: forecasts and noise scales differ, but one-ulp changes to the unchanged
+ *   CmdStan oracle's inputs spread its own results over Effect's. See `judgeOracleSensitivity`.
  * - `incomparable`: both fitted, but rows, component names or component modes differ.
  * - `effect-failed`: Python fitted and Effect failed for a reason other than input validation.
  * - `effect-rejected`: Python fitted and Effect rejected the input as invalid.
@@ -105,6 +156,7 @@ export type DifferentialVerdict =
   | "python-worse-fit"
   | "neither-fits"
   | "mismatch"
+  | "oracle-sensitive"
   | "incomparable"
   | "effect-failed"
   | "effect-rejected"
@@ -120,6 +172,7 @@ export const failingVerdicts: ReadonlySet<DifferentialVerdict> = new Set([
 
 const verdictOrder: ReadonlyArray<DifferentialVerdict> = [
   "mismatch",
+  "oracle-sensitive",
   "incomparable",
   "effect-failed",
   "effect-rejected",
@@ -149,6 +202,51 @@ export interface DifferentialCaseResult {
   readonly noiseGap?: number;
   readonly effect: OutcomeSummary;
   readonly python: OutcomeSummary;
+  /** The perturbed-oracle check, present whenever one ran, whatever it concluded. */
+  readonly oracleCheck?: OracleSensitivityEvidence;
+}
+
+/** Verdicts whose noise-scale disagreement requests a perturbed-oracle check. */
+export const oracleCheckVerdicts: ReadonlySet<DifferentialVerdict> = new Set([
+  "mismatch",
+  "python-worse-fit",
+]);
+
+/**
+ * At most this many cases per run get the check, in case order: each costs one Python fit per
+ * perturbation. Later candidates keep their verdict and are listed as unchecked.
+ */
+export const maximumOracleChecks = 25;
+
+/** One perturbed oracle run, summarized in target-span units. */
+export interface OracleVariantSummary {
+  readonly perturbation: OraclePerturbation;
+  readonly status: "fitted" | "failed" | "incomparable";
+  readonly noiseScale?: number;
+}
+
+/**
+ * Evidence from rerunning the unchanged CmdStan oracle with one-ulp input changes.
+ *
+ * Noise scales are over the training target span. The spread covers Python's original fit and
+ * every comparable perturbed fit. `forecastExcess` is the largest distance, in target spans, by
+ * which any compared Effect forecast quantity falls outside that quantity's spread, less its
+ * strict tolerance; zero means every quantity is inside.
+ */
+export interface OracleSensitivityEvidence {
+  readonly originalVerdict: DifferentialVerdict;
+  readonly sensitive: boolean;
+  readonly effectNoise: number;
+  readonly noiseSpread: { readonly minimum: number; readonly maximum: number };
+  readonly noiseWithinSpread: boolean;
+  readonly forecastExcess: number;
+  readonly forecastWithinSpread: boolean;
+  readonly variants: ReadonlyArray<OracleVariantSummary>;
+  /** Diagnostics only: they describe the input and never decide the verdict. */
+  readonly indicators: {
+    readonly relativeTargetSpan: number;
+    readonly targetSpanUlps: number;
+  };
 }
 
 /** Largest minus smallest training target, or 1 when every target is equal. */
@@ -302,6 +400,182 @@ export const judgeCase = (
   };
 };
 
+/** The distance between adjacent float64 values at `value`. */
+const ulp = (value: number): number => {
+  const magnitude = Math.abs(value);
+
+  if (magnitude === 0) {
+    return Number.MIN_VALUE;
+  }
+
+  const exponent = Math.floor(Math.log2(magnitude));
+  const spacing = 2 ** (exponent - 52);
+
+  // log2 can round across a power of two; the spacing at `magnitude` is the larger candidate.
+  return magnitude >= 2 ** (exponent + 1) ? spacing * 2 : spacing;
+};
+
+const targetIndicators = (dataset: BenchmarkDataset): OracleSensitivityEvidence["indicators"] => {
+  const span = targetSpan(dataset);
+
+  const magnitude = Math.max(
+    ...dataset.observations.map((observation) => Math.abs(observation.value)),
+  );
+
+  return {
+    relativeTargetSpan: magnitude === 0 ? 0 : span / magnitude,
+    targetSpanUlps: span / ulp(magnitude),
+  };
+};
+
+const normalizedValues = (forecasts: ReadonlyArray<ForecastProjection>, span: number) =>
+  forecasts.map((forecast) => forecastQuantityValues(normalizeForecast(forecast, span)));
+
+const sameLayout = (
+  left: ReadonlyArray<ForecastProjection>,
+  right: ReadonlyArray<ForecastProjection>,
+): boolean =>
+  left.length === right.length &&
+  left.every((forecast, index) => {
+    const other = right[index];
+
+    return other !== undefined && sameForecastLayout(forecast, other);
+  });
+
+/**
+ * Decide whether Effect's outcome lies within the spread the unchanged CmdStan oracle shows
+ * under one-ulp input changes.
+ *
+ * The oracle set is Python's original fit plus every perturbed fit with the same forecast layout.
+ * A case is oracle-sensitive only when Effect's noise scale and every compared forecast quantity
+ * fall inside that set's range, widened by the strict tolerances, and at least one perturbed fit
+ * exists. Indicators are recorded but never forgive a mismatch.
+ */
+export const judgeOracleSensitivity = (
+  differentialCase: DifferentialCase,
+  originalVerdict: DifferentialVerdict,
+  effect: Extract<DifferentialOutcome, { status: "fitted" }>,
+  python: Extract<DifferentialOutcome, { status: "fitted" }>,
+  perturbed: ReadonlyArray<PerturbedOutcome>,
+  tolerances: DifferentialTolerances = defaultDifferentialTolerances,
+): OracleSensitivityEvidence => {
+  const span = targetSpan(differentialCase.dataset);
+
+  const variants = perturbed.map((outcome): OracleVariantSummary => {
+    if (outcome.status === "failed") {
+      return { perturbation: outcome.perturbation, status: "failed" };
+    }
+
+    return sameLayout(effect.forecasts, outcome.forecasts)
+      ? {
+          perturbation: outcome.perturbation,
+          status: "fitted",
+          noiseScale: outcome.noiseScale / span,
+        }
+      : { perturbation: outcome.perturbation, status: "incomparable" };
+  });
+
+  const oracles = [
+    python,
+    ...perturbed.filter(
+      (outcome): outcome is Extract<PerturbedOutcome, { status: "fitted" }> =>
+        outcome.status === "fitted" && sameLayout(effect.forecasts, outcome.forecasts),
+    ),
+  ];
+
+  const noises = oracles.map((outcome) => outcome.noiseScale / span);
+  const noiseSpread = { minimum: Math.min(...noises), maximum: Math.max(...noises) };
+  const effectNoise = effect.noiseScale / span;
+
+  const noiseWithinSpread =
+    effectNoise >= noiseSpread.minimum - tolerances.noise &&
+    effectNoise <= noiseSpread.maximum + tolerances.noise;
+
+  const effectValues = normalizedValues(effect.forecasts, span);
+  const oracleValues = oracles.map((outcome) => normalizedValues(outcome.forecasts, span));
+
+  let forecastExcess = sameLayout(effect.forecasts, python.forecasts)
+    ? 0
+    : Number.POSITIVE_INFINITY;
+
+  for (const [row, values] of effectValues.entries()) {
+    for (const [index, { quantity, value }] of values.entries()) {
+      const spread = oracleValues.map((rows) => rows[row]?.[index]?.value ?? Number.NaN);
+      const excess = Math.max(Math.min(...spread) - value, value - Math.max(...spread), 0);
+
+      forecastExcess = Math.max(forecastExcess, excess - tolerances.forecast[quantity], 0);
+    }
+  }
+
+  const forecastWithinSpread = forecastExcess === 0;
+
+  return {
+    originalVerdict,
+    sensitive: oracles.length > 1 && noiseWithinSpread && forecastWithinSpread,
+    effectNoise,
+    noiseSpread,
+    noiseWithinSpread,
+    forecastExcess,
+    forecastWithinSpread,
+    variants,
+    indicators: targetIndicators(differentialCase.dataset),
+  };
+};
+
+/** Cases whose verdict requests a perturbed-oracle check, capped at `maximumOracleChecks`. */
+export const selectOracleChecks = (
+  results: ReadonlyArray<DifferentialCaseResult>,
+): ReadonlyArray<DifferentialCaseResult> =>
+  results.filter((result) => oracleCheckVerdicts.has(result.verdict)).slice(0, maximumOracleChecks);
+
+/** Attach perturbed-oracle evidence and relabel cases whose outcome lies within the spread. */
+export const applyOracleChecks = (
+  report: DifferentialReport,
+  cases: ReadonlyArray<DifferentialCase>,
+  effectOutcomes: ReadonlyArray<DifferentialOutcome>,
+  pythonOutcomes: ReadonlyArray<DifferentialOutcome>,
+  perturbedOutcomes: ReadonlyArray<PerturbedOutcome>,
+): DifferentialReport => {
+  const checked = new Set(selectOracleChecks(report.results).map((result) => result.caseId));
+
+  const results = report.results.map((result) => {
+    const differentialCase = cases.find((item) => item.id === result.caseId);
+    const effect = effectOutcomes.find((outcome) => outcome.caseId === result.caseId);
+    const python = pythonOutcomes.find((outcome) => outcome.caseId === result.caseId);
+    const perturbed = perturbedOutcomes.filter((outcome) => outcome.caseId === result.caseId);
+
+    if (
+      !checked.has(result.caseId) ||
+      differentialCase === undefined ||
+      effect?.status !== "fitted" ||
+      python?.status !== "fitted"
+    ) {
+      return result;
+    }
+
+    if (perturbed.length !== oraclePerturbations.length) {
+      throw new Error(`Case ${result.caseId} is missing perturbed oracle outcomes`);
+    }
+
+    const oracleCheck = judgeOracleSensitivity(
+      differentialCase,
+      result.verdict,
+      effect,
+      python,
+      perturbed,
+      report.tolerances,
+    );
+
+    return {
+      ...result,
+      verdict: oracleCheck.sensitive ? ("oracle-sensitive" as const) : result.verdict,
+      oracleCheck,
+    };
+  });
+
+  return { ...report, counts: countVerdicts(results), results };
+};
+
 /** The complete machine-readable result of one differential run. */
 export interface DifferentialReport {
   readonly schemaVersion: 1;
@@ -335,12 +609,19 @@ export const buildDifferentialReport = (
     return judgeCase(differentialCase, effect, python, tolerances);
   });
 
+  return { schemaVersion: 1, runId, rootSeed, tolerances, counts: countVerdicts(results), results };
+};
+
+const countVerdicts = (
+  results: ReadonlyArray<DifferentialCaseResult>,
+): Readonly<Record<DifferentialVerdict, number>> => {
   const counts: Record<DifferentialVerdict, number> = {
     match: 0,
     "equivalent-fit": 0,
     "python-worse-fit": 0,
     "neither-fits": 0,
     mismatch: 0,
+    "oracle-sensitive": 0,
     incomparable: 0,
     "effect-failed": 0,
     "effect-rejected": 0,
@@ -352,7 +633,7 @@ export const buildDifferentialReport = (
     counts[result.verdict] += 1;
   }
 
-  return { schemaVersion: 1, runId, rootSeed, tolerances, counts, results };
+  return counts;
 };
 
 const formatNumber = (value: number | undefined): string =>
@@ -387,8 +668,17 @@ export const renderDifferentialMarkdown = (report: DifferentialReport): string =
   const failing = report.results.filter((result) => failingVerdicts.has(result.verdict));
 
   const triaged = report.results.filter(
-    (result) => !failingVerdicts.has(result.verdict) && result.verdict !== "match",
+    (result) =>
+      !failingVerdicts.has(result.verdict) &&
+      result.verdict !== "match" &&
+      result.verdict !== "oracle-sensitive",
   );
+
+  const oracleChecked = report.results.filter((result) => result.oracleCheck !== undefined);
+
+  const unchecked =
+    report.results.filter((result) => oracleCheckVerdicts.has(result.verdict)).length -
+    oracleChecked.filter((result) => result.verdict !== "oracle-sensitive").length;
 
   const compared = report.results
     .flatMap((result) => (result.differences === undefined ? [] : [result.differences.forecast]))
@@ -429,6 +719,40 @@ export const renderDifferentialMarkdown = (report: DifferentialReport): string =
       "",
       ...resultTable(failing),
     );
+  }
+
+  lines.push(
+    "",
+    "## Oracle sensitivity",
+    "",
+    `Cases judged \`${[...oracleCheckVerdicts].join("` or `")}\` rerun the unchanged CmdStan oracle`,
+    `once per one-ulp change: ${oraclePerturbations.map((name) => `\`${name}\``).join(", ")}.`,
+    "A case is `oracle-sensitive` only when Effect's noise scale and every forecast quantity lie",
+    "within the spread of Python's original and perturbed fits, widened by the strict tolerances.",
+    `At most ${maximumOracleChecks} cases are checked per run.`,
+    "",
+  );
+
+  if (oracleChecked.length === 0) {
+    lines.push("No case requested a check.");
+  } else {
+    lines.push(
+      "| Case | Growth | Before | After | Effect noise | Oracle noise spread | Forecast excess | Relative target span |",
+      "| --- | --- | --- | --- | ---: | --- | ---: | ---: |",
+      ...oracleChecked.flatMap((result) => {
+        const check = result.oracleCheck;
+
+        if (check === undefined) {
+          return [];
+        }
+
+        return `| \`${result.caseId}\` | ${result.growth} | ${check.originalVerdict} | ${result.verdict} | ${formatNumber(check.effectNoise)} | ${formatNumber(check.noiseSpread.minimum)} – ${formatNumber(check.noiseSpread.maximum)} | ${formatNumber(check.forecastExcess)} | ${formatNumber(check.indicators.relativeTargetSpan)} |`;
+      }),
+    );
+  }
+
+  if (unchecked > 0) {
+    lines.push("", `${unchecked} further candidates were not checked in this run.`);
   }
 
   lines.push("", "## Triaged divergence", "");
