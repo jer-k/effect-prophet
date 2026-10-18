@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+
 import { Cause, Effect, Exit, Predicate, Schema } from "effect";
 import { fit, prophetFittingBackendLayer } from "effect-prophet";
 import { describe, expect, it } from "vitest";
@@ -111,4 +113,23 @@ describe("differential case generation", () => {
       }
     }
   }, 60_000);
+
+  it("matches the frozen cases the Prophet fixture generator pins Stan evidence for", async () => {
+    const frozen: unknown = JSON.parse(
+      await readFile(
+        new URL("../../../tools/prophet/differential-cases.json", import.meta.url),
+        "utf8",
+      ),
+    );
+
+    const decoded = Schema.decodeUnknownSync(
+      Schema.Struct({ cases: Schema.Array(DifferentialCaseSchema) }),
+    )(frozen);
+
+    expect(decoded.cases.length).toBeGreaterThan(0);
+
+    for (const frozenCase of decoded.cases) {
+      expect(frozenCase).toStrictEqual(generateCase(frozenCase.seed));
+    }
+  });
 });

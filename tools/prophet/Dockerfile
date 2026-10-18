@@ -33,5 +33,8 @@ COPY benchmark/inputs/v1/training-ordered.json benchmark/inputs/v1/training-unso
 COPY benchmark/inputs/v2/logistic-basic-96.json benchmark/inputs/v2/logistic-weekly-256.json ./benchmark/inputs/v2/
 # Flat Newton oracles consume the 96-row benchmark histories verbatim.
 COPY benchmark/inputs/v1/flat-level.json benchmark/inputs/v1/flat-seasonal.json ./benchmark/inputs/v1/
+# Differential same-state oracles configure Prophet with the differential's own adapter.
+COPY tools/prophet/differential-cases.json ./tools/prophet/
+COPY benchmark/tools/adapters/python-prophet.py benchmark/tools/adapters/evaluation.py ./benchmark/tools/adapters/
 
 ENTRYPOINT ["/opt/effect-prophet-reference/bin/python", "tools/prophet/generate.py"]

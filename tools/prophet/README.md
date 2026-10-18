@@ -354,6 +354,14 @@ They use the same unmodified executable, `jacobian=False`, `sig_figs=12`, and ex
 increasing fitted-output precision; these cases do not claim public preprocessing or full optimizer
 parity. The old packet exponential is now only a test counterexample, not fitting arithmetic.
 
+`stan-differential-same-state.json` pins the unchanged executable's density and every gradient
+component for five differential inputs, the four from #107 plus seed 1886692310, frozen in
+`differential-cases.json` and configured through the differential's own Python adapter. Each case
+records Prophet's normalized problem with features rounded to 12 decimal places, Prophet's
+initialization, and one authored state that moves every coordinate, including flat growth's
+prior-only rate and changepoints. Probes use `jacobian=False` and `sig_figs=12`. No optimizer runs:
+these inputs are oracle-sensitive, so a fitted endpoint would not be a stable fixture.
+
 ## Shared comparison substrate
 
 [`compose.yaml`](../../compose.yaml) keeps the Python and Effect/Rust-WASM environments separate

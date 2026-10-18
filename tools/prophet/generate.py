@@ -58,11 +58,14 @@ LOGISTIC_PREDICTION_STATE_FILENAME = "logistic-prediction-state.json"
 STAN_LOGISTIC_LBFGS_FILENAME = "stan-logistic-lbfgs.json"
 LARGE_FOURIER_STAN_FILENAME = "large-fourier-stan.json"
 FLAT_LOW_ORDER_STAN_FILENAME = "flat-low-order-stan.json"
+STAN_DIFFERENTIAL_SAME_STATE_FILENAME = "stan-differential-same-state.json"
 MANIFEST_FILENAME = "manifest.json"
 ROOT = Path(__file__).resolve().parents[2]
 REFERENCE_PATH = ROOT / "tools" / "prophet" / "reference.json"
 LOCK_PATH = ROOT / "tools" / "prophet" / "uv.lock"
 GENERATOR_PATH = Path(__file__).resolve()
+DIFFERENTIAL_CASES_PATH = ROOT / "tools" / "prophet" / "differential-cases.json"
+DIFFERENTIAL_ADAPTER_PATH = ROOT / "benchmark" / "tools" / "adapters" / "python-prophet.py"
 
 
 @dataclass(frozen=True)
@@ -3095,6 +3098,73 @@ def make_stan_logistic_lbfgs_fixture() -> dict[str, Any]:
     }
 
 
+def make_stan_differential_same_state_fixture() -> dict[str, Any]:
+    """Freeze pinned Stan density and gradients at fixed states of differential cases.
+
+    The cases are frozen generator output configured exactly as the differential's
+    Python adapter configures them. Probes use Prophet's own initialization and one
+    authored state that moves every coordinate, including flat growth's prior-only
+    rate and changepoints. No optimizer runs: these inputs are oracle-sensitive.
+    """
+    import runpy
+
+    sys.path.insert(0, str(DIFFERENTIAL_ADAPTER_PATH.parent))
+    adapter = runpy.run_path(str(DIFFERENTIAL_ADAPTER_PATH))
+    canonical = lambda value: canonical_fitted_float(value, zero_threshold=0.0)
+    cases = []
+
+    for differential_case in json.loads(DIFFERENTIAL_CASES_PATH.read_text())["cases"]:
+        model = adapter["configure_model"](differential_case)
+        frame = adapter["records_frame"](differential_case["dataset"]["observations"], include_value=True)
+        inputs = model.preprocess(frame)
+        initial = model.calculate_initial_params(inputs.K)
+        _, data = model.stan_backend.prepare_data(initial.__dict__, inputs.__dict__)
+
+        if "zeros" in inputs.X.columns:
+            fail("Differential same-state cases must have real features, not Prophet's dummy column")
+
+        # The oracle and Rust both receive these exact, CPU-independent feature bytes.
+        data["X"] = np.round(inputs.X.to_numpy(), FOURIER_DECIMAL_PLACES).tolist()
+        sigma_index = 2 + inputs.S
+        parameters = [canonical(value) for value in
+                      [initial.k, initial.m, *initial.delta, 0.0, *initial.beta]]
+        authored = list(parameters)
+        authored[0] = canonical(parameters[0] + 0.01)
+        for column in range(inputs.S):
+            authored[2 + column] = 0.25 if column % 2 == 0 else -0.0005
+        authored[sigma_index] = canonical(float(np.log(0.3)))
+        for column in range(inputs.K):
+            authored[sigma_index + 1 + column] = 0.01 * (column + 1) * (-1 if column % 2 else 1)
+
+        probes = []
+        for probe in (parameters, [canonical(value) for value in authored]):
+            value, gradient = stan_unconstrained_probe(model, data, probe)
+            probes.append({"parameters": probe, "logDensity": canonical(value),
+                           "gradient": [canonical(value) for value in gradient]})
+
+        cases.append({
+            "id": differential_case["id"], "seed": differential_case["seed"],
+            "growth": model.growth, "times": [float(value) for value in inputs.t],
+            "target": [float(value) for value in inputs.y],
+            "changepointTimes": [float(value) for value in model.changepoints_t]
+            if len(model.changepoints) else [],
+            "internalChangepointCount": inputs.S,
+            "features": [float(value) for value in np.asarray(data["X"]).ravel()],
+            "featurePriors": [float(value) for value in inputs.sigmas],
+            "featureModes": ["multiplicative" if value else "additive" for value in inputs.s_m],
+            "changepointPrior": float(inputs.tau), "initialParameters": parameters,
+            "probes": probes,
+        })
+
+    return {
+        "sourceMethod": "Unmodified Prophet 1.4.0 preprocess/init and bundled Stan log_prob without Jacobian",
+        "sourceCases": "tools/prophet/differential-cases.json",
+        "sourceCasesSha256": sha256_file(DIFFERENTIAL_CASES_PATH),
+        "cases": cases,
+        "tolerances": {"relative": 1e-10},
+    }
+
+
 def make_logistic_prediction_state_fixture() -> dict[str, Any]:
     """Freeze public gamma arithmetic, including nonfinite singular predictions.
 
@@ -3423,6 +3493,8 @@ def write_outputs(output: Path, execution: dict[str, str], reference: dict[str, 
     logistic_prediction_path.write_bytes(stable_json(make_logistic_prediction_state_fixture()))
     stan_logistic_lbfgs_path = output / STAN_LOGISTIC_LBFGS_FILENAME
     stan_logistic_lbfgs_path.write_bytes(stable_json(make_stan_logistic_lbfgs_fixture()))
+    stan_same_state_path = output / STAN_DIFFERENTIAL_SAME_STATE_FILENAME
+    stan_same_state_path.write_bytes(stable_json(make_stan_differential_same_state_fixture()))
 
     large_fourier_path = output / LARGE_FOURIER_STAN_FILENAME
     large_fourier_path.write_bytes(stable_json(make_large_fourier_stan_fixture()))
@@ -3511,6 +3583,10 @@ def write_outputs(output: Path, execution: dict[str, str], reference: dict[str, 
             },
             {"path": LARGE_FOURIER_STAN_FILENAME, "sha256": sha256_file(large_fourier_path)},
             {"path": FLAT_LOW_ORDER_STAN_FILENAME, "sha256": sha256_file(flat_low_order_path)},
+            {
+                "path": STAN_DIFFERENTIAL_SAME_STATE_FILENAME,
+                "sha256": sha256_file(stan_same_state_path),
+            },
         ],
         "backendArtifacts": [
             {
@@ -3524,7 +3600,8 @@ def write_outputs(output: Path, execution: dict[str, str], reference: dict[str, 
         "generatorRevision": hashlib.sha256(
             GENERATOR_PATH.read_bytes() + b"\0"
             + GENERATOR_PATH.with_name("linear_optimizer_evidence.py").read_bytes() + b"\0"
-            + GENERATOR_PATH.with_name("country_holiday_fixtures.py").read_bytes()
+            + GENERATOR_PATH.with_name("country_holiday_fixtures.py").read_bytes() + b"\0"
+            + DIFFERENTIAL_ADAPTER_PATH.read_bytes()
         ).hexdigest(),
         "numericalEnvironment": numerical_environment(),
         "prophetSourceCommit": reference["sourceCommit"],
@@ -3561,6 +3638,7 @@ def compare_outputs(generated: Path, committed: Path) -> None:
         STAN_LOGISTIC_OBJECTIVE_FILENAME,
         LOGISTIC_PREDICTION_STATE_FILENAME,
         STAN_LOGISTIC_LBFGS_FILENAME,
+        STAN_DIFFERENTIAL_SAME_STATE_FILENAME,
         MANIFEST_FILENAME,
     ):
         generated_path = generated / filename

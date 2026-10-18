@@ -4444,13 +4444,13 @@
   },
   "generatorSources": {
     "tools/prophet/calendar_collection.py": "7d7c3ae653df9d21211a61e39496ff7553bcd9d01809a9e89e17b241fc1adec3",
-    "tools/prophet/generate.py": "fa4aea54e23acefc662898417f3f731daae52f0f87162586b6bf52eda0a20ea8",
+    "tools/prophet/generate.py": "8dd1cc8fc17d196ab4a5a552404ecce8e0ab9e1469e6f56a5a1a01c03390d8b6",
     "tools/prophet/generate_calendars.py": "25c5be803eedd9133af6eb22858e898084cf6f4faf10d0e399c87b370a93147f",
     "tools/prophet/linear_optimizer_evidence.py": "3efd26543501753ae1d00b8fba6ea174e7006774a2b79ab0fcc7ca0c78b3af6a"
   },
   "inputSources": {
     "tools/prophet/.python-version": "43fd694bd564dd2215f51a6b23f6a3712834850225e629d7781c81c71076092d",
-    "tools/prophet/Dockerfile": "407054bc8aaa3ff812550c56aa03d446e6d6f239ff1ee23130357dc102a1ffdb",
+    "tools/prophet/Dockerfile": "785c33f1f306d68a004780c385b843c43713bb9ae31c72a3f1963e6e3997dd83",
     "tools/prophet/calendar-restrictions.json": "9d5634018b977811637b28ade871245b6b6e4b68f84ba3cbc5c028bb0e8f87e7",
     "tools/prophet/pyproject.toml": "a5b02093f95f7ca4e26c6b45399b23cbb44712bf78502764eb41738e7d8e83ec",
     "tools/prophet/reference.json": "5cc0d008e81d2c924658c0e63571de7cab4524b76374cb19d6373d9c4f83ef27",
@@ -4468,5 +4468,5 @@
     "version": "1.4.0"
   },
   "schemaVersion": 1,
-  "snapshotId": "sha256:a164d63f6d89813d3d28c19a1390af4acde19bafd396dac2c7f90e5cede5605b"
+  "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7"
 }
