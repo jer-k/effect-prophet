@@ -108,6 +108,35 @@ class PythonProphetInputTest(unittest.TestCase):
         self.assertEqual(dataset, original)
         self.assertEqual(path.read_bytes(), contents)
 
+    def test_flat_keeps_prophet_default_changepoints_and_automatic_newton(self):
+        path = BENCHMARK_ROOT / "inputs" / "v1" / "flat-level.json"
+        training, _ = adapter["prepare_input"](json.loads(path.read_bytes()))
+        case = {
+            "id": "flat-default-changepoints",
+            "workload": {
+                "kind": "map",
+                "configuration": {
+                    "growth": "flat", "scaling": "minmax",
+                    # Effect's flat options cannot express either setting.
+                    "changepoints": {"mode": "explicit", "timestamps": []},
+                    "changepointPriorScale": 0.5,
+                    "seasonalities": [], "events": [], "regressors": [],
+                },
+                "pythonOptimizer": {
+                    "algorithm": "Auto", "maxIterations": 10_000,
+                    "newtonFallback": True, "sigFigs": 12,
+                },
+            },
+        }
+        model = adapter["fit_model"](training, case)
+        direct = adapter["Prophet"](growth="flat")
+
+        for field in ("n_changepoints", "changepoint_range", "changepoint_prior_scale"):
+            self.assertEqual(getattr(model, field), getattr(direct, field))
+        self.assertEqual(len(model.changepoints), 25)
+        self.assertEqual(np.asarray(model.params["delta"]).shape, (1, 25))
+        self.assertIn("algorithm=newton", model.stan_fit.runset.cmd(0))
+
 
 class PythonLogisticReferenceTest(unittest.TestCase):
     def case(self, count=96, empty=False, defaults=False, prior_scale=0.05):
