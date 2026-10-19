@@ -30,6 +30,7 @@ RUN npm ci && npm cache clean --force
 COPY rust-toolchain.toml rolldown.config.ts tsconfig.json tsconfig.build.json ./
 COPY tools/clean-build.ts tools/prepare-wasm-package.ts ./tools/
 COPY rust/prophet-wasm/Cargo.toml rust/prophet-wasm/Cargo.lock ./rust/prophet-wasm/
+COPY rust/prophet-wasm/.cargo ./rust/prophet-wasm/.cargo
 COPY rust/prophet-wasm/src ./rust/prophet-wasm/src
 COPY rust/prophet-wasm/third-party ./rust/prophet-wasm/third-party
 COPY src ./src

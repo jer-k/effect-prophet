@@ -22,6 +22,7 @@ RUN npm ci
 COPY rust-toolchain.toml ./
 COPY tools/prepare-wasm-package.ts ./tools/
 COPY rust/prophet-wasm/Cargo.toml rust/prophet-wasm/Cargo.lock ./rust/prophet-wasm/
+COPY rust/prophet-wasm/.cargo ./rust/prophet-wasm/.cargo
 COPY rust/prophet-wasm/src ./rust/prophet-wasm/src
 COPY rust/prophet-wasm/third-party ./rust/prophet-wasm/third-party
 
