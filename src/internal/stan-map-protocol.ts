@@ -36,6 +36,9 @@ export const annotateStanCompletion = (summary: typeof StanMapFitSummarySchema.T
 
 const growthLabels = { flat: "Flat", linear: "Linear", logistic: "Logistic" } as const;
 
+/** wasm32 linear memory addresses at most 65,536 pages of 64 KiB. */
+export const wasmMemoryLimitBytes = 65_536 * 65_536;
+
 /** Decode bounded failure evidence without losing either failed optimization attempt. */
 export const stanOptimizerFailure = (
   packed: Float64Array,
@@ -49,6 +52,7 @@ export const stanOptimizerFailure = (
     "curvature-failure",
     "non-finite-result",
     "line-search-failure",
+    "workspace-allocation",
   ] as const;
 
   const first = reasons[(packed[1] ?? Number.NaN) - 1];
@@ -57,41 +61,76 @@ export const stanOptimizerFailure = (
   const iterations = (value: number | undefined) =>
     value === -1 || (value !== undefined && Number.isSafeInteger(value) && value >= 0);
 
+  // Workspace failures carry the Newton parameter count where others carry iterations.
+  const detail = (reason: (typeof reasons)[number] | null, value: number | undefined) =>
+    reason === "workspace-allocation"
+      ? value !== undefined && Number.isSafeInteger(value) && value > 0
+      : iterations(value);
+
   const valid =
     packed.length === 5 &&
     first !== undefined &&
     second !== undefined &&
-    iterations(packed[2]) &&
-    iterations(packed[4]) &&
+    detail(first, packed[2]) &&
+    detail(second, packed[4]) &&
     (second !== null || packed[4] === -1);
+
+  if (!valid) {
+    return Effect.fail(
+      new FittingError({
+        reason: "backend-failure",
+        observationCount,
+        backendPhase: "protocol",
+        message: `WASM ${growth} optimizer returned malformed failure evidence`,
+      }),
+    );
+  }
+
+  const firstDetail = packed[2] ?? -1;
+  const secondDetail = packed[4] ?? -1;
+
+  const attempt = (reason: (typeof reasons)[number], value: number) =>
+    reason === "workspace-allocation"
+      ? { reason, parameterCount: value }
+      : { reason, iterations: value === -1 ? null : value };
+
+  const cause = {
+    first: attempt(first, firstDetail),
+    fallback: second === null ? null : attempt(second, secondDetail),
+  };
+
+  const parameterCount =
+    first === "workspace-allocation"
+      ? firstDetail
+      : second === "workspace-allocation"
+        ? secondDetail
+        : undefined;
+
+  if (parameterCount !== undefined) {
+    return Effect.fail(
+      new FittingError(
+        {
+          reason: "memory-limit",
+          observationCount,
+          parameterCount,
+          memoryLimitBytes: wasmMemoryLimitBytes,
+          backendPhase: "execute",
+          message: `${growthLabels[growth]} MAP Newton workspace for ${parameterCount} parameters exceeds WASM memory`,
+        },
+        { cause },
+      ),
+    );
+  }
 
   return Effect.fail(
     new FittingError(
       {
         reason: "backend-failure",
         observationCount,
-        backendPhase: valid ? "execute" : "protocol",
-        message: valid
-          ? `${growthLabels[growth]} MAP optimizer failed`
-          : `WASM ${growth} optimizer returned malformed failure evidence`,
+        backendPhase: "execute",
+        message: `${growthLabels[growth]} MAP optimizer failed`,
       },
-      valid
-        ? {
-            cause: {
-              first: {
-                reason: first,
-                iterations: packed[2] === -1 ? null : packed[2],
-              },
-              fallback:
-                second === null
-                  ? null
-                  : {
-                      reason: second,
-                      iterations: packed[4] === -1 ? null : packed[4],
-                    },
-            },
-          }
-        : undefined,
+      { cause },
     ),
   );
 };

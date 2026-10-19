@@ -4,7 +4,6 @@
 
 use nalgebra::DMatrix;
 
-use crate::fourier::checked_element_count;
 use crate::map_objective::MapObjectiveError;
 
 /// A proportional log density and its unconstrained-coordinate gradient.
@@ -31,6 +30,8 @@ pub enum StanOptimizerError {
   NonFiniteResult,
   /// Strong Wolfe search failed after the permitted Hessian reset.
   LineSearchFailure { iterations: usize },
+  /// Linear memory cannot hold the dense Newton workspace for this many parameters.
+  WorkspaceAllocation { parameters: usize },
 }
 
 /// Source-compatible name for the Newton entrypoint's shared numerical errors.
@@ -59,6 +60,12 @@ pub struct NewtonResult {
   /// Why optimization stopped.
   pub termination: NewtonTermination,
 }
+
+/// wasm32 linear memory addresses at most 65,536 pages of 64 KiB.
+pub const WASM_MEMORY_LIMIT_BYTES: u64 = 65_536 * 65_536;
+
+/// The Hessian, its dense copy, the eigenvectors and decomposition scratch coexist.
+const NEWTON_WORKSPACE_MATRICES: usize = 4;
 
 const HESSIAN_EPSILON: f64 = 1e-3;
 const OBJECTIVE_TOLERANCE: f64 = 1e-8;
@@ -169,14 +176,36 @@ pub(crate) fn optimize_newton_with_hessian(
   unreachable!("validated Newton budget must produce a termination result")
 }
 
-/// Bound aggregate dense workspace before allocating state or evaluating rows.
+/// Reserve the aggregate dense workspace before evaluating rows.
+///
+/// Reserving every matrix together grows linear memory once and turns a real
+/// allocation failure into an error instead of an allocator trap. The released
+/// pages stay with the allocator for the Newton loop that follows.
 pub(crate) fn check_workspace(dimension: usize) -> Result<(), NewtonError> {
-  checked_element_count(
-    dimension,
-    dimension.checked_mul(4).ok_or(NewtonError::SizeOverflow)?,
-  )
-  .map_err(|_| NewtonError::SizeOverflow)?;
+  let exhausted = NewtonError::WorkspaceAllocation {
+    parameters: dimension,
+  };
+  let elements = dimension.checked_mul(dimension).ok_or(exhausted)?;
+
+  if newton_workspace_bytes(elements).is_none_or(|bytes| bytes > WASM_MEMORY_LIMIT_BYTES) {
+    return Err(exhausted);
+  }
+
+  let mut reserved = Vec::with_capacity(NEWTON_WORKSPACE_MATRICES);
+
+  for _ in 0..NEWTON_WORKSPACE_MATRICES {
+    let mut matrix = Vec::<f64>::new();
+    matrix.try_reserve_exact(elements).map_err(|_| exhausted)?;
+    reserved.push(matrix);
+  }
+
   Ok(())
+}
+
+fn newton_workspace_bytes(elements: usize) -> Option<u64> {
+  u64::try_from(elements)
+    .ok()?
+    .checked_mul((NEWTON_WORKSPACE_MATRICES * size_of::<f64>()) as u64)
 }
 
 pub(crate) fn checked_evaluation(
@@ -215,7 +244,10 @@ pub(crate) fn finite_difference_hessian_from_gradients(
   gradient: impl Fn(&[f64], usize) -> Result<Vec<f64>, NewtonError>,
 ) -> Result<Vec<f64>, NewtonError> {
   let dimension = parameters.len();
-  let count = checked_element_count(dimension, dimension).map_err(|_| NewtonError::SizeOverflow)?;
+  // Newton's workspace reservation owns the memory bound for this matrix.
+  let count = dimension
+    .checked_mul(dimension)
+    .ok_or(NewtonError::SizeOverflow)?;
   let mut hessian = vec![0.0; count];
   let mut perturbed = parameters.to_vec();
   let perturbations = [-2.0, -1.0, 1.0, 2.0];
@@ -389,15 +421,32 @@ mod tests {
 
   #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
   #[cfg_attr(not(target_arch = "wasm32"), test)]
-  fn rejects_oversized_workspace_before_evaluating_the_objective() {
-    let initial = vec![0.0; 4097];
+  fn rejects_workspace_beyond_wasm_memory_before_evaluating_the_objective() {
+    // 4 * 11_586^2 doubles is the first dimension past 4 GiB.
+    let initial = vec![0.0; 11_586];
     let evaluate = |_: &[f64]| -> Result<LogDensityEvaluation, MapObjectiveError> {
       panic!("oversized curvature must fail before objective evaluation")
     };
     assert_eq!(
       optimize_newton(&initial, 0.0, 10, evaluate),
-      Err(NewtonError::SizeOverflow)
+      Err(NewtonError::WorkspaceAllocation { parameters: 11_586 })
     );
+  }
+
+  #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+  #[cfg_attr(not(target_arch = "wasm32"), test)]
+  fn sizes_the_workspace_against_wasm_memory() {
+    let bytes = |dimension: usize| newton_workspace_bytes(dimension * dimension).unwrap();
+
+    assert!(bytes(11_585) <= WASM_MEMORY_LIMIT_BYTES);
+    assert!(bytes(11_586) > WASM_MEMORY_LIMIT_BYTES);
+  }
+
+  #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+  #[cfg_attr(not(target_arch = "wasm32"), test)]
+  fn reserves_workspace_for_prophet_order_1024() {
+    // The 4-row, order-1024 flat fit Python completes has 2,053 parameters.
+    assert_eq!(check_workspace(2_053), Ok(()));
   }
 
   #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]

@@ -360,6 +360,7 @@ pub(crate) fn fit_error_frame(error: PiecewiseMapError) -> Vec<f64> {
       O::CurvatureFailure => [4.0, -1.0],
       O::NonFiniteResult => [5.0, -1.0],
       O::LineSearchFailure { iterations } => [6.0, iterations as f64],
+      O::WorkspaceAllocation { parameters } => [7.0, parameters as f64],
     }
   }
 

@@ -2,7 +2,10 @@ import { Effect } from "effect";
 import { describe, expect, it } from "vitest";
 
 import { FittingError } from "../../src/errors";
-import { stanOptimizerFailure as linearOptimizerFailure } from "../../src/internal/stan-map-protocol";
+import {
+  stanOptimizerFailure as linearOptimizerFailure,
+  wasmMemoryLimitBytes,
+} from "../../src/internal/stan-map-protocol";
 
 describe("linear optimizer failure protocol", () => {
   it.each([
@@ -24,6 +27,34 @@ describe("linear optimizer failure protocol", () => {
       );
 
       expect(failure).toBeInstanceOf(FittingError);
+      expect(failure.reason).toBe("backend-failure");
+      expect(failure.backendPhase).toBe("execute");
+      expect(failure.cause).toEqual({ first, fallback });
+    },
+  );
+
+  it.each([
+    {
+      frame: [11, 7, 2053, 0, -1],
+      first: { reason: "workspace-allocation", parameterCount: 2053 },
+      fallback: null,
+    },
+    {
+      frame: [11, 6, 34, 7, 2053],
+      first: { reason: "line-search-failure", iterations: 34 },
+      fallback: { reason: "workspace-allocation", parameterCount: 2053 },
+    },
+  ])(
+    "reports Newton workspace exhaustion as a memory limit: $frame",
+    async ({ frame, first, fallback }) => {
+      const failure = await Effect.runPromise(
+        Effect.flip(linearOptimizerFailure(new Float64Array(frame), 4, "flat")),
+      );
+
+      expect(failure).toBeInstanceOf(FittingError);
+      expect(failure.reason).toBe("memory-limit");
+      expect(failure.parameterCount).toBe(2053);
+      expect(failure.memoryLimitBytes).toBe(wasmMemoryLimitBytes);
       expect(failure.backendPhase).toBe("execute");
       expect(failure.cause).toEqual({ first, fallback });
     },
@@ -37,6 +68,9 @@ describe("linear optimizer failure protocol", () => {
       [11, 0, -1, 0, -1],
       [11, 1.5, -1, 0, -1],
       [11, 7, -1, 0, -1],
+      [11, 7, 0, 0, -1],
+      [11, 7, 1.5, 0, -1],
+      [11, 8, 1, 0, -1],
       [11, 6, -2, 0, -1],
       [11, 6, 1.5, 0, -1],
       [11, 6, Number.POSITIVE_INFINITY, 0, -1],
