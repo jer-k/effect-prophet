@@ -35,9 +35,12 @@ COPY rust/prophet-wasm/third-party ./rust/prophet-wasm/third-party
 COPY src ./src
 
 # Reuse compilation state without baking a fresh Cargo target tree into every image.
+# Cargo judges freshness by mtime and COPY keeps the context's mtimes, so a cache last
+# written by another checkout could look newer than these sources. Touch them first.
 RUN --mount=type=cache,id=benchmark-cargo-target-${TARGETARCH},target=/workspace/rust/prophet-wasm/target,sharing=locked \
     --mount=type=cache,id=benchmark-cargo-registry-${TARGETARCH},target=/usr/local/cargo/registry,sharing=locked \
-    npm run build \
+    find rust/prophet-wasm/src -type f -exec touch {} + \
+    && npm run build \
     && mkdir -p /build-tools \
     && rustc --version > /build-tools/rustc-version.txt \
     && wasm-pack --version > /build-tools/wasm-pack-version.txt
