@@ -797,3 +797,35 @@ proptest! {
     }
   }
 }
+
+/// Zero prediction rows satisfy every row-by-column check, so the column count alone must
+/// not size an allocation; this exact frame used to trap on a 16 GiB prior buffer.
+#[test]
+fn zero_row_prediction_rejects_an_unbounded_feature_column_count() {
+  let frame = predict_piecewise_map_with_features(
+    &[],
+    65_536.0,
+    0.0,
+    0.0,
+    f64::NAN,
+    &[],
+    &[],
+    f64::NAN,
+    &[],
+    &[],
+    &[],
+    &[],
+    2_147_483_648.0,
+    &[],
+    &[],
+    &[],
+    &[],
+  );
+
+  assert_eq!(
+    frame,
+    vec![f64::from(
+      super::map::PiecewiseMapPredictionStatus::SizeOverflow as u32
+    )]
+  );
+}

@@ -15,6 +15,7 @@ use crate::wasm::map::{
 };
 use crate::wasm::protocol::{
   parse_explicit_changepoints, parse_nonnegative_integer, parse_positive_integer,
+  placeholder_priors,
 };
 
 /// Prophet's default changepoint prior. It scales only the flat density's unused
@@ -305,7 +306,9 @@ fn predict_protocol(
   let Some(additional_columns) = parse_nonnegative_integer(additional_column_count) else {
     return prediction_error(PiecewiseMapPredictionStatus::InvalidConfiguration);
   };
-  let placeholder_priors = vec![1.0; additional_columns];
+  let Some(placeholder_priors) = placeholder_priors(additional_columns) else {
+    return prediction_error(PiecewiseMapPredictionStatus::SizeOverflow);
+  };
   let Ok(metadata) = parse_metadata(
     timestamps.len(),
     seasonalities.len(),

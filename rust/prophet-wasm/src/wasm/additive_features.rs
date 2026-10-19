@@ -15,6 +15,7 @@ use crate::wasm::map::{
 };
 use crate::wasm::protocol::{
   parse_explicit_changepoints, parse_nonnegative_integer, parse_positive_integer,
+  placeholder_priors,
 };
 
 #[derive(Debug)]
@@ -301,7 +302,9 @@ pub fn predict_piecewise_map_with_features(
       )];
     }
   };
-  let placeholder_priors = vec![1.0; additional_columns];
+  let Some(placeholder_priors) = placeholder_priors(additional_columns) else {
+    return vec![f64::from(PiecewiseMapPredictionStatus::SizeOverflow as u32)];
+  };
   let metadata = match parse_feature_metadata(
     timestamps.len(),
     seasonalities.len(),
