@@ -7,9 +7,7 @@ use super::additive_features::{
   fit_piecewise_map_with_features, fit_piecewise_map_with_features_and_scaling,
   predict_piecewise_map_with_features, predict_piecewise_map_with_features_and_scaling,
 };
-use super::flat_map::{
-  fit_flat_map, fit_flat_map_with_scaling, predict_flat_map, predict_flat_map_with_scaling,
-};
+use super::flat_map::{predict_flat_map, predict_flat_map_with_scaling};
 use super::logistic_map::{fit_logistic_map_with_features, predict_logistic_map_with_features};
 use super::map::{
   fit_piecewise_map, fit_piecewise_map_with_scaling, predict_piecewise_map,
@@ -328,27 +326,6 @@ fn call_every_entry(case: &WireCase) -> Vec<(&'static str, Vec<f64>)> {
   let s = |scalar| case.scalar(scalar);
 
   vec![
-    (
-      "fit_flat_map",
-      fit_flat_map(
-        &case.timestamps,
-        &case.values,
-        &case.periods,
-        &case.orders,
-        &case.prior_scales,
-      ),
-    ),
-    (
-      "fit_flat_map_with_scaling",
-      fit_flat_map_with_scaling(
-        &case.timestamps,
-        &case.values,
-        s(S::ScalingMode),
-        &case.periods,
-        &case.orders,
-        &case.prior_scales,
-      ),
-    ),
     (
       "predict_flat_map",
       predict_flat_map(

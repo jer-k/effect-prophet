@@ -8,11 +8,7 @@ import type { LinearOptimizer } from "../linear-optimizer";
 import type { ChangepointSetting } from "../options";
 import type { ResolvedRegressor } from "../regressor";
 import type { TargetScalingMode } from "../target-scaling";
-import type {
-  EmptySeasonalityLayout,
-  NonEmptySeasonalityLayout,
-  SeasonalityLayout,
-} from "../seasonality";
+import type { SeasonalityLayout } from "../seasonality";
 import type { KnownAdditiveFeatures, SeasonalityMaskMatrix } from "./additional-features";
 
 export type { FlatMapParameters, Parameters, PiecewiseMapParameters } from "../fitted-model";
@@ -58,28 +54,6 @@ export interface LinearPiecewiseMapFitPlan {
   readonly regressors: ReadonlyArray<ResolvedRegressor>;
 }
 
-/** Request for featureless reduced flat MAP fitting. */
-export interface FlatMapFitPlan {
-  readonly _tag: "FlatMap";
-
-  /** Train-only target-scaling policy used by the MAP objective. */
-  readonly scaling: TargetScalingMode;
-
-  /** Canonical empty feature layout established by public parsing. */
-  readonly seasonalities: EmptySeasonalityLayout;
-}
-
-/** Request for reduced flat MAP fitting with a non-empty additive layout. */
-export interface FlatAdditiveMapFitPlan {
-  readonly _tag: "FlatAdditiveMap";
-
-  /** Train-only target-scaling policy used by the MAP objective. */
-  readonly scaling: TargetScalingMode;
-
-  /** Non-empty ordered seasonality coefficient layout established by public parsing. */
-  readonly seasonalities: NonEmptySeasonalityLayout;
-}
-
 /** Request for flat MAP fitting through Prophet's Stan density with resolved feature modes. */
 export interface FlatStanMapFitPlan {
   readonly _tag: "FlatStanMap";
@@ -108,12 +82,7 @@ export interface LogisticPiecewiseMapFitPlan {
 }
 
 /** Exhaustive set of configurations supported by the public fitting backend. */
-export type FitPlan =
-  | LinearPiecewiseMapFitPlan
-  | FlatMapFitPlan
-  | FlatAdditiveMapFitPlan
-  | FlatStanMapFitPlan
-  | LogisticPiecewiseMapFitPlan;
+export type FitPlan = LinearPiecewiseMapFitPlan | FlatStanMapFitPlan | LogisticPiecewiseMapFitPlan;
 
 /** Constructors and exhaustive matching for supported fitting plans. */
 export const FitPlan = Data.taggedEnum<FitPlan>();

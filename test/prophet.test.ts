@@ -194,7 +194,7 @@ describe("linear MAP Prophet integration", () => {
     ]);
   });
 
-  it("routes explicit flat growth to reduced MAP fitting", async () => {
+  it("routes explicit flat growth through Prophet's Stan MAP fit", async () => {
     const model = await Effect.runPromise(
       fit(observations, { growth: "flat" }).pipe(Effect.provide(prophetFittingBackendLayer)),
     );
@@ -208,7 +208,13 @@ describe("linear MAP Prophet integration", () => {
       throw new Error("Expected a flat-map model");
     }
 
-    expect(model.fitSummary.method).toBe("flat-map-coordinate-v1");
+    expect(model.fitSummary.method).toBe("flat-map-stan-v1");
+
+    if (model.fitSummary.method !== "flat-map-stan-v1") {
+      throw new Error("Expected a flat Stan fit");
+    }
+
+    expect(model.fitSummary.optimization.algorithm).toBe("newton");
     expect(model.level).not.toBe(5);
     expect(forecast).toEqual({
       timestamp: 1_704_067_203_000,
@@ -566,7 +572,8 @@ describe("flat MAP Prophet integration", () => {
     const forecasts = await Effect.runPromise(predict(model, timestamps));
 
     expect(model.coefficients).toHaveLength(4);
-    expect(model.fitSummary.termination).toBe("converged");
+    expect(model.fitSummary.method).toBe("flat-map-stan-v1");
+    expect(model.fitSummary.termination).toBe("objective-change");
     expect(forecasts[0]?.trend).toBe(model.level);
     expect(forecasts[1]?.trend).toBe(model.level);
     expect(forecasts[0]?.additive).not.toBe(forecasts[1]?.additive);

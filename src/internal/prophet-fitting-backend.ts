@@ -1,7 +1,6 @@
 import { Layer } from "effect";
 
 import { FitPlan, FittingBackend } from "./fitting-backend";
-import { fitFlatMapWithWasm } from "./wasm-flat-map-backend";
 import { fitLogisticMapWithWasm } from "./wasm-logistic-map-backend";
 import {
   fitFlatStanMapWithWasm,
@@ -52,9 +51,6 @@ export const prophetFittingBackendLayer: Layer.Layer<FittingBackend> = Layer.suc
                 events,
                 regressors,
               ),
-        FlatMap: ({ scaling, seasonalities }) => fitFlatMapWithWasm(input, scaling, seasonalities),
-        FlatAdditiveMap: ({ scaling, seasonalities }) =>
-          fitFlatMapWithWasm(input, scaling, seasonalities),
         LogisticPiecewiseMap: ({
           scaling,
           bounds,

@@ -2,19 +2,6 @@ import { createRequire } from "node:module";
 
 import { Predicate } from "effect";
 
-interface FlatMapFitStatuses {
-  readonly Success: number;
-  readonly InsufficientObservations: number;
-  readonly LengthMismatch: number;
-  readonly InvalidObservation: number;
-  readonly InvalidConfiguration: number;
-  readonly SizeOverflow: number;
-  readonly NonFiniteResult: number;
-  readonly NoiseCollapse: number;
-  readonly NonConvergence: number;
-  readonly NonRepresentableScaling: number;
-}
-
 interface FlatMapPredictionStatuses {
   readonly Success: number;
   readonly InvalidTimestamp: number;
@@ -50,25 +37,9 @@ interface PiecewiseMapPredictionStatuses {
 
 /** Generated Rust/WASM exports exercised directly by the Node boundary tests. */
 export interface ProphetWasmNodeBindings {
-  readonly FlatMapFitStatus: FlatMapFitStatuses;
   readonly FlatMapPredictionStatus: FlatMapPredictionStatuses;
   readonly PiecewiseMapFitStatus: PiecewiseMapFitStatuses;
   readonly PiecewiseMapPredictionStatus: PiecewiseMapPredictionStatuses;
-  readonly fit_flat_map: (
-    timestamps: Float64Array,
-    values: Float64Array,
-    periodsDays: Float64Array,
-    fourierOrders: Float64Array,
-    priorScales: Float64Array,
-  ) => Float64Array;
-  readonly fit_flat_map_with_scaling: (
-    timestamps: Float64Array,
-    values: Float64Array,
-    scalingMode: number,
-    periodsDays: Float64Array,
-    fourierOrders: Float64Array,
-    priorScales: Float64Array,
-  ) => Float64Array;
   readonly predict_flat_map: (
     timestamps: Float64Array,
     level: number,
@@ -149,8 +120,6 @@ const requiredFunctionExports = [
   "predict_logistic_map_with_features",
   "simulate_map_with_features",
   "simulate_logistic_map_with_features",
-  "fit_flat_map",
-  "fit_flat_map_with_scaling",
   "predict_flat_map",
   "predict_flat_map_with_scaling",
   "fit_piecewise_map",
@@ -160,18 +129,6 @@ const requiredFunctionExports = [
 ] as const;
 
 const requiredStatusMembers = {
-  FlatMapFitStatus: [
-    "Success",
-    "InsufficientObservations",
-    "LengthMismatch",
-    "InvalidObservation",
-    "InvalidConfiguration",
-    "SizeOverflow",
-    "NonFiniteResult",
-    "NoiseCollapse",
-    "NonConvergence",
-    "NonRepresentableScaling",
-  ],
   FlatMapPredictionStatus: [
     "Success",
     "InvalidTimestamp",

@@ -967,7 +967,7 @@ mod tests {
   }
 
   #[test]
-  fn flat_stan_fit_matches_the_exact_additive_ridge_fit() {
+  fn flat_stan_fit_reaches_the_exact_conditional_ridge_optimum() {
     let timestamps: Vec<f64> = (0..42).map(|day| f64::from(day) * DAY).collect();
     let values: Vec<f64> = (0..42)
       .map(|day| {
@@ -981,13 +981,6 @@ mod tests {
       prior_scale: 10.0,
     }];
 
-    let reduced = crate::flat_map::fit_flat_map_with_scaling(
-      &timestamps,
-      &values,
-      &weekly,
-      ScalingMode::AbsMax,
-    )
-    .expect("reduced flat fit should converge");
     let stan = fit_mixed_map(
       &timestamps,
       &values,
@@ -1015,15 +1008,58 @@ mod tests {
     )
     .expect("Stan flat fit should converge");
 
+    // At Stan's sigma, Prophet's flat posterior over the level (N(0, 5)) and
+    // betas (N(0, 10)) is a ridge problem with exact normal equations.
+    let scale = values
+      .iter()
+      .fold(0.0_f64, |maximum, value| maximum.max(value.abs()));
+    let sigma = stan.noise_scale / scale;
+    let features = crate::fourier::make_fourier_features(
+      &timestamps,
+      &[crate::fourier::FourierSeasonality {
+        period_days: 7.0,
+        fourier_order: 2,
+      }],
+    )
+    .expect("weekly features");
+    let design = nalgebra::DMatrix::from_fn(42, 5, |row, column| {
+      if column == 0 {
+        1.0
+      } else {
+        features.values()[row * 4 + column - 1]
+      }
+    });
+    let target = nalgebra::DVector::from_iterator(42, values.iter().map(|value| value / scale));
+    let mut normal = design.transpose() * &design / (sigma * sigma);
+    normal[(0, 0)] += 1.0 / 25.0;
+
+    for column in 1..5 {
+      normal[(column, column)] += 1.0 / 100.0;
+    }
+
+    let exact = normal
+      .cholesky()
+      .expect("positive definite normal equations")
+      .solve(&(design.transpose() * &target / (sigma * sigma)));
+
     let close = |left: f64, right: f64| (left - right).abs() <= 1e-5 * right.abs().max(1.0);
 
-    assert!(close(flat_level(&stan), reduced.level));
-    // Stan's Newton stops on a 1e-8 objective change, before sigma fully settles.
-    assert!((stan.noise_scale - reduced.noise_scale).abs() <= 1e-4 * reduced.noise_scale);
+    assert!(close(flat_level(&stan), exact[0] * scale));
 
-    for (left, right) in stan.coefficients.iter().zip(&reduced.coefficients) {
-      assert!(close(*left, *right), "{left} vs {right}");
+    for (column, coefficient) in stan.coefficients.iter().enumerate() {
+      assert!(
+        close(*coefficient, exact[column + 1] * scale),
+        "{coefficient} vs {}",
+        exact[column + 1] * scale
+      );
     }
+
+    // Sigma's own stationarity, n / s - RSS / s^3 + s / 0.25 = 0, at those residuals.
+    let residual_sum_squares = (&target - &design * &exact).norm_squared();
+    let optimal = ((-42.0 + (42.0_f64.powi(2) + 16.0 * residual_sum_squares).sqrt()) / 8.0).sqrt();
+
+    // Stan's Newton stops on a 1e-8 objective change, before sigma fully settles.
+    assert!((sigma - optimal).abs() <= 1e-4 * optimal);
   }
 
   #[test]
