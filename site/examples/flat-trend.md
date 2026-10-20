@@ -20,3 +20,13 @@ case side by side.
 - The data has no real trend, and you don't want the model to invent one from a few unusual
   weeks.
 - You are forecasting far ahead and would rather assume "same as now" than extend a slope.
+
+## Changepoint settings
+
+`map.changepoints` and `map.changepointPriorScale` work with `growth: "flat"`, as they do in
+Python. They never bend a flat trend. Prophet still fits a slope and one adjustment per
+changepoint alongside the level, held in place only by their priors, so these settings decide how
+many of those values there are and how tightly they are held. In exact arithmetic that leaves the
+fitted level and effects unchanged. In practice it changes the path the fit takes, so forecasts
+can differ in the last digits, and fewer changepoints make each fitting step cheaper. Pass the
+values you would pass Python to get the same fit.
