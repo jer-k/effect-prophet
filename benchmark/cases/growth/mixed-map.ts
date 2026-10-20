@@ -1,7 +1,11 @@
 import { defaultLbfgsSettings } from "effect-prophet";
 
 import type { BenchmarkCase } from "../../tools/case.ts";
-import { outputFirstQuality, pythonDefaultOptimizer } from "../prophet-defaults.ts";
+import {
+  outputFirstQuality,
+  prophetDefaultChangepoints,
+  pythonDefaultOptimizer,
+} from "../prophet-defaults.ts";
 import { linearComparison, linearOptimizerQuality, linearOptimizers } from "./linear/controls.ts";
 
 const phases = [
@@ -36,8 +40,6 @@ const pinnedLbfgs = {
   pythonOptimizer: { algorithm: "LBFGS", maxIterations: 10000, newtonFallback: false },
 } as const;
 
-const noPoints = { mode: "explicit", timestamps: [] } as const;
-
 const onePoint = { mode: "explicit", timestamps: ["2020-02-10T00:00:00.000Z"] } as const;
 
 const weekly = { name: "weekly-custom", periodDays: 7, fourierOrder: 2, priorScale: 10 };
@@ -71,7 +73,7 @@ const flatDefaultsCase = (
       growth: "flat",
       seasonalityMode: "additive",
       holidaysMode: "additive",
-      changepoints: noPoints,
+      changepoints: prophetDefaultChangepoints,
       changepointPriorScale: 0.05,
       ...configuration,
     },
@@ -132,7 +134,7 @@ export const growthScalingAndMixedMapCases: ReadonlyArray<BenchmarkCase> = [
         scaling: "minmax",
         seasonalityMode: "additive",
         holidaysMode: "additive",
-        changepoints: noPoints,
+        changepoints: prophetDefaultChangepoints,
         changepointPriorScale: 0.05,
         seasonalities: [{ ...weekly, conditionName: "active", mode: "multiplicative" }],
         events: [campaign],
@@ -185,7 +187,7 @@ export const growthScalingAndMixedMapCases: ReadonlyArray<BenchmarkCase> = [
         scaling: "minmax",
         seasonalityMode: "additive",
         holidaysMode: "additive",
-        changepoints: noPoints,
+        changepoints: prophetDefaultChangepoints,
         changepointPriorScale: 0.05,
         seasonalities: [{ ...weekly, conditionName: "active", mode: "multiplicative" }],
         events: [campaign],

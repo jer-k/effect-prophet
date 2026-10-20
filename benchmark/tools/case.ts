@@ -550,7 +550,6 @@ const validateCaseRelationships = (
     if (benchmarkCase.workload.kind === "map" || benchmarkCase.workload.kind === "evaluation") {
       const configuration = benchmarkCase.workload.configuration;
       const points = configuration.changepoints;
-      const flat = configuration.growth === "flat";
 
       const emptyPoints =
         points.mode === "explicit" ? points.timestamps.length === 0 : points.count === 0;
@@ -559,16 +558,17 @@ const validateCaseRelationships = (
         benchmarkCase.workload.kind === "map" &&
         benchmarkCase.workload.fitRequest === "growth-only";
 
+      // Flat cases may declare any changepoint settings: both libraries size and scale
+      // Prophet's prior-only flat coordinates from them.
       if (
-        (flat && (!emptyPoints || points.mode !== "explicit")) ||
-        (configuration.growth === "linear" &&
-          !growthOnly &&
-          (emptyPoints || benchmarkCase.workload.effectOptimizer === undefined))
+        configuration.growth === "linear" &&
+        !growthOnly &&
+        (emptyPoints || benchmarkCase.workload.effectOptimizer === undefined)
       ) {
         return Effect.fail(
           new BenchmarkInputError({
             input: "cases",
-            message: `MAP case ${benchmarkCase.id} must use flat defaults or supported growth-specific controls`,
+            message: `MAP case ${benchmarkCase.id} must use supported growth-specific controls`,
           }),
         );
       }
@@ -587,9 +587,14 @@ const validateCaseRelationships = (
         configuration.seasonalityMode !== "additive" ||
         configuration.holidaysMode !== "additive" ||
         configuration.changepointPriorScale !== 0.05 ||
-        (configuration.growth === "flat"
-          ? points.mode !== "explicit" || points.timestamps.length !== 0
-          : points.mode !== "auto" || points.count !== 25 || points.range !== 0.8) ||
+        // Prophet resolves the same default grid for every growth. Retained flat evidence
+        // recorded it as explicit `[]` before flat growth accepted changepoint settings.
+        !(
+          (points.mode === "auto" && points.count === 25 && points.range === 0.8) ||
+          (configuration.growth === "flat" &&
+            points.mode === "explicit" &&
+            points.timestamps.length === 0)
+        ) ||
         configuration.events.length !== 0 ||
         configuration.countryHolidays !== undefined ||
         configuration.regressors.length !== 0 ||

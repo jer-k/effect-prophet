@@ -40,7 +40,7 @@ describe("growth, scaling, and mixed-component MAP benchmark workloads", () => {
     }
   });
 
-  it("admits empty logistic points for investigation but rejects flat changepoints", async () => {
+  it("admits empty logistic points for investigation and any flat changepoint settings", async () => {
     const logistic = growthScalingAndMixedMapCases.find(
       (benchmarkCase) => benchmarkCase.id === "logistic-implicit-floor-auto-changepoints",
     );
@@ -88,7 +88,7 @@ describe("growth, scaling, and mixed-component MAP benchmark workloads", () => {
             ...flat.workload,
             configuration: {
               ...flat.workload.configuration,
-              changepoints: { mode: "auto", count: 25, range: 0.8 },
+              changepoints: { mode: "explicit", timestamps: [] },
             },
           },
         },
@@ -97,7 +97,7 @@ describe("growth, scaling, and mixed-component MAP benchmark workloads", () => {
 
     expect(noPoints._tag).toBe("Success");
     expect(flatOptimizer._tag).toBe("Success");
-    expect(flatChangepoints._tag).toBe("Failure");
+    expect(flatChangepoints._tag).toBe("Success");
   });
 
   it("generates complete, deterministic shared growth and mixed-component rows", async () => {

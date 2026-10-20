@@ -9,6 +9,7 @@ import { describe, expect, it } from "vitest";
 import { parseBenchmarkCases, parseBenchmarkDataset } from "../case.ts";
 import { evaluationCases } from "../../cases/diagnostics/evaluation.ts";
 import { flatGrowthCases } from "../../cases/growth/flat/public-api.ts";
+import { prophetDefaultChangepoints } from "../../cases/prophet-defaults.ts";
 import { growthScalingAndMixedMapCases } from "../../cases/growth/mixed-map.ts";
 import { effectOptionsForCase } from "../effect-case.ts";
 import { generateBenchmarkData } from "../generate-data.ts";
@@ -32,10 +33,7 @@ describe("flat-growth reconciliation catalog", () => {
         const featured = item.workload.configuration.regressors.length > 0;
 
         expect(item.workload.effectOptimizer?.algorithm).toBe(featured ? "lbfgs" : undefined);
-        expect(item.workload.configuration.changepoints).toEqual({
-          mode: "explicit",
-          timestamps: [],
-        });
+        expect(item.workload.configuration.changepoints).toEqual(prophetDefaultChangepoints);
 
         if (options?.growth !== "flat") {
           throw new Error("Expected flat options");
@@ -43,7 +41,7 @@ describe("flat-growth reconciliation catalog", () => {
 
         // Effect receives Python's changepoint settings; only features pin an optimizer.
         expect(options.map).toMatchObject({
-          changepoints: { mode: "explicit", timestamps: [] },
+          changepoints: prophetDefaultChangepoints,
           changepointPriorScale: item.workload.configuration.changepointPriorScale,
         });
         expect(options.map?.optimizer).toEqual(item.workload.effectOptimizer);

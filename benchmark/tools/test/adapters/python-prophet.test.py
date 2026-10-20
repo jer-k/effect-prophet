@@ -108,18 +108,15 @@ class PythonProphetInputTest(unittest.TestCase):
         self.assertEqual(dataset, original)
         self.assertEqual(path.read_bytes(), contents)
 
-    def test_flat_keeps_prophet_default_changepoints_and_automatic_newton(self):
-        path = BENCHMARK_ROOT / "inputs" / "v1" / "flat-level.json"
-        training, _ = adapter["prepare_input"](json.loads(path.read_bytes()))
-        case = {
-            "id": "flat-default-changepoints",
+    def flat_case(self, changepoints, prior_scale):
+        return {
+            "id": "flat-changepoints",
             "workload": {
                 "kind": "map",
                 "configuration": {
                     "growth": "flat", "scaling": "minmax",
-                    # Effect's flat options cannot express either setting.
-                    "changepoints": {"mode": "explicit", "timestamps": []},
-                    "changepointPriorScale": 0.5,
+                    "changepoints": changepoints,
+                    "changepointPriorScale": prior_scale,
                     "seasonalities": [], "events": [], "regressors": [],
                 },
                 "pythonOptimizer": {
@@ -128,7 +125,12 @@ class PythonProphetInputTest(unittest.TestCase):
                 },
             },
         }
-        model = adapter["fit_model"](training, case)
+
+    def test_flat_default_grid_matches_prophet_defaults_and_automatic_newton(self):
+        path = BENCHMARK_ROOT / "inputs" / "v1" / "flat-level.json"
+        training, _ = adapter["prepare_input"](json.loads(path.read_bytes()))
+        default_grid = {"mode": "auto", "count": 25, "range": 0.8}
+        model = adapter["fit_model"](training, self.flat_case(default_grid, 0.05))
         direct = adapter["Prophet"](growth="flat")
 
         for field in ("n_changepoints", "changepoint_range", "changepoint_prior_scale"):
@@ -136,6 +138,16 @@ class PythonProphetInputTest(unittest.TestCase):
         self.assertEqual(len(model.changepoints), 25)
         self.assertEqual(np.asarray(model.params["delta"]).shape, (1, 25))
         self.assertIn("algorithm=newton", model.stan_fit.runset.cmd(0))
+
+    def test_flat_passes_explicit_changepoints_and_prior_to_prophet(self):
+        path = BENCHMARK_ROOT / "inputs" / "v1" / "flat-level.json"
+        training, _ = adapter["prepare_input"](json.loads(path.read_bytes()))
+        empty = {"mode": "explicit", "timestamps": []}
+        model = adapter["fit_model"](training, self.flat_case(empty, 0.5))
+
+        # Prophet keeps one zero-time dummy delta when no changepoints are requested.
+        self.assertEqual(model.changepoint_prior_scale, 0.5)
+        self.assertEqual(np.asarray(model.params["delta"]).shape, (1, 1))
 
 
 class PythonLogisticReferenceTest(unittest.TestCase):

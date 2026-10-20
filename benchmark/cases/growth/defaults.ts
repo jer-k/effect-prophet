@@ -1,4 +1,5 @@
 import type { BenchmarkCase } from "../../tools/case.ts";
+import { prophetDefaultChangepoints } from "../prophet-defaults.ts";
 import { linearComparison, linearOptimizerQuality } from "./linear/controls.ts";
 
 const phases = [
@@ -44,11 +45,8 @@ export const defaultCase = (
         scaling: "absmax",
         seasonalityMode: "additive",
         holidaysMode: "additive",
-        // Flat trends have no changepoints; linear uses Prophet's automatic defaults.
-        changepoints:
-          growth === "linear"
-            ? { mode: "auto", count: 25, range: 0.8 }
-            : { mode: "explicit", timestamps: [] },
+        // Prophet resolves its default grid for both growths; a flat trend never reads it.
+        changepoints: prophetDefaultChangepoints,
         changepointPriorScale: 0.05,
         // Expected resolved metadata, NOT a custom seasonality request.
         seasonalities: [{ name: "weekly", periodDays: 7, fourierOrder: 3, priorScale: 10 }],

@@ -173,19 +173,18 @@ def configure_model(benchmark_case: dict[str, Any]) -> Prophet:
         "holidays_mode": configuration.get("holidaysMode", "additive"),
         "scaling": configuration.get("scaling", "absmax"),
     }
-    # Effect's flat options reject changepoints and their prior. Leave Prophet's default
-    # grid and prior in its flat Stan state, exactly as Effect's flat fit retains them.
-    if growth != "flat":
-        common["changepoint_prior_scale"] = configuration["changepointPriorScale"]
+    # Flat growth takes changepoints and their prior too: its trend ignores them, but they
+    # size and scale the prior-only coordinates in Prophet's flat Stan state, as in Effect.
+    common["changepoint_prior_scale"] = configuration["changepointPriorScale"]
 
-        if changepoints["mode"] == "explicit":
-            common["changepoints"] = [
-                pd.to_datetime(value, utc=True).tz_localize(None)
-                for value in changepoints["timestamps"]
-            ]
-        else:
-            common["n_changepoints"] = changepoints["count"]
-            common["changepoint_range"] = changepoints["range"]
+    if changepoints["mode"] == "explicit":
+        common["changepoints"] = [
+            pd.to_datetime(value, utc=True).tz_localize(None)
+            for value in changepoints["timestamps"]
+        ]
+    else:
+        common["n_changepoints"] = changepoints["count"]
+        common["changepoint_range"] = changepoints["range"]
     country = configuration.get("countryHolidays")
     if country is not None:
         if importlib.metadata.version("holidays") != "0.104":
