@@ -8,6 +8,7 @@ import difflib
 import hashlib
 import importlib.metadata
 import json
+import math
 import os
 import platform
 import re
@@ -3310,9 +3311,11 @@ def make_flat_low_order_stan_fixture() -> dict[str, Any]:
                      float(np.log(fitted["sigma_obs"])),
                      *[fitted[f"beta[{index + 1}]"] for index in range(data["K"])]]
             density, _ = stan_unconstrained_probe(model, data, state)
-            features = np.asarray(data["X"])
-            beta = np.asarray(state[3 + data["S"]:])
-            predictions = fitted["m"] + features @ beta
+            beta = state[3 + data["S"]:]
+            # OpenBLAS picks its dot-product kernel per CPU, and a flat-seasonal-minmax
+            # prediction sits on a 12-digit rounding boundary. Exact sums are portable.
+            predictions = [math.fsum([fitted["m"], *(x * b for x, b in zip(row, beta))])
+                           for row in data["X"]]
             identifier = f"{dataset}-{scaling}"
             cases.append({
                 **case,
