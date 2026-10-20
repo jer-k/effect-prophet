@@ -40,16 +40,19 @@ Python, where it differs on purpose, and the smaller behavior differences.
   for the shortcut and 17.8 for the per-path method over eight seeds.
 - **Size limits on uncertainty.** One call takes up to 10,000 rows and 2,048 samples. Python has
   no such limits. See [Uncertainty ranges](../examples/uncertainty) for details.
+- **Memory limit for Newton's method.** Newton's method, used for histories under 100 rows and
+  as L-BFGS's fallback, keeps four tables of size parameters × parameters. The engine can use at
+  most 4 GiB of memory, so Newton can never fit more than 11,585 parameters. In practice the limit
+  is somewhat lower, because the rest of the fit needs memory too, and lower still if your
+  runtime gives the engine less. Each Fourier order adds two parameters, and changepoints, events and
+  regressors add more. Past the limit, `fit` fails with a `FittingError` whose `reason` is
+  `"memory-limit"`, with `parameterCount` and `memoryLimitBytes`. Python has no such limit.
 - **Inputs that cannot be fitted return an error.** If every row has the same timestamp, there
   is no way to draw a trend, so `fit` fails where Python returns `NaN` forecasts. These are the
   [intentional differences](/benchmarks/linear#intentional-differences) in the benchmarks.
 - **Flat growth rejects changepoint options.** `map.changepoints` and
   `map.changepointPriorScale` cannot affect a flat trend, so passing them is an error. Python
   accepts and ignores them.
-- **Flat growth and the optimizer.** A flat model with only plain seasonality uses a faster,
-  exact fitter. Any flat model with events, regressors, conditional seasonalities or
-  multiplicative effects, or one with an explicit `map.optimizer`, is fitted with Prophet's own
-  objective like Python.
 - **Last-digit differences.** Fits stop when they are close enough, and rounding differs across
   computers, so forecasts agree to many decimal places but not always all of them. For logistic
   growth, the fitted internal numbers can differ slightly even when forecasts match; the
