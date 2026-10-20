@@ -962,12 +962,12 @@
     "id": "country-us-linear-additive",
     "dataset": "v5/country-basic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:71ee8daf33ec4d527ad865201555a2205f3bf5059a863e7c96da068855adcdb6",
+      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "country-calendar-public-v1"
@@ -1104,12 +1104,12 @@
     "id": "country-explicit-us-linear-additive",
     "dataset": "v5/country-basic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:71ee8daf33ec4d527ad865201555a2205f3bf5059a863e7c96da068855adcdb6",
+      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "country-calendar-public-v1"
@@ -1395,12 +1395,12 @@
     "id": "country-us-linear-multiplicative",
     "dataset": "v5/country-basic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:71ee8daf33ec4d527ad865201555a2205f3bf5059a863e7c96da068855adcdb6",
+      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "country-calendar-public-v1"
@@ -1537,12 +1537,12 @@
     "id": "country-explicit-us-linear-multiplicative",
     "dataset": "v5/country-basic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:71ee8daf33ec4d527ad865201555a2205f3bf5059a863e7c96da068855adcdb6",
+      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "country-calendar-public-v1"
@@ -1828,12 +1828,12 @@
     "id": "country-boundary-linear",
     "dataset": "v5/country-boundary-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:71ee8daf33ec4d527ad865201555a2205f3bf5059a863e7c96da068855adcdb6",
+      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "country-calendar-public-v1"
@@ -1941,7 +1941,7 @@
     "id": "linear-defaults-small",
     "dataset": "v1/linear-small.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "linear-output-first-v4"
@@ -2037,7 +2037,7 @@
     "id": "linear-defaults-medium",
     "dataset": "v1/linear-medium.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "linear-output-first-v4"
@@ -2133,7 +2133,7 @@
     "id": "linear-defaults-irregular",
     "dataset": "v1/map-irregular-medium.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "linear-output-first-v4"
@@ -2229,7 +2229,7 @@
     "id": "map-training-ordered-explicit",
     "dataset": "v1/training-ordered.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "linear-output-first-v4"
@@ -2329,7 +2329,7 @@
     "id": "map-training-ordered-auto",
     "dataset": "v1/training-ordered.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "linear-output-first-v4"
@@ -2428,7 +2428,7 @@
     "id": "map-training-unsorted-explicit",
     "dataset": "v1/training-unsorted.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "linear-output-first-v4"
@@ -2528,7 +2528,7 @@
     "id": "map-training-unsorted-auto",
     "dataset": "v1/training-unsorted.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "linear-output-first-v4"
@@ -2627,7 +2627,7 @@
     "id": "map-training-duplicates-explicit",
     "dataset": "v1/training-duplicates.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "linear-output-first-v4"
@@ -2727,7 +2727,7 @@
     "id": "map-training-duplicates-auto",
     "dataset": "v1/training-duplicates.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "linear-output-first-v4"
@@ -2826,7 +2826,7 @@
     "id": "map-training-duplicate-features-auto",
     "dataset": "v1/training-duplicate-features.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "linear-output-first-v4"
@@ -2939,7 +2939,7 @@
     "id": "uncertainty-training-duplicates-auto",
     "dataset": "v1/training-duplicates.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "linear-output-first-v4"
@@ -3044,7 +3044,7 @@
     "id": "map-training-zero-span-linear-varied",
     "dataset": "v1/training-zero-span-varied.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "linear-output-first-v4"
@@ -3143,7 +3143,7 @@
     "id": "map-training-zero-span-linear-constant",
     "dataset": "v1/training-zero-span-constant.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "linear-output-first-v4"
@@ -3245,7 +3245,7 @@
       "kind": "evaluation",
       "comparison": {
         "kind": "different-public-work",
-        "evidenceId": "stage-h-evaluation-v1"
+        "evidenceId": "rolling-origin-evaluation-v1"
       },
       "configuration": {
         "growth": "linear",
@@ -3352,7 +3352,7 @@
     "id": "linear-offset-scaling-absmax",
     "dataset": "v1/linear-offset-scaling.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "linear-output-first-v4"
@@ -3463,7 +3463,7 @@
     "id": "linear-offset-scaling-minmax",
     "dataset": "v1/linear-offset-scaling.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "linear-output-first-v4"
@@ -3574,7 +3574,7 @@
     "id": "linear-mixed-components",
     "dataset": "v1/linear-mixed-components.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "linear-output-first-v4"
@@ -3700,7 +3700,7 @@
     "id": "uncertainty-linear-defaults-long-history-intervals-1000",
     "dataset": "v3/linear-long-history.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "linear-output-first-v4"
@@ -3813,7 +3813,7 @@
     "id": "uncertainty-linear-defaults-irregular-intervals-1000",
     "dataset": "v1/map-irregular-medium.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "linear-output-first-v4"
@@ -3920,7 +3920,7 @@
     "id": "uncertainty-linear-offset-scaling-absmax-historical-intervals-128",
     "dataset": "v1/linear-offset-scaling.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "linear-output-first-v4"
@@ -4042,7 +4042,7 @@
     "id": "uncertainty-linear-offset-scaling-absmax-one-future-samples-128",
     "dataset": "v1/linear-offset-scaling.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "linear-output-first-v4"
@@ -4164,7 +4164,7 @@
     "id": "uncertainty-linear-mixed-components-mixed-intervals-128",
     "dataset": "v1/linear-mixed-components.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "linear-output-first-v4"
@@ -4301,7 +4301,7 @@
     "id": "uncertainty-linear-mixed-components-mixed-samples-512",
     "dataset": "v1/linear-mixed-components.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "linear-output-first-v4"
@@ -4441,7 +4441,7 @@
       "kind": "evaluation",
       "comparison": {
         "kind": "different-public-work",
-        "evidenceId": "stage-h-evaluation-v1"
+        "evidenceId": "rolling-origin-evaluation-v1"
       },
       "configuration": {
         "growth": "linear",
@@ -4550,7 +4550,7 @@
       "kind": "evaluation",
       "comparison": {
         "kind": "different-public-work",
-        "evidenceId": "stage-h-evaluation-v1"
+        "evidenceId": "rolling-origin-evaluation-v1"
       },
       "configuration": {
         "growth": "linear",
@@ -4659,7 +4659,7 @@
       "kind": "evaluation",
       "comparison": {
         "kind": "different-public-work",
-        "evidenceId": "stage-h-evaluation-v1"
+        "evidenceId": "rolling-origin-evaluation-v1"
       },
       "configuration": {
         "growth": "linear",
@@ -4777,7 +4777,7 @@
       "kind": "evaluation",
       "comparison": {
         "kind": "different-public-work",
-        "evidenceId": "stage-h-evaluation-v1"
+        "evidenceId": "rolling-origin-evaluation-v1"
       },
       "configuration": {
         "growth": "linear",

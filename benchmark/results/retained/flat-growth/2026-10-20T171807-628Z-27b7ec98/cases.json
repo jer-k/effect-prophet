@@ -3,7 +3,7 @@
     "id": "country-us-flat-additive",
     "dataset": "v5/country-basic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:a164d63f6d89813d3d28c19a1390af4acde19bafd396dac2c7f90e5cede5605b",
+      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -24,8 +24,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [],
@@ -122,7 +123,7 @@
     "id": "country-explicit-us-flat-additive",
     "dataset": "v5/country-basic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:a164d63f6d89813d3d28c19a1390af4acde19bafd396dac2c7f90e5cede5605b",
+      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -138,8 +139,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [],
@@ -390,7 +392,7 @@
     "id": "country-us-flat-multiplicative",
     "dataset": "v5/country-basic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:a164d63f6d89813d3d28c19a1390af4acde19bafd396dac2c7f90e5cede5605b",
+      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -411,8 +413,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "multiplicative",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [],
@@ -509,7 +512,7 @@
     "id": "country-explicit-us-flat-multiplicative",
     "dataset": "v5/country-basic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:a164d63f6d89813d3d28c19a1390af4acde19bafd396dac2c7f90e5cede5605b",
+      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -525,8 +528,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "multiplicative",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [],
@@ -777,7 +781,7 @@
     "id": "country-boundary-flat",
     "dataset": "v5/country-boundary-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:a164d63f6d89813d3d28c19a1390af4acde19bafd396dac2c7f90e5cede5605b",
+      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -798,8 +802,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [],
@@ -867,7 +872,7 @@
     "id": "country-empty-bv-flat",
     "dataset": "v5/country-basic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:a164d63f6d89813d3d28c19a1390af4acde19bafd396dac2c7f90e5cede5605b",
+      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -888,8 +893,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [],
@@ -957,7 +963,7 @@
     "id": "country-explicit-empty-flat",
     "dataset": "v5/country-basic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:a164d63f6d89813d3d28c19a1390af4acde19bafd396dac2c7f90e5cede5605b",
+      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -973,8 +979,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [],
@@ -1042,7 +1049,7 @@
     "id": "country-estimated-sg-flat",
     "dataset": "v5/country-estimated-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:a164d63f6d89813d3d28c19a1390af4acde19bafd396dac2c7f90e5cede5605b",
+      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -1063,8 +1070,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [],
@@ -1132,7 +1140,7 @@
     "id": "country-partial-in-flat",
     "dataset": "v5/country-partial-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:a164d63f6d89813d3d28c19a1390af4acde19bafd396dac2c7f90e5cede5605b",
+      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -1153,8 +1161,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [],
@@ -1222,7 +1231,7 @@
     "id": "country-mixed-us-flat",
     "dataset": "v5/country-mixed-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:a164d63f6d89813d3d28c19a1390af4acde19bafd396dac2c7f90e5cede5605b",
+      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -1243,8 +1252,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "multiplicative",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [
@@ -1355,7 +1365,7 @@
     "id": "country-none-flat-730",
     "dataset": "v5/country-scaling-730.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:a164d63f6d89813d3d28c19a1390af4acde19bafd396dac2c7f90e5cede5605b",
+      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -1371,8 +1381,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [],
@@ -1436,7 +1447,7 @@
     "id": "country-se-flat-730",
     "dataset": "v5/country-scaling-730.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:a164d63f6d89813d3d28c19a1390af4acde19bafd396dac2c7f90e5cede5605b",
+      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -1457,8 +1468,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [],
@@ -1522,7 +1534,7 @@
     "id": "country-explicit-se-flat-730",
     "dataset": "v5/country-scaling-730.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:a164d63f6d89813d3d28c19a1390af4acde19bafd396dac2c7f90e5cede5605b",
+      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -1538,8 +1550,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [],
@@ -3431,7 +3444,7 @@
     "id": "country-cn-flat-730",
     "dataset": "v5/country-scaling-730.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:a164d63f6d89813d3d28c19a1390af4acde19bafd396dac2c7f90e5cede5605b",
+      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -3452,8 +3465,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [],
@@ -3517,7 +3531,7 @@
     "id": "country-explicit-cn-flat-730",
     "dataset": "v5/country-scaling-730.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:a164d63f6d89813d3d28c19a1390af4acde19bafd396dac2c7f90e5cede5605b",
+      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -3533,8 +3547,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [],
@@ -4145,7 +4160,7 @@
     "id": "country-none-flat-2190",
     "dataset": "v5/country-scaling-2190.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:a164d63f6d89813d3d28c19a1390af4acde19bafd396dac2c7f90e5cede5605b",
+      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -4161,8 +4176,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [],
@@ -4226,7 +4242,7 @@
     "id": "country-se-flat-2190",
     "dataset": "v5/country-scaling-2190.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:a164d63f6d89813d3d28c19a1390af4acde19bafd396dac2c7f90e5cede5605b",
+      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -4247,8 +4263,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [],
@@ -4312,7 +4329,7 @@
     "id": "country-explicit-se-flat-2190",
     "dataset": "v5/country-scaling-2190.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:a164d63f6d89813d3d28c19a1390af4acde19bafd396dac2c7f90e5cede5605b",
+      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -4328,8 +4345,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [],
@@ -8041,7 +8059,7 @@
     "id": "country-cn-flat-2190",
     "dataset": "v5/country-scaling-2190.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:a164d63f6d89813d3d28c19a1390af4acde19bafd396dac2c7f90e5cede5605b",
+      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -8062,8 +8080,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [],
@@ -8127,7 +8146,7 @@
     "id": "country-explicit-cn-flat-2190",
     "dataset": "v5/country-scaling-2190.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:a164d63f6d89813d3d28c19a1390af4acde19bafd396dac2c7f90e5cede5605b",
+      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -8143,8 +8162,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [],
@@ -9392,7 +9412,7 @@
     "id": "country-none-flat-2190-batch-32",
     "dataset": "v6/country-scaling-2190-batch-32.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:a164d63f6d89813d3d28c19a1390af4acde19bafd396dac2c7f90e5cede5605b",
+      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -9408,8 +9428,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [],
@@ -9473,7 +9494,7 @@
     "id": "country-se-flat-2190-batch-32",
     "dataset": "v6/country-scaling-2190-batch-32.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:a164d63f6d89813d3d28c19a1390af4acde19bafd396dac2c7f90e5cede5605b",
+      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -9494,8 +9515,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [],
@@ -9559,7 +9581,7 @@
     "id": "country-explicit-se-flat-2190-batch-32",
     "dataset": "v6/country-scaling-2190-batch-32.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:a164d63f6d89813d3d28c19a1390af4acde19bafd396dac2c7f90e5cede5605b",
+      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -9575,8 +9597,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [],
@@ -12833,7 +12856,7 @@
     "id": "country-uncertainty-us-flat",
     "dataset": "v5/country-basic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:a164d63f6d89813d3d28c19a1390af4acde19bafd396dac2c7f90e5cede5605b",
+      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -12854,8 +12877,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [],
@@ -13121,8 +13145,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [
@@ -13237,8 +13262,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [
@@ -13354,8 +13380,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [
@@ -13451,8 +13478,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [
@@ -13573,8 +13601,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [
@@ -13695,8 +13724,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [
@@ -13818,8 +13848,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [
@@ -13941,8 +13972,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [
@@ -14077,8 +14109,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [
@@ -14199,8 +14232,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [
@@ -14322,8 +14356,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [
@@ -14409,8 +14444,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [
@@ -14496,8 +14532,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [
@@ -14582,8 +14619,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [],
@@ -14658,8 +14696,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [],
@@ -14734,8 +14773,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [],
@@ -14810,8 +14850,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [],
@@ -14886,8 +14927,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [],
@@ -14962,8 +15004,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [],
@@ -15038,8 +15081,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [
@@ -15121,8 +15165,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [
@@ -15204,8 +15249,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [
@@ -15316,8 +15362,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [
@@ -15428,8 +15475,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [
@@ -15540,8 +15588,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [
@@ -15652,8 +15701,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [
@@ -15764,8 +15814,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [
@@ -15876,8 +15927,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [
@@ -15988,8 +16040,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [
@@ -16100,8 +16153,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [
@@ -16212,8 +16266,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [
@@ -16324,8 +16379,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [
@@ -16436,8 +16492,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [
@@ -16548,8 +16605,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [
@@ -16650,8 +16708,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [
@@ -16752,8 +16811,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [
@@ -16855,8 +16915,9 @@
         "seasonalityMode": "additive",
         "holidaysMode": "additive",
         "changepoints": {
-          "mode": "explicit",
-          "timestamps": []
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
         },
         "changepointPriorScale": 0.05,
         "seasonalities": [
