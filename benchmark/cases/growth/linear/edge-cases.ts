@@ -1,4 +1,5 @@
 import type { BenchmarkCase } from "../../../tools/case.ts";
+import { pythonDefaultOptimizer } from "../../prophet-defaults.ts";
 import { linearComparison, linearOptimizerQuality, linearOptimizers } from "./controls.ts";
 
 const phases = [
@@ -28,16 +29,10 @@ const automatic = { mode: "auto", count: 25, range: 0.8 } as const;
 
 const explicit = { mode: "explicit", timestamps: ["2020-01-17T00:00:00.000Z"] } as const;
 
-/** Flat zero-span probes keep their original row-handling evidence and Python controls. */
+/** Flat zero-span probes keep their original row-handling evidence. */
 const flatComparison = {
   kind: "equivalent-objective",
   evidenceId: "training-row-map-v1",
-} as const;
-
-const flatPythonOptimizer = {
-  algorithm: "Newton",
-  maxIterations: 10000,
-  newtonFallback: false,
 } as const;
 
 const configuration = {
@@ -145,7 +140,7 @@ export const linearGrowthEdgeCases: ReadonlyArray<BenchmarkCase> = [
             workload: {
               ...workload,
               comparison: flatComparison,
-              pythonOptimizer: flatPythonOptimizer,
+              pythonOptimizer: pythonDefaultOptimizer,
             },
           }
         : {

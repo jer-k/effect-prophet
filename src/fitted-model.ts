@@ -106,6 +106,7 @@ const consistentStanMapCompletion = Schema.makeFilter(
   },
 );
 
+/** Reduced coordinate diagnostics, still decoded for flat models saved by earlier releases. */
 const FlatMapCoordinateFitSummarySchema = Schema.Struct({
   method: Schema.Literal("flat-map-coordinate-v1"),
   termination: Schema.Literals(["converged", "constant-target-shortcut"]),
@@ -122,7 +123,7 @@ export const FlatMapStanFitSummarySchema = Schema.Struct({
   method: Schema.Literal("flat-map-stan-v1"),
 }).check(consistentStanMapCompletion);
 
-/** Reduced coordinate or Stan flat MAP diagnostics. */
+/** Stan flat MAP diagnostics, or reduced coordinate diagnostics from a saved model. */
 export const FlatMapFitSummarySchema = Schema.Union([
   FlatMapCoordinateFitSummarySchema,
   FlatMapStanFitSummarySchema,
@@ -162,14 +163,12 @@ const hasMultiplicativeComponents = (parameters: {
   parameters.regressors.some((regressor) => regressor.definition.mode === "multiplicative");
 
 /**
- * Whether a flat model must fit through Prophet's Stan density.
+ * Whether a flat model has features the retired reduced coordinate fitter never produced.
  *
- * The reduced coordinate fitter covers only unconditional additive seasonalities.
- * Events, regressors, conditional seasonalities, and multiplicative components all
- * fit through Stan, as Prophet's flat model does. Any flat model may also fit through
- * Stan when its caller requests an optimizer.
+ * That fitter covered only unconditional additive seasonalities, so a saved coordinate
+ * summary with events, regressors, conditional or multiplicative components is invalid.
  */
-export const requiresFlatStanMap = (features: {
+const exceedsCoordinateFitter = (features: {
   readonly seasonalities: typeof SeasonalityLayoutSchema.Type;
   readonly events: typeof EventCalendarSchema.Type;
   readonly regressors: ReadonlyArray<unknown>;
@@ -273,7 +272,7 @@ const consistentFlatMapParameters = Schema.makeFilter<FlatMapParametersFields>((
 
   if (
     parameters.fitSummary.method === "flat-map-coordinate-v1" &&
-    requiresFlatStanMap(parameters)
+    exceedsCoordinateFitter(parameters)
   ) {
     issues.push({
       path: ["fitSummary", "method"],

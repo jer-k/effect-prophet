@@ -30,14 +30,18 @@ RUN npm ci && npm cache clean --force
 COPY rust-toolchain.toml rolldown.config.ts tsconfig.json tsconfig.build.json ./
 COPY tools/clean-build.ts tools/prepare-wasm-package.ts ./tools/
 COPY rust/prophet-wasm/Cargo.toml rust/prophet-wasm/Cargo.lock ./rust/prophet-wasm/
+COPY rust/prophet-wasm/.cargo ./rust/prophet-wasm/.cargo
 COPY rust/prophet-wasm/src ./rust/prophet-wasm/src
 COPY rust/prophet-wasm/third-party ./rust/prophet-wasm/third-party
 COPY src ./src
 
 # Reuse compilation state without baking a fresh Cargo target tree into every image.
+# Cargo judges freshness by mtime and COPY keeps the context's mtimes, so a cache last
+# written by another checkout could look newer than these sources. Touch them first.
 RUN --mount=type=cache,id=benchmark-cargo-target-${TARGETARCH},target=/workspace/rust/prophet-wasm/target,sharing=locked \
     --mount=type=cache,id=benchmark-cargo-registry-${TARGETARCH},target=/usr/local/cargo/registry,sharing=locked \
-    npm run build \
+    find rust/prophet-wasm/src -type f -exec touch {} + \
+    && npm run build \
     && mkdir -p /build-tools \
     && rustc --version > /build-tools/rustc-version.txt \
     && wasm-pack --version > /build-tools/wasm-pack-version.txt

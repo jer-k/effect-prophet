@@ -1,0 +1,5 @@
+# Let LLVM vectorize independent lanes (spectral rotations, row loops) with WASM SIMD.
+# simd128 lanes are IEEE-exact and have no fused multiply-add, and LLVM does not reorder
+# floating-point reductions, so fitted results stay bit-identical to scalar builds.
+[target.wasm32-unknown-unknown]
+rustflags = ["-C", "target-feature=+simd128"]

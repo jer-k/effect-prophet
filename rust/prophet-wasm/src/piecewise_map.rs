@@ -13,6 +13,10 @@ use crate::target_scaling::{
   ScalingMode, TargetScaling, TargetScalingError, resolve_target_scaling,
 };
 
+/// Prophet's default private changepoint grid, also present in flat Stan data.
+pub(crate) const DEFAULT_CHANGEPOINT_COUNT: usize = 25;
+pub(crate) const DEFAULT_CHANGEPOINT_RANGE: f64 = 0.8;
+
 const TREND_PRIOR_SCALE: f64 = 5.0;
 const NOISE_PRIOR_SCALE: f64 = 0.5;
 const CONSTANT_TARGET_NOISE_SCALE: f64 = 1e-9;

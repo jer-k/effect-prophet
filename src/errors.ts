@@ -43,6 +43,7 @@ const FittingFailureReasonSchema = Schema.Literals([
   "non-finite-result",
   "noise-collapse",
   "non-convergence",
+  "memory-limit",
   "backend-failure",
 ]);
 
@@ -78,6 +79,7 @@ export type FittingFailureReason =
   | "non-finite-result"
   | "noise-collapse"
   | "non-convergence"
+  | "memory-limit"
   | "backend-failure";
 
 export type PredictionFailureReason =
@@ -130,6 +132,7 @@ export class FittingError extends Schema.TaggedError<FittingError>()("FittingErr
   reason: FittingFailureReasonSchema,
   observationCount: Schema.Natural,
   parameterCount: Schema.optionalKey(Schema.Natural),
+  memoryLimitBytes: Schema.optionalKey(Schema.Natural),
   backendPhase: Schema.optionalKey(WasmFailurePhaseSchema),
   message: Schema.String,
 }) {
@@ -142,6 +145,7 @@ export class FittingError extends Schema.TaggedError<FittingError>()("FittingErr
       readonly reason: FittingFailureReason;
       readonly observationCount: number;
       readonly parameterCount?: number;
+      readonly memoryLimitBytes?: number;
       readonly backendPhase?: WasmFailurePhase;
       readonly message: string;
     },

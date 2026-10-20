@@ -89,27 +89,8 @@ export interface AdditiveFeatureWasmBindings {
   ) => Float64Array;
 }
 
-/** Rust/WASM bindings for the packed reduced flat MAP protocol. */
+/** Rust/WASM bindings for the packed flat MAP prediction protocol. */
 export interface FlatMapWasmBindings {
-  /** Fit one complete flat MAP model and return its packed protocol frame. */
-  readonly fit_flat_map: (
-    timestamps: Float64Array,
-    values: Float64Array,
-    periodsDays: Float64Array,
-    fourierOrders: Float64Array,
-    priorScales: Float64Array,
-  ) => Float64Array;
-
-  /** Fit one complete scaled flat MAP model and return its packed protocol frame. */
-  readonly fit_flat_map_with_scaling: (
-    timestamps: Float64Array,
-    values: Float64Array,
-    scalingMode: number,
-    periodsDays: Float64Array,
-    fourierOrders: Float64Array,
-    priorScales: Float64Array,
-  ) => Float64Array;
-
   /** Evaluate one complete flat MAP prediction batch. */
   readonly predict_flat_map: (
     timestamps: Float64Array,
@@ -275,8 +256,6 @@ const requiredFunctionExports = [
   "fit_piecewise_map_with_features_and_scaling",
   "predict_piecewise_map_with_features",
   "predict_piecewise_map_with_features_and_scaling",
-  "fit_flat_map",
-  "fit_flat_map_with_scaling",
   "predict_flat_map",
   "predict_flat_map_with_scaling",
   "fit_piecewise_map",

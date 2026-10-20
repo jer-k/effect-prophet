@@ -164,7 +164,6 @@ def configure_model(benchmark_case: dict[str, Any]) -> Prophet:
     growth = configuration["growth"] if configurable_growth else "linear"
     common: dict[str, Any] = {
         "growth": growth,
-        "changepoint_prior_scale": configuration["changepointPriorScale"],
         "yearly_seasonality": False,
         "weekly_seasonality": False,
         "daily_seasonality": False,
@@ -174,16 +173,19 @@ def configure_model(benchmark_case: dict[str, Any]) -> Prophet:
         "holidays_mode": configuration.get("holidaysMode", "additive"),
         "scaling": configuration.get("scaling", "absmax"),
     }
-    if growth == "flat":
-        common["changepoints"] = []
-    elif changepoints["mode"] == "explicit":
-        common["changepoints"] = [
-            pd.to_datetime(value, utc=True).tz_localize(None)
-            for value in changepoints["timestamps"]
-        ]
-    else:
-        common["n_changepoints"] = changepoints["count"]
-        common["changepoint_range"] = changepoints["range"]
+    # Effect's flat options reject changepoints and their prior. Leave Prophet's default
+    # grid and prior in its flat Stan state, exactly as Effect's flat fit retains them.
+    if growth != "flat":
+        common["changepoint_prior_scale"] = configuration["changepointPriorScale"]
+
+        if changepoints["mode"] == "explicit":
+            common["changepoints"] = [
+                pd.to_datetime(value, utc=True).tz_localize(None)
+                for value in changepoints["timestamps"]
+            ]
+        else:
+            common["n_changepoints"] = changepoints["count"]
+            common["changepoint_range"] = changepoints["range"]
     country = configuration.get("countryHolidays")
     if country is not None:
         if importlib.metadata.version("holidays") != "0.104":

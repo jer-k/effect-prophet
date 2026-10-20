@@ -1,8 +1,10 @@
 # Flat growth cases
 
 Flat growth means a constant **trend**, not a constant forecast: seasonalities, events and
-regressors still move the forecast. Effect fits flat models with its own fixed optimizer, so flat
-declarations never set `effectOptimizer`.
+regressors still move the forecast. Effect's flat options have no changepoint settings, so the
+Python adapter leaves Prophet's default changepoint grid and prior in place: both Stan states keep
+those prior-only coordinates. Cases without `effectOptimizer` use both libraries' default optimizer
+policy (Newton below 100 rows, otherwise L-BFGS with a Newton fallback).
 
 | File                                     | Cases                                                                                                              |
 | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |

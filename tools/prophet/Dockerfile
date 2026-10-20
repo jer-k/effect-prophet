@@ -31,5 +31,7 @@ COPY rust/prophet-wasm/third-party/prophet-license.txt ./rust/prophet-wasm/third
 COPY benchmark/inputs/v1/training-ordered.json benchmark/inputs/v1/training-unsorted.json ./benchmark/data/generated/
 # Logistic fitting oracles consume the frozen red-checkpoint inputs verbatim.
 COPY benchmark/inputs/v2/logistic-basic-96.json benchmark/inputs/v2/logistic-weekly-256.json ./benchmark/inputs/v2/
+# Flat Newton oracles consume the 96-row benchmark histories verbatim.
+COPY benchmark/inputs/v1/flat-level.json benchmark/inputs/v1/flat-seasonal.json ./benchmark/inputs/v1/
 
 ENTRYPOINT ["/opt/effect-prophet-reference/bin/python", "tools/prophet/generate.py"]

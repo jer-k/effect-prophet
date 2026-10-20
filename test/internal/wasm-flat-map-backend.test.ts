@@ -23,11 +23,6 @@ const definitions = Effect.runSync(
 
 const seasonalities = Effect.runSync(Seasonality.makeSeasonalityLayout(definitions));
 
-const input = {
-  timestamps: new Float64Array([0, DAY / 4, DAY / 2, (3 * DAY) / 4, DAY, DAY * 1.25]),
-  values: new Float64Array([1.1, 3, 0.9, -1.2, 1.2, 2.9]),
-};
-
 const validModel = Effect.runSync(
   parseFlatMapModel({
     model: "flat-map",
@@ -48,12 +43,7 @@ const validModel = Effect.runSync(
   }),
 );
 
-const moduleReturning = (
-  fitResult: Float64Array,
-  predictionResult: Float64Array,
-): FlatMapWasmBindings => ({
-  fit_flat_map: () => fitResult,
-  fit_flat_map_with_scaling: () => fitResult,
+const moduleReturning = (predictionResult: Float64Array): FlatMapWasmBindings => ({
   predict_flat_map: () => predictionResult,
   predict_flat_map_with_scaling: () => predictionResult,
 });
@@ -101,12 +91,6 @@ describe("Rust/WASM flat MAP adapter boundary", () => {
     const executeCause = new Error("private execute cause");
 
     const executeAdapter = makeWasmFlatMapAdapter(() => ({
-      fit_flat_map: () => {
-        throw executeCause;
-      },
-      fit_flat_map_with_scaling: () => {
-        throw executeCause;
-      },
       predict_flat_map: () => {
         throw executeCause;
       },
@@ -115,9 +99,7 @@ describe("Rust/WASM flat MAP adapter boundary", () => {
       },
     }));
 
-    const loadError = await Effect.runPromise(
-      Effect.flip(loadAdapter.fit(input, "absmax", seasonalities)),
-    );
+    const loadError = await Effect.runPromise(Effect.flip(loadAdapter.predict(validModel, [0])));
 
     const executeError = await Effect.runPromise(
       Effect.flip(executeAdapter.predict(validModel, [0])),
@@ -129,49 +111,10 @@ describe("Rust/WASM flat MAP adapter boundary", () => {
     expect(executeError.cause).toBe(executeCause);
   });
 
-  it.each([
-    ["empty", []],
-    ["fractional status", [1.5]],
-    ["unknown status", [99]],
-    ["wrong success width", [0, 1, 0.1]],
-    ["wrong observation count", [0, 1, 0.1, 3, 5, 4, -1, 0, 0, 2, 0]],
-    ["unknown termination", [0, 1, 0.1, 3, 6, 4, -1, 0, 9, 2, 0]],
-    ["extra failure data", [7, 1]],
-  ])("strictly rejects a malformed fit frame: %s", async (_label, frame) => {
-    const adapter = makeWasmFlatMapAdapter(() =>
-      moduleReturning(new Float64Array(frame), new Float64Array([0])),
-    );
-
-    const error = await Effect.runPromise(Effect.flip(adapter.fit(input, "absmax", seasonalities)));
-
-    expect(error).toBeInstanceOf(FittingError);
-    expect(error.reason).toBe("backend-failure");
-    expect(error.backendPhase).toBe("protocol");
-  });
-
-  it.each([
-    [7, "noise-collapse"],
-    [8, "non-convergence"],
-    [6, "non-finite-result"],
-  ] as const)("preserves flat numerical fit status %s", async (status, reason) => {
-    const adapter = makeWasmFlatMapAdapter(() =>
-      moduleReturning(new Float64Array([status]), new Float64Array([0])),
-    );
-
-    const error = await Effect.runPromise(Effect.flip(adapter.fit(input, "absmax", seasonalities)));
-
-    expect(error.reason).toBe(reason);
-    expect(error.backendPhase).toBeUndefined();
-  });
-
   it("strictly decodes prediction frames and maps indexed numerical failures", async () => {
-    const malformed = makeWasmFlatMapAdapter(() =>
-      moduleReturning(new Float64Array([1]), new Float64Array([0, 1])),
-    );
+    const malformed = makeWasmFlatMapAdapter(() => moduleReturning(new Float64Array([0, 1])));
 
-    const numerical = makeWasmFlatMapAdapter(() =>
-      moduleReturning(new Float64Array([1]), new Float64Array([6, 1])),
-    );
+    const numerical = makeWasmFlatMapAdapter(() => moduleReturning(new Float64Array([6, 1])));
 
     const malformedError = await Effect.runPromise(
       Effect.flip(malformed.predict(validModel, [0, DAY / 4])),

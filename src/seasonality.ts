@@ -221,17 +221,6 @@ export type SeasonalComponent = (typeof SeasonalityLayoutSchema.Type)["component
 /** A parsed coefficient layout ordered by definition, harmonic, then sine before cosine. */
 export type SeasonalityLayout = typeof SeasonalityLayoutSchema.Type;
 
-/** A parsed coefficient layout containing no seasonal components. */
-export type EmptySeasonalityLayout = SeasonalityLayout & {
-  readonly components: readonly [];
-  readonly coefficientCount: 0;
-};
-
-/** A parsed coefficient layout containing at least one seasonal component. */
-export type NonEmptySeasonalityLayout = SeasonalityLayout & {
-  readonly components: readonly [SeasonalComponent, ...ReadonlyArray<SeasonalComponent>];
-};
-
 /** An internal failure to establish seasonality or coefficient-layout invariants. */
 export class InvalidSeasonality extends Schema.TaggedError<InvalidSeasonality>()(
   "InvalidSeasonality",
@@ -406,53 +395,3 @@ export const makeSeasonalityLayout = (
 
   return parseSeasonalityLayout({ components, coefficientCount });
 };
-
-/**
- * Construct the canonical empty coefficient layout.
- *
- * @returns A deeply frozen empty layout or structured layout issues.
- */
-export const makeEmptySeasonalityLayout = (): Effect.Effect<
-  EmptySeasonalityLayout,
-  InvalidSeasonality
-> =>
-  makeSeasonalityLayout([]).pipe(
-    Effect.map((layout) => {
-      const components: readonly [] = Object.freeze([]);
-
-      return Object.freeze({
-        ...layout,
-        components,
-        coefficientCount: 0 as const,
-      });
-    }),
-  );
-
-/**
- * Construct a deterministic coefficient layout from at least one definition.
- *
- * @param definitions - Parsed non-empty seasonality definitions in caller-selected order.
- * @returns A deeply frozen non-empty layout or structured layout issues.
- */
-export const makeNonEmptySeasonalityLayout = (
-  definitions: readonly [SeasonalityDefinition, ...ReadonlyArray<SeasonalityDefinition>],
-): Effect.Effect<NonEmptySeasonalityLayout, InvalidSeasonality> =>
-  makeSeasonalityLayout(definitions).pipe(
-    Effect.flatMap((layout) => {
-      const firstComponent = layout.components[0];
-
-      if (firstComponent === undefined) {
-        return Effect.fail(
-          new InvalidSeasonality({
-            issues: [{ message: "Expected at least one seasonal component" }],
-            message: "Failed to construct a non-empty seasonality layout",
-          }),
-        );
-      }
-
-      const components: readonly [SeasonalComponent, ...ReadonlyArray<SeasonalComponent>] =
-        Object.freeze([firstComponent, ...layout.components.slice(1)]);
-
-      return Effect.succeed(Object.freeze({ ...layout, components }));
-    }),
-  );

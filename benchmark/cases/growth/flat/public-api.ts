@@ -1,4 +1,5 @@
 import type { BenchmarkCase } from "../../../tools/case.ts";
+import { pythonDefaultOptimizer } from "../../prophet-defaults.ts";
 import { growthScalingAndMixedMapCases } from "../mixed-map.ts";
 
 /** Flat controls retain original gates and datasets; no passing classification is assumed. */
@@ -52,9 +53,9 @@ export const flatGrowthCases: ReadonlyArray<BenchmarkCase> = growthScalingAndMix
       return [...prefixes, fullHistory];
     }
 
-    // Feature-free and seasonal-only variants keep Effect's default exact reduced fitter;
-    // an explicit optimizer would route them through Stan.
-    const { effectOptimizer: _optimizer, ...reducedWorkload } = workload;
+    // Feature-free and seasonal-only variants use both libraries' default optimizers, so
+    // 96 rows select Newton exactly as `Prophet(growth="flat").fit(df)` does.
+    const { effectOptimizer: _optimizer, ...defaultWorkload } = workload;
 
     const basics: ReadonlyArray<BenchmarkCase> = (
       ["level", "constant", "negative", "seasonal"] as const
@@ -64,7 +65,8 @@ export const flatGrowthCases: ReadonlyArray<BenchmarkCase> = growthScalingAndMix
         id: `flat-${variant}-${scaling}`,
         dataset: `v1/flat-${variant}.json`,
         workload: {
-          ...reducedWorkload,
+          ...defaultWorkload,
+          pythonOptimizer: pythonDefaultOptimizer,
           comparison: { ...workload.comparison, evidenceId: "flat-growth-reduced-v1" },
           configuration: {
             ...workload.configuration,

@@ -370,15 +370,26 @@ describe("mixed component public lifecycle", () => {
         ]).pipe(Effect.provide(prophetFittingBackendLayer)),
       );
 
-      expect(exact.fitSummary.method).toBe("flat-map-coordinate-v1");
-      expect(requested.fitSummary.method).toBe("flat-map-stan-v1");
+      if (
+        exact.model !== "flat-map" ||
+        exact.fitSummary.method !== "flat-map-stan-v1" ||
+        requested.model !== "flat-map" ||
+        requested.fitSummary.method !== "flat-map-stan-v1"
+      ) {
+        throw new Error("Expected flat Stan fits");
+      }
+
+      expect(exact.fitSummary.optimization.algorithm).toBe("newton");
+      expect(requested.fitSummary.optimization.algorithm).toBe("lbfgs");
 
       const future = [timestamp(28), timestamp(29)];
       const exactForecasts = await Effect.runPromise(predict(exact, future));
       const requestedForecasts = await Effect.runPromise(predict(requested, future));
 
+      // Newton stops on Stan's objective-change test and L-BFGS on its own criteria, so the two
+      // endpoints agree near the mode rather than to the last digits.
       for (const [index, forecast] of requestedForecasts.entries()) {
-        expect(forecast.value).toBeCloseTo(exactForecasts[index]?.value ?? Number.NaN, 4);
+        expect(forecast.value).toBeCloseTo(exactForecasts[index]?.value ?? Number.NaN, 2);
       }
     });
 

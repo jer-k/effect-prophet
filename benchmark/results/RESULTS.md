@@ -6,7 +6,7 @@ Recorded historical outcomes are not recomputed using current gates. Architectur
 
 | Scope | Run | Passed | Failed | Provenance | Report |
 | --- | --- | ---: | ---: | --- | --- |
-| flat-growth | `2026-10-15T140835-733Z-34951879` | 63 | 0 | clean tree | [results](retained/flat-growth/2026-10-15T140835-733Z-34951879/report.md) |
+| flat-growth | `2026-10-20T030119-668Z-7835012b` | 63 | 0 | clean tree | [results](retained/flat-growth/2026-10-20T030119-668Z-7835012b/report.md) |
 | linear-growth | `2026-10-15T043106-340Z-34951879` | 38 | 2 | clean tree | [results](retained/linear-growth/2026-10-15T043106-340Z-34951879/report.md) |
 | logistic-growth | `2026-10-15T143246-160Z-34951879` | 52 | 0 | clean tree | [results](retained/logistic-growth/2026-10-15T143246-160Z-34951879/report.md) |
 
@@ -14,7 +14,7 @@ Recorded historical outcomes are not recomputed using current gates. Architectur
 
 Only passed gates admit timing. Diagnostic invalid-domain cases remain failed; they are not relabeled as successful fits.
 
-### flat-growth/2026-10-15T140835-733Z-34951879
+### flat-growth/2026-10-20T030119-668Z-7835012b
 
 | Case | Outcome | Contract |
 | --- | --- | --- |

@@ -148,3 +148,44 @@ def linear_optimizer_evidence(model):
     if model.growth != "linear":
         raise ValueError("Linear optimizer evidence requires a linear model")
     return map_optimizer_evidence(model)
+
+
+def stan_unconstrained_batch(model, data, parameters):
+    """Probe many exact unconstrained points through unmodified CmdStan 2.37.
+
+    Its JSON context stores arrays column-major, while read_unconstrained_params
+    consumes consecutive row states. Pack that layout explicitly. A one-row
+    control verifies the batch layout before returning any evidence.
+    """
+    import csv
+    import json
+    from pathlib import Path
+    import subprocess
+    import tempfile
+
+    count = len(parameters)
+    width = len(parameters[0])
+    flat = [value for point in parameters for value in point]
+    packed = [[flat[column * count + row] for column in range(width)] for row in range(count)]
+
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        (root / "data.json").write_text(json.dumps(data))
+        results = []
+
+        for name, points in (("batch", packed), ("control", parameters[0])):
+            (root / f"{name}.json").write_text(json.dumps({"params_r": points}))
+            subprocess.run([
+                model.stan_backend.model.exe_file, "log_prob",
+                f"unconstrained_params={root / f'{name}.json'}", "jacobian=0",
+                "data", f"file={root / 'data.json'}",
+                "output", f"file={root / f'{name}.csv'}", "sig_figs=12",
+            ], check=True, capture_output=True, text=True)
+            with (root / f"{name}.csv").open() as handle:
+                rows = list(csv.reader(line for line in handle if not line.startswith("#")))
+            results.append([[float(value) for value in row] for row in rows[1:]])
+
+        if results[0][0] != results[1][0]:
+            raise ValueError("CmdStan batch and single-point parameter layouts disagree")
+
+        return results[0]

@@ -70,6 +70,27 @@ If a crate in the report does not offer Apache-2.0, decide whether its code reac
 Code ported or adapted from another project needs the same treatment: a `NOTICE.txt` section, its
 license text in `third-party/`, and a license header in the adapted Rust file.
 
+## Documentation site
+
+The docs site in `site/` is part of the product. When a change affects anything a user can see,
+update the site in the same pull request. That includes public options and defaults, errors and
+their `reason` values, size or memory limits, fitting behavior, results compared with Python
+Prophet, tracing spans and attributes, and performance claims.
+
+Before finishing, search `site/` for the names the change touches: options, error reasons,
+method names, limits, and any removed feature. Fix statements that are now wrong, and delete ones
+that describe behavior that no longer exists. Check these pages in particular:
+
+- `site/python/differences.md`: every intentional difference from Python Prophet, including
+  limits Python does not have. Remove an entry when the difference goes away.
+- `site/examples/errors.md`: the error types and the `reason` values users are likely to see.
+- `site/guide/tracing.md`: span names and attributes.
+- `site/examples/` and `site/snippets/`: options and examples, which `npm run docs:examples` runs.
+- `site/.vitepress/benchmarks/*-cases.ts`: benchmark case descriptions and outcomes. Benchmark
+  numbers come from the retained baselines, so refresh those rather than editing pages by hand.
+
+Run `npm run docs:build` and `npm run format:check` after editing the site.
+
 ## Testing
 
 Files in `test/` should be at the same level as the file they're testing in `src/`. Example

@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use crate::compensated_sum::CompensatedSum;
 use crate::fourier::checked_element_count;
 use crate::mixed_map::ComponentMode;
@@ -252,7 +254,7 @@ pub fn evaluate_map_objective(
 /// Prophet's internal zero-time delta. An absent feature block uses its private
 /// zero-valued beta with prior scale one. Neither is exposed as a public feature.
 pub struct StanLinearObjective<'a> {
-  design: &'a [f64],
+  design: Cow<'a, [f64]>,
   target: &'a [f64],
   changepoint_count: usize,
   /// Effective changepoint locations, including the private zero-time dummy.
@@ -265,12 +267,31 @@ pub struct StanLinearObjective<'a> {
   multiplicative_columns: Vec<bool>,
   changepoint_prior: f64,
   column_count: usize,
+  flat_trend: bool,
 }
 
 impl<'a> StanLinearObjective<'a> {
   /// Parse complete, aligned normalized rows and resolved numerical features.
   pub fn new(
     design: &'a [f64],
+    target: &'a [f64],
+    changepoint_times: &[f64],
+    feature_priors: &'a [f64],
+    modes: &'a [ComponentMode],
+    changepoint_prior: f64,
+  ) -> Result<Self, MapObjectiveError> {
+    Self::with_design(
+      Cow::Borrowed(design),
+      target,
+      changepoint_times,
+      feature_priors,
+      modes,
+      changepoint_prior,
+    )
+  }
+
+  fn with_design(
+    design: Cow<'a, [f64]>,
     target: &'a [f64],
     changepoint_times: &[f64],
     feature_priors: &'a [f64],
@@ -335,6 +356,7 @@ impl<'a> StanLinearObjective<'a> {
         .collect(),
       changepoint_prior,
       column_count,
+      flat_trend: false,
     })
   }
 
@@ -480,9 +502,21 @@ impl<'a> StanLinearObjective<'a> {
     // tape the prior adjoints reach k/m before the trend's scalar broadcasts.
     gradient[0] = -(parameters[0] * 0.2) * 0.2;
     gradient[1] = -(parameters[1] * 0.2) * 0.2;
-    for (row, score) in trend_scores.iter().enumerate() {
-      gradient[0] += self.design[row * self.column_count + 1] * score;
-      gradient[1] += score;
+    if self.flat_trend {
+      // flat_trend's matrix-of-var adjoints have no packet access. Accumulate
+      // its scalar broadcast in row order before adding the prior adjoint.
+      // A double-packet reduction changes near-cancelling gradients and can
+      // turn tens of Newton steps into thousands on minmax histories.
+      let mut adjoint = 0.0;
+      for &score in &trend_scores {
+        adjoint += score;
+      }
+      gradient[1] += adjoint;
+    } else {
+      for (row, score) in trend_scores.iter().enumerate() {
+        gradient[0] += self.design[row * self.column_count + 1] * score;
+        gradient[1] += score;
+      }
     }
     let adjoints = self.changepoint_adjoints(&trend_scores);
     for (delta, point) in self.changepoint_points.iter().copied().enumerate() {
@@ -662,45 +696,70 @@ impl StanMapObjective for StanLinearObjective<'_> {
   }
 }
 
-/// Prophet's flat-growth density over the coordinates its trend can move.
+/// Prophet's complete flat-growth Stan state, including prior-only coordinates.
 ///
-/// Prophet's flat Stan model keeps the linear model's rate `k` and changepoint
-/// `delta`, but its trend ignores both: only priors touch them, and their
-/// gradients are exactly zero at Prophet's zero start. Stan's Newton and L-BFGS
-/// steps therefore never move them in exact arithmetic. Optimizing only
-/// `[m, log(sigma), beta...]` takes those same steps without letting rounding in
-/// the spectral solve seed `delta` beside its Laplace kink, where the kink turns
-/// that noise into large curvature. Densities keep every Prophet constant, so
-/// objectives stay comparable with CmdStan's.
+/// The likelihood ignores `k` and `delta`, but the finite-difference Hessian
+/// and spectral action still include them. Removing those coordinates changes
+/// numerical trajectories on nearly interpolating models. They are retained
+/// through optimization and omitted only from the public flat trend.
 pub struct StanFlatObjective<'a> {
   linear: StanLinearObjective<'a>,
   initial_level: f64,
 }
 
 impl<'a> StanFlatObjective<'a> {
-  /// Parse `[1,0,beta...]` design rows: the linear density with a zero time column.
+  /// Parse flat rows while retaining Stan's prior-only rate and deltas.
+  /// Dropping those coordinates changes the finite-difference spectral action,
+  /// even though their exact likelihood derivatives are zero.
   pub fn new(
     design: &'a [f64],
     target: &'a [f64],
+    changepoint_count: usize,
     feature_priors: &'a [f64],
     modes: &'a [ComponentMode],
     changepoint_prior: f64,
   ) -> Result<Self, MapObjectiveError> {
-    let linear = StanLinearObjective::new(
-      design,
+    let columns = feature_priors
+      .len()
+      .checked_add(2)
+      .ok_or(MapObjectiveError::SizeOverflow)?;
+    let count =
+      checked_element_count(target.len(), columns).map_err(|_| MapObjectiveError::SizeOverflow)?;
+
+    if design.len() != count {
+      return Err(MapObjectiveError::InvalidDimensions);
+    }
+    if design.chunks_exact(columns).any(|row| row[1] != 0.0) {
+      return Err(MapObjectiveError::InvalidInput);
+    }
+
+    let expanded_columns = columns
+      .checked_add(changepoint_count)
+      .ok_or(MapObjectiveError::SizeOverflow)?;
+    let count = checked_element_count(target.len(), expanded_columns)
+      .map_err(|_| MapObjectiveError::SizeOverflow)?;
+    let mut expanded = vec![0.0; count];
+
+    for (source, row) in design
+      .chunks_exact(columns)
+      .zip(expanded.chunks_exact_mut(expanded_columns))
+    {
+      row[..2].copy_from_slice(&source[..2]);
+      row[2 + changepoint_count..].copy_from_slice(&source[2..]);
+    }
+
+    // The locations never enter a flat likelihood. Positive placeholders keep
+    // every zero-time row outside the active prefix, as Stan's flat branch does.
+    let points = vec![1.0; changepoint_count];
+    let mut linear = StanLinearObjective::with_design(
+      Cow::Owned(expanded),
       target,
-      &[],
+      &points,
       feature_priors,
       modes,
       changepoint_prior,
     )?;
-
-    if design
-      .chunks_exact(linear.column_count)
-      .any(|row| row[1] != 0.0)
-    {
-      return Err(MapObjectiveError::InvalidInput);
-    }
+    linear.flat_trend = true;
 
     let mut sum = CompensatedSum::default();
 
@@ -720,14 +779,6 @@ impl<'a> StanFlatObjective<'a> {
     })
   }
 
-  /// Insert the fixed zero rate and zero-time delta: `[0, m, 0, log(sigma), beta...]`.
-  fn linear_state(&self, flat: &[f64]) -> Vec<f64> {
-    let mut state = Vec::with_capacity(flat.len() + 2);
-    state.extend_from_slice(&[0.0, flat[0], 0.0]);
-    state.extend_from_slice(&flat[1..]);
-    state
-  }
-
   /// Fit with Prophet's selection policy and restore `[m, k = 0, beta...]` coefficients.
   pub fn fit_model(
     &self,
@@ -735,44 +786,79 @@ impl<'a> StanFlatObjective<'a> {
   ) -> Result<NormalizedLinearMapFit, crate::stan::linear_optimizer::LinearOptimizationError> {
     let fit = crate::stan::linear_optimizer::optimize_map(self, options)?;
 
-    self.linear.normalized_fit(
-      &self.linear_state(&fit.parameters),
-      &self.linear_state(&fit.evaluation.gradient),
+    let mut normalized = self.linear.normalized_fit(
+      &fit.parameters,
+      &fit.evaluation.gradient,
       fit.evaluation.value,
       fit.attempts.summary(),
-    )
+    )?;
+    normalized
+      .coefficients
+      .drain(2..2 + self.linear.changepoint_count);
+    normalized.coefficients[1] = 0.0;
+    Ok(normalized)
   }
 }
 
 impl StanMapObjective for StanFlatObjective<'_> {
+  fn newton_hessian(
+    &self,
+    parameters: &[f64],
+    current: &LogDensityEvaluation,
+  ) -> Result<Vec<f64>, NewtonError> {
+    use crate::stan::optimizer::{
+      checked_evaluation, finite_difference_hessian, finite_difference_hessian_from_gradients,
+    };
+
+    if self
+      .linear
+      .active_changepoints
+      .iter()
+      .any(|&active| active != 0)
+    {
+      return finite_difference_hessian(parameters, &|state| self.evaluate(state));
+    }
+
+    // Flat likelihoods ignore k/delta. Reuse the current likelihood gradient
+    // for their perturbations, changing only the original prior arithmetic.
+    // Keep the FULL stencil and eigensystem: analytically zeroing these blocks
+    // would discard rounded cross entries and change the fitted trajectory.
+    let sigma_index = self.linear.sigma_index();
+    finite_difference_hessian_from_gradients(parameters, |state, column| {
+      if column != 0 && !(2..sigma_index).contains(&column) {
+        return checked_evaluation(state, &|state| self.evaluate(state))
+          .map(|evaluation| evaluation.gradient);
+      }
+
+      let mut gradient = current.gradient.clone();
+      gradient[column] = if column == 0 {
+        -(state[0] * 0.2) * 0.2
+      } else {
+        let mut prior = -laplace_derivative(state[column], self.linear.changepoint_prior);
+        prior += 0.0;
+        prior += -self.linear.changepoint_points[column - 2] * 0.0;
+        prior
+      };
+      Ok(gradient)
+    })
+  }
+
   fn observation_count(&self) -> usize {
     self.linear.observation_count()
   }
   fn parameter_count(&self) -> usize {
-    self.linear.parameter_count() - 2
+    self.linear.parameter_count()
   }
   fn initial_parameters(&self) -> Vec<f64> {
     let mut parameters = vec![0.0; self.parameter_count()];
-    parameters[0] = self.initial_level;
+    parameters[1] = self.initial_level;
     parameters
   }
   fn log_density_constant(&self) -> f64 {
     self.linear.log_density_constant()
   }
   fn evaluate(&self, parameters: &[f64]) -> Result<LogDensityEvaluation, MapObjectiveError> {
-    if parameters.len() != self.parameter_count() {
-      return Err(MapObjectiveError::InvalidDimensions);
-    }
-
-    let evaluation = self.linear.evaluate(&self.linear_state(parameters))?;
-    let mut gradient = Vec::with_capacity(parameters.len());
-    gradient.push(evaluation.gradient[1]);
-    gradient.extend_from_slice(&evaluation.gradient[3..]);
-
-    Ok(LogDensityEvaluation {
-      value: evaluation.value,
-      gradient,
-    })
+    self.linear.evaluate(parameters)
   }
 }
 
@@ -1306,32 +1392,27 @@ mod tests {
 
   #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
   #[cfg_attr(not(target_arch = "wasm32"), test)]
-  fn flat_density_starts_at_prophet_flat_initialization_and_omits_the_unused_trend() {
+  fn flat_density_retains_prophet_private_coordinates() {
     use crate::stan::linear_optimizer::StanMapObjective;
 
     let target = [0.5, 0.75, 0.25, 1.0];
     let design = [1.0, 0.0, 1.0, 1.0, 0.0, -1.0, 1.0, 0.0, 0.5, 1.0, 0.0, 0.0];
     let modes = [ComponentMode::Additive];
-    let flat = super::StanFlatObjective::new(&design, &target, &[10.0], &modes, 0.05).unwrap();
+    let flat = super::StanFlatObjective::new(&design, &target, 0, &[10.0], &modes, 0.05).unwrap();
     let linear = StanLinearObjective::new(&design, &target, &[], &[10.0], &modes, 0.05).unwrap();
 
-    assert_eq!(flat.parameter_count(), 3);
-    assert_eq!(flat.initial_parameters(), vec![0.625, 0.0, 0.0]);
+    assert_eq!(flat.parameter_count(), 5);
+    assert_eq!(flat.initial_parameters(), vec![0.0, 0.625, 0.0, 0.0, 0.0]);
     assert_eq!(flat.log_density_constant(), linear.log_density_constant());
 
-    let point = [0.6, -1.2, 0.3];
+    let point = [0.0, 0.6, 0.0, -1.2, 0.3];
     let reduced = flat.evaluate(&point).unwrap();
     let complete = linear.evaluate(&[0.0, 0.6, 0.0, -1.2, 0.3]).unwrap();
 
     assert_eq!(reduced.value, complete.value);
-    assert_eq!(
-      reduced.gradient,
-      vec![
-        complete.gradient[1],
-        complete.gradient[3],
-        complete.gradient[4]
-      ]
-    );
+    for (actual, expected) in reduced.gradient.iter().zip(&complete.gradient) {
+      assert!((actual - expected).abs() <= 1e-12);
+    }
     assert_eq!((complete.gradient[0], complete.gradient[2]), (0.0, 0.0));
 
     let fit = flat
@@ -1343,6 +1424,9 @@ mod tests {
 
     let sloped = [1.0, 0.0, 1.0, 1.0, 0.5, -1.0, 1.0, 0.0, 0.5, 1.0, 0.0, 0.0];
 
-    assert!(super::StanFlatObjective::new(&sloped, &target, &[10.0], &modes, 0.05).is_err());
+    assert!(super::StanFlatObjective::new(&sloped, &target, 0, &[10.0], &modes, 0.05).is_err());
   }
 }
+
+#[cfg(test)]
+mod newton_parity;

@@ -9,7 +9,9 @@ use crate::wasm::map::{
 use crate::wasm::mixed_map::{
   layout_view, mask_view, matrix_view, parse_metadata, parse_modes, parse_seasonalities,
 };
-use crate::wasm::protocol::{parse_explicit_changepoints, parse_nonnegative_integer};
+use crate::wasm::protocol::{
+  parse_explicit_changepoints, parse_nonnegative_integer, placeholder_priors,
+};
 
 /// Fit a floor-aware logistic MAP model through one checked WASM call.
 #[must_use]
@@ -196,7 +198,9 @@ pub fn predict_logistic_map_with_features(
   let Some(additional_columns) = parse_nonnegative_integer(additional_column_count) else {
     return prediction_error(PiecewiseMapPredictionStatus::InvalidConfiguration);
   };
-  let placeholder_priors = vec![1.0; additional_columns];
+  let Some(placeholder_priors) = placeholder_priors(additional_columns) else {
+    return prediction_error(PiecewiseMapPredictionStatus::SizeOverflow);
+  };
   let Ok(metadata) = parse_metadata(
     timestamps.len(),
     seasonalities.len(),

@@ -123,3 +123,11 @@ pub(crate) fn parse_nonnegative_integer(value: f64) -> Option<usize> {
 
   Some(value as usize)
 }
+
+/// Unit priors for a prediction-only feature layout.
+///
+/// Callers choose the column count, and zero prediction rows satisfy every row-by-column
+/// check, so bound it by the dense-buffer policy before allocating rather than trapping.
+pub(crate) fn placeholder_priors(columns: usize) -> Option<Vec<f64>> {
+  (columns <= crate::fourier::MAX_DENSE_ELEMENTS).then(|| vec![1.0; columns])
+}

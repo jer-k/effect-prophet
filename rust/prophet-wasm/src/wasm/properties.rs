@@ -7,9 +7,7 @@ use super::additive_features::{
   fit_piecewise_map_with_features, fit_piecewise_map_with_features_and_scaling,
   predict_piecewise_map_with_features, predict_piecewise_map_with_features_and_scaling,
 };
-use super::flat_map::{
-  fit_flat_map, fit_flat_map_with_scaling, predict_flat_map, predict_flat_map_with_scaling,
-};
+use super::flat_map::{predict_flat_map, predict_flat_map_with_scaling};
 use super::logistic_map::{fit_logistic_map_with_features, predict_logistic_map_with_features};
 use super::map::{
   fit_piecewise_map, fit_piecewise_map_with_scaling, predict_piecewise_map,
@@ -328,27 +326,6 @@ fn call_every_entry(case: &WireCase) -> Vec<(&'static str, Vec<f64>)> {
   let s = |scalar| case.scalar(scalar);
 
   vec![
-    (
-      "fit_flat_map",
-      fit_flat_map(
-        &case.timestamps,
-        &case.values,
-        &case.periods,
-        &case.orders,
-        &case.prior_scales,
-      ),
-    ),
-    (
-      "fit_flat_map_with_scaling",
-      fit_flat_map_with_scaling(
-        &case.timestamps,
-        &case.values,
-        s(S::ScalingMode),
-        &case.periods,
-        &case.orders,
-        &case.prior_scales,
-      ),
-    ),
     (
       "predict_flat_map",
       predict_flat_map(
@@ -796,4 +773,36 @@ proptest! {
       }
     }
   }
+}
+
+/// Zero prediction rows satisfy every row-by-column check, so the column count alone must
+/// not size an allocation; this exact frame used to trap on a 16 GiB prior buffer.
+#[test]
+fn zero_row_prediction_rejects_an_unbounded_feature_column_count() {
+  let frame = predict_piecewise_map_with_features(
+    &[],
+    65_536.0,
+    0.0,
+    0.0,
+    f64::NAN,
+    &[],
+    &[],
+    f64::NAN,
+    &[],
+    &[],
+    &[],
+    &[],
+    2_147_483_648.0,
+    &[],
+    &[],
+    &[],
+    &[],
+  );
+
+  assert_eq!(
+    frame,
+    vec![f64::from(
+      super::map::PiecewiseMapPredictionStatus::SizeOverflow as u32
+    )]
+  );
 }

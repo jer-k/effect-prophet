@@ -13,8 +13,6 @@ import { edgeNumber, propertyParameters } from "../helpers/property";
  * a scalar. Derived from the `#[wasm_bindgen]` signatures in `rust/prophet-wasm/src/wasm`.
  */
 const exportSignatures = [
-  ["fit_flat_map", "aaaaa"],
-  ["fit_flat_map_with_scaling", "aanaaa"],
   ["predict_flat_map", "annaaa"],
   ["predict_flat_map_with_scaling", "annnnnaaa"],
   ["fit_piecewise_map", "aanannaaana"],
@@ -150,7 +148,6 @@ describe("Prophet WASM module boundary properties", () => {
       const orders = new Float64Array([order]);
 
       const frames = [
-        module.fit_flat_map(timestamps, values, period, orders, prior),
         module.predict_flat_map(timestamps, 1, 0.1, period, orders, empty),
         module.fit_piecewise_map(
           timestamps,

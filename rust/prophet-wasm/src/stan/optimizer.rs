@@ -2,9 +2,8 @@
 //! `1357c136bf22e3f0d25ed3529fea55fe76842eac`. See `third-party/stan-license.txt`.
 //! This is a pure numerical boundary, not an Effect operation or a tracing site.
 
-use nalgebra::{DMatrix, DVector};
+use nalgebra::DMatrix;
 
-use crate::fourier::checked_element_count;
 use crate::map_objective::MapObjectiveError;
 
 /// A proportional log density and its unconstrained-coordinate gradient.
@@ -31,6 +30,8 @@ pub enum StanOptimizerError {
   NonFiniteResult,
   /// Strong Wolfe search failed after the permitted Hessian reset.
   LineSearchFailure { iterations: usize },
+  /// Linear memory cannot hold the dense Newton workspace for this many parameters.
+  WorkspaceAllocation { parameters: usize },
 }
 
 /// Source-compatible name for the Newton entrypoint's shared numerical errors.
@@ -60,6 +61,12 @@ pub struct NewtonResult {
   pub termination: NewtonTermination,
 }
 
+/// wasm32 linear memory addresses at most 65,536 pages of 64 KiB.
+pub const WASM_MEMORY_LIMIT_BYTES: u64 = 65_536 * 65_536;
+
+/// The Hessian, its dense copy, the eigenvectors and decomposition scratch coexist.
+const NEWTON_WORKSPACE_MATRICES: usize = 4;
+
 const HESSIAN_EPSILON: f64 = 1e-3;
 const OBJECTIVE_TOLERANCE: f64 = 1e-8;
 const MINIMUM_STEP: f64 = 1e-50;
@@ -75,6 +82,24 @@ pub fn optimize_newton(
   initial_log_density: f64,
   max_iterations: usize,
   evaluate: impl Fn(&[f64]) -> Result<LogDensityEvaluation, MapObjectiveError>,
+) -> Result<NewtonResult, NewtonError> {
+  optimize_newton_with_hessian(
+    initial,
+    initial_log_density,
+    max_iterations,
+    &evaluate,
+    |parameters, _| finite_difference_hessian(parameters, &evaluate),
+  )
+}
+
+/// Reuse the same Newton loop with a domain-specific, numerically identical stencil.
+/// The complete state, spectral action, line search and termination stay shared.
+pub(crate) fn optimize_newton_with_hessian(
+  initial: &[f64],
+  initial_log_density: f64,
+  max_iterations: usize,
+  evaluate: impl Fn(&[f64]) -> Result<LogDensityEvaluation, MapObjectiveError>,
+  hessian: impl Fn(&[f64], &LogDensityEvaluation) -> Result<Vec<f64>, NewtonError>,
 ) -> Result<NewtonResult, NewtonError> {
   if initial.is_empty()
     || initial.iter().any(|value| !value.is_finite())
@@ -92,7 +117,7 @@ pub fn optimize_newton(
 
   for iteration in 1..=max_iterations {
     let current = checked_evaluation(&parameters, &evaluate)?;
-    let hessian = finite_difference_hessian(&parameters, &evaluate)?;
+    let hessian = hessian(&parameters, &current)?;
     let direction = spectral_direction(&hessian, &current.gradient)?;
     let mut step = 2.0;
     let mut proposal = vec![0.0; dimension];
@@ -151,14 +176,36 @@ pub fn optimize_newton(
   unreachable!("validated Newton budget must produce a termination result")
 }
 
-/// Bound aggregate dense workspace before allocating state or evaluating rows.
+/// Reserve the aggregate dense workspace before evaluating rows.
+///
+/// Reserving every matrix together grows linear memory once and turns a real
+/// allocation failure into an error instead of an allocator trap. The released
+/// pages stay with the allocator for the Newton loop that follows.
 pub(crate) fn check_workspace(dimension: usize) -> Result<(), NewtonError> {
-  checked_element_count(
-    dimension,
-    dimension.checked_mul(4).ok_or(NewtonError::SizeOverflow)?,
-  )
-  .map_err(|_| NewtonError::SizeOverflow)?;
+  let exhausted = NewtonError::WorkspaceAllocation {
+    parameters: dimension,
+  };
+  let elements = dimension.checked_mul(dimension).ok_or(exhausted)?;
+
+  if newton_workspace_bytes(elements).is_none_or(|bytes| bytes > WASM_MEMORY_LIMIT_BYTES) {
+    return Err(exhausted);
+  }
+
+  let mut reserved = Vec::with_capacity(NEWTON_WORKSPACE_MATRICES);
+
+  for _ in 0..NEWTON_WORKSPACE_MATRICES {
+    let mut matrix = Vec::<f64>::new();
+    matrix.try_reserve_exact(elements).map_err(|_| exhausted)?;
+    reserved.push(matrix);
+  }
+
   Ok(())
+}
+
+fn newton_workspace_bytes(elements: usize) -> Option<u64> {
+  u64::try_from(elements)
+    .ok()?
+    .checked_mul((NEWTON_WORKSPACE_MATRICES * size_of::<f64>()) as u64)
 }
 
 pub(crate) fn checked_evaluation(
@@ -185,8 +232,22 @@ pub(crate) fn finite_difference_hessian(
   parameters: &[f64],
   evaluate: &impl Fn(&[f64]) -> Result<LogDensityEvaluation, MapObjectiveError>,
 ) -> Result<Vec<f64>, NewtonError> {
+  finite_difference_hessian_from_gradients(parameters, |state, _| {
+    checked_evaluation(state, evaluate).map(|evaluation| evaluation.gradient)
+  })
+}
+
+/// Accumulate the pinned four-point stencil, including its rounded off-diagonal
+/// entries. The callback supplies a checked full gradient for each perturbation.
+pub(crate) fn finite_difference_hessian_from_gradients(
+  parameters: &[f64],
+  gradient: impl Fn(&[f64], usize) -> Result<Vec<f64>, NewtonError>,
+) -> Result<Vec<f64>, NewtonError> {
   let dimension = parameters.len();
-  let count = checked_element_count(dimension, dimension).map_err(|_| NewtonError::SizeOverflow)?;
+  // Newton's workspace reservation owns the memory bound for this matrix.
+  let count = dimension
+    .checked_mul(dimension)
+    .ok_or(NewtonError::SizeOverflow)?;
   let mut hessian = vec![0.0; count];
   let mut perturbed = parameters.to_vec();
   let perturbations = [-2.0, -1.0, 1.0, 2.0];
@@ -195,10 +256,13 @@ pub(crate) fn finite_difference_hessian(
   for column in 0..dimension {
     for (perturbation, weight) in perturbations.into_iter().zip(weights) {
       perturbed[column] = parameters[column] + perturbation * HESSIAN_EPSILON;
-      let evaluation = checked_evaluation(&perturbed, evaluate)?;
+      let gradient = gradient(&perturbed, column)?;
+      if gradient.len() != dimension {
+        return Err(NewtonError::InvalidConfiguration);
+      }
 
       for row in 0..dimension {
-        let increment = 0.5 * HESSIAN_EPSILON * weight * evaluation.gradient[row];
+        let increment = 0.5 * HESSIAN_EPSILON * weight * gradient[row];
         hessian[column * dimension + row] += increment;
         hessian[row * dimension + column] += increment;
       }
@@ -214,32 +278,41 @@ pub(crate) fn finite_difference_hessian(
   Ok(hessian)
 }
 
-fn spectral_direction(hessian: &[f64], gradient: &[f64]) -> Result<Vec<f64>, NewtonError> {
+pub(crate) fn spectral_direction(
+  hessian: &[f64],
+  gradient: &[f64],
+) -> Result<Vec<f64>, NewtonError> {
   let dimension = gradient.len();
   let matrix = DMatrix::from_row_slice(dimension, dimension, hessian);
   // Preserve the symmetric spectral action without flooring eigenvalues.
   // The bounded owner follows Eigen's QR arithmetic and deflation.
   let max_iterations = dimension.checked_mul(30).ok_or(NewtonError::SizeOverflow)?;
   let (eigenvectors, eigenvalues) = crate::symmetric_eigen::decompose(matrix, max_iterations)?;
-  let mut projected = DVector::from_iterator(
-    dimension,
-    (0..dimension).map(|column| {
-      crate::stan::reductions::matrix_row_sum(dimension, |row| {
+  let projected: Vec<f64> = (0..dimension)
+    .map(|column| {
+      let projection = crate::stan::reductions::matrix_row_sum(dimension, |row| {
         eigenvectors[(row, column)] * gradient[row]
+      });
+
+      -projection / eigenvalues[column].abs()
+    })
+    .collect();
+
+  // Eigen's column-major GEMV restarts its accumulator at the pinned cache
+  // block boundary. nalgebra's uninterrupted sum changes the spectral action
+  // once the state has 128 coordinates, including its prior-only coordinates.
+  let direction = (0..dimension)
+    .map(|row| {
+      crate::stan::reductions::matrix_column_sum(dimension, dimension, |column| {
+        eigenvectors[(row, column)] * projected[column]
       })
-    }),
-  );
-
-  for column in 0..dimension {
-    projected[column] = -projected[column] / eigenvalues[column].abs();
-  }
-
-  let direction = eigenvectors * projected;
+    })
+    .collect();
 
   // Stan does not reject an infinite/NaN spectral action here. Such proposals
   // fail the model's domain checks during backtracking, which returns the last
   // finite state at the minimum step. Keep that source no-progress completion.
-  Ok(direction.as_slice().to_vec())
+  Ok(direction)
 }
 
 #[cfg(test)]
@@ -348,15 +421,32 @@ mod tests {
 
   #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
   #[cfg_attr(not(target_arch = "wasm32"), test)]
-  fn rejects_oversized_workspace_before_evaluating_the_objective() {
-    let initial = vec![0.0; 4097];
+  fn rejects_workspace_beyond_wasm_memory_before_evaluating_the_objective() {
+    // 4 * 11_586^2 doubles is the first dimension past 4 GiB.
+    let initial = vec![0.0; 11_586];
     let evaluate = |_: &[f64]| -> Result<LogDensityEvaluation, MapObjectiveError> {
       panic!("oversized curvature must fail before objective evaluation")
     };
     assert_eq!(
       optimize_newton(&initial, 0.0, 10, evaluate),
-      Err(NewtonError::SizeOverflow)
+      Err(NewtonError::WorkspaceAllocation { parameters: 11_586 })
     );
+  }
+
+  #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+  #[cfg_attr(not(target_arch = "wasm32"), test)]
+  fn sizes_the_workspace_against_wasm_memory() {
+    let bytes = |dimension: usize| newton_workspace_bytes(dimension * dimension).unwrap();
+
+    assert!(bytes(11_585) <= WASM_MEMORY_LIMIT_BYTES);
+    assert!(bytes(11_586) > WASM_MEMORY_LIMIT_BYTES);
+  }
+
+  #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+  #[cfg_attr(not(target_arch = "wasm32"), test)]
+  fn reserves_workspace_for_prophet_order_1024() {
+    // The 4-row, order-1024 flat fit Python completes has 2,053 parameters.
+    assert_eq!(check_workspace(2_053), Ok(()));
   }
 
   #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]

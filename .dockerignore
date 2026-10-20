@@ -13,6 +13,8 @@ benchmark/tools/adapters/__pycache__
 benchmark/inputs/v1/*
 !benchmark/inputs/v1/training-ordered.json
 !benchmark/inputs/v1/training-unsorted.json
+!benchmark/inputs/v1/flat-level.json
+!benchmark/inputs/v1/flat-seasonal.json
 benchmark/results
 *.tsbuildinfo
 .DS_Store

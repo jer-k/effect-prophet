@@ -38,6 +38,41 @@ describe("linear MAP Prophet integration", () => {
     >();
   });
 
+  it("converges at Python's scale for a large flat Fourier model", async () => {
+    const rows = [1, 2, 1.5, 3].map((value, day) => ({
+      timestamp: new Date(day * 86_400_000).toISOString(),
+      value,
+    }));
+
+    const model = await Effect.runPromise(
+      fit(rows, {
+        growth: "flat",
+        builtInSeasonalities: { daily: "off", weekly: "off", yearly: "off" },
+        seasonalities: [{ name: "custom", periodDays: 7, fourierOrder: 128 }],
+        map: { optimizer: { algorithm: "auto", maxIterations: 1_000 } },
+      }).pipe(Effect.provide(prophetFittingBackendLayer)),
+    );
+
+    // More coefficients than rows: the MAP has no finite maximum, and pinned Stan's
+    // endpoint density moves with single Fourier ULPs (Python ARM64 and AMD64 differ
+    // by 0.31). Require convergence and interpolation rather than a density floor.
+    expect(model.fitSummary.method).toBe("flat-map-stan-v1");
+    expect(model.fitSummary.iterations).toBeLessThan(1_000);
+    expect(model.fitSummary.termination).not.toBe("iteration-limit");
+    expect(Number.isFinite(model.fitSummary.objective)).toBe(true);
+
+    const predictions = await Effect.runPromise(
+      predict(
+        model,
+        rows.map((row) => row.timestamp),
+      ),
+    );
+
+    for (const [index, prediction] of predictions.entries()) {
+      expect(prediction.value).toBeCloseTo(rows[index]?.value ?? Number.NaN, 6);
+    }
+  }, 60_000);
+
   it("fits through the TypeScript Layer and predicts trend forecasts", async () => {
     const model = await Effect.runPromise(
       fit(observations).pipe(Effect.provide(prophetFittingBackendLayer)),
@@ -159,7 +194,7 @@ describe("linear MAP Prophet integration", () => {
     ]);
   });
 
-  it("routes explicit flat growth to reduced MAP fitting", async () => {
+  it("routes explicit flat growth through Prophet's Stan MAP fit", async () => {
     const model = await Effect.runPromise(
       fit(observations, { growth: "flat" }).pipe(Effect.provide(prophetFittingBackendLayer)),
     );
@@ -173,7 +208,13 @@ describe("linear MAP Prophet integration", () => {
       throw new Error("Expected a flat-map model");
     }
 
-    expect(model.fitSummary.method).toBe("flat-map-coordinate-v1");
+    expect(model.fitSummary.method).toBe("flat-map-stan-v1");
+
+    if (model.fitSummary.method !== "flat-map-stan-v1") {
+      throw new Error("Expected a flat Stan fit");
+    }
+
+    expect(model.fitSummary.optimization.algorithm).toBe("newton");
     expect(model.level).not.toBe(5);
     expect(forecast).toEqual({
       timestamp: 1_704_067_203_000,
@@ -531,7 +572,8 @@ describe("flat MAP Prophet integration", () => {
     const forecasts = await Effect.runPromise(predict(model, timestamps));
 
     expect(model.coefficients).toHaveLength(4);
-    expect(model.fitSummary.termination).toBe("converged");
+    expect(model.fitSummary.method).toBe("flat-map-stan-v1");
+    expect(model.fitSummary.termination).toBe("objective-change");
     expect(forecasts[0]?.trend).toBe(model.level);
     expect(forecasts[1]?.trend).toBe(model.level);
     expect(forecasts[0]?.additive).not.toBe(forecasts[1]?.additive);

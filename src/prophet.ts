@@ -22,7 +22,6 @@ import {
 } from "./internal/country-holiday-model";
 import {
   parseFittedModel,
-  requiresFlatStanMap,
   type FittedFlatMapProphet,
   type FittedLogisticMapProphet,
   type FittedPiecewiseMapProphet,
@@ -80,11 +79,7 @@ import {
   type RegressorDefinition,
   type ResolvedRegressor,
 } from "./regressor";
-import type {
-  EmptySeasonalityLayout,
-  NonEmptySeasonalityLayout,
-  SeasonalityLayout,
-} from "./seasonality";
+import type { SeasonalityLayout } from "./seasonality";
 import { defaultTargetScalingMode } from "./target-scaling";
 import {
   exceedsSimulationBudget,
@@ -170,31 +165,6 @@ const packTrainingInput = (observations: Observations): TrainingInput => {
   return { timestamps, values };
 };
 
-const emptyLayoutFromResolved = (layout: SeasonalityLayout): EmptySeasonalityLayout => {
-  const components: readonly [] = Object.freeze([]);
-
-  return Object.freeze({
-    ...layout,
-    components,
-    coefficientCount: 0 as const,
-  });
-};
-
-const nonEmptyLayoutFromResolved = (
-  layout: SeasonalityLayout,
-  firstComponent: SeasonalityLayout["components"][number],
-): NonEmptySeasonalityLayout => {
-  const components: NonEmptySeasonalityLayout["components"] = Object.freeze([
-    firstComponent,
-    ...layout.components.slice(1),
-  ]);
-
-  return Object.freeze({
-    ...layout,
-    components,
-  });
-};
-
 const makeFitPlan = (
   options: ProphetOptions,
   layout: SeasonalityLayout,
@@ -234,34 +204,14 @@ const makeFitPlan = (
     });
   }
 
-  const firstComponent = layout.components[0];
-
-  if (
-    options.growth === "flat" &&
-    (options.map !== undefined ||
-      requiresFlatStanMap({ seasonalities: layout, events: options.events, regressors }))
-  ) {
-    return FitPlan.FlatStanMap({
-      scaling: options.scaling ?? defaultTargetScalingMode,
-      seasonalities: layout,
-      optimizer: options.map?.optimizer ?? defaultLinearOptimizer,
-      seasonalityMasks: masks,
-      additionalFeatures,
-      events: options.events,
-      regressors,
-    });
-  }
-
-  if (firstComponent === undefined) {
-    return FitPlan.FlatMap({
-      scaling: options.scaling ?? defaultTargetScalingMode,
-      seasonalities: emptyLayoutFromResolved(layout),
-    });
-  }
-
-  return FitPlan.FlatAdditiveMap({
+  return FitPlan.FlatStanMap({
     scaling: options.scaling ?? defaultTargetScalingMode,
-    seasonalities: nonEmptyLayoutFromResolved(layout, firstComponent),
+    seasonalities: layout,
+    optimizer: options.map?.optimizer ?? defaultLinearOptimizer,
+    seasonalityMasks: masks,
+    additionalFeatures,
+    events: options.events,
+    regressors,
   });
 };
 

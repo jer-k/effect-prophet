@@ -8,57 +8,26 @@ const wasm = loadProphetWasmNodeBindings();
 const empty = new Float64Array();
 
 describe("generated target-scaling bindings", () => {
-  it("fits and predicts minmax flat MAP state with one trend offset", () => {
-    const timestamps = new Float64Array([0, 1, 2, 3]);
-    const values = new Float64Array([10, 12, 11, 13]);
-    const originalValues = Array.from(values);
-    const fit = wasm.fit_flat_map_with_scaling(timestamps, values, 1, empty, empty, empty);
-
-    assert.equal(fit[0], wasm.FlatMapFitStatus.Success);
-    assert.equal(fit[1], 1);
-    assert.equal(fit[2], 10);
-    assert.equal(fit[3], 3);
-    assert.equal(fit[6], 3);
-    assert.equal(fit.length, 12);
-    assert.deepEqual(Array.from(values), originalValues);
-
+  it("predicts minmax flat MAP state with one trend offset", () => {
     const prediction = wasm.predict_flat_map_with_scaling(
       new Float64Array([4]),
-      fit[1] ?? Number.NaN,
-      fit[2] ?? Number.NaN,
-      fit[3] ?? Number.NaN,
-      fit[4] ?? Number.NaN,
-      fit[5] ?? Number.NaN,
+      1,
+      10,
+      3,
+      0.5,
+      0.1,
       empty,
       empty,
       empty,
     );
 
     assert.equal(prediction[0], wasm.FlatMapPredictionStatus.Success);
-    assert.equal(prediction[1], (fit[2] ?? 0) + (fit[4] ?? 0));
+    assert.equal(prediction[1], 10.5);
     assert.equal(prediction[2], 0);
     assert.equal(prediction[3], prediction[1]);
   });
 
-  it("returns explicit scaling failures without non-finite diagnostics", () => {
-    const invalidMode = wasm.fit_flat_map_with_scaling(
-      new Float64Array([0, 1]),
-      new Float64Array([1, 2]),
-      2,
-      empty,
-      empty,
-      empty,
-    );
-
-    const overflowingRange = wasm.fit_flat_map_with_scaling(
-      new Float64Array([0, 1]),
-      new Float64Array([-Number.MAX_VALUE, Number.MAX_VALUE]),
-      1,
-      empty,
-      empty,
-      empty,
-    );
-
+  it("rejects invalid stored scaling without non-finite diagnostics", () => {
     const invalidStoredScale = wasm.predict_flat_map_with_scaling(
       new Float64Array(),
       1,
@@ -71,8 +40,6 @@ describe("generated target-scaling bindings", () => {
       empty,
     );
 
-    assert.deepEqual(Array.from(invalidMode), [wasm.FlatMapFitStatus.InvalidConfiguration]);
-    assert.deepEqual(Array.from(overflowingRange), [wasm.FlatMapFitStatus.NonRepresentableScaling]);
     assert.deepEqual(Array.from(invalidStoredScale), [wasm.FlatMapPredictionStatus.InvalidModel]);
   });
 

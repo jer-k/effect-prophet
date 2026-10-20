@@ -2,74 +2,7 @@ use crate::fourier::{
   FourierError, FourierSeasonality, checked_element_count, coefficient_count,
   evaluate_seasonal_components, make_fourier_features,
 };
-use crate::map_least_squares::{
-  RidgeLeastSquaresInput, RidgeSolveError, solve_ridge_least_squares,
-};
 use crate::seasonality::SeasonalitySpec;
-use crate::target_scaling::{
-  ScalingMode, TargetScaling, TargetScalingError, resolve_target_scaling,
-};
-
-const TREND_PRIOR_SCALE: f64 = 5.0;
-const NOISE_PRIOR_SCALE: f64 = 0.5;
-const CONSTANT_TARGET_NOISE_SCALE: f64 = 1e-9;
-const MAXIMUM_ITERATIONS: usize = 200;
-const CONVERGENCE_TOLERANCE: f64 = 1e-10;
-const COLLAPSE_TOLERANCE: f64 = 1e-24;
-
-/// How a successful reduced flat MAP fit terminated.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum FlatMapTermination {
-  /// Block-coordinate updates satisfied the deterministic change tolerance.
-  Converged,
-
-  /// Prophet's explicit exact-constant-history shortcut was used.
-  ConstantTargetShortcut,
-}
-
-/// Finite diagnostics for reduced flat MAP fitting.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct FlatMapFitSummary {
-  /// Positive train-derived target scale.
-  pub value_scale: f64,
-
-  /// Number of fitted observations.
-  pub observation_count: usize,
-
-  /// Number of complete coefficient/noise updates.
-  pub iterations: usize,
-
-  /// Summed negative log posterior up to parameter-independent constants.
-  pub objective: f64,
-
-  /// Maximum absolute first-order residual in scaled coordinates.
-  pub stationarity_residual: f64,
-
-  /// Successful termination category.
-  pub termination: FlatMapTermination,
-}
-
-/// Complete output-unit state of a reduced flat MAP model.
-#[derive(Clone, Debug, PartialEq)]
-pub struct FlatMapModel {
-  /// Train-derived target scaling used by the fitted objective.
-  pub target_scaling: TargetScaling,
-
-  /// Constant trend level in observation units relative to the target offset.
-  pub level: f64,
-
-  /// Ordered seasonal definitions.
-  pub seasonalities: Vec<SeasonalitySpec>,
-
-  /// Ordered additive Fourier coefficients in observation units.
-  pub coefficients: Vec<f64>,
-
-  /// Positive observation noise in observation units.
-  pub noise_scale: f64,
-
-  /// Fitting diagnostics.
-  pub summary: FlatMapFitSummary,
-}
 
 /// Row-major `[trend, additive, value, component_0, ...]` predictions.
 #[derive(Clone, Debug, PartialEq)]
@@ -83,37 +16,6 @@ impl FlatMapPredictionBatch {
   pub fn values(&self) -> &[f64] {
     &self.values
   }
-}
-
-/// Expected failures from reduced flat MAP fitting.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum FlatMapError {
-  /// At least two observations are required.
-  InsufficientObservations,
-
-  /// Timestamp and value lengths differ.
-  LengthMismatch,
-
-  /// A training timestamp or value is not finite.
-  InvalidObservation,
-
-  /// A seasonal period, order, or prior is invalid.
-  InvalidConfiguration,
-
-  /// Dense dimensions overflow or exceed the buffer policy.
-  SizeOverflow,
-
-  /// Finite input did not produce a finite numerical result.
-  NonFiniteResult,
-
-  /// Finite targets produced an unrepresentable scaling domain.
-  NonRepresentableScaling,
-
-  /// The posterior has no reliable finite interior noise optimum.
-  NoiseCollapse,
-
-  /// The deterministic iteration budget was exhausted.
-  NonConvergence,
 }
 
 /// Expected failures from flat MAP evaluation.
@@ -135,225 +37,6 @@ pub enum FlatMapPredictionError {
   NonFiniteResult { row: usize },
 }
 
-struct Evaluation {
-  objective: f64,
-  residual_sum_squares: f64,
-  stationarity_residual: f64,
-}
-
-/// Fit a constant level, additive Fourier coefficients, and observation noise jointly.
-pub fn fit_flat_map(
-  timestamps: &[f64],
-  values: &[f64],
-  seasonalities: &[SeasonalitySpec],
-) -> Result<FlatMapModel, FlatMapError> {
-  fit_flat_map_with_scaling(timestamps, values, seasonalities, ScalingMode::AbsMax)
-}
-
-/// Fit a constant level and additive components with explicit target scaling.
-pub fn fit_flat_map_with_scaling(
-  timestamps: &[f64],
-  values: &[f64],
-  seasonalities: &[SeasonalitySpec],
-  scaling_mode: ScalingMode,
-) -> Result<FlatMapModel, FlatMapError> {
-  if timestamps.len() != values.len() {
-    return Err(FlatMapError::LengthMismatch);
-  }
-
-  if values.len() < 2 {
-    return Err(FlatMapError::InsufficientObservations);
-  }
-
-  if timestamps.iter().any(|value| !value.is_finite())
-    || values.iter().any(|value| !value.is_finite())
-  {
-    return Err(FlatMapError::InvalidObservation);
-  }
-
-  let fourier_seasonalities = parse_seasonalities(seasonalities)?;
-  let seasonal_coefficient_count =
-    coefficient_count(&fourier_seasonalities).map_err(map_fourier_fit_error)?;
-  let column_count = seasonal_coefficient_count
-    .checked_add(1)
-    .ok_or(FlatMapError::SizeOverflow)?;
-
-  let target_scaling =
-    resolve_target_scaling(values, scaling_mode).map_err(map_target_scaling_error)?;
-  let value_scale = target_scaling.scale;
-
-  let first_value = values[0];
-
-  if values.iter().all(|value| *value == first_value) {
-    let scaled_level = target_scaling
-      .scale_value(first_value)
-      .map_err(map_target_scaling_error)?;
-    let objective = values.len() as f64 * CONSTANT_TARGET_NOISE_SCALE.ln()
-      + scaled_level * scaled_level / (2.0 * TREND_PRIOR_SCALE * TREND_PRIOR_SCALE)
-      + CONSTANT_TARGET_NOISE_SCALE * CONSTANT_TARGET_NOISE_SCALE
-        / (2.0 * NOISE_PRIOR_SCALE * NOISE_PRIOR_SCALE);
-
-    return Ok(FlatMapModel {
-      target_scaling,
-      level: scaled_level * value_scale,
-      seasonalities: seasonalities.to_vec(),
-      coefficients: vec![0.0; seasonal_coefficient_count],
-      noise_scale: value_scale * CONSTANT_TARGET_NOISE_SCALE,
-      summary: FlatMapFitSummary {
-        value_scale,
-        observation_count: values.len(),
-        iterations: 0,
-        objective,
-        stationarity_residual: 0.0,
-        termination: FlatMapTermination::ConstantTargetShortcut,
-      },
-    });
-  }
-
-  let features =
-    make_fourier_features(timestamps, &fourier_seasonalities).map_err(map_fourier_fit_error)?;
-  let design_count =
-    checked_element_count(values.len(), column_count).map_err(map_fourier_fit_error)?;
-  let mut design = vec![0.0; design_count];
-  let mut target = vec![0.0; values.len()];
-
-  for row in 0..values.len() {
-    let row_offset = row * column_count;
-    let feature_offset = row * seasonal_coefficient_count;
-
-    design[row_offset] = 1.0;
-    design[(row_offset + 1)..(row_offset + column_count)].copy_from_slice(
-      &features.values()[feature_offset..(feature_offset + seasonal_coefficient_count)],
-    );
-    target[row] = target_scaling
-      .scale_value(values[row])
-      .map_err(map_target_scaling_error)?;
-  }
-
-  if target.iter().any(|value| !value.is_finite()) {
-    return Err(FlatMapError::NonFiniteResult);
-  }
-
-  let mut prior_scales = vec![TREND_PRIOR_SCALE; column_count];
-
-  for (component, seasonality) in seasonalities.iter().enumerate() {
-    let start = fourier_seasonalities[..component]
-      .iter()
-      .try_fold(1_usize, |offset, definition| {
-        definition
-          .fourier_order
-          .checked_mul(2)
-          .and_then(|count| offset.checked_add(count))
-      })
-      .ok_or(FlatMapError::SizeOverflow)?;
-    let count = seasonality
-      .fourier_order
-      .checked_mul(2)
-      .ok_or(FlatMapError::SizeOverflow)?;
-
-    prior_scales[start..(start + count)].fill(seasonality.prior_scale);
-  }
-
-  let target_magnitude = target.iter().map(|value| value * value).sum::<f64>();
-  let mut coefficients = vec![0.0; column_count];
-  let mut noise_scale = NOISE_PRIOR_SCALE;
-
-  for iteration in 1..=MAXIMUM_ITERATIONS {
-    let penalty_weights: Vec<f64> = prior_scales
-      .iter()
-      .map(|prior_scale| noise_scale / prior_scale)
-      .collect();
-    let solution = solve_ridge_least_squares(RidgeLeastSquaresInput {
-      row_count: values.len(),
-      column_count,
-      design: &design,
-      target: &target,
-      penalty_weights: &penalty_weights,
-    })
-    .map_err(map_solve_error)?;
-    let coefficient_evaluation = evaluate(
-      &design,
-      &target,
-      &solution.coefficients,
-      &prior_scales,
-      noise_scale,
-    )?;
-
-    if coefficient_evaluation.residual_sum_squares <= COLLAPSE_TOLERANCE * target_magnitude.max(1.0)
-    {
-      return Err(FlatMapError::NoiseCollapse);
-    }
-
-    let observation_count = values.len() as f64;
-    let discriminant =
-      observation_count * observation_count + 16.0 * coefficient_evaluation.residual_sum_squares;
-    let noise_variance =
-      2.0 * coefficient_evaluation.residual_sum_squares / (observation_count + discriminant.sqrt());
-    let next_noise_scale = noise_variance.sqrt();
-
-    if !next_noise_scale.is_finite() || next_noise_scale <= 0.0 {
-      return Err(FlatMapError::NonFiniteResult);
-    }
-
-    let mut maximum_change = (next_noise_scale - noise_scale).abs();
-
-    for (&next, &previous) in solution.coefficients.iter().zip(&coefficients) {
-      maximum_change = maximum_change.max((next - previous).abs());
-    }
-
-    coefficients = solution.coefficients;
-    noise_scale = next_noise_scale;
-
-    let maximum_magnitude = coefficients
-      .iter()
-      .fold(noise_scale.max(1.0), |maximum, value| {
-        maximum.max(value.abs())
-      });
-
-    if maximum_change <= CONVERGENCE_TOLERANCE * maximum_magnitude {
-      let final_evaluation = evaluate(&design, &target, &coefficients, &prior_scales, noise_scale)?;
-      let level = coefficients[0] * value_scale;
-      let output_coefficients: Vec<f64> = coefficients[1..]
-        .iter()
-        .map(|coefficient| coefficient * value_scale)
-        .collect();
-      let output_noise_scale = noise_scale * value_scale;
-
-      if !level.is_finite()
-        || !output_noise_scale.is_finite()
-        || output_noise_scale <= 0.0
-        || output_coefficients
-          .iter()
-          .any(|coefficient| !coefficient.is_finite())
-      {
-        return Err(FlatMapError::NonFiniteResult);
-      }
-
-      target_scaling
-        .restore_trend(level)
-        .map_err(map_target_scaling_error)?;
-
-      return Ok(FlatMapModel {
-        target_scaling,
-        level,
-        seasonalities: seasonalities.to_vec(),
-        coefficients: output_coefficients,
-        noise_scale: output_noise_scale,
-        summary: FlatMapFitSummary {
-          value_scale,
-          observation_count: values.len(),
-          iterations: iteration,
-          objective: final_evaluation.objective,
-          stationarity_residual: final_evaluation.stationarity_residual,
-          termination: FlatMapTermination::Converged,
-        },
-      });
-    }
-  }
-
-  Err(FlatMapError::NonConvergence)
-}
-
 /// Evaluate a flat MAP model and its ordered additive seasonal components.
 pub fn predict_flat_map(
   timestamps: &[f64],
@@ -366,8 +49,7 @@ pub fn predict_flat_map(
     return Err(FlatMapPredictionError::InvalidModel);
   }
 
-  let fourier_seasonalities =
-    parse_seasonalities(seasonalities).map_err(map_fit_configuration_to_prediction)?;
+  let fourier_seasonalities = parse_seasonalities(seasonalities)?;
   let expected_coefficient_count =
     coefficient_count(&fourier_seasonalities).map_err(map_fourier_prediction_error)?;
 
@@ -420,70 +102,9 @@ pub fn predict_flat_map(
   Ok(FlatMapPredictionBatch { values })
 }
 
-fn evaluate(
-  design: &[f64],
-  target: &[f64],
-  coefficients: &[f64],
-  prior_scales: &[f64],
-  noise_scale: f64,
-) -> Result<Evaluation, FlatMapError> {
-  let column_count = coefficients.len();
-  let mut gradient = vec![0.0; column_count];
-  let mut residual_sum_squares = 0.0;
-
-  for (row, &target_value) in target.iter().enumerate() {
-    let row_offset = row * column_count;
-    let fitted = coefficients
-      .iter()
-      .enumerate()
-      .map(|(column, coefficient)| design[row_offset + column] * coefficient)
-      .sum::<f64>();
-    let residual = fitted - target_value;
-    residual_sum_squares += residual * residual;
-
-    for column in 0..column_count {
-      gradient[column] += design[row_offset + column] * residual;
-    }
-  }
-
-  let noise_variance = noise_scale * noise_scale;
-  let mut prior_penalty = 0.0;
-  let mut stationarity_residual = 0.0_f64;
-
-  for column in 0..column_count {
-    let prior_variance = prior_scales[column] * prior_scales[column];
-    prior_penalty += coefficients[column] * coefficients[column] / (2.0 * prior_variance);
-    let derivative = gradient[column] / noise_variance + coefficients[column] / prior_variance;
-    stationarity_residual = stationarity_residual.max(derivative.abs());
-  }
-
-  let noise_derivative = target.len() as f64 / noise_scale
-    - residual_sum_squares / (noise_scale * noise_variance)
-    + noise_scale / (NOISE_PRIOR_SCALE * NOISE_PRIOR_SCALE);
-  stationarity_residual = stationarity_residual.max(noise_derivative.abs());
-
-  let objective = target.len() as f64 * noise_scale.ln()
-    + residual_sum_squares / (2.0 * noise_variance)
-    + prior_penalty
-    + noise_variance / (2.0 * NOISE_PRIOR_SCALE * NOISE_PRIOR_SCALE);
-
-  if !objective.is_finite()
-    || !residual_sum_squares.is_finite()
-    || !stationarity_residual.is_finite()
-  {
-    return Err(FlatMapError::NonFiniteResult);
-  }
-
-  Ok(Evaluation {
-    objective,
-    residual_sum_squares,
-    stationarity_residual,
-  })
-}
-
 fn parse_seasonalities(
   seasonalities: &[SeasonalitySpec],
-) -> Result<Vec<FourierSeasonality>, FlatMapError> {
+) -> Result<Vec<FourierSeasonality>, FlatMapPredictionError> {
   seasonalities
     .iter()
     .map(|seasonality| {
@@ -493,7 +114,7 @@ fn parse_seasonalities(
         || !seasonality.prior_scale.is_finite()
         || seasonality.prior_scale <= 0.0
       {
-        return Err(FlatMapError::InvalidConfiguration);
+        return Err(FlatMapPredictionError::InvalidConfiguration);
       }
 
       Ok(FourierSeasonality {
@@ -502,45 +123,6 @@ fn parse_seasonalities(
       })
     })
     .collect()
-}
-
-fn map_fourier_fit_error(error: FourierError) -> FlatMapError {
-  match error {
-    FourierError::InvalidTimestamp { .. } => FlatMapError::InvalidObservation,
-    FourierError::InvalidSeasonality { .. } => FlatMapError::InvalidConfiguration,
-    FourierError::SizeOverflow | FourierError::SizeLimitExceeded => FlatMapError::SizeOverflow,
-    FourierError::InvalidCoefficients | FourierError::NonFiniteResult { .. } => {
-      FlatMapError::NonFiniteResult
-    }
-  }
-}
-
-fn map_target_scaling_error(error: TargetScalingError) -> FlatMapError {
-  match error {
-    TargetScalingError::EmptyValues => FlatMapError::InsufficientObservations,
-    TargetScalingError::NonFiniteValue | TargetScalingError::InvalidScaling => {
-      FlatMapError::InvalidObservation
-    }
-    TargetScalingError::NonRepresentable => FlatMapError::NonRepresentableScaling,
-  }
-}
-
-fn map_solve_error(error: RidgeSolveError) -> FlatMapError {
-  match error {
-    RidgeSolveError::SizeOverflow => FlatMapError::SizeOverflow,
-    RidgeSolveError::InvalidDimensions
-    | RidgeSolveError::NonFiniteInput
-    | RidgeSolveError::RankDeficient { .. }
-    | RidgeSolveError::NonFiniteResult => FlatMapError::NonFiniteResult,
-  }
-}
-
-fn map_fit_configuration_to_prediction(error: FlatMapError) -> FlatMapPredictionError {
-  match error {
-    FlatMapError::InvalidConfiguration => FlatMapPredictionError::InvalidConfiguration,
-    FlatMapError::SizeOverflow => FlatMapPredictionError::SizeOverflow,
-    _ => FlatMapPredictionError::InvalidModel,
-  }
 }
 
 fn map_fourier_prediction_error(error: FourierError) -> FlatMapPredictionError {
@@ -557,57 +139,14 @@ fn map_fourier_prediction_error(error: FourierError) -> FlatMapPredictionError {
 
 #[cfg(test)]
 mod tests {
-  use super::{
-    FlatMapError, FlatMapTermination, fit_flat_map, fit_flat_map_with_scaling, predict_flat_map,
-  };
+  use super::{FlatMapPredictionError, predict_flat_map};
   use crate::seasonality::SeasonalitySpec;
-  use crate::target_scaling::ScalingMode;
 
   fn assert_close(actual: f64, expected: f64, tolerance: f64) {
     assert!(
       (actual - expected).abs() <= tolerance,
       "expected {actual} to be within {tolerance} of {expected}"
     );
-  }
-
-  #[test]
-  fn fits_a_reduced_flat_level_and_noise() {
-    let model = fit_flat_map(&[0.0, 1.0, 2.0, 3.0], &[1.0, 2.0, 1.5, 2.5], &[])
-      .expect("noisy values have an interior flat MAP optimum");
-
-    assert_eq!(model.summary.termination, FlatMapTermination::Converged);
-    assert!(model.level > 1.0 && model.level < 2.5);
-    assert!(model.noise_scale > 0.0);
-    assert!(model.summary.stationarity_residual < 1e-7);
-  }
-
-  #[test]
-  fn preserves_the_constant_target_shortcut() {
-    let model = fit_flat_map(&[0.0, 1.0], &[-4.0, -4.0], &[])
-      .expect("constant targets use the explicit shortcut");
-
-    assert_eq!(model.level, -4.0);
-    assert_eq!(model.noise_scale, 4e-9);
-    assert_eq!(
-      model.summary.termination,
-      FlatMapTermination::ConstantTargetShortcut
-    );
-  }
-
-  #[test]
-  fn fits_minmax_state_relative_to_a_nonzero_offset() {
-    let model = fit_flat_map_with_scaling(
-      &[0.0, 1.0, 2.0, 3.0],
-      &[10.0, 12.0, 11.0, 13.0],
-      &[],
-      ScalingMode::MinMax,
-    )
-    .expect("nonconstant minmax targets should fit");
-
-    assert_eq!(model.target_scaling.mode, ScalingMode::MinMax);
-    assert_eq!(model.target_scaling.offset, 10.0);
-    assert_eq!(model.target_scaling.scale, 3.0);
-    assert!(model.level > 0.0 && model.level < 3.0);
   }
 
   #[test]
@@ -618,20 +157,8 @@ mod tests {
       fourier_order: 1,
       prior_scale: 10.0,
     }];
-    let model = fit_flat_map(
-      &[0.0, day * 0.25, day * 0.5, day * 0.75, day, day * 1.25],
-      &[1.1, 3.0, 0.9, -1.2, 1.2, 2.9],
-      &seasonalities,
-    )
-    .expect("noisy seasonal values should fit");
-    let predictions = predict_flat_map(
-      &[0.0, day * 0.25],
-      model.level,
-      model.noise_scale,
-      &seasonalities,
-      &model.coefficients,
-    )
-    .expect("the fitted model should predict");
+    let predictions = predict_flat_map(&[0.0, day * 0.25], 1.5, 0.2, &seasonalities, &[0.4, -1.1])
+      .expect("a complete flat model should predict");
 
     assert_close(predictions.values()[0], predictions.values()[4], 1e-12);
     assert_close(
@@ -643,10 +170,14 @@ mod tests {
   }
 
   #[test]
-  fn rejects_insufficient_history() {
+  fn rejects_incomplete_model_state() {
     assert_eq!(
-      fit_flat_map(&[0.0], &[1.0], &[]),
-      Err(FlatMapError::InsufficientObservations)
+      predict_flat_map(&[0.0], 1.0, 0.0, &[], &[]),
+      Err(FlatMapPredictionError::InvalidModel)
+    );
+    assert_eq!(
+      predict_flat_map(&[0.0], 1.0, 0.5, &[], &[1.0]),
+      Err(FlatMapPredictionError::InvalidModel)
     );
   }
 }
