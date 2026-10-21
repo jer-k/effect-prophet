@@ -163,7 +163,7 @@ describe("differential reports", () => {
 
     expect(native).toContain("Python oracle: `linux/arm64`, native.");
     expect(native).toContain(
-      "> **Warning:** The Python oracle ran on `linux/arm64`, not `linux/amd64`",
+      "> **Warning:** The Python oracle uses `linux/arm64`, not `linux/amd64`",
     );
   });
 

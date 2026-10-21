@@ -591,7 +591,7 @@ export const referenceOraclePlatform: BenchmarkContainerPlatform = "linux/amd64"
 export const oraclePlatformWarning = (oracle: ContainerPlatformResolution): string | undefined =>
   oracle.platform === referenceOraclePlatform
     ? undefined
-    : `The Python oracle ran on \`${oracle.platform}\`, not \`${referenceOraclePlatform}\` as in CI and the fixtures. CmdStan's arithmetic differs between the two, so verdicts on chaotic cases may differ from theirs.`;
+    : `The Python oracle uses \`${oracle.platform}\`, not \`${referenceOraclePlatform}\` as in CI and the fixtures. CmdStan's arithmetic differs between the two, so verdicts on chaotic cases may differ from theirs.`;
 
 /** The complete machine-readable result of one differential run. */
 export interface DifferentialReport {
