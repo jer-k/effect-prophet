@@ -10,8 +10,10 @@ import {
   buildDifferentialReport,
   failingVerdicts,
   oraclePerturbations,
+  oraclePlatformWarning,
   parseOutcomeLines,
   parsePerturbedOutcomeLines,
+  referenceOraclePlatform,
   renderDifferentialMarkdown,
   selectOracleChecks,
   type DifferentialCaseResult,
@@ -112,7 +114,13 @@ const main = async (): Promise<void> => {
   const runId = `${timestampRunId()}-${gitRevision.slice(0, 8)}`;
   const runDirectory = resolve(benchmarkRoot, "results/differential", runId);
 
-  const platform = resolveContainerPlatform(process.arch, process.env.BENCHMARK_CONTAINER_PLATFORM);
+  const platform = resolveContainerPlatform(
+    process.arch,
+    process.env.BENCHMARK_CONTAINER_PLATFORM,
+    referenceOraclePlatform,
+  );
+
+  const warning = oraclePlatformWarning(platform);
 
   await mkdir(resolve(runDirectory, "mismatches"), { recursive: true });
   await writeFile(resolve(runDirectory, "cases.json"), `${JSON.stringify(cases)}\n`);
@@ -136,8 +144,10 @@ const main = async (): Promise<void> => {
   );
 
   process.stdout.write(
-    `Differential run ${runId}: ${cases.length} cases${arguments_.rootSeed === undefined ? "" : ` from root seed ${arguments_.rootSeed}`}\n`,
+    `Differential run ${runId}: ${cases.length} cases${arguments_.rootSeed === undefined ? "" : ` from root seed ${arguments_.rootSeed}`} on ${platform.platform}${platform.emulated ? " (emulated)" : ""}\n`,
   );
+
+  if (warning !== undefined) process.stderr.write(`Warning: ${warning}\n`);
 
   // Build on the GC-capped builder unless the caller picked one; cleanup inherits the same choice.
   if (process.env.BUILDX_BUILDER === undefined) {
@@ -182,6 +192,7 @@ const main = async (): Promise<void> => {
       const report = buildDifferentialReport(
         runId,
         arguments_.rootSeed,
+        platform,
         cases,
         effectOutcomes,
         pythonOutcomes,
