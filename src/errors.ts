@@ -41,7 +41,6 @@ const FittingFailureReasonSchema = Schema.Literals([
   "degenerate-observations",
   "rank-deficient",
   "non-finite-result",
-  "noise-collapse",
   "non-convergence",
   "memory-limit",
   "backend-failure",
@@ -77,7 +76,6 @@ export type FittingFailureReason =
   | "degenerate-observations"
   | "rank-deficient"
   | "non-finite-result"
-  | "noise-collapse"
   | "non-convergence"
   | "memory-limit"
   | "backend-failure";

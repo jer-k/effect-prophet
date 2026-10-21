@@ -114,8 +114,6 @@ pub enum PiecewiseMapError {
   NonFiniteResult,
   /// Finite targets produced an unrepresentable scaling domain.
   NonRepresentableScaling,
-  /// The posterior has no reliable finite interior noise optimum.
-  NoiseCollapse,
   /// The deterministic optimizer budget was exhausted.
   NonConvergence,
   /// Linear optimization failed, retaining both failures if fallback failed.

@@ -100,7 +100,6 @@ const fitStatus = {
   zeroTimeRange: 5,
   sizeOverflow: 6,
   nonFiniteResult: 7,
-  noiseCollapse: 8,
   nonConvergence: 9,
   nonRepresentableScaling: 10,
 } as const;
@@ -252,12 +251,6 @@ const decodeFittedParameters = (
       return failWasmFitting(observationCount, {
         reason: "degenerate-observations",
         message: "Linear MAP fitting requires a positive training time range",
-      });
-
-    case fitStatus.noiseCollapse:
-      return failWasmFitting(observationCount, {
-        reason: "noise-collapse",
-        message: "Linear MAP fitting found no reliable finite interior noise optimum",
       });
 
     case fitStatus.nonConvergence:

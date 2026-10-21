@@ -33,8 +33,7 @@ pub enum PiecewiseMapFitStatus {
   SizeOverflow = 6,
   /// Finite input produced a non-finite result.
   NonFiniteResult = 7,
-  /// No reliable finite interior noise optimum exists.
-  NoiseCollapse = 8,
+  // 8 was `NoiseCollapse`, retired now that fits return Stan's tiny-noise endpoint.
   /// The deterministic optimizer budget was exhausted.
   NonConvergence = 9,
   /// Finite targets produced an unrepresentable scaling domain.
@@ -454,7 +453,6 @@ pub(crate) fn status_for_fit_error(error: PiecewiseMapError) -> PiecewiseMapFitS
     PiecewiseMapError::SizeOverflow => PiecewiseMapFitStatus::SizeOverflow,
     PiecewiseMapError::NonFiniteResult => PiecewiseMapFitStatus::NonFiniteResult,
     PiecewiseMapError::NonRepresentableScaling => PiecewiseMapFitStatus::NonRepresentableScaling,
-    PiecewiseMapError::NoiseCollapse => PiecewiseMapFitStatus::NoiseCollapse,
     PiecewiseMapError::NonConvergence => PiecewiseMapFitStatus::NonConvergence,
     PiecewiseMapError::Optimizer(error) => {
       use crate::stan::linear_optimizer::LinearOptimizationError as E;

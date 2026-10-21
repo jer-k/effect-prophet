@@ -21,7 +21,6 @@ interface PiecewiseMapFitStatuses {
   readonly ZeroTimeRange: number;
   readonly SizeOverflow: number;
   readonly NonFiniteResult: number;
-  readonly NoiseCollapse: number;
   readonly NonConvergence: number;
   readonly NonRepresentableScaling: number;
 }
@@ -147,7 +146,6 @@ const requiredStatusMembers = {
     "ZeroTimeRange",
     "SizeOverflow",
     "NonFiniteResult",
-    "NoiseCollapse",
     "NonConvergence",
     "NonRepresentableScaling",
   ],
