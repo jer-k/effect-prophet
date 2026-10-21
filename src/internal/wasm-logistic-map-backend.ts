@@ -52,7 +52,6 @@ const fitStatus = {
   zeroTimeRange: 5,
   sizeOverflow: 6,
   nonFiniteResult: 7,
-  noiseCollapse: 8,
   nonConvergence: 9,
   nonRepresentableScaling: 10,
   optimizerFailure: 11,
@@ -95,11 +94,6 @@ const fittingFailure = (
       return failWasmFitting(observationCount, {
         reason: "degenerate-observations",
         message: "Logistic MAP fitting requires a positive training time range",
-      });
-    case fitStatus.noiseCollapse:
-      return failWasmFitting(observationCount, {
-        reason: "noise-collapse",
-        message: "Logistic MAP fitting found no reliable finite interior noise optimum",
       });
     case fitStatus.nonConvergence:
       return failWasmFitting(observationCount, {

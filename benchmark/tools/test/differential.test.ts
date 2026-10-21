@@ -113,7 +113,7 @@ describe("differential judging", () => {
       "effect-rejected",
     );
 
-    expect(judgeCase(span, failed("FittingError", "noise-collapse"), fitted(1)).verdict).toBe(
+    expect(judgeCase(span, failed("FittingError", "non-convergence"), fitted(1)).verdict).toBe(
       "effect-failed",
     );
 

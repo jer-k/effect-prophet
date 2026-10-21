@@ -8,10 +8,17 @@ All notable changes to this project are documented here. The format follows
 
 ### Changed
 
+- Histories that the model can fit exactly, such as noiseless seasonal data, now fit with a
+  noise scale near zero, as in Python. Flat growth previously failed with `noise-collapse`.
 - Flat growth accepts `map.changepoints` and `map.changepointPriorScale`, as Python Prophet does.
   Previously both were rejected and every flat fit used Prophet's default grid and prior. The
   flat trend still ignores them, but they size and scale the prior-only parameters Prophet's
   flat model optimizes, so they change the fit exactly as they do in Python.
+
+### Removed
+
+- The `noise-collapse` reason of `FittingError`. No fit returns it any more, so code that
+  handles it can drop that branch.
 
 ### Benchmarks
 

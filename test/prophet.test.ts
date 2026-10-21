@@ -706,6 +706,78 @@ describe("flat MAP Prophet integration", () => {
   });
 });
 
+// A trend plus daily and weekly terms that Prophet's default seasonalities reproduce exactly.
+const exactSeasonal = (days: number): number =>
+  12 * Math.sin(2 * Math.PI * days) -
+  5 * Math.cos(8 * Math.PI * days) +
+  20 * Math.cos((2 * Math.PI * days) / 7) +
+  3 * Math.sin((6 * Math.PI * days) / 7);
+
+const exactHistories = {
+  flat: { options: { growth: "flat" }, covariates: {}, trend: () => 1_000 },
+  linear: {
+    options: { growth: "linear" },
+    covariates: {},
+    trend: (days: number) => 1_000 + 2 * days,
+  },
+  logistic: {
+    options: { growth: "logistic" },
+    covariates: { capacity: 2_000 },
+    trend: (days: number) => 1_800 / (1 + Math.exp(-0.2 * (days - 15))),
+  },
+} as const;
+
+describe("exactly fittable Prophet histories", () => {
+  // Python Prophet fits these at a noise scale near zero instead of rejecting them.
+  it.each(["flat", "linear", "logistic"] as const)(
+    "fits noiseless %s history like Python Prophet",
+    async (growth) => {
+      const history = exactHistories[growth];
+
+      const timestamps = Array.from({ length: 30 * 24 }, (_, hour) =>
+        new Date(syntheticStart + hour * (DAY / 24)).toISOString(),
+      );
+
+      const values = timestamps.map(
+        (_, hour) => history.trend(hour / 24) + exactSeasonal(hour / 24),
+      );
+
+      const rows = timestamps.map((timestamp, index) => ({
+        timestamp,
+        value: values[index] ?? Number.NaN,
+        ...history.covariates,
+      }));
+
+      const model = await Effect.runPromise(
+        fit(rows, history.options).pipe(Effect.provide(prophetFittingBackendLayer)),
+      );
+
+      const forecasts = await Effect.runPromise(
+        predict(
+          model,
+          timestamps.map((timestamp) => ({ timestamp, ...history.covariates })),
+        ),
+      );
+
+      const span = Math.max(...values) - Math.min(...values);
+
+      const largestError = Math.max(
+        ...forecasts.map((forecast, index) => Math.abs(forecast.value - (values[index] ?? 0))),
+      );
+
+      // Same tolerance as the differential comparison against Python Prophet.
+      expect(largestError / span).toBeLessThan(1e-3);
+
+      // Only flat growth reaches the zero-noise boundary; L-BFGS stops earlier for the others,
+      // in Python as well as here.
+      if (growth === "flat") {
+        expect(model.noiseScale / span).toBeLessThan(1e-9);
+        expect(largestError / span).toBeLessThan(1e-9);
+      }
+    },
+  );
+});
+
 describe("linear MAP Prophet integration", () => {
   it("resolves automatic built-ins from training history before real WASM fitting", async () => {
     const automaticObservations = Array.from({ length: 57 }, (_, index) => {
