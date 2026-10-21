@@ -2,7 +2,7 @@ import type { Types } from "effect";
 import fc from "fast-check";
 
 import { linearOptimizers } from "../cases/growth/linear/controls.ts";
-import { pythonDefaultOptimizer } from "../cases/prophet-defaults.ts";
+import { prophetDefaultChangepoints, pythonDefaultOptimizer } from "../cases/prophet-defaults.ts";
 import type { BenchmarkDataset } from "./case.ts";
 import type { DifferentialCase } from "./differential.ts";
 
@@ -541,10 +541,7 @@ const defaultsWorkload = (growth: Configuration["growth"]): Workload => ({
     scaling: "absmax",
     seasonalityMode: "additive",
     holidaysMode: "additive",
-    changepoints:
-      growth === "flat"
-        ? { mode: "explicit", timestamps: [] }
-        : { mode: "auto", count: 25, range: 0.8 },
+    changepoints: prophetDefaultChangepoints,
     changepointPriorScale: 0.05,
     seasonalities: [],
     events: [],

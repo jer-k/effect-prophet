@@ -6,10 +6,15 @@ import { fileURLToPath } from "node:url";
 import { commandOutput, runCommand } from "./commands.ts";
 import { resolveContainerPlatform } from "./container-platform.ts";
 import {
+  applyOracleChecks,
   buildDifferentialReport,
   failingVerdicts,
+  oraclePerturbations,
   parseOutcomeLines,
+  parsePerturbedOutcomeLines,
   renderDifferentialMarkdown,
+  selectOracleChecks,
+  type DifferentialCaseResult,
 } from "./differential.ts";
 import { caseSeeds, generateCase } from "./differential-generate.ts";
 import { benchmarkBuilderName, ensureBenchmarkBuilder } from "./docker-builder.ts";
@@ -148,56 +153,102 @@ const main = async (): Promise<void> => {
 
   const compose = ["compose", "-f", composePath];
 
-  try {
-    if (arguments_.build) {
-      runCommand(
-        "docker",
-        [...compose, "build", "effect-prophet-benchmark", "python-prophet-benchmark"],
-        environment,
+  const runService = (service: string) =>
+    runCommand("docker", [...compose, "run", "--rm", "--no-deps", service], environment);
+
+  // Every container runs before cleanup; the perturbed oracle needs the first report.
+  const judge = async () => {
+    try {
+      if (arguments_.build) {
+        runCommand(
+          "docker",
+          [...compose, "build", "effect-prophet-benchmark", "python-prophet-benchmark"],
+          environment,
+        );
+      }
+
+      for (const service of ["effect-prophet-differential", "python-prophet-differential"]) {
+        runService(service);
+      }
+
+      const effectOutcomes = parseOutcomeLines(
+        await readFile(resolve(runDirectory, "effect-prophet.jsonl"), "utf8"),
       );
+
+      const pythonOutcomes = parseOutcomeLines(
+        await readFile(resolve(runDirectory, "python-prophet.jsonl"), "utf8"),
+      );
+
+      const report = buildDifferentialReport(
+        runId,
+        arguments_.rootSeed,
+        cases,
+        effectOutcomes,
+        pythonOutcomes,
+      );
+
+      const checks = selectOracleChecks(report.results);
+
+      if (checks.length === 0) {
+        return { effectOutcomes, pythonOutcomes, perturbedOutcomes: [], report };
+      }
+
+      // Noise-scale disagreements rerun the unchanged CmdStan oracle on one-ulp input changes.
+      await writeFile(
+        resolve(runDirectory, "perturbation-requests.json"),
+        `${JSON.stringify({ caseIds: checks.map((result) => result.caseId), perturbations: oraclePerturbations })}\n`,
+      );
+
+      runService("python-prophet-perturbation");
+
+      const perturbedOutcomes = parsePerturbedOutcomeLines(
+        await readFile(resolve(runDirectory, "python-perturbations.jsonl"), "utf8"),
+      );
+
+      return {
+        effectOutcomes,
+        pythonOutcomes,
+        perturbedOutcomes,
+        report: applyOracleChecks(report, cases, effectOutcomes, pythonOutcomes, perturbedOutcomes),
+      };
+    } finally {
+      cleanupDockerStorage();
     }
+  };
 
-    for (const service of ["effect-prophet-differential", "python-prophet-differential"]) {
-      runCommand("docker", [...compose, "run", "--rm", "--no-deps", service], environment);
-    }
-  } finally {
-    cleanupDockerStorage();
-  }
-
-  const effectOutcomes = parseOutcomeLines(
-    await readFile(resolve(runDirectory, "effect-prophet.jsonl"), "utf8"),
-  );
-
-  const pythonOutcomes = parseOutcomeLines(
-    await readFile(resolve(runDirectory, "python-prophet.jsonl"), "utf8"),
-  );
-
-  const report = buildDifferentialReport(
-    runId,
-    arguments_.rootSeed,
-    cases,
-    effectOutcomes,
-    pythonOutcomes,
-  );
+  const { effectOutcomes, pythonOutcomes, perturbedOutcomes, report } = await judge();
 
   const markdown = renderDifferentialMarkdown(report);
   const failing = report.results.filter((result) => failingVerdicts.has(result.verdict));
 
-  // Each failure keeps its complete input and both outcomes, so it can be promoted to a fixture.
-  for (const result of failing) {
-    await writeFile(
-      resolve(runDirectory, "mismatches", `${result.caseId}.json`),
+  const sensitive = report.results.filter((result) => result.verdict === "oracle-sensitive");
+
+  await mkdir(resolve(runDirectory, "oracle-sensitive"), { recursive: true });
+
+  // Each failure or oracle-sensitive case keeps its complete input, both outcomes and any
+  // perturbed oracle outcomes, so it can be promoted to a fixture or rechecked.
+  const writeCaseArtifact = async (directory: string, result: DifferentialCaseResult) =>
+    writeFile(
+      resolve(runDirectory, directory, `${result.caseId}.json`),
       `${JSON.stringify(
         {
           result,
           case: cases.find((item) => item.id === result.caseId),
           effect: effectOutcomes.find((outcome) => outcome.caseId === result.caseId),
           python: pythonOutcomes.find((outcome) => outcome.caseId === result.caseId),
+          perturbedPython: perturbedOutcomes.filter((outcome) => outcome.caseId === result.caseId),
         },
         null,
         2,
       )}\n`,
     );
+
+  for (const result of failing) {
+    await writeCaseArtifact("mismatches", result);
+  }
+
+  for (const result of sensitive) {
+    await writeCaseArtifact("oracle-sensitive", result);
   }
 
   await writeFile(resolve(runDirectory, "report.json"), `${JSON.stringify(report, null, 2)}\n`);
@@ -210,7 +261,7 @@ const main = async (): Promise<void> => {
   }
 
   process.stdout.write(
-    `${failing.length} parity failures in ${cases.length} cases. Report: ${resolve(runDirectory, "report.md")}\n`,
+    `${failing.length} parity failures and ${sensitive.length} oracle-sensitive cases in ${cases.length} cases. Report: ${resolve(runDirectory, "report.md")}\n`,
   );
 };
 

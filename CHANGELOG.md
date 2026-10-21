@@ -4,6 +4,21 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows
 [Semantic Versioning](https://semver.org/). Before 1.0, minor versions may include breaking changes.
 
+## [Unreleased]
+
+### Changed
+
+- Flat growth accepts `map.changepoints` and `map.changepointPriorScale`, as Python Prophet does.
+  Previously both were rejected and every flat fit used Prophet's default grid and prior. The
+  flat trend still ignores them, but they size and scale the prior-only parameters Prophet's
+  flat model optimizes, so they change the fit exactly as they do in Python.
+
+### Benchmarks
+
+- The differential comparison reruns Python Prophet with one-ulp input changes when the noise
+  scales disagree, and labels a case `oracle-sensitive` when Python's own results spread over
+  Effect's. These cases are counted separately from parity failures.
+
 ## [0.2.0] - 2026-10-15
 
 ### Added

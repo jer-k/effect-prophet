@@ -24,7 +24,7 @@ const exportSignatures = [
   ["predict_piecewise_map_with_features", "annnnaanaaaanaaaa"],
   ["predict_piecewise_map_with_features_and_scaling", "annnnnnnaanaaaanaaaa"],
   ["fit_mixed_linear_map", "aannannaaaanaaaaana"],
-  ["fit_mixed_flat_map", "aanaaaanaaaaaa"],
+  ["fit_mixed_flat_map", "aannannaaaanaaaaana"],
   ["predict_mixed_linear_map", "annnnnnnaanaaaanaaaaa"],
   ["predict_mixed_flat_map", "annnnnaaaanaaaaa"],
   ["fit_logistic_map_with_features", "aaanannannaaaanaaaaana"],

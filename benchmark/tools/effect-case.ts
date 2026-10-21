@@ -58,17 +58,6 @@ export const effectOptionsForCase = (
       holidaysMode: workload.configuration.holidaysMode,
     };
 
-    if (workload.configuration.growth === "flat") {
-      const flat =
-        workload.effectOptimizer === undefined
-          ? { ...options, growth: "flat" as const }
-          : { ...options, growth: "flat" as const, map: { optimizer: workload.effectOptimizer } };
-
-      return seasonalities === undefined
-        ? { ...flat, seasonalities: [] }
-        : { ...flat, seasonalities };
-    }
-
     const mapConfiguration = {
       changepoints: workload.configuration.changepoints,
       changepointPriorScale: workload.configuration.changepointPriorScale,
@@ -78,6 +67,15 @@ export const effectOptionsForCase = (
       workload.effectOptimizer === undefined
         ? mapConfiguration
         : { ...mapConfiguration, optimizer: workload.effectOptimizer };
+
+    // Changepoint settings size flat growth's Stan state, as they do Python's.
+    if (workload.configuration.growth === "flat") {
+      const flat = { ...options, growth: "flat" as const, map };
+
+      return seasonalities === undefined
+        ? { ...flat, seasonalities: [] }
+        : { ...flat, seasonalities };
+    }
 
     if (workload.configuration.growth === "logistic") {
       return { ...options, growth: "logistic", seasonalities: configuration.seasonalities, map };

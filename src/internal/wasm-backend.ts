@@ -8,6 +8,7 @@ import {
   type WasmFailurePhase,
 } from "../errors";
 import type { Parameters as FittedParameters } from "../fitted-model";
+import type { ChangepointSetting } from "../options";
 import type { SeasonalityLayout } from "../seasonality";
 import type { TargetScalingMode } from "../target-scaling";
 import type { KnownAdditiveFeatures, SeasonalityMaskMatrix } from "./additional-features";
@@ -224,6 +225,17 @@ export const packSeasonalitiesForFit = (seasonalities: SeasonalityLayout) => {
 
   return { periods, orders, priors };
 };
+
+/** Pack a changepoint request as the shared explicit-or-automatic fitting arguments. */
+export const packChangepointsForFit = (changepoints: ChangepointSetting) =>
+  changepoints.mode === "explicit"
+    ? { mode: 0, timestamps: new Float64Array(changepoints.timestamps), count: 0, range: 0 }
+    : {
+        mode: 1,
+        timestamps: new Float64Array(),
+        count: changepoints.count,
+        range: changepoints.range,
+      };
 
 /** Pack checked masks, feature values, priors, and component ranges for the numeric ABI. */
 export const packKnownAdditiveFeatures = (

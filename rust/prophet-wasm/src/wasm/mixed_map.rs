@@ -18,10 +18,6 @@ use crate::wasm::protocol::{
   placeholder_priors,
 };
 
-/// Prophet's default changepoint prior. It scales only the flat density's unused
-/// zero-time delta, which contributes a constant to the objective.
-const FLAT_CHANGEPOINT_PRIOR_SCALE: f64 = 0.05;
-
 pub(crate) struct ParsedMetadata {
   pub(crate) masks: Vec<u8>,
   pub(crate) offsets: Vec<usize>,
@@ -112,7 +108,10 @@ pub fn fit_mixed_linear_map(
   }
 }
 
-/// Fit a flat MAP model with events, regressors, conditions, or multiplicative components.
+/// Fit a flat MAP model through Prophet's complete Stan state.
+///
+/// Changepoints and their prior use the linear fit's wire layout: Prophet resolves
+/// them for flat growth too, and each adds a prior-only `delta` to the state.
 #[must_use]
 #[wasm_bindgen]
 #[allow(clippy::too_many_arguments)]
@@ -120,6 +119,10 @@ pub fn fit_mixed_flat_map(
   timestamps: &[f64],
   values: &[f64],
   scaling_mode: f64,
+  changepoint_mode: f64,
+  explicit_changepoints: &[f64],
+  automatic_count: f64,
+  automatic_range: f64,
   periods_days: &[f64],
   fourier_orders: &[f64],
   seasonal_prior_scales: &[f64],
@@ -130,6 +133,7 @@ pub fn fit_mixed_flat_map(
   additional_component_offsets: &[f64],
   additional_component_counts: &[f64],
   column_modes: &[f64],
+  changepoint_prior_scale: f64,
   optimizer: &[f64],
 ) -> Vec<f64> {
   let Some(scaling) = ScalingMode::from_code(scaling_mode) else {
@@ -141,6 +145,15 @@ pub fn fit_mixed_flat_map(
     return fit_error(PiecewiseMapFitStatus::InvalidConfiguration);
   };
   let Some(controls) = crate::wasm::protocol::parse_linear_optimizer(optimizer) else {
+    return fit_error(PiecewiseMapFitStatus::InvalidConfiguration);
+  };
+  let Ok(changepoints) = parse_changepoints(
+    timestamps,
+    changepoint_mode,
+    explicit_changepoints,
+    automatic_count,
+    automatic_range,
+  ) else {
     return fit_error(PiecewiseMapFitStatus::InvalidConfiguration);
   };
   let Some(additional_columns) = parse_nonnegative_integer(additional_column_count) else {
@@ -165,13 +178,15 @@ pub fn fit_mixed_flat_map(
   match fit_mixed_map(
     timestamps,
     values,
-    MixedTrendInput::Flat,
+    MixedTrendInput::Flat {
+      changepoints: &changepoints,
+    },
     &seasonalities,
     mask_view(timestamps.len(), seasonalities.len(), &metadata),
     matrix_view(timestamps.len(), additional_columns, additional_values),
     layout_view(additional_prior_scales, &metadata.offsets, &metadata.counts),
     &modes,
-    FLAT_CHANGEPOINT_PRIOR_SCALE,
+    changepoint_prior_scale,
     controls,
     scaling,
   ) {
@@ -583,6 +598,10 @@ mod tests {
       &[0.0, 1.0, 2.0, 3.0, 4.0, 5.0],
       &[11.0, 8.0, 10.5, 11.0, 9.5, 10.0],
       0.0,
+      0.0,
+      &[],
+      0.0,
+      0.0,
       &[],
       &[],
       &[],
@@ -593,6 +612,7 @@ mod tests {
       &[0.0],
       &[1.0],
       &[1.0],
+      0.05,
       &DEFAULT_OPTIMIZER,
     );
 
@@ -635,6 +655,10 @@ mod tests {
         &[0.0, 1.0],
         &[1.0, 2.0],
         0.0,
+        0.0,
+        &[],
+        0.0,
+        0.0,
         &[],
         &[],
         &[],
@@ -645,10 +669,98 @@ mod tests {
         &[0.0],
         &[1.0],
         &[mode],
+        0.05,
         &DEFAULT_OPTIMIZER,
       );
 
       assert_eq!(packed, vec![4.0]);
     }
+  }
+
+  #[test]
+  fn passes_configured_changepoints_and_prior_scale_to_the_flat_kernel() {
+    use crate::additional_features::{
+      AdditionalFeatureLayoutView, FeatureMatrixView, SeasonalityMaskView,
+    };
+    use crate::mixed_map::{ComponentMode, MixedTrendInput, fit_mixed_map};
+    use crate::stan::linear_optimizer::LinearOptimizerOptions;
+    use crate::target_scaling::ScalingMode;
+
+    let timestamps = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0];
+    let values = [11.0, 8.0, 10.5, 11.0, 9.5, 10.0];
+    let features = [1.0, -1.0, 0.5, 1.0, -0.5, 0.0];
+    let wire = |mode: f64, explicit: &[f64], count: f64, range: f64, prior: f64| {
+      fit_mixed_flat_map(
+        &timestamps,
+        &values,
+        0.0,
+        mode,
+        explicit,
+        count,
+        range,
+        &[],
+        &[],
+        &[],
+        &[],
+        1.0,
+        &features,
+        &[10.0],
+        &[0.0],
+        &[1.0],
+        &[1.0],
+        prior,
+        &DEFAULT_OPTIMIZER,
+      )
+    };
+    let kernel = |changepoints: &[f64], prior: f64| {
+      fit_mixed_map(
+        &timestamps,
+        &values,
+        MixedTrendInput::Flat { changepoints },
+        &[],
+        SeasonalityMaskView {
+          row_count: 6,
+          component_count: 0,
+          values: &[],
+        },
+        FeatureMatrixView {
+          row_count: 6,
+          column_count: 1,
+          values: &features,
+        },
+        AdditionalFeatureLayoutView {
+          prior_scales: &[10.0],
+          component_offsets: &[0],
+          component_counts: &[1],
+        },
+        &[ComponentMode::Multiplicative],
+        prior,
+        LinearOptimizerOptions::default(),
+        ScalingMode::AbsMax,
+      )
+      .unwrap()
+    };
+
+    for prior in [0.001, 0.5] {
+      let explicit = wire(0.0, &[2.0, 3.0], 0.0, 0.0, prior);
+      let expected = kernel(&[2.0, 3.0], prior);
+
+      assert_eq!(explicit[0], 0.0);
+      assert_eq!(explicit[5], expected.noise_scale);
+      assert_eq!(explicit[9], expected.summary.objective);
+      assert_eq!(explicit[16], expected.additional_coefficients[0]);
+    }
+
+    // Prophet resolves automatic flat changepoints too: 6 rows keep floor(4.8) - 1 = 3.
+    let automatic = wire(1.0, &[], 25.0, 0.8, 0.05);
+    let expected = kernel(&[1.0, 2.0, 3.0], 0.05);
+
+    assert_eq!(automatic[9], expected.summary.objective);
+
+    for prior in [0.0, -0.05, f64::NAN] {
+      assert_eq!(wire(0.0, &[], 0.0, 0.0, prior), vec![4.0]);
+    }
+
+    assert_eq!(wire(0.0, &[9.0], 0.0, 0.0, 0.05), vec![4.0]);
   }
 }

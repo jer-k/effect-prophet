@@ -59,6 +59,9 @@ export interface FlatStanMapFitPlan {
   readonly _tag: "FlatStanMap";
   readonly scaling: TargetScalingMode;
   readonly seasonalities: SeasonalityLayout;
+  /** Sizes Stan's prior-only changepoint state; the flat trend ignores the locations. */
+  readonly changepoints: ChangepointSetting;
+  readonly changepointPriorScale: number;
   readonly optimizer: LinearOptimizer;
   readonly seasonalityMasks: SeasonalityMaskMatrix;
   readonly additionalFeatures: KnownAdditiveFeatures;

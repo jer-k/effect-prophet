@@ -260,6 +260,7 @@ trend and components.
 | `python-worse-fit` | They differ, and Python's noise scale is larger                          | no             |
 | `neither-fits`     | Both noise scales exceed the span, so neither fit resolves the data      | no             |
 | `mismatch`         | They differ, and Effect's noise scale is larger: Effect fits worse       | yes            |
+| `oracle-sensitive` | They differ, but the perturbed CmdStan oracle spreads over Effect's fit  | no, listed     |
 | `incomparable`     | Both fitted, but rows, component names or modes differ                   | yes            |
 | `effect-failed`    | Python fitted; Effect failed with a fitting/prediction error or a defect | yes            |
 | `effect-rejected`  | Python fitted; Effect rejected the input as invalid                      | no, listed     |
@@ -275,10 +276,28 @@ automatic seasonalities do. With `minmax` scaling and multiplicative components,
 prediction applies multiplicative terms in data units rather than the scaled units it fitted in,
 so in-sample predictions can differ from the fit on both sides; Effect reproduces this.
 
+### Oracle sensitivity
+
+Some inputs make CmdStan itself unstable: changing one scaled target by one ulp can double its
+fitted noise scale (#107). Every `mismatch` or `python-worse-fit` case therefore reruns the
+unchanged Python oracle eight times, once per one-ulp change to Prophet's initial offset `m`, the
+first, last or every scaled target, each down and up. Prophet's backend receives only that change;
+every model setting, initialization and optimizer control stays as Prophet chose it.
+
+A case becomes `oracle-sensitive` only when Effect's noise scale and every compared forecast
+quantity, row by row, lie within the range of Python's original and perturbed fits, widened by
+the strict tolerances. It is counted separately, keeps its original verdict and the full evidence
+in `report.json`, and is written to `oracle-sensitive/`. A case outside the spread keeps its
+verdict, with the same evidence attached. The verdict alone requests the check: the recorded
+relative target span and span in ulps describe the input but never forgive a mismatch. At most 25
+cases are checked per run, costing up to 200 extra Python fits; later candidates keep their
+verdicts and are counted as unchecked.
+
 Runs are written to the gitignored `results/differential/<run-id>/`: `cases.json`,
-`manifest.json` (root seed and every case seed), both implementations' JSON-lines outcomes,
-`report.json`, `report.md`, and one file per parity failure under `mismatches/` with the complete
-input and both outcomes. The weekly
+`manifest.json` (root seed and every case seed), both implementations' JSON-lines outcomes, any
+perturbed Python outcomes, `report.json`, `report.md`, and one file per parity failure under
+`mismatches/` and per oracle-sensitive case under `oracle-sensitive/`, each with the complete input,
+both outcomes and the perturbed oracle outcomes. The weekly
 [Differential workflow](../.github/workflows/differential.yml) runs 200 cases on a new root seed,
 writes `report.md` to the job summary and uploads the run directory. Parity failures never fail
 the job. When one exposes a real bug, fix it and promote the input to a deterministic fixture

@@ -4,7 +4,7 @@ import { inspectCountryHolidays } from "effect-prophet";
 import type { BenchmarkCase } from "../../tools/case.ts";
 import { scalarUncertaintyControls, uncertaintyLifecyclePhases } from "../uncertainty/controls.ts";
 import { linearOptimizers } from "../growth/linear/controls.ts";
-import { pythonDefaultOptimizer } from "../prophet-defaults.ts";
+import { prophetDefaultChangepoints, pythonDefaultOptimizer } from "../prophet-defaults.ts";
 
 type Configuration = Extract<BenchmarkCase["workload"], { kind: "map" }>["configuration"];
 
@@ -92,9 +92,7 @@ export const countryHolidayCases = Effect.fn("benchmark.catalog.country-holidays
           seasonalityMode: "additive",
           holidaysMode: mode,
           changepoints:
-            growth === "flat"
-              ? { mode: "explicit", timestamps: [] }
-              : { mode: "auto", count: 2, range: 0.8 },
+            growth === "flat" ? prophetDefaultChangepoints : { mode: "auto", count: 2, range: 0.8 },
           changepointPriorScale: 0.05,
           ...fields,
         },

@@ -36,6 +36,7 @@ import {
   failWasmPrediction,
   indexedFailureTimestamp,
   packKnownAdditiveFeatures,
+  packChangepointsForFit,
   packSeasonalitiesForFit,
   packSeasonalitiesForPrediction,
   readWasmStatus,
@@ -411,7 +412,7 @@ export const fitMixedLinearMapWithWasm = (
   regressors: ReadonlyArray<ResolvedRegressor>,
 ): Effect.Effect<PiecewiseMapParameters, FittingError> => {
   const observationCount = input.values.length;
-  const explicit = changepoints.mode === "explicit";
+  const packedChangepoints = packChangepointsForFit(changepoints);
   const componentCount = seasonalities.components.length + features.layout.components.length;
   const coefficientCount = seasonalities.coefficientCount + features.layout.coefficientCount;
 
@@ -436,10 +437,10 @@ export const fitMixedLinearMapWithWasm = (
           input.timestamps,
           input.values,
           targetScalingModeCode(scaling),
-          explicit ? 0 : 1,
-          explicit ? new Float64Array(changepoints.timestamps) : new Float64Array(),
-          explicit ? 0 : changepoints.count,
-          explicit ? 0 : changepoints.range,
+          packedChangepoints.mode,
+          packedChangepoints.timestamps,
+          packedChangepoints.count,
+          packedChangepoints.range,
           seasonal.periods,
           seasonal.orders,
           seasonal.priors,
@@ -486,13 +487,16 @@ export const fitMixedLinearMapWithWasm = (
 };
 
 /**
- * Fit a flat MAP model with events, regressors, conditions, or multiplicative
- * components through Prophet's Stan density in one coarse Rust/WASM call.
+ * Fit a flat MAP model through Prophet's complete Stan state in one coarse Rust/WASM call.
+ *
+ * Changepoints and their prior scale add Stan's prior-only rate adjustments to the state.
  */
 export const fitFlatStanMapWithWasm = (
   input: TrainingInput,
   scaling: TargetScalingMode,
   seasonalities: SeasonalityLayout,
+  changepoints: ChangepointSetting,
+  changepointPriorScale: number,
   optimizer: LinearOptimizer,
   masks: SeasonalityMaskMatrix,
   features: KnownAdditiveFeatures,
@@ -516,6 +520,7 @@ export const fitFlatStanMapWithWasm = (
 
     const seasonal = packSeasonalitiesForFit(seasonalities);
     const additional = packKnownAdditiveFeatures(masks, features);
+    const packedChangepoints = packChangepointsForFit(changepoints);
 
     const packed = yield* attemptWasmFitting(
       () =>
@@ -523,6 +528,10 @@ export const fitFlatStanMapWithWasm = (
           input.timestamps,
           input.values,
           targetScalingModeCode(scaling),
+          packedChangepoints.mode,
+          packedChangepoints.timestamps,
+          packedChangepoints.count,
+          packedChangepoints.range,
           seasonal.periods,
           seasonal.orders,
           seasonal.priors,
@@ -533,6 +542,7 @@ export const fitFlatStanMapWithWasm = (
           additional.offsets,
           additional.counts,
           modesFor(seasonalities, features),
+          changepointPriorScale,
           encodeLinearOptimizer(optimizer),
         ),
       observationCount,

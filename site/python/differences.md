@@ -50,9 +50,6 @@ Python, where it differs on purpose, and the smaller behavior differences.
 - **Inputs that cannot be fitted return an error.** If every row has the same timestamp, there
   is no way to draw a trend, so `fit` fails where Python returns `NaN` forecasts. These are the
   [intentional differences](/benchmarks/linear#intentional-differences) in the benchmarks.
-- **Flat growth rejects changepoint options.** `map.changepoints` and
-  `map.changepointPriorScale` cannot affect a flat trend, so passing them is an error. Python
-  accepts and ignores them.
 - **Last-digit differences.** Fits stop when they are close enough, and rounding differs across
   computers, so forecasts agree to many decimal places but not always all of them. For logistic
   growth, the fitted internal numbers can differ slightly even when forecasts match; the

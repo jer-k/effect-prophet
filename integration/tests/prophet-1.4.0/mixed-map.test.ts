@@ -36,10 +36,19 @@ describe("Prophet 1.4.0 mixed MAP evidence", () => {
       const componentCounts = new Float64Array([2, 2, 1, 1]);
       const scaling = referenceCase.scaling === "absmax" ? 0 : 1;
 
-      const common = [
+      // Python fits the flat case with Prophet's automatic changepoints, which the fixture
+      // omits because flat predictions never read them.
+      const changepoints: [number, Float64Array, number, number] =
+        referenceCase.growth === "linear"
+          ? [0, new Float64Array(referenceCase.expected.changepointTimestamps.map(epoch)), 0, 0]
+          : [1, new Float64Array(), 25, 0.8];
+
+      // Flat growth shares the linear wire layout, including changepoints and their prior.
+      const args = [
         timestamps,
         values,
         scaling,
+        ...changepoints,
         new Float64Array(),
         new Float64Array(),
         new Float64Array(),
@@ -50,32 +59,14 @@ describe("Prophet 1.4.0 mixed MAP evidence", () => {
         componentOffsets,
         componentCounts,
         modes,
+        referenceCase.settings.changepointPriorScale,
+        new Float64Array([2, 1, 10_000]),
       ] as const;
 
       const fit =
         referenceCase.growth === "linear"
-          ? wasm.fit_mixed_linear_map(
-              timestamps,
-              values,
-              scaling,
-              0,
-              new Float64Array(referenceCase.expected.changepointTimestamps.map(epoch)),
-              0,
-              0,
-              new Float64Array(),
-              new Float64Array(),
-              new Float64Array(),
-              new Float64Array(),
-              columnCount,
-              new Float64Array(referenceCase.expected.trainingFeaturesRowMajor),
-              new Float64Array(referenceCase.expected.featurePriorScales),
-              componentOffsets,
-              componentCounts,
-              modes,
-              referenceCase.settings.changepointPriorScale,
-              new Float64Array([2, 1, 10_000]),
-            )
-          : wasm.fit_mixed_flat_map(...common, new Float64Array([2, 1, 10_000]));
+          ? wasm.fit_mixed_linear_map(...args)
+          : wasm.fit_mixed_flat_map(...args);
 
       expect(fit[0]).toBe(0);
 
@@ -223,6 +214,8 @@ describe("Prophet 1.4.0 mixed MAP evidence", () => {
         regressors,
       };
 
+      const changepointPriorScale = referenceCase.settings.changepointPriorScale;
+
       const options =
         referenceCase.growth === "linear"
           ? {
@@ -233,10 +226,10 @@ describe("Prophet 1.4.0 mixed MAP evidence", () => {
                   mode: "explicit" as const,
                   timestamps: referenceCase.expected.changepointTimestamps,
                 },
-                changepointPriorScale: referenceCase.settings.changepointPriorScale,
+                changepointPriorScale,
               },
             }
-          : { ...commonOptions, growth: "flat" as const };
+          : { ...commonOptions, growth: "flat" as const, map: { changepointPriorScale } };
 
       const model = await Effect.runPromise(
         fit(referenceCase.observations, options).pipe(Effect.provide(prophetFittingBackendLayer)),

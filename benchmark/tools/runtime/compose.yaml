@@ -70,3 +70,17 @@ services:
     environment:
       <<: *runtime-environment
       DIFFERENTIAL_RUN_DIRECTORY: /results
+
+  # Reruns the unchanged CmdStan oracle on requested cases with one-ulp input changes.
+  python-prophet-perturbation:
+    <<: *runtime
+    image: effect-prophet/benchmark-python:1.4.0
+    command:
+      [
+        /opt/effect-prophet-benchmark/bin/python,
+        benchmark/tools/adapters/python-differential.py,
+        --perturbations,
+      ]
+    environment:
+      <<: *runtime-environment
+      DIFFERENTIAL_RUN_DIRECTORY: /results

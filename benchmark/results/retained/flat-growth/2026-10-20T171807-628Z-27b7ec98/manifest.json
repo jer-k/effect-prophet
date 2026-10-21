@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "runId": "2026-10-20T030119-668Z-7835012b",
-  "createdAt": "2026-10-20T03:01:24.383Z",
-  "gitRevision": "7835012b486794900684ff67778502e6da02ab6e",
+  "runId": "2026-10-20T171807-628Z-27b7ec98",
+  "createdAt": "2026-10-20T17:18:12.111Z",
+  "gitRevision": "27b7ec98aff8098fc16dd0abc828045b94569e9a",
   "gitDirty": false,
   "hostPlatform": "darwin",
   "hostRelease": "25.5.0",
@@ -94,7 +94,7 @@
     },
     {
       "name": "benchmark/cases/holidays/country-calendars.ts",
-      "value": "46440d328c77cff837162aec151b013dfd70ce1766c9966b1a4cb86ab7cf019c"
+      "value": "c9202cafcec9b5236caede8db04c715c80b2e7a4e976ab73d85452a73d1b6c40"
     },
     {
       "name": "benchmark/cases/holidays/coverage-policy.json",
@@ -102,7 +102,7 @@
     },
     {
       "name": "calendars/manifest.json",
-      "value": "37cc206c93d0dca2974edce5a8d770b93fa096b3fe096b03e213d8103c1d0562"
+      "value": "ef7f04414555602fb8c9b772d417597f1c4dee43011e489b459a0c9bf43a9039"
     },
     {
       "name": "calendars/coverage.json",
@@ -110,7 +110,7 @@
     },
     {
       "name": "src/internal/country-holiday-catalog.ts",
-      "value": "c1b4ff9b4bec4b42b66dec0d896d1710383f6ffadc7e4f9151af4d4af96525cc"
+      "value": "10786775ced2aa87e8bc5f8fec7b4fe40790164670bc5d381359c1a12b18c40b"
     },
     {
       "name": "benchmark/cases/regressors/public-api.json",
@@ -134,7 +134,7 @@
     },
     {
       "name": "benchmark/cases/growth/defaults.ts",
-      "value": "6aac21120e8f954f9e54bc8280678971c70f030dd0d8b289b76783e6d5ef8b0c"
+      "value": "1c0bbb0bdd0019f437f3b402f0bc6dcc88bf7f70f729f18eead5a2368c058116"
     },
     {
       "name": "tools/prophet/linear_optimizer_evidence.py",
@@ -142,7 +142,7 @@
     },
     {
       "name": "benchmark/cases/growth/mixed-map.ts",
-      "value": "7644446c5745b472b67b0c6ed39b7c984abedeeb706ba9f42cfe938481c76db2"
+      "value": "848e87f7973de1915712d7674bc9687c287e6acadaa52add3cb15d4d6acdd64c"
     },
     {
       "name": "benchmark/cases/uncertainty/public-api.ts",
@@ -166,7 +166,7 @@
     },
     {
       "name": "benchmark/tools/effect-case.ts",
-      "value": "1430a4213acea09a988e0f7db788380ee1133fe744a844a5c09e8b9739049bee"
+      "value": "83eaf2958ba6df4e12a3a12d2be9011933c28b8e3ad640c458ba1c11acf1e6f8"
     },
     {
       "name": "benchmark/tools/country-holidays.ts",
@@ -182,7 +182,7 @@
     },
     {
       "name": "benchmark/tools/adapters/python-prophet.py",
-      "value": "034336f9e2c75d417fa066b7945335a6a1425f87c69653976e6a099335590e15"
+      "value": "500cef84afae9b38169ef971fc20c6d4c91740104198118c7b5079f30722e4b4"
     },
     {
       "name": "benchmark/tools/catalog.ts",
@@ -190,11 +190,11 @@
     },
     {
       "name": "benchmark/tools/case.ts",
-      "value": "0d993ac069436c7331b8c376f4fcc4e01bde48b96b3ce79d7f4802e0e45a2c4f"
+      "value": "cf13337a856561f22c1b2b7189236b747f2112cc6f7a25b0a1a9b07546ad22b7"
     },
     {
       "name": "benchmark/tools/report.ts",
-      "value": "cbb75ddbe9664d58e5b32af9b1903a3d9c0e51593eb86d7326283ed504f9e0c7"
+      "value": "59fa2b9695454dbe51e12378d6ee4ed06e6335c2c2dc49250cdeec079a2bdcd8"
     },
     {
       "name": "benchmark/tools/report-cli.ts",
@@ -209,8 +209,8 @@
       "value": "025bcf9f3210e9a2a91c2e70ac43b23cb385952d180603287d4c9d087561c278"
     },
     {
-      "name": "benchmark/results/runs/2026-10-20T030119-668Z-7835012b/cases.json",
-      "value": "a426d25a3baf233af511e54f9733d65a2221497ce49f026e8fbf2c032d8f08dd"
+      "name": "benchmark/results/runs/2026-10-20T171807-628Z-27b7ec98/cases.json",
+      "value": "90f067d131508955626d008f922c485aa06139fd3518aaa1c0eac80d2d79e203"
     },
     {
       "name": "benchmark/evidence/comparisons.json",
@@ -332,11 +332,11 @@
   "containerImages": [
     {
       "name": "effect-prophet/benchmark-effect:local",
-      "value": "sha256:3a018d4ce96a517eb09f103492e495b30942278c3abbb223c4f732b58e09f806"
+      "value": "sha256:2061871ed43219e5d693e330002a01b52a6f651da9905f06adbc8776c3534dd4"
     },
     {
       "name": "effect-prophet/benchmark-python:1.4.0",
-      "value": "sha256:07a082e9f600a895c9e0973811282072db901d31f67fa4f8604eeeb71e2720cb"
+      "value": "sha256:6184e1c348bfdcb4cf50766f9b542337ea93ca6d7afd631db59651cf65ec0ee2"
     }
   ]
 }

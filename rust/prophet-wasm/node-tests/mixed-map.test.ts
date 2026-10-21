@@ -14,6 +14,10 @@ describe("mixed MAP WASM boundary", () => {
       new Float64Array([0, 1, 2, 3, 4, 5]),
       new Float64Array([11, 8, 10.5, 11, 9.5, 10]),
       0,
+      0,
+      new Float64Array(),
+      0,
+      0,
       new Float64Array(),
       new Float64Array(),
       new Float64Array(),
@@ -24,6 +28,7 @@ describe("mixed MAP WASM boundary", () => {
       new Float64Array([0]),
       new Float64Array([1]),
       new Float64Array([1]),
+      0.05,
       newton,
     );
 
@@ -67,6 +72,10 @@ describe("mixed MAP WASM boundary", () => {
         new Float64Array([0, 1]),
         new Float64Array([1, 2]),
         0,
+        0,
+        new Float64Array(),
+        0,
+        0,
         new Float64Array(),
         new Float64Array(),
         new Float64Array(),
@@ -77,6 +86,7 @@ describe("mixed MAP WASM boundary", () => {
         new Float64Array([0]),
         new Float64Array([1]),
         new Float64Array([mode]),
+        0.05,
         newton,
       );
 
@@ -89,6 +99,10 @@ describe("mixed MAP WASM boundary", () => {
       new Float64Array([0, 1, 2, 3, 4, 5]),
       new Float64Array([11, 8, 10.5, 11, 9.5, 10]),
       0,
+      0,
+      new Float64Array(),
+      0,
+      0,
       new Float64Array(),
       new Float64Array(),
       new Float64Array(),
@@ -99,6 +113,7 @@ describe("mixed MAP WASM boundary", () => {
       new Float64Array([0]),
       new Float64Array([1]),
       new Float64Array([1]),
+      0.05,
       newton,
     ] as const;
 

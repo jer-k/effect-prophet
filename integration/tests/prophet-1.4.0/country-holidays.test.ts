@@ -77,21 +77,17 @@ describe("Prophet 1.4.0 / holidays 0.104 country calendars", () => {
         events: reference.events,
         holidaysMode: reference.mode,
         builtInSeasonalities: off,
-        map: { optimizer: { algorithm: "newton", maxIterations: 10_000 } },
+        // Python fits every growth with n_changepoints=0.
+        map: {
+          optimizer: { algorithm: "newton", maxIterations: 10_000 },
+          changepoints: { mode: "explicit", timestamps: [] },
+        },
       } as const;
 
       const options = Match.value(reference.growth).pipe(
         Match.when("flat", () => ({ ...common, growth: "flat" as const })),
-        Match.when("logistic", () => ({
-          ...common,
-          growth: "logistic" as const,
-          map: { ...common.map, changepoints: { mode: "explicit" as const, timestamps: [] } },
-        })),
-        Match.when("linear", () => ({
-          ...common,
-          growth: "linear" as const,
-          map: { ...common.map, changepoints: { mode: "explicit" as const, timestamps: [] } },
-        })),
+        Match.when("logistic", () => ({ ...common, growth: "logistic" as const })),
+        Match.when("linear", () => ({ ...common, growth: "linear" as const })),
         Match.exhaustive,
       );
 

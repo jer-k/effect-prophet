@@ -33,6 +33,7 @@ import {
   failWasmPrediction,
   indexedFailureTimestamp,
   packKnownAdditiveFeatures,
+  packChangepointsForFit,
   packSeasonalitiesForFit,
   packSeasonalitiesForPrediction,
   readWasmStatus,
@@ -230,7 +231,7 @@ export const fitLogisticMapWithWasm = (
   regressors: ReadonlyArray<ResolvedRegressor>,
 ): Effect.Effect<LogisticMapParameters, FittingError> => {
   const observationCount = input.values.length;
-  const explicit = changepoints.mode === "explicit";
+  const packedChangepoints = packChangepointsForFit(changepoints);
   const componentCount = seasonalities.components.length + features.layout.components.length;
   const coefficientCount = seasonalities.coefficientCount + features.layout.coefficientCount;
 
@@ -258,10 +259,10 @@ export const fitLogisticMapWithWasm = (
           bounds.floorPolicy === "implicit" ? 0 : 1,
           bounds.explicitFloors,
           targetScalingModeCode(scaling),
-          explicit ? 0 : 1,
-          explicit ? new Float64Array(changepoints.timestamps) : new Float64Array(),
-          explicit ? 0 : changepoints.count,
-          explicit ? 0 : changepoints.range,
+          packedChangepoints.mode,
+          packedChangepoints.timestamps,
+          packedChangepoints.count,
+          packedChangepoints.range,
           seasonal.periods,
           seasonal.orders,
           seasonal.priors,

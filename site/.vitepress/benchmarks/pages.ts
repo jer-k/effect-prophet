@@ -134,7 +134,7 @@ const runDetails = ({ run }: Benchmark) => [
 ];
 
 const timingCaveat =
-  "Timings come from one machine and describe this workload only. They are not a general speed ranking.";
+  "Timings come from one machine and describe this workload only. They are not a general speed ranking. Where Python is faster, it is often because Python runs Stan's optimizer as compiled C++, while Effect Prophet runs the same algorithm as WebAssembly with narrower vector instructions. The gap is widest for Newton's method on short histories with many parameters.";
 
 const allCases = (benchmark: Benchmark) => benchmark.groups.flatMap((group) => group.cases);
 

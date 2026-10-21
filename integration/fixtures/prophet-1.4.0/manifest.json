@@ -83,6 +83,10 @@
     {
       "path": "flat-low-order-stan.json",
       "sha256": "4dcf3314799a53781fecc00b8071870dd3516c96e778bdec00af9af6531cf00c"
+    },
+    {
+      "path": "stan-differential-same-state.json",
+      "sha256": "562b3e2116c0ca360291722fb55ca893fd2a9c94047643a226aface14e694ce2"
     }
   ],
   "backendArtifacts": [
@@ -98,7 +102,7 @@
     "platform": "linux/amd64",
     "uvVersion": "0.8.15"
   },
-  "generatorRevision": "ee27255594411da7d37e657706bc330a9aaf2f85c64bdfe9741502428e4c4acd",
+  "generatorRevision": "458031bf87b237b942ba504dec1df54bb8a64ad866585dd349587ae9971b605c",
   "numericalEnvironment": [
     {
       "name": "cmdstanpy",

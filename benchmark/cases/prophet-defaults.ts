@@ -6,6 +6,9 @@ export const pythonDefaultOptimizer = {
   sigFigs: 12,
 } as const;
 
+/** Prophet's default changepoint grid: 25 automatic changepoints over 80% of the history. */
+export const prophetDefaultChangepoints = { mode: "auto", count: 25, range: 0.8 } as const;
+
 /**
  * Forecasts, components, noise and persistence gate each case. Fitting objective, normalized noise
  * and stationarity are reported, and gaps beyond these thresholds are flagged for investigation.

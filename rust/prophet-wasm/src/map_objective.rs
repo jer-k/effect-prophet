@@ -1426,6 +1426,186 @@ mod tests {
 
     assert!(super::StanFlatObjective::new(&sloped, &target, 0, &[10.0], &modes, 0.05).is_err());
   }
+
+  /// One frozen differential input and the objective Effect builds for its growth.
+  struct SameStateCase {
+    value: serde_json::Value,
+    design: Vec<f64>,
+    target: Vec<f64>,
+    changepoints: Vec<f64>,
+    priors: Vec<f64>,
+    modes: Vec<ComponentMode>,
+  }
+
+  impl SameStateCase {
+    fn load() -> Vec<Self> {
+      let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../integration/fixtures/prophet-1.4.0/stan-differential-same-state.json"
+      ))
+      .unwrap();
+
+      fixture["cases"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|value| {
+          let times = numbers(&value["times"]);
+          let changepoints = numbers(&value["changepointTimes"]);
+          let features = numbers(&value["features"]);
+          let priors = numbers(&value["featurePriors"]);
+          let flat = value["growth"] == "flat";
+          let mut design = Vec::new();
+
+          // Flat rows are `[1, 0, features...]`; the objective adds its own delta columns.
+          for (row, time) in times.iter().enumerate() {
+            design.push(1.0);
+            design.push(if flat { 0.0 } else { *time });
+
+            if !flat {
+              design.extend(changepoints.iter().map(|point| (time - point).max(0.0)));
+            }
+
+            design.extend_from_slice(&features[row * priors.len()..(row + 1) * priors.len()]);
+          }
+
+          Self {
+            design,
+            target: numbers(&value["target"]),
+            changepoints,
+            modes: modes(&value["featureModes"]),
+            priors,
+            value: value.clone(),
+          }
+        })
+        .collect()
+    }
+
+    fn flat(&self) -> Option<super::StanFlatObjective<'_>> {
+      (self.value["growth"] == "flat").then(|| {
+        super::StanFlatObjective::new(
+          &self.design,
+          &self.target,
+          self.changepoints.len(),
+          &self.priors,
+          &self.modes,
+          self.value["changepointPrior"].as_f64().unwrap(),
+        )
+        .unwrap()
+      })
+    }
+
+    fn objective(&self) -> Box<dyn crate::stan::linear_optimizer::StanMapObjective + '_> {
+      match self.flat() {
+        Some(flat) => Box::new(flat),
+        None => Box::new(
+          StanLinearObjective::new(
+            &self.design,
+            &self.target,
+            &self.changepoints,
+            &self.priors,
+            &self.modes,
+            self.value["changepointPrior"].as_f64().unwrap(),
+          )
+          .unwrap(),
+        ),
+      }
+    }
+  }
+
+  #[test]
+  fn differential_inputs_match_pinned_stan_density_and_every_gradient_component() {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+      "../../../integration/fixtures/prophet-1.4.0/stan-differential-same-state.json"
+    ))
+    .unwrap();
+    let tolerance = fixture["tolerances"]["relative"].as_f64().unwrap();
+    let close =
+      |actual: f64, expected: f64| (actual - expected).abs() <= tolerance * expected.abs();
+
+    for case in SameStateCase::load() {
+      let objective = case.objective();
+      let seed = &case.value["seed"];
+      let changepoints = case.value["internalChangepointCount"].as_u64().unwrap() as usize;
+
+      assert_eq!(
+        objective.parameter_count(),
+        3 + changepoints + case.priors.len(),
+        "{seed}: Effect must optimize Stan's complete parameter vector"
+      );
+
+      for (actual, expected) in objective
+        .initial_parameters()
+        .into_iter()
+        .zip(numbers(&case.value["initialParameters"]))
+      {
+        assert!(
+          close(actual, expected),
+          "{seed}: initial {actual} vs {expected}"
+        );
+      }
+
+      for probe in case.value["probes"].as_array().unwrap() {
+        let evaluation = objective.evaluate(&numbers(&probe["parameters"])).unwrap();
+        let expected = probe["logDensity"].as_f64().unwrap();
+
+        assert!(
+          close(evaluation.value, expected),
+          "{seed}: density {} vs {expected}",
+          evaluation.value
+        );
+
+        for (index, (actual, expected)) in evaluation
+          .gradient
+          .iter()
+          .zip(numbers(&probe["gradient"]))
+          .enumerate()
+        {
+          assert!(
+            close(*actual, expected),
+            "{seed}: gradient {index} {actual} vs {expected}"
+          );
+        }
+      }
+    }
+  }
+
+  #[test]
+  fn flat_newton_moves_prior_only_coordinates_through_its_numerical_hessian() {
+    use crate::stan::linear_optimizer::StanMapObjective;
+
+    let mut checked = 0;
+
+    for case in SameStateCase::load() {
+      let Some(flat) = case.flat() else { continue };
+      let seed = &case.value["seed"];
+      let sigma_index = 2 + case.value["internalChangepointCount"].as_u64().unwrap() as usize;
+      let initial = flat.initial_parameters();
+      let dimension = initial.len();
+      let hessian = finite_difference_hessian(&initial, &|point| flat.evaluate(point)).unwrap();
+
+      // In exact arithmetic k and delta decouple; Stan's stencil leaves rounding cross terms.
+      for row in (0..sigma_index).filter(|row| *row != 1) {
+        assert!(
+          (0..dimension).any(|column| column != row && hessian[row * dimension + column] != 0.0),
+          "{seed}: prior-only coordinate {row} should couple through the stencil"
+        );
+      }
+
+      let fit = flat.fit_newton(10_000).unwrap();
+
+      assert_eq!(fit.parameters.len(), dimension);
+      assert!(
+        fit.parameters[..sigma_index]
+          .iter()
+          .enumerate()
+          .any(|(index, value)| index != 1 && *value != 0.0),
+        "{seed}: Newton should be free to move k or delta off zero"
+      );
+      checked += 1;
+    }
+
+    assert_eq!(checked, 2);
+  }
 }
 
 #[cfg(test)]

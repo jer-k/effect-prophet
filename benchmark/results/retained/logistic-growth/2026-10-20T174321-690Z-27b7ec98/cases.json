@@ -3,12 +3,12 @@
     "id": "country-us-logistic-additive",
     "dataset": "v5/country-logistic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:71ee8daf33ec4d527ad865201555a2205f3bf5059a863e7c96da068855adcdb6",
+      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "country-calendar-public-v1"
@@ -145,12 +145,12 @@
     "id": "country-explicit-us-logistic-additive",
     "dataset": "v5/country-logistic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:71ee8daf33ec4d527ad865201555a2205f3bf5059a863e7c96da068855adcdb6",
+      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "country-calendar-public-v1"
@@ -436,12 +436,12 @@
     "id": "country-us-logistic-multiplicative",
     "dataset": "v5/country-logistic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:71ee8daf33ec4d527ad865201555a2205f3bf5059a863e7c96da068855adcdb6",
+      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "country-calendar-public-v1"
@@ -578,12 +578,12 @@
     "id": "country-explicit-us-logistic-multiplicative",
     "dataset": "v5/country-logistic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:71ee8daf33ec4d527ad865201555a2205f3bf5059a863e7c96da068855adcdb6",
+      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "country-calendar-public-v1"
@@ -869,10 +869,10 @@
     "id": "logistic-implicit-floor-absmax",
     "dataset": "v1/logistic-implicit-floor.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
-        "evidenceId": "stage-f-logistic-v1"
+        "evidenceId": "logistic-map-v1"
       },
       "configuration": {
         "growth": "logistic",
@@ -966,10 +966,10 @@
     "id": "logistic-implicit-floor-minmax",
     "dataset": "v1/logistic-implicit-floor.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
-        "evidenceId": "stage-f-logistic-v1"
+        "evidenceId": "logistic-map-v1"
       },
       "configuration": {
         "growth": "logistic",
@@ -1063,10 +1063,10 @@
     "id": "logistic-explicit-floor-absmax",
     "dataset": "v1/logistic-explicit-floor.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
-        "evidenceId": "stage-f-logistic-v1"
+        "evidenceId": "logistic-map-v1"
       },
       "configuration": {
         "growth": "logistic",
@@ -1167,10 +1167,10 @@
     "id": "logistic-explicit-floor-minmax",
     "dataset": "v1/logistic-explicit-floor.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
-        "evidenceId": "stage-f-logistic-v1"
+        "evidenceId": "logistic-map-v1"
       },
       "configuration": {
         "growth": "logistic",
@@ -1271,10 +1271,10 @@
     "id": "logistic-implicit-floor-auto-changepoints",
     "dataset": "v1/logistic-implicit-floor.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
-        "evidenceId": "stage-f-logistic-v1"
+        "evidenceId": "logistic-map-v1"
       },
       "configuration": {
         "growth": "logistic",
@@ -1367,10 +1367,10 @@
     "id": "logistic-implicit-floor-large",
     "dataset": "v1/logistic-implicit-floor-large.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
-        "evidenceId": "stage-f-logistic-v1"
+        "evidenceId": "logistic-map-v1"
       },
       "configuration": {
         "growth": "logistic",
@@ -1464,7 +1464,7 @@
     "id": "uncertainty-logistic-reconcile-defaults-rate-changes-intervals-1000",
     "dataset": "v3/logistic-rate-changes.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "logistic-python-reconciliation-v1"
@@ -1567,7 +1567,7 @@
     "id": "uncertainty-logistic-reconcile-defaults-rate-changes-intervals-1000-seed-7",
     "dataset": "v3/logistic-rate-changes.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "logistic-python-reconciliation-v1"
@@ -1670,10 +1670,10 @@
     "id": "uncertainty-logistic-implicit-floor-minmax-full-samples-512",
     "dataset": "v1/logistic-implicit-floor.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
-        "evidenceId": "stage-f-logistic-v1"
+        "evidenceId": "logistic-map-v1"
       },
       "configuration": {
         "growth": "logistic",
@@ -1773,10 +1773,10 @@
     "id": "uncertainty-logistic-implicit-floor-large-full-intervals-128",
     "dataset": "v1/logistic-implicit-floor-large.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
-        "evidenceId": "stage-f-logistic-v1"
+        "evidenceId": "logistic-map-v1"
       },
       "configuration": {
         "growth": "logistic",
@@ -1876,10 +1876,10 @@
     "id": "uncertainty-logistic-explicit-floor-minmax-full-intervals-512",
     "dataset": "v1/logistic-explicit-floor.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
-        "evidenceId": "stage-f-logistic-v1"
+        "evidenceId": "logistic-map-v1"
       },
       "configuration": {
         "growth": "logistic",
@@ -1986,10 +1986,10 @@
     "id": "uncertainty-logistic-explicit-floor-minmax-full-samples-128",
     "dataset": "v1/logistic-explicit-floor.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
-        "evidenceId": "stage-f-logistic-v1"
+        "evidenceId": "logistic-map-v1"
       },
       "configuration": {
         "growth": "logistic",
@@ -2096,10 +2096,10 @@
     "id": "uncertainty-logistic-explicit-floor-minmax-mixed-conditions-events-intervals-128",
     "dataset": "v1/logistic-uncertainty-mixed.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
-        "evidenceId": "stage-f-logistic-v1"
+        "evidenceId": "logistic-map-v1"
       },
       "configuration": {
         "growth": "logistic",
@@ -2222,10 +2222,10 @@
     "id": "uncertainty-logistic-explicit-floor-minmax-mixed-conditions-events-samples-128",
     "dataset": "v1/logistic-uncertainty-mixed.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
-        "evidenceId": "stage-f-logistic-v1"
+        "evidenceId": "logistic-map-v1"
       },
       "configuration": {
         "growth": "logistic",
@@ -2351,7 +2351,7 @@
       "kind": "evaluation",
       "comparison": {
         "kind": "different-public-work",
-        "evidenceId": "stage-h-evaluation-v1"
+        "evidenceId": "rolling-origin-evaluation-v1"
       },
       "configuration": {
         "growth": "logistic",
@@ -2445,7 +2445,7 @@
       "kind": "evaluation",
       "comparison": {
         "kind": "different-public-work",
-        "evidenceId": "stage-h-evaluation-v1"
+        "evidenceId": "rolling-origin-evaluation-v1"
       },
       "configuration": {
         "growth": "logistic",
@@ -2539,7 +2539,7 @@
       "kind": "evaluation",
       "comparison": {
         "kind": "different-public-work",
-        "evidenceId": "stage-h-evaluation-v1"
+        "evidenceId": "rolling-origin-evaluation-v1"
       },
       "configuration": {
         "growth": "logistic",
@@ -2642,7 +2642,7 @@
       "kind": "evaluation",
       "comparison": {
         "kind": "different-public-work",
-        "evidenceId": "stage-h-evaluation-v1"
+        "evidenceId": "rolling-origin-evaluation-v1"
       },
       "configuration": {
         "growth": "logistic",
@@ -2737,7 +2737,7 @@
       "kind": "evaluation",
       "comparison": {
         "kind": "different-public-work",
-        "evidenceId": "stage-h-evaluation-v1"
+        "evidenceId": "rolling-origin-evaluation-v1"
       },
       "configuration": {
         "growth": "logistic",
@@ -2829,7 +2829,7 @@
     "id": "logistic-reconcile-basic-96-empty-absmax",
     "dataset": "v2/logistic-basic-96.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "logistic-python-reconciliation-v1"
@@ -2913,7 +2913,7 @@
     "id": "logistic-reconcile-basic-96-explicit-absmax",
     "dataset": "v2/logistic-basic-96.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "logistic-python-reconciliation-v1"
@@ -2999,7 +2999,7 @@
     "id": "logistic-reconcile-basic-96-auto-absmax",
     "dataset": "v2/logistic-basic-96.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "logistic-python-reconciliation-v1"
@@ -3084,7 +3084,7 @@
     "id": "logistic-reconcile-basic-96-empty-minmax",
     "dataset": "v2/logistic-basic-96.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "logistic-python-reconciliation-v1"
@@ -3168,7 +3168,7 @@
     "id": "logistic-reconcile-basic-96-explicit-minmax",
     "dataset": "v2/logistic-basic-96.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "logistic-python-reconciliation-v1"
@@ -3254,7 +3254,7 @@
     "id": "logistic-reconcile-basic-96-auto-minmax",
     "dataset": "v2/logistic-basic-96.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "logistic-python-reconciliation-v1"
@@ -3339,7 +3339,7 @@
     "id": "logistic-reconcile-empty-loose-prior-absmax",
     "dataset": "v2/logistic-basic-96.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "logistic-python-reconciliation-v1"
@@ -3423,7 +3423,7 @@
     "id": "logistic-reconcile-empty-loose-prior-minmax",
     "dataset": "v2/logistic-basic-96.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "logistic-python-reconciliation-v1"
@@ -3507,7 +3507,7 @@
     "id": "logistic-reconcile-basic-99",
     "dataset": "v2/logistic-basic-99.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "logistic-python-reconciliation-v1"
@@ -3593,7 +3593,7 @@
     "id": "logistic-reconcile-basic-100",
     "dataset": "v2/logistic-basic-100.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "logistic-python-reconciliation-v1"
@@ -3679,7 +3679,7 @@
     "id": "logistic-reconcile-basic-256",
     "dataset": "v2/logistic-basic-256.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "logistic-python-reconciliation-v1"
@@ -3765,7 +3765,7 @@
     "id": "logistic-reconcile-defaults-96",
     "dataset": "v2/logistic-weekly-96.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "logistic-python-reconciliation-v1"
@@ -3858,7 +3858,7 @@
     "id": "logistic-reconcile-defaults-256",
     "dataset": "v2/logistic-weekly-256.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "logistic-python-reconciliation-v1"
@@ -3951,7 +3951,7 @@
     "id": "logistic-reconcile-defaults-rate-changes",
     "dataset": "v3/logistic-rate-changes.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "logistic-python-reconciliation-v1"
@@ -4044,7 +4044,7 @@
     "id": "logistic-reconcile-weekly",
     "dataset": "v2/logistic-weekly-96.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "logistic-python-reconciliation-v1"
@@ -4137,7 +4137,7 @@
     "id": "logistic-reconcile-conditional",
     "dataset": "v2/logistic-conditional-96.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "logistic-python-reconciliation-v1"
@@ -4231,7 +4231,7 @@
     "id": "logistic-reconcile-event",
     "dataset": "v2/logistic-event-96.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "logistic-python-reconciliation-v1"
@@ -4332,7 +4332,7 @@
     "id": "logistic-reconcile-regressor-additive",
     "dataset": "v2/logistic-regressor-additive-96.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "logistic-python-reconciliation-v1"
@@ -4424,7 +4424,7 @@
     "id": "logistic-reconcile-regressor-multiplicative",
     "dataset": "v2/logistic-regressor-multiplicative-96.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "logistic-python-reconciliation-v1"
@@ -4517,7 +4517,7 @@
     "id": "logistic-reconcile-explicit-floor-absmax",
     "dataset": "v2/logistic-floor-96.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "logistic-python-reconciliation-v1"
@@ -4603,7 +4603,7 @@
     "id": "logistic-reconcile-mixed-absmax",
     "dataset": "v2/logistic-mixed-96.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "logistic-python-reconciliation-v1"
@@ -4719,7 +4719,7 @@
     "id": "logistic-reconcile-explicit-floor-minmax",
     "dataset": "v2/logistic-floor-96.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "logistic-python-reconciliation-v1"
@@ -4805,7 +4805,7 @@
     "id": "logistic-reconcile-mixed-minmax",
     "dataset": "v2/logistic-mixed-96.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "logistic-python-reconciliation-v1"
@@ -4921,7 +4921,7 @@
     "id": "logistic-reconcile-unsorted",
     "dataset": "v2/logistic-unsorted-96.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "logistic-python-reconciliation-v1"
@@ -5007,7 +5007,7 @@
     "id": "logistic-reconcile-duplicates",
     "dataset": "v2/logistic-duplicates-96.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "logistic-python-reconciliation-v1"
@@ -5093,7 +5093,7 @@
     "id": "logistic-reconcile-declining",
     "dataset": "v2/logistic-declining-96.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "logistic-python-reconciliation-v1"
@@ -5179,7 +5179,7 @@
     "id": "logistic-reconcile-saturated",
     "dataset": "v2/logistic-saturated-96.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "logistic-python-reconciliation-v1"
@@ -5265,7 +5265,7 @@
     "id": "logistic-reconcile-constant",
     "dataset": "v2/logistic-constant-96.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "logistic-python-reconciliation-v1"
@@ -5351,7 +5351,7 @@
     "id": "logistic-reconcile-out-of-bounds",
     "dataset": "v2/logistic-out-of-bounds-96.json",
     "workload": {
-      "kind": "stage-f-map",
+      "kind": "map",
       "comparison": {
         "kind": "equivalent-objective",
         "evidenceId": "logistic-python-reconciliation-v1"
