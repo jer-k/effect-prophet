@@ -6,8 +6,18 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `FittingError` has a `memory-limit` reason, with `parameterCount` and `memoryLimitBytes`, for
+  models whose Newton optimizer would need more than WebAssembly's 4 GiB of memory.
+
 ### Changed
 
+- Every flat model is fitted with Prophet's Stan objective and optimizer, as in Python. Simple
+  flat models used a separate exact solver, which was slow for large Fourier orders and could
+  stop at a different optimum. Models saved by earlier versions still load and predict.
+- Large Fourier orders fit quickly instead of taking seconds to minutes. Models with more than
+  2048 parameters, which used to fail with `backend-failure`, now fit as they do in Python.
 - Histories that the model can fit exactly, such as noiseless seasonal data, now fit with a
   noise scale near zero, as in Python. Flat growth previously failed with `noise-collapse`.
 - Flat growth accepts `map.changepoints` and `map.changepointPriorScale`, as Python Prophet does.
