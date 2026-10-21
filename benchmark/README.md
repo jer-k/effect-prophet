@@ -40,7 +40,9 @@ npm run benchmark -- --no-build --case map-events-small
 
 Rebuild after source/adapter changes; `--no-build` deliberately reuses existing images.
 Apple Silicon uses `linux/arm64`; x64 uses `linux/amd64`. An explicit
-`BENCHMARK_CONTAINER_PLATFORM=linux/amd64` override is recorded as emulated on ARM.
+`BENCHMARK_CONTAINER_PLATFORM=linux/amd64` override is recorded as emulated on ARM. The
+[differential comparison](#differential-comparison) uses `linux/amd64` on every host instead
+([Oracle platform](#oracle-platform)).
 
 Each run freezes **only selected cases**, including configuration, gates and input hashes.
 Both adapters pass independent correctness checks and the cross-language eligibility gate
@@ -275,6 +277,27 @@ the triage. The rest keep only seasonalities with two full periods of history, a
 automatic seasonalities do. With `minmax` scaling and multiplicative components, Prophet's
 prediction applies multiplicative terms in data units rather than the scaled units it fitted in,
 so in-sample predictions can differ from the fit on both sides; Effect reproduces this.
+
+### Oracle platform
+
+The differential runs the Python oracle on `linux/amd64` on every host, emulated on Apple
+Silicon, because CmdStan's arithmetic depends on the platform. On arm64, Eigen compiles its packet
+multiply-add to a fused multiply-add (`vfmaq_f64`), so the matrix-vector products in Prophet's
+`normal_id_glm` likelihood round once per term where the prebuilt amd64 CmdStan, built for SSE2,
+rounds twice. `-ffp-contract=off` does not prevent this, because the fusion is an explicit
+intrinsic. Effect runs as WebAssembly, so its arithmetic is the same on every host, and it
+matches the unfused amd64 products. WebAssembly has no deterministic fused multiply-add, so
+matching arm64 would need a software `fma` in the optimizer's inner loop. On a chaotic case, one
+last-bit difference changes CmdStan's optimizer path, so an arm64 oracle can return a different
+verdict than CI, which runs on amd64, or the fixtures, which are generated on amd64 (#115).
+
+`BENCHMARK_CONTAINER_PLATFORM` overrides the platform. A run on any other platform prints a
+warning, and `report.md` and the job summary state the oracle platform, whether it was emulated,
+and the same warning. Emulation makes a run slower: on an Apple M4 Pro, `--seed 60 --cases 200`
+takes about 22 minutes emulated and 18 natively, including the image builds. Nothing in the
+differential is timed, so emulation does not affect its results. Benchmarks keep the native
+platform: emulated timings mean nothing, and their correctness gates do not depend on the last
+bit.
 
 ### Oracle sensitivity
 

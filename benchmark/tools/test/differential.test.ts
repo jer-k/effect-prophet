@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  resolveContainerPlatform,
+  type ContainerPlatformResolution,
+} from "../container-platform.ts";
+import {
   applyOracleChecks,
   buildDifferentialReport,
   failingVerdicts,
@@ -19,6 +23,8 @@ import {
 } from "../differential.ts";
 import { generateCase } from "../differential-generate.ts";
 import type { ForecastProjection } from "../result.ts";
+
+const amd64Oracle = resolveContainerPlatform("x64");
 
 // Any generated case works as a carrier; judging reads only its id, traits, growth and targets.
 const carrier = generateCase(1);
@@ -124,6 +130,7 @@ describe("differential reports", () => {
     const report = buildDifferentialReport(
       "run-1",
       60,
+      amd64Oracle,
       [caseWithSpan(1)],
       [fitted(1, 0.2)],
       [fitted(5, 0.1)],
@@ -137,12 +144,33 @@ describe("differential reports", () => {
     expect(markdown).toContain(`\`${carrier.id}\``);
     expect(markdown).toContain("npm run differential -- --seed 60 --cases 1");
     expect(markdown).toContain("npm run differential -- --case-seed <seed>");
+    expect(markdown).toContain("Python oracle: `linux/amd64`, native.");
+    expect(markdown).not.toContain("Warning");
+  });
+
+  it("states an emulated oracle and warns when it is not the reference platform", () => {
+    const render = (oracle: ContainerPlatformResolution) =>
+      renderDifferentialMarkdown(
+        buildDifferentialReport("run-1", 60, oracle, [carrier], [fitted(1)], [fitted(1)]),
+      );
+
+    const emulated = render(resolveContainerPlatform("arm64", undefined, "linux/amd64"));
+
+    expect(emulated).toContain("Python oracle: `linux/amd64`, emulated on a `linux/arm64` host.");
+    expect(emulated).not.toContain("Warning");
+
+    const native = render(resolveContainerPlatform("arm64"));
+
+    expect(native).toContain("Python oracle: `linux/arm64`, native.");
+    expect(native).toContain(
+      "> **Warning:** The Python oracle uses `linux/arm64`, not `linux/amd64`",
+    );
   });
 
   it("fails when a case has no outcome from one implementation", () => {
-    expect(() => buildDifferentialReport("run-1", 60, [carrier], [fitted(1)], [])).toThrow(
-      "missing an implementation outcome",
-    );
+    expect(() =>
+      buildDifferentialReport("run-1", 60, amd64Oracle, [carrier], [fitted(1)], []),
+    ).toThrow("missing an implementation outcome");
   });
 
   it("decodes JSON-lines outcomes and rejects malformed ones", () => {
@@ -316,7 +344,7 @@ describe("oracle sensitivity", () => {
   it("relabels checked reports, counts oracle-sensitive cases separately and keeps evidence", () => {
     const effect = [fittedOutcome(1.3, 0.25)];
     const python = [fittedOutcome(1, 0.1)];
-    const report = buildDifferentialReport("run-1", 60, [span], effect, python);
+    const report = buildDifferentialReport("run-1", 60, amd64Oracle, [span], effect, python);
 
     expect(report.results[0]?.verdict).toBe("mismatch");
 

@@ -21,13 +21,17 @@ export interface ContainerPlatformResolution {
   readonly emulated: boolean;
 }
 
-/** Resolve the requested container platform and whether it differs from the host architecture. */
+/**
+ * Resolve the requested container platform and whether it differs from the host architecture.
+ * Without an override, `preferred` is used when given, and the host's own platform otherwise.
+ */
 export const resolveContainerPlatform = (
   hostArchitecture: string,
   override?: string,
+  preferred?: BenchmarkContainerPlatform,
 ): ContainerPlatformResolution => {
   const hostPlatform = nativePlatform(hostArchitecture);
-  const selected = override ?? hostPlatform;
+  const selected = override ?? preferred ?? hostPlatform;
 
   if (selected !== "linux/arm64" && selected !== "linux/amd64") {
     throw new Error(`Unsupported container platform ${selected}`);

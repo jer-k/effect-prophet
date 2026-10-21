@@ -1,6 +1,10 @@
 import { Schema } from "effect";
 
 import { BenchmarkDatasetSchema, MapWorkloadSchema, type BenchmarkDataset } from "./case.ts";
+import type {
+  BenchmarkContainerPlatform,
+  ContainerPlatformResolution,
+} from "./container-platform.ts";
 import {
   compareForecast,
   emptyDifferences,
@@ -576,11 +580,25 @@ export const applyOracleChecks = (
   return { ...report, counts: countVerdicts(results), results };
 };
 
+/**
+ * The CmdStan oracle platform that the fixtures and CI judge against. On arm64, Eigen fuses the
+ * GLM matrix-vector products with FMA; amd64 CmdStan does not, and Effect's WASM arithmetic
+ * matches it, so chaotic cases can change verdict between the two platforms (#115).
+ */
+export const referenceOraclePlatform: BenchmarkContainerPlatform = "linux/amd64";
+
+/** Why a run's verdicts may differ from CI and the fixtures, or `undefined` on the reference oracle. */
+export const oraclePlatformWarning = (oracle: ContainerPlatformResolution): string | undefined =>
+  oracle.platform === referenceOraclePlatform
+    ? undefined
+    : `The Python oracle uses \`${oracle.platform}\`, not \`${referenceOraclePlatform}\` as in CI and the fixtures. CmdStan's arithmetic differs between the two, so verdicts on chaotic cases may differ from theirs.`;
+
 /** The complete machine-readable result of one differential run. */
 export interface DifferentialReport {
   readonly schemaVersion: 1;
   readonly runId: string;
   readonly rootSeed: number | undefined;
+  readonly oracle: ContainerPlatformResolution;
   readonly tolerances: DifferentialTolerances;
   readonly counts: Readonly<Record<DifferentialVerdict, number>>;
   readonly results: ReadonlyArray<DifferentialCaseResult>;
@@ -590,6 +608,7 @@ export interface DifferentialReport {
 export const buildDifferentialReport = (
   runId: string,
   rootSeed: number | undefined,
+  oracle: ContainerPlatformResolution,
   cases: ReadonlyArray<DifferentialCase>,
   effectOutcomes: ReadonlyArray<DifferentialOutcome>,
   pythonOutcomes: ReadonlyArray<DifferentialOutcome>,
@@ -609,7 +628,15 @@ export const buildDifferentialReport = (
     return judgeCase(differentialCase, effect, python, tolerances);
   });
 
-  return { schemaVersion: 1, runId, rootSeed, tolerances, counts: countVerdicts(results), results };
+  return {
+    schemaVersion: 1,
+    runId,
+    rootSeed,
+    oracle,
+    tolerances,
+    counts: countVerdicts(results),
+    results,
+  };
 };
 
 const countVerdicts = (
@@ -689,11 +716,20 @@ export const renderDifferentialMarkdown = (report: DifferentialReport): string =
       ? "Cases were selected by their own seeds."
       : `Root seed \`${report.rootSeed}\`; rerun every case with \`npm run differential -- --seed ${report.rootSeed} --cases ${report.results.length}\`.`;
 
+  const execution = report.oracle.emulated
+    ? `emulated on a \`${report.oracle.nativePlatform}\` host`
+    : "native";
+
+  const warning = oraclePlatformWarning(report.oracle);
+
   const lines = [
     "# Differential comparison against Python Prophet",
     "",
     `Run \`${report.runId}\`: ${report.results.length} generated cases. ${seedLine}`,
     "",
+    `Python oracle: \`${report.oracle.platform}\`, ${execution}.`,
+    "",
+    ...(warning === undefined ? [] : [`> **Warning:** ${warning}`, ""]),
     "Forecast differences are the largest absolute difference across prediction rows, divided by",
     "the training target's span. Noise gaps are Effect's fitted noise scale minus Python's, over",
     "the same span, so a positive gap means Effect fits the training data worse.",
