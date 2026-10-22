@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "runId": "2026-10-20T171807-628Z-27b7ec98",
-  "createdAt": "2026-10-20T17:18:12.111Z",
-  "gitRevision": "27b7ec98aff8098fc16dd0abc828045b94569e9a",
+  "runId": "2026-10-22T193148-782Z-bc4f2208",
+  "createdAt": "2026-10-22T19:31:53.601Z",
+  "gitRevision": "bc4f2208715745367a9d8a2b9708bfefd1a48b2d",
   "gitDirty": false,
   "hostPlatform": "darwin",
   "hostRelease": "25.5.0",
@@ -102,7 +102,7 @@
     },
     {
       "name": "calendars/manifest.json",
-      "value": "ef7f04414555602fb8c9b772d417597f1c4dee43011e489b459a0c9bf43a9039"
+      "value": "3c927cb901461bf54a6f15046cb9d26928bd1df7c6f3a663fc305323a6bb1033"
     },
     {
       "name": "calendars/coverage.json",
@@ -110,7 +110,7 @@
     },
     {
       "name": "src/internal/country-holiday-catalog.ts",
-      "value": "10786775ced2aa87e8bc5f8fec7b4fe40790164670bc5d381359c1a12b18c40b"
+      "value": "8f46665230bd17ee7b0b4accd51ca5778bc72eef006a10257b0be5d2866ccc6e"
     },
     {
       "name": "benchmark/cases/regressors/public-api.json",
@@ -209,8 +209,8 @@
       "value": "025bcf9f3210e9a2a91c2e70ac43b23cb385952d180603287d4c9d087561c278"
     },
     {
-      "name": "benchmark/results/runs/2026-10-20T171807-628Z-27b7ec98/cases.json",
-      "value": "90f067d131508955626d008f922c485aa06139fd3518aaa1c0eac80d2d79e203"
+      "name": "benchmark/results/runs/2026-10-22T193148-782Z-bc4f2208/cases.json",
+      "value": "91eb3f1fa118be0c4af09b85a11a55abc7c83459d901fc8c5d15489d2d9449d6"
     },
     {
       "name": "benchmark/evidence/comparisons.json",
@@ -332,7 +332,7 @@
   "containerImages": [
     {
       "name": "effect-prophet/benchmark-effect:local",
-      "value": "sha256:2061871ed43219e5d693e330002a01b52a6f651da9905f06adbc8776c3534dd4"
+      "value": "sha256:975ae3983e38742e93445bba7316ee6a34d905ddcc8a10497adfca866ba8a718"
     },
     {
       "name": "effect-prophet/benchmark-python:1.4.0",
