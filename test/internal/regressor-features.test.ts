@@ -57,6 +57,23 @@ describe("regressor feature preprocessing", () => {
     });
   });
 
+  it("computes statistics only for columns it standardizes", async () => {
+    const resolved = await Effect.runPromise(
+      resolveRegressorFeatures(definitions([{ name: "raw", standardization: "never" }]), [
+        [1e308],
+        [-1e308],
+      ]),
+    );
+
+    expect(resolved.regressors[0]?.transform).toEqual({ mode: "identity", reason: "disabled" });
+
+    const overflow = await Effect.runPromise(
+      Effect.flip(resolveRegressorFeatures(definitions([{ name: "huge" }]), [[1e308], [1.5e308]])),
+    );
+
+    expect(overflow.message).toBe("Regressor 'huge' has unrepresentable training statistics");
+  });
+
   it("keeps two-valued nonbinary columns standardized", async () => {
     const resolved = await Effect.runPromise(
       resolveRegressorFeatures(definitions([{ name: "switch" }]), [[-1], [2], [-1], [2]]),
