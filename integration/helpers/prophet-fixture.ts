@@ -912,6 +912,41 @@ const TargetScalingReferenceFileSchema = Schema.Struct({
   fittedCases: Schema.NonEmptyArray(TargetScalingFittedCaseSchema),
 });
 
+const RegressorStandardizationCaseSchema = Schema.Struct({
+  id: Schema.NonEmptyString,
+  observations: Schema.NonEmptyArray(
+    Schema.Struct({
+      timestamp: Schema.String,
+      value: Schema.Finite,
+      regressors: NumericRecordSchema,
+    }),
+  ),
+  regressors: Schema.NonEmptyArray(
+    Schema.Struct({
+      name: Schema.NonEmptyString,
+      standardization: Schema.Literals(["auto", "always", "never"]),
+      mean: Schema.Finite,
+      standardDeviation: PositiveFinite,
+      standardizedValues: Schema.NonEmptyArray(Schema.Finite),
+    }),
+  ),
+}).check(
+  Schema.makeFilter((referenceCase) => {
+    for (const [index, regressor] of referenceCase.regressors.entries()) {
+      if (regressor.standardizedValues.length !== referenceCase.observations.length) {
+        return {
+          path: ["regressors", index, "standardizedValues"],
+          issue: "Standardized regressor values must align with observations",
+        };
+      }
+    }
+  }),
+);
+
+const RegressorStandardizationReferenceFileSchema = Schema.Struct({
+  cases: Schema.NonEmptyArray(RegressorStandardizationCaseSchema),
+});
+
 const ComponentModeSchema = Schema.Literals(["additive", "multiplicative"]);
 
 const MixedMapIndependentCaseSchema = Schema.Struct({
@@ -1325,6 +1360,7 @@ const FixtureManifestSchema = Schema.Struct({
       "conditional-seasonality.json",
       "conditional-map-fit.json",
       "target-scaling.json",
+      "regressor-standardization.json",
       "mixed-map.json",
       "country-holidays.json",
       "logistic-map.json",
@@ -1398,6 +1434,11 @@ const decodeConditionalMapFitReferenceSchema = Schema.decodeUnknownEffect(
 
 const decodeTargetScalingReferenceSchema = Schema.decodeUnknownEffect(
   TargetScalingReferenceFileSchema,
+  { errors: "all" },
+);
+
+const decodeRegressorStandardizationReferenceSchema = Schema.decodeUnknownEffect(
+  RegressorStandardizationReferenceFileSchema,
   { errors: "all" },
 );
 
@@ -1481,6 +1522,10 @@ export type SeasonalityResolutionReferenceFile =
 
 /** Parsed Prophet target-scaling preprocessing and fitted MAP evidence. */
 export type TargetScalingReferenceFile = typeof TargetScalingReferenceFileSchema.Type;
+
+/** Parsed Prophet regressor statistics and standardized training columns. */
+export type RegressorStandardizationReferenceFile =
+  typeof RegressorStandardizationReferenceFileSchema.Type;
 
 /** Parsed independent and Prophet-fitted mixed MAP evidence. */
 export type MixedMapReferenceFile = typeof MixedMapReferenceFileSchema.Type;
@@ -1708,6 +1753,26 @@ export const decodeSeasonalityResolutionReference = Effect.fn(
   path = "<memory>",
 ): Effect.fn.Return<SeasonalityResolutionReferenceFile, FixtureLoadError> {
   return yield* decodeSeasonalityResolutionReferenceSchema(input).pipe(
+    Effect.mapError(
+      (cause) =>
+        new FixtureLoadError({
+          operation: "schema",
+          fixturePath: path,
+          message: formatSchemaIssue(cause.issue),
+          cause,
+        }),
+    ),
+  );
+});
+
+/** Parse untrusted regressor statistics and standardized training columns. */
+export const decodeRegressorStandardizationReference = Effect.fn(
+  "ProphetFixture.decodeRegressorStandardizationReference",
+)(function* (
+  input: Parameters<typeof decodeRegressorStandardizationReferenceSchema>[0],
+  path = "<memory>",
+): Effect.fn.Return<RegressorStandardizationReferenceFile, FixtureLoadError> {
+  return yield* decodeRegressorStandardizationReferenceSchema(input).pipe(
     Effect.mapError(
       (cause) =>
         new FixtureLoadError({
@@ -1970,6 +2035,19 @@ export const loadProphetFixtureBundle = Effect.fn("ProphetFixture.loadBundle")(f
 
   const targetScaling = yield* decodeTargetScalingReference(targetScalingInput, targetScalingPath);
 
+  const regressorStandardizationPath = nodePath.join(root, "regressor-standardization.json");
+  const regressorStandardizationContents = yield* readFixtureText(regressorStandardizationPath);
+
+  const regressorStandardizationInput: unknown = yield* Effect.try({
+    try: () => JSON.parse(regressorStandardizationContents),
+    catch: (cause) => invalidJson(regressorStandardizationPath, cause),
+  });
+
+  const regressorStandardization = yield* decodeRegressorStandardizationReference(
+    regressorStandardizationInput,
+    regressorStandardizationPath,
+  );
+
   const mixedMapPath = nodePath.join(root, "mixed-map.json");
   const mixedMapContents = yield* readFixtureText(mixedMapPath);
 
@@ -2042,6 +2120,7 @@ export const loadProphetFixtureBundle = Effect.fn("ProphetFixture.loadBundle")(f
     mixedMap,
     countryHolidays,
     piecewiseLinear,
+    regressorStandardization,
     seasonalityResolution,
     targetScaling,
   };
