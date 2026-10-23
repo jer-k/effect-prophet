@@ -48,6 +48,7 @@ SEASONALITY_RESOLUTION_FILENAME = "seasonality-resolution.json"
 CONDITIONAL_SEASONALITY_FILENAME = "conditional-seasonality.json"
 CONDITIONAL_MAP_FIT_FILENAME = "conditional-map-fit.json"
 TARGET_SCALING_FILENAME = "target-scaling.json"
+REGRESSOR_STANDARDIZATION_FILENAME = "regressor-standardization.json"
 MIXED_MAP_FILENAME = "mixed-map.json"
 COUNTRY_HOLIDAYS_FILENAME = "country-holidays.json"
 LOGISTIC_MAP_FILENAME = "logistic-map.json"
@@ -1835,6 +1836,89 @@ def make_target_scaling_fixture() -> dict[str, Any]:
     return {"fittedCases": [linear_case, flat_case], "preprocessingCases": preprocessing_cases}
 
 
+def make_regressor_standardization_fixture() -> dict[str, Any]:
+    """Freeze Prophet's regressor statistics and standardized training columns.
+
+    Prophet standardizes with pandas' `mean` and `std`, whose numpy pairwise sums round
+    differently from other summation orders. Lengths cover numpy's short loop (< 8), one
+    accumulator block (≤ 128) and recursive splits. Values come from integer arithmetic and one
+    division, and pandas' sums, `sqrt` and elementwise operations are exact IEEE operations, so
+    the full-precision statistics are the same on every CPU.
+    """
+
+    def column(length: int, offset: float, spread: float, stride: int) -> list[float]:
+        return [offset + spread * float((index * stride) % 1009 - 504) / 1009.0 for index in range(length)]
+
+    specs = (
+        ("short-5", 5, (("level", "always", column(5, 12.0, 4.0, 211)),)),
+        ("block-13", 13, (("level", "auto", column(13, -50.0, 0.001, 389)),)),
+        ("block-128", 128, (("level", "auto", column(128, 1e6, 10.0, 577)),)),
+        (
+            "split-149",
+            149,
+            (
+                ("temperature", "always", column(149, 19.7, 0.6, 613)),
+                ("promotion", "auto", [float(index % 2) for index in range(149)]),
+                ("price", "never", column(149, 3.5, 1.0, 101)),
+            ),
+        ),
+        ("split-1031", 1031, (("level", "auto", column(1031, -2.5e4, 3e3, 997)),)),
+    )
+    cases: list[dict[str, Any]] = []
+
+    for identifier, length, regressors in specs:
+        timestamps = [timestamp_from_offset(index * DAY_MILLISECONDS) for index in range(length)]
+        values = [10.0 + float(index % 7) for index in range(length)]
+        model = Prophet(
+            growth="flat",
+            yearly_seasonality=False,
+            weekly_seasonality=False,
+            daily_seasonality=False,
+            uncertainty_samples=0,
+        )
+
+        for name, standardization, _ in regressors:
+            model.add_regressor(
+                name, standardize={"always": True, "never": False, "auto": "auto"}[standardization]
+            )
+
+        prepared = model.setup_dataframe(
+            pd.DataFrame(
+                {
+                    "ds": [prophet_timestamp(timestamp) for timestamp in timestamps],
+                    "y": values,
+                    **{name: training for name, _, training in regressors},
+                }
+            ),
+            initialize_scales=True,
+        )
+        cases.append(
+            {
+                "id": identifier,
+                "observations": [
+                    {
+                        "timestamp": timestamp,
+                        "value": value,
+                        "regressors": {name: training[index] for name, _, training in regressors},
+                    }
+                    for index, (timestamp, value) in enumerate(zip(timestamps, values, strict=True))
+                ],
+                "regressors": [
+                    {
+                        "name": name,
+                        "standardization": standardization,
+                        "mean": float(model.extra_regressors[name]["mu"]),
+                        "standardDeviation": float(model.extra_regressors[name]["std"]),
+                        "standardizedValues": [float(value) for value in prepared[name]],
+                    }
+                    for name, standardization, _ in regressors
+                ],
+            }
+        )
+
+    return {"cases": cases}
+
+
 def make_mixed_map_fixture() -> dict[str, Any]:
     """Freeze independent mixed equations and fitted Newton evidence."""
 
@@ -3475,6 +3559,8 @@ def write_outputs(output: Path, execution: dict[str, str], reference: dict[str, 
     conditional_map_fit_path.write_bytes(stable_json(make_conditional_map_fit_fixture()))
     target_scaling_path = output / TARGET_SCALING_FILENAME
     target_scaling_path.write_bytes(stable_json(make_target_scaling_fixture()))
+    regressor_standardization_path = output / REGRESSOR_STANDARDIZATION_FILENAME
+    regressor_standardization_path.write_bytes(stable_json(make_regressor_standardization_fixture()))
     from country_holiday_fixtures import make_country_holiday_fixture
 
     country_holidays_path = output / COUNTRY_HOLIDAYS_FILENAME
@@ -3548,6 +3634,10 @@ def write_outputs(output: Path, execution: dict[str, str], reference: dict[str, 
             {
                 "path": TARGET_SCALING_FILENAME,
                 "sha256": sha256_file(target_scaling_path),
+            },
+            {
+                "path": REGRESSOR_STANDARDIZATION_FILENAME,
+                "sha256": sha256_file(regressor_standardization_path),
             },
             {
                 "path": MIXED_MAP_FILENAME,
@@ -3630,6 +3720,7 @@ def compare_outputs(generated: Path, committed: Path) -> None:
         CONDITIONAL_SEASONALITY_FILENAME,
         CONDITIONAL_MAP_FIT_FILENAME,
         TARGET_SCALING_FILENAME,
+        REGRESSOR_STANDARDIZATION_FILENAME,
         MIXED_MAP_FILENAME,
         COUNTRY_HOLIDAYS_FILENAME,
         LOGISTIC_MAP_FILENAME,

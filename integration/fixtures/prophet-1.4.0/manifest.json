@@ -45,6 +45,10 @@
       "sha256": "174a9d5b73222f1f9df781e80755af2f1d08f1f038bca7ecc5eabd0b1ba8909c"
     },
     {
+      "path": "regressor-standardization.json",
+      "sha256": "5a16dc9d3ce4d6d53263dc944c36ef4961e77d2c88b865ee3f00c00383f89b1d"
+    },
+    {
       "path": "mixed-map.json",
       "sha256": "6773439d5be0b8b6ff8a3e68d52fc8d61b53cfbd6a8b725df8eebf52c13b4ef2"
     },
@@ -102,7 +106,7 @@
     "platform": "linux/amd64",
     "uvVersion": "0.8.15"
   },
-  "generatorRevision": "458031bf87b237b942ba504dec1df54bb8a64ad866585dd349587ae9971b605c",
+  "generatorRevision": "ccc68a944d60a103d4ff0f8a290e9e2aab84cab00d3f7b1e0f54e3b3107233a9",
   "numericalEnvironment": [
     {
       "name": "cmdstanpy",

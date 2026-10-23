@@ -7,6 +7,7 @@ import {
   type InvalidAdditionalFeatures,
   type KnownAdditiveFeatures,
 } from "./additional-features";
+import { pairwiseSum } from "./pairwise-sum";
 import { checkedElementCount } from "./safe-arithmetic";
 
 /** Failure while resolving or applying regressor preprocessing. */
@@ -53,19 +54,18 @@ const checkRows = (
 };
 
 /**
- * Resolve one transform with Welford's online sample-variance algorithm.
+ * Resolve one transform with the arithmetic of pandas' `mean` and `std`, which Prophet uses.
  *
- * Welford updates avoid subtracting two large squared sums and are stable for
- * columns whose finite values have a large shared offset and a small spread.
+ * Both are two-pass numpy pairwise sums: the mean first, then the squared deviations from it.
+ * Matching the summation order reproduces Prophet's statistics, and so its standardized
+ * features, bit for bit.
  */
 const resolveTransform = (
   definition: RegressorDefinition,
   values: ReadonlyArray<ReadonlyArray<number>>,
   columnIndex: number,
 ): Effect.Effect<RegressorTransform, RegressorFeatureError> => {
-  let count = 0;
-  let mean = 0;
-  let sumSquaredDeviation = 0;
+  const column: Array<number> = [];
   let first: number | undefined;
   let constant = true;
   let sawZero = false;
@@ -93,25 +93,14 @@ const resolveTransform = (
       sawOther = true;
     }
 
-    count += 1;
-    const delta = value - mean;
-    mean += delta / count;
-    const deltaFromUpdatedMean = value - mean;
-    sumSquaredDeviation += delta * deltaFromUpdatedMean;
-
-    if (!Number.isFinite(mean) || !Number.isFinite(sumSquaredDeviation)) {
-      return fail(
-        [columnIndex],
-        `Regressor '${definition.name}' has unrepresentable training statistics`,
-      );
-    }
+    column.push(value);
   }
 
   if (definition.standardization === "never") {
     return Effect.succeed(Object.freeze({ mode: "identity", reason: "disabled" }));
   }
 
-  if (constant || count < 2) {
+  if (constant || column.length < 2) {
     return Effect.succeed(Object.freeze({ mode: "identity", reason: "constant" }));
   }
 
@@ -119,7 +108,24 @@ const resolveTransform = (
     return Effect.succeed(Object.freeze({ mode: "identity", reason: "binary" }));
   }
 
-  const variance = sumSquaredDeviation / (count - 1);
+  const mean = pairwiseSum(column) / column.length;
+
+  const sumSquaredDeviation = pairwiseSum(
+    column.map((value) => {
+      const deviation = mean - value;
+
+      return deviation * deviation;
+    }),
+  );
+
+  if (!Number.isFinite(mean) || !Number.isFinite(sumSquaredDeviation)) {
+    return fail(
+      [columnIndex],
+      `Regressor '${definition.name}' has unrepresentable training statistics`,
+    );
+  }
+
+  const variance = sumSquaredDeviation / (column.length - 1);
   const sampleStandardDeviation = Math.sqrt(variance);
 
   if (

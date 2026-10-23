@@ -3,7 +3,7 @@
     "id": "country-us-flat-additive",
     "dataset": "v5/country-basic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
+      "snapshotId": "sha256:d8bc5bd9034bc32a8c791e0b4cf2e1f9e89df3d9d7d16af3a274e68b8a612107",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -123,7 +123,7 @@
     "id": "country-explicit-us-flat-additive",
     "dataset": "v5/country-basic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
+      "snapshotId": "sha256:d8bc5bd9034bc32a8c791e0b4cf2e1f9e89df3d9d7d16af3a274e68b8a612107",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -392,7 +392,7 @@
     "id": "country-us-flat-multiplicative",
     "dataset": "v5/country-basic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
+      "snapshotId": "sha256:d8bc5bd9034bc32a8c791e0b4cf2e1f9e89df3d9d7d16af3a274e68b8a612107",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -512,7 +512,7 @@
     "id": "country-explicit-us-flat-multiplicative",
     "dataset": "v5/country-basic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
+      "snapshotId": "sha256:d8bc5bd9034bc32a8c791e0b4cf2e1f9e89df3d9d7d16af3a274e68b8a612107",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -781,7 +781,7 @@
     "id": "country-boundary-flat",
     "dataset": "v5/country-boundary-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
+      "snapshotId": "sha256:d8bc5bd9034bc32a8c791e0b4cf2e1f9e89df3d9d7d16af3a274e68b8a612107",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -872,7 +872,7 @@
     "id": "country-empty-bv-flat",
     "dataset": "v5/country-basic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
+      "snapshotId": "sha256:d8bc5bd9034bc32a8c791e0b4cf2e1f9e89df3d9d7d16af3a274e68b8a612107",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -963,7 +963,7 @@
     "id": "country-explicit-empty-flat",
     "dataset": "v5/country-basic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
+      "snapshotId": "sha256:d8bc5bd9034bc32a8c791e0b4cf2e1f9e89df3d9d7d16af3a274e68b8a612107",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -1049,7 +1049,7 @@
     "id": "country-estimated-sg-flat",
     "dataset": "v5/country-estimated-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
+      "snapshotId": "sha256:d8bc5bd9034bc32a8c791e0b4cf2e1f9e89df3d9d7d16af3a274e68b8a612107",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -1140,7 +1140,7 @@
     "id": "country-partial-in-flat",
     "dataset": "v5/country-partial-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
+      "snapshotId": "sha256:d8bc5bd9034bc32a8c791e0b4cf2e1f9e89df3d9d7d16af3a274e68b8a612107",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -1231,7 +1231,7 @@
     "id": "country-mixed-us-flat",
     "dataset": "v5/country-mixed-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
+      "snapshotId": "sha256:d8bc5bd9034bc32a8c791e0b4cf2e1f9e89df3d9d7d16af3a274e68b8a612107",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -1365,7 +1365,7 @@
     "id": "country-none-flat-730",
     "dataset": "v5/country-scaling-730.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
+      "snapshotId": "sha256:d8bc5bd9034bc32a8c791e0b4cf2e1f9e89df3d9d7d16af3a274e68b8a612107",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -1447,7 +1447,7 @@
     "id": "country-se-flat-730",
     "dataset": "v5/country-scaling-730.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
+      "snapshotId": "sha256:d8bc5bd9034bc32a8c791e0b4cf2e1f9e89df3d9d7d16af3a274e68b8a612107",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -1534,7 +1534,7 @@
     "id": "country-explicit-se-flat-730",
     "dataset": "v5/country-scaling-730.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
+      "snapshotId": "sha256:d8bc5bd9034bc32a8c791e0b4cf2e1f9e89df3d9d7d16af3a274e68b8a612107",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -3444,7 +3444,7 @@
     "id": "country-cn-flat-730",
     "dataset": "v5/country-scaling-730.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
+      "snapshotId": "sha256:d8bc5bd9034bc32a8c791e0b4cf2e1f9e89df3d9d7d16af3a274e68b8a612107",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -3531,7 +3531,7 @@
     "id": "country-explicit-cn-flat-730",
     "dataset": "v5/country-scaling-730.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
+      "snapshotId": "sha256:d8bc5bd9034bc32a8c791e0b4cf2e1f9e89df3d9d7d16af3a274e68b8a612107",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -4160,7 +4160,7 @@
     "id": "country-none-flat-2190",
     "dataset": "v5/country-scaling-2190.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
+      "snapshotId": "sha256:d8bc5bd9034bc32a8c791e0b4cf2e1f9e89df3d9d7d16af3a274e68b8a612107",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -4242,7 +4242,7 @@
     "id": "country-se-flat-2190",
     "dataset": "v5/country-scaling-2190.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
+      "snapshotId": "sha256:d8bc5bd9034bc32a8c791e0b4cf2e1f9e89df3d9d7d16af3a274e68b8a612107",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -4329,7 +4329,7 @@
     "id": "country-explicit-se-flat-2190",
     "dataset": "v5/country-scaling-2190.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
+      "snapshotId": "sha256:d8bc5bd9034bc32a8c791e0b4cf2e1f9e89df3d9d7d16af3a274e68b8a612107",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -8059,7 +8059,7 @@
     "id": "country-cn-flat-2190",
     "dataset": "v5/country-scaling-2190.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
+      "snapshotId": "sha256:d8bc5bd9034bc32a8c791e0b4cf2e1f9e89df3d9d7d16af3a274e68b8a612107",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -8146,7 +8146,7 @@
     "id": "country-explicit-cn-flat-2190",
     "dataset": "v5/country-scaling-2190.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
+      "snapshotId": "sha256:d8bc5bd9034bc32a8c791e0b4cf2e1f9e89df3d9d7d16af3a274e68b8a612107",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -9412,7 +9412,7 @@
     "id": "country-none-flat-2190-batch-32",
     "dataset": "v6/country-scaling-2190-batch-32.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
+      "snapshotId": "sha256:d8bc5bd9034bc32a8c791e0b4cf2e1f9e89df3d9d7d16af3a274e68b8a612107",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -9494,7 +9494,7 @@
     "id": "country-se-flat-2190-batch-32",
     "dataset": "v6/country-scaling-2190-batch-32.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
+      "snapshotId": "sha256:d8bc5bd9034bc32a8c791e0b4cf2e1f9e89df3d9d7d16af3a274e68b8a612107",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -9581,7 +9581,7 @@
     "id": "country-explicit-se-flat-2190-batch-32",
     "dataset": "v6/country-scaling-2190-batch-32.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
+      "snapshotId": "sha256:d8bc5bd9034bc32a8c791e0b4cf2e1f9e89df3d9d7d16af3a274e68b8a612107",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -12856,7 +12856,7 @@
     "id": "country-uncertainty-us-flat",
     "dataset": "v5/country-basic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:57d9b33f0f7999c0bbda5aa00588b7c4553117bea2e9449ad1f9a94bc665b3f7",
+      "snapshotId": "sha256:d8bc5bd9034bc32a8c791e0b4cf2e1f9e89df3d9d7d16af3a274e68b8a612107",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },

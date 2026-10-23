@@ -24,6 +24,9 @@ All notable changes to this project are documented here. The format follows
   Previously both were rejected and every flat fit used Prophet's default grid and prior. The
   flat trend still ignores them, but they size and scale the prior-only parameters Prophet's
   flat model optimizes, so they change the fit exactly as they do in Python.
+- Standardized regressors use exactly the mean and standard deviation Python Prophet computes.
+  They used to differ in the last few digits because Effect summed the values in a different
+  order, which was enough to send a sensitive fit to a different optimum.
 
 ### Removed
 
