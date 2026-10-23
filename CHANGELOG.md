@@ -4,7 +4,11 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows
 [Semantic Versioning](https://semver.org/). Before 1.0, minor versions may include breaking changes.
 
-## [Unreleased]
+## [0.3.0] - 2026-10-23
+
+Broader checks against Python Prophet 1.4.0, and the fixes they led to. Evaluation scores now
+follow Python's `performance_metrics` exactly, which changes some scores and removes options and
+fields from the evaluation API: see **Removed** before upgrading.
 
 ### Added
 
@@ -35,11 +39,18 @@ All notable changes to this project are documented here. The format follows
 - `rows` scores are sorted by horizon, as in Python, with equal horizons in input order. They used
   to follow the input order.
 - `mape` fails with `zero-actual` when any actual is within `1e-8` of zero, where Python drops
-  `mape` from its result. It used to fail only for an actual of exactly zero.
+  `mape` from its result. It used to fail only for an actual of exactly zero. `mdape` still fails
+  only for an actual of exactly zero.
 - Percentage objectives in `searchModels` no longer need a zero-actual policy.
 - Holdout reports use policy version `effect-prophet-evaluation-v2`, because their scores are
   recomputed when decoded. `decodeEvaluationReport` rejects reports saved by earlier versions
   with an `EvaluationReportError` at `policyVersion`.
+
+### Fixed
+
+- Regressors that are not standardized, because they use `standardization: "never"` or are
+  constant or binary, no longer fail with an `InputValidationError` when their values are too
+  large to average. As in Prophet, statistics are computed only for standardized regressors.
 
 ### Removed
 
@@ -54,11 +65,21 @@ All notable changes to this project are documented here. The format follows
 - The `empty-bucket` reason of `EvaluationMetricError`. Every score now covers at least one
   forecast.
 
-### Benchmarks
+### Verification against Python Prophet
 
-- The differential comparison reruns Python Prophet with one-ulp input changes when the noise
-  scales disagree, and labels a case `oracle-sensitive` when Python's own results spread over
-  Effect's. These cases are counted separately from parity failures.
+- **Property-based tests** run in every CI build. They generate hostile and valid input for
+  observation decoding, the WebAssembly boundary, `fit`, `predict` and tracing, and check that
+  every failure is a typed error, never a crash, and that results are deterministic.
+- **A weekly differential comparison** fits newly generated inputs with both Effect Prophet and
+  Python Prophet 1.4.0, covering every trend type and feature, and reports parity failures with
+  a seed that replays each one. Run it locally with `npm run differential`.
+- The differential judges Effect against Python on `linux/amd64`, the same CmdStan build the
+  compatibility fixtures and CI use, on every host.
+- When the noise scales disagree, the differential reruns Python Prophet with one-ulp input
+  changes, and labels a case `oracle-sensitive` when Python's own results spread over Effect's.
+  These cases are counted separately from parity failures.
+- New generated fixtures check regressor standardization and the Stan objective at large Fourier
+  orders, and the evaluation-metrics fixture now checks every score with exact equality.
 
 ## [0.2.0] - 2026-10-15
 
@@ -249,6 +270,7 @@ These Python Prophet features are not implemented in this release:
 - Inputs that cannot define a trend, such as every row sharing one timestamp, return an error where
   Python returns `NaN` forecasts.
 
+[0.3.0]: https://github.com/jer-k/effect-prophet/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/jer-k/effect-prophet/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/jer-k/effect-prophet/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/jer-k/effect-prophet/releases/tag/v0.1.0

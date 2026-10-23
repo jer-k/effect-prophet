@@ -29,7 +29,13 @@ from all three trends.
 5. A case matches when every number agrees within a small tolerance. Only matching cases are timed.
 
 Separately, every pull request checks the library against stored Python Prophet results for each
-feature.
+feature, and runs property-based tests that throw generated input, valid and invalid, at fitting
+and forecasting to check that every failure is a typed error rather than a crash.
+
+Every week, a differential comparison goes further than the fixed benchmark cases. It generates
+hundreds of new inputs, mixing trend types, features, cadences, gaps, outliers and very large or
+very small values, then fits each one with both libraries and compares the results. Any case where
+Effect Prophet fits worse than Python is recorded with a seed that reproduces it.
 
 ## Why the numbers aren't exactly zero
 
