@@ -6,80 +6,56 @@ All notable changes to this project are documented here. The format follows
 
 ## [0.3.0] - 2026-10-23
 
-Broader checks against Python Prophet 1.4.0, and the fixes they led to. Evaluation scores now
-follow Python's `performance_metrics` exactly, which changes some scores and removes options and
-fields from the evaluation API: see **Removed** before upgrading.
+A correctness release: broader checks against Python Prophet 1.4.0, and the fixes they turned up.
+Evaluation scores now match Python's exactly, which removes a few options and fields, so read
+**Removed** before upgrading.
 
 ### Added
 
-- `FittingError` has a `memory-limit` reason, with `parameterCount` and `memoryLimitBytes`, for
-  models whose Newton optimizer would need more than WebAssembly's 4 GiB of memory.
+- `FittingError` has a `memory-limit` reason for models too large for WebAssembly's 4 GiB of
+  memory.
 
 ### Changed
 
-- Every flat model is fitted with Prophet's Stan objective and optimizer, as in Python. Simple
-  flat models used a separate exact solver, which was slow for large Fourier orders and could
-  stop at a different optimum. Models saved by earlier versions still load and predict.
-- Large Fourier orders fit quickly instead of taking seconds to minutes. Models with more than
-  2048 parameters, which used to fail with `backend-failure`, now fit as they do in Python.
-- Histories that the model can fit exactly, such as noiseless seasonal data, now fit with a
-  noise scale near zero, as in Python. Flat growth previously failed with `noise-collapse`.
-- Flat growth accepts `map.changepoints` and `map.changepointPriorScale`, as Python Prophet does.
-  Previously both were rejected and every flat fit used Prophet's default grid and prior. The
-  flat trend still ignores them, but they size and scale the prior-only parameters Prophet's
-  flat model optimizes, so they change the fit exactly as they do in Python.
-- Standardized regressors use exactly the mean and standard deviation Python Prophet computes.
-  They used to differ in the last few digits because Effect summed the values in a different
-  order, which was enough to send a sensitive fit to a different optimum.
-- `performanceMetrics` computes every score exactly as Python Prophet's `performance_metrics`
-  does. A rolling window now covers exactly its number of forecasts, taking a share of the oldest
-  horizon in it, where it used to include that whole horizon. `mdape` fills a short horizon's
-  window with the forecasts just before it. Totals are summed in Prophet's order, so `horizons`
-  and `overall` scores can also change in the last digit.
-- `rows` scores are sorted by horizon, as in Python, with equal horizons in input order. They used
-  to follow the input order.
-- `mape` fails with `zero-actual` when any actual is within `1e-8` of zero, where Python drops
-  `mape` from its result. It used to fail only for an actual of exactly zero. `mdape` still fails
-  only for an actual of exactly zero.
-- Percentage objectives in `searchModels` no longer need a zero-actual policy.
-- Holdout reports use policy version `effect-prophet-evaluation-v2`, because their scores are
-  recomputed when decoded. `decodeEvaluationReport` rejects reports saved by earlier versions
-  with an `EvaluationReportError` at `policyVersion`.
+- **Flat growth fits the way Python does.** Every flat model uses Prophet's Stan optimizer and
+  accepts `map.changepoints` and `map.changepointPriorScale`. Models saved by earlier versions
+  still load and predict.
+- **Large Fourier orders fit quickly**, and models with more than 2048 parameters, which used to
+  fail, now fit as they do in Python.
+- **Histories the model can fit exactly**, such as noiseless data, fit with a noise scale near
+  zero, as in Python, instead of failing.
+- **Standardized regressors** use exactly the mean and standard deviation Python computes.
+- **`performanceMetrics` matches Python's `performance_metrics` exactly**, so some scores change,
+  most of all rolling scores. `rows` scores are sorted by horizon, as in Python.
+- `mape` fails with `zero-actual` when an actual is within `1e-8` of zero, not only at exactly
+  zero.
+- `decodeEvaluationReport` rejects holdout reports saved by earlier versions, because their scores
+  are recomputed when decoded.
 
 ### Fixed
 
-- Regressors that are not standardized, because they use `standardization: "never"` or are
-  constant or binary, no longer fail with an `InputValidationError` when their values are too
-  large to average. As in Prophet, statistics are computed only for standardized regressors.
+- Regressors that are not standardized no longer fail validation when their values are too large
+  to average.
 
 ### Removed
 
-- The `noise-collapse` reason of `FittingError`. No fit returns it any more, so code that
-  handles it can drop that branch.
-- The `mapeZeroActual` option of `performanceMetrics`, `searchModels` objectives and
-  `evaluateHoldout`, with the `includedCount` and `excludedCount` fields of `mape` and `mdape`
-  scores. Python has no way to exclude rows, so to skip zero actuals, leave those rows out before
-  scoring.
-- `rowCount` on rolling metric points, which always equals the report's `windowRows`. Rolling
-  points have the new `RollingMetricPoint` type.
-- The `empty-bucket` reason of `EvaluationMetricError`. Every score now covers at least one
-  forecast.
+- The `noise-collapse` reason of `FittingError`, which no fit returns any more.
+- The `mapeZeroActual` option of `performanceMetrics`, `searchModels` and `evaluateHoldout`, with
+  the `includedCount` and `excludedCount` score fields. To skip zero actuals, leave those rows out
+  before scoring.
+- `rowCount` on rolling metric points, which always equals the report's `windowRows`. They now
+  have their own `RollingMetricPoint` type.
+- The `empty-bucket` reason of `EvaluationMetricError`, which can no longer happen.
 
 ### Verification against Python Prophet
 
-- **Property-based tests** run in every CI build. They generate hostile and valid input for
-  observation decoding, the WebAssembly boundary, `fit`, `predict` and tracing, and check that
-  every failure is a typed error, never a crash, and that results are deterministic.
-- **A weekly differential comparison** fits newly generated inputs with both Effect Prophet and
-  Python Prophet 1.4.0, covering every trend type and feature, and reports parity failures with
-  a seed that replays each one. Run it locally with `npm run differential`.
-- The differential judges Effect against Python on `linux/amd64`, the same CmdStan build the
-  compatibility fixtures and CI use, on every host.
-- When the noise scales disagree, the differential reruns Python Prophet with one-ulp input
-  changes, and labels a case `oracle-sensitive` when Python's own results spread over Effect's.
-  These cases are counted separately from parity failures.
-- New generated fixtures check regressor standardization and the Stan objective at large Fourier
-  orders, and the evaluation-metrics fixture now checks every score with exact equality.
+- **Property-based tests** run in every CI build and check that hostile input produces typed
+  errors, never crashes.
+- **A weekly differential comparison** fits hundreds of newly generated inputs with both
+  libraries and reports every case where Effect Prophet fits worse, with a seed that replays it.
+  Cases where Python's own result is unstable are reported separately. Run it locally with
+  `npm run differential`.
+- New fixtures cover regressor standardization, large Fourier orders and evaluation metrics.
 
 ## [0.2.0] - 2026-10-15
 
