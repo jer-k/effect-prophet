@@ -11,11 +11,11 @@ Regressors match Python Prophet 1.4.0 on all three trend types. The
 <<< @/snippets/regressors.ts
 
 ```txt [Output]
-temperature additive 4.00
-160.0, 160.0, 160.0
+temperature additive 3.99
+159.9, 159.9, 159.9
 ```
 
-The model learned the real relationship: 4 extra sales for every degree.
+The model learned the real relationship: about 4 extra sales for every degree.
 
 ## Things to know
 
