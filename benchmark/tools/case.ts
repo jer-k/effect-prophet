@@ -212,7 +212,7 @@ export const MapWorkloadSchema = Schema.Struct({
   ),
 });
 
-const EvaluationWorkloadSchema = Schema.Struct({
+const evaluationWorkloadFields = {
   kind: Schema.Literal("evaluation"),
   comparison: Schema.Struct({
     kind: Schema.Literal("different-public-work"),
@@ -226,7 +226,6 @@ const EvaluationWorkloadSchema = Schema.Struct({
     cutoffs: Schema.Array(CanonicalTimestamp).check(Schema.isMinLength(1)),
   }),
   metricAggregation: Schema.Literals(["horizons", "rolling", "overall"]),
-  mapeZeroActual: Schema.Literals(["error", "exclude"]),
   interval: Schema.optionalKey(
     Schema.Struct({
       seed: NonNegativeInteger.check(Schema.isLessThanOrEqualTo(4_294_967_295)),
@@ -245,7 +244,18 @@ const EvaluationWorkloadSchema = Schema.Struct({
   ),
   expectedFailures: Schema.optionalKey(NonNegativeInteger),
   holdoutRows: Schema.optionalKey(PositiveInteger),
-});
+};
+
+// Retained runs before #119 recorded a zero-actual policy, which performanceMetrics no longer has.
+const EvaluationWorkloadSchema = Schema.Struct({
+  ...evaluationWorkloadFields,
+  mapeZeroActual: Schema.optionalKey(Schema.Literals(["error", "exclude"])),
+}).pipe(
+  Schema.decodeTo(Schema.toType(Schema.Struct(evaluationWorkloadFields)), {
+    decode: SchemaGetter.transform(({ mapeZeroActual: _retired, ...workload }) => workload),
+    encode: SchemaGetter.transform((workload) => workload),
+  }),
+);
 
 /** A public forecasting workload understood by both language adapters. */
 export const BenchmarkWorkloadSchema = Schema.Union([

@@ -27,11 +27,32 @@ All notable changes to this project are documented here. The format follows
 - Standardized regressors use exactly the mean and standard deviation Python Prophet computes.
   They used to differ in the last few digits because Effect summed the values in a different
   order, which was enough to send a sensitive fit to a different optimum.
+- `performanceMetrics` computes every score exactly as Python Prophet's `performance_metrics`
+  does. A rolling window now covers exactly its number of forecasts, taking a share of the oldest
+  horizon in it, where it used to include that whole horizon. `mdape` fills a short horizon's
+  window with the forecasts just before it. Totals are summed in Prophet's order, so `horizons`
+  and `overall` scores can also change in the last digit.
+- `rows` scores are sorted by horizon, as in Python, with equal horizons in input order. They used
+  to follow the input order.
+- `mape` fails with `zero-actual` when any actual is within `1e-8` of zero, where Python drops
+  `mape` from its result. It used to fail only for an actual of exactly zero.
+- Percentage objectives in `searchModels` no longer need a zero-actual policy.
+- Holdout reports use policy version `effect-prophet-evaluation-v2`, because their scores are
+  recomputed when decoded. `decodeEvaluationReport` rejects reports saved by earlier versions
+  with an `EvaluationReportError` at `policyVersion`.
 
 ### Removed
 
 - The `noise-collapse` reason of `FittingError`. No fit returns it any more, so code that
   handles it can drop that branch.
+- The `mapeZeroActual` option of `performanceMetrics`, `searchModels` objectives and
+  `evaluateHoldout`, with the `includedCount` and `excludedCount` fields of `mape` and `mdape`
+  scores. Python has no way to exclude rows, so to skip zero actuals, leave those rows out before
+  scoring.
+- `rowCount` on rolling metric points, which always equals the report's `windowRows`. Rolling
+  points have the new `RollingMetricPoint` type.
+- The `empty-bucket` reason of `EvaluationMetricError`. Every score now covers at least one
+  forecast.
 
 ### Benchmarks
 

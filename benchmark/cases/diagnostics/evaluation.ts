@@ -53,7 +53,6 @@ export const evaluationCases: ReadonlyArray<BenchmarkCase> = [
       : id === "linear"
         ? ("overall" as const)
         : ("horizons" as const),
-    mapeZeroActual: "exclude" as const,
     plan: {
       horizonMs: 7 * dayMs,
       cutoffs: id.endsWith("large")

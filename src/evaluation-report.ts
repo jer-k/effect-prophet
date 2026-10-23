@@ -1,4 +1,4 @@
-import { Effect, Schema } from "effect";
+import { Effect, Option, Schema } from "effect";
 
 import {
   BaselineForecastError,
@@ -41,27 +41,20 @@ import {
   type EncodedUncertaintyOptions,
 } from "./uncertainty";
 
-const policyVersion = "effect-prophet-evaluation-v1" as const;
+const policyVersion = "effect-prophet-evaluation-v2" as const;
 
 const maximumRows = 10_000;
 
 const EpochSchema = Schema.Int.check(Schema.makeFilter(isValidTimestamp));
 
-const FiniteScore = Schema.Struct({
-  metric: Schema.Literals(["mae", "mse", "rmse", "smape", "coverage"]),
+const ScoreSchema = Schema.Struct({
+  metric: Schema.Literals(["mae", "mse", "rmse", "mape", "mdape", "smape", "coverage"]),
   value: Schema.Finite,
-});
-
-const PercentageScore = Schema.Struct({
-  metric: Schema.Literals(["mape", "mdape"]),
-  value: Schema.Finite,
-  includedCount: Schema.Natural,
-  excludedCount: Schema.Natural,
 });
 
 const BucketSchema = Schema.Struct({
   rowCount: Schema.Int.check(Schema.isGreaterThan(0), Schema.isLessThanOrEqualTo(maximumRows)),
-  scores: Schema.NonEmptyArray(Schema.Union([FiniteScore, PercentageScore])),
+  scores: Schema.NonEmptyArray(ScoreSchema),
 });
 
 const OverallMetricsSchema = Schema.Struct({
@@ -93,14 +86,12 @@ const MetricOptionsSchema = Schema.Struct({
     ),
   ),
   aggregation: Schema.Struct({ kind: Schema.Literal("overall") }),
-  mapeZeroActual: Schema.optionalKey(Schema.Literals(["error", "exclude"])),
 });
 
 const ObjectiveSchema = Schema.Struct({
   metric: Schema.Literals(["mae", "mse", "rmse", "mape", "mdape", "smape"]),
   aggregation: Schema.Struct({ kind: Schema.Literal("overall") }),
   direction: Schema.Literal("minimize"),
-  mapeZeroActual: Schema.optionalKey(Schema.Literals(["error", "exclude"])),
 });
 
 const PointSchema = Schema.Struct({
@@ -314,6 +305,10 @@ const decodeReportSchema = Schema.decodeUnknownEffect(ReportSchema, {
   onExcessProperty: "error",
 });
 
+const decodeReportVersion = Schema.decodeUnknownEffect(
+  Schema.Struct({ policyVersion: Schema.String }),
+);
+
 const decodeProvenance = Schema.decodeUnknownEffect(ProvenanceSchema, {
   onExcessProperty: "error",
 });
@@ -392,8 +387,6 @@ const reportConsistency = (
       metrics.source !== report.kind ||
       metrics.bucket.rowCount !== forecasts.length ||
       !metricPolicy.metrics.includes(selected.searchObjective.metric) ||
-      (metricPolicy.mapeZeroActual ?? "error") !==
-        (selected.searchObjective.mapeZeroActual ?? "error") ||
       report.baselines.length > 16 ||
       report.baselines.some(
         (baseline) =>
@@ -555,6 +548,19 @@ export const decodeEvaluationReport = Effect.fn("Prophet.decodeEvaluationReport"
   // oxlint-disable-next-line anti-slop/no-unknown-parameters -- The public decoder must parse an untrusted external JSON value.
   input: unknown,
 ): Effect.fn.Return<HoldoutEvaluationReport, EvaluationReportError> {
+  const version = yield* Effect.option(decodeReportVersion(input));
+
+  // Metrics are re-scored on decode, so a report scored by another policy version cannot match.
+  if (Option.isSome(version) && version.value.policyVersion !== policyVersion) {
+    return yield* Effect.fail(
+      reportError(
+        "decode",
+        ["policyVersion"],
+        `Unsupported report policy version; expected ${policyVersion}`,
+      ),
+    );
+  }
+
   const parsed = yield* decodeReportSchema(input).pipe(
     Effect.mapError(
       (error) =>
@@ -667,12 +673,9 @@ export const evaluateHoldout = Effect.fn("Prophet.evaluateHoldout")(function* (
     Effect.mapError((error) => inputValidationErrorFromIssue("evaluation-holdout", error.issue)),
   );
 
-  if (
-    !metricPolicy.metrics.includes(search.objective.metric) ||
-    (metricPolicy.mapeZeroActual ?? "error") !== (search.objective.mapeZeroActual ?? "error")
-  ) {
+  if (!metricPolicy.metrics.includes(search.objective.metric)) {
     return yield* Effect.fail(
-      invalid(["metrics"], "Holdout metrics must retain the search objective and zero policy"),
+      invalid(["metrics"], "Holdout metrics must retain the search objective"),
     );
   }
 

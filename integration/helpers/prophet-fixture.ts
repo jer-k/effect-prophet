@@ -553,28 +553,47 @@ const EvaluationCutoffReferenceFileSchema = Schema.Struct({
   }),
 );
 
+const MetricNameSchema = Schema.Literals([
+  "mae",
+  "mse",
+  "rmse",
+  "mape",
+  "mdape",
+  "smape",
+  "coverage",
+]);
+
+// Prophet drops MAPE for near-zero actuals, so a point carries only the metrics it returned.
 const MetricScoresSchema = Schema.Struct({
-  mae: Schema.Finite,
-  mse: Schema.Finite,
-  rmse: Schema.Finite,
-  mape: Schema.Finite,
-  mdape: Schema.Finite,
-  smape: Schema.Finite,
-  coverage: Schema.Finite,
+  mae: Schema.optionalKey(Schema.Finite),
+  mse: Schema.optionalKey(Schema.Finite),
+  rmse: Schema.optionalKey(Schema.Finite),
+  mape: Schema.optionalKey(Schema.Finite),
+  mdape: Schema.optionalKey(Schema.Finite),
+  smape: Schema.optionalKey(Schema.Finite),
+  coverage: Schema.optionalKey(Schema.Finite),
 });
 
-const MetricExpectedSchema = Schema.Array(
+const MetricAggregationSchema = Schema.Union([
+  Schema.Struct({ kind: Schema.Literals(["rows", "horizons", "overall"]) }),
   Schema.Struct({
-    horizonMs: Schema.Int.check(Schema.isGreaterThan(0)),
-    scores: MetricScoresSchema,
+    kind: Schema.Literal("rolling"),
+    window: Schema.Union([
+      Schema.Struct({
+        kind: Schema.Literal("count"),
+        rows: Schema.Int.check(Schema.isGreaterThan(0)),
+      }),
+      Schema.Struct({ kind: Schema.Literal("fraction"), value: Schema.Finite }),
+    ]),
   }),
-);
+]);
 
-const EvaluationMetricsReferenceFileSchema = Schema.Struct({
-  kind: Schema.Literal("evaluation-metrics"),
-  sourceMethod: Schema.Literal("Prophet 1.4.0 performance_metrics"),
+const EvaluationMetricsReferenceCaseSchema = Schema.Struct({
+  id: Schema.NonEmptyString,
+  metrics: Schema.NonEmptyArray(MetricNameSchema),
   rows: Schema.NonEmptyArray(
     Schema.Struct({
+      fold: Schema.Natural,
       horizonMs: Schema.Int.check(Schema.isGreaterThan(0)),
       actual: Schema.Finite,
       predicted: Schema.Finite,
@@ -582,12 +601,27 @@ const EvaluationMetricsReferenceFileSchema = Schema.Struct({
       upper: Schema.Finite,
     }),
   ),
-  expected: Schema.Struct({
-    rows: MetricExpectedSchema,
-    horizons: MetricExpectedSchema,
-    rolling: MetricExpectedSchema,
-    overall: MetricExpectedSchema,
-  }),
+  aggregations: Schema.NonEmptyArray(
+    Schema.Struct({
+      aggregation: MetricAggregationSchema,
+      rollingWindow: Schema.Finite,
+      windowRows: Schema.optionalKey(Schema.Int.check(Schema.isGreaterThan(0))),
+      metrics: Schema.NonEmptyArray(MetricNameSchema),
+      points: Schema.NonEmptyArray(
+        Schema.Struct({
+          row: Schema.optionalKey(Schema.Natural),
+          horizonMs: Schema.Int.check(Schema.isGreaterThan(0)),
+          scores: MetricScoresSchema,
+        }),
+      ),
+    }),
+  ),
+});
+
+const EvaluationMetricsReferenceFileSchema = Schema.Struct({
+  kind: Schema.Literal("evaluation-metrics"),
+  sourceMethod: Schema.Literal("Prophet 1.4.0 performance_metrics"),
+  cases: Schema.NonEmptyArray(EvaluationMetricsReferenceCaseSchema),
 });
 
 const LinearMapFitReferenceCaseSchema = Schema.Struct({

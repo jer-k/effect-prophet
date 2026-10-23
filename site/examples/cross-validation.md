@@ -47,8 +47,48 @@ To choose the exact dates yourself, use `cutoffs: { mode: "explicit", timestamps
 `coverage` needs uncertainty ranges. Pass `{ mode: "intervals", uncertainty: { seed: 1 } }` as a
 fourth argument to `crossValidate`.
 
-You can also group scores by how far ahead the forecast was, with
-`aggregation: { kind: "horizons" }`, to see how accuracy drops off over time.
+## Grouping the scores
+
+`aggregation` decides which forecasts each score covers. Each choice matches a value of Python's
+`rolling_window`:
+
+| `aggregation`                                                   | Python                     | Scores                                                   |
+| --------------------------------------------------------------- | -------------------------- | -------------------------------------------------------- |
+| `{ kind: "overall" }`                                           | `rolling_window=1`         | One score over every forecast                            |
+| `{ kind: "horizons" }`                                          | `rolling_window=0`         | One score per horizon, to see how accuracy drops off     |
+| `{ kind: "rolling", window: { kind: "fraction", value: 0.1 } }` | `rolling_window=0.1`       | Python's default: each score covers 10% of the forecasts |
+| `{ kind: "rolling", window: { kind: "count", rows: 30 } }`      | `rolling_window=30 / rows` | Each score covers exactly 30 forecasts                   |
+| `{ kind: "rows" }`                                              | `rolling_window=-1`        | One score per forecast, from the shortest horizon up     |
+
+A rolling score sits at the longest horizon in its window, and covers exactly the window's number
+of forecasts, as in Python:
+
+- Averages start at that horizon and add shorter ones until the window is full. When the last
+  horizon added has more forecasts than the window still needs, the score takes just that share
+  of their total. A horizon with more forecasts than the window on its own uses all of them.
+- `mdape` takes every forecast at the horizon when there are at least as many as the window.
+  Otherwise it fills the window with the forecasts just before them.
+- Horizons too short to fill a window get no score.
+
+The scores match Python Prophet's to the last digit.
+
+## Actual values of zero
+
+`mape` and `mdape` divide by the actual value, so they fail with an `EvaluationMetricError` whose
+`reason` is `"zero-actual"`:
+
+- `mape` fails if any actual is within `1e-8` of zero. That is where Python drops `mape` from its
+  result.
+- `mdape` fails only for an actual of exactly zero.
+
+To score the remaining forecasts, leave those rows out:
+
+```ts
+performanceMetrics(
+  { ...result, rows: result.rows.filter((row) => Math.abs(row.actual) >= 1e-8) },
+  { metrics: ["mape"], aggregation: { kind: "overall" } },
+);
+```
 
 ## Is that good?
 

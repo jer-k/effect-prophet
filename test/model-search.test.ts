@@ -572,17 +572,28 @@ describe("searchModels", () => {
     expect(["featureless", "map"]).toContain(result.selected.id);
   });
 
-  it("requires an explicit exact-zero policy for percentage objectives", async () => {
+  it("scores percentage objectives without a zero-actual policy, as Prophet does", async () => {
+    const percentage = { ...objective, metric: "mape" } as const;
+
+    const result = await Effect.runPromise(
+      search({
+        candidates: [{ id: "one", options: firstOption }],
+        plan,
+        objective: percentage,
+        failurePolicy: "record",
+      }),
+    );
+
+    expect(result.objective).toEqual(percentage);
+    expect(result.candidates[0]).toMatchObject({ kind: "success", id: "one" });
+
+    // The removed exclusion policy is rejected rather than silently ignored.
     const failure = await Effect.runPromise(
       Effect.result(
         search({
-          candidates: [{ id: "one", options: {} }],
+          candidates: [{ id: "one", options: firstOption }],
           plan,
-          objective: {
-            metric: "mape",
-            aggregation: { kind: "overall" },
-            direction: "minimize",
-          },
+          objective: JSON.parse(JSON.stringify({ ...percentage, mapeZeroActual: "exclude" })),
           failurePolicy: "record",
         }),
       ),

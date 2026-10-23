@@ -6,15 +6,15 @@ Recorded historical outcomes are not recomputed using current gates. Architectur
 
 | Scope | Run | Passed | Failed | Provenance | Report |
 | --- | --- | ---: | ---: | --- | --- |
-| flat-growth | `2026-10-22T193148-782Z-bc4f2208` | 63 | 0 | clean tree | [results](retained/flat-growth/2026-10-22T193148-782Z-bc4f2208/report.md) |
-| linear-growth | `2026-10-22T191453-457Z-bc4f2208` | 38 | 2 | clean tree | [results](retained/linear-growth/2026-10-22T191453-457Z-bc4f2208/report.md) |
-| logistic-growth | `2026-10-22T195711-087Z-bc4f2208` | 52 | 0 | clean tree | [results](retained/logistic-growth/2026-10-22T195711-087Z-bc4f2208/report.md) |
+| flat-growth | `2026-10-23T070952-935Z-fad30c55` | 63 | 0 | clean tree | [results](retained/flat-growth/2026-10-23T070952-935Z-fad30c55/report.md) |
+| linear-growth | `2026-10-23T035446-262Z-fad30c55` | 38 | 2 | clean tree | [results](retained/linear-growth/2026-10-23T035446-262Z-fad30c55/report.md) |
+| logistic-growth | `2026-10-23T111858-007Z-fad30c55` | 52 | 0 | clean tree | [results](retained/logistic-growth/2026-10-23T111858-007Z-fad30c55/report.md) |
 
 ## Case outcomes
 
 Only passed gates admit timing. Diagnostic invalid-domain cases remain failed; they are not relabeled as successful fits.
 
-### flat-growth/2026-10-22T193148-782Z-bc4f2208
+### flat-growth/2026-10-23T070952-935Z-fad30c55
 
 | Case | Outcome | Contract |
 | --- | --- | --- |
@@ -82,7 +82,7 @@ Only passed gates admit timing. Diagnostic invalid-domain cases remain failed; t
 | `flat-mixed-components-absmax-defaults` | passed | equivalent-objective |
 | `flat-correlated-regressors` | passed | equivalent-objective |
 
-### linear-growth/2026-10-22T191453-457Z-bc4f2208
+### linear-growth/2026-10-23T035446-262Z-fad30c55
 
 | Case | Outcome | Contract |
 | --- | --- | --- |
@@ -127,7 +127,7 @@ Only passed gates admit timing. Diagnostic invalid-domain cases remain failed; t
 | `evaluation-linear-search` | passed | different-public-work |
 | `evaluation-linear-failure-search` | passed | different-public-work |
 
-### logistic-growth/2026-10-22T195711-087Z-bc4f2208
+### logistic-growth/2026-10-23T111858-007Z-fad30c55
 
 | Case | Outcome | Contract |
 | --- | --- | --- |

@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "runId": "2026-10-22T195711-087Z-bc4f2208",
-  "createdAt": "2026-10-22T19:57:15.610Z",
-  "gitRevision": "bc4f2208715745367a9d8a2b9708bfefd1a48b2d",
+  "runId": "2026-10-23T111858-007Z-fad30c55",
+  "createdAt": "2026-10-23T11:19:03.166Z",
+  "gitRevision": "fad30c55c03760712503393517c093abe5d6e0c8",
   "gitDirty": false,
   "hostPlatform": "darwin",
   "hostRelease": "25.5.0",
@@ -91,7 +91,7 @@
     },
     {
       "name": "calendars/manifest.json",
-      "value": "3c927cb901461bf54a6f15046cb9d26928bd1df7c6f3a663fc305323a6bb1033"
+      "value": "fa91eb6d82dae1b989872a4a412cd3cc8dac1f47b409f69175467d7800232ed1"
     },
     {
       "name": "calendars/coverage.json",
@@ -99,7 +99,7 @@
     },
     {
       "name": "src/internal/country-holiday-catalog.ts",
-      "value": "8f46665230bd17ee7b0b4accd51ca5778bc72eef006a10257b0be5d2866ccc6e"
+      "value": "4d5bfb360730cf7747cd4ff7d13d0ff1b93e36d52a9dc79166a5c9fbd5e3dba9"
     },
     {
       "name": "benchmark/cases/regressors/public-api.json",
@@ -115,7 +115,7 @@
     },
     {
       "name": "benchmark/cases/growth/linear/edge-cases.ts",
-      "value": "446bdb1812e204b5c95ba2140ee46a28812e2a022cc81ffd49daa82ec4eb1617"
+      "value": "7abaae1b06bfe13b479501791ab1fa64c2e1b2af2b948ef476db16b8c6efce0d"
     },
     {
       "name": "benchmark/cases/growth/linear/controls.ts",
@@ -143,7 +143,7 @@
     },
     {
       "name": "benchmark/cases/diagnostics/evaluation.ts",
-      "value": "3cd2ff44a832e23419e490e8135573c356b5cd4ad2e9f487dadfa1a08c0057a7"
+      "value": "b199b9f5aa588fe9fc9b782b11a01ab23f788bfc05759c52ca813d2961753d88"
     },
     {
       "name": "benchmark/cases/growth/flat/public-api.ts",
@@ -179,11 +179,11 @@
     },
     {
       "name": "benchmark/tools/case.ts",
-      "value": "cf13337a856561f22c1b2b7189236b747f2112cc6f7a25b0a1a9b07546ad22b7"
+      "value": "6687b753bb4f50b9f0455c9e4f594a641663c9330484162440354daaff339d32"
     },
     {
       "name": "benchmark/tools/report.ts",
-      "value": "59fa2b9695454dbe51e12378d6ee4ed06e6335c2c2dc49250cdeec079a2bdcd8"
+      "value": "50768da24a430982e8c10f34d121865871dfacf0bb2c8993cace0771d6f233c7"
     },
     {
       "name": "benchmark/tools/report-cli.ts",
@@ -191,15 +191,15 @@
     },
     {
       "name": "benchmark/tools/evaluation.ts",
-      "value": "eb8802508227d8bc9052b17d743d3fa61eacb139e60077acca7294cbaf1afa07"
+      "value": "5d6615d6ce16c071de629dee05749abd2271604ee098529901d0c2594dcc04b6"
     },
     {
       "name": "benchmark/tools/adapters/evaluation.py",
-      "value": "025bcf9f3210e9a2a91c2e70ac43b23cb385952d180603287d4c9d087561c278"
+      "value": "dd3b130e08016b397bf0ca40a5ddef768bedd890d6391c1c16136869d77edc44"
     },
     {
-      "name": "benchmark/results/runs/2026-10-22T195711-087Z-bc4f2208/cases.json",
-      "value": "aca9864651d26b7ab337e99f3d74c10a3804419fe865b3d8868218bd96112353"
+      "name": "benchmark/results/runs/2026-10-23T111858-007Z-fad30c55/cases.json",
+      "value": "2fd7fbff2407a52d3faf6358c376340ffe9d55858dde31a5d9d01f54bedb127c"
     },
     {
       "name": "benchmark/evidence/comparisons.json",
@@ -329,11 +329,11 @@
   "containerImages": [
     {
       "name": "effect-prophet/benchmark-effect:local",
-      "value": "sha256:975ae3983e38742e93445bba7316ee6a34d905ddcc8a10497adfca866ba8a718"
+      "value": "sha256:afea215a8d454312c693b8369934fb94665e4e9cffd67cbb206d35182cd8b614"
     },
     {
       "name": "effect-prophet/benchmark-python:1.4.0",
-      "value": "sha256:6184e1c348bfdcb4cf50766f9b542337ea93ca6d7afd631db59651cf65ec0ee2"
+      "value": "sha256:43c20fb254498dcc6cbed89c41d24624a3f22f3d464764ab2480755a55279379"
     }
   ]
 }

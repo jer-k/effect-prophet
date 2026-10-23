@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "baselines": {
-    "linear-growth": "retained/linear-growth/2026-10-22T191453-457Z-bc4f2208",
-    "flat-growth": "retained/flat-growth/2026-10-22T193148-782Z-bc4f2208",
-    "logistic-growth": "retained/logistic-growth/2026-10-22T195711-087Z-bc4f2208"
+    "linear-growth": "retained/linear-growth/2026-10-23T035446-262Z-fad30c55",
+    "flat-growth": "retained/flat-growth/2026-10-23T070952-935Z-fad30c55",
+    "logistic-growth": "retained/logistic-growth/2026-10-23T111858-007Z-fad30c55"
   }
 }

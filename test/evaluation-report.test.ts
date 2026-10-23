@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   decodeEvaluationReport,
   encodeEvaluationReport,
+  EvaluationReportError,
   evaluateHoldout,
   fit,
   InputValidationError,
@@ -562,6 +563,16 @@ describe("evaluateHoldout", () => {
       const result = await Effect.runPromise(Effect.result(decodeEvaluationReport(changed)));
       expect(result._tag).toBe("Failure");
     }
+
+    // Reports from before Prophet's rolling-window arithmetic cannot be re-scored identically.
+    const legacy = await Effect.runPromise(
+      Effect.flip(
+        decodeEvaluationReport({ ...report, policyVersion: "effect-prophet-evaluation-v1" }),
+      ),
+    );
+
+    expect(legacy).toBeInstanceOf(EvaluationReportError);
+    expect(legacy.issues.map((issue) => issue.path)).toContainEqual(["policyVersion"]);
   });
 
   it("decodes without a backend or misleading holdout/WASM spans", async () => {

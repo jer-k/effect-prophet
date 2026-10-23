@@ -42,6 +42,7 @@ export {
   type MetricOptions,
   type MetricReport,
   type MetricScore,
+  type RollingMetricPoint,
   type RowMetricPoint,
 } from "./evaluation-metrics";
 

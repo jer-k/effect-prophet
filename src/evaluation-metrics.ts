@@ -13,6 +13,7 @@ import type {
   IntervalCrossValidationResult,
   PointCrossValidationResult,
 } from "./evaluation";
+import { kahanSum } from "./internal/kahan-sum";
 
 type MetricSource = CrossValidationResult["kind"] | "baseline";
 
@@ -48,7 +49,7 @@ const AggregationSchema = Schema.Union([
   }),
 ]);
 
-/** A row, exact-horizon, whole-group rolling or overall aggregation. */
+/** A row, exact-horizon, rolling or overall aggregation, with Prophet's window semantics. */
 export type MetricAggregation = typeof AggregationSchema.Type;
 
 const MetricOptionsSchema = Schema.Struct({
@@ -60,21 +61,17 @@ const MetricOptionsSchema = Schema.Struct({
     }),
   ),
   aggregation: AggregationSchema,
-  mapeZeroActual: Schema.optionalKey(Schema.Literals(["error", "exclude"])),
 });
 
-/** Encoded metric selection and explicit aggregation; exact-zero actuals fail by default. */
+/** Encoded metric selection and explicit aggregation. */
 export type MetricOptions = typeof MetricOptionsSchema.Encoded;
 
-/** A finite bucket score, with denominators on actual-dependent percentage metrics. */
+/** A finite bucket score. */
 export type MetricScore<Source extends MetricSource = MetricSource> =
   | {
-      readonly metric: "mape" | "mdape";
+      readonly metric: "mae" | "mse" | "rmse" | "mape" | "mdape" | "smape";
       readonly value: number;
-      readonly includedCount: number;
-      readonly excludedCount: number;
     }
-  | { readonly metric: "mae" | "mse" | "rmse" | "smape"; readonly value: number }
   | (Source extends "intervals" ? { readonly metric: "coverage"; readonly value: number } : never);
 
 /** All requested metrics on the same set of forecast instances. */
@@ -83,7 +80,7 @@ export interface MetricBucket<Source extends MetricSource = MetricSource> {
   readonly scores: ReadonlyArray<MetricScore<Source>>;
 }
 
-/** A score for one forecast instance in original fold/input order. */
+/** A score for one forecast instance, in horizon order. */
 export interface RowMetricPoint<
   Source extends MetricSource = MetricSource,
 > extends MetricBucket<Source> {
@@ -93,11 +90,17 @@ export interface RowMetricPoint<
   readonly horizonMs: number;
 }
 
-/** A score at the right edge of an exact-horizon or rolling bucket. */
+/** A score over every forecast instance at one exact horizon. */
 export interface HorizonMetricPoint<
   Source extends MetricSource = MetricSource,
 > extends MetricBucket<Source> {
   readonly horizonMs: number;
+}
+
+/** A score over exactly the report's `windowRows` forecast instances, at the window's right edge. */
+export interface RollingMetricPoint<Source extends MetricSource = MetricSource> {
+  readonly horizonMs: number;
+  readonly scores: ReadonlyArray<MetricScore<Source>>;
 }
 
 /** The aggregation determines which bucket coordinates are available. */
@@ -116,11 +119,9 @@ export type MetricReport<Source extends MetricSource = MetricSource> =
       readonly source: Source;
       readonly kind: "rolling";
       readonly windowRows: number;
-      readonly points: ReadonlyArray<HorizonMetricPoint<Source>>;
+      readonly points: ReadonlyArray<RollingMetricPoint<Source>>;
     }
   | { readonly source: Source; readonly kind: "overall"; readonly bucket: MetricBucket<Source> };
-
-type ParsedOptions = typeof MetricOptionsSchema.Type;
 
 type Row = CrossValidationPointRow | CrossValidationIntervalRow;
 
@@ -129,191 +130,125 @@ type MetricInput =
   | { readonly kind: "intervals"; readonly rows: ReadonlyArray<CrossValidationIntervalRow> }
   | { readonly kind: "baseline"; readonly rows: ReadonlyArray<CrossValidationPointRow> };
 
+type Group = { readonly horizonMs: number; readonly start: number; end: number };
+
+type Failure = (
+  bucket: number,
+  reason: EvaluationMetricError["reason"],
+  stage: EvaluationMetricError["stage"],
+) => EvaluationMetricError;
+
+// Prophet drops MAPE from its result when any actual is this close to zero.
+const nearZeroActual = 1e-8;
+
 const decodeOptions = Schema.decodeUnknownEffect(MetricOptionsSchema, {
   errors: "all",
   onExcessProperty: "error",
 });
 
-const metricFailure = (
-  metric: MetricName,
-  aggregation: MetricAggregation["kind"],
-  bucket: number,
-  reason: EvaluationMetricError["reason"],
-  stage: EvaluationMetricError["stage"],
-): EvaluationMetricError =>
-  new EvaluationMetricError({
-    metric,
-    aggregation,
-    bucket,
-    reason,
-    stage,
-    message: `Cannot compute ${metric} for ${aggregation} bucket ${bucket}: ${reason} at ${stage}`,
-  });
+const metricFailure =
+  (metric: MetricName, aggregation: MetricAggregation["kind"]): Failure =>
+  (bucket, reason, stage) =>
+    new EvaluationMetricError({
+      metric,
+      aggregation,
+      bucket,
+      reason,
+      stage,
+      message: `Cannot compute ${metric} for ${aggregation} bucket ${bucket}: ${reason} at ${stage}`,
+    });
 
-const finite = (
-  value: number,
-  metric: MetricName,
-  aggregation: MetricAggregation["kind"],
-  bucket: number,
-  stage: EvaluationMetricError["stage"],
-) =>
-  Number.isFinite(value)
-    ? Effect.succeed(value)
-    : Effect.fail(metricFailure(metric, aggregation, bucket, "non-finite", stage));
-
-// Neumaier summation retains small contributions even when the running total is much larger.
-const mean = (
-  values: ReadonlyArray<number>,
-  metric: MetricName,
-  aggregation: MetricAggregation["kind"],
-  bucket: number,
-) =>
-  Effect.gen(function* () {
-    let sum = 0;
-    let correction = 0;
-
-    for (const value of values) {
-      const next = yield* finite(sum + value, metric, aggregation, bucket, "sum");
-      correction = yield* finite(
-        correction + (Math.abs(sum) >= Math.abs(value) ? sum - next + value : value - next + sum),
-        metric,
-        aggregation,
-        bucket,
-        "sum",
-      );
-      sum = next;
-    }
-
-    const total = yield* finite(sum + correction, metric, aggregation, bucket, "sum");
-
-    return yield* finite(total / values.length, metric, aggregation, bucket, "mean");
-  });
-
+// Prophet's per-row formulas, in the same operation order so each value rounds identically.
 const contribution = (
   row: Row,
   metric: MetricName,
-  kind: MetricSource,
-  aggregation: MetricAggregation["kind"],
   bucket: number,
-  zeroPolicy: "error" | "exclude",
-) =>
-  Effect.gen(function* () {
-    const actual = row.actual;
-    const predicted = row.predicted;
-    const error = yield* finite(actual - predicted, metric, aggregation, bucket, "difference");
-    const absolute = Math.abs(error);
+  fail: Failure,
+): number | EvaluationMetricError => {
+  const error = row.actual - row.predicted;
 
-    switch (metric) {
-      case "mae":
-        return absolute;
-      case "mse":
-      case "rmse":
-        return yield* finite(error * error, metric, aggregation, bucket, "square");
-      case "mape":
-      case "mdape":
-        if (actual === 0) {
-          if (zeroPolicy === "error") {
-            return yield* Effect.fail(
-              metricFailure(metric, aggregation, bucket, "zero-actual", "division"),
-            );
-          }
+  if (!Number.isFinite(error)) return fail(bucket, "non-finite", "difference");
 
-          return undefined;
-        }
+  switch (metric) {
+    case "mae":
+      return Math.abs(error);
+    case "mse":
+    case "rmse": {
+      const square = error * error;
 
-        return yield* finite(Math.abs(error / actual), metric, aggregation, bucket, "division");
-      case "smape": {
-        const denominator = yield* finite(
-          Math.abs(actual) + Math.abs(predicted),
-          metric,
-          aggregation,
-          bucket,
-          "sum",
-        );
-
-        return denominator === 0
-          ? 0
-          : yield* finite((2 * absolute) / denominator, metric, aggregation, bucket, "division");
-      }
-
-      case "coverage":
-        if (kind !== "intervals" || !("lower" in row)) {
-          return yield* Effect.fail(
-            metricFailure(metric, aggregation, bucket, "unavailable", "input"),
-          );
-        }
-
-        return row.lower <= actual && actual <= row.upper ? 1 : 0;
-    }
-  });
-
-const bucketScores = (
-  rows: ReadonlyArray<Row>,
-  options: ParsedOptions,
-  kind: MetricSource,
-  bucketIndex: number,
-) =>
-  Effect.gen(function* () {
-    const aggregation = options.aggregation.kind;
-    const scores: Array<MetricScore> = [];
-
-    for (const metric of options.metrics) {
-      const values: Array<number> = [];
-      let excludedCount = 0;
-
-      for (const row of rows) {
-        const value = yield* contribution(
-          row,
-          metric,
-          kind,
-          aggregation,
-          bucketIndex,
-          options.mapeZeroActual ?? "error",
-        );
-
-        if (value === undefined) excludedCount += 1;
-        else values.push(value);
-      }
-
-      if (values.length === 0) {
-        return yield* Effect.fail(
-          metricFailure(metric, aggregation, bucketIndex, "empty-bucket", "input"),
-        );
-      }
-
-      let value: number;
-
-      if (metric === "mdape") {
-        // Own the scratch array; never sort the caller's forecast rows or shared values.
-        values.sort((left, right) => left - right);
-        const upper = values[Math.floor(values.length / 2)];
-        const lower = values[Math.floor((values.length - 1) / 2)];
-
-        if (upper === undefined || lower === undefined) {
-          return yield* Effect.fail(
-            metricFailure(metric, aggregation, bucketIndex, "empty-bucket", "median"),
-          );
-        }
-
-        // Half-sums avoid overflow when two individually finite central values are large.
-        value = yield* finite(lower / 2 + upper / 2, metric, aggregation, bucketIndex, "median");
-      } else {
-        value = yield* mean(values, metric, aggregation, bucketIndex);
-
-        if (metric === "rmse") {
-          value = yield* finite(Math.sqrt(value), metric, aggregation, bucketIndex, "mean");
-        }
-      }
-
-      scores.push(
-        metric === "mape" || metric === "mdape"
-          ? Object.freeze({ metric, value, includedCount: values.length, excludedCount })
-          : Object.freeze({ metric, value }),
-      );
+      return Number.isFinite(square) ? square : fail(bucket, "non-finite", "square");
     }
 
-    return Object.freeze({ rowCount: rows.length, scores: Object.freeze(scores) });
-  });
+    case "mape":
+    case "mdape": {
+      // Prophet skips MAPE for near-zero actuals, but MDAPE divides by every nonzero actual.
+      if (metric === "mape" ? Math.abs(row.actual) < nearZeroActual : row.actual === 0) {
+        return fail(bucket, "zero-actual", "division");
+      }
+
+      const ratio = Math.abs(error / row.actual);
+
+      return Number.isFinite(ratio) ? ratio : fail(bucket, "non-finite", "division");
+    }
+
+    case "smape": {
+      const ratio = Math.abs(error) / ((Math.abs(row.actual) + Math.abs(row.predicted)) / 2);
+
+      // Prophet replaces the NaN from 0/0 with 0.
+      if (Number.isNaN(ratio)) return 0;
+
+      return Number.isFinite(ratio) ? ratio : fail(bucket, "non-finite", "division");
+    }
+
+    case "coverage":
+      if (!("lower" in row)) return fail(bucket, "unavailable", "input");
+
+      return row.lower <= row.actual && row.actual <= row.upper ? 1 : 0;
+  }
+};
+
+/**
+ * Prophet's `rolling_mean_by_h`: sum each horizon group as pandas does, then walk from the largest
+ * horizon down. Every mean covers exactly `windowRows` rows, taking a proportional share of the
+ * oldest group's sum, and lands on the newest group in its window.
+ */
+const rollingMeans = (
+  values: ReadonlyArray<number>,
+  groups: ReadonlyArray<Group>,
+  windowRows: number,
+  bucket: (group: number) => number,
+  fail: Failure,
+): ReadonlyArray<number> | EvaluationMetricError => {
+  const sums = groups.map((group) => kahanSum(values, group.start, group.end));
+  const means: Array<number> = [];
+  const size = (index: number) => (groups[index]?.end ?? 0) - (groups[index]?.start ?? 0);
+
+  let trailing = groups.length - 1;
+  let total = 0;
+  let count = 0;
+
+  for (let index = groups.length - 1; index >= 0; index -= 1) {
+    const sum = sums[index] ?? Number.NaN;
+    total += sum;
+    count += size(index);
+
+    while (count >= windowRows) {
+      const excess = ((count - windowRows) * sum) / size(index);
+      const mean = (total - excess) / windowRows;
+
+      if (!Number.isFinite(total)) return fail(bucket(trailing), "non-finite", "sum");
+
+      if (!Number.isFinite(mean)) return fail(bucket(trailing), "non-finite", "mean");
+
+      means[trailing] = mean;
+      total -= sums[trailing] ?? Number.NaN;
+      count -= size(trailing);
+      trailing -= 1;
+    }
+  }
+
+  return means;
+};
 
 // A counted order statistic supports sliding MDAPE without sorting every overlapping window.
 const medianIndex = (tree: ReadonlyArray<number>, rank: number): number => {
@@ -334,208 +269,69 @@ const medianIndex = (tree: ReadonlyArray<number>, rank: number): number => {
   return index;
 };
 
-const rollingPoints = (
-  ordered: ReadonlyArray<Row>,
-  groups: ReadonlyArray<{
-    readonly horizonMs: number;
-    readonly start: number;
-    readonly end: number;
-  }>,
-  options: ParsedOptions,
-  kind: MetricSource,
+/**
+ * Prophet's `rolling_median_by_h`: a group with at least `windowRows` rows is its own window;
+ * a smaller one is filled to exactly `windowRows` with the rows just before it in horizon order.
+ * Either way the window is a contiguous range whose ends only move forward.
+ */
+const rollingMedians = (
+  values: ReadonlyArray<number>,
+  groups: ReadonlyArray<Group>,
+  first: number,
   windowRows: number,
-) =>
-  Effect.gen(function* () {
-    const points: Array<HorizonMetricPoint> = [];
+  bucket: (group: number) => number,
+  fail: Failure,
+): ReadonlyArray<number> | EvaluationMetricError => {
+  const sorted = Array.from(new Set(values)).sort((left, right) => left - right);
+  const tree = Array.from({ length: sorted.length + 1 }, () => 0);
+  const medians: Array<number> = [];
 
-    // An indexed contribution is calculated once, even when it belongs to many windows.
-    const series: Array<{
-      metric: MetricName;
-      values: ReadonlyArray<number | undefined>;
-      sorted: ReadonlyArray<number>;
-      tree: Array<number>;
-    }> = [];
+  const adjust = (value: number, direction: 1 | -1) => {
+    let lower = 0;
+    let upper = sorted.length;
 
-    for (const metric of options.metrics) {
-      const values: Array<number | undefined> = [];
+    while (lower < upper) {
+      const middle = Math.floor((lower + upper) / 2);
 
-      for (const [index, group] of groups.entries()) {
-        for (let rowIndex = group.start; rowIndex < group.end; rowIndex += 1) {
-          const row = ordered[rowIndex];
-
-          if (row !== undefined) {
-            values.push(
-              yield* contribution(
-                row,
-                metric,
-                kind,
-                "rolling",
-                index,
-                options.mapeZeroActual ?? "error",
-              ),
-            );
-          }
-        }
-      }
-
-      const sorted =
-        metric === "mdape"
-          ? Array.from(
-              new Set(values.filter((value): value is number => value !== undefined)),
-            ).sort((left, right) => left - right)
-          : [];
-
-      series.push({
-        metric,
-        values,
-        sorted,
-        tree: Array.from({ length: sorted.length + 1 }, () => 0),
-      });
+      if ((sorted[middle] ?? Infinity) < value) lower = middle + 1;
+      else upper = middle;
     }
 
-    const sums = series.map(() => ({ sum: 0, correction: 0, included: 0 }));
+    for (let position = lower + 1; position < tree.length; position += position & -position) {
+      tree[position] = (tree[position] ?? 0) + direction;
+    }
+  };
 
-    const update = (start: number, end: number, direction: 1 | -1, bucket: number) =>
-      Effect.gen(function* () {
-        for (const [metricIndex, column] of series.entries()) {
-          const state = sums[metricIndex];
+  let low = 0;
+  let high = 0;
 
-          if (state === undefined) continue;
+  for (let index = first; index < groups.length; index += 1) {
+    const group = groups[index];
 
-          for (let rowIndex = start; rowIndex < end; rowIndex += 1) {
-            const value = column.values[rowIndex];
+    if (group === undefined) continue;
+    const start = Math.min(group.start, group.end - windowRows);
 
-            if (value === undefined) continue;
-            state.included += direction;
+    for (; high < group.end; high += 1) adjust(values[high] ?? Number.NaN, 1);
 
-            if (column.metric === "mdape") {
-              let lower = 0;
-              let upper = column.sorted.length;
+    for (; low < start; low += 1) adjust(values[low] ?? Number.NaN, -1);
 
-              while (lower < upper) {
-                const middle = Math.floor((lower + upper) / 2);
+    const count = group.end - start;
+    const upper = sorted[medianIndex(tree, Math.floor(count / 2) + 1)];
+    const lower = count % 2 === 1 ? upper : sorted[medianIndex(tree, count / 2)];
 
-                if ((column.sorted[middle] ?? Infinity) < value) lower = middle + 1;
-                else upper = middle;
-              }
-
-              for (
-                let position = lower + 1;
-                position < column.tree.length;
-                position += position & -position
-              ) {
-                column.tree[position] = (column.tree[position] ?? 0) + direction;
-              }
-            } else {
-              const delta = direction * value;
-
-              const next = yield* finite(
-                state.sum + delta,
-                column.metric,
-                "rolling",
-                bucket,
-                "sum",
-              );
-
-              state.correction = yield* finite(
-                state.correction +
-                  (Math.abs(state.sum) >= Math.abs(delta)
-                    ? state.sum - next + delta
-                    : delta - next + state.sum),
-                column.metric,
-                "rolling",
-                bucket,
-                "sum",
-              );
-              state.sum = next;
-            }
-          }
-        }
-      });
-
-    let left = 0;
-    let previousEnd = 0;
-
-    for (const [index, group] of groups.entries()) {
-      if (group.end >= windowRows) {
-        // Evict first: the union of consecutive windows may overflow even when each window is finite.
-        while (left < index && group.end - (groups[left + 1]?.start ?? group.end) >= windowRows) {
-          const removed = groups[left];
-
-          if (removed !== undefined) yield* update(removed.start, removed.end, -1, index);
-          left += 1;
-        }
-      }
-
-      yield* update(previousEnd, group.end, 1, index);
-      previousEnd = group.end;
-
-      if (group.end < windowRows) continue;
-
-      const rowCount = group.end - (groups[left]?.start ?? 0);
-      const scores: Array<MetricScore> = [];
-
-      for (const [metricIndex, column] of series.entries()) {
-        const state = sums[metricIndex];
-
-        if (state === undefined) continue;
-        const { metric } = column;
-
-        if (state.included === 0) {
-          return yield* Effect.fail(
-            metricFailure(metric, "rolling", index, "empty-bucket", "input"),
-          );
-        }
-
-        let value: number;
-
-        if (metric === "mdape") {
-          const lower =
-            column.sorted[medianIndex(column.tree, Math.floor((state.included + 1) / 2))];
-
-          const upper = column.sorted[medianIndex(column.tree, Math.floor(state.included / 2) + 1)];
-
-          if (lower === undefined || upper === undefined) {
-            return yield* Effect.fail(
-              metricFailure(metric, "rolling", index, "misaligned", "median"),
-            );
-          }
-
-          value = yield* finite(lower / 2 + upper / 2, metric, "rolling", index, "median");
-        } else {
-          const total = yield* finite(
-            state.sum + state.correction,
-            metric,
-            "rolling",
-            index,
-            "sum",
-          );
-
-          value = yield* finite(total / state.included, metric, "rolling", index, "mean");
-
-          if (metric === "rmse")
-            value = yield* finite(Math.sqrt(value), metric, "rolling", index, "mean");
-        }
-
-        scores.push(
-          metric === "mape" || metric === "mdape"
-            ? Object.freeze({
-                metric,
-                value,
-                includedCount: state.included,
-                excludedCount: rowCount - state.included,
-              })
-            : Object.freeze({ metric, value }),
-        );
-      }
-
-      points.push(
-        Object.freeze({ horizonMs: group.horizonMs, rowCount, scores: Object.freeze(scores) }),
-      );
+    if (lower === undefined || upper === undefined) {
+      return fail(bucket(index), "misaligned", "median");
     }
 
-    return Object.freeze(points);
-  });
+    // numpy averages the middle pair as (a + b) / 2 and returns an odd count's middle unchanged.
+    const median = count % 2 === 1 ? upper : (lower + upper) / 2;
+
+    if (!Number.isFinite(median)) return fail(bucket(index), "non-finite", "median");
+    medians[index] = median;
+  }
+
+  return medians;
+};
 
 const computeMetrics = (
   result: MetricInput,
@@ -562,7 +358,7 @@ const computeMetrics = (
 
     if (result.kind !== "intervals" && options.metrics.includes("coverage")) {
       return yield* Effect.fail(
-        metricFailure("coverage", aggregation.kind, 0, "unavailable", "input"),
+        metricFailure("coverage", aggregation.kind)(0, "unavailable", "input"),
       );
     }
 
@@ -582,43 +378,14 @@ const computeMetrics = (
             (result.rows[index]?.lower ?? Infinity) > (result.rows[index]?.upper ?? -Infinity)))
       ) {
         return yield* Effect.fail(
-          metricFailure(first, aggregation.kind, index, "misaligned", "input"),
+          metricFailure(first, aggregation.kind)(index, "misaligned", "input"),
         );
       }
     }
 
-    if (aggregation.kind === "rows") {
-      const points: Array<RowMetricPoint> = [];
-
-      for (const [index, row] of rows.entries()) {
-        const scores = yield* bucketScores([row], options, result.kind, index);
-        points.push(
-          Object.freeze({
-            ...scores,
-            fold: row.fold,
-            cutoff: row.cutoff,
-            timestamp: row.timestamp,
-            horizonMs: row.horizonMs,
-          }),
-        );
-      }
-
-      return Object.freeze({
-        source: result.kind,
-        kind: "rows" as const,
-        points: Object.freeze(points),
-      });
-    }
-
-    if (aggregation.kind === "overall") {
-      const bucket = yield* bucketScores(rows, options, result.kind, 0);
-
-      return Object.freeze({ source: result.kind, kind: "overall" as const, bucket });
-    }
-
-    // Sort a copy; original input order breaks ties among equal integer horizons.
+    // Prophet sorts by horizon with an unstable sort; a stable sort keeps equal horizons in input order.
     const ordered = Array.from(rows).sort((left, right) => left.horizonMs - right.horizonMs);
-    const groups: Array<{ horizonMs: number; start: number; end: number }> = [];
+    const groups: Array<Group> = [];
 
     for (const row of ordered) {
       const previous = groups[groups.length - 1];
@@ -634,12 +401,50 @@ const computeMetrics = (
       }
     }
 
+    if (aggregation.kind === "rows") {
+      const points: Array<RowMetricPoint> = [];
+
+      for (const [index, row] of ordered.entries()) {
+        const scores: Array<MetricScore> = [];
+
+        for (const metric of options.metrics) {
+          const value = contribution(row, metric, index, metricFailure(metric, "rows"));
+
+          if (value instanceof EvaluationMetricError) return yield* Effect.fail(value);
+
+          scores.push(
+            Object.freeze({ metric, value: metric === "rmse" ? Math.sqrt(value) : value }),
+          );
+        }
+
+        points.push(
+          Object.freeze({
+            rowCount: 1,
+            scores: Object.freeze(scores),
+            fold: row.fold,
+            cutoff: row.cutoff,
+            timestamp: row.timestamp,
+            horizonMs: row.horizonMs,
+          }),
+        );
+      }
+
+      return Object.freeze({
+        source: result.kind,
+        kind: "rows" as const,
+        points: Object.freeze(points),
+      });
+    }
+
+    // Prophet scores each horizon as a one-row window and the whole result as an n-row window.
     const windowRows =
-      aggregation.kind === "rolling"
-        ? aggregation.window.kind === "count"
-          ? aggregation.window.rows
-          : Math.max(1, Math.floor(aggregation.window.value * rows.length))
-        : 1;
+      aggregation.kind === "horizons"
+        ? 1
+        : aggregation.kind === "overall"
+          ? rows.length
+          : aggregation.window.kind === "count"
+            ? aggregation.window.rows
+            : Math.max(1, Math.floor(aggregation.window.value * rows.length));
 
     if (windowRows > rows.length) {
       return yield* Effect.fail(
@@ -653,24 +458,74 @@ const computeMetrics = (
       );
     }
 
-    if (aggregation.kind === "rolling") {
-      const points = yield* rollingPoints(ordered, groups, options, result.kind, windowRows);
+    const bucket = (group: number) => (aggregation.kind === "overall" ? 0 : group);
+    const firstPoint = groups.findIndex((group) => group.end >= windowRows);
+    const columns: Array<{ metric: MetricName; values: ReadonlyArray<number> }> = [];
 
-      return Object.freeze({ source: result.kind, kind: "rolling" as const, windowRows, points });
+    for (const metric of options.metrics) {
+      const fail = metricFailure(metric, aggregation.kind);
+      const values: Array<number> = [];
+
+      for (const [index, group] of groups.entries()) {
+        for (let position = group.start; position < group.end; position += 1) {
+          const row = ordered[position];
+
+          if (row === undefined) continue;
+          const value = contribution(row, metric, bucket(index), fail);
+
+          if (value instanceof EvaluationMetricError) return yield* Effect.fail(value);
+          values.push(value);
+        }
+      }
+
+      const aggregated =
+        metric === "mdape"
+          ? rollingMedians(values, groups, firstPoint, windowRows, bucket, fail)
+          : rollingMeans(values, groups, windowRows, bucket, fail);
+
+      if (aggregated instanceof EvaluationMetricError) return yield* Effect.fail(aggregated);
+
+      columns.push({
+        metric,
+        values: metric === "rmse" ? aggregated.map((value) => Math.sqrt(value)) : aggregated,
+      });
     }
 
-    const points: Array<HorizonMetricPoint> = [];
-
-    for (const [index, group] of groups.entries()) {
-      const scores = yield* bucketScores(
-        ordered.slice(group.start, group.end),
-        options,
-        result.kind,
-        index,
+    const scoresAt = (index: number) =>
+      Object.freeze(
+        columns.map(({ metric, values }) =>
+          Object.freeze({ metric, value: values[index] ?? Number.NaN }),
+        ),
       );
 
-      points.push(Object.freeze({ ...scores, horizonMs: group.horizonMs }));
+    if (aggregation.kind === "overall") {
+      const bucket = Object.freeze({ rowCount: rows.length, scores: scoresAt(groups.length - 1) });
+
+      return Object.freeze({ source: result.kind, kind: "overall" as const, bucket });
     }
+
+    if (aggregation.kind === "rolling") {
+      const points = groups
+        .slice(firstPoint)
+        .map((group, offset) =>
+          Object.freeze({ horizonMs: group.horizonMs, scores: scoresAt(firstPoint + offset) }),
+        );
+
+      return Object.freeze({
+        source: result.kind,
+        kind: "rolling" as const,
+        windowRows,
+        points: Object.freeze(points),
+      });
+    }
+
+    const points = groups.map((group, index) =>
+      Object.freeze({
+        rowCount: group.end - group.start,
+        scores: scoresAt(index),
+        horizonMs: group.horizonMs,
+      }),
+    );
 
     return Object.freeze({
       source: result.kind,
@@ -679,7 +534,7 @@ const computeMetrics = (
     });
   });
 
-/** Compute checked point-error and interval-coverage metrics over trusted CV forecast instances. */
+/** Compute Prophet's point-error and interval-coverage metrics over trusted CV forecast instances. */
 export function performanceMetrics(
   result: BaselineCrossValidationResult,
   input: MetricOptions,

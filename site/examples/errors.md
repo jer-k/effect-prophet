@@ -19,6 +19,7 @@ Bad input (observations): Expected a valid canonical UTC timestamp (for example,
 | `PredictionError`             | A forecast couldn't be computed for a row                                                                         | Check that future rows have every field the model needs                                                          |
 | `CountryHolidayError`         | A country calendar couldn't be used. `reason` says why, e.g. `known-coverage-restriction`.                        | See [calendar errors](/guide/holiday-calendars#errors)                                                           |
 | `ModelSerializationError`     | Saved model data couldn't be read                                                                                 | Make sure it was saved by the same version                                                                       |
+| `EvaluationMetricError`       | A score couldn't be computed. `reason` says why, e.g. `zero-actual` when `mape` meets an actual near zero.        | See [actual values of zero](/examples/cross-validation#actual-values-of-zero)                                    |
 | `EvaluationError` and friends | Cross-validation, search or holdout checks failed                                                                 | `reason` and the wrapped `cause` explain which step                                                              |
 
 ## Without Effect

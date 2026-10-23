@@ -12,7 +12,7 @@ from prophet.diagnostics import cross_validation, performance_metrics
 
 
 def metric_window(case):
-    """Python's rolling window is fractional/weighted, unlike Effect whole horizon groups."""
+    """The rolling_window that gives the same aggregation as Effect's metricAggregation."""
     return {"overall": 1, "horizons": 0, "rolling": 0.5}[case["workload"]["metricAggregation"]]
 
 

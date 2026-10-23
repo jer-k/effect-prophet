@@ -343,7 +343,6 @@ describe("forecast baselines", () => {
       comparePerformance(model, [baseline], {
         metrics: ["mape"],
         aggregation: { kind: "overall" },
-        mapeZeroActual: "exclude",
       }),
     );
 

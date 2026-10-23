@@ -3,7 +3,7 @@
     "id": "country-us-logistic-additive",
     "dataset": "v5/country-logistic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:d8bc5bd9034bc32a8c791e0b4cf2e1f9e89df3d9d7d16af3a274e68b8a612107",
+      "snapshotId": "sha256:457fc6eed73b9adef1c65e3e2a42a640e0a24b637f07e51f47e66bc9ec7f9b43",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -145,7 +145,7 @@
     "id": "country-explicit-us-logistic-additive",
     "dataset": "v5/country-logistic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:d8bc5bd9034bc32a8c791e0b4cf2e1f9e89df3d9d7d16af3a274e68b8a612107",
+      "snapshotId": "sha256:457fc6eed73b9adef1c65e3e2a42a640e0a24b637f07e51f47e66bc9ec7f9b43",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -436,7 +436,7 @@
     "id": "country-us-logistic-multiplicative",
     "dataset": "v5/country-logistic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:d8bc5bd9034bc32a8c791e0b4cf2e1f9e89df3d9d7d16af3a274e68b8a612107",
+      "snapshotId": "sha256:457fc6eed73b9adef1c65e3e2a42a640e0a24b637f07e51f47e66bc9ec7f9b43",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -578,7 +578,7 @@
     "id": "country-explicit-us-logistic-multiplicative",
     "dataset": "v5/country-logistic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:d8bc5bd9034bc32a8c791e0b4cf2e1f9e89df3d9d7d16af3a274e68b8a612107",
+      "snapshotId": "sha256:457fc6eed73b9adef1c65e3e2a42a640e0a24b637f07e51f47e66bc9ec7f9b43",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -2388,8 +2388,7 @@
           "2020-03-17T00:00:00.000Z"
         ]
       },
-      "metricAggregation": "horizons",
-      "mapeZeroActual": "exclude"
+      "metricAggregation": "horizons"
     },
     "phases": [
       "evaluation-input-conversion",
@@ -2483,7 +2482,6 @@
         ]
       },
       "metricAggregation": "horizons",
-      "mapeZeroActual": "exclude",
       "interval": {
         "seed": 19,
         "samples": 256,
@@ -2577,7 +2575,6 @@
         ]
       },
       "metricAggregation": "horizons",
-      "mapeZeroActual": "exclude",
       "candidates": [
         {
           "id": "prior-low",
@@ -2680,8 +2677,7 @@
           "2020-08-19T00:00:00.000Z"
         ]
       },
-      "metricAggregation": "rolling",
-      "mapeZeroActual": "exclude"
+      "metricAggregation": "rolling"
     },
     "phases": [
       "evaluation-input-conversion",
@@ -2776,7 +2772,6 @@
         ]
       },
       "metricAggregation": "rolling",
-      "mapeZeroActual": "exclude",
       "interval": {
         "seed": 19,
         "samples": 256,
