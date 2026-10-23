@@ -60,4 +60,6 @@ part.
 
 `evaluateHoldout` fits the selected settings once on all the development data and scores them
 on the held-out rows. The report is plain data, so you can save it with
-`encodeEvaluationReport` and load it again with `decodeEvaluationReport`.
+`encodeEvaluationReport` and load it again with `decodeEvaluationReport`. Loading recomputes the
+scores, so a report saved by an earlier version of Effect Prophet may be rejected with an
+`EvaluationReportError`. Rerun the check after upgrading.
