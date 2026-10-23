@@ -226,7 +226,6 @@ const EvaluationWorkloadSchema = Schema.Struct({
     cutoffs: Schema.Array(CanonicalTimestamp).check(Schema.isMinLength(1)),
   }),
   metricAggregation: Schema.Literals(["horizons", "rolling", "overall"]),
-  mapeZeroActual: Schema.Literals(["error", "exclude"]),
   interval: Schema.optionalKey(
     Schema.Struct({
       seed: NonNegativeInteger.check(Schema.isLessThanOrEqualTo(4_294_967_295)),

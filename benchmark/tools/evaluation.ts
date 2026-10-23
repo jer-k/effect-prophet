@@ -66,7 +66,6 @@ const metricPolicy = (workload: Extract<BenchmarkCase["workload"], { kind: "eval
           window: { kind: "fraction" as const, value: 0.5 },
         }
       : { kind: workload.metricAggregation },
-  mapeZeroActual: workload.mapeZeroActual,
 });
 
 const candidateOptions = (

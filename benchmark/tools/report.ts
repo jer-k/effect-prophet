@@ -124,7 +124,6 @@ export interface BenchmarkReport {
     readonly seed: number | undefined;
     readonly intervalWidth: number | undefined;
     readonly metricAggregation: string;
-    readonly mapeZeroActual: string;
     readonly candidateOptionsHashes: ReadonlyArray<string>;
     readonly featureColumns: number;
     readonly changepoints: number;
@@ -1161,7 +1160,6 @@ export const buildBenchmarkReport = (
           seed: workload.interval?.seed,
           intervalWidth: workload.interval?.intervalWidth,
           metricAggregation: workload.metricAggregation,
-          mapeZeroActual: workload.mapeZeroActual,
           candidateOptionsHashes: (workload.candidates ?? []).map((candidate) =>
             createHash("sha256")
               .update(
@@ -1293,11 +1291,11 @@ export const renderBenchmarkMarkdown = (report: BenchmarkReport): string => {
     "",
     "Point alignment is gated before timing; the classification `different-public-work` precludes relative performance rankings. Python requires an untimed full-history fit before public CV, copies pandas history, and uses default vectorized intervals; Effect performs per-fold sequential scalar simulation. Python has no public baseline/search/holdout-report APIs: those entries use explicit application-level operations. Metrics and rolling/percentage policies differ. Both adapters disable parallelism. C, F, total training visits, assessment rows, features/changepoints, and S are separate axes.",
     "",
-    "| Case | Recipe / SHA-256 | Model | C | F | Training visits | Assessment rows | Features | Points | S | Seed / width | Metric / zero policy | Candidate option hashes (input order) |",
+    "| Case | Recipe / SHA-256 | Model | C | F | Training visits | Assessment rows | Features | Points | S | Seed / width | Metric aggregation | Candidate option hashes (input order) |",
     "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | --- |",
     ...report.evaluations.map(
       (item) =>
-        `| ${item.id} | ${item.identity?.recipe ?? "n/a"} / ${item.identity?.sha256 ?? "n/a"} | ${item.growth} | ${item.candidates} | ${item.foldCount} | ${item.trainingRows} | ${item.assessmentRows} | ${item.featureColumns} | ${item.changepoints} | ${item.samples} | ${item.seed ?? "n/a"} / ${item.intervalWidth ?? "n/a"} | ${item.metricAggregation} / ${item.mapeZeroActual} | ${item.candidateOptionsHashes.join(", ") || "n/a"} |`,
+        `| ${item.id} | ${item.identity?.recipe ?? "n/a"} / ${item.identity?.sha256 ?? "n/a"} | ${item.growth} | ${item.candidates} | ${item.foldCount} | ${item.trainingRows} | ${item.assessmentRows} | ${item.featureColumns} | ${item.changepoints} | ${item.samples} | ${item.seed ?? "n/a"} / ${item.intervalWidth ?? "n/a"} | ${item.metricAggregation} | ${item.candidateOptionsHashes.join(", ") || "n/a"} |`,
     ),
     "",
     "## Absolute timings",

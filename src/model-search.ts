@@ -42,7 +42,6 @@ const ObjectiveSchema = Schema.Struct({
   metric: ObjectiveMetricSchema,
   aggregation: Schema.Struct({ kind: Schema.Literal("overall") }),
   direction: Schema.Literal("minimize"),
-  mapeZeroActual: Schema.optionalKey(Schema.Literals(["error", "exclude"])),
 });
 
 const SearchSchema = Schema.Struct({
@@ -80,7 +79,6 @@ export interface SearchObjective {
   readonly metric: Exclude<MetricName, "coverage">;
   readonly aggregation: { readonly kind: "overall" };
   readonly direction: "minimize";
-  readonly mapeZeroActual?: "error" | "exclude";
 }
 
 /** An explicit bounded selection request over a single fitting backend. */
@@ -272,18 +270,6 @@ export const searchModels = Effect.fn("Prophet.searchModels")(function* (
     Effect.mapError((error) => inputValidationErrorFromIssue("evaluation-search", error.issue)),
   );
 
-  if (
-    (parsed.objective.metric === "mape" || parsed.objective.metric === "mdape") &&
-    parsed.objective.mapeZeroActual === undefined
-  ) {
-    return yield* Effect.fail(
-      invalidSearch(
-        ["objective", "mapeZeroActual"],
-        "Percentage objectives require a zero-actual policy",
-      ),
-    );
-  }
-
   const validatedCandidates: Array<{
     id: CandidateId;
     options: EncodedProphetOptions;
@@ -395,7 +381,6 @@ export const searchModels = Effect.fn("Prophet.searchModels")(function* (
     metric: parsed.objective.metric,
     aggregation: Object.freeze({ kind: "overall" }),
     direction: "minimize",
-    mapeZeroActual: parsed.objective.mapeZeroActual ?? "error",
   });
 
   const outcomes: Array<SearchCandidateResult> = [];
@@ -414,7 +399,6 @@ export const searchModels = Effect.fn("Prophet.searchModels")(function* (
       const report = yield* performanceMetrics(cv, {
         metrics: [objective.metric],
         aggregation: { kind: "overall" },
-        mapeZeroActual: objective.mapeZeroActual ?? "error",
       });
 
       if (report.kind !== "overall") {

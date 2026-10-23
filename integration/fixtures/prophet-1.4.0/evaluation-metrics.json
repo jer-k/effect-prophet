@@ -1,188 +1,1974 @@
 {
-  "expected": {
-    "horizons": [
-      {
-        "horizonMs": 86400000,
-        "scores": {
-          "coverage": 1.0,
-          "mae": 1.0,
-          "mape": 0.5,
-          "mdape": 0.5,
-          "mse": 1.0,
-          "rmse": 1.0,
-          "smape": 0.666666666667
-        }
-      },
-      {
-        "horizonMs": 172800000,
-        "scores": {
-          "coverage": 1.0,
-          "mae": 2.0,
-          "mape": 0.5,
-          "mdape": 0.5,
-          "mse": 4.0,
-          "rmse": 2.0,
-          "smape": 0.666666666667
-        }
-      },
-      {
-        "horizonMs": 259200000,
-        "scores": {
-          "coverage": 1.0,
-          "mae": 2.0,
-          "mape": 0.5,
-          "mdape": 0.5,
-          "mse": 4.0,
-          "rmse": 2.0,
-          "smape": 0.666666666667
-        }
-      },
-      {
-        "horizonMs": 345600000,
-        "scores": {
-          "coverage": 0.0,
-          "mae": 2.0,
-          "mape": 0.25,
-          "mdape": 0.25,
-          "mse": 4.0,
-          "rmse": 2.0,
-          "smape": 0.285714285714
-        }
-      }
-    ],
-    "overall": [
-      {
-        "horizonMs": 345600000,
-        "scores": {
-          "coverage": 0.75,
-          "mae": 1.75,
-          "mape": 0.4375,
-          "mdape": 0.5,
-          "mse": 3.25,
-          "rmse": 1.80277563773,
-          "smape": 0.571428571429
-        }
-      }
-    ],
-    "rolling": [
-      {
-        "horizonMs": 172800000,
-        "scores": {
-          "coverage": 1.0,
-          "mae": 1.5,
-          "mape": 0.5,
-          "mdape": 0.5,
-          "mse": 2.5,
-          "rmse": 1.58113883008,
-          "smape": 0.666666666667
-        }
-      },
-      {
-        "horizonMs": 259200000,
-        "scores": {
-          "coverage": 1.0,
-          "mae": 2.0,
-          "mape": 0.5,
-          "mdape": 0.5,
-          "mse": 4.0,
-          "rmse": 2.0,
-          "smape": 0.666666666667
-        }
-      },
-      {
-        "horizonMs": 345600000,
-        "scores": {
-          "coverage": 0.5,
-          "mae": 2.0,
-          "mape": 0.375,
-          "mdape": 0.375,
-          "mse": 4.0,
-          "rmse": 2.0,
-          "smape": 0.47619047619
-        }
-      }
-    ],
-    "rows": [
-      {
-        "horizonMs": 86400000,
-        "scores": {
-          "coverage": 1.0,
-          "mae": 1.0,
-          "mape": 0.5,
-          "mdape": 0.5,
-          "mse": 1.0,
-          "rmse": 1.0,
-          "smape": 0.666666666667
-        }
-      },
-      {
-        "horizonMs": 172800000,
-        "scores": {
-          "coverage": 1.0,
-          "mae": 2.0,
-          "mape": 0.5,
-          "mdape": 0.5,
-          "mse": 4.0,
-          "rmse": 2.0,
-          "smape": 0.666666666667
-        }
-      },
-      {
-        "horizonMs": 259200000,
-        "scores": {
-          "coverage": 1.0,
-          "mae": 2.0,
-          "mape": 0.5,
-          "mdape": 0.5,
-          "mse": 4.0,
-          "rmse": 2.0,
-          "smape": 0.666666666667
-        }
-      },
-      {
-        "horizonMs": 345600000,
-        "scores": {
-          "coverage": 0.0,
-          "mae": 2.0,
-          "mape": 0.25,
-          "mdape": 0.25,
-          "mse": 4.0,
-          "rmse": 2.0,
-          "smape": 0.285714285714
-        }
-      }
-    ]
-  },
-  "kind": "evaluation-metrics",
-  "rows": [
+  "cases": [
     {
-      "actual": 2.0,
-      "horizonMs": 86400000,
-      "lower": 1.0,
-      "predicted": 1.0,
-      "upper": 2.0
+      "aggregations": [
+        {
+          "aggregation": {
+            "kind": "rows"
+          },
+          "metrics": [
+            "mae",
+            "mse",
+            "rmse",
+            "mape",
+            "mdape",
+            "smape",
+            "coverage"
+          ],
+          "points": [
+            {
+              "horizonMs": 86400000,
+              "row": 0,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 2.0,
+                "mape": 1.0,
+                "mdape": 1.0,
+                "mse": 4.0,
+                "rmse": 2.0,
+                "smape": 2.0
+              }
+            },
+            {
+              "horizonMs": 172800000,
+              "row": 1,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 3.0,
+                "mape": 6.0,
+                "mdape": 6.0,
+                "mse": 9.0,
+                "rmse": 3.0,
+                "smape": 1.5
+              }
+            },
+            {
+              "horizonMs": 345600000,
+              "row": 2,
+              "scores": {
+                "coverage": 0.0,
+                "mae": 2.0,
+                "mape": 2.0,
+                "mdape": 2.0,
+                "mse": 4.0,
+                "rmse": 2.0,
+                "smape": 1.0
+              }
+            },
+            {
+              "horizonMs": 518400000,
+              "row": 3,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 3.5,
+                "mape": 14.0,
+                "mdape": 14.0,
+                "mse": 12.25,
+                "rmse": 3.5,
+                "smape": 1.75
+              }
+            },
+            {
+              "horizonMs": 86400000,
+              "row": 4,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 4.0,
+                "mape": 1.0,
+                "mdape": 1.0,
+                "mse": 16.0,
+                "rmse": 4.0,
+                "smape": 2.0
+              }
+            },
+            {
+              "horizonMs": 172800000,
+              "row": 5,
+              "scores": {
+                "coverage": 0.0,
+                "mae": 6.0,
+                "mape": 6.0,
+                "mdape": 6.0,
+                "mse": 36.0,
+                "rmse": 6.0,
+                "smape": 1.5
+              }
+            },
+            {
+              "horizonMs": 259200000,
+              "row": 6,
+              "scores": {
+                "coverage": 0.0,
+                "mae": 0.8000000000000003,
+                "mape": 0.21621621621621628,
+                "mdape": 0.21621621621621628,
+                "mse": 0.6400000000000005,
+                "rmse": 0.8000000000000003,
+                "smape": 0.24242424242424251
+              }
+            },
+            {
+              "horizonMs": 345600000,
+              "row": 7,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 4.0,
+                "mape": 2.0,
+                "mdape": 2.0,
+                "mse": 16.0,
+                "rmse": 4.0,
+                "smape": 1.0
+              }
+            },
+            {
+              "horizonMs": 518400000,
+              "row": 8,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 14.0,
+                "mape": 14.0,
+                "mdape": 14.0,
+                "mse": 196.0,
+                "rmse": 14.0,
+                "smape": 1.75
+              }
+            },
+            {
+              "horizonMs": 691200000,
+              "row": 9,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 16.0,
+                "mape": 2.0,
+                "mdape": 2.0,
+                "mse": 256.0,
+                "rmse": 16.0,
+                "smape": 1.0
+              }
+            },
+            {
+              "horizonMs": 86400000,
+              "row": 10,
+              "scores": {
+                "coverage": 0.0,
+                "mae": 8.0,
+                "mape": 1.0,
+                "mdape": 1.0,
+                "mse": 64.0,
+                "rmse": 8.0,
+                "smape": 2.0
+              }
+            },
+            {
+              "horizonMs": 345600000,
+              "row": 11,
+              "scores": {
+                "coverage": 0.0,
+                "mae": 8.0,
+                "mape": 2.0,
+                "mdape": 2.0,
+                "mse": 64.0,
+                "rmse": 8.0,
+                "smape": 1.0
+              }
+            },
+            {
+              "horizonMs": 432000000,
+              "row": 12,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 2.200000000000001,
+                "mape": 0.17886178861788626,
+                "mdape": 0.17886178861788626,
+                "mse": 4.840000000000004,
+                "rmse": 2.200000000000001,
+                "smape": 0.19642857142857154
+              }
+            },
+            {
+              "horizonMs": 518400000,
+              "row": 13,
+              "scores": {
+                "coverage": 0.0,
+                "mae": 28.0,
+                "mape": 14.0,
+                "mdape": 14.0,
+                "mse": 784.0,
+                "rmse": 28.0,
+                "smape": 1.75
+              }
+            },
+            {
+              "horizonMs": 604800000,
+              "row": 14,
+              "scores": {
+                "coverage": 0.0,
+                "mae": 5.5,
+                "mape": 0.05408062930186824,
+                "mdape": 0.05408062930186824,
+                "mse": 30.25,
+                "rmse": 5.5,
+                "smape": 0.05558362809499747
+              }
+            },
+            {
+              "horizonMs": 691200000,
+              "row": 15,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 16.0,
+                "mape": 1.0,
+                "mdape": 1.0,
+                "mse": 256.0,
+                "rmse": 16.0,
+                "smape": 2.0
+              }
+            },
+            {
+              "horizonMs": 345600000,
+              "row": 16,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 1.0,
+                "mape": 2.0,
+                "mdape": 2.0,
+                "mse": 1.0,
+                "rmse": 1.0,
+                "smape": 1.0
+              }
+            }
+          ],
+          "rollingWindow": -1.0
+        },
+        {
+          "aggregation": {
+            "kind": "horizons"
+          },
+          "metrics": [
+            "mae",
+            "mse",
+            "rmse",
+            "mape",
+            "mdape",
+            "smape",
+            "coverage"
+          ],
+          "points": [
+            {
+              "horizonMs": 86400000,
+              "scores": {
+                "coverage": 0.6666666666666667,
+                "mae": 4.666666666666666,
+                "mape": 1.0,
+                "mdape": 1.0,
+                "mse": 28.0,
+                "rmse": 5.291502622129181,
+                "smape": 2.0
+              }
+            },
+            {
+              "horizonMs": 172800000,
+              "scores": {
+                "coverage": 0.5,
+                "mae": 4.5,
+                "mape": 6.0,
+                "mdape": 6.0,
+                "mse": 22.5,
+                "rmse": 4.743416490252569,
+                "smape": 1.5
+              }
+            },
+            {
+              "horizonMs": 259200000,
+              "scores": {
+                "coverage": 0.0,
+                "mae": 0.8000000000000003,
+                "mape": 0.21621621621621628,
+                "mdape": 0.21621621621621628,
+                "mse": 0.6400000000000005,
+                "rmse": 0.8000000000000003,
+                "smape": 0.24242424242424251
+              }
+            },
+            {
+              "horizonMs": 345600000,
+              "scores": {
+                "coverage": 0.5,
+                "mae": 3.75,
+                "mape": 2.0,
+                "mdape": 2.0,
+                "mse": 21.25,
+                "rmse": 4.6097722286464435,
+                "smape": 1.0
+              }
+            },
+            {
+              "horizonMs": 432000000,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 2.200000000000001,
+                "mape": 0.17886178861788626,
+                "mdape": 0.17886178861788626,
+                "mse": 4.840000000000004,
+                "rmse": 2.200000000000001,
+                "smape": 0.19642857142857154
+              }
+            },
+            {
+              "horizonMs": 518400000,
+              "scores": {
+                "coverage": 0.6666666666666667,
+                "mae": 15.166666666666668,
+                "mape": 14.0,
+                "mdape": 14.0,
+                "mse": 330.75,
+                "rmse": 18.186533479473212,
+                "smape": 1.75
+              }
+            },
+            {
+              "horizonMs": 604800000,
+              "scores": {
+                "coverage": 0.0,
+                "mae": 5.5,
+                "mape": 0.05408062930186824,
+                "mdape": 0.05408062930186824,
+                "mse": 30.25,
+                "rmse": 5.5,
+                "smape": 0.05558362809499747
+              }
+            },
+            {
+              "horizonMs": 691200000,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 16.0,
+                "mape": 1.5,
+                "mdape": 1.5,
+                "mse": 256.0,
+                "rmse": 16.0,
+                "smape": 1.5
+              }
+            }
+          ],
+          "rollingWindow": 0.0
+        },
+        {
+          "aggregation": {
+            "kind": "overall"
+          },
+          "metrics": [
+            "mae",
+            "mse",
+            "rmse",
+            "mape",
+            "mdape",
+            "smape",
+            "coverage"
+          ],
+          "points": [
+            {
+              "horizonMs": 691200000,
+              "scores": {
+                "coverage": 0.5882352941176471,
+                "mae": 7.294117647058823,
+                "mape": 4.026421096125645,
+                "mdape": 2.0,
+                "mse": 103.17529411764706,
+                "rmse": 10.157524015115449,
+                "smape": 1.2790844965851653
+              }
+            }
+          ],
+          "rollingWindow": 1.0
+        },
+        {
+          "aggregation": {
+            "kind": "rolling",
+            "window": {
+              "kind": "fraction",
+              "value": 0.05
+            }
+          },
+          "metrics": [
+            "mae",
+            "mse",
+            "rmse",
+            "mape",
+            "mdape",
+            "smape",
+            "coverage"
+          ],
+          "points": [
+            {
+              "horizonMs": 86400000,
+              "scores": {
+                "coverage": 0.6666666666666667,
+                "mae": 4.666666666666666,
+                "mape": 1.0,
+                "mdape": 1.0,
+                "mse": 28.0,
+                "rmse": 5.291502622129181,
+                "smape": 2.0
+              }
+            },
+            {
+              "horizonMs": 172800000,
+              "scores": {
+                "coverage": 0.5,
+                "mae": 4.5,
+                "mape": 6.0,
+                "mdape": 6.0,
+                "mse": 22.5,
+                "rmse": 4.743416490252569,
+                "smape": 1.5
+              }
+            },
+            {
+              "horizonMs": 259200000,
+              "scores": {
+                "coverage": 0.0,
+                "mae": 0.8000000000000003,
+                "mape": 0.21621621621621628,
+                "mdape": 0.21621621621621628,
+                "mse": 0.6400000000000005,
+                "rmse": 0.8000000000000003,
+                "smape": 0.24242424242424251
+              }
+            },
+            {
+              "horizonMs": 345600000,
+              "scores": {
+                "coverage": 0.5,
+                "mae": 3.75,
+                "mape": 2.0,
+                "mdape": 2.0,
+                "mse": 21.25,
+                "rmse": 4.6097722286464435,
+                "smape": 1.0
+              }
+            },
+            {
+              "horizonMs": 432000000,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 2.200000000000001,
+                "mape": 0.17886178861788626,
+                "mdape": 0.17886178861788626,
+                "mse": 4.840000000000004,
+                "rmse": 2.200000000000001,
+                "smape": 0.19642857142857154
+              }
+            },
+            {
+              "horizonMs": 518400000,
+              "scores": {
+                "coverage": 0.6666666666666667,
+                "mae": 15.166666666666668,
+                "mape": 14.0,
+                "mdape": 14.0,
+                "mse": 330.75,
+                "rmse": 18.186533479473212,
+                "smape": 1.75
+              }
+            },
+            {
+              "horizonMs": 604800000,
+              "scores": {
+                "coverage": 0.0,
+                "mae": 5.5,
+                "mape": 0.05408062930186824,
+                "mdape": 0.05408062930186824,
+                "mse": 30.25,
+                "rmse": 5.5,
+                "smape": 0.05558362809499747
+              }
+            },
+            {
+              "horizonMs": 691200000,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 16.0,
+                "mape": 1.5,
+                "mdape": 1.5,
+                "mse": 256.0,
+                "rmse": 16.0,
+                "smape": 1.5
+              }
+            }
+          ],
+          "rollingWindow": 0.05,
+          "windowRows": 1
+        },
+        {
+          "aggregation": {
+            "kind": "rolling",
+            "window": {
+              "kind": "fraction",
+              "value": 0.25
+            }
+          },
+          "metrics": [
+            "mae",
+            "mse",
+            "rmse",
+            "mape",
+            "mdape",
+            "smape",
+            "coverage"
+          ],
+          "points": [
+            {
+              "horizonMs": 172800000,
+              "scores": {
+                "coverage": 0.5833333333333334,
+                "mae": 4.583333333333334,
+                "mape": 3.5,
+                "mdape": 3.5,
+                "mse": 25.250000000000014,
+                "rmse": 5.024937810560447,
+                "smape": 1.75
+              }
+            },
+            {
+              "horizonMs": 259200000,
+              "scores": {
+                "coverage": 0.4166666666666667,
+                "mae": 3.6166666666666676,
+                "mape": 3.304054054054054,
+                "mdape": 3.5,
+                "mse": 18.41000000000001,
+                "rmse": 4.290687590584988,
+                "smape": 1.3106060606060606
+              }
+            },
+            {
+              "horizonMs": 345600000,
+              "scores": {
+                "coverage": 0.5,
+                "mae": 3.7500000000000004,
+                "mape": 2.0,
+                "mdape": 2.0,
+                "mse": 21.250000000000007,
+                "rmse": 4.609772228646444,
+                "smape": 0.9999999999999997
+              }
+            },
+            {
+              "horizonMs": 432000000,
+              "scores": {
+                "coverage": 0.625,
+                "mae": 3.3625000000000007,
+                "mape": 1.5447154471544717,
+                "mdape": 2.0,
+                "mse": 17.147500000000008,
+                "rmse": 4.140953996363641,
+                "smape": 0.7991071428571426
+              }
+            },
+            {
+              "horizonMs": 518400000,
+              "scores": {
+                "coverage": 0.75,
+                "mae": 11.925,
+                "mape": 10.544715447154472,
+                "mdape": 14.0,
+                "mse": 249.2725,
+                "rmse": 15.788365969915949,
+                "smape": 1.3616071428571426
+              }
+            },
+            {
+              "horizonMs": 604800000,
+              "scores": {
+                "coverage": 0.5,
+                "mae": 12.75,
+                "mape": 10.513520157325466,
+                "mdape": 14.0,
+                "mse": 255.625,
+                "rmse": 15.988276955319481,
+                "smape": 1.3263959070237492
+              }
+            },
+            {
+              "horizonMs": 691200000,
+              "scores": {
+                "coverage": 0.6666666666666667,
+                "mae": 13.166666666666668,
+                "mape": 4.263520157325466,
+                "mdape": 1.5,
+                "mse": 218.25,
+                "rmse": 14.773286702694158,
+                "smape": 1.2013959070237492
+              }
+            }
+          ],
+          "rollingWindow": 0.25,
+          "windowRows": 4
+        },
+        {
+          "aggregation": {
+            "kind": "rolling",
+            "window": {
+              "kind": "fraction",
+              "value": 0.5
+            }
+          },
+          "metrics": [
+            "mae",
+            "mse",
+            "rmse",
+            "mape",
+            "mdape",
+            "smape",
+            "coverage"
+          ],
+          "points": [
+            {
+              "horizonMs": 345600000,
+              "scores": {
+                "coverage": 0.45833333333333337,
+                "mae": 3.6833333333333336,
+                "mape": 2.652027027027027,
+                "mdape": 2.0,
+                "mse": 19.829999999999988,
+                "rmse": 4.453088815642462,
+                "smape": 1.1553030303030303
+              }
+            },
+            {
+              "horizonMs": 432000000,
+              "scores": {
+                "coverage": 0.5,
+                "mae": 3.3750000000000004,
+                "mape": 2.549384750604263,
+                "mdape": 2.0,
+                "mse": 16.934999999999988,
+                "rmse": 4.115215668710449,
+                "smape": 0.9298566017316017
+              }
+            },
+            {
+              "horizonMs": 518400000,
+              "scores": {
+                "coverage": 0.625,
+                "mae": 7.8375,
+                "mape": 6.272357723577236,
+                "mdape": 2.0,
+                "mse": 135.26125,
+                "rmse": 11.630187014833425,
+                "smape": 1.1808035714285714
+              }
+            },
+            {
+              "horizonMs": 604800000,
+              "scores": {
+                "coverage": 0.5625,
+                "mae": 8.05625,
+                "mape": 6.029117802239969,
+                "mdape": 2.0,
+                "mse": 136.38625,
+                "rmse": 11.678452380345608,
+                "smape": 1.062751524940446
+              }
+            },
+            {
+              "horizonMs": 691200000,
+              "scores": {
+                "coverage": 0.6875,
+                "mae": 11.11875,
+                "mape": 5.904117802239969,
+                "mdape": 2.0,
+                "mse": 195.07375,
+                "rmse": 13.966880467735091,
+                "smape": 1.187751524940446
+              }
+            }
+          ],
+          "rollingWindow": 0.5,
+          "windowRows": 8
+        },
+        {
+          "aggregation": {
+            "kind": "rolling",
+            "window": {
+              "kind": "fraction",
+              "value": 1.0
+            }
+          },
+          "metrics": [
+            "mae",
+            "mse",
+            "rmse",
+            "mape",
+            "mdape",
+            "smape",
+            "coverage"
+          ],
+          "points": [
+            {
+              "horizonMs": 691200000,
+              "scores": {
+                "coverage": 0.5882352941176471,
+                "mae": 7.294117647058823,
+                "mape": 4.026421096125645,
+                "mdape": 2.0,
+                "mse": 103.17529411764706,
+                "rmse": 10.157524015115449,
+                "smape": 1.2790844965851653
+              }
+            }
+          ],
+          "rollingWindow": 1.0,
+          "windowRows": 17
+        },
+        {
+          "aggregation": {
+            "kind": "rolling",
+            "window": {
+              "kind": "count",
+              "rows": 2
+            }
+          },
+          "metrics": [
+            "mae",
+            "mse",
+            "rmse",
+            "mape",
+            "mdape",
+            "smape",
+            "coverage"
+          ],
+          "points": [
+            {
+              "horizonMs": 86400000,
+              "scores": {
+                "coverage": 0.6666666666666667,
+                "mae": 4.666666666666668,
+                "mape": 1.0,
+                "mdape": 1.0,
+                "mse": 28.0,
+                "rmse": 5.291502622129181,
+                "smape": 2.0
+              }
+            },
+            {
+              "horizonMs": 172800000,
+              "scores": {
+                "coverage": 0.5,
+                "mae": 4.500000000000001,
+                "mape": 6.0,
+                "mdape": 6.0,
+                "mse": 22.5,
+                "rmse": 4.743416490252569,
+                "smape": 1.4999999999999998
+              }
+            },
+            {
+              "horizonMs": 259200000,
+              "scores": {
+                "coverage": 0.25,
+                "mae": 2.6500000000000012,
+                "mape": 3.108108108108108,
+                "mdape": 3.1081081081081083,
+                "mse": 11.57,
+                "rmse": 3.4014702703389896,
+                "smape": 0.8712121212121211
+              }
+            },
+            {
+              "horizonMs": 345600000,
+              "scores": {
+                "coverage": 0.5,
+                "mae": 3.750000000000001,
+                "mape": 2.0,
+                "mdape": 2.0,
+                "mse": 21.25,
+                "rmse": 4.6097722286464435,
+                "smape": 0.9999999999999998
+              }
+            },
+            {
+              "horizonMs": 432000000,
+              "scores": {
+                "coverage": 0.75,
+                "mae": 2.9750000000000014,
+                "mape": 1.0894308943089435,
+                "mdape": 1.089430894308943,
+                "mse": 13.045000000000002,
+                "rmse": 3.6117862616716403,
+                "smape": 0.5982142857142856
+              }
+            },
+            {
+              "horizonMs": 518400000,
+              "scores": {
+                "coverage": 0.6666666666666667,
+                "mae": 15.166666666666668,
+                "mape": 14.0,
+                "mdape": 14.0,
+                "mse": 330.75,
+                "rmse": 18.186533479473212,
+                "smape": 1.75
+              }
+            },
+            {
+              "horizonMs": 604800000,
+              "scores": {
+                "coverage": 0.33333333333333337,
+                "mae": 10.333333333333334,
+                "mape": 7.027040314650932,
+                "mdape": 7.027040314650934,
+                "mse": 180.5,
+                "rmse": 13.435028842544403,
+                "smape": 0.9027918140474989
+              }
+            },
+            {
+              "horizonMs": 691200000,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 16.0,
+                "mape": 1.5,
+                "mdape": 1.5,
+                "mse": 256.0,
+                "rmse": 16.0,
+                "smape": 1.5
+              }
+            }
+          ],
+          "rollingWindow": 0.11764705882352941,
+          "windowRows": 2
+        },
+        {
+          "aggregation": {
+            "kind": "rolling",
+            "window": {
+              "kind": "count",
+              "rows": 3
+            }
+          },
+          "metrics": [
+            "mae",
+            "mse",
+            "rmse",
+            "mape",
+            "mdape",
+            "smape",
+            "coverage"
+          ],
+          "points": [
+            {
+              "horizonMs": 86400000,
+              "scores": {
+                "coverage": 0.6666666666666666,
+                "mae": 4.666666666666667,
+                "mape": 1.0,
+                "mdape": 1.0,
+                "mse": 28.0,
+                "rmse": 5.291502622129181,
+                "smape": 1.9999999999999993
+              }
+            },
+            {
+              "horizonMs": 172800000,
+              "scores": {
+                "coverage": 0.5555555555555556,
+                "mae": 4.555555555555555,
+                "mape": 4.333333333333333,
+                "mdape": 6.0,
+                "mse": 24.333333333333332,
+                "rmse": 4.932882862316247,
+                "smape": 1.666666666666666
+              }
+            },
+            {
+              "horizonMs": 259200000,
+              "scores": {
+                "coverage": 0.3333333333333333,
+                "mae": 3.2666666666666675,
+                "mape": 4.072072072072072,
+                "mdape": 6.0,
+                "mse": 15.213333333333333,
+                "rmse": 3.9004273270160197,
+                "smape": 1.0808080808080804
+              }
+            },
+            {
+              "horizonMs": 345600000,
+              "scores": {
+                "coverage": 0.5,
+                "mae": 3.7500000000000004,
+                "mape": 2.0,
+                "mdape": 2.0,
+                "mse": 21.25,
+                "rmse": 4.6097722286464435,
+                "smape": 0.9999999999999996
+              }
+            },
+            {
+              "horizonMs": 432000000,
+              "scores": {
+                "coverage": 0.6666666666666666,
+                "mae": 3.2333333333333343,
+                "mape": 1.3929539295392956,
+                "mdape": 2.0,
+                "mse": 15.780000000000001,
+                "rmse": 3.9724048132082412,
+                "smape": 0.7321428571428568
+              }
+            },
+            {
+              "horizonMs": 518400000,
+              "scores": {
+                "coverage": 0.6666666666666666,
+                "mae": 15.166666666666666,
+                "mape": 14.0,
+                "mdape": 14.0,
+                "mse": 330.75,
+                "rmse": 18.186533479473212,
+                "smape": 1.7499999999999998
+              }
+            },
+            {
+              "horizonMs": 604800000,
+              "scores": {
+                "coverage": 0.4444444444444445,
+                "mae": 11.944444444444445,
+                "mape": 9.351360209767288,
+                "mdape": 14.0,
+                "mse": 230.58333333333334,
+                "rmse": 15.184970639857468,
+                "smape": 1.1851945426983324
+              }
+            },
+            {
+              "horizonMs": 691200000,
+              "scores": {
+                "coverage": 0.6666666666666666,
+                "mae": 12.5,
+                "mape": 1.0180268764339562,
+                "mdape": 1.0,
+                "mse": 180.75,
+                "rmse": 13.444329659748751,
+                "smape": 1.0185278760316658
+              }
+            }
+          ],
+          "rollingWindow": 0.17647058823529413,
+          "windowRows": 3
+        },
+        {
+          "aggregation": {
+            "kind": "rolling",
+            "window": {
+              "kind": "count",
+              "rows": 13
+            }
+          },
+          "metrics": [
+            "mae",
+            "mse",
+            "rmse",
+            "mape",
+            "mdape",
+            "smape",
+            "coverage"
+          ],
+          "points": [
+            {
+              "horizonMs": 518400000,
+              "scores": {
+                "coverage": 0.5641025641025641,
+                "mae": 6.294871794871795,
+                "mape": 4.953467538833393,
+                "mdape": 2.0,
+                "mse": 91.05615384615385,
+                "rmse": 9.54233482152842,
+                "smape": 1.283757908757909
+              }
+            },
+            {
+              "horizonMs": 604800000,
+              "scores": {
+                "coverage": 0.5128205128205129,
+                "mae": 6.3589743589743595,
+                "mape": 4.880704510318152,
+                "mdape": 2.0,
+                "mse": 91.22923076923077,
+                "rmse": 9.551399414181713,
+                "smape": 1.13418741861137
+              }
+            },
+            {
+              "horizonMs": 691200000,
+              "scores": {
+                "coverage": 0.5769230769230769,
+                "mae": 8.115384615384615,
+                "mape": 4.5730122026258435,
+                "mdape": 2.0,
+                "mse": 126.72923076923077,
+                "rmse": 11.257407817487593,
+                "smape": 1.0957258801498315
+              }
+            }
+          ],
+          "rollingWindow": 0.7647058823529411,
+          "windowRows": 13
+        }
+      ],
+      "id": "cross-validation",
+      "metrics": [
+        "mae",
+        "mse",
+        "rmse",
+        "mape",
+        "mdape",
+        "smape",
+        "coverage"
+      ],
+      "rows": [
+        {
+          "actual": 2.0,
+          "fold": 0,
+          "horizonMs": 86400000,
+          "lower": 0.0,
+          "predicted": 0.0,
+          "upper": 2.0
+        },
+        {
+          "actual": 0.5,
+          "fold": 0,
+          "horizonMs": 172800000,
+          "lower": 0.5,
+          "predicted": 3.5,
+          "upper": 0.5
+        },
+        {
+          "actual": 1.0,
+          "fold": 0,
+          "horizonMs": 345600000,
+          "lower": 2.0,
+          "predicted": 3.0,
+          "upper": 4.0
+        },
+        {
+          "actual": 0.25,
+          "fold": 0,
+          "horizonMs": 518400000,
+          "lower": 0.0,
+          "predicted": 3.75,
+          "upper": 1.0
+        },
+        {
+          "actual": -4.0,
+          "fold": 1,
+          "horizonMs": 86400000,
+          "lower": -5.0,
+          "predicted": -0.0,
+          "upper": -1.0
+        },
+        {
+          "actual": -1.0,
+          "fold": 1,
+          "horizonMs": 172800000,
+          "lower": -8.0,
+          "predicted": -7.0,
+          "upper": -2.0
+        },
+        {
+          "actual": 3.7,
+          "fold": 1,
+          "horizonMs": 259200000,
+          "lower": 2.5,
+          "predicted": 2.9,
+          "upper": 3.5
+        },
+        {
+          "actual": 2.0,
+          "fold": 1,
+          "horizonMs": 345600000,
+          "lower": 2.0,
+          "predicted": 6.0,
+          "upper": 2.0
+        },
+        {
+          "actual": 1.0,
+          "fold": 1,
+          "horizonMs": 518400000,
+          "lower": 1.0,
+          "predicted": 15.0,
+          "upper": 16.0
+        },
+        {
+          "actual": 8.0,
+          "fold": 1,
+          "horizonMs": 691200000,
+          "lower": 7.0,
+          "predicted": 24.0,
+          "upper": 9.0
+        },
+        {
+          "actual": 8.0,
+          "fold": 2,
+          "horizonMs": 86400000,
+          "lower": 9.0,
+          "predicted": 0.0,
+          "upper": 10.0
+        },
+        {
+          "actual": -4.0,
+          "fold": 2,
+          "horizonMs": 345600000,
+          "lower": -13.0,
+          "predicted": -12.0,
+          "upper": -11.0
+        },
+        {
+          "actual": -12.3,
+          "fold": 2,
+          "horizonMs": 432000000,
+          "lower": -13.0,
+          "predicted": -10.1,
+          "upper": -12.3
+        },
+        {
+          "actual": -2.0,
+          "fold": 2,
+          "horizonMs": 518400000,
+          "lower": -31.0,
+          "predicted": -30.0,
+          "upper": -29.0
+        },
+        {
+          "actual": 101.7,
+          "fold": 2,
+          "horizonMs": 604800000,
+          "lower": 90.0,
+          "predicted": 96.2,
+          "upper": 100.0
+        },
+        {
+          "actual": -16.0,
+          "fold": 2,
+          "horizonMs": 691200000,
+          "lower": -17.0,
+          "predicted": -0.0,
+          "upper": -15.0
+        },
+        {
+          "actual": 0.5,
+          "fold": 3,
+          "horizonMs": 345600000,
+          "lower": 0.5,
+          "predicted": 1.5,
+          "upper": 1.5
+        }
+      ]
     },
     {
-      "actual": -4.0,
-      "horizonMs": 172800000,
-      "lower": -4.0,
-      "predicted": -2.0,
-      "upper": -2.0
+      "aggregations": [
+        {
+          "aggregation": {
+            "kind": "rows"
+          },
+          "metrics": [
+            "mae",
+            "mse",
+            "rmse",
+            "mdape",
+            "smape",
+            "coverage"
+          ],
+          "points": [
+            {
+              "horizonMs": 86400000,
+              "row": 0,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 2.0,
+                "mdape": 1.0,
+                "mse": 4.0,
+                "rmse": 2.0,
+                "smape": 2.0
+              }
+            },
+            {
+              "horizonMs": 172800000,
+              "row": 1,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 1.500000005,
+                "mdape": 300000001.0,
+                "mse": 2.250000015,
+                "rmse": 1.500000005,
+                "smape": 2.0
+              }
+            },
+            {
+              "horizonMs": 259200000,
+              "row": 2,
+              "scores": {
+                "coverage": 0.0,
+                "mae": 12.0,
+                "mdape": 2.0,
+                "mse": 144.0,
+                "rmse": 12.0,
+                "smape": 1.0
+              }
+            },
+            {
+              "horizonMs": 86400000,
+              "row": 3,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 4.0,
+                "mdape": 1.0,
+                "mse": 16.0,
+                "rmse": 4.0,
+                "smape": 2.0
+              }
+            },
+            {
+              "horizonMs": 259200000,
+              "row": 4,
+              "scores": {
+                "coverage": 0.0,
+                "mae": 6.0,
+                "mdape": 2.0,
+                "mse": 36.0,
+                "rmse": 6.0,
+                "smape": 1.0
+              }
+            }
+          ],
+          "rollingWindow": -1.0
+        },
+        {
+          "aggregation": {
+            "kind": "horizons"
+          },
+          "metrics": [
+            "mae",
+            "mse",
+            "rmse",
+            "mdape",
+            "smape",
+            "coverage"
+          ],
+          "points": [
+            {
+              "horizonMs": 86400000,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 3.0,
+                "mdape": 1.0,
+                "mse": 10.0,
+                "rmse": 3.1622776601683795,
+                "smape": 2.0
+              }
+            },
+            {
+              "horizonMs": 172800000,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 1.500000005,
+                "mdape": 300000001.0,
+                "mse": 2.250000015,
+                "rmse": 1.500000005,
+                "smape": 2.0
+              }
+            },
+            {
+              "horizonMs": 259200000,
+              "scores": {
+                "coverage": 0.0,
+                "mae": 9.0,
+                "mdape": 2.0,
+                "mse": 90.0,
+                "rmse": 9.486832980505138,
+                "smape": 1.0
+              }
+            }
+          ],
+          "rollingWindow": 0.0
+        },
+        {
+          "aggregation": {
+            "kind": "overall"
+          },
+          "metrics": [
+            "mae",
+            "mse",
+            "rmse",
+            "mdape",
+            "smape",
+            "coverage"
+          ],
+          "points": [
+            {
+              "horizonMs": 259200000,
+              "scores": {
+                "coverage": 0.6,
+                "mae": 5.100000001,
+                "mdape": 2.0,
+                "mse": 40.450000003,
+                "rmse": 6.3600314466989865,
+                "smape": 1.6
+              }
+            }
+          ],
+          "rollingWindow": 1.0
+        },
+        {
+          "aggregation": {
+            "kind": "rolling",
+            "window": {
+              "kind": "fraction",
+              "value": 0.5
+            }
+          },
+          "metrics": [
+            "mae",
+            "mse",
+            "rmse",
+            "mdape",
+            "smape",
+            "coverage"
+          ],
+          "points": [
+            {
+              "horizonMs": 86400000,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 3.0,
+                "mdape": 1.0,
+                "mse": 10.0,
+                "rmse": 3.1622776601683795,
+                "smape": 2.0
+              }
+            },
+            {
+              "horizonMs": 172800000,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 2.2500000025,
+                "mdape": 150000001.0,
+                "mse": 6.125000007500001,
+                "rmse": 2.474873735668145,
+                "smape": 2.0
+              }
+            },
+            {
+              "horizonMs": 259200000,
+              "scores": {
+                "coverage": 0.0,
+                "mae": 9.0,
+                "mdape": 2.0,
+                "mse": 90.0,
+                "rmse": 9.486832980505138,
+                "smape": 1.0
+              }
+            }
+          ],
+          "rollingWindow": 0.5,
+          "windowRows": 2
+        },
+        {
+          "aggregation": {
+            "kind": "rolling",
+            "window": {
+              "kind": "count",
+              "rows": 3
+            }
+          },
+          "metrics": [
+            "mae",
+            "mse",
+            "rmse",
+            "mdape",
+            "smape",
+            "coverage"
+          ],
+          "points": [
+            {
+              "horizonMs": 172800000,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 2.500000001666667,
+                "mdape": 1.0,
+                "mse": 7.416666671666671,
+                "rmse": 2.723355773979351,
+                "smape": 2.0
+              }
+            },
+            {
+              "horizonMs": 259200000,
+              "scores": {
+                "coverage": 0.3333333333333333,
+                "mae": 6.500000001666667,
+                "mdape": 2.0,
+                "mse": 60.750000005000004,
+                "rmse": 7.794228634380699,
+                "smape": 1.3333333333333333
+              }
+            }
+          ],
+          "rollingWindow": 0.6,
+          "windowRows": 3
+        }
+      ],
+      "id": "near-zero-actual",
+      "metrics": [
+        "mae",
+        "mse",
+        "rmse",
+        "mape",
+        "mdape",
+        "smape",
+        "coverage"
+      ],
+      "rows": [
+        {
+          "actual": 2.0,
+          "fold": 0,
+          "horizonMs": 86400000,
+          "lower": 0.0,
+          "predicted": 0.0,
+          "upper": 2.0
+        },
+        {
+          "actual": -5e-09,
+          "fold": 0,
+          "horizonMs": 172800000,
+          "lower": -1.0,
+          "predicted": 1.5,
+          "upper": 1.0
+        },
+        {
+          "actual": 6.0,
+          "fold": 0,
+          "horizonMs": 259200000,
+          "lower": 17.0,
+          "predicted": 18.0,
+          "upper": 19.0
+        },
+        {
+          "actual": -4.0,
+          "fold": 1,
+          "horizonMs": 86400000,
+          "lower": -4.0,
+          "predicted": -0.0,
+          "upper": 0.0
+        },
+        {
+          "actual": 3.0,
+          "fold": 1,
+          "horizonMs": 259200000,
+          "lower": 9.0,
+          "predicted": 9.0,
+          "upper": 9.0
+        }
+      ]
     },
     {
-      "actual": 4.0,
-      "horizonMs": 259200000,
-      "lower": 1.0,
-      "predicted": 2.0,
-      "upper": 4.0
+      "aggregations": [
+        {
+          "aggregation": {
+            "kind": "rows"
+          },
+          "metrics": [
+            "mae",
+            "mse",
+            "rmse",
+            "mape",
+            "mdape",
+            "smape",
+            "coverage"
+          ],
+          "points": [
+            {
+              "horizonMs": 86400000,
+              "row": 0,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 1e-08,
+                "mape": 1.0,
+                "mdape": 1.0,
+                "mse": 1.0000000000000001e-16,
+                "rmse": 1e-08,
+                "smape": 0.6666666666666666
+              }
+            },
+            {
+              "horizonMs": 172800000,
+              "row": 1,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 8.0,
+                "mape": 2.0,
+                "mdape": 2.0,
+                "mse": 64.0,
+                "rmse": 8.0,
+                "smape": 1.0
+              }
+            },
+            {
+              "horizonMs": 86400000,
+              "row": 2,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 0.75,
+                "mape": 0.10344827586206896,
+                "mdape": 0.10344827586206896,
+                "mse": 0.5625,
+                "rmse": 0.75,
+                "smape": 0.10909090909090909
+              }
+            }
+          ],
+          "rollingWindow": -1.0
+        },
+        {
+          "aggregation": {
+            "kind": "horizons"
+          },
+          "metrics": [
+            "mae",
+            "mse",
+            "rmse",
+            "mape",
+            "mdape",
+            "smape",
+            "coverage"
+          ],
+          "points": [
+            {
+              "horizonMs": 86400000,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 0.375000005,
+                "mape": 0.5517241379310345,
+                "mdape": 0.5517241379310345,
+                "mse": 0.28125000000000006,
+                "rmse": 0.5303300858899107,
+                "smape": 0.3878787878787879
+              }
+            },
+            {
+              "horizonMs": 172800000,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 8.0,
+                "mape": 2.0,
+                "mdape": 2.0,
+                "mse": 64.0,
+                "rmse": 8.0,
+                "smape": 1.0
+              }
+            }
+          ],
+          "rollingWindow": 0.0
+        },
+        {
+          "aggregation": {
+            "kind": "overall"
+          },
+          "metrics": [
+            "mae",
+            "mse",
+            "rmse",
+            "mape",
+            "mdape",
+            "smape",
+            "coverage"
+          ],
+          "points": [
+            {
+              "horizonMs": 172800000,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 2.91666667,
+                "mape": 1.0344827586206897,
+                "mdape": 1.0,
+                "mse": 21.520833333333332,
+                "rmse": 4.639055219905593,
+                "smape": 0.591919191919192
+              }
+            }
+          ],
+          "rollingWindow": 1.0
+        },
+        {
+          "aggregation": {
+            "kind": "rolling",
+            "window": {
+              "kind": "fraction",
+              "value": 0.5
+            }
+          },
+          "metrics": [
+            "mae",
+            "mse",
+            "rmse",
+            "mape",
+            "mdape",
+            "smape",
+            "coverage"
+          ],
+          "points": [
+            {
+              "horizonMs": 86400000,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 0.375000005,
+                "mape": 0.5517241379310345,
+                "mdape": 0.5517241379310345,
+                "mse": 0.28125000000000006,
+                "rmse": 0.5303300858899107,
+                "smape": 0.3878787878787879
+              }
+            },
+            {
+              "horizonMs": 172800000,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 8.0,
+                "mape": 2.0,
+                "mdape": 2.0,
+                "mse": 64.0,
+                "rmse": 8.0,
+                "smape": 1.0
+              }
+            }
+          ],
+          "rollingWindow": 0.5,
+          "windowRows": 1
+        }
+      ],
+      "id": "threshold-actual",
+      "metrics": [
+        "mae",
+        "mse",
+        "rmse",
+        "mape",
+        "mdape",
+        "smape",
+        "coverage"
+      ],
+      "rows": [
+        {
+          "actual": 1e-08,
+          "fold": 0,
+          "horizonMs": 86400000,
+          "lower": 0.0,
+          "predicted": 2e-08,
+          "upper": 1.0
+        },
+        {
+          "actual": 4.0,
+          "fold": 0,
+          "horizonMs": 172800000,
+          "lower": 4.0,
+          "predicted": 12.0,
+          "upper": 12.0
+        },
+        {
+          "actual": 7.25,
+          "fold": 1,
+          "horizonMs": 86400000,
+          "lower": 7.0,
+          "predicted": 6.5,
+          "upper": 7.5
+        }
+      ]
     },
     {
-      "actual": 8.0,
-      "horizonMs": 345600000,
-      "lower": 6.0,
-      "predicted": 6.0,
-      "upper": 7.0
+      "aggregations": [
+        {
+          "aggregation": {
+            "kind": "rows"
+          },
+          "metrics": [
+            "mae",
+            "mse",
+            "rmse",
+            "smape",
+            "coverage"
+          ],
+          "points": [
+            {
+              "horizonMs": 86400000,
+              "row": 0,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 0.0,
+                "mse": 0.0,
+                "rmse": 0.0,
+                "smape": 0.0
+              }
+            },
+            {
+              "horizonMs": 172800000,
+              "row": 1,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 4.0,
+                "mse": 16.0,
+                "rmse": 4.0,
+                "smape": 1.0
+              }
+            },
+            {
+              "horizonMs": 86400000,
+              "row": 2,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 0.0,
+                "mse": 0.0,
+                "rmse": 0.0,
+                "smape": 0.0
+              }
+            },
+            {
+              "horizonMs": 172800000,
+              "row": 3,
+              "scores": {
+                "coverage": 0.0,
+                "mae": 3.0,
+                "mse": 9.0,
+                "rmse": 3.0,
+                "smape": 2.0
+              }
+            },
+            {
+              "horizonMs": 259200000,
+              "row": 4,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 0.75,
+                "mse": 0.5625,
+                "rmse": 0.75,
+                "smape": 0.14634146341463414
+              }
+            }
+          ],
+          "rollingWindow": -1.0
+        },
+        {
+          "aggregation": {
+            "kind": "horizons"
+          },
+          "metrics": [
+            "mae",
+            "mse",
+            "rmse",
+            "smape",
+            "coverage"
+          ],
+          "points": [
+            {
+              "horizonMs": 86400000,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 0.0,
+                "mse": 0.0,
+                "rmse": 0.0,
+                "smape": 0.0
+              }
+            },
+            {
+              "horizonMs": 172800000,
+              "scores": {
+                "coverage": 0.5,
+                "mae": 3.5,
+                "mse": 12.5,
+                "rmse": 3.5355339059327378,
+                "smape": 1.5
+              }
+            },
+            {
+              "horizonMs": 259200000,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 0.75,
+                "mse": 0.5625,
+                "rmse": 0.75,
+                "smape": 0.14634146341463414
+              }
+            }
+          ],
+          "rollingWindow": 0.0
+        },
+        {
+          "aggregation": {
+            "kind": "overall"
+          },
+          "metrics": [
+            "mae",
+            "mse",
+            "rmse",
+            "smape",
+            "coverage"
+          ],
+          "points": [
+            {
+              "horizonMs": 259200000,
+              "scores": {
+                "coverage": 0.8,
+                "mae": 1.55,
+                "mse": 5.1125,
+                "rmse": 2.261083810919003,
+                "smape": 0.6292682926829268
+              }
+            }
+          ],
+          "rollingWindow": 1.0
+        },
+        {
+          "aggregation": {
+            "kind": "rolling",
+            "window": {
+              "kind": "fraction",
+              "value": 0.5
+            }
+          },
+          "metrics": [
+            "mae",
+            "mse",
+            "rmse",
+            "smape",
+            "coverage"
+          ],
+          "points": [
+            {
+              "horizonMs": 86400000,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 0.0,
+                "mse": 0.0,
+                "rmse": 0.0,
+                "smape": 0.0
+              }
+            },
+            {
+              "horizonMs": 172800000,
+              "scores": {
+                "coverage": 0.5,
+                "mae": 3.5,
+                "mse": 12.5,
+                "rmse": 3.5355339059327378,
+                "smape": 1.5
+              }
+            },
+            {
+              "horizonMs": 259200000,
+              "scores": {
+                "coverage": 0.75,
+                "mae": 2.125,
+                "mse": 6.53125,
+                "rmse": 2.555631037532609,
+                "smape": 0.8231707317073171
+              }
+            }
+          ],
+          "rollingWindow": 0.5,
+          "windowRows": 2
+        },
+        {
+          "aggregation": {
+            "kind": "rolling",
+            "window": {
+              "kind": "count",
+              "rows": 3
+            }
+          },
+          "metrics": [
+            "mae",
+            "mse",
+            "rmse",
+            "smape",
+            "coverage"
+          ],
+          "points": [
+            {
+              "horizonMs": 172800000,
+              "scores": {
+                "coverage": 0.6666666666666666,
+                "mae": 2.3333333333333335,
+                "mse": 8.333333333333334,
+                "rmse": 2.886751345948129,
+                "smape": 1.0
+              }
+            },
+            {
+              "horizonMs": 259200000,
+              "scores": {
+                "coverage": 0.6666666666666666,
+                "mae": 2.5833333333333335,
+                "mse": 8.520833333333334,
+                "rmse": 2.9190466480228325,
+                "smape": 1.048780487804878
+              }
+            }
+          ],
+          "rollingWindow": 0.6,
+          "windowRows": 3
+        }
+      ],
+      "id": "zero-actual",
+      "metrics": [
+        "mae",
+        "mse",
+        "rmse",
+        "mape",
+        "smape",
+        "coverage"
+      ],
+      "rows": [
+        {
+          "actual": 0.0,
+          "fold": 0,
+          "horizonMs": 86400000,
+          "lower": 0.0,
+          "predicted": 0.0,
+          "upper": 0.0
+        },
+        {
+          "actual": 2.0,
+          "fold": 0,
+          "horizonMs": 172800000,
+          "lower": 1.0,
+          "predicted": 6.0,
+          "upper": 3.0
+        },
+        {
+          "actual": 0.0,
+          "fold": 1,
+          "horizonMs": 86400000,
+          "lower": -1.0,
+          "predicted": 0.0,
+          "upper": 1.0
+        },
+        {
+          "actual": -3.0,
+          "fold": 1,
+          "horizonMs": 172800000,
+          "lower": -2.0,
+          "predicted": -0.0,
+          "upper": 0.0
+        },
+        {
+          "actual": 5.5,
+          "fold": 1,
+          "horizonMs": 259200000,
+          "lower": 5.0,
+          "predicted": 4.75,
+          "upper": 6.0
+        }
+      ]
     }
   ],
+  "kind": "evaluation-metrics",
   "sourceMethod": "Prophet 1.4.0 performance_metrics"
 }

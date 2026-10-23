@@ -164,7 +164,6 @@ export const linearGrowthEdgeCases: ReadonlyArray<BenchmarkCase> = [
         cutoffs: ["2020-01-18T00:00:00.000Z", "2020-01-19T00:00:00.000Z"],
       },
       metricAggregation: "overall",
-      mapeZeroActual: "exclude",
       candidates: [{ id: "control", changepointPriorScale: 0.05 }],
       holdoutRows: 8,
     },

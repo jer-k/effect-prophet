@@ -1103,54 +1103,195 @@ def make_evaluation_cutoff_case(spec: EvaluationCutoffCaseSpec) -> dict[str, Any
     }
 
 
-def make_evaluation_metrics_fixture() -> dict[str, Any]:
-    """Pin unmodified Prophet metrics on nonzero, finite interval forecast instances.
+EVALUATION_METRIC_NAMES = ("mae", "mse", "rmse", "mape", "mdape", "smape", "coverage")
 
-    Distinct horizons make Python's rolling boundary and our whole-group boundary
-    identical here; overlapping-horizon differences are covered in the TS tests.
-    """
-    offsets = (1, 2, 3, 4)
-    actuals = (2.0, -4.0, 4.0, 8.0)
-    predictions = (1.0, -2.0, 2.0, 6.0)
-    lower = (1.0, -4.0, 1.0, 6.0)
-    upper = (2.0, -2.0, 4.0, 7.0)
-    cutoff = pd.Timestamp("2024-01-01")
-    frame = pd.DataFrame({
-        "ds": [cutoff + pd.Timedelta(days=offset) for offset in offsets],
-        "cutoff": [cutoff] * len(offsets),
-        "y": actuals,
-        "yhat": predictions,
-        "yhat_lower": lower,
-        "yhat_upper": upper,
+# Rows are (fold, horizon days, actual, predicted, lower, upper), in cross-validation order.
+EvaluationMetricRow = tuple[int, int, float, float, float, float]
+
+
+def ratio_row(fold: int, days: int, actual: float, ratio: float, lower: float, upper: float) -> EvaluationMetricRow:
+    """A row predicting `ratio * actual`, whose percentage errors are short binary fractions."""
+
+    return (fold, days, actual, ratio * actual, lower, upper)
+
+
+# Every horizon with more than one row predicts 0, 3, 7 or 15 times its actuals, so its absolute,
+# squared and percentage errors are short binary fractions that pandas sums exactly in any order.
+# Groups that a window borrows only part of share one APE, so the borrowed rows' median doesn't
+# depend on which rows are taken. Single-row horizons carry arbitrary values, which exercise the
+# rounding of Prophet's running window sum and of its proportional share of the oldest group.
+EVALUATION_METRIC_CASES: tuple[dict[str, Any], ...] = (
+    {
+        "id": "cross-validation",
+        "metrics": EVALUATION_METRIC_NAMES,
+        "rows": (
+            ratio_row(0, 1, 2.0, 0.0, 0.0, 2.0),
+            ratio_row(0, 2, 0.5, 7.0, 0.5, 0.5),
+            ratio_row(0, 4, 1.0, 3.0, 2.0, 4.0),
+            ratio_row(0, 6, 0.25, 15.0, 0.0, 1.0),
+            ratio_row(1, 1, -4.0, 0.0, -5.0, -1.0),
+            ratio_row(1, 2, -1.0, 7.0, -8.0, -2.0),
+            (1, 3, 3.7, 2.9, 2.5, 3.5),
+            ratio_row(1, 4, 2.0, 3.0, 2.0, 2.0),
+            ratio_row(1, 6, 1.0, 15.0, 1.0, 16.0),
+            ratio_row(1, 8, 8.0, 3.0, 7.0, 9.0),
+            ratio_row(2, 1, 8.0, 0.0, 9.0, 10.0),
+            ratio_row(2, 4, -4.0, 3.0, -13.0, -11.0),
+            (2, 5, -12.3, -10.1, -13.0, -12.3),
+            ratio_row(2, 6, -2.0, 15.0, -31.0, -29.0),
+            (2, 7, 101.7, 96.2, 90.0, 100.0),
+            ratio_row(2, 8, -16.0, 0.0, -17.0, -15.0),
+            ratio_row(3, 4, 0.5, 3.0, 0.5, 1.5),
+        ),
+        # Seventeen rows: a 5% window clamps to one row, and the 13-row and full windows split
+        # or span every horizon group.
+        "fractions": (0.05, 0.25, 0.5, 1.0),
+        "counts": (2, 3, 13),
+    },
+    {
+        "id": "near-zero-actual",
+        "metrics": EVALUATION_METRIC_NAMES,
+        "rows": (
+            ratio_row(0, 1, 2.0, 0.0, 0.0, 2.0),
+            (0, 2, -5e-9, 1.5, -1.0, 1.0),
+            ratio_row(0, 3, 6.0, 3.0, 17.0, 19.0),
+            ratio_row(1, 1, -4.0, 0.0, -4.0, 0.0),
+            ratio_row(1, 3, 3.0, 3.0, 9.0, 9.0),
+        ),
+        "fractions": (0.5,),
+        "counts": (3,),
+    },
+    {
+        "id": "threshold-actual",
+        "metrics": EVALUATION_METRIC_NAMES,
+        "rows": (
+            (0, 1, 1e-8, 2e-8, 0.0, 1.0),
+            ratio_row(0, 2, 4.0, 3.0, 4.0, 12.0),
+            (1, 1, 7.25, 6.5, 7.0, 7.5),
+        ),
+        "fractions": (0.5,),
+        "counts": (),
+    },
+    {
+        # An actual of zero makes MDAPE non-finite, so this case leaves it out.
+        "id": "zero-actual",
+        "metrics": ("mae", "mse", "rmse", "mape", "smape", "coverage"),
+        "rows": (
+            ratio_row(0, 1, 0.0, 0.0, 0.0, 0.0),
+            ratio_row(0, 2, 2.0, 3.0, 1.0, 3.0),
+            ratio_row(1, 1, 0.0, 0.0, -1.0, 1.0),
+            ratio_row(1, 2, -3.0, 0.0, -2.0, 0.0),
+            (1, 3, 5.5, 4.75, 5.0, 6.0),
+        ),
+        "fractions": (0.5,),
+        "counts": (3,),
+    },
+)
+
+
+def evaluation_metric_frame(rows: Sequence[EvaluationMetricRow]) -> pd.DataFrame:
+    """Lay rows out as Prophet's `cross_validation` returns them, one weekly cutoff per fold."""
+
+    first_cutoff = pd.Timestamp("2024-01-01")
+    cutoffs = [first_cutoff + pd.Timedelta(days=7 * row[0]) for row in rows]
+
+    return pd.DataFrame({
+        "ds": [cutoff + pd.Timedelta(days=row[1]) for cutoff, row in zip(cutoffs, rows, strict=True)],
+        "cutoff": cutoffs,
+        "y": [row[2] for row in rows],
+        "yhat": [row[3] for row in rows],
+        "yhat_lower": [row[4] for row in rows],
+        "yhat_upper": [row[5] for row in rows],
     })
-    names = ["mae", "mse", "rmse", "mape", "mdape", "smape", "coverage"]
-    modes = {"rows": -1.0, "horizons": 0.0, "rolling": 0.5, "overall": 1.0}
-    expected = {}
-    for mode, window in modes.items():
-        reference = performance_metrics(frame, metrics=names.copy(), rolling_window=window)
-        assert reference is not None
-        expected[mode] = [
-            {
-                "horizonMs": int(row.horizon / pd.Timedelta(milliseconds=1)),
-                "scores": {name: float(format(getattr(row, name), ".12g")) for name in names},
-            }
-            for row in reference.itertuples()
+
+
+def evaluation_metric_points(frame: pd.DataFrame, metrics: Sequence[str], rolling_window: float) -> dict[str, Any]:
+    """Run unmodified `performance_metrics` and keep every score at full precision."""
+
+    result = performance_metrics(frame, metrics=list(metrics), rolling_window=rolling_window)
+    assert result is not None
+    returned = [name for name in metrics if name in result.columns]
+
+    def point(row: Any) -> dict[str, Any]:
+        return {
+            "horizonMs": int(row.horizon / pd.Timedelta(milliseconds=1)),
+            "scores": {name: float(getattr(row, name)) for name in returned},
+        }
+
+    if rolling_window < 0:
+        # Per-row results keep the input index; Prophet's order among equal horizons is unspecified.
+        points = [{"row": int(index), **point(row)} for index, row in zip(result.index, result.itertuples())]
+        points.sort(key=lambda entry: entry["row"])
+    else:
+        points = [point(row) for row in result.itertuples()]
+
+    return {"metrics": returned, "points": points}
+
+
+def make_evaluation_metrics_fixture() -> dict[str, Any]:
+    """Pin unmodified Prophet 1.4.0 `performance_metrics` on cross-validation-shaped rows.
+
+    Cases repeat horizons, split horizon groups at window boundaries, cover every row in one
+    window, borrow earlier rows for MDAPE, and drop MAPE for near-zero actuals. pandas' `sort_values`
+    leaves equal horizons in an unspecified order, so each result is recomputed on shuffled inputs
+    and must be identical: every expected value is independent of that order. The remaining
+    arithmetic is IEEE addition, subtraction, multiplication, division and square root, so the
+    full-precision values are the same on every CPU.
+    """
+
+    cases: list[dict[str, Any]] = []
+
+    for spec in EVALUATION_METRIC_CASES:
+        rows = spec["rows"]
+        count = len(rows)
+        frame = evaluation_metric_frame(rows)
+        windows: list[tuple[dict[str, Any], float]] = [
+            ({"kind": "rows"}, -1.0),
+            ({"kind": "horizons"}, 0.0),
+            ({"kind": "overall"}, 1.0),
         ]
+
+        for fraction in spec["fractions"]:
+            windows.append(({"kind": "rolling", "window": {"kind": "fraction", "value": fraction}}, fraction))
+
+        for window_rows in spec["counts"]:
+            rolling_window = window_rows / count
+            assert int(rolling_window * count) == window_rows, (spec["id"], window_rows)
+            windows.append(({"kind": "rolling", "window": {"kind": "count", "rows": window_rows}}, rolling_window))
+
+        aggregations: list[dict[str, Any]] = []
+        shuffles = np.random.default_rng(119)
+
+        for aggregation, rolling_window in windows:
+            expected = evaluation_metric_points(frame, spec["metrics"], rolling_window)
+
+            for _ in range(32):
+                shuffled = frame.iloc[shuffles.permutation(count)]
+                assert evaluation_metric_points(shuffled, spec["metrics"], rolling_window) == expected, (
+                    f"{spec['id']} {aggregation} depends on the order of equal horizons"
+                )
+
+            entry: dict[str, Any] = {"aggregation": aggregation, "rollingWindow": rolling_window, **expected}
+
+            if aggregation["kind"] == "rolling":
+                entry["windowRows"] = min(max(int(rolling_window * count), 1), count)
+
+            aggregations.append(entry)
+
+        cases.append({
+            "id": spec["id"],
+            "metrics": list(spec["metrics"]),
+            "rows": [
+                {"fold": fold, "horizonMs": days * DAY_MILLISECONDS, "actual": actual, "predicted": predicted, "lower": lower, "upper": upper}
+                for fold, days, actual, predicted, lower, upper in rows
+            ],
+            "aggregations": aggregations,
+        })
 
     return {
         "kind": "evaluation-metrics",
         "sourceMethod": "Prophet 1.4.0 performance_metrics",
-        "rows": [
-            {
-                "horizonMs": offset * 86_400_000,
-                "actual": actual,
-                "predicted": predicted,
-                "lower": low,
-                "upper": high,
-            }
-            for offset, actual, predicted, low, high in zip(offsets, actuals, predictions, lower, upper)
-        ],
-        "expected": expected,
+        "cases": cases,
     }
 
 

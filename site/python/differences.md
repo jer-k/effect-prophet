@@ -47,6 +47,18 @@ Python, where it differs on purpose, and the smaller behavior differences.
   runtime gives the engine less. Each Fourier order adds two parameters, and changepoints, events and
   regressors add more. Past the limit, `fit` fails with a `FittingError` whose `reason` is
   `"memory-limit"`, with `parameterCount` and `memoryLimitBytes`. Python has no such limit.
+- **Percentage scores near zero.** When an actual value is within `1e-8` of zero, Python drops
+  `mape` from `performance_metrics` and logs a message. `performanceMetrics` fails with an
+  `EvaluationMetricError` whose `reason` is `"zero-actual"` instead, so a requested score never
+  goes missing. For `mdape`, Python keeps the infinite or `NaN` ratio an actual of exactly zero
+  produces, and the median may or may not hide it. `performanceMetrics` fails the same way for
+  that actual. A score that overflows fails with `"non-finite"` where Python returns infinity.
+  See [Actual values of zero](../examples/cross-validation#actual-values-of-zero).
+- **Order of forecasts with the same horizon.** Python sorts forecasts by horizon with a sort
+  that leaves equal horizons in no fixed order. `performanceMetrics` keeps them in the order
+  `crossValidate` returns them, oldest round first. This decides the order of `rows` scores and
+  which forecasts `mdape` borrows from a shorter horizon to fill a window. It can also change the
+  last digit of a total. Otherwise scores match Python's exactly.
 - **Inputs that cannot be fitted return an error.** If every row has the same timestamp, there
   is no way to draw a trend, so `fit` fails where Python returns `NaN` forecasts. These are the
   [intentional differences](/benchmarks/linear#intentional-differences) in the benchmarks.

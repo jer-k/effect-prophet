@@ -1,8 +1,6 @@
 import { Effect } from "effect";
 import { beforeAll, describe, expect, it } from "vitest";
 
-import { loadProphetFixtureBundle } from "../integration/helpers/prophet-fixture";
-
 import {
   EvaluationMetricError,
   InputValidationError,
@@ -93,21 +91,17 @@ describe("performanceMetrics", () => {
 
     if (result.kind !== "overall") return;
     expect(result.bucket.rowCount).toBe(4);
-    expect(result.bucket.scores).toEqual(
-      [
-        { metric: "mae", value: 1.75 },
-        { metric: "mse", value: 3.25 },
-        { metric: "rmse", value: Math.sqrt(3.25) },
-        { metric: "mape", value: 0.4375 },
-        { metric: "mdape", value: 0.5, includedCount: 4, excludedCount: 0 },
-        { metric: "smape", value: (2 / 3 + 2 / 3 + 2 / 3 + 2 / 7) / 4 },
-      ].map((score) =>
-        score.metric === "mape" ? { ...score, includedCount: 4, excludedCount: 0 } : score,
-      ),
-    );
+    expect(result.bucket.scores).toEqual([
+      { metric: "mae", value: 1.75 },
+      { metric: "mse", value: 3.25 },
+      { metric: "rmse", value: Math.sqrt(3.25) },
+      { metric: "mape", value: 0.4375 },
+      { metric: "mdape", value: 0.5 },
+      { metric: "smape", value: (2 / 3 + 2 / 3 + 2 / 3 + 2 / 7) / 4 },
+    ]);
   });
 
-  it("preserves fold/input row order and aggregates exact equal horizons across folds", async () => {
+  it("sorts rows by horizon, keeping input order for ties, and aggregates exact horizons", async () => {
     const source = point([
       [0, 2 * day, 4, 3],
       [0, day, 1, 0],
@@ -132,9 +126,9 @@ describe("performanceMetrics", () => {
           entry.scores[0]?.value,
         ]),
     ).toEqual([
-      [0, 2 * day, 1, 1],
       [0, day, 1, 1],
       [1, day, 1, 3],
+      [0, 2 * day, 1, 1],
       [1, 2 * day, 1, 4],
     ]);
     expect(
@@ -147,7 +141,7 @@ describe("performanceMetrics", () => {
     expect(source.rows.map((entry) => entry.horizonMs)).toEqual([2 * day, day, day, 2 * day]);
   });
 
-  it("uses whole equal-horizon groups for right-aligned count and fraction windows", async () => {
+  it("averages exactly w rows, taking a proportional share of the oldest horizon group", async () => {
     const source = point([
       [0, day, 1, 0],
       [1, day, 3, 0],
@@ -166,13 +160,22 @@ describe("performanceMetrics", () => {
         }),
       );
 
+      // At 2 days the window holds the 5 and half of the first day's sum of 4: (5 + 4 / 2) / 2.
       expect(
-        report.kind === "rolling" &&
-          report.points.map((entry) => [entry.horizonMs, entry.rowCount, entry.scores[0]?.value]),
+        report.kind === "rolling" && [
+          report.windowRows,
+          report.points.map((entry) => [
+            entry.horizonMs,
+            ...entry.scores.map(({ value }) => value),
+          ]),
+        ],
       ).toEqual([
-        [day, 2, 2],
-        [2 * day, 3, 3],
-        [3 * day, 2, 6],
+        2,
+        [
+          [day, 2, Math.sqrt(5)],
+          [2 * day, 3.5, Math.sqrt(15)],
+          [3 * day, 6, Math.sqrt(37)],
+        ],
       ]);
     }
   });
@@ -220,57 +223,91 @@ describe("performanceMetrics", () => {
     expect(preflight).toMatchObject({ metric: "coverage", reason: "unavailable" });
   });
 
-  it("enforces zero policies with bucket-local included/excluded counts", async () => {
-    const source = point([
-      [0, day, 0, 0],
-      [0, 2 * day, 2, 1],
-      [1, day, -0, 1],
-    ]);
-
-    const error = await Effect.runPromise(
+  it("fails MAPE for near-zero actuals and MDAPE for exact zeros, as Prophet's rules require", async () => {
+    const zero = await Effect.runPromise(
       Effect.flip(
-        performanceMetrics(source, { metrics: ["mape"], aggregation: { kind: "overall" } }),
+        performanceMetrics(
+          point([
+            [0, 2 * day, 2, 1],
+            [1, day, -0, 1],
+          ]),
+          { metrics: ["mape"], aggregation: { kind: "horizons" } },
+        ),
       ),
     );
 
-    expect(error).toMatchObject({ reason: "zero-actual", metric: "mape", bucket: 0 });
+    expect(zero).toMatchObject({ reason: "zero-actual", metric: "mape", bucket: 0 });
 
-    const report = await Effect.runPromise(
-      performanceMetrics(source, {
-        metrics: ["mape", "mdape"],
-        aggregation: { kind: "overall" },
-        mapeZeroActual: "exclude",
-      }),
-    );
-
-    expect(report.kind === "overall" && report.bucket.scores).toEqual([
-      { metric: "mape", value: 0.5, includedCount: 1, excludedCount: 2 },
-      { metric: "mdape", value: 0.5, includedCount: 1, excludedCount: 2 },
-    ]);
-
-    const empty = await Effect.runPromise(
+    // Prophet skips MAPE whenever any |actual| is below 1e-8, but still divides for MDAPE.
+    const nearZero = await Effect.runPromise(
       Effect.flip(
-        performanceMetrics(point([[0, day, 0, 0]]), {
-          metrics: ["mdape"],
-          aggregation: { kind: "rows" },
-          mapeZeroActual: "exclude",
+        performanceMetrics(point([[0, day, -1e-9, 0]]), {
+          metrics: ["mdape", "mape"],
+          aggregation: { kind: "overall" },
         }),
       ),
     );
 
-    expect(empty).toMatchObject({ reason: "empty-bucket", metric: "mdape", bucket: 0 });
+    expect(nearZero).toMatchObject({ reason: "zero-actual", metric: "mape", stage: "division" });
 
-    // Prophet skips MAPE globally below 1e-8; an exact nonzero actual remains here.
-    const nearZero = await Effect.runPromise(
-      performanceMetrics(point([[0, day, 1e-9, 0]]), {
-        metrics: ["mape", "mdape"],
+    const scored = await Effect.runPromise(
+      performanceMetrics(
+        point([
+          [0, day, 1e-8, 0],
+          [0, 2 * day, 1e-9, 0],
+        ]),
+        { metrics: ["mdape"], aggregation: { kind: "rows" } },
+      ),
+    );
+
+    expect(scored.kind === "rows" && scored.points.map((entry) => entry.scores[0]?.value)).toEqual([
+      1, 1,
+    ]);
+
+    const threshold = await Effect.runPromise(
+      performanceMetrics(point([[0, day, 1e-8, 0]]), {
+        metrics: ["mape"],
         aggregation: { kind: "overall" },
       }),
     );
 
-    expect(
-      nearZero.kind === "overall" && nearZero.bucket.scores.map((score) => score.value),
-    ).toEqual([1, 1]);
+    expect(threshold.kind === "overall" && threshold.bucket.scores).toEqual([
+      { metric: "mape", value: 1 },
+    ]);
+
+    const mdape = await Effect.runPromise(
+      Effect.flip(
+        performanceMetrics(
+          point([
+            [0, day, 1, 0],
+            [0, 2 * day, 0, 1],
+          ]),
+          {
+            metrics: ["mdape"],
+            aggregation: { kind: "rolling", window: { kind: "count", rows: 1 } },
+          },
+        ),
+      ),
+    );
+
+    expect(mdape).toMatchObject({ reason: "zero-actual", metric: "mdape", bucket: 1 });
+
+    const removed = await Effect.runPromise(
+      Effect.flip(
+        performanceMetrics(
+          point([[0, day, 1, 0]]),
+          JSON.parse(
+            JSON.stringify({
+              metrics: ["mape"],
+              aggregation: { kind: "overall" },
+              mapeZeroActual: "exclude",
+            }),
+          ),
+        ),
+      ),
+    );
+
+    expect(removed).toBeInstanceOf(InputValidationError);
   });
 
   it("keeps nonnegative finite scores, aggregation identities and permutation-invariant buckets", async () => {
@@ -315,59 +352,74 @@ describe("performanceMetrics", () => {
     }
   });
 
-  it("matches recomputed whole-group buckets including MDAPE and excluded zeros", async () => {
-    const values = [
-      [0, day, 0, 1],
-      [1, day, 3, 1],
-      [0, 2 * day, 5, 1],
-      [0, 3 * day, 2, 0],
-      [1, 3 * day, 0, 0],
-      [0, 4 * day, 7, 2],
-    ] as const;
+  it("matches an independent recomputation of every exact w-row window", async () => {
+    const values = Array.from({ length: 23 }, (_, index) => {
+      const fold = index % 3;
+      const horizon = ((index * 7) % 6) + 1 + (index % 5 === 0 ? 0 : (index % 2) * 2);
+
+      return [fold, horizon * day, ((index * 37) % 19) + 1.25, ((index * 11) % 13) - 4] as const;
+    });
 
     const source = point(values);
+    const sorted = Array.from(source.rows).sort((left, right) => left.horizonMs - right.horizonMs);
+    const horizons = Array.from(new Set(sorted.map((row) => row.horizonMs)));
+    const absolute = (row: CrossValidationPointRow) => Math.abs(row.actual - row.predicted);
+    const percentage = (row: CrossValidationPointRow) => absolute(row) / Math.abs(row.actual);
 
-    const options = {
-      metrics: ["mae", "mse", "rmse", "mape", "mdape", "smape"] as const,
-      mapeZeroActual: "exclude" as const,
-    };
+    for (let windowRows = 1; windowRows <= values.length; windowRows += 1) {
+      const report = await Effect.runPromise(
+        performanceMetrics(source, {
+          metrics: ["mae", "mdape"],
+          aggregation: { kind: "rolling", window: { kind: "count", rows: windowRows } },
+        }),
+      );
 
-    const report = await Effect.runPromise(
-      performanceMetrics(source, {
-        ...options,
-        aggregation: { kind: "rolling", window: { kind: "count", rows: 3 } },
-      }),
-    );
+      if (report.kind !== "rolling") throw new Error("Expected a rolling report");
 
-    expect(report.kind).toBe("rolling");
+      const expected = horizons.flatMap((horizon) => {
+        const start = sorted.findIndex((row) => row.horizonMs === horizon);
+        const end = sorted.filter((row) => row.horizonMs <= horizon).length;
 
-    if (report.kind !== "rolling") return;
+        if (end < windowRows) return [];
 
-    for (const bucket of report.points) {
-      const sorted = source.rows
-        .filter((row) => row.horizonMs <= bucket.horizonMs)
-        .sort((left, right) => left.horizonMs - right.horizonMs);
+        // Whole groups back to the one that fills the window, then a share of that oldest group.
+        let mean = 0;
+        let remaining = windowRows;
 
-      const distinct = Array.from(new Set(sorted.map((row) => row.horizonMs))).reverse();
-      const selected: Array<CrossValidationPointRow> = [];
+        for (const group of horizons.filter((candidate) => candidate <= horizon).reverse()) {
+          const members = sorted.filter((row) => row.horizonMs === group);
+          const share = Math.min(1, remaining / members.length);
 
-      for (const horizon of distinct) {
-        selected.unshift(...sorted.filter((row) => row.horizonMs === horizon));
+          mean += (share * members.reduce((total, row) => total + absolute(row), 0)) / windowRows;
+          remaining -= members.length;
 
-        if (selected.length >= 3) break;
+          if (remaining <= 0) break;
+        }
+
+        // MDAPE takes the whole group, or fills it to w with the rows just before it.
+        const window = sorted
+          .slice(Math.min(start, end - windowRows), end)
+          .map(percentage)
+          .sort((left, right) => left - right);
+
+        const middle = Math.floor(window.length / 2);
+
+        const median =
+          window.length % 2 === 1
+            ? (window[middle] ?? NaN)
+            : ((window[middle - 1] ?? NaN) + (window[middle] ?? NaN)) / 2;
+
+        return [{ horizon, mean, median }];
+      });
+
+      expect(report.points.map((entry) => entry.horizonMs)).toEqual(
+        expected.map(({ horizon }) => horizon),
+      );
+
+      for (const [index, entry] of report.points.entries()) {
+        expect(entry.scores[0]?.value).toBeCloseTo(expected[index]?.mean ?? NaN, 12);
+        expect(entry.scores[1]?.value).toBe(expected[index]?.median);
       }
-
-      const expected = await Effect.runPromise(
-        performanceMetrics(
-          { ...source, rows: selected },
-          { ...options, aggregation: { kind: "overall" } },
-        ),
-      );
-
-      expect(expected.kind === "overall" && bucket.scores).toEqual(
-        expected.kind === "overall" && expected.bucket.scores,
-      );
-      expect(bucket.rowCount).toBe(selected.length);
     }
   });
 
@@ -386,58 +438,9 @@ describe("performanceMetrics", () => {
       }),
     );
 
-    expect(report.kind === "rolling" && report.points.length).toBe(1_001);
-    expect(report.kind === "rolling" && report.points.at(-1)?.rowCount).toBe(1_000);
-  });
-
-  it("matches pinned, unmodified Prophet 1.4.0 diagnostics where contracts coincide", async () => {
-    const { evaluationMetrics: fixture } = await Effect.runPromise(loadProphetFixtureBundle());
-
-    const source: IntervalCrossValidationResult = {
-      kind: "intervals",
-      plan,
-      folds: [],
-      simulation: simulationIdentity,
-      sampleCount: 10,
-      intervalWidth: 0.8,
-      rows: fixture.rows.map((row) => ({
-        fold: 0,
-        cutoff: Date.UTC(2024, 0, 1),
-        timestamp: Date.UTC(2024, 0, 1) + row.horizonMs,
-        ...row,
-      })),
-    };
-
-    const all = ["mae", "mse", "rmse", "mape", "mdape", "smape", "coverage"] as const;
-
-    const aggregations = [
-      { kind: "rows" },
-      { kind: "horizons" },
-      { kind: "rolling", window: { kind: "fraction", value: 0.5 } },
-      { kind: "overall" },
-    ] as const;
-
-    for (const aggregation of aggregations) {
-      const report = await Effect.runPromise(
-        performanceMetrics(source, { metrics: all, aggregation }),
-      );
-
-      const expected = fixture.expected[aggregation.kind];
-      const points = report.kind === "overall" ? [report.bucket] : report.points;
-
-      expect(points).toHaveLength(expected.length);
-
-      for (const [index, bucket] of points.entries()) {
-        const reference = expected[index];
-        expect(reference).toBeDefined();
-
-        if (reference === undefined) continue;
-
-        for (const score of bucket.scores) {
-          expect(score.value).toBeCloseTo(reference.scores[score.metric], 10);
-        }
-      }
-    }
+    expect(report.kind === "rolling" && [report.windowRows, report.points.length]).toEqual([
+      1_000, 1_001,
+    ]);
   });
 
   it("returns typed input and arithmetic failures without mutating input", async () => {
@@ -462,6 +465,21 @@ describe("performanceMetrics", () => {
 
     expect(difference).toMatchObject({ reason: "non-finite", stage: "difference" });
     expect(source.rows[0]?.actual).toBe(1e308);
+
+    // Prophet totals each horizon group before dividing, so a group can overflow on its own.
+    const sum = await Effect.runPromise(
+      Effect.flip(
+        performanceMetrics(
+          point([
+            [0, day, 1e308, 0],
+            [1, day, 1e308, 0],
+          ]),
+          { metrics: ["mae"], aggregation: { kind: "horizons" } },
+        ),
+      ),
+    );
+
+    expect(sum).toMatchObject({ reason: "non-finite", metric: "mae", stage: "sum", bucket: 0 });
 
     for (const input of [
       { metrics: [], aggregation: { kind: "rows" } },
