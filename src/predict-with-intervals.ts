@@ -63,7 +63,7 @@ export const predictWithIntervals = Effect.fn("Prophet.predictWithIntervals")(fu
   const forecasts = yield* predict(model, rowsInput);
   const alignment = alignIntervalRows(intervals, options, forecasts);
 
-  if (alignment.kind !== "aligned") {
+  if (alignment.kind !== "aligned" || forecasts.length !== rows.length) {
     return yield* Effect.fail(
       new PredictionError({
         reason: "backend-failure",
