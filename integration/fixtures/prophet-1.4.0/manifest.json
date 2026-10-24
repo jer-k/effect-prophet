@@ -106,7 +106,7 @@
     "platform": "linux/amd64",
     "uvVersion": "0.8.15"
   },
-  "generatorRevision": "f5a09e0d2d255e033b974e2a10db285e8aebe2eb0805468c989ac80aca6bd0e3",
+  "generatorRevision": "c927e0526572606903cd6c7231bea9ddd48859c4ec03119c72ee003c07d11781",
   "numericalEnvironment": [
     {
       "name": "cmdstanpy",
