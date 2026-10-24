@@ -621,6 +621,66 @@ export const correlatedRegressorDatasets: ReadonlyArray<BenchmarkDataset> = [
   }),
 ];
 
+/** Outliers added to the anomaly histories, by row index, with their offsets in target units. */
+export const anomalyIncidents = {
+  "linear-anomalies": new Map([
+    [50, 15],
+    [120, -15],
+    [230, 12],
+    [300, -12],
+  ]),
+  "flat-anomalies": new Map([
+    [30, 8],
+    [95, -8],
+    [150, 6],
+  ]),
+  "logistic-anomalies": new Map([
+    [70, 25],
+    [180, -25],
+    [290, 20],
+  ]),
+} as const;
+
+/** Timestamp of a daily row at an index, as every anomaly history spaces its rows. */
+export const anomalyTimestamp = (index: number): string => timestampAt(index);
+
+/** Histories with known outliers, checked in-sample: every row is both fitted and assessed. */
+export const anomalyDatasets: ReadonlyArray<BenchmarkDataset> = [
+  makeDataset({
+    id: "linear-anomalies",
+    observationCount: 365,
+    predictionCount: 0,
+    recipe:
+      "linear-anomalies-v1:piecewise+weekly+bounded-noise-x10+outliers@50(+15),120(-15),230(+12),300(-12):n=365:h=0",
+    noiseMultiplier: 10,
+    covariates: noCovariates,
+    additive: (index) => weekly(index) + (anomalyIncidents["linear-anomalies"].get(index) ?? 0),
+  }),
+  makeDataset({
+    id: "flat-anomalies",
+    observationCount: 180,
+    predictionCount: 0,
+    recipe:
+      "flat-anomalies-v1:level=35+weekly+bounded-noise-x5+outliers@30(+8),95(-8),150(+6):n=180:h=0",
+    noiseMultiplier: 5,
+    trend: () => 35,
+    covariates: noCovariates,
+    additive: (index) => weekly(index) + (anomalyIncidents["flat-anomalies"].get(index) ?? 0),
+  }),
+  makeDataset({
+    id: "logistic-anomalies",
+    observationCount: 365,
+    predictionCount: 0,
+    recipe:
+      "logistic-anomalies-v1:logit=-3+6t|1.5t|4t@0.35,0.65+weekly+bounded-noise-x10+outliers@70(+25),180(-25),290(+20):changing-capacity:n=365:h=0",
+    noiseMultiplier: 10,
+    trend: (index) => changingRateCapacity(index) / (1 + Math.exp(-changingRateLogit(index, 364))),
+    covariates: (index) => ({ capacity: changingRateCapacity(index) }),
+    additive: (index) =>
+      0.8 * weekly(index) + (anomalyIncidents["logistic-anomalies"].get(index) ?? 0),
+  }),
+];
+
 /** Generate an immutable input version; existing identical bytes are reused, never overwritten. */
 export const generateBenchmarkData = Effect.fn("benchmark.inputs.generate")(function* (
   outputRoot = new URL("../inputs/v1/", import.meta.url),
@@ -788,6 +848,7 @@ const versionDatasets = new Map<string, ReadonlyArray<BenchmarkDataset>>([
   ["v4", correlatedRegressorDatasets],
   ["v5", countryHolidayDatasets],
   ["v6", countryHolidayBatchDatasets],
+  ["v7", anomalyDatasets],
 ]);
 
 const entrypoint = process.argv[1];

@@ -90,3 +90,80 @@ export const intervalBoundRatio = (
 
   return ratio;
 };
+
+/** One library's flagged anomaly rows, as indexes into the interval rows. */
+export interface AnomalyEvidence {
+  readonly rows: number;
+  readonly flagged: ReadonlyArray<{
+    readonly index: number;
+    readonly timestamp: number;
+    readonly actual: number;
+  }>;
+}
+
+/** How two libraries' in-sample anomaly flags compare for one run. */
+export type AnomalyAgreement =
+  | { readonly kind: "inconsistent" }
+  | {
+      readonly kind: "compared";
+      readonly effectFlagged: number;
+      readonly pythonFlagged: number;
+      /** Rows only one library flagged; their actuals lie between the two libraries' bounds. */
+      readonly oneSided: number;
+      /** Declared outliers at least one library did not flag. */
+      readonly missedExpected: ReadonlyArray<number>;
+    };
+
+const flagsOutsideOwnIntervals = (
+  evidence: AnomalyEvidence,
+  intervals: ReadonlyArray<IntervalBounds>,
+): boolean =>
+  evidence.rows === intervals.length &&
+  evidence.flagged.every(({ index, actual }, position) => {
+    const bounds = intervals[index];
+
+    return (
+      bounds !== undefined &&
+      (position === 0 || index > (evidence.flagged[position - 1]?.index ?? Infinity)) &&
+      (actual < bounds.valueLower || actual > bounds.valueUpper)
+    );
+  });
+
+/**
+ * Compare in-sample anomaly flags. Each library's flags must be strictly outside its own value
+ * intervals, so a row flagged by only one of them always lies between their two bounds: whether
+ * that is acceptable is decided by the interval-bound gate, not here. Every declared outlier must
+ * be flagged by both.
+ */
+export const anomalyAgreement = (
+  effect: AnomalyEvidence,
+  python: AnomalyEvidence,
+  effectIntervals: ReadonlyArray<IntervalBounds>,
+  pythonIntervals: ReadonlyArray<IntervalBounds>,
+  expected: ReadonlyArray<number>,
+): AnomalyAgreement => {
+  if (
+    effect.rows !== python.rows ||
+    !flagsOutsideOwnIntervals(effect, effectIntervals) ||
+    !flagsOutsideOwnIntervals(python, pythonIntervals)
+  ) {
+    return { kind: "inconsistent" };
+  }
+
+  const effectIndexes = new Set(effect.flagged.map((row) => row.index));
+  const pythonIndexes = new Set(python.flagged.map((row) => row.index));
+  const shared = [...effectIndexes].filter((index) => pythonIndexes.has(index)).length;
+
+  const flaggedAt = (evidence: AnomalyEvidence, timestamp: number) =>
+    evidence.flagged.some((row) => row.timestamp === timestamp);
+
+  return {
+    kind: "compared",
+    effectFlagged: effectIndexes.size,
+    pythonFlagged: pythonIndexes.size,
+    oneSided: effectIndexes.size + pythonIndexes.size - 2 * shared,
+    missedExpected: expected.filter(
+      (timestamp) => !flaggedAt(effect, timestamp) || !flaggedAt(python, timestamp),
+    ),
+  };
+};

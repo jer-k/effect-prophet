@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { parseBenchmarkCases, type BenchmarkCase } from "../case.ts";
 import { linearGrowthEdgeCases } from "../../cases/growth/linear/edge-cases.ts";
+import { anomalyCases } from "../../cases/uncertainty/anomalies.ts";
 import { uncertaintyCases } from "../../cases/uncertainty/public-api.ts";
 import { buildBenchmarkReport, renderBenchmarkMarkdown } from "../report.ts";
 import {
@@ -788,6 +789,174 @@ describe("benchmark reporting", () => {
     const streamedSmall = await reportWith({ ...checks, reduction: "streamed" });
 
     expect(streamedSmall.correctness[0]?.status).toBe("failed");
+  });
+
+  it("passes anomaly cases only when both libraries flag the injected outliers consistently", async () => {
+    const selected = anomalyCases[0];
+
+    if (
+      selected === undefined ||
+      selected.workload.kind !== "map" ||
+      selected.workload.uncertainty === undefined
+    ) {
+      throw new Error("Missing declared anomaly case");
+    }
+
+    const outlier = Date.UTC(2020, 0, 2);
+
+    const [cases, manifest] = await Promise.all([
+      Effect.runPromise(
+        parseBenchmarkCases([
+          {
+            ...selected,
+            workload: {
+              ...selected.workload,
+              anomalies: { expected: [new Date(outlier).toISOString()] },
+            },
+            independentRuns: 1,
+          },
+        ]),
+      ),
+      Effect.runPromise(parseRunManifest(manifestInput)),
+    ]);
+
+    const controls = selected.workload.uncertainty;
+
+    const intervals = Array.from({ length: 4 }, () => ({
+      trendLower: 1,
+      trendUpper: 1,
+      valueLower: 0.5,
+      valueUpper: 1.5,
+    }));
+
+    const uncertainty = {
+      algorithm: "scalar",
+      output: controls.output,
+      rows: 4,
+      samples: controls.samples,
+      replay: "passed",
+      reduction: "passed",
+      finite: "passed",
+      intervals,
+    };
+
+    const row = (index: number, actual: number) => ({
+      index,
+      timestamp: Date.UTC(2020, 0, 1 + index),
+      actual,
+    });
+
+    type Flags = {
+      readonly rows: number;
+      readonly ownIntervals: string;
+      readonly flagged: ReadonlyArray<ReturnType<typeof row>>;
+    };
+
+    const flaggedOutlier: Flags = { rows: 4, ownIntervals: "passed", flagged: [row(1, 3)] };
+
+    const inputFor = (
+      implementation: "effect-prophet" | "python-prophet",
+      anomalies: Flags | undefined,
+      ownIntervals = intervals,
+    ) => {
+      const projection = {
+        ...correctness,
+        caseId: selected.id,
+        modelKind: "linear-piecewise-map",
+        noiseScale: 0.2,
+        fitQuality: optimizerQualityEntries,
+        uncertainty: { ...uncertainty, intervals: ownIntervals },
+      };
+
+      return {
+        ...makeResultInput(implementation, 100),
+        correctness: [anomalies === undefined ? projection : { ...projection, anomalies }],
+        measurements: [
+          {
+            ...makeResultInput(implementation, 100).measurements[0],
+            caseId: selected.id,
+            phase: "warm-anomalies",
+            comparison: "scalar-process-different-public-work",
+            evidenceId: selected.workload.comparison.evidenceId,
+          },
+        ],
+      };
+    };
+
+    const reportWith = async (
+      effect: ReturnType<typeof inputFor>,
+      python: ReturnType<typeof inputFor>,
+    ) =>
+      buildBenchmarkReport(
+        manifest,
+        cases,
+        await Effect.runPromise(parseImplementationResult(effect)),
+        await Effect.runPromise(parseImplementationResult(python)),
+        new Set([selected.workload.comparison.evidenceId]),
+      );
+
+    const accepted = await reportWith(
+      inputFor("effect-prophet", flaggedOutlier),
+      inputFor("python-prophet", flaggedOutlier),
+    );
+
+    expect(accepted.correctness[0]).toMatchObject({
+      status: "passed",
+      anomalies: {
+        expected: 1,
+        effectFlagged: 1,
+        pythonFlagged: 1,
+        oneSided: 0,
+        missedExpected: 0,
+      },
+      note: expect.stringContaining("flagged all 1 injected outliers"),
+    });
+    expect(accepted.timings.map((timing) => timing.phase)).toEqual([
+      "warm-anomalies",
+      "warm-anomalies",
+    ]);
+
+    // Row 2 sits between the two libraries' upper bounds, so only Effect flags it.
+    const pythonIntervals = intervals.map((bounds, index) =>
+      index === 2 ? { ...bounds, valueUpper: 1.55 } : bounds,
+    );
+
+    const oneSided = await reportWith(
+      inputFor("effect-prophet", { ...flaggedOutlier, flagged: [row(1, 3), row(2, 1.52)] }),
+      inputFor("python-prophet", flaggedOutlier, pythonIntervals),
+    );
+
+    expect(oneSided.correctness[0]).toMatchObject({
+      status: "passed",
+      anomalies: { effectFlagged: 2, pythonFlagged: 1, oneSided: 1 },
+    });
+
+    const missed = await reportWith(
+      inputFor("effect-prophet", flaggedOutlier),
+      inputFor("python-prophet", { ...flaggedOutlier, flagged: [] }),
+    );
+
+    expect(missed.correctness[0]).toMatchObject({
+      status: "failed",
+      note: expect.stringContaining("injected anomalies"),
+    });
+    expect(missed.timings).toEqual([]);
+
+    // A flag inside its own interval contradicts strict exceedance.
+    for (const [effect, python] of [
+      [{ ...flaggedOutlier, flagged: [row(1, 3), row(3, 1)] }, flaggedOutlier],
+      [flaggedOutlier, undefined],
+    ]) {
+      const rejected = await reportWith(
+        inputFor("effect-prophet", effect),
+        inputFor("python-prophet", python),
+      );
+
+      expect(rejected.correctness[0]).toMatchObject({
+        status: "failed",
+        note: "Anomaly flags are missing, misaligned, or not outside their own intervals.",
+      });
+    }
   });
 
   it("rejects metadata disagreement before accepting timing rows", async () => {

@@ -26,7 +26,7 @@ export const linearGroups = [
     id: "uncertainty",
     title: "Uncertainty ranges",
     intro:
-      "Both libraries simulate possible futures with random draws, so individual simulated values never match. Each range must still match Python's within the variation expected from that many draws.",
+      "Both libraries simulate possible futures with random draws, so individual simulated values never match. Each range must still match Python's within the variation expected from that many draws. Anomaly cases also check that both libraries flag the outliers in a history.",
   },
   {
     id: "evaluation",
@@ -198,6 +198,12 @@ export const linearCaseDescriptions = {
     group: "uncertainty",
     title: "Samples with mixed effects",
     summary: "512 raw simulated values per date for the same mixed model.",
+  },
+  "anomalies-linear-defaults-99": {
+    group: "uncertainty",
+    title: "Anomalies in a history",
+    summary:
+      "`anomalies(history, { seed })` against fitting in Python, predicting the same history and comparing each value with its 99% range. 365 daily rows of a bending trend with four added outliers, which both libraries must flag.",
   },
   "evaluation-linear-point": {
     group: "evaluation",

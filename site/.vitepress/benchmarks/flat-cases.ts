@@ -26,7 +26,7 @@ export const flatGroups = [
     id: "uncertainty",
     title: "Uncertainty ranges",
     intro:
-      "Both libraries simulate possible futures with random draws, so individual simulated values never match. Each range must still match Python's within the variation expected from that many draws.",
+      "Both libraries simulate possible futures with random draws, so individual simulated values never match. Each range must still match Python's within the variation expected from that many draws. Anomaly cases also check that both libraries flag the outliers in a history.",
   },
   {
     id: "evaluation",
@@ -167,6 +167,12 @@ export const flatCaseDescriptions = {
   "flat-prefix-225-minmax": prefix(225, "minmax", 256),
   "flat-prefix-232-absmax": prefix(232, "absmax", 256),
   "flat-prefix-232-minmax": prefix(232, "minmax", 256),
+  "anomalies-flat-defaults-99": {
+    group: "uncertainty",
+    title: "Anomalies in a history",
+    summary:
+      "`anomalies(history, { seed })` against fitting in Python, predicting the same history and comparing each value with its 99% range. 180 daily rows of a flat level with three added outliers, which both libraries must flag.",
+  },
   "uncertainty-flat-defaults-seasonal-intervals-1000": {
     group: "uncertainty",
     title: "Defaults, ranges with a weekly pattern",

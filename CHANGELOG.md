@@ -16,6 +16,12 @@ All notable changes to this project are documented here. The format follows
   range, like `Prophet.anomalies` in prophet-ruby. The flagged values also shape the fit, so use
   `detectAnomalies` to judge new data against an earlier model.
 
+### Benchmarks
+
+- New benchmarks check `anomalies` against the same steps written with Python Prophet: fit,
+  predict the history with 99% ranges, and flag the values outside them. They cover linear, flat
+  and logistic histories with known outliers, which both libraries must find.
+
 ## [0.3.0] - 2026-10-23
 
 A correctness release: broader checks against Python Prophet 1.4.0, and the fixes they turned up.

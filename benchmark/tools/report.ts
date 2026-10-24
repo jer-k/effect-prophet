@@ -11,7 +11,7 @@ import type {
   ImplementationResult,
   RunManifest,
 } from "./result.ts";
-import { intervalBoundRatio } from "./uncertainty.ts";
+import { anomalyAgreement, intervalBoundRatio } from "./uncertainty.ts";
 
 /** Distribution summary derived from retained raw timing samples. */
 export interface TimingSummary {
@@ -47,8 +47,21 @@ export interface CaseCorrectnessSummary {
   readonly maximumDifferences?: QuantityDifferences;
   /** Largest interval-bound difference as a fraction of its allowance; at most 1 passes. */
   readonly intervalBoundRatio?: number;
+  /** In-sample anomaly flags, the most of each count across independent runs. */
+  readonly anomalies?: AnomalyComparison;
   readonly investigations?: ReadonlyArray<FitInvestigation>;
   readonly note: string;
+}
+
+/** How the two libraries' in-sample anomaly flags compared. */
+export interface AnomalyComparison {
+  readonly expected: number;
+  readonly effectFlagged: number;
+  readonly pythonFlagged: number;
+  /** Rows only one library flagged, each between the two libraries' bounds. */
+  readonly oneSided: number;
+  /** Declared outliers that at least one library missed in at least one run. */
+  readonly missedExpected: number;
 }
 
 /** Internal fit evidence beyond an output-first investigation threshold; never a failure. */
@@ -568,6 +581,58 @@ const maximumIntervalBoundRatio = (
   return maximum;
 };
 
+/** Compare anomaly flags across aligned runs, or undefined when evidence is missing or inconsistent. */
+const compareAnomalies = (
+  expectedTimestamps: ReadonlyArray<string>,
+  effectProjections: ReadonlyArray<CorrectnessProjection>,
+  pythonProjections: ReadonlyArray<CorrectnessProjection>,
+): AnomalyComparison | undefined => {
+  const expected = expectedTimestamps.map((timestamp) => Date.parse(timestamp));
+  const missed = new Set<number>();
+  let effectFlagged = 0;
+  let pythonFlagged = 0;
+  let oneSided = 0;
+
+  for (const [index, effectProjection] of effectProjections.entries()) {
+    const pythonProjection = pythonProjections[index];
+    const effect = effectProjection.anomalies;
+    const python = pythonProjection?.anomalies;
+    const effectIntervals = effectProjection.uncertainty?.intervals;
+    const pythonIntervals = pythonProjection?.uncertainty?.intervals;
+
+    if (
+      effect === undefined ||
+      python === undefined ||
+      effectIntervals === undefined ||
+      pythonIntervals === undefined
+    ) {
+      return undefined;
+    }
+
+    const agreement = anomalyAgreement(effect, python, effectIntervals, pythonIntervals, expected);
+
+    if (agreement.kind === "inconsistent") {
+      return undefined;
+    }
+
+    effectFlagged = Math.max(effectFlagged, agreement.effectFlagged);
+    pythonFlagged = Math.max(pythonFlagged, agreement.pythonFlagged);
+    oneSided = Math.max(oneSided, agreement.oneSided);
+
+    for (const timestamp of agreement.missedExpected) {
+      missed.add(timestamp);
+    }
+  }
+
+  return {
+    expected: expected.length,
+    effectFlagged,
+    pythonFlagged,
+    oneSided,
+    missedExpected: missed.size,
+  };
+};
+
 const correctnessForCase = (
   benchmarkCase: BenchmarkCase,
   effectResult: ImplementationResult,
@@ -952,9 +1017,28 @@ const correctnessForCase = (
     };
   }
 
+  const anomalyDeclaration =
+    benchmarkCase.workload.kind === "map" ? benchmarkCase.workload.anomalies : undefined;
+
+  const anomalies =
+    anomalyDeclaration === undefined
+      ? undefined
+      : compareAnomalies(anomalyDeclaration.expected, effectProjections, pythonProjections);
+
+  if (anomalyDeclaration !== undefined && anomalies === undefined) {
+    return {
+      caseId: benchmarkCase.id,
+      status: "failed",
+      comparison,
+      maximumDifferences: maximum,
+      note: "Anomaly flags are missing, misaligned, or not outside their own intervals.",
+    };
+  }
+
   const failedChecks = [
     ...failedQuantities,
     ...(intervalRatio !== undefined && intervalRatio > 1 ? ["interval bounds"] : []),
+    ...(anomalies !== undefined && anomalies.missedExpected > 0 ? ["injected anomalies"] : []),
   ];
 
   const passed = failedChecks.length === 0;
@@ -982,15 +1066,24 @@ const correctnessForCase = (
           controls === undefined
             ? `Verified equivalent behavior for this configuration under evidence ${evidenceId}.`
             : `Verified fitted point behavior under ${evidenceId}; every interval bound matched Python's scalar simulation within its Monte Carlo allowance. Public output work differs.`
-        }${stationarityNotice}${investigationNotice}`
+        }${anomalyNotice(anomalies)}${stationarityNotice}${investigationNotice}`
       : `Cross-language quantities exceeded tolerance: ${failedChecks.join(", ")}.${investigationNotice}`,
   };
 
-  const withIntervals =
+  const withIntervals: CaseCorrectnessSummary =
     intervalRatio === undefined ? summary : { ...summary, intervalBoundRatio: intervalRatio };
+
+  if (anomalies !== undefined) {
+    Object.assign(withIntervals, { anomalies });
+  }
 
   return outputFirst ? { ...withIntervals, investigations } : withIntervals;
 };
+
+const anomalyNotice = (anomalies: AnomalyComparison | undefined): string =>
+  anomalies === undefined
+    ? ""
+    : ` Both libraries flagged all ${anomalies.expected} injected outliers. Effect flagged at most ${anomalies.effectFlagged} rows and Python ${anomalies.pythonFlagged}; ${anomalies.oneSided} were flagged by only one library, each between the two libraries' bounds.`;
 
 /** Build a neutral correctness and absolute-timing report from raw artifacts. */
 export const buildBenchmarkReport = (
@@ -1282,6 +1375,8 @@ export const renderBenchmarkMarkdown = (report: BenchmarkReport): string => {
     "## Uncertainty workloads",
     "",
     "Python public `predict(..., vectorized=False)` includes point/component/interval assembly; `predictive_samples(..., vectorized=False)` returns trend/yhat matrices. Effect uses `predictUncertainty` for both modes. Python RNG reset is included in warm operation timings; fitted model/setup and input conversion are excluded. Both use scalar continuous-time algorithms, not identical random draws or equivalent public-output work. Only absolute times are reported. The external EP-080 distribution evidence establishes eligibility; this run checks replay, finite dimensions, same-sample quantiles and fitted point equivalence, not fitted distribution parity or calibration.",
+    "",
+    "Anomaly workloads check the whole history in-sample. Effect's `warm-anomalies` times the public `anomalies` call, fit included; Python's times a fresh fit, `predict(history, vectorized=False)` and the strict `y < yhat_lower | y > yhat_upper` comparison. Each library's flags must be exactly the rows outside its own value intervals, and both must flag every declared outlier. Rows flagged by one library alone are counted, not failed.",
     "",
     "| Case | N | Features | Changepoints | Rows | Future | Horizon (days) | S | Output | Effect sampler limit (bytes) | Dataset recipe / SHA-256 | Evidence |",
     "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | --- | --- |",
