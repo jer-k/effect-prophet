@@ -90,6 +90,7 @@ Each of these functions creates a span named after it:
 | `Prophet.predict`                                                                                  | `predict`                                                                                   |
 | `Prophet.predictUncertainty`                                                                       | `predictUncertainty`                                                                        |
 | `Prophet.predictWithIntervals`                                                                     | `predictWithIntervals`, around its `Prophet.predictUncertainty` and `Prophet.predict` spans |
+| `Prophet.detectAnomalies`                                                                          | `detectAnomalies`, around `Prophet.decodeObservations` and `Prophet.predictWithIntervals`   |
 | `Prophet.crossValidate`                                                                            | `crossValidate`                                                                             |
 | `Prophet.planRollingOrigin`                                                                        | `planRollingOrigin`                                                                         |
 | `Prophet.searchModels`                                                                             | `searchModels`                                                                              |
@@ -167,6 +168,13 @@ Every attribute name starts with `effect_prophet.`.
 | `seasonality.count`, `scaling.mode` | As for fitting (`predict` only)                                      |
 | `output.kind`, `sample.count`       | `intervals` or `samples`, and simulations per date (`simulate` only) |
 | `wasm.cold_start`                   | `true` only for the call that loaded the engine                      |
+
+**`Prophet.detectAnomalies`**
+
+| Attribute           | Meaning                                                 |
+| ------------------- | ------------------------------------------------------- |
+| `observation.count` | Measurements checked. Set only when the check succeeds. |
+| `anomaly.count`     | Measurements outside their range. Set only on success.  |
 
 **Country calendars**
 

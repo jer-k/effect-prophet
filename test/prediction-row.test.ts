@@ -2,7 +2,7 @@ import { Effect } from "effect";
 import { describe, expect, it } from "vitest";
 
 import { InputValidationError } from "../src/errors";
-import { decodePredictionRows } from "../src/prediction-row";
+import { decodePredictionRows, predictionRowFromObservation } from "../src/prediction-row";
 
 describe("decodePredictionRows", () => {
   it("parses mixed timestamp and object rows without reordering duplicates", async () => {
@@ -49,5 +49,36 @@ describe("decodePredictionRows", () => {
       expect(error).toBeInstanceOf(InputValidationError);
       expect(error.input).toBe("prediction-rows");
     }
+  });
+});
+
+describe("predictionRowFromObservation", () => {
+  it("drops the observed value and keeps every known input", () => {
+    const observation = {
+      timestamp: Date.parse("2025-01-02T00:00:00.000Z"),
+      value: 12,
+      capacity: 20,
+      floor: 1,
+      regressors: { promotion: 1 },
+      conditions: { onSeason: true },
+    };
+
+    const before = structuredClone(observation);
+    const row = predictionRowFromObservation(observation);
+
+    expect(row).toEqual({
+      timestamp: "2025-01-02T00:00:00.000Z",
+      capacity: 20,
+      floor: 1,
+      regressors: { promotion: 1 },
+      conditions: { onSeason: true },
+    });
+
+    expect(Object.isFrozen(row)).toBe(true);
+    expect(observation).toEqual(before);
+
+    expect(predictionRowFromObservation({ timestamp: 0, value: 1 })).toEqual({
+      timestamp: "1970-01-01T00:00:00.000Z",
+    });
   });
 });

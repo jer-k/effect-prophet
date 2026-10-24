@@ -1259,6 +1259,18 @@ describe("interval-only helpers", () => {
       output: "intervals",
     });
 
+    // A caller's own default applies only when the request omits a width.
+    const omitted = await Effect.runPromise(
+      parseIntervalOptions({ seed: 1 }, "Needs intervals", 0.99),
+    );
+
+    const explicit = await Effect.runPromise(
+      parseIntervalOptions({ seed: 1, intervalWidth: 0.5 }, "Needs intervals", 0.99),
+    );
+
+    expect(omitted.intervalWidth).toBe(0.99);
+    expect(explicit.intervalWidth).toBe(0.5);
+
     const samples = await Effect.runPromise(
       Effect.flip(parseIntervalOptions({ seed: 1, output: "samples" }, "Needs intervals")),
     );

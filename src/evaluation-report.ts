@@ -25,9 +25,10 @@ import type { FittedProphet } from "./fitted-model";
 import type { FittingBackend } from "./internal/fitting-backend";
 import { copyFrozen, freezeOwned } from "./internal/owned-input";
 import { checkedAdd } from "./internal/safe-arithmetic";
-import { isValidTimestamp, TimestampSchema } from "./internal/timestamp";
+import { encodeTimestamp, isValidTimestamp } from "./internal/timestamp";
 import type { ModelSearchResult, SearchCandidateResult } from "./model-search";
 import { decodeObservations, type EncodedObservation, type Observation } from "./observation";
+import { predictionRowFromObservation } from "./prediction-row";
 import {
   checkExplicitChangepointBounds,
   decodeOptions,
@@ -321,8 +322,6 @@ const decodeBaseline = Schema.decodeUnknownEffect(BaselineSchema, {
 const decodeMetricPolicy = Schema.decodeUnknownEffect(MetricOptionsSchema, {
   onExcessProperty: "error",
 });
-
-const encodeTimestamp = Schema.encodeSync(TimestampSchema);
 
 // Inputs here are schema-parsed report fields or complete parsed fit options; compare owned JSON trees without depending on object key order.
 const same = <Left, Right>(left: Left, right: Right): boolean => {
@@ -736,10 +735,7 @@ export const evaluateHoldout = Effect.fn("Prophet.evaluateHoldout")(function* (
       "effect_prophet.model.type": model.model,
     });
 
-    const future = holdout.map(({ value: _actual, timestamp, ...known }) => ({
-      ...known,
-      timestamp: encodeTimestamp(timestamp),
-    }));
+    const future = holdout.map(predictionRowFromObservation);
 
     const forecasts = yield* predict(model, future).pipe(
       Effect.mapError((cause) => failure("predict", "operation-failed", cause)),

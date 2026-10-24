@@ -19,8 +19,13 @@ import { defaultTargetScalingMode } from "./target-scaling";
 import { checkedAdd, checkedMultiply } from "./internal/safe-arithmetic";
 import { deriveEvaluationFoldSeed } from "./evaluation-seed";
 import { millisecondsPerDay } from "./internal/time";
-import { isValidTimestamp as validEpoch, TimestampSchema } from "./internal/timestamp";
+import {
+  encodeTimestamp,
+  isValidTimestamp as validEpoch,
+  TimestampSchema,
+} from "./internal/timestamp";
 import { decodeObservations, type EncodedObservation, type Observations } from "./observation";
+import { predictionRowFromObservation } from "./prediction-row";
 import {
   checkExplicitChangepointBounds,
   decodeOptions,
@@ -518,8 +523,6 @@ export const planRollingOrigin = Effect.fn("Prophet.planRollingOrigin")(function
   return foldPlan.summary;
 });
 
-const encodeTimestamp = Schema.encodeSync(TimestampSchema);
-
 /** Reconstruct and check a supplied fold summary against the complete observed history. */
 export const resolveBaselinePlan = (
   observations: Observations,
@@ -577,15 +580,6 @@ export const resolveBaselinePlan = (
 
 const projectTrainingRow = (row: Observations[number]): EncodedObservation =>
   Object.freeze({ ...row, timestamp: encodeTimestamp(row.timestamp) });
-
-const projectPredictionRow = (row: Observations[number]) => {
-  const { value: _actual, ...future } = row;
-
-  return Object.freeze({
-    ...future,
-    timestamp: encodeTimestamp(row.timestamp),
-  });
-};
 
 const foldOptions = (
   input: EncodedProphetOptions,
@@ -692,7 +686,7 @@ const crossValidateOperation = Effect.fn("Prophet.crossValidate")(function* (
       ];
 
       const assessment = observations.slice(fold.assessmentStart, fold.assessmentEndExclusive);
-      const predictionRows = assessment.map(projectPredictionRow);
+      const predictionRows = assessment.map(predictionRowFromObservation);
 
       const model = yield* fit(
         trainingRows,

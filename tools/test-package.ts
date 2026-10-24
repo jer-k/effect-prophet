@@ -13,6 +13,7 @@ import {
   predict,
   predictUncertainty,
   predictWithIntervals,
+  detectAnomalies,
   planRollingOrigin,
   crossValidate,
   crossValidateBaseline,
@@ -58,6 +59,7 @@ const expectedJavaScriptFiles = sourceFiles.flatMap((sourceFile) => {
 });
 
 const expectedDeclarationFiles = [
+  "dist/anomaly.d.ts",
   "dist/component-mode.d.ts",
   "dist/country-holidays.d.ts",
   "dist/errors.d.ts",
@@ -464,6 +466,20 @@ assert.ok(
   (withIntervals.rows[0]?.valueInterval.lower ?? NaN) <=
     (withIntervals.rows[0]?.valueInterval.upper ?? NaN),
 );
+
+const assessed = await Effect.runPromise(
+  detectAnomalies(
+    regressorModel,
+    [{ timestamp: "2024-01-01T00:00:04.000Z", value: 1_000, regressors: { promotion: 1 } }],
+    { seed: 42, samples: 4 },
+  ),
+);
+
+assert.equal(assessed.intervalWidth, 0.99);
+
+assert.equal(assessed.rows[0]?.predicted, regressorForecast?.value);
+
+assert.equal(assessed.anomalies[0]?.position, "above");
 
 const logisticModel = await Effect.runPromise(
   fit(

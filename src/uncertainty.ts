@@ -85,15 +85,19 @@ const decodeOptions = Schema.decodeUnknownEffect(OptionsSchema, {
   onExcessProperty: "error",
 });
 
+/** Interval width used when a simulation request omits one. */
+export const defaultIntervalWidth = 0.8;
+
 /** Parse explicit simulation controls without installing a random service. */
 export const parseUncertaintyOptions = (
   input: Parameters<typeof decodeOptions>[0],
+  omittedIntervalWidth: number = defaultIntervalWidth,
 ): Effect.Effect<UncertaintyOptions, InputValidationError> =>
   decodeOptions(input).pipe(
     Effect.map((parsed) => ({
       seed: parsed.seed,
       samples: parsed.samples ?? 1_000,
-      intervalWidth: parsed.intervalWidth ?? 0.8,
+      intervalWidth: parsed.intervalWidth ?? omittedIntervalWidth,
       output: parsed.output ?? "intervals",
     })),
     Effect.mapError((error) => inputValidationErrorFromIssue("uncertainty-options", error.issue)),
@@ -103,8 +107,9 @@ export const parseUncertaintyOptions = (
 export const parseIntervalOptions = (
   input: Parameters<typeof decodeOptions>[0],
   message: string,
+  omittedIntervalWidth: number = defaultIntervalWidth,
 ): Effect.Effect<UncertaintyOptions & { readonly output: "intervals" }, InputValidationError> =>
-  parseUncertaintyOptions(input).pipe(
+  parseUncertaintyOptions(input, omittedIntervalWidth).pipe(
     Effect.flatMap((options) =>
       options.output === "intervals"
         ? Effect.succeed({ ...options, output: options.output })

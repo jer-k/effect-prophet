@@ -10,6 +10,8 @@ All notable changes to this project are documented here. The format follows
 
 - `predictWithIntervals` returns each point forecast together with its seeded value and trend
   ranges, so you no longer call `predict` and `predictUncertainty` and match up their rows.
+- `detectAnomalies` checks new measurements against the ranges of an already fitted model and
+  reports which fall below or above them. The range defaults to 99% wide.
 
 ## [0.3.0] - 2026-10-23
 

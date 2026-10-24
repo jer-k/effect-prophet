@@ -1,3 +1,11 @@
+export {
+  defaultAnomalyIntervalWidth,
+  detectAnomalies,
+  type AnomalyAssessment,
+  type AnomalyPosition,
+  type AnomalyReport,
+} from "./anomaly";
+
 export { type ComponentMode } from "./component-mode";
 
 export {
@@ -213,6 +221,7 @@ export {
 } from "./prophet";
 
 export {
+  defaultIntervalWidth,
   maximumSampleCells,
   maximumSimulationRows,
   simulationIdentity,
