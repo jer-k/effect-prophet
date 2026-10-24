@@ -4,6 +4,24 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows
 [Semantic Versioning](https://semver.org/). Before 1.0, minor versions may include breaking changes.
 
+## [Unreleased]
+
+### Added
+
+- `predictWithIntervals` returns each point forecast together with its seeded value and trend
+  ranges, so you no longer call `predict` and `predictUncertainty` and match up their rows.
+- `detectAnomalies` checks new measurements against the ranges of an already fitted model and
+  reports which fall below or above them. The range defaults to 99% wide.
+- `anomalies` fits a history and returns the timestamps whose values fall outside their own 99%
+  range, like `Prophet.anomalies` in prophet-ruby. The flagged values also shape the fit, so use
+  `detectAnomalies` to judge new data against an earlier model.
+
+### Benchmarks
+
+- New benchmarks check `anomalies` against the same steps written with Python Prophet: fit,
+  predict the history with 99% ranges, and flag the values outside them. They cover linear, flat
+  and logistic histories with known outliers, which both libraries must find.
+
 ## [0.3.0] - 2026-10-23
 
 A correctness release: broader checks against Python Prophet 1.4.0, and the fixes they turned up.
@@ -246,6 +264,7 @@ These Python Prophet features are not implemented in this release:
 - Inputs that cannot define a trend, such as every row sharing one timestamp, return an error where
   Python returns `NaN` forecasts.
 
+[Unreleased]: https://github.com/jer-k/effect-prophet/compare/v0.3.0...HEAD
 [0.3.0]: https://github.com/jer-k/effect-prophet/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/jer-k/effect-prophet/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/jer-k/effect-prophet/compare/v0.1.0...v0.1.1

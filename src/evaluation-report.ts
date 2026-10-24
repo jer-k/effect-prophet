@@ -25,9 +25,10 @@ import type { FittedProphet } from "./fitted-model";
 import type { FittingBackend } from "./internal/fitting-backend";
 import { copyFrozen, freezeOwned } from "./internal/owned-input";
 import { checkedAdd } from "./internal/safe-arithmetic";
-import { isValidTimestamp, TimestampSchema } from "./internal/timestamp";
+import { encodeTimestamp, isValidTimestamp } from "./internal/timestamp";
 import type { ModelSearchResult, SearchCandidateResult } from "./model-search";
 import { decodeObservations, type EncodedObservation, type Observation } from "./observation";
+import { predictionRowFromObservation } from "./prediction-row";
 import {
   checkExplicitChangepointBounds,
   decodeOptions,
@@ -35,6 +36,7 @@ import {
 } from "./options";
 import { fit, predict, predictUncertainty } from "./prophet";
 import {
+  alignIntervalRows,
   exceedsSimulationBudget,
   simulationIdentity,
   parseUncertaintyOptions,
@@ -320,8 +322,6 @@ const decodeBaseline = Schema.decodeUnknownEffect(BaselineSchema, {
 const decodeMetricPolicy = Schema.decodeUnknownEffect(MetricOptionsSchema, {
   onExcessProperty: "error",
 });
-
-const encodeTimestamp = Schema.encodeSync(TimestampSchema);
 
 // Inputs here are schema-parsed report fields or complete parsed fit options; compare owned JSON trees without depending on object key order.
 const same = <Left, Right>(left: Left, right: Right): boolean => {
@@ -735,10 +735,7 @@ export const evaluateHoldout = Effect.fn("Prophet.evaluateHoldout")(function* (
       "effect_prophet.model.type": model.model,
     });
 
-    const future = holdout.map(({ value: _actual, timestamp, ...known }) => ({
-      ...known,
-      timestamp: encodeTimestamp(timestamp),
-    }));
+    const future = holdout.map(predictionRowFromObservation);
 
     const forecasts = yield* predict(model, future).pipe(
       Effect.mapError((cause) => failure("predict", "operation-failed", cause)),
@@ -774,38 +771,21 @@ export const evaluateHoldout = Effect.fn("Prophet.evaluateHoldout")(function* (
         Effect.mapError((cause) => failure("uncertainty", "operation-failed", cause)),
       );
 
-      if (
-        intervals.kind !== "intervals" ||
-        intervals.rows.length !== points.length ||
-        intervals.sampleCount !== uncertainty.samples ||
-        intervals.intervalWidth !== uncertainty.intervalWidth ||
-        intervals.simulation !== simulationIdentity
-      ) {
+      const alignment = alignIntervalRows(intervals, uncertainty, points);
+
+      if (alignment.kind === "frame-mismatch") {
         return yield* Effect.fail(failure("result", "result-mismatch"));
       }
 
-      const withIntervals: Array<CrossValidationIntervalRow> = [];
-
-      for (const [index, point] of points.entries()) {
-        const interval = intervals.rows[index];
-
-        if (
-          interval?.timestamp !== point.timestamp ||
-          !Number.isFinite(interval.value.lower) ||
-          !Number.isFinite(interval.value.upper) ||
-          interval.value.lower > interval.value.upper
-        ) {
-          return yield* Effect.fail(failure("result", "result-mismatch", undefined, index));
-        }
-
-        withIntervals.push({
-          ...point,
-          lower: interval.value.lower,
-          upper: interval.value.upper,
-        });
+      if (alignment.kind === "row-mismatch") {
+        return yield* Effect.fail(failure("result", "result-mismatch", undefined, alignment.index));
       }
 
-      rows = withIntervals;
+      rows = alignment.rows.map(({ row, interval }) => ({
+        ...row,
+        lower: interval.value.lower,
+        upper: interval.value.upper,
+      }));
     }
 
     const kind = uncertainty === undefined ? ("point" as const) : ("intervals" as const);

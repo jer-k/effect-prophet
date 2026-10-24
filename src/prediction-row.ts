@@ -1,7 +1,8 @@
 import { Effect, Predicate, Schema } from "effect";
 
 import { InputValidationError, inputValidationErrorFromIssue } from "./errors";
-import { TimestampSchema } from "./internal/timestamp";
+import { encodeTimestamp, TimestampSchema } from "./internal/timestamp";
+import type { Observation } from "./observation";
 
 /** One row accepted by the public prediction boundary. */
 export type EncodedPredictionRow =
@@ -110,3 +111,12 @@ export const decodePredictionRows = Effect.fnUntraced(function* (
     }),
   );
 });
+
+/** Project an observation onto the prediction row with the same timestamp and known inputs. */
+export const predictionRowFromObservation = (
+  observation: Observation,
+): Exclude<EncodedPredictionRow, string> => {
+  const { value: _actual, timestamp, ...known } = observation;
+
+  return Object.freeze({ ...known, timestamp: encodeTimestamp(timestamp) });
+};

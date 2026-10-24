@@ -20,9 +20,13 @@ Fixture generation runs in the `prophet-fixtures-generate` Compose service. Its 
 
 The manifest records the base image, platform, Python and uv versions, dependency-lock digest,
 numerical package versions, generator source-bundle digest, source commit, and Prophet's bundled
-model-binary digest. `generatorRevision` is SHA-256 of `generate.py`, a NUL byte, then
-`linear_optimizer_evidence.py`, covering the shared executable-probe protocol as well as case
-construction. Docker provides the OS/native execution envelope; `uv.lock` remains the dependency lock.
+model-binary digest. `generatorRevision` is SHA-256 of `generate.py`,
+`linear_optimizer_evidence.py`, `country_holiday_fixtures.py` and the benchmark's Python adapter
+(`benchmark/tools/adapters/python-prophet.py`), joined by NUL bytes. That covers case construction,
+the shared executable-probe protocol, and the adapter the differential comparison reuses. Editing
+any of them changes the manifest, so run `npm run fixtures:generate` and commit the result even
+when no fixture values change. Docker provides the OS/native execution envelope; `uv.lock` remains
+the dependency lock.
 
 The pinned platform makes fixture provenance consistent on ARM and x86 development machines. It
 may use emulation on ARM. Do not use an emulated fixture run as performance evidence; future

@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "files": [
+    {
+      "file": "linear-anomalies.json",
+      "recipe": "linear-anomalies-v1:piecewise+weekly+bounded-noise-x10+outliers@50(+15),120(-15),230(+12),300(-12):n=365:h=0",
+      "sha256": "2b70250a026865e01f8ce95665c42641633fba309e791a7dc1e2996e67bd98ed"
+    },
+    {
+      "file": "flat-anomalies.json",
+      "recipe": "flat-anomalies-v1:level=35+weekly+bounded-noise-x5+outliers@30(+8),95(-8),150(+6):n=180:h=0",
+      "sha256": "331e086f70aeba1edc5c406b58248c396c8666bda9fe70e084658fa5eabae0d8"
+    },
+    {
+      "file": "logistic-anomalies.json",
+      "recipe": "logistic-anomalies-v1:logit=-3+6t|1.5t|4t@0.35,0.65+weekly+bounded-noise-x10+outliers@70(+25),180(-25),290(+20):changing-capacity:n=365:h=0",
+      "sha256": "f92aff28ec2c019e6c7a4aa0e8212f37dc46671743801175f23c953ca5e56275"
+    }
+  ]
+}

@@ -764,6 +764,44 @@ def assert_uncertainty(model: Prophet, frame: pd.DataFrame, benchmark_case: dict
                            "valueLower": float(row[2]), "valueUpper": float(row[3])} for row in bounds]}
 
 
+def run_anomalies(training: pd.DataFrame, benchmark_case: dict[str, Any]) -> pd.Series:
+    """Fit the history, predict it, and return the dates strictly outside their value interval.
+
+    This is prophet-ruby's ``Prophet.anomalies`` written against Python's public API: Prophet has
+    no anomaly method of its own, so the comparison is the application code a Python user writes.
+    """
+
+    controls = benchmark_case["workload"]["uncertainty"]
+    model = fit_model(training, benchmark_case)
+    model.uncertainty_samples = controls["samples"]
+    model.interval_width = controls["intervalWidth"]
+    np.random.seed(controls["seed"])
+    forecast = model.predict(training, vectorized=False)
+    actual = training["y"].to_numpy()
+    outside = (actual < forecast["yhat_lower"].to_numpy()) | (actual > forecast["yhat_upper"].to_numpy())
+    return forecast["ds"][outside]
+
+
+def assert_anomalies(training: pd.DataFrame, frame: pd.DataFrame, benchmark_case: dict[str, Any],
+                     intervals: list[dict[str, float]]) -> dict[str, Any]:
+    """Check the flagged dates are exactly the rows outside this run's own value intervals."""
+
+    dates = training["ds"]
+    if (len(intervals) != len(training) or not dates.reset_index(drop=True).equals(frame["ds"].reset_index(drop=True))
+            or not dates.is_monotonic_increasing or not dates.is_unique):
+        raise ValueError("Anomaly cases require uniquely timestamped history rows in order")
+    actual = training["y"].to_numpy(dtype=np.float64)
+    expected = [index for index, bounds in enumerate(intervals)
+                if actual[index] < bounds["valueLower"] or actual[index] > bounds["valueUpper"]]
+    positions = {date: index for index, date in enumerate(dates)}
+    flagged = [positions.get(date) for date in run_anomalies(training, benchmark_case)]
+    if flagged != expected:
+        raise ValueError("Anomaly flags differ from strict exceedance of the run's own value intervals")
+    return {"rows": len(training), "ownIntervals": "passed",
+            "flagged": [{"index": index, "timestamp": int(pd.Timestamp(dates.iloc[index]).value // 1_000_000),
+                         "actual": float(actual[index])} for index in expected]}
+
+
 def correctness_projection(
     benchmark_case: dict[str, Any], dataset: dict[str, Any], run: int
 ) -> dict[str, Any]:
@@ -792,6 +830,12 @@ def correctness_projection(
         raise ValueError(verified.stderr or verified.stdout or "Fresh-process restoration failed")
 
     uncertainty = benchmark_case["workload"].get("uncertainty")
+    uncertainty_evidence = (assert_uncertainty(model, prediction_frame, benchmark_case)
+                            if uncertainty is not None else None)
+    anomaly_evidence = (assert_anomalies(training, prediction_frame, benchmark_case,
+                                         uncertainty_evidence["intervals"])
+                        if uncertainty_evidence is not None
+                        and benchmark_case["workload"].get("anomalies") is not None else None)
     result: dict[str, Any] = {
         "caseId": benchmark_case["id"],
         "run": run,
@@ -804,8 +848,8 @@ def correctness_projection(
         "persistenceMaximumAbsoluteError": persistence_maximum_error(
             model, prediction_frame, projections
         ),
-        **({"uncertainty": assert_uncertainty(model, prediction_frame, benchmark_case)}
-           if uncertainty is not None else {}),
+        **({"uncertainty": uncertainty_evidence} if uncertainty_evidence is not None else {}),
+        **({"anomalies": anomaly_evidence} if anomaly_evidence is not None else {}),
     }
     sigma = model.params.get("sigma_obs")
     if benchmark_case["workload"]["kind"] in ("linear-map", "map"):
@@ -941,6 +985,8 @@ def measurement_for_phase(
         samples = process_samples(benchmark_case, "--cold-uncertainty")
     elif phase == "fresh-process-restored-uncertainty":
         samples = process_samples(benchmark_case, "--restored-uncertainty", serialized)
+    elif phase == "warm-anomalies":
+        samples = measure(benchmark_case, lambda: run_anomalies(training, benchmark_case))
     else:
         raise ValueError(f"Unsupported benchmark phase: {phase}")
     comparison = benchmark_case["workload"]["comparison"]

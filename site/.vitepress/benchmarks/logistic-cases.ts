@@ -38,7 +38,7 @@ export const logisticGroups = [
     id: "uncertainty",
     title: "Uncertainty ranges",
     intro:
-      "Both libraries simulate possible futures with random draws, so individual simulated values never match. Each range must still match Python's within the variation expected from that many draws.",
+      "Both libraries simulate possible futures with random draws, so individual simulated values never match. Each range must still match Python's within the variation expected from that many draws. Anomaly cases also check that both libraries flag the outliers in a history.",
   },
   {
     id: "evaluation",
@@ -246,6 +246,12 @@ export const logisticCaseDescriptions = {
     group: "data",
     title: "Values outside the bounds",
     summary: "Noisy targets that go below zero and above the ceiling.",
+  },
+  "anomalies-logistic-defaults-99": {
+    group: "uncertainty",
+    title: "Anomalies in a history",
+    summary:
+      "`anomalies(history, { seed })` against fitting in Python, predicting the same history and comparing each value with its 99% range. 365 daily rows of a capped trend whose growth rate changes with three added outliers, which both libraries must flag.",
   },
   "uncertainty-logistic-reconcile-defaults-rate-changes-intervals-1000": {
     group: "uncertainty",

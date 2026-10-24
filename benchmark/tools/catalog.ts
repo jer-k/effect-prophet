@@ -12,6 +12,7 @@ import {
   growthScalingAndMixedMapCases,
 } from "../cases/growth/mixed-map.ts";
 import { logisticReconciliationCases } from "../cases/growth/logistic/public-api.ts";
+import { anomalyCases } from "../cases/uncertainty/anomalies.ts";
 import { uncertaintyCases } from "../cases/uncertainty/public-api.ts";
 import { BenchmarkArtifactError, readJson } from "./artifacts.ts";
 import { parseBenchmarkCases, type BenchmarkCase } from "./case.ts";
@@ -53,6 +54,7 @@ export const loadCaseCatalog = Effect.fn("benchmark.catalog.load")(function* () 
     ...linearGrowthEdgeCases,
     ...growthScalingAndMixedMapCases,
     ...uncertaintyCases,
+    ...anomalyCases,
     ...evaluationCases,
     ...flatDefaultCases,
     ...flatGrowthCases,
@@ -92,6 +94,8 @@ export const suiteForCase = (item: BenchmarkCase): BenchmarkSuiteId =>
 /** Classify a case by its primary Prophet capability without duplicating declarations. */
 export const capabilityForCase = (item: BenchmarkCase): string => {
   if (item.workload.kind === "evaluation") return "diagnostics";
+
+  if (item.workload.kind === "map" && item.workload.anomalies !== undefined) return "anomalies";
 
   if (item.workload.kind === "map" && item.workload.uncertainty !== undefined) return "uncertainty";
 

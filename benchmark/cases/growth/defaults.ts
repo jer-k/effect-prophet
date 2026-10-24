@@ -14,7 +14,8 @@ const phases = [
   "fresh-process-restored-predict",
 ] as const;
 
-const tolerances = {
+/** Cross-language tolerances for fits under library defaults. */
+export const defaultCaseTolerances = {
   trend: { absolute: 0.01, relative: 0.002 },
   component: { absolute: 0.01, relative: 0.002 },
   additive: { absolute: 0.01, relative: 0.002 },
@@ -60,7 +61,7 @@ export const defaultCase = (
     measuredIterations: 3,
     independentRuns: 2,
     timeoutSeconds: 300,
-    correctnessTolerances: tolerances,
+    correctnessTolerances: defaultCaseTolerances,
   };
 
   return growth === "linear"

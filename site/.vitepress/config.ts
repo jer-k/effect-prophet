@@ -43,6 +43,7 @@ export default defineConfig({
           { text: "Growth with a ceiling", link: "/examples/saturating-growth" },
           { text: "Flat trends", link: "/examples/flat-trend" },
           { text: "Uncertainty ranges", link: "/examples/uncertainty" },
+          { text: "Finding anomalies", link: "/examples/anomalies" },
           { text: "Saving and loading models", link: "/examples/saving-models" },
           { text: "Testing forecast accuracy", link: "/examples/cross-validation" },
           { text: "Choosing settings", link: "/examples/tuning" },

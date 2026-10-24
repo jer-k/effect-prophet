@@ -66,17 +66,20 @@ The defaults are Prophet's, so a fit with no options produces the same model as 
 
 ### Output and evaluation
 
-| Python                                    | Effect Prophet                                                                            |
-| ----------------------------------------- | ----------------------------------------------------------------------------------------- |
-| `predict(future)` columns `yhat`, `trend` | `predict(model, timestamps)`: `value`, `trend`, and every component broken out            |
-| `yhat_lower`, `yhat_upper`                | a separate `predictUncertainty(model, timestamps, { seed, samples, intervalWidth })` call |
-| `interval_width`, `uncertainty_samples`   | `intervalWidth` and `samples` on `predictUncertainty`                                     |
-| `predictive_samples`                      | `predictUncertainty(..., { output: "samples" })`                                          |
-| `regressor_coefficients(model)`           | `getRegressorCoefficients(model)`                                                         |
-| `cross_validation`                        | `crossValidate`                                                                           |
-| `performance_metrics`                     | `performanceMetrics`                                                                      |
-| `model_to_json`, `model_from_json`        | `encodeFittedModel`, `decodeFittedModel`; the format is not Python's                      |
-| a loop over parameter grids               | `searchModels` and `evaluateHoldout`                                                      |
+| Python                                           | Effect Prophet                                                                               |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| `predict(future)` columns `yhat`, `trend`        | `predict(model, timestamps)`: `value`, `trend`, and every component broken out               |
+| `yhat_lower`, `yhat_upper`                       | `predictWithIntervals(model, timestamps, { seed, samples, intervalWidth })`: `valueInterval` |
+| `trend_lower`, `trend_upper`                     | `trendInterval` on each `predictWithIntervals` row                                           |
+| `interval_width`, `uncertainty_samples`          | `intervalWidth` and `samples` on `predictWithIntervals` or `predictUncertainty`              |
+| comparing `y` with `yhat_lower`, `yhat_upper`    | `detectAnomalies(model, observations, { seed })`                                             |
+| the same, on the history the model was fitted on | `anomalies(history, { seed })`, which fits and checks in one call                            |
+| `predictive_samples`                             | `predictUncertainty(..., { output: "samples" })`                                             |
+| `regressor_coefficients(model)`                  | `getRegressorCoefficients(model)`                                                            |
+| `cross_validation`                               | `crossValidate`                                                                              |
+| `performance_metrics`                            | `performanceMetrics`                                                                         |
+| `model_to_json`, `model_from_json`               | `encodeFittedModel`, `decodeFittedModel`; the format is not Python's                         |
+| a loop over parameter grids                      | `searchModels` and `evaluateHoldout`                                                         |
 
 ## Gotchas for Python users
 

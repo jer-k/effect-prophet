@@ -1,7 +1,7 @@
 # Uncertainty ranges
 
-A single number is never the whole story. `predictUncertainty` gives a **range** for each
-forecast: "between 133 and 140, most likely around 136".
+A single number is never the whole story. `predictWithIntervals` gives each forecast a
+**range**: "between 133 and 140, most likely around 136".
 
 ::: tip Benchmarked against Python Prophet
 Both libraries simulate ranges with random draws, so individual values never match exactly. The
@@ -21,6 +21,21 @@ on all three trend types, within the variation expected from that many draws, an
 2025-04-07 137.6  (80% range 134.4 to 141.3)
 ```
 
+Each row is the same forecast `predict` returns, with every component, plus two ranges:
+
+| Field           | Meaning                                                            |
+| --------------- | ------------------------------------------------------------------ |
+| `value`         | The point forecast, exactly as `predict` returns it                |
+| `valueInterval` | `{ lower, upper }` range for `value`, from trend changes and noise |
+| `trendInterval` | `{ lower, upper }` range for `trend`, from trend changes alone     |
+
+The result also records `sampleCount`, `intervalWidth` and `simulation`, the version of the
+simulation method. Rows come back in the order you passed them, including repeated dates, so a
+row with a promotion and the same date without one each keep their own forecast and range.
+
+If you only need the ranges, `predictUncertainty` takes the same arguments and skips the point
+forecast.
+
 ## How it works
 
 The model simulates many possible futures. In each one, the trend might change direction the way
@@ -32,11 +47,12 @@ simulated futures.
 | `seed`          | required      | Any whole number. The same seed always gives the same ranges.            |
 | `samples`       | `1000`        | How many futures to simulate (up to 2,048). More is smoother but slower. |
 | `intervalWidth` | `0.8`         | How much of the simulated futures to cover. `0.95` gives a wider range.  |
-| `output`        | `"intervals"` | `"samples"` returns every simulated value instead of a range             |
+| `output`        | `"intervals"` | `predictUncertainty` only: `"samples"` returns every simulated value     |
 
 ## Working with the raw samples
 
-Use `output: "samples"` to answer questions like "what's the chance we go over 150?":
+Use `predictUncertainty` with `output: "samples"` to answer questions like "what's the chance we
+go over 150?". `predictWithIntervals` rejects `output: "samples"` with an `InputValidationError`.
 
 <<< @/snippets/samples.ts
 
@@ -50,5 +66,5 @@ Use `output: "samples"` to answer questions like "what's the chance we go over 1
 - **Size limits.** One call takes up to 10,000 rows. Ranges work with any sample count up to
   2,048, but `output: "samples"` returns every simulated value, so rows × samples can be at most
   1,000,000. Very long forecasts are also capped: with the default 25 changepoints, ranges reach
-  about 10 times the length of the history ahead. Past any limit, `predictUncertainty` fails with
-  a `PredictionError` whose reason is `simulation-limit`.
+  about 10 times the length of the history ahead. Past any limit, `predictWithIntervals` and
+  `predictUncertainty` fail with a `PredictionError` whose reason is `simulation-limit`.

@@ -74,6 +74,26 @@ Python per-call NumPy seeds are reset. The default vectorized approximation is n
 scalar comparator. Sampling and interval reduction require O(rows × samples) work/space.
 Interval mode is not constant-scratch, and sampler limits are not total-process RSS limits.
 
+## Anomalies
+
+Anomaly cases are in-sample: the prediction rows are exactly the history, and the uncertainty
+controls ask for 99% value intervals from 1,000 scalar paths. Effect's `warm-anomalies` times the
+public `anomalies` call: decoding, fit, simulation and flagging. Python Prophet has no anomaly
+method, so its phase times the application code behind prophet-ruby's `Prophet.anomalies`: a
+fresh fit, the per-call seed reset, `predict(history, vectorized=False)` and the strict
+`y < yhat_lower | y > yhat_upper` comparison. `warm-fit` and `warm-uncertainty` time the two
+halves on their own.
+
+The uncertainty gates apply unchanged. Each adapter also checks that its flags are exactly the
+history rows strictly outside the value intervals it projected for the same model, rows and seed,
+so the public operation and the projected intervals cannot drift apart. The report then requires
+every declared injected outlier to be flagged by both libraries in every run. A row flagged by
+only one library is counted, not failed: by the previous check its value lies between the two
+libraries' bounds, and the interval gate has already held those bounds to their Monte Carlo
+allowance. At 99% that allowance is about 4.5 standard errors of the difference between two
+1,000-path estimates of a Gaussian noise quantile. Trend intervals have zero width in-sample,
+because simulated trend changes start after the history.
+
 ## Diagnostics and selection
 
 Evaluation is `different-public-work`, even when point gates pass. MAP CV defaults independently

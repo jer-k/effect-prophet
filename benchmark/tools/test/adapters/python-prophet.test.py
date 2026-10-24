@@ -327,6 +327,37 @@ class PythonCountryReferenceTest(unittest.TestCase):
             self.assertEqual(policy["comparison"], "intentional-difference")
             self.assertGreater(len(frame), 0)
 
+    def test_anomalies_flag_exactly_the_rows_outside_their_own_value_intervals(self):
+        dataset = json.loads((BENCHMARK_ROOT / "inputs" / "v7" / "flat-anomalies.json").read_bytes())
+        training, _ = adapter["prepare_input"](dataset)
+        frame = training.drop(columns="y")
+        case = {
+            "id": "anomalies-flat-test",
+            "workload": {
+                "kind": "map", "fitRequest": "growth-only",
+                "configuration": {"growth": "flat"},
+                "pythonOptimizer": {"algorithm": "Auto", "maxIterations": 10_000, "newtonFallback": True},
+                "uncertainty": {"seed": 19, "samples": 200, "intervalWidth": 0.99, "output": "intervals"},
+                "anomalies": {"expected": []},
+            },
+        }
+
+        flagged = adapter["run_anomalies"](training, case)
+        self.assertEqual(flagged.dt.strftime("%Y-%m-%d").tolist(), ["2020-01-31", "2020-04-05", "2020-05-30"])
+
+        model = adapter["fit_model"](training, case)
+        forecast = adapter["run_uncertainty"](model, frame, case)
+        intervals = [{"valueLower": float(lower), "valueUpper": float(upper)}
+                     for lower, upper in zip(forecast["yhat_lower"], forecast["yhat_upper"])]
+        evidence = adapter["assert_anomalies"](training, frame, case, intervals)
+
+        self.assertEqual([row["index"] for row in evidence["flagged"]], [30, 95, 150])
+        self.assertEqual(evidence["flagged"][0]["timestamp"], 1_580_428_800_000)
+
+        widened = [{"valueLower": -1e9, "valueUpper": 1e9} for _ in intervals]
+        with self.assertRaisesRegex(ValueError, "strict exceedance"):
+            adapter["assert_anomalies"](training, frame, case, widened)
+
 
 if __name__ == "__main__":
     unittest.main()

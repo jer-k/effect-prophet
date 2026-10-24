@@ -41,6 +41,7 @@ export const BenchmarkPhaseSchema = Schema.Literals([
   "warm-uncertainty",
   "cold-first-uncertainty",
   "fresh-process-restored-uncertainty",
+  "warm-anomalies",
   "evaluation-input-conversion",
   "evaluation-plan",
   "evaluation-point",
@@ -208,6 +209,13 @@ export const MapWorkloadSchema = Schema.Struct({
       algorithm: Schema.Literal("scalar-continuous-time"),
       evidence: NonEmptyString,
       samplerMemoryLimitBytes: PositiveInteger,
+    }),
+  ),
+  // In-sample anomaly detection over the whole history, judged by the uncertainty controls.
+  anomalies: Schema.optionalKey(
+    Schema.Struct({
+      // The injected outliers, which both libraries must flag.
+      expected: Schema.Array(CanonicalTimestamp).check(Schema.isMinLength(1)),
     }),
   ),
 });
@@ -477,6 +485,31 @@ const validateCaseRelationships = (
         new BenchmarkInputError({
           input: "cases",
           message: `Case ${benchmarkCase.id} has mismatched uncertainty workload and phases`,
+        }),
+      );
+    }
+
+    const anomalies =
+      benchmarkCase.workload.kind === "map" ? benchmarkCase.workload.anomalies : undefined;
+
+    const anomalyPhase = benchmarkCase.phases.includes("warm-anomalies");
+
+    // Anomaly detection checks every history row against its own interval, so the prediction rows
+    // must be exactly the history.
+    if (
+      (anomalies !== undefined) !== anomalyPhase ||
+      (anomalies !== undefined &&
+        (uncertainty?.output !== "intervals" ||
+          benchmarkCase.rowSelection === undefined ||
+          benchmarkCase.rowSelection.future !== 0 ||
+          benchmarkCase.rowSelection.stride !== 1 ||
+          (benchmarkCase.datasetIdentity !== undefined &&
+            benchmarkCase.rowSelection.historical !== benchmarkCase.datasetIdentity.trainingRows)))
+    ) {
+      return Effect.fail(
+        new BenchmarkInputError({
+          input: "cases",
+          message: `Case ${benchmarkCase.id} must check its whole history with interval-only anomalies`,
         }),
       );
     }

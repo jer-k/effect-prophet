@@ -74,7 +74,7 @@ export const benchmarkFeatures: ReadonlyArray<BenchmarkFeature> = [
     title: "Uncertainty ranges",
     group: "uncertainty",
     intro:
-      "Both libraries simulate possible futures with random draws, so individual simulated values never match. Each range must still match Python's within the variation expected from that many draws, on every trend type.",
+      "Both libraries simulate possible futures with random draws, so individual simulated values never match. Each range must still match Python's within the variation expected from that many draws, on every trend type. Anomaly cases also check that both libraries flag the outliers in a history.",
   },
   {
     id: "cross-validation",

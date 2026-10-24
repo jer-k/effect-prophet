@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 
 import { Effect, Predicate, Schema } from "effect";
 import {
+  anomalies,
   decodeFittedModel,
   encodeFittedModel,
   fit,
@@ -900,6 +901,92 @@ const assertUncertainty = (
   };
 };
 
+const anomalyControls = (benchmarkCase: BenchmarkCase) => {
+  const workload = benchmarkCase.workload;
+
+  if (
+    workload.kind !== "map" ||
+    workload.anomalies === undefined ||
+    workload.uncertainty === undefined
+  ) {
+    throw new Error("Anomaly phase requires anomaly and uncertainty controls");
+  }
+
+  return workload.uncertainty;
+};
+
+/** The public in-sample operation: fit the history, then flag it against its own ranges. */
+const runAnomalies = (
+  input: PreparedInput,
+  benchmarkCase: BenchmarkCase,
+): ReadonlyArray<number> | Promise<ReadonlyArray<number>> => {
+  const controls = anomalyControls(benchmarkCase);
+  const options = effectOptionsForCase(benchmarkCase);
+
+  const operation = anomalies(
+    input.observations,
+    { seed: controls.seed, samples: controls.samples, intervalWidth: controls.intervalWidth },
+    options,
+  ).pipe(Effect.provide(prophetFittingBackendLayer), Effect.withTracerEnabled(false));
+
+  return options?.countryHolidays === undefined
+    ? Effect.runSync(operation)
+    : Effect.runPromise(operation);
+};
+
+/**
+ * Check that the public operation flags exactly the history rows strictly outside the value
+ * intervals this run projected for the same rows, seed and model, and record them by row index.
+ */
+const assertAnomalies = async (
+  input: PreparedInput,
+  benchmarkCase: BenchmarkCase,
+  intervals: ReadonlyArray<{ readonly valueLower: number; readonly valueUpper: number }>,
+): Promise<NonNullable<CorrectnessProjection["anomalies"]>> => {
+  const rows = input.observations;
+
+  // Indexes stand for rows, so a timestamp must name one row, in history order.
+  if (
+    intervals.length !== rows.length ||
+    rows.some(
+      (row, index) =>
+        row.timestamp !== input.predictionRows[index]?.timestamp ||
+        (index > 0 && row.timestamp <= (rows[index - 1]?.timestamp ?? "")),
+    )
+  ) {
+    throw new Error("Anomaly cases require uniquely timestamped history rows in order");
+  }
+
+  const expected = rows.flatMap((row, index) => {
+    const interval = intervals[index];
+
+    return interval !== undefined &&
+      (row.value < interval.valueLower || row.value > interval.valueUpper)
+      ? [index]
+      : [];
+  });
+
+  const indexes = new Map(rows.map((row, index) => [Date.parse(row.timestamp), index]));
+
+  const flagged = (await runAnomalies(input, benchmarkCase)).map((timestamp) =>
+    indexes.get(timestamp),
+  );
+
+  if (JSON.stringify(flagged) !== JSON.stringify(expected)) {
+    throw new Error("anomalies differs from strict exceedance of its own value intervals");
+  }
+
+  return {
+    rows: rows.length,
+    ownIntervals: "passed",
+    flagged: expected.map((index) => ({
+      index,
+      timestamp: Date.parse(rows[index]?.timestamp ?? ""),
+      actual: rows[index]?.value ?? NaN,
+    })),
+  };
+};
+
 const correctnessProjection = async (
   benchmarkCase: BenchmarkCase,
   dataset: BenchmarkDataset,
@@ -979,8 +1066,19 @@ const correctnessProjection = async (
     persistenceMaximumAbsoluteError: persistenceError,
   };
 
+  const anomalyEvidence =
+    benchmarkCase.workload.kind === "map" &&
+    benchmarkCase.workload.anomalies !== undefined &&
+    uncertainty?.intervals !== undefined
+      ? await assertAnomalies(input, benchmarkCase, uncertainty.intervals)
+      : undefined;
+
   const withUncertainty: CorrectnessProjection =
     uncertainty === undefined ? common : { ...common, uncertainty };
+
+  if (anomalyEvidence !== undefined) {
+    Object.assign(withUncertainty, { anomalies: anomalyEvidence });
+  }
 
   if (benchmarkCase.workload.kind !== "fixed-linear-prediction") {
     return {
@@ -1139,6 +1237,9 @@ const measurementForPhase = async (
       break;
     case "fresh-process-restored-uncertainty":
       samples = processSamples(benchmarkCase, "--restored-uncertainty", encodedJson);
+      break;
+    case "warm-anomalies":
+      samples = await measure(benchmarkCase, () => runAnomalies(prepared, benchmarkCase));
       break;
     default:
       throw new Error(`Evaluation phase ${phase} requires an evaluation workload`);

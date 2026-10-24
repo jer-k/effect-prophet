@@ -1,3 +1,12 @@
+export {
+  anomalies,
+  defaultAnomalyIntervalWidth,
+  detectAnomalies,
+  type AnomalyAssessment,
+  type AnomalyPosition,
+  type AnomalyReport,
+} from "./anomaly";
+
 export { type ComponentMode } from "./component-mode";
 
 export {
@@ -110,6 +119,12 @@ export {
   type Observations,
 } from "./observation";
 
+export {
+  predictWithIntervals,
+  type ForecastWithIntervals,
+  type ForecastsWithIntervals,
+} from "./predict-with-intervals";
+
 export { prophetFittingBackendLayer } from "./internal/prophet-fitting-backend";
 
 export {
@@ -207,11 +222,14 @@ export {
 } from "./prophet";
 
 export {
+  defaultIntervalWidth,
   maximumSampleCells,
   maximumSimulationRows,
   simulationIdentity,
+  type EncodedIntervalOptions,
   type EncodedUncertaintyOptions,
   type UncertaintyInterval,
+  type UncertaintyIntervalRow,
   type UncertaintyOptions,
   type UncertaintyResult,
 } from "./uncertainty";

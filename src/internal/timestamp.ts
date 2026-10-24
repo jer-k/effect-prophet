@@ -29,3 +29,6 @@ export const TimestampSchema = CanonicalTimestampString.pipe(
     ),
   }),
 );
+
+/** Encode a validated epoch millisecond as its canonical UTC timestamp string. */
+export const encodeTimestamp = Schema.encodeSync(TimestampSchema);

@@ -12,6 +12,9 @@ import {
   getRegressorCoefficients,
   predict,
   predictUncertainty,
+  predictWithIntervals,
+  anomalies,
+  detectAnomalies,
   planRollingOrigin,
   crossValidate,
   crossValidateBaseline,
@@ -57,6 +60,7 @@ const expectedJavaScriptFiles = sourceFiles.flatMap((sourceFile) => {
 });
 
 const expectedDeclarationFiles = [
+  "dist/anomaly.d.ts",
   "dist/component-mode.d.ts",
   "dist/country-holidays.d.ts",
   "dist/errors.d.ts",
@@ -80,6 +84,7 @@ const expectedDeclarationFiles = [
   "dist/model-serialization.d.ts",
   "dist/observation.d.ts",
   "dist/options.d.ts",
+  "dist/predict-with-intervals.d.ts",
   "dist/prediction-row.d.ts",
   "dist/prophet.d.ts",
   "dist/regressor.d.ts",
@@ -447,6 +452,48 @@ assert.equal(samples.kind, "samples");
 if (samples.kind === "samples") {
   assert.equal(samples.value.length, 4);
 }
+
+const withIntervals = await Effect.runPromise(
+  predictWithIntervals(
+    regressorModel,
+    [{ timestamp: "2024-01-01T00:00:04.000Z", regressors: { promotion: 1 } }],
+    { seed: 42, samples: 4 },
+  ),
+);
+
+assert.equal(withIntervals.rows[0]?.value, regressorForecast?.value);
+
+assert.ok(
+  (withIntervals.rows[0]?.valueInterval.lower ?? NaN) <=
+    (withIntervals.rows[0]?.valueInterval.upper ?? NaN),
+);
+
+const assessed = await Effect.runPromise(
+  detectAnomalies(
+    regressorModel,
+    [{ timestamp: "2024-01-01T00:00:04.000Z", value: 1_000, regressors: { promotion: 1 } }],
+    { seed: 42, samples: 4 },
+  ),
+);
+
+assert.equal(assessed.intervalWidth, 0.99);
+
+assert.equal(assessed.rows[0]?.predicted, regressorForecast?.value);
+
+assert.equal(assessed.anomalies[0]?.position, "above");
+
+const flagged = await Effect.runPromise(
+  anomalies(
+    Array.from({ length: 20 }, (_, offset) => ({
+      timestamp: new Date(Date.UTC(2024, 0, 1 + offset)).toISOString(),
+      value: offset + (offset === 10 ? 50 : ((offset * 7) % 5) / 5),
+    })),
+    { seed: 42, samples: 100 },
+    { builtInSeasonalities: { daily: "off", weekly: "off", yearly: "off" } },
+  ).pipe(Effect.provide(prophetFittingBackendLayer)),
+);
+
+assert.deepEqual(flagged, [Date.UTC(2024, 0, 11)]);
 
 const logisticModel = await Effect.runPromise(
   fit(

@@ -6,6 +6,8 @@ including historical and future prediction rows; it does not duplicate or replac
 `v5/` contains eight [country-calendar workloads](../cases/holidays/README.md): basic/mixed/bounded
 histories, sparse/estimated/partial future years, and occurrence/name-heavy scaling cases.
 `v6/` adds the identical long training history with a smaller prediction batch without changing v5.
+`v7/` contains three histories with known outliers (linear, flat and logistic) for the in-sample
+anomaly cases; they have no future rows.
 Each version has a `manifest.json` recording recipe identities and SHA-256 hashes.
 Training rows and future rows include all required covariates, masks and bounds.
 

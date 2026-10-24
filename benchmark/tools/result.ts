@@ -188,6 +188,17 @@ export const CorrectnessProjectionSchema = Schema.Struct({
       ),
     }),
   ),
+  // Rows the public anomaly operation flagged, as indexes into the uncertainty rows. `passed`
+  // records that they are exactly the rows strictly outside that run's own value intervals.
+  anomalies: Schema.optionalKey(
+    Schema.Struct({
+      rows: NonNegativeInteger,
+      ownIntervals: Schema.Literal("passed"),
+      flagged: Schema.Array(
+        Schema.Struct({ index: NonNegativeInteger, timestamp: Schema.Int, actual: Schema.Finite }),
+      ),
+    }),
+  ),
 });
 
 /** Untimed correctness evidence emitted by one independent run. */

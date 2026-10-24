@@ -1,6 +1,6 @@
 import { Effect, Schema } from "effect";
 
-import { InputValidationError, inputValidationErrorFromIssue } from "../errors";
+import { type InputValidationError, inputValidationErrorFromIssue } from "../errors";
 import type { EncodedProphetOptions } from "../options";
 import {
   defaultTargetScalingMode,
@@ -8,8 +8,8 @@ import {
   type TargetScalingMode,
 } from "../target-scaling";
 import {
-  parseUncertaintyOptions,
-  type EncodedUncertaintyOptions,
+  parseIntervalOptions,
+  type EncodedIntervalOptions,
   type UncertaintyOptions,
 } from "../uncertainty";
 
@@ -23,7 +23,7 @@ export interface CrossValidationPointInput {
 export interface CrossValidationIntervalInput {
   readonly mode: "intervals";
   readonly scaling?: TargetScalingMode;
-  readonly uncertainty: Omit<EncodedUncertaintyOptions, "output"> & { readonly output?: never };
+  readonly uncertainty: EncodedIntervalOptions;
 }
 
 /** Public fourth-argument controls for point or interval cross-validation. */
@@ -64,17 +64,10 @@ export const parseCrossValidationInput = (
       return Object.freeze(syntax);
     }
 
-    const uncertainty = yield* parseUncertaintyOptions(syntax.uncertainty);
-
-    if (uncertainty.output !== "intervals") {
-      return yield* Effect.fail(
-        new InputValidationError({
-          input: "uncertainty-options",
-          issues: [{ path: ["output"], message: "Cross-validation requires interval output" }],
-          message: "Cross-validation requires interval output",
-        }),
-      );
-    }
+    const uncertainty = yield* parseIntervalOptions(
+      syntax.uncertainty,
+      "Cross-validation requires interval output",
+    );
 
     return Object.freeze({
       ...syntax,
