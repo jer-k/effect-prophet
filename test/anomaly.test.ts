@@ -2,8 +2,10 @@ import { Effect, Exit, Option } from "effect";
 import { describe, expect, it } from "vitest";
 
 import {
+  FittingError,
   InputValidationError,
   PredictionError,
+  anomalies,
   defaultAnomalyIntervalWidth,
   detectAnomalies,
   fit,
@@ -452,6 +454,295 @@ describe("detectAnomalies", () => {
     }
 
     expect(spans.some((span) => span.name === "Prophet.predictWithIntervals")).toBe(false);
+    expect(spans.filter((span) => span.name.startsWith("effect-prophet.wasm."))).toEqual([]);
+  });
+});
+
+// The same history with an in-sample spike on day 20 and dip on day 40.
+const incidents = new Map([
+  [20, 25],
+  [40, -25],
+]);
+
+const disturbed = history.map((row, offset) => ({
+  ...row,
+  value: row.value + (incidents.get(offset) ?? 0),
+}));
+
+// One row more than a single simulation accepts.
+const tooLong = Array.from({ length: 10_001 }, (_, offset) => ({
+  timestamp: new Date(Date.UTC(2000, 0, 1) + offset * 3_600_000).toISOString(),
+  value: noise(offset),
+}));
+
+const baselineOptions = {
+  builtInSeasonalities: { daily: "off", weekly: "off", yearly: "off" },
+} as const;
+
+const runAnomalies = (...args: Parameters<typeof anomalies>) =>
+  Effect.runPromise(anomalies(...args).pipe(Effect.provide(prophetFittingBackendLayer)));
+
+describe("anomalies", () => {
+  it("returns the in-sample spike and dip, and nothing for an undisturbed history", async () => {
+    const flagged = await runAnomalies(disturbed, options, baselineOptions);
+    const clean = await runAnomalies(history, options, baselineOptions);
+
+    expect(flagged).toEqual([Date.parse(day(20)), Date.parse(day(40))]);
+    expect(clean).toEqual([]);
+  });
+
+  it("equals fitting the history and comparing it with its own seeded value ranges", async () => {
+    for (const intervalWidth of [undefined, 0.1]) {
+      const request = intervalWidth === undefined ? options : { ...options, intervalWidth };
+
+      const [flagged, manual] = await Effect.runPromise(
+        Effect.gen(function* () {
+          const model = yield* fit(disturbed, baselineOptions);
+
+          const intervals = yield* predictUncertainty(
+            model,
+            disturbed.map(({ timestamp }) => timestamp),
+            { ...options, intervalWidth: intervalWidth ?? defaultAnomalyIntervalWidth },
+          );
+
+          if (intervals.kind !== "intervals") {
+            throw new Error("Expected interval output");
+          }
+
+          const expectedFlags = intervals.rows
+            .filter((row, index) => {
+              const actual = disturbed[index]?.value ?? NaN;
+
+              return actual < row.value.lower || actual > row.value.upper;
+            })
+            .map((row) => row.timestamp);
+
+          return [yield* anomalies(disturbed, request, baselineOptions), expectedFlags];
+        }).pipe(Effect.provide(prophetFittingBackendLayer)),
+      );
+
+      expect(flagged).toEqual(manual);
+    }
+
+    // Narrower ranges flag more, and omitted model options fall back to fit's defaults.
+    const wide = await runAnomalies(disturbed, options, baselineOptions);
+    const narrowOptions = { ...options, intervalWidth: 0.1 };
+    const narrow = await runAnomalies(disturbed, narrowOptions, baselineOptions);
+
+    const automatic = await runAnomalies(disturbed, options);
+
+    expect(narrow.length).toBeGreaterThan(wide.length);
+    expect(wide.every((timestamp) => narrow.includes(timestamp))).toBe(true);
+    expect(automatic).toEqual(expect.arrayContaining([...wide]));
+  });
+
+  it("orders flags chronologically and keeps one flag per tied row", async () => {
+    const tie = history[30];
+
+    if (tie === undefined) {
+      throw new Error("Expected a day 30 observation");
+    }
+
+    const spike = { ...tie, value: tie.value + 25 };
+
+    for (const tied of [
+      [tie, spike],
+      [spike, tie],
+    ]) {
+      const shuffled = [...disturbed.slice(31).reverse(), ...tied, ...disturbed.slice(0, 30)];
+      const flagged = await runAnomalies(shuffled, options, baselineOptions);
+
+      expect(flagged).toEqual([Date.parse(day(20)), Date.parse(day(30)), Date.parse(day(40))]);
+    }
+  });
+
+  it("replays by seed without mutating its inputs", async () => {
+    const input = disturbed.map((row) => ({ ...row }));
+    const modelOptions = structuredClone(baselineOptions);
+    const before = structuredClone({ input, options, modelOptions });
+
+    const first = await runAnomalies(input, options, modelOptions);
+    const again = await runAnomalies(input, options, modelOptions);
+
+    expect(again).toEqual(first);
+    expect({ input, options, modelOptions }).toEqual(before);
+    expect(Object.isFrozen(first)).toBe(true);
+
+    const [seeded, reseeded] = await Effect.runPromise(
+      Effect.gen(function* () {
+        const model = yield* fit(input, modelOptions);
+
+        return yield* Effect.all([
+          detectAnomalies(model, input, options),
+          detectAnomalies(model, input, { ...options, seed: 12 }),
+        ]);
+      }).pipe(Effect.provide(prophetFittingBackendLayer)),
+    );
+
+    expect(first).toEqual(seeded.anomalies.map((row) => row.timestamp));
+    expect(reseeded.rows.map((row) => row.lower)).not.toEqual(seeded.rows.map((row) => row.lower));
+  });
+
+  it("keeps input, option, fit and simulation failure precedence", async () => {
+    const fail = (...args: Parameters<typeof anomalies>) =>
+      Effect.runPromise(
+        Effect.flip(anomalies(...args)).pipe(Effect.provide(prophetFittingBackendLayer)),
+      );
+
+    for (const input of [[], [{ timestamp: "bad", value: 1 }], [{ timestamp: day(0) }]]) {
+      const error = await fail(JSON.parse(JSON.stringify(input)), JSON.parse('{"seed":-1}'));
+
+      expect(error).toBeInstanceOf(InputValidationError);
+      expect(error).toMatchObject({ input: "observations" });
+    }
+
+    for (const request of [{ seed: -1 }, { seed: 1, intervalWidth: 1 }, { seed: 1, typo: 1 }]) {
+      const error = await fail(disturbed, JSON.parse(JSON.stringify(request)), {
+        growth: JSON.parse('"sideways"'),
+      });
+
+      expect(error).toBeInstanceOf(InputValidationError);
+      expect(error).toMatchObject({ input: "uncertainty-options" });
+    }
+
+    const samples = await fail(disturbed, JSON.parse('{"seed":1,"output":"samples"}'));
+
+    expect(samples).toBeInstanceOf(InputValidationError);
+    expect(samples).toMatchObject({ issues: [{ path: ["output"] }] });
+
+    const modelOptions = await fail(disturbed, options, {
+      growth: JSON.parse('"sideways"'),
+    });
+
+    expect(modelOptions).toBeInstanceOf(InputValidationError);
+    expect(modelOptions).toMatchObject({ input: "options" });
+
+    const single = await fail([{ timestamp: day(0), value: 1 }], options);
+
+    expect(single).toBeInstanceOf(FittingError);
+    expect(single).toMatchObject({ reason: "insufficient-observations" });
+
+    const uncapped = await fail(disturbed, options, { growth: "logistic" });
+
+    expect(uncapped).toBeInstanceOf(InputValidationError);
+
+    const capped = await runAnomalies(
+      disturbed.map((row) => ({ ...row, capacity: 200 })),
+      options,
+      { ...baselineOptions, growth: "logistic" },
+    );
+
+    expect(capped).toEqual(expect.arrayContaining([Date.parse(day(20)), Date.parse(day(40))]));
+
+    const budget = await fail(tooLong, { seed: 1, samples: 1 });
+
+    expect(budget).toBeInstanceOf(PredictionError);
+    expect(budget).toMatchObject({ reason: "simulation-limit" });
+  });
+
+  it("ends one safe trace that fits, then checks the same history", async () => {
+    const { spans, tracer } = collectTestSpans();
+
+    await Effect.runPromise(
+      anomalies(disturbed, options, baselineOptions).pipe(
+        Effect.withSpan("audit.job"),
+        Effect.withTracer(tracer),
+        Effect.provide(prophetFittingBackendLayer),
+      ),
+    );
+
+    const span = (name: string) => {
+      const found = spans.find((candidate) => candidate.name === name);
+
+      if (found === undefined) {
+        throw new Error(`Expected ${name}`);
+      }
+
+      return found;
+    };
+
+    const parentOf = (child: ReturnType<typeof span>) =>
+      child.parent.pipe(Option.getOrUndefined)?.spanId;
+
+    const job = span("audit.job");
+    const operation = span("Prophet.anomalies");
+    const fitted = span("Prophet.fit");
+    const detected = span("Prophet.detectAnomalies");
+    const engineFit = span("effect-prophet.wasm.fit");
+    const simulate = span("effect-prophet.wasm.simulate");
+
+    expect(parentOf(operation)).toBe(job.spanId);
+    expect(parentOf(fitted)).toBe(operation.spanId);
+    expect(parentOf(detected)).toBe(operation.spanId);
+    expect(parentOf(engineFit)).toBe(fitted.spanId);
+
+    expect(
+      spans.filter((candidate) => parentOf(candidate) === operation.spanId).map(({ name }) => name),
+    ).toEqual(["Prophet.decodeObservations", "Prophet.fit", "Prophet.detectAnomalies"]);
+
+    const operationStatus = requireEndedSpan(operation);
+    const fitStatus = requireEndedSpan(fitted);
+    const detectStatus = requireEndedSpan(detected);
+
+    for (const child of [fitted, detected, engineFit, simulate]) {
+      const status = requireEndedSpan(child);
+
+      expect(child.traceId).toBe(job.traceId);
+      expect(Exit.isSuccess(status.exit)).toBe(true);
+      expect(status.startTime).toBeGreaterThanOrEqual(operationStatus.startTime);
+      expect(status.endTime).toBeLessThanOrEqual(operationStatus.endTime);
+    }
+
+    expect(fitStatus.endTime).toBeLessThanOrEqual(detectStatus.startTime);
+    expect(Exit.isSuccess(operationStatus.exit)).toBe(true);
+
+    expect(Object.fromEntries(operation.attributes)).toEqual({
+      "effect_prophet.observation.count": 60,
+      "effect_prophet.anomaly.count": 2,
+    });
+  });
+
+  it("ends a failed span, and fits nothing when validation or the row budget fails", async () => {
+    const { spans, tracer } = collectTestSpans();
+
+    const failed = await Effect.runPromise(
+      anomalies([{ timestamp: day(0), value: 1 }], options).pipe(
+        Effect.withTracer(tracer),
+        Effect.provide(prophetFittingBackendLayer),
+        Effect.exit,
+      ),
+    );
+
+    const operation = spans.find((span) => span.name === "Prophet.anomalies");
+    const status = operation === undefined ? undefined : requireEndedSpan(operation);
+
+    expect(Exit.isFailure(failed)).toBe(true);
+    expect(status !== undefined && Exit.isFailure(status.exit)).toBe(true);
+    expect(operation === undefined ? undefined : Object.fromEntries(operation.attributes)).toEqual(
+      {},
+    );
+
+    expect(spans.some((span) => span.name === "Prophet.detectAnomalies")).toBe(false);
+
+    spans.length = 0;
+
+    for (const request of [
+      anomalies(JSON.parse("[]"), options),
+      anomalies(disturbed, { seed: -1 }),
+      anomalies(disturbed, JSON.parse('{"seed":1,"output":"samples"}')),
+      anomalies(tooLong, { seed: 1, samples: 1 }),
+    ]) {
+      await Effect.runPromise(
+        request.pipe(
+          Effect.withTracer(tracer),
+          Effect.provide(prophetFittingBackendLayer),
+          Effect.exit,
+        ),
+      );
+    }
+
+    expect(spans.filter((span) => span.name === "Prophet.anomalies")).toHaveLength(4);
+    expect(spans.some((span) => span.name === "Prophet.fit")).toBe(false);
     expect(spans.filter((span) => span.name.startsWith("effect-prophet.wasm."))).toEqual([]);
   });
 });

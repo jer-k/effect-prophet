@@ -40,7 +40,9 @@ Python, where it differs on purpose, and the smaller behavior differences.
   two agree: in our long-history benchmark, the average trend width of future ranges was 17.7
   for the shortcut and 17.8 for the per-path method over eight seeds.
 - **Size limits on uncertainty.** One call takes up to 10,000 rows and 2,048 samples. Python has
-  no such limits. See [Uncertainty ranges](../examples/uncertainty) for details.
+  no such limits. See [Uncertainty ranges](../examples/uncertainty) for details. Because
+  `anomalies` simulates its whole history, it takes histories of up to 10,000 rows; see
+  [Finding anomalies](../examples/anomalies#looking-back-over-a-history) for longer ones.
 - **Memory limit for Newton's method.** Newton's method, used for histories under 100 rows and
   as L-BFGS's fallback, keeps four tables of size parameters × parameters. The engine can use at
   most 4 GiB of memory, so Newton can never fit more than 11,585 parameters. In practice the limit

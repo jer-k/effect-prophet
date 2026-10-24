@@ -2,7 +2,8 @@
 
 Is today's number unusual? Fit a model on earlier data, then ask `detectAnomalies` how new
 measurements compare with the range the model expected for them. Values outside the range are
-anomalies.
+anomalies. To look back over data you already have instead, see
+[Looking back over a history](#looking-back-over-a-history).
 
 <<< @/snippets/anomalies.ts
 
@@ -39,8 +40,8 @@ format as your history, so you can pass rows straight from the same source.
 
 ## Options
 
-The options are the same as for [uncertainty ranges](./uncertainty), except that the range
-defaults to 99% wide:
+`detectAnomalies` and `anomalies` take the same options as [uncertainty ranges](./uncertainty),
+except that the range defaults to 99% wide:
 
 | Option          | Default  | Meaning                                                         |
 | --------------- | -------- | --------------------------------------------------------------- |
@@ -52,8 +53,51 @@ defaults to 99% wide:
 measurements; past that, or past the forecast-length limit, it fails with a `PredictionError`
 whose reason is `simulation-limit`.
 
+## Looking back over a history
+
+`anomalies` fits a model to a history, checks that same history against it, and returns the
+timestamps outside their range:
+
+<<< @/snippets/anomalies-in-sample.ts
+
+```txt [Output]
+2025-02-10
+2025-03-12
+```
+
+Timestamps are epoch milliseconds, in date order. Each flagged row adds its timestamp once, so if
+two rows share a timestamp and both are outside, it appears twice. Model options go in an
+optional third argument, exactly as `fit` takes them:
+
+```ts
+anomalies(history, { seed: 42, intervalWidth: 0.95 }, { growth: "logistic" });
+```
+
+The whole history is simulated in one call, so `anomalies` takes up to 10,000 rows. A longer
+history fails with a `PredictionError` whose reason is `simulation-limit`, before anything is
+fitted. To check one anyway, fit it with `fit` and pass it to `detectAnomalies` in batches of up
+to 10,000 rows.
+
+### Which one to use
+
+|                         | `detectAnomalies`                    | `anomalies`                      |
+| ----------------------- | ------------------------------------ | -------------------------------- |
+| Model                   | One you fitted earlier               | Fitted from the history you pass |
+| Checks                  | Any measurements, usually later ones | The history it was fitted on     |
+| Returns                 | Every row, with its range            | Timestamps of the flagged rows   |
+| Needs a fitting backend | No                                   | Yes                              |
+
+Use `detectAnomalies` for monitoring, where today is judged against what came before. Use
+`anomalies` for a quick look back over a history, for example to find days to clean up before
+fitting a forecast.
+
 ## Things to know
 
+- **With `anomalies`, outliers can hide themselves.** The flagged days also shape the model. A
+  large outlier pulls the trend toward itself and widens every range, so smaller outliers can go
+  unflagged. Two big outliers in an otherwise quiet history can widen the ranges so much that even
+  a 50% range flags nothing else. If a day matters, judge it with `detectAnomalies` against a
+  model fitted without it.
 - **A 99% range doesn't mean 1% false alarms.** The ranges come from simulated trend changes
   and noise, and don't account for uncertainty in the seasonal patterns. A model that fits its
   history too closely gives narrow ranges and flags ordinary values. Check a few weeks of known
@@ -62,3 +106,4 @@ whose reason is `simulation-limit`.
   part of the training data. If it was, the model has already partly adjusted to it.
 - **No scores or probabilities.** Each measurement is inside or outside its range. How far
   outside is `actual` minus `upper` (or `lower` minus `actual`), in your data's own units.
+  `anomalies` returns only timestamps; use `detectAnomalies` to see the ranges.

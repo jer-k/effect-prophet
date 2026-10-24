@@ -1,4 +1,5 @@
 export {
+  anomalies,
   defaultAnomalyIntervalWidth,
   detectAnomalies,
   type AnomalyAssessment,

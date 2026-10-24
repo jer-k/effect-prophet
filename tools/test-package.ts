@@ -13,6 +13,7 @@ import {
   predict,
   predictUncertainty,
   predictWithIntervals,
+  anomalies,
   detectAnomalies,
   planRollingOrigin,
   crossValidate,
@@ -480,6 +481,19 @@ assert.equal(assessed.intervalWidth, 0.99);
 assert.equal(assessed.rows[0]?.predicted, regressorForecast?.value);
 
 assert.equal(assessed.anomalies[0]?.position, "above");
+
+const flagged = await Effect.runPromise(
+  anomalies(
+    Array.from({ length: 20 }, (_, offset) => ({
+      timestamp: new Date(Date.UTC(2024, 0, 1 + offset)).toISOString(),
+      value: offset + (offset === 10 ? 50 : ((offset * 7) % 5) / 5),
+    })),
+    { seed: 42, samples: 100 },
+    { builtInSeasonalities: { daily: "off", weekly: "off", yearly: "off" } },
+  ).pipe(Effect.provide(prophetFittingBackendLayer)),
+);
+
+assert.deepEqual(flagged, [Date.UTC(2024, 0, 11)]);
 
 const logisticModel = await Effect.runPromise(
   fit(

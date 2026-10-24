@@ -1,12 +1,16 @@
 import { Effect } from "effect";
 
 import type { CountryHolidayError } from "./country-holidays";
-import { PredictionError, type InputValidationError } from "./errors";
+import { PredictionError, type FittingError, type InputValidationError } from "./errors";
 import type { FittedProphet } from "./fitted-model";
+import type { FittingBackend } from "./internal/fitting-backend";
 import { decodeObservations } from "./observation";
+import type { EncodedProphetOptions } from "./options";
 import { predictWithIntervals } from "./predict-with-intervals";
 import { predictionRowFromObservation } from "./prediction-row";
+import { fit } from "./prophet";
 import {
+  exceedsSimulationBudget,
   parseIntervalOptions,
   simulationIdentity,
   type EncodedIntervalOptions,
@@ -136,4 +140,65 @@ export const detectAnomalies = Effect.fn("Prophet.detectAnomalies")(function* (
     rows: Object.freeze(rows),
     anomalies: Object.freeze(anomalies),
   });
+});
+
+/**
+ * Fit a model to a history and return the timestamps whose values fall outside the
+ * seeded predictive range the model gives for that same history.
+ *
+ * This is retrospective, in-sample detection: the flagged observations also shaped the
+ * model, so a large outlier can bend the fit or widen the ranges enough to hide itself.
+ * Use `detectAnomalies` to judge later observations against an earlier model.
+ *
+ * Timestamps are returned chronologically, once per flagged observation, so equal
+ * timestamps appear as often as their rows are flagged.
+ *
+ * @param historyInput - Untrusted observations, used both to fit and to check.
+ * @param optionsInput - Simulation controls with an explicit seed; `intervalWidth`
+ *   defaults to 0.99 and sample output is rejected.
+ * @param modelOptionsInput - Optional model options, exactly as `fit` accepts them.
+ * @returns Flagged timestamps as epoch milliseconds, or a typed failure.
+ */
+export const anomalies = Effect.fn("Prophet.anomalies")(function* (
+  historyInput: Parameters<typeof decodeObservations>[0],
+  optionsInput: EncodedIntervalOptions,
+  modelOptionsInput?: EncodedProphetOptions,
+): Effect.fn.Return<
+  ReadonlyArray<number>,
+  InputValidationError | FittingError | PredictionError | CountryHolidayError,
+  FittingBackend
+> {
+  const observations = yield* decodeObservations(historyInput);
+
+  const options = yield* parseIntervalOptions(
+    optionsInput,
+    "anomalies requires interval output",
+    defaultAnomalyIntervalWidth,
+  );
+
+  // Every history row is simulated, so reject a history too long for that before fitting it.
+  if (exceedsSimulationBudget(observations.length, options.samples, "intervals")) {
+    return yield* Effect.fail(
+      new PredictionError({
+        reason: "simulation-limit",
+        timestamp: observations[0].timestamp,
+        message: "Anomaly detection exceeds the simulation row budget",
+      }),
+    );
+  }
+
+  const model = yield* fit(historyInput, modelOptionsInput);
+
+  const report = yield* detectAnomalies(model, historyInput, {
+    seed: options.seed,
+    samples: options.samples,
+    intervalWidth: options.intervalWidth,
+  });
+
+  yield* Effect.annotateCurrentSpan({
+    "effect_prophet.observation.count": report.rows.length,
+    "effect_prophet.anomaly.count": report.anomalies.length,
+  });
+
+  return Object.freeze(report.anomalies.map((row) => row.timestamp));
 });
