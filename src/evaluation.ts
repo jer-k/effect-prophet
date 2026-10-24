@@ -29,7 +29,7 @@ import {
   type ProphetOptions,
 } from "./options";
 import { fit, predict, predictUncertainty } from "./prophet";
-import { exceedsSimulationBudget, simulationIdentity } from "./uncertainty";
+import { alignIntervalRows, exceedsSimulationBudget, simulationIdentity } from "./uncertainty";
 import type { CountryHolidayError } from "./country-holidays";
 import type { FittedProphet } from "./fitted-model";
 import type { SeasonalityLayout } from "./seasonality";
@@ -773,13 +773,9 @@ const crossValidateOperation = Effect.fn("Prophet.crossValidate")(function* (
           output: "intervals",
         }).pipe(Effect.mapError((cause) => foldFailure(fold, "uncertainty", cause)));
 
-        if (
-          intervals.kind !== "intervals" ||
-          intervals.simulation !== simulationIdentity ||
-          intervals.sampleCount !== uncertainty.samples ||
-          intervals.intervalWidth !== uncertainty.intervalWidth ||
-          intervals.rows.length !== pointRows.length
-        ) {
+        const alignment = alignIntervalRows(intervals, uncertainty, pointRows);
+
+        if (alignment.kind === "frame-mismatch") {
           return yield* Effect.fail(
             foldFailure(
               fold,
@@ -793,42 +789,28 @@ const crossValidateOperation = Effect.fn("Prophet.crossValidate")(function* (
           );
         }
 
-        const checked: Array<CrossValidationIntervalRow> = [];
-
-        for (const [rowIndex, point] of pointRows.entries()) {
-          const interval = intervals.rows[rowIndex];
-
-          if (
-            interval === undefined ||
-            interval.timestamp !== point.timestamp ||
-            !Number.isFinite(interval.value.lower) ||
-            !Number.isFinite(interval.value.upper) ||
-            interval.value.lower > interval.value.upper
-          ) {
-            return yield* Effect.fail(
-              foldFailure(
-                fold,
-                "interval-result",
-                new PredictionError({
-                  reason: "backend-failure",
-                  timestamp: point.timestamp,
-                  message: "Evaluation interval is misaligned or non-finite",
-                }),
-                rowIndex,
-              ),
-            );
-          }
-
-          checked.push(
-            Object.freeze({
-              ...point,
-              lower: interval.value.lower,
-              upper: interval.value.upper,
-            }),
+        if (alignment.kind === "row-mismatch") {
+          return yield* Effect.fail(
+            foldFailure(
+              fold,
+              "interval-result",
+              new PredictionError({
+                reason: "backend-failure",
+                timestamp: alignment.timestamp,
+                message: "Evaluation interval is misaligned or non-finite",
+              }),
+              alignment.index,
+            ),
           );
         }
 
-        foldIntervals = checked;
+        foldIntervals = alignment.rows.map(({ row, interval }) =>
+          Object.freeze({
+            ...row,
+            lower: interval.value.lower,
+            upper: interval.value.upper,
+          }),
+        );
       }
 
       return {

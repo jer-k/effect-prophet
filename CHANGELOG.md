@@ -4,6 +4,13 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows
 [Semantic Versioning](https://semver.org/). Before 1.0, minor versions may include breaking changes.
 
+## [Unreleased]
+
+### Added
+
+- `predictWithIntervals` returns each point forecast together with its seeded value and trend
+  ranges, so you no longer call `predict` and `predictUncertainty` and match up their rows.
+
 ## [0.3.0] - 2026-10-23
 
 A correctness release: broader checks against Python Prophet 1.4.0, and the fixes they turned up.
@@ -246,6 +253,7 @@ These Python Prophet features are not implemented in this release:
 - Inputs that cannot define a trend, such as every row sharing one timestamp, return an error where
   Python returns `NaN` forecasts.
 
+[Unreleased]: https://github.com/jer-k/effect-prophet/compare/v0.3.0...HEAD
 [0.3.0]: https://github.com/jer-k/effect-prophet/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/jer-k/effect-prophet/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/jer-k/effect-prophet/compare/v0.1.0...v0.1.1

@@ -35,6 +35,7 @@ import {
 } from "./options";
 import { fit, predict, predictUncertainty } from "./prophet";
 import {
+  alignIntervalRows,
   exceedsSimulationBudget,
   simulationIdentity,
   parseUncertaintyOptions,
@@ -774,38 +775,21 @@ export const evaluateHoldout = Effect.fn("Prophet.evaluateHoldout")(function* (
         Effect.mapError((cause) => failure("uncertainty", "operation-failed", cause)),
       );
 
-      if (
-        intervals.kind !== "intervals" ||
-        intervals.rows.length !== points.length ||
-        intervals.sampleCount !== uncertainty.samples ||
-        intervals.intervalWidth !== uncertainty.intervalWidth ||
-        intervals.simulation !== simulationIdentity
-      ) {
+      const alignment = alignIntervalRows(intervals, uncertainty, points);
+
+      if (alignment.kind === "frame-mismatch") {
         return yield* Effect.fail(failure("result", "result-mismatch"));
       }
 
-      const withIntervals: Array<CrossValidationIntervalRow> = [];
-
-      for (const [index, point] of points.entries()) {
-        const interval = intervals.rows[index];
-
-        if (
-          interval?.timestamp !== point.timestamp ||
-          !Number.isFinite(interval.value.lower) ||
-          !Number.isFinite(interval.value.upper) ||
-          interval.value.lower > interval.value.upper
-        ) {
-          return yield* Effect.fail(failure("result", "result-mismatch", undefined, index));
-        }
-
-        withIntervals.push({
-          ...point,
-          lower: interval.value.lower,
-          upper: interval.value.upper,
-        });
+      if (alignment.kind === "row-mismatch") {
+        return yield* Effect.fail(failure("result", "result-mismatch", undefined, alignment.index));
       }
 
-      rows = withIntervals;
+      rows = alignment.rows.map(({ row, interval }) => ({
+        ...row,
+        lower: interval.value.lower,
+        upper: interval.value.upper,
+      }));
     }
 
     const kind = uncertainty === undefined ? ("point" as const) : ("intervals" as const);

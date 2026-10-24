@@ -22,6 +22,11 @@ const OptionsSchema = Schema.Struct({
 /** Untrusted opt-in simulation request; an explicit seed is required. */
 export type EncodedUncertaintyOptions = typeof OptionsSchema.Encoded;
 
+/** Untrusted interval-only simulation request; sample output is rejected, never ignored. */
+export type EncodedIntervalOptions = Omit<EncodedUncertaintyOptions, "output"> & {
+  readonly output?: never;
+};
+
 /** Parsed exact-count simulation controls. */
 export interface UncertaintyOptions {
   readonly seed: number;
@@ -50,6 +55,13 @@ export interface UncertaintyInterval {
   readonly upper: number;
 }
 
+/** Simulated trend and value intervals for one prediction row. */
+export interface UncertaintyIntervalRow {
+  readonly timestamp: number;
+  readonly trend: UncertaintyInterval;
+  readonly value: UncertaintyInterval;
+}
+
 /** Distinct owned interval or row-major sample results. */
 export type UncertaintyResult =
   | {
@@ -57,11 +69,7 @@ export type UncertaintyResult =
       readonly simulation: typeof simulationIdentity;
       readonly sampleCount: number;
       readonly intervalWidth: number;
-      readonly rows: ReadonlyArray<{
-        readonly timestamp: number;
-        readonly trend: UncertaintyInterval;
-        readonly value: UncertaintyInterval;
-      }>;
+      readonly rows: ReadonlyArray<UncertaintyIntervalRow>;
     }
   | {
       readonly kind: "samples";
@@ -90,3 +98,80 @@ export const parseUncertaintyOptions = (
     })),
     Effect.mapError((error) => inputValidationErrorFromIssue("uncertainty-options", error.issue)),
   );
+
+/** Parse simulation controls for an operation that only returns intervals. */
+export const parseIntervalOptions = (
+  input: Parameters<typeof decodeOptions>[0],
+  message: string,
+): Effect.Effect<UncertaintyOptions & { readonly output: "intervals" }, InputValidationError> =>
+  parseUncertaintyOptions(input).pipe(
+    Effect.flatMap((options) =>
+      options.output === "intervals"
+        ? Effect.succeed({ ...options, output: options.output })
+        : Effect.fail(
+            new InputValidationError({
+              input: "uncertainty-options",
+              issues: [{ path: ["output"], message }],
+              message,
+            }),
+          ),
+    ),
+  );
+
+/** The result of pairing interval rows with the rows they were requested for. */
+export type IntervalAlignment<Row> =
+  | {
+      readonly kind: "aligned";
+      readonly rows: ReadonlyArray<{
+        readonly row: Row;
+        readonly interval: UncertaintyIntervalRow;
+      }>;
+    }
+  | { readonly kind: "frame-mismatch" }
+  | { readonly kind: "row-mismatch"; readonly index: number; readonly timestamp: number };
+
+const isOrderedInterval = (interval: UncertaintyInterval): boolean =>
+  Number.isFinite(interval.lower) &&
+  Number.isFinite(interval.upper) &&
+  interval.lower <= interval.upper;
+
+/**
+ * Pair each requested row with its interval by position.
+ *
+ * The result must answer the request, and each row must carry the requested
+ * timestamp and finite ordered intervals. Rows are never matched by timestamp
+ * alone, because duplicate timestamps may carry different auxiliary inputs.
+ */
+export const alignIntervalRows = <Row extends { readonly timestamp: number }>(
+  result: UncertaintyResult,
+  options: Pick<UncertaintyOptions, "samples" | "intervalWidth">,
+  rows: ReadonlyArray<Row>,
+): IntervalAlignment<Row> => {
+  if (
+    result.kind !== "intervals" ||
+    result.simulation !== simulationIdentity ||
+    result.sampleCount !== options.samples ||
+    result.intervalWidth !== options.intervalWidth ||
+    result.rows.length !== rows.length
+  ) {
+    return { kind: "frame-mismatch" };
+  }
+
+  const aligned: Array<{ readonly row: Row; readonly interval: UncertaintyIntervalRow }> = [];
+
+  for (const [index, row] of rows.entries()) {
+    const interval = result.rows[index];
+
+    if (
+      interval?.timestamp !== row.timestamp ||
+      !isOrderedInterval(interval.value) ||
+      !isOrderedInterval(interval.trend)
+    ) {
+      return { kind: "row-mismatch", index, timestamp: row.timestamp };
+    }
+
+    aligned.push({ row, interval });
+  }
+
+  return { kind: "aligned", rows: aligned };
+};

@@ -28,8 +28,9 @@ Python, where it differs on purpose, and the smaller behavior differences.
   selected snapshot and never silently adopt installed updates. See
   [Country holiday calendars](/guide/holiday-calendars).
 - Cross-validation and model search run one fold after another, with no worker parallelism
-- Uncertainty ranges are a separate [`predictUncertainty`](../examples/uncertainty) call, so
-  point forecasts never pay for simulations. They need a seed, so results are repeatable.
+- `predict` never simulates, so point forecasts never pay for it. Ranges come from
+  [`predictWithIntervals`](../examples/uncertainty), or `predictUncertainty` for ranges alone.
+  They need a seed, so results are repeatable.
 
 ## Small behavior differences
 

@@ -12,6 +12,7 @@ import {
   getRegressorCoefficients,
   predict,
   predictUncertainty,
+  predictWithIntervals,
   planRollingOrigin,
   crossValidate,
   crossValidateBaseline,
@@ -80,6 +81,7 @@ const expectedDeclarationFiles = [
   "dist/model-serialization.d.ts",
   "dist/observation.d.ts",
   "dist/options.d.ts",
+  "dist/predict-with-intervals.d.ts",
   "dist/prediction-row.d.ts",
   "dist/prophet.d.ts",
   "dist/regressor.d.ts",
@@ -447,6 +449,21 @@ assert.equal(samples.kind, "samples");
 if (samples.kind === "samples") {
   assert.equal(samples.value.length, 4);
 }
+
+const withIntervals = await Effect.runPromise(
+  predictWithIntervals(
+    regressorModel,
+    [{ timestamp: "2024-01-01T00:00:04.000Z", regressors: { promotion: 1 } }],
+    { seed: 42, samples: 4 },
+  ),
+);
+
+assert.equal(withIntervals.rows[0]?.value, regressorForecast?.value);
+
+assert.ok(
+  (withIntervals.rows[0]?.valueInterval.lower ?? NaN) <=
+    (withIntervals.rows[0]?.valueInterval.upper ?? NaN),
+);
 
 const logisticModel = await Effect.runPromise(
   fit(

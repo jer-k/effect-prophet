@@ -11,7 +11,10 @@ import {
   predictUncertainty,
   prophetFittingBackendLayer,
   simulationIdentity,
+  type UncertaintyInterval,
+  type UncertaintyResult,
 } from "../src/index";
+import { alignIntervalRows, parseIntervalOptions } from "../src/uncertainty";
 
 const history = [
   { timestamp: "2025-01-01T00:00:00.000Z", value: 1 },
@@ -1169,5 +1172,110 @@ describe("predictUncertainty", () => {
     }
 
     expect(spans.some((span) => span.name === "effect-prophet.wasm.simulate")).toBe(false);
+  });
+});
+
+describe("interval-only helpers", () => {
+  const options = { samples: 8, intervalWidth: 0.8 } as const;
+  const range = { lower: 1, upper: 2 } as const;
+
+  const result = (
+    rows: ReadonlyArray<{
+      timestamp: number;
+      trend: UncertaintyInterval;
+      value: UncertaintyInterval;
+    }>,
+  ): UncertaintyResult => ({
+    kind: "intervals",
+    simulation: simulationIdentity,
+    sampleCount: 8,
+    intervalWidth: 0.8,
+    rows,
+  });
+
+  it("pairs tied rows by position and reports the first misaligned row", () => {
+    const requested = [
+      { timestamp: 5, id: "a" },
+      { timestamp: 5, id: "b" },
+      { timestamp: 3, id: "c" },
+    ];
+
+    const intervals = requested.map(({ timestamp }) => ({ timestamp, trend: range, value: range }));
+    const aligned = alignIntervalRows(result(intervals), options, requested);
+
+    expect(aligned).toEqual({
+      kind: "aligned",
+      rows: requested.map((row, index) => ({ row, interval: intervals[index] })),
+    });
+
+    for (const broken of [
+      { timestamp: 4, trend: range, value: range },
+      { timestamp: 5, trend: range, value: { lower: 2, upper: 1 } },
+      { timestamp: 5, trend: { lower: Number.NaN, upper: 1 }, value: range },
+      { timestamp: 5, trend: range, value: { lower: 0, upper: Number.POSITIVE_INFINITY } },
+    ]) {
+      const rows = [intervals[0], broken, intervals[2]].filter(Predicate.isNotUndefined);
+
+      expect(alignIntervalRows(result(rows), options, requested)).toEqual({
+        kind: "row-mismatch",
+        index: 1,
+        timestamp: 5,
+      });
+    }
+
+    expect(
+      alignIntervalRows(result([{ timestamp: 5, trend: range, value: range }]), options, [
+        { timestamp: 5 },
+      ]).kind,
+    ).toBe("aligned");
+  });
+
+  it("rejects a frame that does not answer the request", () => {
+    const rows = [{ timestamp: 1, trend: range, value: range }];
+    const requested = [{ timestamp: 1 }];
+
+    for (const frame of [
+      { ...result(rows), sampleCount: 9 },
+      { ...result(rows), intervalWidth: 0.9 },
+      result([]),
+      {
+        kind: "samples",
+        simulation: simulationIdentity,
+        sampleCount: 8,
+        timestamps: [1],
+        trend: new Float64Array(8),
+        value: new Float64Array(8),
+      } satisfies UncertaintyResult,
+    ]) {
+      expect(alignIntervalRows(frame, options, requested)).toEqual({ kind: "frame-mismatch" });
+    }
+  });
+
+  it("parses interval controls and rejects sample output with the caller's message", async () => {
+    expect(await Effect.runPromise(parseIntervalOptions({ seed: 1 }, "Needs intervals"))).toEqual({
+      seed: 1,
+      samples: 1000,
+      intervalWidth: 0.8,
+      output: "intervals",
+    });
+
+    const samples = await Effect.runPromise(
+      Effect.flip(parseIntervalOptions({ seed: 1, output: "samples" }, "Needs intervals")),
+    );
+
+    expect(samples).toEqual(
+      new InputValidationError({
+        input: "uncertainty-options",
+        issues: [{ path: ["output"], message: "Needs intervals" }],
+        message: "Needs intervals",
+      }),
+    );
+
+    const malformed = await Effect.runPromise(
+      Effect.flip(parseIntervalOptions({ seed: -1, output: "samples" }, "Needs intervals")),
+    );
+
+    expect(malformed).toMatchObject({ input: "uncertainty-options" });
+    expect(malformed.issues.some((issue) => issue.path?.[0] === "seed")).toBe(true);
   });
 });

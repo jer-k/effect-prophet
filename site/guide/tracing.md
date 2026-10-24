@@ -89,6 +89,7 @@ Each of these functions creates a span named after it:
 | `Prophet.fit`                                                                                      | `fit`                                                                                       |
 | `Prophet.predict`                                                                                  | `predict`                                                                                   |
 | `Prophet.predictUncertainty`                                                                       | `predictUncertainty`                                                                        |
+| `Prophet.predictWithIntervals`                                                                     | `predictWithIntervals`, around its `Prophet.predictUncertainty` and `Prophet.predict` spans |
 | `Prophet.crossValidate`                                                                            | `crossValidate`                                                                             |
 | `Prophet.planRollingOrigin`                                                                        | `planRollingOrigin`                                                                         |
 | `Prophet.searchModels`                                                                             | `searchModels`                                                                              |
