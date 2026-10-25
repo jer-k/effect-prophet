@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "runId": "2026-10-23T111858-007Z-fad30c55",
-  "createdAt": "2026-10-23T11:19:03.166Z",
-  "gitRevision": "fad30c55c03760712503393517c093abe5d6e0c8",
+  "runId": "2026-10-25T174545-762Z-5f551f20",
+  "createdAt": "2026-10-25T17:45:50.598Z",
+  "gitRevision": "5f551f20f5e46dd5d8d0dbe73cbc477bd1c1d725",
   "gitDirty": false,
   "hostPlatform": "darwin",
   "hostRelease": "25.5.0",
@@ -29,6 +29,8 @@
     "uncertainty-logistic-explicit-floor-minmax-full-samples-128",
     "uncertainty-logistic-explicit-floor-minmax-mixed-conditions-events-intervals-128",
     "uncertainty-logistic-explicit-floor-minmax-mixed-conditions-events-samples-128",
+    "anomalies-logistic-defaults-99",
+    "warm-start-logistic-defaults-7-new-rows",
     "evaluation-logistic-point",
     "evaluation-logistic-intervals",
     "evaluation-logistic-search",
@@ -91,7 +93,7 @@
     },
     {
       "name": "calendars/manifest.json",
-      "value": "fa91eb6d82dae1b989872a4a412cd3cc8dac1f47b409f69175467d7800232ed1"
+      "value": "ec22a976e861f3cd67b10b88b25ffcd2eb588b2cfe9a910449d4065bdede77ab"
     },
     {
       "name": "calendars/coverage.json",
@@ -99,7 +101,7 @@
     },
     {
       "name": "src/internal/country-holiday-catalog.ts",
-      "value": "4d5bfb360730cf7747cd4ff7d13d0ff1b93e36d52a9dc79166a5c9fbd5e3dba9"
+      "value": "4379ba2bd77edf482ffb5c2e1bc471878b9e338e4a6354393e5300c41968a93c"
     },
     {
       "name": "benchmark/cases/regressors/public-api.json",
@@ -123,7 +125,7 @@
     },
     {
       "name": "benchmark/cases/growth/defaults.ts",
-      "value": "1c0bbb0bdd0019f437f3b402f0bc6dcc88bf7f70f729f18eead5a2368c058116"
+      "value": "4ca8a0f7668000d0199ee0caa86fee38c401b87fe3a84b6cac98d287a7734d52"
     },
     {
       "name": "tools/prophet/linear_optimizer_evidence.py",
@@ -163,27 +165,27 @@
     },
     {
       "name": "benchmark/tools/result.ts",
-      "value": "e749aba82b1d2655861ea3bc8cf53a2ae18499efd1702183caa57b49d64b02fa"
+      "value": "42f379d07c0836eb4f6bc83eda2d4bad2d72dab59721e5a6c5c0f499fea85253"
     },
     {
       "name": "benchmark/tools/adapters/effect-prophet.ts",
-      "value": "96987c2d5f052eb20e9bbfd1a335aaa6b048257e11369a665e25750b778302f7"
+      "value": "54b1acd1ff5779a6d0bd7f5270a70099de68132e888e71cfe7f8328c72a6b55a"
     },
     {
       "name": "benchmark/tools/adapters/python-prophet.py",
-      "value": "500cef84afae9b38169ef971fc20c6d4c91740104198118c7b5079f30722e4b4"
+      "value": "748b589c8994feccb35cb839fa8af1a59e6f4cd100d801f9a76c1751d3d17bf0"
     },
     {
       "name": "benchmark/tools/catalog.ts",
-      "value": "272efd17382fde53e1380310aa7469aec7c9fcade6f0511b32f82c3b9b614712"
+      "value": "33119f26b2650c10899ac0701f4207d0168baeee391bb50e944d2973cec72b7b"
     },
     {
       "name": "benchmark/tools/case.ts",
-      "value": "6687b753bb4f50b9f0455c9e4f594a641663c9330484162440354daaff339d32"
+      "value": "cbc1f500aa30e37b6cfe2148de3dc0c9b95f516567ceb61bfcfba04c9587607d"
     },
     {
       "name": "benchmark/tools/report.ts",
-      "value": "50768da24a430982e8c10f34d121865871dfacf0bb2c8993cace0771d6f233c7"
+      "value": "7c781fbc57baf9bba0434caed9a2453a910f904a99ed6083be3971a87a61e8d3"
     },
     {
       "name": "benchmark/tools/report-cli.ts",
@@ -198,8 +200,8 @@
       "value": "dd3b130e08016b397bf0ca40a5ddef768bedd890d6391c1c16136869d77edc44"
     },
     {
-      "name": "benchmark/results/runs/2026-10-23T111858-007Z-fad30c55/cases.json",
-      "value": "2fd7fbff2407a52d3faf6358c376340ffe9d55858dde31a5d9d01f54bedb127c"
+      "name": "benchmark/results/runs/2026-10-25T174545-762Z-5f551f20/cases.json",
+      "value": "9be69d263f45bc4cb1cae9659ddb9172d06084777453f4e95798afc1204dc197"
     },
     {
       "name": "benchmark/evidence/comparisons.json",
@@ -222,12 +224,16 @@
       "value": "e82d8958680c7c36e8b19e8b70038324f2dfee936f93bcb49d8bd17b73dfa267"
     },
     {
+      "name": "benchmark/inputs/v7/manifest.json",
+      "value": "a834d6bbd38085d5b2f0a6e944f3315e0f51c1db19452ee4df31e74f31ada850"
+    },
+    {
       "name": "benchmark/inputs/v2/manifest.json",
       "value": "104ef27a397a89f076d5f2fe9486a3af427ec8791be5015ad0d2dfaa99ce3aae"
     },
     {
       "name": "package-lock.json",
-      "value": "8708018f06a0ecceb9c2fc8c0f6b7b611d15714e476e4c2b406981b40f93da5b"
+      "value": "104c37d10d1c531327aad421bc30351ec1e5f14acaeac9803a8971d2710163db"
     },
     {
       "name": "benchmark/inputs/v5/country-logistic-96.json",
@@ -252,6 +258,10 @@
     {
       "name": "benchmark/inputs/v1/logistic-uncertainty-mixed.json",
       "value": "6dd8e686d92b341795f6e1f4cf7be9c247ccdb275ca309059fd9114369416767"
+    },
+    {
+      "name": "benchmark/inputs/v7/logistic-anomalies.json",
+      "value": "f92aff28ec2c019e6c7a4aa0e8212f37dc46671743801175f23c953ca5e56275"
     },
     {
       "name": "benchmark/inputs/v2/logistic-basic-96.json",
@@ -329,11 +339,11 @@
   "containerImages": [
     {
       "name": "effect-prophet/benchmark-effect:local",
-      "value": "sha256:afea215a8d454312c693b8369934fb94665e4e9cffd67cbb206d35182cd8b614"
+      "value": "sha256:39c4ab144a7147d1a81c22e55137c3ac28c9660c59959796c7c7aca75854b6a2"
     },
     {
       "name": "effect-prophet/benchmark-python:1.4.0",
-      "value": "sha256:43c20fb254498dcc6cbed89c41d24624a3f22f3d464764ab2480755a55279379"
+      "value": "sha256:93483eec0afdfe504929a154683fc5d671aec1c501107d5c6a76d99557be5970"
     }
   ]
 }

@@ -6,15 +6,15 @@ Recorded historical outcomes are not recomputed using current gates. Architectur
 
 | Scope | Run | Passed | Failed | Provenance | Report |
 | --- | --- | ---: | ---: | --- | --- |
-| flat-growth | `2026-10-23T070952-935Z-fad30c55` | 63 | 0 | clean tree | [results](retained/flat-growth/2026-10-23T070952-935Z-fad30c55/report.md) |
-| linear-growth | `2026-10-23T035446-262Z-fad30c55` | 38 | 2 | clean tree | [results](retained/linear-growth/2026-10-23T035446-262Z-fad30c55/report.md) |
-| logistic-growth | `2026-10-23T111858-007Z-fad30c55` | 52 | 0 | clean tree | [results](retained/logistic-growth/2026-10-23T111858-007Z-fad30c55/report.md) |
+| flat-growth | `2026-10-25T172048-197Z-5f551f20` | 65 | 0 | clean tree | [results](retained/flat-growth/2026-10-25T172048-197Z-5f551f20/report.md) |
+| linear-growth | `2026-10-25T170328-932Z-5f551f20` | 41 | 2 | clean tree | [results](retained/linear-growth/2026-10-25T170328-932Z-5f551f20/report.md) |
+| logistic-growth | `2026-10-25T174545-762Z-5f551f20` | 54 | 0 | clean tree | [results](retained/logistic-growth/2026-10-25T174545-762Z-5f551f20/report.md) |
 
 ## Case outcomes
 
 Only passed gates admit timing. Diagnostic invalid-domain cases remain failed; they are not relabeled as successful fits.
 
-### flat-growth/2026-10-23T070952-935Z-fad30c55
+### flat-growth/2026-10-25T172048-197Z-5f551f20
 
 | Case | Outcome | Contract |
 | --- | --- | --- |
@@ -49,6 +49,8 @@ Only passed gates admit timing. Diagnostic invalid-domain cases remain failed; t
 | `uncertainty-flat-defaults-seasonal-intervals-1000` | passed | scalar-process-different-public-work |
 | `uncertainty-flat-mixed-components-full-intervals-512` | passed | scalar-process-different-public-work |
 | `uncertainty-flat-mixed-components-large-full-samples-128` | passed | scalar-process-different-public-work |
+| `anomalies-flat-defaults-99` | passed | scalar-process-different-public-work |
+| `warm-start-flat-defaults-7-new-rows` | passed | equivalent-objective |
 | `evaluation-flat-mixed-point` | passed | different-public-work |
 | `evaluation-flat-mixed-intervals` | passed | different-public-work |
 | `evaluation-flat-mixed-search` | passed | different-public-work |
@@ -82,7 +84,7 @@ Only passed gates admit timing. Diagnostic invalid-domain cases remain failed; t
 | `flat-mixed-components-absmax-defaults` | passed | equivalent-objective |
 | `flat-correlated-regressors` | passed | equivalent-objective |
 
-### linear-growth/2026-10-23T035446-262Z-fad30c55
+### linear-growth/2026-10-25T170328-932Z-5f551f20
 
 | Case | Outcome | Contract |
 | --- | --- | --- |
@@ -122,12 +124,15 @@ Only passed gates admit timing. Diagnostic invalid-domain cases remain failed; t
 | `uncertainty-linear-offset-scaling-absmax-one-future-samples-128` | passed | scalar-process-different-public-work |
 | `uncertainty-linear-mixed-components-mixed-intervals-128` | passed | scalar-process-different-public-work |
 | `uncertainty-linear-mixed-components-mixed-samples-512` | passed | scalar-process-different-public-work |
+| `anomalies-linear-defaults-99` | passed | scalar-process-different-public-work |
+| `warm-start-linear-defaults-30-new-rows` | passed | equivalent-objective |
+| `warm-start-linear-defaults-1-new-row` | passed | equivalent-objective |
 | `evaluation-linear-point` | passed | different-public-work |
 | `evaluation-linear-intervals` | passed | different-public-work |
 | `evaluation-linear-search` | passed | different-public-work |
 | `evaluation-linear-failure-search` | passed | different-public-work |
 
-### logistic-growth/2026-10-23T111858-007Z-fad30c55
+### logistic-growth/2026-10-25T174545-762Z-5f551f20
 
 | Case | Outcome | Contract |
 | --- | --- | --- |
@@ -149,6 +154,8 @@ Only passed gates admit timing. Diagnostic invalid-domain cases remain failed; t
 | `uncertainty-logistic-explicit-floor-minmax-full-samples-128` | passed | scalar-process-different-public-work |
 | `uncertainty-logistic-explicit-floor-minmax-mixed-conditions-events-intervals-128` | passed | scalar-process-different-public-work |
 | `uncertainty-logistic-explicit-floor-minmax-mixed-conditions-events-samples-128` | passed | scalar-process-different-public-work |
+| `anomalies-logistic-defaults-99` | passed | scalar-process-different-public-work |
+| `warm-start-logistic-defaults-7-new-rows` | passed | equivalent-objective |
 | `evaluation-logistic-point` | passed | different-public-work |
 | `evaluation-logistic-intervals` | passed | different-public-work |
 | `evaluation-logistic-search` | passed | different-public-work |

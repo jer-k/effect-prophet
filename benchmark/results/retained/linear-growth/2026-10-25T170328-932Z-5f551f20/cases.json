@@ -962,7 +962,7 @@
     "id": "country-us-linear-additive",
     "dataset": "v5/country-basic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:457fc6eed73b9adef1c65e3e2a42a640e0a24b637f07e51f47e66bc9ec7f9b43",
+      "snapshotId": "sha256:a14370273fba01e9cb27ee517ec9ba221510f8e9fba706dcd872c63ac2ea7d88",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -1104,7 +1104,7 @@
     "id": "country-explicit-us-linear-additive",
     "dataset": "v5/country-basic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:457fc6eed73b9adef1c65e3e2a42a640e0a24b637f07e51f47e66bc9ec7f9b43",
+      "snapshotId": "sha256:a14370273fba01e9cb27ee517ec9ba221510f8e9fba706dcd872c63ac2ea7d88",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -1395,7 +1395,7 @@
     "id": "country-us-linear-multiplicative",
     "dataset": "v5/country-basic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:457fc6eed73b9adef1c65e3e2a42a640e0a24b637f07e51f47e66bc9ec7f9b43",
+      "snapshotId": "sha256:a14370273fba01e9cb27ee517ec9ba221510f8e9fba706dcd872c63ac2ea7d88",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -1537,7 +1537,7 @@
     "id": "country-explicit-us-linear-multiplicative",
     "dataset": "v5/country-basic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:457fc6eed73b9adef1c65e3e2a42a640e0a24b637f07e51f47e66bc9ec7f9b43",
+      "snapshotId": "sha256:a14370273fba01e9cb27ee517ec9ba221510f8e9fba706dcd872c63ac2ea7d88",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -1828,7 +1828,7 @@
     "id": "country-boundary-linear",
     "dataset": "v5/country-boundary-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:457fc6eed73b9adef1c65e3e2a42a640e0a24b637f07e51f47e66bc9ec7f9b43",
+      "snapshotId": "sha256:a14370273fba01e9cb27ee517ec9ba221510f8e9fba706dcd872c63ac2ea7d88",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -4431,6 +4431,304 @@
       "predictionRows": 12,
       "futureRows": 8,
       "horizonDays": 15
+    }
+  },
+  {
+    "id": "anomalies-linear-defaults-99",
+    "dataset": "v7/linear-anomalies.json",
+    "workload": {
+      "kind": "map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "linear-output-first-v4"
+      },
+      "fitRequest": "growth-only",
+      "configuration": {
+        "growth": "linear",
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [
+          {
+            "name": "weekly",
+            "periodDays": 7,
+            "fourierOrder": 3,
+            "priorScale": 10
+          }
+        ],
+        "events": [],
+        "regressors": []
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true
+      },
+      "uncertainty": {
+        "seed": 19,
+        "samples": 1000,
+        "intervalWidth": 0.99,
+        "output": "intervals",
+        "algorithm": "scalar-continuous-time",
+        "evidence": "docs/validation/uncertainty.md#evidence-classes",
+        "samplerMemoryLimitBytes": 67108864
+      },
+      "anomalies": {
+        "expected": [
+          "2020-02-20T00:00:00.000Z",
+          "2020-04-30T00:00:00.000Z",
+          "2020-08-18T00:00:00.000Z",
+          "2020-10-27T00:00:00.000Z"
+        ]
+      }
+    },
+    "phases": [
+      "warm-fit",
+      "warm-uncertainty",
+      "warm-anomalies"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 3,
+    "independentRuns": 2,
+    "timeoutSeconds": 900,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.01,
+        "relative": 0.002
+      },
+      "component": {
+        "absolute": 0.01,
+        "relative": 0.002
+      },
+      "additive": {
+        "absolute": 0.01,
+        "relative": 0.002
+      },
+      "forecast": {
+        "absolute": 0.01,
+        "relative": 0.002
+      },
+      "noiseScale": {
+        "absolute": 0.01,
+        "relative": 0.02
+      },
+      "persistence": {
+        "absolute": 1e-10,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "rowSelection": {
+      "historical": 365,
+      "future": 0,
+      "stride": 1
+    },
+    "datasetIdentity": {
+      "recipe": "linear-anomalies-v1:piecewise+weekly+bounded-noise-x10+outliers@50(+15),120(-15),230(+12),300(-12):n=365:h=0",
+      "sha256": "2b70250a026865e01f8ce95665c42641633fba309e791a7dc1e2996e67bd98ed",
+      "trainingRows": 365,
+      "predictionRows": 365,
+      "futureRows": 0,
+      "horizonDays": 0
+    }
+  },
+  {
+    "id": "warm-start-linear-defaults-30-new-rows",
+    "dataset": "v1/linear-medium.json",
+    "workload": {
+      "kind": "map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "linear-output-first-v4"
+      },
+      "fitRequest": "growth-only",
+      "configuration": {
+        "growth": "linear",
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [
+          {
+            "name": "weekly",
+            "periodDays": 7,
+            "fourierOrder": 3,
+            "priorScale": 10
+          }
+        ],
+        "events": [],
+        "regressors": []
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true
+      },
+      "warmStart": {
+        "baseRows": 226,
+        "investigateParameterAbsolute": 0.01
+      }
+    },
+    "phases": [
+      "warm-fit",
+      "warm-start-fit"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 3,
+    "independentRuns": 2,
+    "timeoutSeconds": 300,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.01,
+        "relative": 0.002
+      },
+      "component": {
+        "absolute": 0.01,
+        "relative": 0.002
+      },
+      "additive": {
+        "absolute": 0.01,
+        "relative": 0.002
+      },
+      "forecast": {
+        "absolute": 0.01,
+        "relative": 0.002
+      },
+      "noiseScale": {
+        "absolute": 0.01,
+        "relative": 0.02
+      },
+      "persistence": {
+        "absolute": 1e-10,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "deterministic-piecewise-weekly-v2:n=256:h=64",
+      "sha256": "5f69f47c9189c3587fe9c4d72a1c885d2b16d5bd72fa693b49c46ca5ad6381fc",
+      "trainingRows": 256,
+      "predictionRows": 64,
+      "futureRows": 64,
+      "horizonDays": 64
+    }
+  },
+  {
+    "id": "warm-start-linear-defaults-1-new-row",
+    "dataset": "v1/linear-medium.json",
+    "workload": {
+      "kind": "map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "linear-output-first-v4"
+      },
+      "fitRequest": "growth-only",
+      "configuration": {
+        "growth": "linear",
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [
+          {
+            "name": "weekly",
+            "periodDays": 7,
+            "fourierOrder": 3,
+            "priorScale": 10
+          }
+        ],
+        "events": [],
+        "regressors": []
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true
+      },
+      "warmStart": {
+        "baseRows": 255,
+        "investigateParameterAbsolute": 0.01
+      }
+    },
+    "phases": [
+      "warm-fit",
+      "warm-start-fit"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 3,
+    "independentRuns": 2,
+    "timeoutSeconds": 300,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.01,
+        "relative": 0.002
+      },
+      "component": {
+        "absolute": 0.01,
+        "relative": 0.002
+      },
+      "additive": {
+        "absolute": 0.01,
+        "relative": 0.002
+      },
+      "forecast": {
+        "absolute": 0.01,
+        "relative": 0.002
+      },
+      "noiseScale": {
+        "absolute": 0.01,
+        "relative": 0.02
+      },
+      "persistence": {
+        "absolute": 1e-10,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "deterministic-piecewise-weekly-v2:n=256:h=64",
+      "sha256": "5f69f47c9189c3587fe9c4d72a1c885d2b16d5bd72fa693b49c46ca5ad6381fc",
+      "trainingRows": 256,
+      "predictionRows": 64,
+      "futureRows": 64,
+      "horizonDays": 64
     }
   },
   {

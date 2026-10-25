@@ -19,6 +19,8 @@
     "uncertainty-logistic-explicit-floor-minmax-full-samples-128",
     "uncertainty-logistic-explicit-floor-minmax-mixed-conditions-events-intervals-128",
     "uncertainty-logistic-explicit-floor-minmax-mixed-conditions-events-samples-128",
+    "anomalies-logistic-defaults-99",
+    "warm-start-logistic-defaults-7-new-rows",
     "evaluation-logistic-point",
     "evaluation-logistic-intervals",
     "evaluation-logistic-search",
