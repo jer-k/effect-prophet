@@ -4,34 +4,45 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows
 [Semantic Versioning](https://semver.org/). Before 1.0, minor versions may include breaking changes.
 
-## [Unreleased]
+## [0.4.0] - 2026-10-25
+
+Shortcuts for everyday jobs: forecast in one call, get ranges with every forecast, flag unusual
+values, and start a refit from an earlier model. Existing code works as before.
 
 ### Added
 
-- `predictWithIntervals` returns each point forecast together with its seeded value and trend
-  ranges, so you no longer call `predict` and `predictUncertainty` and match up their rows.
-- `detectAnomalies` checks new measurements against the ranges of an already fitted model and
-  reports which fall below or above them. The range defaults to 99% wide.
-- `forecast` fits a history and predicts the rows you pass in one call, returning exactly what
-  `fit` and then `predict` would. It returns only the forecast; call `fit` and `predict` yourself
-  to keep the model.
-- `warmStartParameters` reads a fitted model's parameters, and `map.warmStart` starts a fit from
-  them, like Python's `warm_start_params` and `fit(init=...)`. As in Python, changepoint and
-  coefficient values are used only when their counts still match. A warm start isn't always
-  faster; see [Updating a model with new data](https://jer-k.github.io/effect-prophet/examples/saving-models#updating-a-model-with-new-data).
-- `anomalies` fits a history and returns the timestamps whose values fall outside their own 99%
-  range, like `Prophet.anomalies` in prophet-ruby. The flagged values also shape the fit, so use
-  `detectAnomalies` to judge new data against an earlier model.
+- **`forecast`** fits a history and predicts your future rows in one call. The result is exactly
+  what `fit` and then `predict` return. The model isn't returned, so call `fit` and `predict`
+  yourself when you want to reuse or [save it](https://jer-k.github.io/effect-prophet/examples/saving-models).
+- **`predictWithIntervals`** returns each forecast with its value and trend ranges, so you no
+  longer call `predict` and `predictUncertainty` and match up their rows yourself.
+- **`detectAnomalies`** checks new measurements against a model you already fitted and says
+  whether each is below, within or above its range. The model isn't refitted, so it suits
+  monitoring: train on last quarter, check this week. Ranges default to 99% wide.
+- **`anomalies`** fits a history and returns the timestamps whose values fall outside their own
+  99% range, like `Prophet.anomalies` in prophet-ruby. The flagged values also shape the fit, so a
+  large outlier can hide smaller ones; see [Finding anomalies](https://jer-k.github.io/effect-prophet/examples/anomalies).
+- **Warm starts**, like Python's `warm_start_params`. `warmStartParameters(model)` reads a fitted
+  model's parameters, and passing them as `map.warmStart` starts the next fit from there. As in
+  Python, the changepoint and coefficient values are used only when their counts still match.
+  `crossValidate` and `searchModels` use the warm start for every fold.
+- A warm start isn't always faster, and a logistic refit after many new rows can settle on a much
+  worse fit, in Python too. [Updating a model with new data](https://jer-k.github.io/effect-prophet/examples/saving-models#updating-a-model-with-new-data)
+  shows how to check for that.
+- Tracing spans for each new operation, and attributes on the fit span saying whether a fit was
+  warm-started.
+- `defaultIntervalWidth` (0.8) and `defaultAnomalyIntervalWidth` (0.99) are exported.
 
-### Benchmarks
+### Verification against Python Prophet
 
-- New benchmarks check `anomalies` against the same steps written with Python Prophet: fit,
-  predict the history with 99% ranges, and flag the values outside them. They cover linear, flat
-  and logistic histories with known outliers, which both libraries must find.
-- New benchmarks check warm starts against Python's `fit(df, init=warm_start_params(m))`: fit
-  the first rows of a history, then refit the whole history from that fit, after a day, a week or
-  a month of new rows. They cover linear, flat and logistic growth and time the refit beside a
-  fresh fit.
+- **New fixtures** check warm starts against Python's `warm_start_params`, for linear, flat,
+  logistic and multiplicative models and for refits whose changepoint or coefficient counts no
+  longer match.
+- **New benchmarks** check `anomalies` against the same steps written with Python Prophet, on
+  linear, flat and logistic histories with known outliers. Both libraries must flag every one.
+- **New benchmarks** check warm starts against Python's `fit(df, init=warm_start_params(m))`:
+  refit a history from an earlier fit after a day, a week or a month of new rows, for linear,
+  flat and logistic growth, and time the refit beside a fresh fit.
 
 ## [0.3.0] - 2026-10-23
 
@@ -275,7 +286,7 @@ These Python Prophet features are not implemented in this release:
 - Inputs that cannot define a trend, such as every row sharing one timestamp, return an error where
   Python returns `NaN` forecasts.
 
-[Unreleased]: https://github.com/jer-k/effect-prophet/compare/v0.3.0...HEAD
+[0.4.0]: https://github.com/jer-k/effect-prophet/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/jer-k/effect-prophet/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/jer-k/effect-prophet/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/jer-k/effect-prophet/compare/v0.1.0...v0.1.1
