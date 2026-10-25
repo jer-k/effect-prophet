@@ -1,8 +1,10 @@
 import { Effect } from "effect";
+import type { WarmStartParameters } from "effect-prophet";
 import { describe, expect, it } from "vitest";
 
 import { parseBenchmarkCases, type BenchmarkCase } from "../case.ts";
 import { linearGrowthEdgeCases } from "../../cases/growth/linear/edge-cases.ts";
+import { warmStartCases } from "../../cases/growth/warm-start.ts";
 import { anomalyCases } from "../../cases/uncertainty/anomalies.ts";
 import { uncertaintyCases } from "../../cases/uncertainty/public-api.ts";
 import { buildBenchmarkReport, renderBenchmarkMarkdown } from "../report.ts";
@@ -956,6 +958,128 @@ describe("benchmark reporting", () => {
         status: "failed",
         note: "Anomaly flags are missing, misaligned, or not outside their own intervals.",
       });
+    }
+  });
+
+  it("gates warm-start cases on both libraries' starting parameters", async () => {
+    const [linear, flat] = [warmStartCases[0], warmStartCases[2]];
+
+    if (linear === undefined || flat === undefined) {
+      throw new Error("Missing declared warm-start cases");
+    }
+
+    const [cases, manifest] = await Promise.all([
+      Effect.runPromise(
+        parseBenchmarkCases([linear, flat].map((item) => ({ ...item, independentRuns: 1 }))),
+      ),
+      Effect.runPromise(parseRunManifest(manifestInput)),
+    ]);
+
+    const parameters = { k: 0.2, m: 0.4, sigmaObs: 0.05, delta: [0.01, -0.02], beta: [0.1, 0.2] };
+
+    type Parameters = WarmStartParameters;
+
+    const inputFor = (
+      implementation: "effect-prophet" | "python-prophet",
+      selected: BenchmarkCase,
+      warmStart: Parameters | undefined,
+    ) => {
+      const projection = {
+        ...correctness,
+        caseId: selected.id,
+        modelKind: "linear-piecewise-map",
+        noiseScale: 0.2,
+        fitQuality: optimizerQualityEntries,
+      };
+
+      const baseRows = selected.workload.kind === "map" ? selected.workload.warmStart?.baseRows : 0;
+
+      return {
+        ...makeResultInput(implementation, 100),
+        correctness: [
+          warmStart === undefined
+            ? projection
+            : { ...projection, warmStart: { baseRows, parameters: warmStart } },
+        ],
+        measurements: [
+          {
+            ...makeResultInput(implementation, 100).measurements[0],
+            caseId: selected.id,
+            phase: "warm-start-fit",
+            comparison: "equivalent-objective",
+            evidenceId: selected.workload.comparison.evidenceId,
+          },
+        ],
+      };
+    };
+
+    const reportWith = async (
+      selected: BenchmarkCase,
+      effect: Parameters | undefined,
+      python: Parameters | undefined,
+    ) =>
+      buildBenchmarkReport(
+        manifest,
+        cases.filter((item) => item.id === selected.id),
+        await Effect.runPromise(
+          parseImplementationResult(inputFor("effect-prophet", selected, effect)),
+        ),
+        await Effect.runPromise(
+          parseImplementationResult(inputFor("python-prophet", selected, python)),
+        ),
+        new Set([selected.workload.comparison.evidenceId]),
+      );
+
+    const accepted = await reportWith(linear, { ...parameters, m: 0.4001 }, parameters);
+
+    expect(accepted.correctness[0]).toMatchObject({
+      status: "passed",
+      warmStart: { baseRows: 226, maximumParameterDifference: expect.closeTo(1e-4, 12) },
+      investigations: [],
+      note: expect.stringContaining("own fit of the first 226 rows"),
+    });
+    expect(accepted.timings.map((timing) => timing.phase)).toEqual([
+      "warm-start-fit",
+      "warm-start-fit",
+    ]);
+
+    // Starting points further apart than the case allows are flagged; the refit's outputs gate.
+    const apart = await reportWith(linear, { ...parameters, delta: [0.01, -0.05] }, parameters);
+
+    expect(apart.correctness[0]).toMatchObject({
+      status: "passed",
+      investigations: [
+        {
+          name: "warm-start-parameters",
+          effectValue: -0.05,
+          pythonValue: -0.02,
+          threshold: 0.01,
+        },
+      ],
+    });
+    expect(renderBenchmarkMarkdown(apart)).toContain("| warm-start-parameters |");
+
+    // Flat models keep no rate state, so Effect's zero rate and empty deltas are not compared.
+    const flatReport = await reportWith(flat, { ...parameters, k: 0, delta: [] }, parameters);
+
+    expect(flatReport.correctness[0]).toMatchObject({
+      status: "passed",
+      warmStart: { maximumParameterDifference: 0 },
+    });
+    expect(flatReport.correctness[0]?.investigations).toBeUndefined();
+
+    for (const [effect, python] of [
+      [parameters, undefined],
+      [{ ...parameters, beta: [0.1] }, parameters],
+      [{ ...parameters, delta: [0.01] }, parameters],
+    ] as const) {
+      const rejected = await reportWith(linear, effect, python);
+
+      expect(rejected.correctness[0]).toMatchObject({
+        status: "failed",
+        note: "Warm-start parameters are missing, misaligned, or shaped differently.",
+      });
+      expect(rejected.timings).toEqual([]);
     }
   });
 

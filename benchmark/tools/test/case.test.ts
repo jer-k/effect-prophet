@@ -1,6 +1,7 @@
 import { Effect } from "effect";
 import { describe, expect, it } from "vitest";
 
+import { warmStartCases } from "../../cases/growth/warm-start.ts";
 import { loadCaseCatalog, loadCoreCases } from "../catalog.ts";
 
 import { parseBenchmarkCases, parseBenchmarkDataset } from "../case.ts";
@@ -154,6 +155,44 @@ describe("benchmark case parsing", () => {
     const result = await Effect.runPromise(parseBenchmarkCases([invalid]).pipe(Effect.exit));
 
     expect(result._tag).toBe("Failure");
+  });
+
+  it("requires warm-start cases to refit a longer history in their own phase", async () => {
+    const [declared] = warmStartCases;
+
+    if (declared === undefined || declared.workload.kind !== "map") {
+      throw new Error("Expected a declared warm-start case");
+    }
+
+    const { warmStart: _omitted, ...withoutWarmStart } = declared.workload;
+
+    const withBaseRows = (baseRows: number) => ({
+      ...declared,
+      datasetIdentity: {
+        recipe: "linear-medium",
+        sha256: "0".repeat(64),
+        trainingRows: 256,
+        predictionRows: 64,
+        futureRows: 64,
+        horizonDays: 64,
+      },
+      workload: {
+        ...declared.workload,
+        warmStart: { baseRows, investigateParameterAbsolute: 1e-3 },
+      },
+    });
+
+    expect(await Effect.runPromise(parseBenchmarkCases([withBaseRows(255)]))).toHaveLength(1);
+
+    for (const invalid of [
+      { ...declared, phases: ["warm-fit"] },
+      { ...declared, workload: withoutWarmStart },
+      withBaseRows(256),
+    ]) {
+      const failure = await Effect.runPromise(Effect.flip(parseBenchmarkCases([invalid])));
+
+      expect(failure.message).toContain("longer history from a calendar-free warm start");
+    }
   });
 
   it("contains every feature workload and no different-objective branch", async () => {

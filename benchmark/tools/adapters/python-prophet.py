@@ -21,7 +21,7 @@ import pandas as pd
 import prophet
 from prophet import Prophet
 from prophet.serialize import model_from_json, model_to_json
-from prophet.utilities import regressor_coefficients
+from prophet.utilities import regressor_coefficients, warm_start_params
 
 import evaluation as evaluation_work
 
@@ -216,21 +216,47 @@ def configure_model(benchmark_case: dict[str, Any]) -> Prophet:
     return model
 
 
-def fit_model(training: pd.DataFrame, benchmark_case: dict[str, Any]) -> Prophet:
+def fit_model(training: pd.DataFrame, benchmark_case: dict[str, Any],
+              init: dict[str, Any] | None = None) -> Prophet:
     """Construct and fit a fresh model through Prophet's public fit operation."""
 
     workload = benchmark_case["workload"]
     model = configure_model(benchmark_case)
     optimizer = workload["pythonOptimizer"]
+    warm_start = {} if init is None else {"init": init}
     if workload.get("fitRequest") == "growth-only":
         # Output precision is not a solver tolerance; no algorithm/budget override.
-        return model.fit(training, sig_figs=12)
+        return model.fit(training, sig_figs=12, **warm_start)
     return model.fit(
         training,
         **({} if optimizer["algorithm"] == "Auto" else {"algorithm": optimizer["algorithm"]}),
         iter=optimizer["maxIterations"],
         **({"sig_figs": optimizer["sigFigs"]} if "sigFigs" in optimizer else {}),
+        **warm_start,
     )
+
+
+def base_warm_start(training: pd.DataFrame, benchmark_case: dict[str, Any]) -> dict[str, Any] | None:
+    """Untimed: read ``warm_start_params`` from a fit of the history's first ``baseRows`` rows."""
+
+    controls = benchmark_case["workload"].get("warmStart")
+    if controls is None:
+        return None
+    if controls["baseRows"] >= len(training):
+        raise ValueError("Warm-start cases need a longer history than their base")
+    base = fit_model(training.iloc[:controls["baseRows"]].reset_index(drop=True), benchmark_case)
+    return warm_start_params(base)
+
+
+def warm_start_evidence(benchmark_case: dict[str, Any], init: dict[str, Any]) -> dict[str, Any]:
+    """Project the parameters a refit started from into the shared result shape."""
+
+    def values(name: str) -> list[float]:
+        return [float(value) for value in np.asarray(init[name], dtype=np.float64).reshape(-1)]
+
+    return {"baseRows": benchmark_case["workload"]["warmStart"]["baseRows"],
+            "parameters": {"k": float(init["k"]), "m": float(init["m"]), "sigmaObs": float(init["sigma_obs"]),
+                           "delta": values("delta"), "beta": values("beta")}}
 
 
 def fixed_prediction_model(
@@ -263,12 +289,16 @@ def fixed_prediction_model(
     return model_from_json(model_to_json(model))
 
 
-def setup_model(training: pd.DataFrame, benchmark_case: dict[str, Any]) -> Prophet:
-    """Prepare an untimed fitted model for prediction and persistence phases."""
+def setup_model(training: pd.DataFrame, benchmark_case: dict[str, Any],
+                init: dict[str, Any] | None = None) -> Prophet:
+    """Prepare an untimed fitted model for prediction and persistence phases.
+
+    Warm-start cases pass the base fit's parameters, so the model is the refit from them.
+    """
 
     if benchmark_case["workload"]["kind"] == "fixed-linear-prediction":
         return fixed_prediction_model(training, benchmark_case)
-    return fit_model(training, benchmark_case)
+    return fit_model(training, benchmark_case, init)
 
 
 def event_names(model: Prophet) -> list[str]:
@@ -808,7 +838,8 @@ def correctness_projection(
     """Produce untimed public correctness evidence for one independent run."""
 
     training, prediction_frame = prepare_input(dataset)
-    model = setup_model(training, benchmark_case)
+    init = base_warm_start(training, benchmark_case)
+    model = setup_model(training, benchmark_case, init)
     _, projections = forecast_projection(model, prediction_frame)
     metadata = metadata_projection(model, benchmark_case)
     assert_forecasts(benchmark_case, dataset, projections, model)
@@ -850,6 +881,7 @@ def correctness_projection(
         ),
         **({"uncertainty": uncertainty_evidence} if uncertainty_evidence is not None else {}),
         **({"anomalies": anomaly_evidence} if anomaly_evidence is not None else {}),
+        **({"warmStart": warm_start_evidence(benchmark_case, init)} if init is not None else {}),
     }
     sigma = model.params.get("sigma_obs")
     if benchmark_case["workload"]["kind"] in ("linear-map", "map"):
@@ -950,7 +982,8 @@ def measurement_for_phase(
         }
 
     training, prediction_frame = prepare_input(dataset)
-    model = setup_model(training, benchmark_case)
+    init = base_warm_start(training, benchmark_case)
+    model = setup_model(training, benchmark_case, init)
     serialized = model_to_json(model)
     if phase == "adapter-input-conversion":
         samples = measure(benchmark_case, lambda: prepare_input(dataset))
@@ -987,6 +1020,10 @@ def measurement_for_phase(
         samples = process_samples(benchmark_case, "--restored-uncertainty", serialized)
     elif phase == "warm-anomalies":
         samples = measure(benchmark_case, lambda: run_anomalies(training, benchmark_case))
+    elif phase == "warm-start-fit":
+        if init is None:
+            raise ValueError(f"Case {benchmark_case['id']} declares no warm start")
+        samples = measure(benchmark_case, lambda: fit_model(training, benchmark_case, init))
     else:
         raise ValueError(f"Unsupported benchmark phase: {phase}")
     comparison = benchmark_case["workload"]["comparison"]

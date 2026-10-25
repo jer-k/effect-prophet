@@ -42,6 +42,7 @@ export const BenchmarkPhaseSchema = Schema.Literals([
   "cold-first-uncertainty",
   "fresh-process-restored-uncertainty",
   "warm-anomalies",
+  "warm-start-fit",
   "evaluation-input-conversion",
   "evaluation-plan",
   "evaluation-point",
@@ -216,6 +217,14 @@ export const MapWorkloadSchema = Schema.Struct({
     Schema.Struct({
       // The injected outliers, which both libraries must flag.
       expected: Schema.Array(CanonicalTimestamp).check(Schema.isMinLength(1)),
+    }),
+  ),
+  // Refit the whole history from the parameters of a fit of its first `baseRows` rows.
+  warmStart: Schema.optionalKey(
+    Schema.Struct({
+      baseRows: PositiveInteger.check(Schema.isGreaterThanOrEqualTo(2)),
+      // Larger differences between the two libraries' warm-start parameters are flagged.
+      investigateParameterAbsolute: NonNegativeFinite,
     }),
   ),
 });
@@ -510,6 +519,27 @@ const validateCaseRelationships = (
         new BenchmarkInputError({
           input: "cases",
           message: `Case ${benchmarkCase.id} must check its whole history with interval-only anomalies`,
+        }),
+      );
+    }
+
+    const warmStart =
+      benchmarkCase.workload.kind === "map" ? benchmarkCase.workload.warmStart : undefined;
+
+    // The base fit uses a prefix of the history, so the history must be longer than it.
+    if (
+      (warmStart !== undefined) !== benchmarkCase.phases.includes("warm-start-fit") ||
+      (warmStart !== undefined &&
+        (uncertainty !== undefined ||
+          (benchmarkCase.workload.kind === "map" &&
+            benchmarkCase.workload.configuration.countryHolidays !== undefined) ||
+          (benchmarkCase.datasetIdentity !== undefined &&
+            warmStart.baseRows >= benchmarkCase.datasetIdentity.trainingRows)))
+    ) {
+      return Effect.fail(
+        new BenchmarkInputError({
+          input: "cases",
+          message: `Case ${benchmarkCase.id} must refit a longer history from a calendar-free warm start`,
         }),
       );
     }

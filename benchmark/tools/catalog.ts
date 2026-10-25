@@ -12,6 +12,7 @@ import {
   growthScalingAndMixedMapCases,
 } from "../cases/growth/mixed-map.ts";
 import { logisticReconciliationCases } from "../cases/growth/logistic/public-api.ts";
+import { warmStartCases } from "../cases/growth/warm-start.ts";
 import { anomalyCases } from "../cases/uncertainty/anomalies.ts";
 import { uncertaintyCases } from "../cases/uncertainty/public-api.ts";
 import { BenchmarkArtifactError, readJson } from "./artifacts.ts";
@@ -55,6 +56,7 @@ export const loadCaseCatalog = Effect.fn("benchmark.catalog.load")(function* () 
     ...growthScalingAndMixedMapCases,
     ...uncertaintyCases,
     ...anomalyCases,
+    ...warmStartCases,
     ...evaluationCases,
     ...flatDefaultCases,
     ...flatGrowthCases,
@@ -96,6 +98,8 @@ export const capabilityForCase = (item: BenchmarkCase): string => {
   if (item.workload.kind === "evaluation") return "diagnostics";
 
   if (item.workload.kind === "map" && item.workload.anomalies !== undefined) return "anomalies";
+
+  if (item.workload.kind === "map" && item.workload.warmStart !== undefined) return "warm-start";
 
   if (item.workload.kind === "map" && item.workload.uncertainty !== undefined) return "uncertainty";
 

@@ -206,3 +206,12 @@ Serialization is exercised by lifecycle phases rather than copied into separate 
 | `uncertainty-logistic-explicit-floor-minmax-full-samples-128` | [v1/logistic-explicit-floor.json](inputs/v1/logistic-explicit-floor.json) | equivalent-objective | 6 |
 | `uncertainty-logistic-explicit-floor-minmax-mixed-conditions-events-intervals-128` | [v1/logistic-uncertainty-mixed.json](inputs/v1/logistic-uncertainty-mixed.json) | equivalent-objective | 6 |
 | `uncertainty-logistic-explicit-floor-minmax-mixed-conditions-events-samples-128` | [v1/logistic-uncertainty-mixed.json](inputs/v1/logistic-uncertainty-mixed.json) | equivalent-objective | 6 |
+
+## warm-start
+
+| Case | Input | Contract | Phases |
+| --- | --- | --- | ---: |
+| `warm-start-linear-defaults-30-new-rows` | [v1/linear-medium.json](inputs/v1/linear-medium.json) | equivalent-objective | 2 |
+| `warm-start-linear-defaults-1-new-row` | [v1/linear-medium.json](inputs/v1/linear-medium.json) | equivalent-objective | 2 |
+| `warm-start-flat-defaults-7-new-rows` | [v1/flat-seasonal.json](inputs/v1/flat-seasonal.json) | equivalent-objective | 2 |
+| `warm-start-logistic-defaults-7-new-rows` | [v3/logistic-rate-changes.json](inputs/v3/logistic-rate-changes.json) | equivalent-objective | 2 |

@@ -23,6 +23,7 @@ const phaseLabels: ReadonlyArray<readonly [string, string]> = [
   ["cold-first-uncertainty", "First simulation in a new process"],
   ["fresh-process-restored-uncertainty", "Load and simulate in a new process"],
   ["warm-anomalies", "Fit and find anomalies"],
+  ["warm-start-fit", "Refit from an earlier fit"],
   ["evaluation-plan", "Plan cross-validation folds"],
   ["evaluation-point", "Cross-validate"],
   ["evaluation-intervals", "Cross-validate with ranges"],
@@ -44,6 +45,7 @@ const flagLabels = new Map([
 /** The single timing shown in the overview table, by preference. */
 const headlinePhases = [
   "warm-anomalies",
+  "warm-start-fit",
   "warm-fit-predict",
   "warm-uncertainty",
   "evaluation-point",

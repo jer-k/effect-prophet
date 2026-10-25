@@ -42,6 +42,13 @@ from scratch: 346.20
   the target scale and time span change, so the old answer is only a nearby guess.
 - The result can differ slightly from a fresh fit, as it can in Python, because the optimizer
   stops when it is close enough.
+- **Check logistic refits after many new rows.** From a warm start, the default L-BFGS optimizer
+  can settle on a far worse fit, and Python Prophet 1.4.0 does the same. On a 256-day and a
+  365-day logistic history, refits after 30 new rows ended with a noise scale 200 to 900 times a
+  fresh fit's in both libraries. After one or seven new rows, both refits were fine. Compare the
+  refit's `noiseScale` with the earlier model's, or refit with
+  `map: { warmStart, optimizer: { algorithm: "newton" } }`, which reached the best fit from every
+  start we tried.
 - A history whose values are all the same skips the optimizer, so the warm start is ignored.
 - `crossValidate` and `searchModels` use `map.warmStart` for every fold, as Python's
   `cross_validation` reuses the arguments the model was fitted with.

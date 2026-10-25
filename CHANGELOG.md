@@ -28,6 +28,10 @@ All notable changes to this project are documented here. The format follows
 - New benchmarks check `anomalies` against the same steps written with Python Prophet: fit,
   predict the history with 99% ranges, and flag the values outside them. They cover linear, flat
   and logistic histories with known outliers, which both libraries must find.
+- New benchmarks check warm starts against Python's `fit(df, init=warm_start_params(m))`: fit
+  the first rows of a history, then refit the whole history from that fit, after a day, a week or
+  a month of new rows. They cover linear, flat and logistic growth and time the refit beside a
+  fresh fit.
 
 ## [0.3.0] - 2026-10-23
 
