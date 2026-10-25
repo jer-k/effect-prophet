@@ -3,7 +3,7 @@
     "id": "country-us-logistic-additive",
     "dataset": "v5/country-logistic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:457fc6eed73b9adef1c65e3e2a42a640e0a24b637f07e51f47e66bc9ec7f9b43",
+      "snapshotId": "sha256:a14370273fba01e9cb27ee517ec9ba221510f8e9fba706dcd872c63ac2ea7d88",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -145,7 +145,7 @@
     "id": "country-explicit-us-logistic-additive",
     "dataset": "v5/country-logistic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:457fc6eed73b9adef1c65e3e2a42a640e0a24b637f07e51f47e66bc9ec7f9b43",
+      "snapshotId": "sha256:a14370273fba01e9cb27ee517ec9ba221510f8e9fba706dcd872c63ac2ea7d88",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -436,7 +436,7 @@
     "id": "country-us-logistic-multiplicative",
     "dataset": "v5/country-logistic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:457fc6eed73b9adef1c65e3e2a42a640e0a24b637f07e51f47e66bc9ec7f9b43",
+      "snapshotId": "sha256:a14370273fba01e9cb27ee517ec9ba221510f8e9fba706dcd872c63ac2ea7d88",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -578,7 +578,7 @@
     "id": "country-explicit-us-logistic-multiplicative",
     "dataset": "v5/country-logistic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:457fc6eed73b9adef1c65e3e2a42a640e0a24b637f07e51f47e66bc9ec7f9b43",
+      "snapshotId": "sha256:a14370273fba01e9cb27ee517ec9ba221510f8e9fba706dcd872c63ac2ea7d88",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -2342,6 +2342,212 @@
       "predictionRows": 24,
       "futureRows": 24,
       "horizonDays": 24
+    }
+  },
+  {
+    "id": "anomalies-logistic-defaults-99",
+    "dataset": "v7/logistic-anomalies.json",
+    "workload": {
+      "kind": "map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "logistic-python-reconciliation-v1"
+      },
+      "fitRequest": "growth-only",
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [
+          {
+            "name": "weekly",
+            "periodDays": 7,
+            "fourierOrder": 3,
+            "priorScale": 10
+          }
+        ],
+        "events": [],
+        "regressors": []
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      },
+      "uncertainty": {
+        "seed": 19,
+        "samples": 1000,
+        "intervalWidth": 0.99,
+        "output": "intervals",
+        "algorithm": "scalar-continuous-time",
+        "evidence": "docs/validation/uncertainty.md#evidence-classes",
+        "samplerMemoryLimitBytes": 67108864
+      },
+      "anomalies": {
+        "expected": [
+          "2020-03-11T00:00:00.000Z",
+          "2020-06-29T00:00:00.000Z",
+          "2020-10-17T00:00:00.000Z"
+        ]
+      }
+    },
+    "phases": [
+      "warm-fit",
+      "warm-uncertainty",
+      "warm-anomalies"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 3,
+    "independentRuns": 2,
+    "timeoutSeconds": 900,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.01,
+        "relative": 0.002
+      },
+      "component": {
+        "absolute": 0.01,
+        "relative": 0.002
+      },
+      "additive": {
+        "absolute": 0.01,
+        "relative": 0.002
+      },
+      "forecast": {
+        "absolute": 0.01,
+        "relative": 0.002
+      },
+      "noiseScale": {
+        "absolute": 0.01,
+        "relative": 0.02
+      },
+      "persistence": {
+        "absolute": 1e-10,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "rowSelection": {
+      "historical": 365,
+      "future": 0,
+      "stride": 1
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-anomalies-v1:logit=-3+6t|1.5t|4t@0.35,0.65+weekly+bounded-noise-x10+outliers@70(+25),180(-25),290(+20):changing-capacity:n=365:h=0",
+      "sha256": "f92aff28ec2c019e6c7a4aa0e8212f37dc46671743801175f23c953ca5e56275",
+      "trainingRows": 365,
+      "predictionRows": 365,
+      "futureRows": 0,
+      "horizonDays": 0
+    }
+  },
+  {
+    "id": "warm-start-logistic-defaults-7-new-rows",
+    "dataset": "v3/logistic-rate-changes.json",
+    "workload": {
+      "kind": "map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "logistic-python-reconciliation-v1"
+      },
+      "fitRequest": "growth-only",
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [
+          {
+            "name": "weekly",
+            "periodDays": 7,
+            "fourierOrder": 3,
+            "priorScale": 10
+          }
+        ],
+        "events": [],
+        "regressors": []
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      },
+      "warmStart": {
+        "baseRows": 358,
+        "investigateParameterAbsolute": 0.01
+      }
+    },
+    "phases": [
+      "warm-fit",
+      "warm-start-fit"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 3,
+    "independentRuns": 2,
+    "timeoutSeconds": 600,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.01,
+        "relative": 0.002
+      },
+      "component": {
+        "absolute": 0.01,
+        "relative": 0.002
+      },
+      "additive": {
+        "absolute": 0.01,
+        "relative": 0.002
+      },
+      "forecast": {
+        "absolute": 0.01,
+        "relative": 0.002
+      },
+      "noiseScale": {
+        "absolute": 0.01,
+        "relative": 0.02
+      },
+      "persistence": {
+        "absolute": 1e-10,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-rate-changes-v1:logit=-3+6t|1.5t|4t@0.35,0.65+weekly+bounded-noise-x10:changing-capacity:n=365:h=90",
+      "sha256": "a2b86c23197e401e7531c84acd97a4af204be36a92bcf992ce229f99096fe628",
+      "trainingRows": 365,
+      "predictionRows": 455,
+      "futureRows": 455,
+      "horizonDays": 90
     }
   },
   {

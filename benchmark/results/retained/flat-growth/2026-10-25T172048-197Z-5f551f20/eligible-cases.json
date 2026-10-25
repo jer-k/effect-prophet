@@ -32,6 +32,8 @@
     "uncertainty-flat-defaults-seasonal-intervals-1000",
     "uncertainty-flat-mixed-components-full-intervals-512",
     "uncertainty-flat-mixed-components-large-full-samples-128",
+    "anomalies-flat-defaults-99",
+    "warm-start-flat-defaults-7-new-rows",
     "evaluation-flat-mixed-point",
     "evaluation-flat-mixed-intervals",
     "evaluation-flat-mixed-search",
