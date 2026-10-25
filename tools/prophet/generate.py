@@ -25,6 +25,7 @@ import pandas as pd
 import prophet
 from prophet import Prophet
 from prophet.diagnostics import generate_cutoffs, performance_metrics
+from prophet.utilities import warm_start_params
 
 from linear_optimizer_evidence import (
     linear_optimizer_evidence, map_optimizer_evidence, stan_curvature_probe,
@@ -60,6 +61,7 @@ STAN_LOGISTIC_LBFGS_FILENAME = "stan-logistic-lbfgs.json"
 LARGE_FOURIER_STAN_FILENAME = "large-fourier-stan.json"
 FLAT_LOW_ORDER_STAN_FILENAME = "flat-low-order-stan.json"
 STAN_DIFFERENTIAL_SAME_STATE_FILENAME = "stan-differential-same-state.json"
+WARM_START_FILENAME = "warm-start.json"
 MANIFEST_FILENAME = "manifest.json"
 ROOT = Path(__file__).resolve().parents[2]
 REFERENCE_PATH = ROOT / "tools" / "prophet" / "reference.json"
@@ -3638,6 +3640,107 @@ def make_flat_low_order_stan_fixture() -> dict[str, Any]:
     }}
 
 
+def warm_start_state(values: dict[str, Any], *, zero_threshold: float = FITTED_ZERO_THRESHOLD) -> dict[str, Any]:
+    """Project `warm_start_params`-shaped Stan values into fixture JSON."""
+
+    def scalar(name: str) -> float:
+        return canonical_fitted_float(np.asarray(values[name]).reshape(-1)[0], zero_threshold=zero_threshold)
+
+    def vector(name: str) -> list[float]:
+        return [canonical_fitted_float(value, zero_threshold=zero_threshold)
+                for value in np.asarray(values[name]).reshape(-1)]
+
+    return {"k": scalar("k"), "m": scalar("m"), "sigmaObs": scalar("sigma_obs"),
+            "delta": vector("delta"), "beta": vector("beta")}
+
+
+def make_warm_start_fixture() -> dict[str, Any]:
+    """Fit a prefix, then the full history from its `warm_start_params`, as Python users do.
+
+    Every fit uses Newton. A capped budget leaves each fit where its start led it, so a
+    warm and a cold fit differ; Prophet's default L-BFGS can stop early on histories like
+    these, cold or warm, in both libraries.
+    """
+    days = 120
+    timestamps = [timestamp_from_offset(index * DAY_MILLISECONDS) for index in range(days)]
+    linear_values = [canonical_fourier_float(np.float64(
+        10.0 + 0.05 * index + np.sin(index / 3.0) + 0.3 * (index % 7) + 0.08 * max(0, index - 70)
+    )) for index in range(days)]
+    # A flat fit of a trending history settles beside Laplace kinks, where last-bit
+    # differences move the endpoint; a level history keeps flat fits portable.
+    flat_values = [canonical_fourier_float(np.float64(
+        10.0 + np.sin(index / 3.0) + 0.3 * (index % 7)
+    )) for index in range(days)]
+    capacity = 30.0
+    logistic_values = [canonical_fourier_float(np.float64(
+        capacity / (1.0 + np.exp(-(index - 45) / 12.0)) + 0.4 * np.sin(index / 2.0) + 0.2 * (index % 7)
+    )) for index in range(days)]
+
+    def frame(values: Sequence[float], rows: int, logistic: bool) -> pd.DataFrame:
+        data: dict[str, Any] = {
+            "ds": [prophet_timestamp(timestamp) for timestamp in timestamps[:rows]],
+            "y": list(values[:rows]),
+        }
+        if logistic:
+            data["cap"] = [capacity] * rows
+        return pd.DataFrame(data)
+
+    def observations(values: Sequence[float], rows: int, logistic: bool) -> list[dict[str, Any]]:
+        return [{"timestamp": timestamp, "value": value, **({"capacity": capacity} if logistic else {})}
+                for timestamp, value in zip(timestamps[:rows], values[:rows], strict=True)]
+
+    def model(growth: str, changepoints: int, weekly: bool, mode: str) -> Prophet:
+        return Prophet(growth=growth, n_changepoints=changepoints, seasonality_mode=mode,
+                       yearly_seasonality=False, weekly_seasonality=weekly,
+                       daily_seasonality=False, uncertainty_samples=0)
+
+    def fit_kwargs(iterations: int | None) -> dict[str, Any]:
+        capped = {} if iterations is None else {"iter": iterations, "require_converged": False}
+        return {"algorithm": "Newton", "sig_figs": 12, **capped}
+
+    specs = (
+        ("linear", "linear", 90, (5, True), (5, True), "additive", None),
+        ("linear-two-iterations", "linear", 90, (5, True), (5, True), "additive", 2),
+        ("multiplicative-two-iterations", "linear", 90, (5, True), (5, True), "multiplicative", 2),
+        ("delta-length-mismatch", "linear", 90, (3, True), (5, True), "additive", 2),
+        ("beta-length-mismatch", "linear", 90, (5, False), (5, True), "additive", 2),
+        ("flat-two-iterations", "flat", 90, (5, True), (5, True), "additive", 2),
+        ("logistic", "logistic", 60, (5, True), (5, True), "additive", None),
+        ("logistic-two-iterations", "logistic", 60, (5, True), (5, True), "additive", 2),
+    )
+    cases = []
+
+    for identifier, growth, prefix, first_shape, second_shape, mode, iterations in specs:
+        print(f"Recording warm start oracle: {identifier}", file=sys.stderr, flush=True)
+        logistic = growth == "logistic"
+        values = {"linear": linear_values, "flat": flat_values, "logistic": logistic_values}[growth]
+        rows = 80 if logistic else days
+
+        first = model(growth, *first_shape, mode).fit(frame(values, prefix, logistic), **fit_kwargs(None))
+        warm = warm_start_params(first)
+        warmed = model(growth, *second_shape, mode).fit(
+            frame(values, rows, logistic), init=warm, **fit_kwargs(iterations))
+        cold = model(growth, *second_shape, mode).fit(frame(values, rows, logistic), **fit_kwargs(iterations))
+
+        def shape(changepoints: int, weekly: bool) -> dict[str, Any]:
+            return {"changepointCount": changepoints, "weekly": weekly}
+
+        cases.append({
+            "id": identifier,
+            "growth": growth,
+            "seasonalityMode": mode,
+            "first": {**shape(*first_shape), "observations": observations(values, prefix, logistic)},
+            "second": {**shape(*second_shape), "observations": observations(values, rows, logistic),
+                       "maxIterations": iterations},
+            # Exactly the values Python started from, including those near zero.
+            "warmStart": warm_start_state(warm, zero_threshold=0.0),
+            "expected": {"warm": warm_start_state(warm_start_params(warmed)),
+                         "cold": warm_start_state(warm_start_params(cold))},
+        })
+
+    return {"cases": cases, "tolerances": {"parameterAbsolute": 1e-6}}
+
+
 def write_outputs(output: Path, execution: dict[str, str], reference: dict[str, str]) -> None:
     """Write the fixture artifact and its provenance manifest."""
 
@@ -3729,6 +3832,9 @@ def write_outputs(output: Path, execution: dict[str, str], reference: dict[str, 
     flat_low_order_path = output / FLAT_LOW_ORDER_STAN_FILENAME
     flat_low_order_path.write_bytes(stable_json(make_flat_low_order_stan_fixture()))
 
+    warm_start_path = output / WARM_START_FILENAME
+    warm_start_path.write_bytes(stable_json(make_warm_start_fixture()))
+
     model_path = find_prophet_model()
     manifest = {
         "artifacts": [
@@ -3818,6 +3924,7 @@ def write_outputs(output: Path, execution: dict[str, str], reference: dict[str, 
                 "path": STAN_DIFFERENTIAL_SAME_STATE_FILENAME,
                 "sha256": sha256_file(stan_same_state_path),
             },
+            {"path": WARM_START_FILENAME, "sha256": sha256_file(warm_start_path)},
         ],
         "backendArtifacts": [
             {

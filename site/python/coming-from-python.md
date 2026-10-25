@@ -52,6 +52,7 @@ the [five-minute introduction](../guide/effect-basics).
 | `changepoints=[...]`                                                              | `map.changepoints: { mode: "explicit", timestamps }`                                                                |
 | `changepoint_prior_scale`                                                         | `map.changepointPriorScale`                                                                                         |
 | `fit(algorithm="Newton", iter=n)`                                                 | `map.optimizer: { algorithm: "newton", maxIterations: n }`                                                          |
+| `fit(df, init=warm_start_params(m))`                                              | `map.warmStart: warmStartParameters(model)`                                                                         |
 | `yearly_seasonality`, `weekly_seasonality`, `daily_seasonality`                   | `builtInSeasonalities: { yearly, weekly, daily }`: `"auto"`, `"off"`, or `{ mode: "on", fourierOrder, priorScale }` |
 | `seasonality_mode="multiplicative"`                                               | `seasonalityMode: "multiplicative"`                                                                                 |
 | `holidays_mode`                                                                   | `holidaysMode`                                                                                                      |
@@ -92,8 +93,8 @@ The defaults are Prophet's, so a fit with no options produces the same model as 
 - **The seed is required** for uncertainty ranges, so results are repeatable.
 - **Intervals are a separate call.** `predict` returns point forecasts only, so you never pay for
   simulations you didn't ask for.
-- **Models are immutable.** Fitting returns a new model. There is nothing to mutate, and no
-  `warm_start_params`.
+- **Models are immutable.** Fitting returns a new model. There is nothing to mutate; to refit from an
+  earlier model, pass `warmStartParameters(model)` as `map.warmStart`.
 - **Country coverage is explicit.** The offline snapshot covers request years 1995–2060;
   reviewed gaps fail by default. Opting into `"allow-known-gaps"` accepts actual partial provider
   data, not complete coverage. Fitted models embed their selected snapshot; updates require a

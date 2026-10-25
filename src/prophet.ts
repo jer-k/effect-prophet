@@ -173,6 +173,8 @@ const makeFitPlan = (
   regressors: ReadonlyArray<ResolvedRegressor>,
   logisticBounds?: LogisticTrainingBounds,
 ): FitPlan => {
+  const warmStart = options.map.warmStart === undefined ? {} : { warmStart: options.map.warmStart };
+
   if (options.growth === "logistic" && logisticBounds !== undefined) {
     return FitPlan.LogisticPiecewiseMap({
       scaling: options.scaling ?? defaultTargetScalingMode,
@@ -185,6 +187,7 @@ const makeFitPlan = (
       additionalFeatures,
       events: options.events,
       regressors,
+      ...warmStart,
     });
   }
 
@@ -201,6 +204,7 @@ const makeFitPlan = (
       additionalFeatures,
       events: options.events,
       regressors,
+      ...warmStart,
     });
   }
 
@@ -214,6 +218,7 @@ const makeFitPlan = (
     additionalFeatures,
     events: options.events,
     regressors,
+    ...warmStart,
   });
 };
 

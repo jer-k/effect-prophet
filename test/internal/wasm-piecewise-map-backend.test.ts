@@ -2,12 +2,17 @@ import { Effect, Exit, Option, Tracer } from "effect";
 import { describe, expect, it } from "vitest";
 
 import { FittingError } from "../../src/errors";
-import type { PiecewiseMapWasmBindings } from "../../src/internal/prophet-wasm-module";
+import {
+  loadProphetWasmModule,
+  type PiecewiseMapWasmBindings,
+} from "../../src/internal/prophet-wasm-module";
+import { encodeStanOptimizer } from "../../src/internal/stan-map-protocol";
 import { prophetFittingBackendLayer } from "../../src/internal/prophet-fitting-backend";
 import { makeWasmPiecewiseMapAdapter } from "../../src/internal/wasm-piecewise-map-backend";
 import { requireEndedSpan as requireEnded } from "./tracing-test-helpers";
 import { fit, predict } from "../../src/prophet";
 import * as Seasonality from "../../src/seasonality";
+import { targetScalingModeCode } from "../../src/target-scaling";
 
 const input = {
   timestamps: new Float64Array([0, 1, 2, 3, 4, 5]),
@@ -80,6 +85,56 @@ describe("Rust/WASM linear piecewise MAP adapter", () => {
     expect(error).toBeInstanceOf(FittingError);
     expect(error.reason).toBe("backend-failure");
     expect(error.backendPhase).toBe("protocol");
+  });
+
+  it("rejects a success frame whose initialization codes are malformed", async () => {
+    const empty = new Float64Array();
+
+    const valid = Array.from(
+      loadProphetWasmModule().fit_piecewise_map_with_scaling(
+        input.timestamps,
+        input.values,
+        targetScalingModeCode("absmax"),
+        0,
+        new Float64Array([2]),
+        0,
+        0,
+        empty,
+        empty,
+        empty,
+        0.5,
+        encodeStanOptimizer(optimizer),
+      ),
+    );
+
+    const fitFrame = (frame: ReadonlyArray<number>) =>
+      Effect.runPromiseExit(
+        makeWasmPiecewiseMapAdapter(() => moduleReturning(frame)).fit(
+          input,
+          "absmax",
+          seasonalities,
+          { mode: "explicit", timestamps: [2] },
+          0.5,
+          optimizer,
+        ),
+      );
+
+    expect(valid.slice(20, 22)).toEqual([0, 0]);
+    expect(Exit.isSuccess(await fitFrame(valid))).toBe(true);
+
+    for (const codes of [
+      [3, 1],
+      [0, 1],
+    ]) {
+      const exit = await fitFrame([...valid.slice(0, 20), ...codes, ...valid.slice(22)]);
+
+      const error = Exit.isFailure(exit)
+        ? Option.getOrUndefined(Exit.findErrorOption(exit))
+        : undefined;
+
+      expect(error).toBeInstanceOf(FittingError);
+      expect(error?.backendPhase).toBe("protocol");
+    }
   });
 });
 

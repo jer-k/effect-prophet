@@ -241,7 +241,7 @@ impl<'a> StanLogisticObjective<'a> {
       noise_scale,
       objective: -fit.evaluation.value,
       stationarity_residual,
-      optimization: fit.attempts.summary(),
+      optimization: fit.summary(),
     })
   }
 }
@@ -255,6 +255,9 @@ impl StanMapObjective for StanLogisticObjective<'_> {
   }
   fn initial_parameters(&self) -> Vec<f64> {
     self.initial_parameters()
+  }
+  fn sigma_index(&self) -> usize {
+    self.sigma_index
   }
   fn log_density_constant(&self) -> f64 {
     self.log_density_constant()

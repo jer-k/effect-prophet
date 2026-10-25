@@ -65,6 +65,6 @@ describe("generated target-scaling bindings", () => {
     assert.equal(fit[3], 5);
     assert.equal(fit[4], 1);
     assert.equal(fit[9], 5);
-    assert.equal(fit.length, 22);
+    assert.equal(fit.length, 24);
   });
 });

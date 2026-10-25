@@ -35,7 +35,7 @@ test("generated bindings fit and predict logistic MAP rows", () => {
   const fitted = fit();
 
   assert.equal(fitted[0], 0);
-  assert.equal(fitted.length, 20);
+  assert.equal(fitted.length, 22);
   assert.equal(fitted[16], 1);
   assert.equal(fitted[17], 1);
 
@@ -76,7 +76,7 @@ test("generated bindings report honest Stan budget completion", () => {
   const limited = fit(new Float64Array([2, 1, 1]));
   assert.equal(limited[0], 0);
   assert.equal(limited[12], 1);
-  assert.deepEqual(Array.from(limited.slice(15, 20)), [9, 1, 1, -1, 0]);
+  assert.deepEqual(Array.from(limited.slice(15, 22)), [9, 1, 1, -1, 0, 0, 0]);
 });
 
 test("generated bindings reject malformed logistic controls instead of silently selecting a policy", () => {

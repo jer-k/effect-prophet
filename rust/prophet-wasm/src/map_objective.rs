@@ -617,7 +617,7 @@ impl<'a> StanLinearObjective<'a> {
       &fit.parameters,
       &fit.evaluation.gradient,
       fit.evaluation.value,
-      fit.attempts.summary(),
+      fit.summary(),
     )
   }
 
@@ -687,6 +687,9 @@ impl StanMapObjective for StanLinearObjective<'_> {
   }
   fn initial_parameters(&self) -> Vec<f64> {
     self.initial_parameters()
+  }
+  fn sigma_index(&self) -> usize {
+    self.sigma_index()
   }
   fn log_density_constant(&self) -> f64 {
     self.log_density_constant()
@@ -790,7 +793,7 @@ impl<'a> StanFlatObjective<'a> {
       &fit.parameters,
       &fit.evaluation.gradient,
       fit.evaluation.value,
-      fit.attempts.summary(),
+      fit.summary(),
     )?;
     normalized
       .coefficients
@@ -853,6 +856,9 @@ impl StanMapObjective for StanFlatObjective<'_> {
     let mut parameters = vec![0.0; self.parameter_count()];
     parameters[1] = self.initial_level;
     parameters
+  }
+  fn sigma_index(&self) -> usize {
+    self.linear.sigma_index()
   }
   fn log_density_constant(&self) -> f64 {
     self.linear.log_density_constant()
@@ -974,7 +980,7 @@ mod tests {
         );
       }
       let options = LinearOptimizerOptions::parse(budget, choice).unwrap();
-      let model_fit = objective.fit_model(options);
+      let model_fit = objective.fit_model(options.clone());
       let fit = objective.fit_stan(options);
       if case["expected"]["failure"].is_string() {
         assert_eq!(
@@ -1011,12 +1017,7 @@ mod tests {
         case["id"]
       );
       let model_fit = model_fit.unwrap();
-      assert_eq!(
-        model_fit.optimization,
-        fit.attempts.summary(),
-        "{}",
-        case["id"]
-      );
+      assert_eq!(model_fit.optimization, fit.summary(), "{}", case["id"]);
       assert_eq!(
         model_fit.optimization.attempt_count,
         case["attempts"].as_array().unwrap().len()

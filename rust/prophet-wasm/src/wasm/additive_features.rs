@@ -218,7 +218,7 @@ fn fit_piecewise_map_with_features_protocol(
         .checked_mul(2)
         .and_then(|count| count.checked_add(model.coefficients.len()))
         .and_then(|count| count.checked_add(model.additional_coefficients.len()))
-        .and_then(|count| count.checked_add(17 + metadata_width))
+        .and_then(|count| count.checked_add(19 + metadata_width))
       else {
         return vec![f64::from(PiecewiseMapFitStatus::SizeOverflow as u32)];
       };

@@ -24,6 +24,7 @@ import {
   prophetFittingBackendLayer,
   searchModels,
   inspectCountryHolidays,
+  warmStartParameters,
 } from "effect-prophet";
 
 const projectRoot = new URL("../", import.meta.url);
@@ -93,6 +94,7 @@ const expectedDeclarationFiles = [
   "dist/seasonality.d.ts",
   "dist/target-scaling.d.ts",
   "dist/uncertainty.d.ts",
+  "dist/warm-start.d.ts",
 ];
 
 const thirdPartyRoot = new URL("rust/prophet-wasm/third-party/", projectRoot);
@@ -451,6 +453,15 @@ const [oneCallForecast] = await Effect.runPromise(
 assert.equal(oneCallForecast?.value, regressorForecast?.value);
 
 assert.equal(getRegressorCoefficients(regressorModel)[0]?.name, "promotion");
+
+const warmStarted = await Effect.runPromise(
+  fit(regressorHistory, {
+    ...regressorOptions,
+    map: { warmStart: warmStartParameters(regressorModel) },
+  }).pipe(Effect.provide(prophetFittingBackendLayer)),
+);
+
+assert.equal(warmStarted.model, regressorModel.model);
 
 const samples = await Effect.runPromise(
   predictUncertainty(

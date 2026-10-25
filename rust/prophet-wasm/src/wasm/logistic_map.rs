@@ -114,7 +114,7 @@ pub fn fit_logistic_map_with_features(
     Ok(model) => {
       let changepoint_count = model.changepoint_timestamps.len();
       let mut packed = Vec::with_capacity(
-        20 + changepoint_count * 2 + model.coefficients.len() + model.additional_coefficients.len(),
+        22 + changepoint_count * 2 + model.coefficients.len() + model.additional_coefficients.len(),
       );
       let (floor_code, implicit_floor) = match model.scaling.floor_policy {
         LogisticFloorPolicy::Implicit(floor) => (0.0, floor),
@@ -291,7 +291,7 @@ mod tests {
     );
 
     assert_eq!(fit[0], 0.0);
-    assert_eq!(fit.len(), 20);
+    assert_eq!(fit.len(), 22);
     assert_eq!(fit[16], 1.0);
     assert_eq!(fit[17], 1.0);
 

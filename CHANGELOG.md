@@ -15,6 +15,10 @@ All notable changes to this project are documented here. The format follows
 - `forecast` fits a history and predicts the rows you pass in one call, returning exactly what
   `fit` and then `predict` would. It returns only the forecast; call `fit` and `predict` yourself
   to keep the model.
+- `warmStartParameters` reads a fitted model's parameters, and `map.warmStart` starts a fit from
+  them, like Python's `warm_start_params` and `fit(init=...)`. As in Python, changepoint and
+  coefficient values are used only when their counts still match. A warm start isn't always
+  faster; see [Updating a model with new data](https://jer-k.github.io/effect-prophet/examples/saving-models#updating-a-model-with-new-data).
 - `anomalies` fits a history and returns the timestamps whose values fall outside their own 99%
   range, like `Prophet.anomalies` in prophet-ruby. The flagged values also shape the fit, so use
   `detectAnomalies` to judge new data against an earlier model.

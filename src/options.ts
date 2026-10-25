@@ -37,6 +37,7 @@ import {
   type SeasonalityDefinition,
 } from "./seasonality";
 import { TargetScalingModeSchema, type TargetScalingMode } from "./target-scaling";
+import { WarmStartParametersSchema, type WarmStartParameters } from "./warm-start";
 
 /** Valid trend forms represented by the current public fitting configuration. */
 export type Growth = "flat" | "linear" | "logistic";
@@ -102,6 +103,9 @@ export interface EncodedMapOptions {
   readonly changepoints?: EncodedChangepointSetting;
   readonly changepointPriorScale?: number;
   readonly optimizer?: EncodedLinearOptimizer;
+
+  /** Where the optimizer starts, like Python's `init`; see `warmStartParameters`. */
+  readonly warmStart?: WarmStartParameters;
 }
 
 /**
@@ -166,6 +170,9 @@ export interface MapOptions<Optimizer = LinearOptimizer> {
   readonly changepoints: ChangepointSetting;
   readonly changepointPriorScale: number;
   readonly optimizer: Optimizer;
+
+  /** Requested optimizer start; Prophet's initialization applies when absent. */
+  readonly warmStart?: WarmStartParameters;
 }
 
 /** Public linear-growth options without configured custom seasonalities. */
@@ -245,6 +252,7 @@ export interface FlatMapOptions {
   readonly changepoints: ChangepointSetting;
   readonly changepointPriorScale: number;
   readonly optimizer?: LinearOptimizer;
+  readonly warmStart?: WarmStartParameters;
 }
 
 /** Parsed flat-growth MAP options without configured custom seasonalities. */
@@ -373,6 +381,7 @@ const MapOptionsSchema = Schema.Struct({
   ]).pipe(Schema.optionalKey),
   changepointPriorScale: Schema.optionalKey(PositiveFinite),
   optimizer: Schema.optionalKey(Schema.Unknown),
+  warmStart: Schema.optionalKey(WarmStartParametersSchema),
 });
 
 const ProphetOptionsSyntaxSchema = Schema.Struct({
@@ -424,10 +433,22 @@ const freezeMapOptions = <Optimizer extends object>(
         })
       : Object.freeze({ ...options.changepoints });
 
+  const warmStart =
+    options.warmStart === undefined
+      ? {}
+      : {
+          warmStart: Object.freeze({
+            ...options.warmStart,
+            delta: Object.freeze(Array.from(options.warmStart.delta)),
+            beta: Object.freeze(Array.from(options.warmStart.beta)),
+          }),
+        };
+
   return Object.freeze({
     changepoints,
     changepointPriorScale: options.changepointPriorScale,
     optimizer: Object.freeze({ ...options.optimizer }),
+    ...warmStart,
   });
 };
 
@@ -598,6 +619,8 @@ export const decodeOptions = Effect.fn("Prophet.decodeOptions")(function* (
       ? undefined
       : yield* decodeLinearOptimizer(syntax.map.optimizer);
 
+  const warmStart = syntax.map?.warmStart === undefined ? {} : { warmStart: syntax.map.warmStart };
+
   const map =
     syntax.map === undefined
       ? defaultAutomaticMapOptions
@@ -606,6 +629,7 @@ export const decodeOptions = Effect.fn("Prophet.decodeOptions")(function* (
           changepointPriorScale:
             syntax.map.changepointPriorScale ?? defaultAutomaticMapOptions.changepointPriorScale,
           optimizer: optimizer ?? defaultAutomaticMapOptions.optimizer,
+          ...warmStart,
         });
 
   const { optimizer: requestedOptimizer, ...flatChangepoints } = map;

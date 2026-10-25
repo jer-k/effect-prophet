@@ -25,6 +25,7 @@ export const prophetFittingBackendLayer: Layer.Layer<FittingBackend> = Layer.suc
           additionalFeatures,
           events,
           regressors,
+          warmStart,
         }) =>
           hasMultiplicativeMode(seasonalities, additionalFeatures)
             ? fitMixedLinearMapWithWasm(
@@ -38,6 +39,7 @@ export const prophetFittingBackendLayer: Layer.Layer<FittingBackend> = Layer.suc
                 additionalFeatures,
                 events,
                 regressors,
+                warmStart,
               )
             : fitPiecewiseMapFeaturesWithWasm(
                 input,
@@ -50,6 +52,7 @@ export const prophetFittingBackendLayer: Layer.Layer<FittingBackend> = Layer.suc
                 additionalFeatures,
                 events,
                 regressors,
+                warmStart,
               ),
         LogisticPiecewiseMap: ({
           scaling,
@@ -62,6 +65,7 @@ export const prophetFittingBackendLayer: Layer.Layer<FittingBackend> = Layer.suc
           additionalFeatures,
           events,
           regressors,
+          warmStart,
         }) =>
           fitLogisticMapWithWasm(
             input,
@@ -75,6 +79,7 @@ export const prophetFittingBackendLayer: Layer.Layer<FittingBackend> = Layer.suc
             additionalFeatures,
             events,
             regressors,
+            warmStart,
           ),
         FlatStanMap: ({
           scaling,
@@ -86,6 +91,7 @@ export const prophetFittingBackendLayer: Layer.Layer<FittingBackend> = Layer.suc
           additionalFeatures,
           events,
           regressors,
+          warmStart,
         }) =>
           fitFlatStanMapWithWasm(
             input,
@@ -98,6 +104,7 @@ export const prophetFittingBackendLayer: Layer.Layer<FittingBackend> = Layer.suc
             additionalFeatures,
             events,
             regressors,
+            warmStart,
           ),
       }),
   },

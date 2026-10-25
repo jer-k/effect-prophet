@@ -33,7 +33,7 @@ describe("mixed MAP WASM boundary", () => {
     );
 
     assert.equal(fit[0], wasm.PiecewiseMapFitStatus.Success);
-    assert.equal(fit.length, 17);
+    assert.equal(fit.length, 19);
 
     const prediction = wasm.predict_mixed_flat_map(
       new Float64Array([6]),
@@ -48,7 +48,7 @@ describe("mixed MAP WASM boundary", () => {
       new Float64Array(),
       1,
       new Float64Array([2]),
-      new Float64Array([fit[16] ?? Number.NaN]),
+      new Float64Array([fit[18] ?? Number.NaN]),
       new Float64Array([0]),
       new Float64Array([1]),
       new Float64Array([1]),

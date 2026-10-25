@@ -91,6 +91,10 @@
     {
       "path": "stan-differential-same-state.json",
       "sha256": "562b3e2116c0ca360291722fb55ca893fd2a9c94047643a226aface14e694ce2"
+    },
+    {
+      "path": "warm-start.json",
+      "sha256": "a94e08f89a06eee86fe9842fa3d86713eb9a34df80a141ca2cad92a9c89970c1"
     }
   ],
   "backendArtifacts": [
@@ -106,7 +110,7 @@
     "platform": "linux/amd64",
     "uvVersion": "0.8.15"
   },
-  "generatorRevision": "c927e0526572606903cd6c7231bea9ddd48859c4ec03119c72ee003c07d11781",
+  "generatorRevision": "a9ad6d22fa7efe180dd01ddcfcd951cc4eb1b6f90dea9454ac2ca3d335953f64",
   "numericalEnvironment": [
     {
       "name": "cmdstanpy",
