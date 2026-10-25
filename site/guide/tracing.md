@@ -91,6 +91,7 @@ Each of these functions creates a span named after it:
 | `Prophet.predictUncertainty`                                                                       | `predictUncertainty`                                                                          |
 | `Prophet.predictWithIntervals`                                                                     | `predictWithIntervals`, around its `Prophet.predictUncertainty` and `Prophet.predict` spans   |
 | `Prophet.detectAnomalies`                                                                          | `detectAnomalies`, around `Prophet.decodeObservations` and `Prophet.predictWithIntervals`     |
+| `Prophet.forecast`                                                                                 | `forecast`, around `Prophet.decodeObservations`, `Prophet.fit` and `Prophet.predict`          |
 | `Prophet.anomalies`                                                                                | `anomalies`, around `Prophet.decodeObservations`, `Prophet.fit` and `Prophet.detectAnomalies` |
 | `Prophet.crossValidate`                                                                            | `crossValidate`                                                                               |
 | `Prophet.planRollingOrigin`                                                                        | `planRollingOrigin`                                                                           |
@@ -117,8 +118,10 @@ Each of these functions creates a span named after it:
 | `effect-prophet.evaluation.holdout`   | The final check in `evaluateHoldout`                            |
 
 Input that fails validation, or a request with nothing to do, such as an empty list of dates,
-returns before reaching the engine and creates no engine span. `anomalies` also checks the
-history's length before fitting, so a history too long to simulate creates no `Prophet.fit` span.
+returns before reaching the engine and creates no engine span. `forecast` checks its history and
+future rows before fitting, so malformed rows create no `Prophet.fit` span. `anomalies` also
+checks the history's length before fitting, so a history too long to simulate creates no
+`Prophet.fit` span.
 
 ### Country calendar steps
 
@@ -170,6 +173,13 @@ Every attribute name starts with `effect_prophet.`.
 | `seasonality.count`, `scaling.mode` | As for fitting (`predict` only)                                      |
 | `output.kind`, `sample.count`       | `intervals` or `samples`, and simulations per date (`simulate` only) |
 | `wasm.cold_start`                   | `true` only for the call that loaded the engine                      |
+
+**`Prophet.forecast`**
+
+| Attribute           | Meaning                                                   |
+| ------------------- | --------------------------------------------------------- |
+| `observation.count` | Rows in the history. Set only when the forecast succeeds. |
+| `prediction.count`  | Rows forecast. Set only when the forecast succeeds.       |
 
 **`Prophet.detectAnomalies` and `Prophet.anomalies`**
 

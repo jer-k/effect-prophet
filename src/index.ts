@@ -102,6 +102,8 @@ export {
   type EventOccurrence,
 } from "./event";
 
+export { forecast } from "./forecast";
+
 export {
   searchModels,
   type ModelSearchInput,
