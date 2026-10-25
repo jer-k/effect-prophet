@@ -12,6 +12,9 @@ All notable changes to this project are documented here. The format follows
   ranges, so you no longer call `predict` and `predictUncertainty` and match up their rows.
 - `detectAnomalies` checks new measurements against the ranges of an already fitted model and
   reports which fall below or above them. The range defaults to 99% wide.
+- `forecast` fits a history and predicts the rows you pass in one call, returning exactly what
+  `fit` and then `predict` would. It returns only the forecast; call `fit` and `predict` yourself
+  to keep the model.
 - `anomalies` fits a history and returns the timestamps whose values fall outside their own 99%
   range, like `Prophet.anomalies` in prophet-ruby. The flagged values also shape the fit, so use
   `detectAnomalies` to judge new data against an earlier model.

@@ -48,6 +48,35 @@ history on its own.
 
 If steps 3 and 4 feel unfamiliar, read [Effect in five minutes](./effect-basics). It is short.
 
+## Fit and predict in one call
+
+When you only need the forecast, `forecast` fits and predicts in one call:
+
+<<< @/snippets/one-call-forecast.ts
+
+```txt [Output]
+2025-04-01 137.2
+2025-04-02 145.5
+2025-04-03 153.8
+2025-04-04 156.2
+2025-04-05 151.3
+2025-04-06 143.2
+2025-04-07 138.3
+```
+
+The result is exactly what `fit` and then `predict` return, in the order of your dates. Model
+options go in an optional third argument, exactly as `fit` takes them:
+
+```ts
+forecast(history, nextWeek, { growth: "flat" });
+```
+
+`forecast` returns only the forecast, not the model. To forecast again from the same model, or to
+[save it](../examples/saving-models), call `fit` and `predict` yourself. Like `predict`, it doesn't
+guess anything about the future: you list the dates, and any capacities, floors, regressors or
+conditions the model needs go on each row, as in
+[this regressor example](../examples/regressors#in-one-call).
+
 ## Next steps
 
 - [Prepare your own data](./your-data)

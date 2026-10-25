@@ -13,6 +13,7 @@ import {
   predict,
   predictUncertainty,
   predictWithIntervals,
+  forecast,
   anomalies,
   detectAnomalies,
   planRollingOrigin,
@@ -71,6 +72,7 @@ const expectedDeclarationFiles = [
   "dist/event.d.ts",
   "dist/feature-name.d.ts",
   "dist/fitted-model.d.ts",
+  "dist/forecast.d.ts",
   "dist/index.d.ts",
   "dist/internal/additional-features.d.ts",
   "dist/internal/cross-validation-options.d.ts",
@@ -398,32 +400,33 @@ assert.equal(forecasts[0]?.value, 11);
 
 assert.equal(forecasts[0]?.trend, 11);
 
+const regressorHistory = [
+  {
+    timestamp: "2024-01-01T00:00:00.000Z",
+    value: 2,
+    regressors: { promotion: 0 },
+  },
+  {
+    timestamp: "2024-01-01T00:00:01.000Z",
+    value: 6,
+    regressors: { promotion: 1 },
+  },
+  {
+    timestamp: "2024-01-01T00:00:02.000Z",
+    value: 4,
+    regressors: { promotion: 0 },
+  },
+  {
+    timestamp: "2024-01-01T00:00:03.000Z",
+    value: 8,
+    regressors: { promotion: 1 },
+  },
+];
+
+const regressorOptions = { regressors: [{ name: "promotion", priorScale: 100 }] };
+
 const regressorModel = await Effect.runPromise(
-  fit(
-    [
-      {
-        timestamp: "2024-01-01T00:00:00.000Z",
-        value: 2,
-        regressors: { promotion: 0 },
-      },
-      {
-        timestamp: "2024-01-01T00:00:01.000Z",
-        value: 6,
-        regressors: { promotion: 1 },
-      },
-      {
-        timestamp: "2024-01-01T00:00:02.000Z",
-        value: 4,
-        regressors: { promotion: 0 },
-      },
-      {
-        timestamp: "2024-01-01T00:00:03.000Z",
-        value: 8,
-        regressors: { promotion: 1 },
-      },
-    ],
-    { regressors: [{ name: "promotion", priorScale: 100 }] },
-  ).pipe(Effect.provide(prophetFittingBackendLayer)),
+  fit(regressorHistory, regressorOptions).pipe(Effect.provide(prophetFittingBackendLayer)),
 );
 
 const [regressorForecast] = await Effect.runPromise(
@@ -436,6 +439,16 @@ const [regressorForecast] = await Effect.runPromise(
 );
 
 assert.equal(regressorForecast?.regressors[0]?.name, "promotion");
+
+const [oneCallForecast] = await Effect.runPromise(
+  forecast(
+    regressorHistory,
+    [{ timestamp: "2024-01-01T00:00:04.000Z", regressors: { promotion: 1 } }],
+    regressorOptions,
+  ).pipe(Effect.provide(prophetFittingBackendLayer)),
+);
+
+assert.equal(oneCallForecast?.value, regressorForecast?.value);
 
 assert.equal(getRegressorCoefficients(regressorModel)[0]?.name, "promotion");
 

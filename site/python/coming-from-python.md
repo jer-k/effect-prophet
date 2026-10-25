@@ -68,6 +68,7 @@ The defaults are Prophet's, so a fit with no options produces the same model as 
 
 | Python                                           | Effect Prophet                                                                               |
 | ------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| `fit(df)` then `predict(future)`                 | `forecast(history, future, options)`, which fits and predicts in one call                    |
 | `predict(future)` columns `yhat`, `trend`        | `predict(model, timestamps)`: `value`, `trend`, and every component broken out               |
 | `yhat_lower`, `yhat_upper`                       | `predictWithIntervals(model, timestamps, { seed, samples, intervalWidth })`: `valueInterval` |
 | `trend_lower`, `trend_upper`                     | `trendInterval` on each `predictWithIntervals` row                                           |

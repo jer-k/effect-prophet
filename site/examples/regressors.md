@@ -17,6 +17,17 @@ temperature additive 3.99
 
 The model learned the real relationship: about 4 extra sales for every degree.
 
+## In one call
+
+If you don't need the coefficients, `forecast` fits and predicts at once. Pass full rows, each
+with its future regressor value:
+
+<<< @/snippets/regressors-one-call.ts
+
+```txt [Output]
+120.0, 139.9, 159.9
+```
+
 ## Things to know
 
 - **Every row needs every regressor**, in both the history and the future rows. If you don't know

@@ -48,7 +48,8 @@ const program = Effect.gen(function* () {
 const forecast = await Effect.runPromise(program.pipe(Effect.provide(prophetFittingBackendLayer)));
 ```
 
-Most examples on this site use this pattern.
+Most examples on this site use this pattern. When you only need the forecast,
+[`forecast`](./getting-started#fit-and-predict-in-one-call) does both steps in one call.
 
 ## Errors are values
 
