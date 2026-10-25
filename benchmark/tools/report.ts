@@ -49,6 +49,8 @@ export interface CaseCorrectnessSummary {
   readonly intervalBoundRatio?: number;
   /** In-sample anomaly flags, the most of each count across independent runs. */
   readonly anomalies?: AnomalyComparison;
+  /** How far apart the two libraries' warm-start parameters were, across independent runs. */
+  readonly warmStart?: WarmStartComparison;
   readonly investigations?: ReadonlyArray<FitInvestigation>;
   readonly note: string;
 }
@@ -62,6 +64,13 @@ export interface AnomalyComparison {
   readonly oneSided: number;
   /** Declared outliers that at least one library missed in at least one run. */
   readonly missedExpected: number;
+}
+
+/** The parameters each library's refit started from, read from its own base fit. */
+export interface WarmStartComparison {
+  readonly baseRows: number;
+  /** Largest absolute difference in any compared Stan parameter, in scaled units. */
+  readonly maximumParameterDifference: number;
 }
 
 /** Internal fit evidence beyond an output-first investigation threshold; never a failure. */
@@ -633,6 +642,77 @@ const compareAnomalies = (
   };
 };
 
+/**
+ * Compare the warm-start parameters of aligned runs, or undefined when evidence is missing or the
+ * shapes differ. Flat models keep neither Stan's prior-only rate nor its deltas, so for flat growth
+ * only `m`, `sigmaObs` and `beta` are compared.
+ */
+const compareWarmStarts = (
+  baseRows: number,
+  growth: "linear" | "flat" | "logistic",
+  effectProjections: ReadonlyArray<CorrectnessProjection>,
+  pythonProjections: ReadonlyArray<CorrectnessProjection>,
+):
+  | { readonly comparison: WarmStartComparison; readonly largest: FitInvestigation | undefined }
+  | undefined => {
+  let largest: FitInvestigation | undefined;
+
+  for (const [index, effectProjection] of effectProjections.entries()) {
+    const effect = effectProjection.warmStart;
+    const python = pythonProjections[index]?.warmStart;
+
+    if (
+      effect === undefined ||
+      python === undefined ||
+      effect.baseRows !== baseRows ||
+      python.baseRows !== baseRows ||
+      effect.parameters.beta.length !== python.parameters.beta.length ||
+      (growth !== "flat" && effect.parameters.delta.length !== python.parameters.delta.length)
+    ) {
+      return undefined;
+    }
+
+    const left = effect.parameters;
+    const right = python.parameters;
+
+    const pairs: ReadonlyArray<readonly [number, number]> = [
+      [left.m, right.m],
+      [left.sigmaObs, right.sigmaObs],
+      ...left.beta.map((value, position) => [value, right.beta[position] ?? NaN] as const),
+      ...(growth === "flat"
+        ? []
+        : [
+            [left.k, right.k] as const,
+            ...left.delta.map((value, position) => [value, right.delta[position] ?? NaN] as const),
+          ]),
+    ];
+
+    for (const [effectValue, pythonValue] of pairs) {
+      const difference = effectValue - pythonValue;
+
+      if (!Number.isFinite(difference)) {
+        return undefined;
+      }
+
+      if (largest === undefined || Math.abs(difference) > Math.abs(largest.difference)) {
+        largest = {
+          name: "warm-start-parameters",
+          run: effectProjection.run,
+          effectValue,
+          pythonValue,
+          difference,
+          threshold: 0,
+        };
+      }
+    }
+  }
+
+  return {
+    comparison: { baseRows, maximumParameterDifference: Math.abs(largest?.difference ?? 0) },
+    largest,
+  };
+};
+
 const correctnessForCase = (
   benchmarkCase: BenchmarkCase,
   effectResult: ImplementationResult,
@@ -1035,6 +1115,42 @@ const correctnessForCase = (
     };
   }
 
+  const warmStartDeclaration =
+    benchmarkCase.workload.kind === "map" ? benchmarkCase.workload.warmStart : undefined;
+
+  const warmStarts =
+    warmStartDeclaration === undefined || benchmarkCase.workload.kind !== "map"
+      ? undefined
+      : compareWarmStarts(
+          warmStartDeclaration.baseRows,
+          benchmarkCase.workload.configuration.growth,
+          effectProjections,
+          pythonProjections,
+        );
+
+  if (warmStartDeclaration !== undefined && warmStarts === undefined) {
+    return {
+      caseId: benchmarkCase.id,
+      status: "failed",
+      comparison,
+      maximumDifferences: maximum,
+      note: "Warm-start parameters are missing, misaligned, or shaped differently.",
+    };
+  }
+
+  // Each refit starts from its own library's base fit; a wide gap there is flagged, not failed,
+  // because the refit's outputs are gated on their own.
+  if (
+    warmStartDeclaration !== undefined &&
+    warmStarts?.largest !== undefined &&
+    Math.abs(warmStarts.largest.difference) > warmStartDeclaration.investigateParameterAbsolute
+  ) {
+    investigations.push({
+      ...warmStarts.largest,
+      threshold: warmStartDeclaration.investigateParameterAbsolute,
+    });
+  }
+
   const failedChecks = [
     ...failedQuantities,
     ...(intervalRatio !== undefined && intervalRatio > 1 ? ["interval bounds"] : []),
@@ -1048,13 +1164,14 @@ const correctnessForCase = (
       ? ` Stationarity is diagnostic-only; near-stationarity acceptance is deferred to ${optimizerQuality.stationarity.followUp}.`
       : "";
 
-  const investigationNotice = !outputFirst
-    ? ""
-    : investigations.length === 0
-      ? " Output-first: internal fit evidence is reported, not gated."
-      : ` Output-first: investigate internal fit differences in ${[
+  const investigationNotice =
+    investigations.length > 0
+      ? ` ${outputFirst ? "Output-first: investigate" : "Investigate"} internal fit differences in ${[
           ...new Set(investigations.map((item) => item.name)),
-        ].join(", ")}.`;
+        ].join(", ")}.`
+      : outputFirst
+        ? " Output-first: internal fit evidence is reported, not gated."
+        : "";
 
   const summary: CaseCorrectnessSummary = {
     caseId: benchmarkCase.id,
@@ -1066,7 +1183,7 @@ const correctnessForCase = (
           controls === undefined
             ? `Verified equivalent behavior for this configuration under evidence ${evidenceId}.`
             : `Verified fitted point behavior under ${evidenceId}; every interval bound matched Python's scalar simulation within its Monte Carlo allowance. Public output work differs.`
-        }${anomalyNotice(anomalies)}${stationarityNotice}${investigationNotice}`
+        }${anomalyNotice(anomalies)}${warmStartNotice(warmStarts?.comparison)}${stationarityNotice}${investigationNotice}`
       : `Cross-language quantities exceeded tolerance: ${failedChecks.join(", ")}.${investigationNotice}`,
   };
 
@@ -1077,8 +1194,19 @@ const correctnessForCase = (
     Object.assign(withIntervals, { anomalies });
   }
 
-  return outputFirst ? { ...withIntervals, investigations } : withIntervals;
+  if (warmStarts !== undefined) {
+    Object.assign(withIntervals, { warmStart: warmStarts.comparison });
+  }
+
+  return outputFirst || investigations.length > 0
+    ? { ...withIntervals, investigations }
+    : withIntervals;
 };
+
+const warmStartNotice = (warmStart: WarmStartComparison | undefined): string =>
+  warmStart === undefined
+    ? ""
+    : ` Each library refit from its own fit of the first ${warmStart.baseRows} rows; their starting parameters differed by at most ${warmStart.maximumParameterDifference.toPrecision(3)} in scaled units.`;
 
 const anomalyNotice = (anomalies: AnomalyComparison | undefined): string =>
   anomalies === undefined
@@ -1359,7 +1487,7 @@ export const renderBenchmarkMarkdown = (report: BenchmarkReport): string => {
       "",
       "## Output-first investigation flags",
       "",
-      "Internal fit evidence that differs from Python beyond its declared investigation threshold. These rows do not fail the case: fitted outputs gate eligibility. Each flag should be explained in validation notes. Stationarity is flagged only when Effect's residual exceeds Python's.",
+      "Internal fit evidence that differs from Python beyond its declared investigation threshold. These rows do not fail the case: fitted outputs gate eligibility. Each flag should be explained in validation notes. Stationarity is flagged only when Effect's residual exceeds Python's. Warm-start parameters are flagged when the two libraries' base fits start their refits further apart than the case allows.",
       "",
       "| Case | Run | Quantity | Effect | Python | Effect - Python | Threshold |",
       "| --- | ---: | --- | ---: | ---: | ---: | ---: |",
@@ -1381,6 +1509,10 @@ export const renderBenchmarkMarkdown = (report: BenchmarkReport): string => {
     "| Case | N | Features | Changepoints | Rows | Future | Horizon (days) | S | Output | Effect sampler limit (bytes) | Dataset recipe / SHA-256 | Evidence |",
     "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | --- | --- |",
     ...reportWorkloadRows(report),
+    "",
+    "## Warm-start workloads",
+    "",
+    "Warm-start cases fit the first rows of a history, read that fit's Stan parameters with `warmStartParameters` or `warm_start_params`, and refit the whole history from them. That refit is the model every correctness gate and prediction phase uses. `warm-start-fit` times the refit alone; the base fit is untimed. `warm-fit` times a fresh fit of the same history for comparison.",
     "",
     "## Evaluation workloads",
     "",

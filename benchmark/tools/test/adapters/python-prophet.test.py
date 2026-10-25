@@ -358,6 +358,38 @@ class PythonCountryReferenceTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "strict exceedance"):
             adapter["assert_anomalies"](training, frame, case, widened)
 
+    def test_warm_start_refits_from_warm_start_params_of_the_base_rows(self):
+        dataset = json.loads((BENCHMARK_ROOT / "inputs" / "v1" / "flat-seasonal.json").read_bytes())
+        training, _ = adapter["prepare_input"](dataset)
+        case = {
+            "id": "warm-start-flat-test",
+            "workload": {
+                "kind": "map", "fitRequest": "growth-only",
+                "configuration": {"growth": "flat"},
+                "pythonOptimizer": {"algorithm": "Auto", "maxIterations": 10_000, "newtonFallback": True},
+                "warmStart": {"baseRows": 89, "investigateParameterAbsolute": 0.01},
+            },
+        }
+
+        init = adapter["base_warm_start"](training, case)
+        base = adapter["fit_model"](training.iloc[:89], case)
+        self.assertEqual(float(init["m"]), float(base.params["m"].reshape(-1)[0]))
+
+        evidence = adapter["warm_start_evidence"](case, init)
+        self.assertEqual(evidence["baseRows"], 89)
+        self.assertEqual(evidence["parameters"]["sigmaObs"], float(init["sigma_obs"]))
+        self.assertEqual(len(evidence["parameters"]["beta"]), base.params["beta"].shape[1])
+        json.dumps(evidence, allow_nan=False)
+
+        warm = adapter["setup_model"](training, case, init)
+        self.assertEqual(len(warm.history), len(training))
+
+        no_warm_start = {**case, "workload": {key: value for key, value in case["workload"].items()
+                                              if key != "warmStart"}}
+        self.assertIsNone(adapter["base_warm_start"](training, no_warm_start))
+        with self.assertRaisesRegex(ValueError, "longer history"):
+            adapter["base_warm_start"](training.iloc[:89], case)
+
 
 if __name__ == "__main__":
     unittest.main()

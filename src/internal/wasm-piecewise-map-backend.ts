@@ -12,12 +12,15 @@ import type { LinearOptimizer } from "../linear-optimizer";
 import {
   encodeStanOptimizer as encodeLinearOptimizer,
   decodeStanCompletion as decodeLinearCompletion,
+  decodeStanInitialization,
+  annotateStanInitialization,
   annotateStanCompletion as annotateLinearCompletion,
   annotateStanRequest as annotateLinearRequest,
   stanOptimizerFailure as linearOptimizerFailure,
 } from "./stan-map-protocol";
 import type { ResolvedRegressor } from "../regressor";
 import type { SeasonalityLayout } from "../seasonality";
+import type { WarmStartParameters } from "../warm-start";
 import { targetScalingModeCode, type TargetScalingMode } from "../target-scaling";
 import type { TrainingInput } from "./fitting-backend";
 import type { KnownAdditiveFeatures, SeasonalityMaskMatrix } from "./additional-features";
@@ -74,6 +77,7 @@ export interface WasmPiecewiseMapAdapter {
     features: KnownAdditiveFeatures,
     events: EventCalendar,
     regressors: ReadonlyArray<ResolvedRegressor>,
+    warmStart?: WarmStartParameters,
   ) => Effect.Effect<PiecewiseMapParameters, FittingError>;
 
   /** Predict from complete trusted linear MAP state. */
@@ -158,7 +162,7 @@ const decodeFittedParameters = (
       regressors.length;
 
     const expectedLength =
-      20 +
+      22 +
       changepointCount * 2 +
       seasonalities.coefficientCount +
       events.layout.coefficientCount +
@@ -173,13 +177,14 @@ const decodeFittedParameters = (
 
     if (
       termination === undefined ||
+      decodeStanInitialization(packed, 20) === undefined ||
       packed[1] !== targetScalingModeCode(scaling) ||
       packed[11] !== observationCount
     ) {
       return protocolFailure(observationCount, parameterCount);
     }
 
-    const changepointStart = 20;
+    const changepointStart = 22;
     const deltaStart = changepointStart + changepointCount;
     const coefficientStart = deltaStart + changepointCount;
     const eventCoefficientStart = coefficientStart + seasonalities.coefficientCount;
@@ -382,6 +387,7 @@ export const makeWasmPiecewiseMapAdapter = (
     features,
     events,
     regressors,
+    warmStart,
   ) => {
     const observationCount = input.values.length;
     const packedChangepoints = packChangepointsForFit(changepoints);
@@ -389,7 +395,7 @@ export const makeWasmPiecewiseMapAdapter = (
     const coefficientCount = seasonalities.coefficientCount + features.layout.coefficientCount;
 
     return Effect.gen(function* () {
-      yield* annotateLinearRequest(optimizer);
+      yield* annotateLinearRequest(optimizer, warmStart);
 
       const module = yield* attemptWasmFitting(loadModule, observationCount, {
         phase: "load",
@@ -433,7 +439,7 @@ export const makeWasmPiecewiseMapAdapter = (
             offsets,
             counts,
             changepointPriorScale,
-            encodeLinearOptimizer(optimizer),
+            encodeLinearOptimizer(optimizer, warmStart),
           ),
         observationCount,
         {
@@ -442,7 +448,7 @@ export const makeWasmPiecewiseMapAdapter = (
         },
       );
 
-      return yield* decodeFittedParameters(
+      const model = yield* decodeFittedParameters(
         packed,
         observationCount,
         scaling,
@@ -451,6 +457,10 @@ export const makeWasmPiecewiseMapAdapter = (
         events,
         regressors,
       );
+
+      yield* annotateStanInitialization(decodeStanInitialization(packed, 20));
+
+      return model;
     }).pipe(
       Effect.tap((model) => annotateLinearCompletion(model.fitSummary)),
       Effect.tap(annotateFittedDimensions),

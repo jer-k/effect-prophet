@@ -35,7 +35,7 @@ test("fits and predicts grouped known additive columns through generated binding
   const fit = fitWithFeatures(new Float64Array([0, 1, 0, 0]));
 
   assert.equal(fit[0], wasm.PiecewiseMapFitStatus.Success);
-  assert.equal(fit.length, 18);
+  assert.equal(fit.length, 20);
 
   const prediction = wasm.predict_piecewise_map_with_features(
     new Float64Array([4]),
@@ -52,7 +52,7 @@ test("fits and predicts grouped known additive columns through generated binding
     empty,
     1,
     new Float64Array([1]),
-    new Float64Array([fit[17] ?? Number.NaN]),
+    new Float64Array([fit[19] ?? Number.NaN]),
     new Float64Array([0]),
     new Float64Array([1]),
   );

@@ -3,9 +3,58 @@ import { describe, expect, it } from "vitest";
 
 import { FittingError } from "../../src/errors";
 import {
+  decodeStanInitialization,
+  encodeStanOptimizer,
   stanOptimizerFailure as linearOptimizerFailure,
   wasmMemoryLimitBytes,
 } from "../../src/internal/stan-map-protocol";
+import { defaultLbfgsSettings, defaultLinearOptimizer } from "../../src/linear-optimizer";
+
+describe("Stan optimizer control frames", () => {
+  const warmStart = { k: 0.5, m: -0.25, sigmaObs: 0.1, delta: [0.01, 0.02], beta: [0.3] };
+  const lbfgs = Object.values(defaultLbfgsSettings);
+
+  it("keeps version two when Prophet's initialization applies", () => {
+    expect(Array.from(encodeStanOptimizer({ algorithm: "newton", maxIterations: 50 }))).toEqual([
+      2, 1, 50,
+    ]);
+    expect(Array.from(encodeStanOptimizer(defaultLinearOptimizer))).toEqual([
+      2,
+      0,
+      10_000,
+      1,
+      ...lbfgs,
+    ]);
+  });
+
+  it("appends a counted warm start after the algorithm's controls", () => {
+    const init = [0.5, -0.25, 0.1, 2, 0.01, 0.02, 1, 0.3];
+
+    expect(
+      Array.from(encodeStanOptimizer({ algorithm: "newton", maxIterations: 50 }, warmStart)),
+    ).toEqual([3, 1, 50, ...init]);
+    expect(Array.from(encodeStanOptimizer(defaultLinearOptimizer, warmStart))).toEqual([
+      3,
+      0,
+      10_000,
+      1,
+      ...lbfgs,
+      ...init,
+    ]);
+  });
+
+  it.each([
+    { codes: [0, 0], expected: null },
+    { codes: [1, 1], expected: { delta: "warm-start", beta: "warm-start" } },
+    { codes: [2, 1], expected: { delta: "default", beta: "warm-start" } },
+    { codes: [1, 2], expected: { delta: "warm-start", beta: "default" } },
+    { codes: [0, 1], expected: undefined },
+    { codes: [3, 1], expected: undefined },
+    { codes: [1], expected: undefined },
+  ])("decodes initialization codes $codes", ({ codes, expected }) => {
+    expect(decodeStanInitialization(new Float64Array([9, ...codes]), 1)).toEqual(expected);
+  });
+});
 
 describe("linear optimizer failure protocol", () => {
   it.each([

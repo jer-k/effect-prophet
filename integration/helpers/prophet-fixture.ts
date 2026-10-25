@@ -1239,6 +1239,40 @@ const UncertaintySummarySchema = Schema.Struct({
   high: Schema.Array(Schema.Finite),
 });
 
+const WarmStartStateSchema = Schema.Struct({
+  k: Schema.Finite,
+  m: Schema.Finite,
+  sigmaObs: PositiveFinite,
+  delta: Schema.Array(Schema.Finite),
+  beta: Schema.Array(Schema.Finite),
+});
+
+const WarmStartFitFields = {
+  changepointCount: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
+  weekly: Schema.Boolean,
+  observations: Schema.NonEmptyArray(
+    Schema.Struct({ ...ObservationSchema.fields, capacity: Schema.optionalKey(PositiveFinite) }),
+  ),
+};
+
+const WarmStartReferenceFileSchema = Schema.Struct({
+  cases: Schema.NonEmptyArray(
+    Schema.Struct({
+      id: Schema.NonEmptyString,
+      growth: Schema.Literals(["linear", "flat", "logistic"]),
+      seasonalityMode: Schema.Literals(["additive", "multiplicative"]),
+      first: Schema.Struct(WarmStartFitFields),
+      second: Schema.Struct({
+        ...WarmStartFitFields,
+        maxIterations: Schema.NullOr(Schema.Int.check(Schema.isGreaterThan(0))),
+      }),
+      warmStart: WarmStartStateSchema,
+      expected: Schema.Struct({ warm: WarmStartStateSchema, cold: WarmStartStateSchema }),
+    }),
+  ),
+  tolerances: Schema.Struct({ parameterAbsolute: PositiveFinite }),
+});
+
 const MapUncertaintyReferenceFileSchema = Schema.Struct({
   sourceMethod: Schema.Literal("Python Prophet 1.4.0 scalar MAP fixed-state simulation"),
   cases: Schema.NonEmptyArray(
@@ -1406,6 +1440,7 @@ const FixtureManifestSchema = Schema.Struct({
       "large-fourier-stan.json",
       "flat-low-order-stan.json",
       "stan-differential-same-state.json",
+      "warm-start.json",
     ]) {
       if (!paths.has(requiredPath)) {
         return {
@@ -1566,6 +1601,9 @@ export type MixedMapReferenceFile = typeof MixedMapReferenceFileSchema.Type;
 
 /** Parsed fixed-state Prophet scalar-path distribution summaries. */
 export type MapUncertaintyReferenceFile = typeof MapUncertaintyReferenceFileSchema.Type;
+
+/** Decoded `warm_start_params` evidence and the Newton fits that start from it. */
+export type WarmStartReferenceFile = typeof WarmStartReferenceFileSchema.Type;
 
 /** Parsed provenance and artifact integrity metadata for the fixture folder. */
 export type FixtureManifest = typeof FixtureManifestSchema.Type;
@@ -2140,6 +2178,28 @@ export const loadProphetFixtureBundle = Effect.fn("ProphetFixture.loadBundle")(f
     seasonalityResolutionPath,
   );
 
+  const warmStartPath = nodePath.join(root, "warm-start.json");
+  const warmStartContents = yield* readFixtureText(warmStartPath);
+
+  const warmStartInput: unknown = yield* Effect.try({
+    try: () => JSON.parse(warmStartContents),
+    catch: (cause) => invalidJson(warmStartPath, cause),
+  });
+
+  const warmStart = yield* Schema.decodeUnknownEffect(WarmStartReferenceFileSchema)(
+    warmStartInput,
+  ).pipe(
+    Effect.mapError(
+      (cause) =>
+        new FixtureLoadError({
+          operation: "schema",
+          fixturePath: warmStartPath,
+          message: formatSchemaIssue(cause.issue),
+          cause,
+        }),
+    ),
+  );
+
   return {
     changepointResolution,
     conditionalMapFit,
@@ -2157,5 +2217,6 @@ export const loadProphetFixtureBundle = Effect.fn("ProphetFixture.loadBundle")(f
     regressorStandardization,
     seasonalityResolution,
     targetScaling,
+    warmStart,
   };
 });

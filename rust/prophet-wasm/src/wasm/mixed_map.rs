@@ -364,7 +364,7 @@ fn pack_linear_fit(model: crate::mixed_map::MixedMapModel) -> Vec<f64> {
   };
   let changepoint_count = trend.changepoint_timestamps.len();
   let mut packed = Vec::with_capacity(
-    20 + changepoint_count * 2 + model.coefficients.len() + model.additional_coefficients.len(),
+    22 + changepoint_count * 2 + model.coefficients.len() + model.additional_coefficients.len(),
   );
   let termination = termination_code(model.summary.termination);
 
@@ -401,7 +401,7 @@ fn pack_flat_fit(model: crate::mixed_map::MixedMapModel) -> Vec<f64> {
     return fit_error(PiecewiseMapFitStatus::InvalidConfiguration);
   };
   let mut packed =
-    Vec::with_capacity(16 + model.coefficients.len() + model.additional_coefficients.len());
+    Vec::with_capacity(18 + model.coefficients.len() + model.additional_coefficients.len());
 
   packed.extend_from_slice(&[
     0.0,
@@ -617,7 +617,7 @@ mod tests {
     );
 
     assert_eq!(fit[0], 0.0);
-    assert_eq!(fit.len(), 17);
+    assert_eq!(fit.len(), 19);
     assert_eq!(
       fit[12], 1.0,
       "Prophet's automatic policy uses Newton below 100 rows"
@@ -748,7 +748,7 @@ mod tests {
       assert_eq!(explicit[0], 0.0);
       assert_eq!(explicit[5], expected.noise_scale);
       assert_eq!(explicit[9], expected.summary.objective);
-      assert_eq!(explicit[16], expected.additional_coefficients[0]);
+      assert_eq!(explicit[18], expected.additional_coefficients[0]);
     }
 
     // Prophet resolves automatic flat changepoints too: 6 rows keep floor(4.8) - 1 = 3.

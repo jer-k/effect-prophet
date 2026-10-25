@@ -16,8 +16,10 @@ import {
   predict,
   predictUncertainty,
   prophetFittingBackendLayer,
+  warmStartParameters,
   type FittedProphet,
   type Forecasts,
+  type WarmStartParameters,
 } from "effect-prophet";
 
 import {
@@ -244,8 +246,14 @@ const prepareInput = (dataset: BenchmarkDataset): PreparedInput => ({
 const runFit = (
   input: PreparedInput,
   benchmarkCase: BenchmarkCase,
+  warmStart?: WarmStartParameters,
 ): FittedProphet | Promise<FittedProphet> => {
-  const options = effectOptionsForCase(benchmarkCase);
+  const caseOptions = effectOptionsForCase(benchmarkCase);
+
+  const options =
+    warmStart === undefined
+      ? caseOptions
+      : { ...caseOptions, map: { ...caseOptions?.map, warmStart } };
 
   const operation = fit(input.observations, options).pipe(
     Effect.provide(prophetFittingBackendLayer),
@@ -305,13 +313,45 @@ const fixedPredictionModel = (benchmarkCase: BenchmarkCase): FittedProphet => {
   );
 };
 
+const warmStartControls = (benchmarkCase: BenchmarkCase) =>
+  benchmarkCase.workload.kind === "map" ? benchmarkCase.workload.warmStart : undefined;
+
+/** Untimed: read warm-start parameters from a fit of the history's first `baseRows` rows. */
+const baseWarmStart = (
+  input: PreparedInput,
+  benchmarkCase: BenchmarkCase,
+): WarmStartParameters | undefined => {
+  const controls = warmStartControls(benchmarkCase);
+
+  if (controls === undefined) {
+    return undefined;
+  }
+
+  if (controls.baseRows >= input.observations.length) {
+    throw new Error(`Case ${benchmarkCase.id} warm start needs a longer history than its base`);
+  }
+
+  const base = runFit(
+    { ...input, observations: input.observations.slice(0, controls.baseRows) },
+    benchmarkCase,
+  );
+
+  if (base instanceof Promise) {
+    throw new Error(`Case ${benchmarkCase.id} warm start requires a synchronous fit`);
+  }
+
+  return warmStartParameters(base);
+};
+
+/** Warm-start cases measure and check the refit from the base fit, as an application would. */
 const setupModel = (
   input: PreparedInput,
   benchmarkCase: BenchmarkCase,
+  warmStart: WarmStartParameters | undefined,
 ): FittedProphet | Promise<FittedProphet> =>
   benchmarkCase.workload.kind === "fixed-linear-prediction"
     ? fixedPredictionModel(benchmarkCase)
-    : runFit(input, benchmarkCase);
+    : runFit(input, benchmarkCase, warmStart);
 
 const runPredict = (model: FittedProphet, input: PreparedInput): Forecasts =>
   runWithoutTracing(predict(model, input.predictionRows));
@@ -993,7 +1033,8 @@ const correctnessProjection = async (
   run: number,
 ): Promise<CorrectnessProjection> => {
   const input = prepareInput(dataset);
-  const model = await setupModel(input, benchmarkCase);
+  const warmStart = baseWarmStart(input, benchmarkCase);
+  const model = await setupModel(input, benchmarkCase, warmStart);
   const forecasts = forecastProjection(runPredict(model, input));
   const metadata = metadataProjection(model);
 
@@ -1078,6 +1119,14 @@ const correctnessProjection = async (
 
   if (anomalyEvidence !== undefined) {
     Object.assign(withUncertainty, { anomalies: anomalyEvidence });
+  }
+
+  const warmStartRows = warmStartControls(benchmarkCase)?.baseRows;
+
+  if (warmStart !== undefined && warmStartRows !== undefined) {
+    Object.assign(withUncertainty, {
+      warmStart: { baseRows: warmStartRows, parameters: warmStart },
+    });
   }
 
   if (benchmarkCase.workload.kind !== "fixed-linear-prediction") {
@@ -1185,7 +1234,8 @@ const measurementForPhase = async (
   }
 
   const prepared = prepareInput(dataset);
-  const model = await setupModel(prepared, benchmarkCase);
+  const warmStart = baseWarmStart(prepared, benchmarkCase);
+  const model = await setupModel(prepared, benchmarkCase, warmStart);
   const forecasts = runPredict(model, prepared);
   const encodedJson = JSON.stringify(runWithoutTracing(encodeFittedModel(model)));
   let samples: ReadonlyArray<number>;
@@ -1240,6 +1290,13 @@ const measurementForPhase = async (
       break;
     case "warm-anomalies":
       samples = await measure(benchmarkCase, () => runAnomalies(prepared, benchmarkCase));
+      break;
+    case "warm-start-fit":
+      if (warmStart === undefined) {
+        throw new Error(`Case ${benchmarkCase.id} declares no warm start`);
+      }
+
+      samples = await measure(benchmarkCase, () => runFit(prepared, benchmarkCase, warmStart));
       break;
     default:
       throw new Error(`Evaluation phase ${phase} requires an evaluation workload`);

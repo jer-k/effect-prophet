@@ -8,7 +8,7 @@ export const flatGroups = [
     id: "defaults",
     title: "Default settings",
     intro:
-      '`fit(history, { growth: "flat" })` against `Prophet(growth="flat").fit(df)` with nothing else set. Each library decides on its own which seasonal patterns to use.',
+      '`fit(history, { growth: "flat" })` against `Prophet(growth="flat").fit(df)` with nothing else set. Each library decides on its own which seasonal patterns to use. Warm-start cases fit the first rows, then refit the whole history from the parameters of that fit, as when new data arrives.',
   },
   {
     id: "level",
@@ -57,6 +57,12 @@ export const flatCaseDescriptions = {
     group: "defaults",
     title: "Defaults, weekly pattern",
     summary: "96 days around one level with a clear weekly rhythm.",
+  },
+  "warm-start-flat-defaults-7-new-rows": {
+    group: "defaults",
+    title: "Refit after a week of new data",
+    summary:
+      '`fit(history, { growth: "flat", map: { warmStart } })` from `warmStartParameters` of a fit of the first 89 days, against `fit(df, init=warm_start_params(m))`. 96 days around one level with a weekly rhythm, fitted with Newton. Timings compare the refit with a fresh fit.',
   },
   "flat-defaults-negative": {
     group: "defaults",

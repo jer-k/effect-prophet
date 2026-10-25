@@ -9,6 +9,7 @@ import type { ChangepointSetting } from "../options";
 import type { ResolvedRegressor } from "../regressor";
 import type { TargetScalingMode } from "../target-scaling";
 import type { SeasonalityLayout } from "../seasonality";
+import type { WarmStartParameters } from "../warm-start";
 import type { KnownAdditiveFeatures, SeasonalityMaskMatrix } from "./additional-features";
 
 export type { FlatMapParameters, Parameters, PiecewiseMapParameters } from "../fitted-model";
@@ -52,6 +53,9 @@ export interface LinearPiecewiseMapFitPlan {
 
   /** Training-derived regressor metadata retained in the fitted model. */
   readonly regressors: ReadonlyArray<ResolvedRegressor>;
+
+  /** Requested optimizer start; Prophet's initialization applies when absent. */
+  readonly warmStart?: WarmStartParameters;
 }
 
 /** Request for flat MAP fitting through Prophet's Stan density with resolved feature modes. */
@@ -67,6 +71,7 @@ export interface FlatStanMapFitPlan {
   readonly additionalFeatures: KnownAdditiveFeatures;
   readonly events: EventCalendar;
   readonly regressors: ReadonlyArray<ResolvedRegressor>;
+  readonly warmStart?: WarmStartParameters;
 }
 
 /** Request for joint floor-aware logistic MAP fitting. */
@@ -82,6 +87,7 @@ export interface LogisticPiecewiseMapFitPlan {
   readonly additionalFeatures: KnownAdditiveFeatures;
   readonly events: EventCalendar;
   readonly regressors: ReadonlyArray<ResolvedRegressor>;
+  readonly warmStart?: WarmStartParameters;
 }
 
 /** Exhaustive set of configurations supported by the public fitting backend. */

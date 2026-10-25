@@ -37,7 +37,7 @@ describe("linear piecewise MAP WASM boundary", () => {
 
     assert.equal(result[0], wasm.PiecewiseMapFitStatus.Success);
     assert.equal(result[1], 1);
-    assert.equal(result.length, 19);
+    assert.equal(result.length, 21);
 
     const prediction = wasm.predict_piecewise_map(
       new Float64Array([2, 6]),
@@ -45,8 +45,8 @@ describe("linear piecewise MAP WASM boundary", () => {
       result[3] ?? Number.NaN,
       result[4] ?? Number.NaN,
       result[5] ?? Number.NaN,
-      result.slice(17, 18),
-      result.slice(18, 19),
+      result.slice(19, 20),
+      result.slice(20, 21),
       result[7] ?? Number.NaN,
       empty,
       empty,
@@ -62,7 +62,7 @@ describe("linear piecewise MAP WASM boundary", () => {
 
     assert.equal(result[0], wasm.PiecewiseMapFitStatus.Success);
     assert.equal(result[1], 2);
-    assert.deepEqual(Array.from(result.slice(17, 19)), [2, 5]);
+    assert.deepEqual(Array.from(result.slice(19, 21)), [2, 5]);
   });
 
   it("retains repeated automatic candidates but rejects repeated explicit wire options", () => {
@@ -82,7 +82,7 @@ describe("linear piecewise MAP WASM boundary", () => {
 
     assert.equal(result[0], wasm.PiecewiseMapFitStatus.Success);
     assert.equal(result[1], 7);
-    assert.deepEqual(Array.from(result.slice(17, 24)), [0, 1, 1, 2, 2, 3, 3]);
+    assert.deepEqual(Array.from(result.slice(19, 26)), [0, 1, 1, 2, 2, 3, 3]);
     assert.deepEqual(Array.from(fit(0, new Float64Array([1, 1]), 0, 0)), [
       wasm.PiecewiseMapFitStatus.InvalidConfiguration,
     ]);

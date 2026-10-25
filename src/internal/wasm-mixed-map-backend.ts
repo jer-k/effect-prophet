@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { componentModeCode } from "../component-mode";
+import { coefficientModeCodes } from "../component-mode";
 import { FittingError, PredictionError } from "../errors";
 import { emptyEventCalendar, type EventCalendar } from "../event";
 import {
@@ -16,12 +16,15 @@ import type { LinearOptimizer } from "../linear-optimizer";
 import {
   encodeStanOptimizer as encodeLinearOptimizer,
   decodeStanCompletion as decodeLinearCompletion,
+  decodeStanInitialization,
+  annotateStanInitialization,
   annotateStanCompletion as annotateLinearCompletion,
   annotateStanRequest as annotateLinearRequest,
   stanOptimizerFailure as linearOptimizerFailure,
 } from "./stan-map-protocol";
 import type { ResolvedRegressor } from "../regressor";
 import type { SeasonalityLayout } from "../seasonality";
+import type { WarmStartParameters } from "../warm-start";
 import { targetScalingModeCode, type TargetScalingMode } from "../target-scaling";
 import type { KnownAdditiveFeatures, SeasonalityMaskMatrix } from "./additional-features";
 import type { TrainingInput } from "./fitting-backend";
@@ -77,30 +80,6 @@ const predictionStatus = {
   sizeOverflow: 4,
   nonFiniteResult: 5,
 } as const;
-
-export const modesFor = (
-  seasonalities: SeasonalityLayout,
-  features: KnownAdditiveFeatures,
-): Float64Array => {
-  const modes = new Float64Array(seasonalities.coefficientCount + features.layout.coefficientCount);
-  let offset = 0;
-
-  for (const component of seasonalities.components) {
-    modes.fill(
-      componentModeCode(component.definition.mode),
-      offset,
-      offset + component.coefficientCount,
-    );
-    offset += component.coefficientCount;
-  }
-
-  for (const component of features.layout.components) {
-    modes.fill(componentModeCode(component.mode), offset, offset + component.coefficientCount);
-    offset += component.coefficientCount;
-  }
-
-  return modes;
-};
 
 /** Whether any resolved seasonal, event, or regressor component is multiplicative. */
 export const hasMultiplicativeMode = (
@@ -200,7 +179,7 @@ const decodeLinearFit = (
   }
 
   const expectedLength =
-    20 + changepointCount * 2 + seasonalities.coefficientCount + additionalCount;
+    22 + changepointCount * 2 + seasonalities.coefficientCount + additionalCount;
 
   const completion = decodeLinearCompletion(packed);
   const termination = completion.termination;
@@ -208,13 +187,14 @@ const decodeLinearFit = (
   if (
     packed.length !== expectedLength ||
     termination === undefined ||
+    decodeStanInitialization(packed, 20) === undefined ||
     packed[1] !== targetScalingModeCode(scaling) ||
     packed[11] !== observationCount
   ) {
     return fittingFailure(new Float64Array(), observationCount, "linear");
   }
 
-  const changepointStart = 20;
+  const changepointStart = 22;
   const deltaStart = changepointStart + changepointCount;
   const coefficientStart = deltaStart + changepointCount;
   const eventStart = coefficientStart + seasonalities.coefficientCount;
@@ -268,7 +248,7 @@ const decodeFlatFit = (
     return fittingFailure(packed, observationCount, "flat");
   }
 
-  const coefficientStart = 16;
+  const coefficientStart = 18;
   const eventStart = coefficientStart + seasonalities.coefficientCount;
   const regressorStart = eventStart + events.layout.coefficientCount;
   const expectedLength = regressorStart + regressors.length;
@@ -277,6 +257,7 @@ const decodeFlatFit = (
   if (
     packed.length !== expectedLength ||
     completion.termination === undefined ||
+    decodeStanInitialization(packed, 16) === undefined ||
     packed[1] !== targetScalingModeCode(scaling) ||
     packed[7] !== observationCount
   ) {
@@ -404,6 +385,7 @@ export const fitMixedLinearMapWithWasm = (
   features: KnownAdditiveFeatures,
   events: EventCalendar,
   regressors: ReadonlyArray<ResolvedRegressor>,
+  warmStart?: WarmStartParameters,
 ): Effect.Effect<PiecewiseMapParameters, FittingError> => {
   const observationCount = input.values.length;
   const packedChangepoints = packChangepointsForFit(changepoints);
@@ -411,7 +393,7 @@ export const fitMixedLinearMapWithWasm = (
   const coefficientCount = seasonalities.coefficientCount + features.layout.coefficientCount;
 
   return Effect.gen(function* () {
-    yield* annotateLinearRequest(optimizer);
+    yield* annotateLinearRequest(optimizer, warmStart);
     yield* Effect.annotateCurrentSpan({
       "effect_prophet.component.mode": "mixed",
     });
@@ -423,7 +405,7 @@ export const fitMixedLinearMapWithWasm = (
 
     const seasonal = packSeasonalitiesForFit(seasonalities);
     const additional = packKnownAdditiveFeatures(masks, features);
-    const modes = modesFor(seasonalities, features);
+    const modes = coefficientModeCodes(seasonalities, features);
 
     const packed = yield* attemptWasmFitting(
       () =>
@@ -446,7 +428,7 @@ export const fitMixedLinearMapWithWasm = (
           additional.counts,
           modes,
           changepointPriorScale,
-          encodeLinearOptimizer(optimizer),
+          encodeLinearOptimizer(optimizer, warmStart),
         ),
       observationCount,
       {
@@ -455,7 +437,7 @@ export const fitMixedLinearMapWithWasm = (
       },
     );
 
-    return yield* decodeLinearFit(
+    const model = yield* decodeLinearFit(
       packed,
       observationCount,
       scaling,
@@ -464,6 +446,10 @@ export const fitMixedLinearMapWithWasm = (
       regressors,
       changepointPriorScale,
     );
+
+    yield* annotateStanInitialization(decodeStanInitialization(packed, 20));
+
+    return model;
   }).pipe(
     Effect.tap((model) => annotateLinearCompletion(model.fitSummary)),
     Effect.tap(annotateFittedDimensions),
@@ -496,13 +482,14 @@ export const fitFlatStanMapWithWasm = (
   features: KnownAdditiveFeatures,
   events: EventCalendar = emptyEventCalendar,
   regressors: ReadonlyArray<ResolvedRegressor> = [],
+  warmStart?: WarmStartParameters,
 ): Effect.Effect<FlatMapParameters, FittingError> => {
   const observationCount = input.values.length;
   const componentCount = seasonalities.components.length + features.layout.components.length;
   const coefficientCount = seasonalities.coefficientCount + features.layout.coefficientCount;
 
   return Effect.gen(function* () {
-    yield* annotateLinearRequest(optimizer);
+    yield* annotateLinearRequest(optimizer, warmStart);
     yield* Effect.annotateCurrentSpan({
       "effect_prophet.component.mode": componentModeAttribute(seasonalities, features),
     });
@@ -535,9 +522,9 @@ export const fitFlatStanMapWithWasm = (
           additional.priors,
           additional.offsets,
           additional.counts,
-          modesFor(seasonalities, features),
+          coefficientModeCodes(seasonalities, features),
           changepointPriorScale,
-          encodeLinearOptimizer(optimizer),
+          encodeLinearOptimizer(optimizer, warmStart),
         ),
       observationCount,
       {
@@ -546,7 +533,7 @@ export const fitFlatStanMapWithWasm = (
       },
     );
 
-    return yield* decodeFlatFit(
+    const model = yield* decodeFlatFit(
       packed,
       observationCount,
       scaling,
@@ -554,6 +541,10 @@ export const fitFlatStanMapWithWasm = (
       events,
       regressors,
     );
+
+    yield* annotateStanInitialization(decodeStanInitialization(packed, 16));
+
+    return model;
   }).pipe(
     Effect.tap((model) =>
       model.fitSummary.method === "flat-map-stan-v1"
@@ -628,7 +619,7 @@ const predictMixed = (
       additionalCoefficients,
       additional.offsets,
       additional.counts,
-      modesFor(model.seasonalities, features),
+      coefficientModeCodes(model.seasonalities, features),
     ] as const;
 
     const packed = yield* attemptWasmPrediction(

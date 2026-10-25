@@ -199,6 +199,20 @@ export const CorrectnessProjectionSchema = Schema.Struct({
       ),
     }),
   ),
+  // The Stan parameters the refit started from, read from a fit of the first `baseRows` rows
+  // with `warmStartParameters` or `warm_start_params`, in scaled units.
+  warmStart: Schema.optionalKey(
+    Schema.Struct({
+      baseRows: PositiveInteger,
+      parameters: Schema.Struct({
+        k: Schema.Finite,
+        m: Schema.Finite,
+        sigmaObs: Schema.Finite.check(Schema.isGreaterThan(0)),
+        delta: Schema.Array(Schema.Finite),
+        beta: Schema.Array(Schema.Finite),
+      }),
+    }),
+  ),
 });
 
 /** Untimed correctness evidence emitted by one independent run. */

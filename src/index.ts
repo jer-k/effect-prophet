@@ -236,6 +236,8 @@ export {
   type UncertaintyResult,
 } from "./uncertainty";
 
+export { warmStartParameters, type WarmStartParameters } from "./warm-start";
+
 export {
   parseRegressorDefinitions,
   type EncodedRegressorDefinition,

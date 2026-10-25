@@ -788,20 +788,19 @@ mod tests {
   use crate::seasonality::SeasonalitySpec;
   use crate::target_scaling::ScalingMode;
 
-  const CONTROLS: crate::stan::linear_optimizer::LinearOptimizerOptions =
-    match crate::stan::linear_optimizer::LinearOptimizerOptions::parse(
+  fn controls() -> crate::stan::linear_optimizer::LinearOptimizerOptions {
+    crate::stan::linear_optimizer::LinearOptimizerOptions::parse(
       2_000,
       crate::stan::linear_optimizer::LinearOptimizerChoice::Newton,
-    ) {
-      Ok(controls) => controls,
-      Err(_) => panic!("valid test controls"),
-    };
+    )
+    .expect("valid test controls")
+  }
 
   #[test]
   fn fits_and_predicts_a_noisy_piecewise_series() {
     let timestamps = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0];
     let values = [1.0, 1.9, 3.1, 3.2, 3.4, 3.5];
-    let model = fit_piecewise_map(&timestamps, &values, &[2.0], &[], 0.5, CONTROLS)
+    let model = fit_piecewise_map(&timestamps, &values, &[2.0], &[], 0.5, controls())
       .expect("noisy data should have an interior optimum");
 
     assert!(matches!(model.summary.termination, MapTermination::Stan(_)));
@@ -846,7 +845,7 @@ mod tests {
 
   #[test]
   fn preserves_the_constant_target_shortcut() {
-    let model = fit_piecewise_map(&[0.0, 1.0], &[-4.0, -4.0], &[], &[], 0.05, CONTROLS).unwrap();
+    let model = fit_piecewise_map(&[0.0, 1.0], &[-4.0, -4.0], &[], &[], 0.05, controls()).unwrap();
 
     assert_eq!(model.trend.intercept, -4.0);
     assert_eq!(
@@ -901,7 +900,7 @@ mod tests {
         component_counts: &[1],
       },
       0.05,
-      CONTROLS,
+      controls(),
     )
     .expect("noisy event history should have an interior MAP optimum");
 
@@ -917,7 +916,7 @@ mod tests {
       &[2.0],
       &[],
       0.2,
-      CONTROLS,
+      controls(),
       ScalingMode::MinMax,
     )
     .expect("minmax targets should have an interior optimum");
@@ -944,7 +943,7 @@ mod tests {
       &[day * 0.5],
       &seasonalities,
       0.05,
-      CONTROLS,
+      controls(),
     )
     .unwrap();
 

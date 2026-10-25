@@ -8,7 +8,7 @@ export const linearGroups = [
     id: "defaults",
     title: "Default settings",
     intro:
-      "`fit(history)` against `Prophet().fit(df)` with no options on either side. Each library decides on its own which seasonal patterns to use.",
+      "`fit(history)` against `Prophet().fit(df)` with no options on either side. Each library decides on its own which seasonal patterns to use. Warm-start cases fit the first rows, then refit the whole history from the parameters of that fit, as when new data arrives.",
   },
   {
     id: "trend",
@@ -52,6 +52,18 @@ export const linearCaseDescriptions = {
     group: "defaults",
     title: "Defaults, one month of daily data",
     summary: "32 days of history. Weekly seasonality switches on automatically.",
+  },
+  "warm-start-linear-defaults-30-new-rows": {
+    group: "defaults",
+    title: "Refit after a month of new data",
+    summary:
+      "`fit(history, { map: { warmStart } })` from `warmStartParameters` of a fit of the first 226 days, against `fit(df, init=warm_start_params(m))`. 256 days in all, fitted with L-BFGS. Timings compare the refit with a fresh fit.",
+  },
+  "warm-start-linear-defaults-1-new-row": {
+    group: "defaults",
+    title: "Refit after one new day",
+    summary:
+      "The same refit after one new day: a fit of the first 255 days starts the fit of all 256.",
   },
   "linear-defaults-medium": {
     group: "defaults",

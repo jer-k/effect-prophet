@@ -3,15 +3,29 @@ import { Effect, Match } from "effect";
 import { FittingError } from "../errors";
 import type { LinearOptimizer } from "../linear-optimizer";
 import type { StanMapFitSummarySchema } from "../fitted-model";
+import type { WarmStartParameters } from "../warm-start";
 
 /** Annotate bounded controls within the existing complete WASM fit boundary. */
-export const annotateStanRequest = (optimizer: LinearOptimizer) =>
-  Effect.annotateCurrentSpan({
+export const annotateStanRequest = (
+  optimizer: LinearOptimizer,
+  warmStart?: WarmStartParameters,
+) => {
+  const attributes = {
     "effect_prophet.optimizer.requested_algorithm": optimizer.algorithm,
     "effect_prophet.optimizer.max_iterations": optimizer.maxIterations,
     "effect_prophet.optimizer.fallback":
       optimizer.algorithm === "newton" ? "none" : optimizer.fallback,
+  };
+
+  if (warmStart === undefined) {
+    return Effect.annotateCurrentSpan(attributes);
+  }
+
+  return Effect.annotateCurrentSpan({
+    ...attributes,
+    "effect_prophet.optimizer.initialization": "warm-start",
   });
+};
 
 /** Annotate a completed Stan fit within its existing WASM boundary span. */
 export const annotateStanCompletion = (summary: typeof StanMapFitSummarySchema.Type) => {
@@ -135,16 +149,39 @@ export const stanOptimizerFailure = (
   );
 };
 
-/** Shared Stan control wire version two, with no inapplicable Newton fields. */
-export const encodeStanOptimizer = (optimizer: LinearOptimizer): Float64Array => {
+/**
+ * Shared Stan control wire, with no inapplicable Newton fields.
+ *
+ * Version two starts from Prophet's initialization. Version three appends a warm start:
+ * `[k, m, sigmaObs, D, ...delta, B, ...beta]`.
+ */
+export const encodeStanOptimizer = (
+  optimizer: LinearOptimizer,
+  warmStart?: WarmStartParameters,
+): Float64Array => {
+  const version = warmStart === undefined ? 2 : 3;
+
+  const init =
+    warmStart === undefined
+      ? []
+      : [
+          warmStart.k,
+          warmStart.m,
+          warmStart.sigmaObs,
+          warmStart.delta.length,
+          ...warmStart.delta,
+          warmStart.beta.length,
+          ...warmStart.beta,
+        ];
+
   if (optimizer.algorithm === "newton") {
-    return new Float64Array([2, 1, optimizer.maxIterations]);
+    return new Float64Array([version, 1, optimizer.maxIterations, ...init]);
   }
 
   const controls = optimizer.lbfgs;
 
   return new Float64Array([
-    2,
+    version,
     optimizer.algorithm === "auto" ? 0 : 2,
     optimizer.maxIterations,
     optimizer.fallback === "newton" ? 1 : 0,
@@ -155,6 +192,7 @@ export const encodeStanOptimizer = (optimizer: LinearOptimizer): Float64Array =>
     controls.tolGrad,
     controls.tolRelGrad,
     controls.tolParam,
+    ...init,
   ]);
 };
 
@@ -185,3 +223,51 @@ export const decodeStanCompletion = (packed: Float64Array, offset = 15) => ({
     hessianResets: packed[offset + 4],
   },
 });
+
+const initializationSources = { 1: "warm-start", 2: "default" } as const;
+
+type InitializationSource = (typeof initializationSources)[keyof typeof initializationSources];
+
+/** Where a warm-started fit's `delta` and `beta` began, after Python's length checks. */
+export interface StanInitialization {
+  readonly delta: InitializationSource;
+  readonly beta: InitializationSource;
+}
+
+/**
+ * Decode the two initialization codes after the completion fields.
+ *
+ * @returns `null` for Prophet's initialization, or `undefined` for malformed codes.
+ */
+export const decodeStanInitialization = (
+  packed: Float64Array,
+  offset: number,
+): StanInitialization | null | undefined => {
+  const delta = packed[offset];
+  const beta = packed[offset + 1];
+
+  if (delta === 0 && beta === 0) {
+    return null;
+  }
+
+  const source = (code: number | undefined) =>
+    code === 1 || code === 2 ? initializationSources[code] : undefined;
+
+  const deltaSource = source(delta);
+  const betaSource = source(beta);
+
+  return deltaSource === undefined || betaSource === undefined
+    ? undefined
+    : { delta: deltaSource, beta: betaSource };
+};
+
+/** Annotate whether a warm-started fit kept its `delta` and `beta`. */
+export const annotateStanInitialization = (
+  initialization: StanInitialization | null | undefined,
+) =>
+  initialization === null || initialization === undefined
+    ? Effect.void
+    : Effect.annotateCurrentSpan({
+        "effect_prophet.optimizer.warm_start.delta": initialization.delta,
+        "effect_prophet.optimizer.warm_start.beta": initialization.beta,
+      });

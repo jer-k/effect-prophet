@@ -1,5 +1,6 @@
 import { Effect } from "effect";
 
+import { coefficientModeCodes } from "../component-mode";
 import { PredictionError } from "../errors";
 import type {
   FittedFlatMapProphet,
@@ -11,7 +12,6 @@ import type { UncertaintyOptions, UncertaintyResult } from "../uncertainty";
 import { simulationIdentity } from "../uncertainty";
 import { targetScalingModeCode } from "../target-scaling";
 import type { KnownAdditiveFeatures, SeasonalityMaskMatrix } from "./additional-features";
-import { modesFor } from "./wasm-mixed-map-backend";
 import { loadProphetWasmModule, type MapUncertaintyWasmBindings } from "./prophet-wasm-module";
 import {
   attemptWasmPrediction,
@@ -109,7 +109,7 @@ export const simulateMapWithWasm = (
               coefficients,
               additional.offsets,
               additional.counts,
-              modesFor(model.seasonalities, features),
+              coefficientModeCodes(model.seasonalities, features),
               options.seed,
               options.samples,
               options.intervalWidth,
@@ -139,7 +139,7 @@ export const simulateMapWithWasm = (
               coefficients,
               additional.offsets,
               additional.counts,
-              modesFor(model.seasonalities, features),
+              coefficientModeCodes(model.seasonalities, features),
               options.seed,
               options.samples,
               options.intervalWidth,

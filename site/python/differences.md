@@ -7,7 +7,6 @@ Python, where it differs on purpose, and the smaller behavior differences.
 ## Not available yet
 
 - Full Bayesian fitting (`mcmc_samples`)
-- Warm starts (`warm_start_params`)
 - Forecasting regressors with their own models. Every future row must supply its regressor
   values.
 - Monthly horizons and custom metrics in cross-validation
@@ -62,6 +61,14 @@ Python, where it differs on purpose, and the smaller behavior differences.
   `crossValidate` returns them, oldest round first. This decides the order of `rows` scores and
   which forecasts `mdape` borrows from a shorter horizon to fill a window. It can also change the
   last digit of a total. Otherwise scores match Python's exactly.
+- **Warm starts are checked.** Python quietly replaces a `k`, `m` or `sigma_obs` it can't read
+  as a number with its default. `fit` rejects a warm start with a non-finite number, or a
+  `sigmaObs` that isn't positive, with an `InputValidationError`. Mismatched `delta` and `beta`
+  lengths fall back to the defaults, as in Python.
+- **Warm starts from flat models.** Flat models don't keep Stan's rate and changepoint
+  adjustments, which don't affect a flat trend, so `warmStartParameters` returns `k: 0` and an
+  empty `delta` for them, and the next fit starts the adjustments from Prophet's defaults.
+  Python's values for these after a converged fit are close to zero.
 - **Inputs that cannot be fitted return an error.** If every row has the same timestamp, there
   is no way to draw a trend, so `fit` fails where Python returns `NaN` forecasts. These are the
   [intentional differences](/benchmarks/linear#intentional-differences) in the benchmarks.

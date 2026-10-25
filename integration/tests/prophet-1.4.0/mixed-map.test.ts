@@ -72,8 +72,8 @@ describe("Prophet 1.4.0 mixed MAP evidence", () => {
 
       const coefficientStart =
         referenceCase.growth === "linear"
-          ? 20 + referenceCase.expected.changepointTimestamps.length * 2
-          : 16;
+          ? 22 + referenceCase.expected.changepointTimestamps.length * 2
+          : 18;
 
       for (const [index, expected] of referenceCase.expected.coefficients.entries()) {
         expectClose(
@@ -102,7 +102,7 @@ describe("Prophet 1.4.0 mixed MAP evidence", () => {
               fit[7],
               fit[8],
               new Float64Array(referenceCase.expected.changepointTimestamps.map(epoch)),
-              fit.slice(20 + referenceCase.expected.changepointTimestamps.length, coefficientStart),
+              fit.slice(22 + referenceCase.expected.changepointTimestamps.length, coefficientStart),
               fit[10],
               new Float64Array(),
               new Float64Array(),

@@ -164,6 +164,8 @@ Every attribute name starts with `effect_prophet.`.
 | `optimizer.requested_algorithm`, `optimizer.max_iterations`, `optimizer.fallback`                      | The optimizer settings you passed in `map.optimizer`, or Prophet's defaults                                 |
 | `optimizer.algorithm`, `optimizer.termination`, `optimizer.iteration.count`                            | What ran, why it stopped and how many steps it took                                                         |
 | `optimizer.attempt.count`, `optimizer.failed_attempt.iteration.count`, `optimizer.hessian_reset.count` | Retries and recoveries, when the first method fell back to the second                                       |
+| `optimizer.initialization`                                                                             | `warm-start` when you passed `map.warmStart`. Only present then.                                            |
+| `optimizer.warm_start.delta`, `optimizer.warm_start.beta`                                              | `warm-start`, or `default` when the counts differed. Only present when a warm-started fit ran the optimizer |
 
 **`effect-prophet.wasm.predict` and `effect-prophet.wasm.simulate`**
 

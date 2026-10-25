@@ -8,7 +8,7 @@ export const logisticGroups = [
     id: "defaults",
     title: "Default settings",
     intro:
-      '`fit(history, { growth: "logistic" })` against `Prophet(growth="logistic").fit(df)` with nothing else set. Each library decides on its own which seasonal patterns, changepoints and optimizer to use.',
+      '`fit(history, { growth: "logistic" })` against `Prophet(growth="logistic").fit(df)` with nothing else set. Each library decides on its own which seasonal patterns, changepoints and optimizer to use. Warm-start cases fit the first rows, then refit the whole history from the parameters of that fit, as when new data arrives.',
   },
   {
     id: "trend",
@@ -76,6 +76,12 @@ export const logisticCaseDescriptions = {
     title: "Defaults, a year with changing growth",
     summary:
       "365 days whose growth rate changes twice, so the automatic changepoints have real changes to find.",
+  },
+  "warm-start-logistic-defaults-7-new-rows": {
+    group: "defaults",
+    title: "Refit after a week of new data",
+    summary:
+      '`fit(history, { growth: "logistic", map: { warmStart } })` from `warmStartParameters` of a fit of the first 358 days, against `fit(df, init=warm_start_params(m))`. The 365 days with changing growth, fitted with L-BFGS. Timings compare the refit with a fresh fit.',
   },
   "logistic-reconcile-basic-96-empty-absmax": {
     group: "trend",

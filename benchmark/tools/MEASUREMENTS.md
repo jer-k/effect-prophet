@@ -94,6 +94,26 @@ allowance. At 99% that allowance is about 4.5 standard errors of the difference 
 1,000-path estimates of a Gaussian noise quantile. Trend intervals have zero width in-sample,
 because simulated trend changes start after the history.
 
+## Warm starts
+
+Warm-start cases refit a history from the parameters of an earlier fit of its first rows, as an
+application does when new rows arrive. Each adapter fits the first `baseRows` rows untimed, reads
+that fit's Stan parameters (`warmStartParameters` or `warm_start_params`), and refits the whole
+history from them: Effect with `map.warmStart`, Python with `fit(..., init=...)`. Both keep their
+default optimizers. The refit is the model every correctness gate and prediction phase uses.
+`warm-start-fit` times the refit alone, including Python's copy of the fit arguments; `warm-fit`
+times a fresh fit of the same history beside it.
+
+Each library starts from its own base fit, so the two refits start from slightly different points
+wherever default L-BFGS stops early. The report records the largest difference between the two
+libraries' starting parameters in scaled units, ignoring a flat model's rate and deltas, which
+Effect does not keep. A difference beyond the case's threshold is flagged for investigation, not
+failed: the refit's own outputs are gated.
+
+Logistic refits after a month of new rows are not declared. From a warm start, default L-BFGS
+settles with a noise scale hundreds of times a fresh fit's in Prophet 1.4.0 and in Effect alike,
+with the same trend but seasonal coefficients that end wherever each optimizer stops.
+
 ## Diagnostics and selection
 
 Evaluation is `different-public-work`, even when point gates pass. MAP CV defaults independently

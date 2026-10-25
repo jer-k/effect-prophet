@@ -207,7 +207,7 @@ fn fit_piecewise_map_protocol(
       let Some(capacity) = changepoint_count
         .checked_mul(2)
         .and_then(|count| count.checked_add(model.coefficients.len()))
-        .and_then(|count| count.checked_add(17 + metadata_width))
+        .and_then(|count| count.checked_add(19 + metadata_width))
       else {
         return fit_status_frame(PiecewiseMapFitStatus::SizeOverflow);
       };
@@ -523,7 +523,7 @@ mod tests {
       f64::from(PiecewiseMapFitStatus::Success as u32)
     );
     assert_eq!(explicit[1], 1.0);
-    assert_eq!(explicit.len(), 19);
+    assert_eq!(explicit.len(), 21);
 
     let automatic = fit_piecewise_map(
       &[0.0, 1.0, 2.0, 3.0, 4.0, 5.0],

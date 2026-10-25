@@ -1,5 +1,6 @@
 import { Effect } from "effect";
 
+import { coefficientModeCodes } from "../component-mode";
 import { FittingError, PredictionError } from "../errors";
 import type { EventCalendar } from "../event";
 import {
@@ -15,10 +16,13 @@ import {
   annotateStanCompletion,
   encodeStanOptimizer,
   decodeStanCompletion,
+  decodeStanInitialization,
+  annotateStanInitialization,
   stanOptimizerFailure,
 } from "./stan-map-protocol";
 import type { ResolvedRegressor } from "../regressor";
 import type { SeasonalityLayout } from "../seasonality";
+import type { WarmStartParameters } from "../warm-start";
 import { targetScalingModeCode, type TargetScalingMode } from "../target-scaling";
 import type { KnownAdditiveFeatures, SeasonalityMaskMatrix } from "./additional-features";
 import type { TrainingInput } from "./fitting-backend";
@@ -41,7 +45,7 @@ import {
   wasmFittingError,
   wasmPredictSpanOptions,
 } from "./wasm-backend";
-import { modesFor, type MixedMapPredictionBatch } from "./wasm-mixed-map-backend";
+import { type MixedMapPredictionBatch } from "./wasm-mixed-map-backend";
 
 const fitStatus = {
   success: 0,
@@ -150,10 +154,11 @@ const decodeFit = (
   const additionalCount = events.layout.coefficientCount + regressors.length;
 
   const expectedLength =
-    20 + changepointCount * 2 + seasonalities.coefficientCount + additionalCount;
+    22 + changepointCount * 2 + seasonalities.coefficientCount + additionalCount;
 
   if (
     packed.length !== expectedLength ||
+    decodeStanInitialization(packed, 20) === undefined ||
     packed[1] !== targetScalingModeCode(scaling) ||
     packed[11] !== observationCount ||
     (packed[3] !== 0 && packed[3] !== 1) ||
@@ -168,7 +173,7 @@ const decodeFit = (
       ? { kind: "implicit" as const, floor: packed[4] ?? Number.NaN }
       : { kind: "explicit" as const };
 
-  const changepointStart = 20;
+  const changepointStart = 22;
   const deltaStart = changepointStart + changepointCount;
   const coefficientStart = deltaStart + changepointCount;
   const eventStart = coefficientStart + seasonalities.coefficientCount;
@@ -223,6 +228,7 @@ export const fitLogisticMapWithWasm = (
   features: KnownAdditiveFeatures,
   events: EventCalendar,
   regressors: ReadonlyArray<ResolvedRegressor>,
+  warmStart?: WarmStartParameters,
 ): Effect.Effect<LogisticMapParameters, FittingError> => {
   const observationCount = input.values.length;
   const packedChangepoints = packChangepointsForFit(changepoints);
@@ -234,7 +240,7 @@ export const fitLogisticMapWithWasm = (
       "effect_prophet.component.mode": "mixed",
     });
 
-    yield* annotateStanRequest(optimizer);
+    yield* annotateStanRequest(optimizer, warmStart);
 
     const module = yield* attemptWasmFitting(loadProphetWasmModule, observationCount, {
       phase: "load",
@@ -266,9 +272,9 @@ export const fitLogisticMapWithWasm = (
           additional.priors,
           additional.offsets,
           additional.counts,
-          modesFor(seasonalities, features),
+          coefficientModeCodes(seasonalities, features),
           changepointPriorScale,
-          encodeStanOptimizer(optimizer),
+          encodeStanOptimizer(optimizer, warmStart),
         ),
       observationCount,
       {
@@ -288,6 +294,7 @@ export const fitLogisticMapWithWasm = (
     );
 
     yield* annotateStanCompletion(fitted.fitSummary);
+    yield* annotateStanInitialization(decodeStanInitialization(packed, 20));
     yield* annotateFittedDimensions(fitted);
 
     return fitted;
@@ -448,7 +455,7 @@ export const predictLogisticMapWithWasm = (
           additionalCoefficients,
           additional.offsets,
           additional.counts,
-          modesFor(model.seasonalities, features),
+          coefficientModeCodes(model.seasonalities, features),
         ),
       firstTimestamp,
       {
