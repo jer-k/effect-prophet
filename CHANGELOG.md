@@ -4,6 +4,14 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows
 [Semantic Versioning](https://semver.org/). Before 1.0, minor versions may include breaking changes.
 
+## [Unreleased]
+
+### Fixed
+
+- The `effect-prophet.wasm.fit` span for a flat trend now counts one parameter per changepoint
+  in `parameter.count`, matching what the engine solves for. `changepoint.count` stays `0`,
+  because a flat trend never bends.
+
 ## [0.4.0] - 2026-10-25
 
 Shortcuts for everyday jobs: forecast in one call, get ranges with every forecast, flag unusual

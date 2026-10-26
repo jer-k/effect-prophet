@@ -236,6 +236,12 @@ const decodeLinearFit = (
   );
 };
 
+/** A decoded flat fit and the resolved changepoints that sized its prior-only deltas. */
+interface FlatFit {
+  readonly model: FlatMapParameters;
+  readonly changepointCount: number;
+}
+
 const decodeFlatFit = (
   packed: Float64Array,
   observationCount: number,
@@ -243,12 +249,13 @@ const decodeFlatFit = (
   seasonalities: SeasonalityLayout,
   events: EventCalendar,
   regressors: ReadonlyArray<ResolvedRegressor>,
-): Effect.Effect<FlatMapParameters, FittingError> => {
+): Effect.Effect<FlatFit, FittingError> => {
   if (readWasmStatus(packed) !== fitStatus.success) {
     return fittingFailure(packed, observationCount, "flat");
   }
 
-  const coefficientStart = 18;
+  const changepointCount = packed[18];
+  const coefficientStart = 19;
   const eventStart = coefficientStart + seasonalities.coefficientCount;
   const regressorStart = eventStart + events.layout.coefficientCount;
   const expectedLength = regressorStart + regressors.length;
@@ -256,6 +263,9 @@ const decodeFlatFit = (
 
   if (
     packed.length !== expectedLength ||
+    changepointCount === undefined ||
+    !Number.isSafeInteger(changepointCount) ||
+    changepointCount < 0 ||
     completion.termination === undefined ||
     decodeStanInitialization(packed, 16) === undefined ||
     packed[1] !== targetScalingModeCode(scaling) ||
@@ -284,6 +294,7 @@ const decodeFlatFit = (
       stationarityResidual: packed[10],
     },
   }).pipe(
+    Effect.map((model) => ({ model, changepointCount })),
     Effect.mapError(() =>
       wasmFittingError(observationCount, {
         reason: "backend-failure",
@@ -533,7 +544,7 @@ export const fitFlatStanMapWithWasm = (
       },
     );
 
-    const model = yield* decodeFlatFit(
+    const { model, changepointCount } = yield* decodeFlatFit(
       packed,
       observationCount,
       scaling,
@@ -543,6 +554,7 @@ export const fitFlatStanMapWithWasm = (
     );
 
     yield* annotateStanInitialization(decodeStanInitialization(packed, 16));
+    yield* annotateFittedDimensions(model, changepointCount);
 
     return model;
   }).pipe(
@@ -551,7 +563,6 @@ export const fitFlatStanMapWithWasm = (
         ? annotateLinearCompletion(model.fitSummary)
         : Effect.void,
     ),
-    Effect.tap(annotateFittedDimensions),
     Effect.withSpan(
       "effect-prophet.wasm.fit",
       wasmFitSpanOptions(

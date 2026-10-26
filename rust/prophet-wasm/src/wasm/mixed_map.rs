@@ -190,7 +190,7 @@ pub fn fit_mixed_flat_map(
     controls,
     scaling,
   ) {
-    Ok(model) => pack_flat_fit(model),
+    Ok(model) => pack_flat_fit(model, changepoints.len()),
     Err(error) => crate::wasm::map::fit_error_frame(error),
   }
 }
@@ -396,12 +396,14 @@ fn pack_linear_fit(model: crate::mixed_map::MixedMapModel) -> Vec<f64> {
   packed
 }
 
-fn pack_flat_fit(model: crate::mixed_map::MixedMapModel) -> Vec<f64> {
+/// Frame a flat fit. The resolved changepoint count sizes the optimizer's prior-only deltas,
+/// which the flat trend never applies.
+fn pack_flat_fit(model: crate::mixed_map::MixedMapModel, changepoint_count: usize) -> Vec<f64> {
   let MixedTrendModel::Flat { level } = model.trend else {
     return fit_error(PiecewiseMapFitStatus::InvalidConfiguration);
   };
   let mut packed =
-    Vec::with_capacity(18 + model.coefficients.len() + model.additional_coefficients.len());
+    Vec::with_capacity(19 + model.coefficients.len() + model.additional_coefficients.len());
 
   packed.extend_from_slice(&[
     0.0,
@@ -420,6 +422,7 @@ fn pack_flat_fit(model: crate::mixed_map::MixedMapModel) -> Vec<f64> {
   packed.extend_from_slice(&crate::wasm::protocol::linear_summary_frame(
     model.summary.termination,
   ));
+  packed.push(changepoint_count as f64);
   packed.extend_from_slice(&model.coefficients);
   packed.extend_from_slice(&model.additional_coefficients);
   packed
@@ -617,11 +620,12 @@ mod tests {
     );
 
     assert_eq!(fit[0], 0.0);
-    assert_eq!(fit.len(), 19);
+    assert_eq!(fit.len(), 20);
     assert_eq!(
       fit[12], 1.0,
       "Prophet's automatic policy uses Newton below 100 rows"
     );
+    assert_eq!(fit[18], 0.0);
 
     let prediction = predict_mixed_flat_map(
       &[6.0],
@@ -636,7 +640,7 @@ mod tests {
       &[],
       1.0,
       &[2.0],
-      &[fit[16]],
+      &[fit[19]],
       &[0.0],
       &[1.0],
       &[1.0],
@@ -748,7 +752,8 @@ mod tests {
       assert_eq!(explicit[0], 0.0);
       assert_eq!(explicit[5], expected.noise_scale);
       assert_eq!(explicit[9], expected.summary.objective);
-      assert_eq!(explicit[18], expected.additional_coefficients[0]);
+      assert_eq!(explicit[18], 2.0);
+      assert_eq!(explicit[19], expected.additional_coefficients[0]);
     }
 
     // Prophet resolves automatic flat changepoints too: 6 rows keep floor(4.8) - 1 = 3.
@@ -756,6 +761,7 @@ mod tests {
     let expected = kernel(&[1.0, 2.0, 3.0], 0.05);
 
     assert_eq!(automatic[9], expected.summary.objective);
+    assert_eq!(automatic[18], 3.0);
 
     for prior in [0.0, -0.05, f64::NAN] {
       assert_eq!(wire(0.0, &[], 0.0, 0.0, prior), vec![4.0]);

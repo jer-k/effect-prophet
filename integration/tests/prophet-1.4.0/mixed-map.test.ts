@@ -73,7 +73,7 @@ describe("Prophet 1.4.0 mixed MAP evidence", () => {
       const coefficientStart =
         referenceCase.growth === "linear"
           ? 22 + referenceCase.expected.changepointTimestamps.length * 2
-          : 18;
+          : 19;
 
       for (const [index, expected] of referenceCase.expected.coefficients.entries()) {
         expectClose(

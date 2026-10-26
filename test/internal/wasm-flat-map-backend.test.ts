@@ -219,9 +219,10 @@ describe("Rust/WASM flat MAP tracing", () => {
 
       expect(child.startTime >= parent.startTime).toBe(true);
       expect(child.endTime <= parent.endTime).toBe(true);
+      // Prophet's automatic grid keeps floor(6 * 0.8) - 1 = 3 prior-only deltas.
       expect(Object.fromEntries(wasmFit.attributes)).toMatchObject({
         "effect_prophet.changepoint.count": 0,
-        "effect_prophet.parameter.count": 4,
+        "effect_prophet.parameter.count": 2 + 3 + 2,
       });
     }
 
@@ -233,6 +234,74 @@ describe("Rust/WASM flat MAP tracing", () => {
       expect(child.endTime <= parent.endTime).toBe(true);
     }
   });
+
+  it.each([
+    { name: "explicit []", changepoints: { mode: "explicit", timestamps: [] }, deltaCount: 0 },
+    {
+      name: "explicit",
+      changepoints: {
+        mode: "explicit",
+        timestamps: ["1970-01-01T06:00:00.000Z", "1970-01-01T12:00:00.000Z"],
+      },
+      deltaCount: 2,
+    },
+    { name: "automatic", changepoints: { mode: "auto", count: 25 }, deltaCount: 3 },
+  ] as const)(
+    "counts $name prior-only deltas as parameters, not changepoints",
+    async ({ changepoints, deltaCount }) => {
+      const spans: Array<Tracer.Span> = [];
+
+      const tracer = Tracer.make({
+        span: (options) => {
+          const span = new Tracer.NativeSpan(options);
+          spans.push(span);
+
+          return span;
+        },
+      });
+
+      const observations = [
+        { timestamp: "1970-01-01T00:00:00.000Z", value: 1.1 },
+        { timestamp: "1970-01-01T06:00:00.000Z", value: 3 },
+        { timestamp: "1970-01-01T12:00:00.000Z", value: 0.9 },
+        { timestamp: "1970-01-01T18:00:00.000Z", value: -1.2 },
+        { timestamp: "1970-01-02T00:00:00.000Z", value: 1.2 },
+        { timestamp: "1970-01-02T06:00:00.000Z", value: 2.9 },
+      ] as const;
+
+      const model = await Effect.runPromise(
+        fit(observations, {
+          growth: "flat",
+          seasonalities: [{ name: "daily-custom", periodDays: 1, fourierOrder: 1, priorScale: 10 }],
+          map: { changepoints },
+        }).pipe(Effect.provide(prophetFittingBackendLayer), Effect.withTracer(tracer)),
+      );
+
+      const publicFit = spans.find((span) => span.name === "Prophet.fit");
+      const wasmFit = spans.find((span) => span.name === "effect-prophet.wasm.fit");
+
+      expect(publicFit).toBeDefined();
+      expect(wasmFit).toBeDefined();
+
+      if (publicFit === undefined || wasmFit === undefined) {
+        return;
+      }
+
+      const child = requireEnded(wasmFit);
+      const parent = requireEnded(publicFit);
+
+      expect(wasmFit.traceId).toBe(publicFit.traceId);
+      expect(wasmFit.parent.pipe(Option.getOrUndefined)?.spanId).toBe(publicFit.spanId);
+      expect(Exit.isSuccess(child.exit)).toBe(true);
+      expect(child.startTime >= parent.startTime).toBe(true);
+      expect(child.endTime <= parent.endTime).toBe(true);
+      expect(Object.fromEntries(wasmFit.attributes)).toMatchObject({
+        "effect_prophet.model.type": "flat-map",
+        "effect_prophet.changepoint.count": 0,
+        "effect_prophet.parameter.count": 2 + deltaCount + model.coefficients.length,
+      });
+    },
+  );
 
   it("short-circuits insufficient flat history before the numerical boundary", async () => {
     const spans: Array<Tracer.Span> = [];
