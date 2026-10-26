@@ -414,13 +414,19 @@ export const wasmFitSpanOptions = (
       };
 };
 
-/** Annotate the fitted dimensions that drive optimizer cost within a WASM fit boundary. */
-export const annotateFittedDimensions = (parameters: FittedParameters) => {
+/**
+ * Annotate the fitted dimensions that drive optimizer cost within a WASM fit boundary.
+ *
+ * Flat fits solve for prior-only deltas they never keep, so they report those through
+ * `priorOnlyDeltaCount` rather than as changepoints.
+ */
+export const annotateFittedDimensions = (parameters: FittedParameters, priorOnlyDeltaCount = 0) => {
   const changepointCount = "deltas" in parameters ? parameters.deltas.length : 0;
 
   const parameterCount =
     2 +
     changepointCount +
+    priorOnlyDeltaCount +
     parameters.coefficients.length +
     (parameters.eventCoefficients?.length ?? 0) +
     (parameters.regressors?.length ?? 0);
