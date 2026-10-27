@@ -95,6 +95,10 @@
     {
       "path": "warm-start.json",
       "sha256": "a94e08f89a06eee86fe9842fa3d86713eb9a34df80a141ca2cad92a9c89970c1"
+    },
+    {
+      "path": "future-timestamps.json",
+      "sha256": "f093a29146b62b77a031909b5d61820a6185a9d21eb88394c7a46a49ad364356"
     }
   ],
   "backendArtifacts": [
@@ -110,7 +114,7 @@
     "platform": "linux/amd64",
     "uvVersion": "0.8.15"
   },
-  "generatorRevision": "784dbd7f0c33810c1f66d1a8e1f5fb50fa490054facf2cebfe04bb7d0c86eb50",
+  "generatorRevision": "895539ba9240e6a8cade7482826035b5aa3a8310b64dad8534c5971bee00918c",
   "numericalEnvironment": [
     {
       "name": "cmdstanpy",

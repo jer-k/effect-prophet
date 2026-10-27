@@ -1255,6 +1255,41 @@ const WarmStartFitFields = {
   ),
 };
 
+const FutureTimestampsReferenceFileSchema = Schema.Struct({
+  cases: Schema.NonEmptyArray(
+    Schema.Struct({
+      id: Schema.NonEmptyString,
+      kind: Schema.Literal("future-timestamps"),
+      sourceMethod: Schema.Literal("Prophet 1.4.0 make_future_dataframe"),
+      trainingTimestamps: Schema.NonEmptyArray(CanonicalTimestamp),
+      periods: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
+      freq: Schema.Literals([
+        "h",
+        "D",
+        "W",
+        "W-SUN",
+        "W-MON",
+        "W-TUE",
+        "W-WED",
+        "W-THU",
+        "W-FRI",
+        "W-SAT",
+        "MS",
+        "ME",
+      ]),
+      includeHistory: Schema.Boolean,
+      expectedTimestamps: Schema.Array(CanonicalTimestamp),
+    }).check(
+      Schema.makeFilter((referenceCase) =>
+        referenceCase.includeHistory ||
+        referenceCase.expectedTimestamps.length === referenceCase.periods
+          ? undefined
+          : { path: ["expectedTimestamps"], issue: "Expected one timestamp per period" },
+      ),
+    ),
+  ),
+});
+
 const WarmStartReferenceFileSchema = Schema.Struct({
   cases: Schema.NonEmptyArray(
     Schema.Struct({
@@ -1441,6 +1476,7 @@ const FixtureManifestSchema = Schema.Struct({
       "flat-low-order-stan.json",
       "stan-differential-same-state.json",
       "warm-start.json",
+      "future-timestamps.json",
     ]) {
       if (!paths.has(requiredPath)) {
         return {
@@ -1604,6 +1640,9 @@ export type MapUncertaintyReferenceFile = typeof MapUncertaintyReferenceFileSche
 
 /** Decoded `warm_start_params` evidence and the Newton fits that start from it. */
 export type WarmStartReferenceFile = typeof WarmStartReferenceFileSchema.Type;
+
+/** Decoded `make_future_dataframe` evidence over authored histories. */
+export type FutureTimestampsReferenceFile = typeof FutureTimestampsReferenceFileSchema.Type;
 
 /** Parsed provenance and artifact integrity metadata for the fixture folder. */
 export type FixtureManifest = typeof FixtureManifestSchema.Type;
@@ -2200,6 +2239,28 @@ export const loadProphetFixtureBundle = Effect.fn("ProphetFixture.loadBundle")(f
     ),
   );
 
+  const futureTimestampsPath = nodePath.join(root, "future-timestamps.json");
+  const futureTimestampsContents = yield* readFixtureText(futureTimestampsPath);
+
+  const futureTimestampsInput: unknown = yield* Effect.try({
+    try: () => JSON.parse(futureTimestampsContents),
+    catch: (cause) => invalidJson(futureTimestampsPath, cause),
+  });
+
+  const futureTimestamps = yield* Schema.decodeUnknownEffect(FutureTimestampsReferenceFileSchema)(
+    futureTimestampsInput,
+  ).pipe(
+    Effect.mapError(
+      (cause) =>
+        new FixtureLoadError({
+          operation: "schema",
+          fixturePath: futureTimestampsPath,
+          message: formatSchemaIssue(cause.issue),
+          cause,
+        }),
+    ),
+  );
+
   return {
     changepointResolution,
     conditionalMapFit,
@@ -2207,6 +2268,7 @@ export const loadProphetFixtureBundle = Effect.fn("ProphetFixture.loadBundle")(f
     evaluationCutoffs,
     evaluationMetrics,
     fourier,
+    futureTimestamps,
     linearMapFit,
     linearTrend,
     mapUncertainty,

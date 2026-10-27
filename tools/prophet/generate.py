@@ -62,6 +62,7 @@ LARGE_FOURIER_STAN_FILENAME = "large-fourier-stan.json"
 FLAT_LOW_ORDER_STAN_FILENAME = "flat-low-order-stan.json"
 STAN_DIFFERENTIAL_SAME_STATE_FILENAME = "stan-differential-same-state.json"
 WARM_START_FILENAME = "warm-start.json"
+FUTURE_TIMESTAMPS_FILENAME = "future-timestamps.json"
 MANIFEST_FILENAME = "manifest.json"
 ROOT = Path(__file__).resolve().parents[2]
 REFERENCE_PATH = ROOT / "tools" / "prophet" / "reference.json"
@@ -401,6 +402,17 @@ class ChangepointResolutionCaseSpec:
 
 
 @dataclass(frozen=True)
+class FutureTimestampsCaseSpec:
+    """Authored make_future_dataframe inputs: a history, a period count and a pandas alias."""
+
+    identifier: str
+    timestamps: tuple[str, ...]
+    periods: int
+    freq: str
+    include_history: bool = False
+
+
+@dataclass(frozen=True)
 class EvaluationCutoffCaseSpec:
     """Authored release cutoff-generation inputs with explicit fixed-ms durations."""
 
@@ -475,6 +487,40 @@ EVALUATION_CUTOFF_CASES = (
         "irregular-gap", (0, 4 * DAY_MILLISECONDS, *(index * DAY_MILLISECONDS for index in range(20, 25))),
         2 * DAY_MILLISECONDS, DAY_MILLISECONDS, DAY_MILLISECONDS,
     ),
+)
+
+
+MID_JANUARY = ("2025-01-14T12:30:00.000Z", "2025-01-15T12:30:00.000Z")
+
+FUTURE_TIMESTAMPS_CASES = (
+    FutureTimestampsCaseSpec("hourly-subdaily", MID_JANUARY, 3, "h"),
+    FutureTimestampsCaseSpec(
+        "daily-unsorted-duplicates",
+        ("2025-01-07T00:00:00.000Z", "2025-01-05T00:00:00.000Z", "2025-01-07T00:00:00.000Z"),
+        3, "D",
+    ),
+    FutureTimestampsCaseSpec("daily-millisecond-offset", ("2025-01-15T12:30:15.250Z",), 2, "D"),
+    FutureTimestampsCaseSpec("daily-zero-periods", MID_JANUARY, 0, "D"),
+    FutureTimestampsCaseSpec(
+        "default-include-history-unsorted-duplicates",
+        ("2025-01-07T00:00:00.000Z", "2025-01-05T00:00:00.000Z", "2025-01-07T00:00:00.000Z"),
+        2, "D", include_history=True,
+    ),
+    FutureTimestampsCaseSpec("include-history-zero-periods", MID_JANUARY, 0, "D", include_history=True),
+    FutureTimestampsCaseSpec("include-history-month-end", MID_JANUARY, 2, "ME", include_history=True),
+    FutureTimestampsCaseSpec("weekly-default-sunday", MID_JANUARY, 3, "W"),
+    FutureTimestampsCaseSpec("weekly-from-sunday", ("2025-01-19T00:00:00.000Z",), 3, "W"),
+    FutureTimestampsCaseSpec("weekly-sunday-alias", MID_JANUARY, 2, "W-SUN"),
+    FutureTimestampsCaseSpec("weekly-monday", MID_JANUARY, 2, "W-MON"),
+    FutureTimestampsCaseSpec("weekly-wednesday-on-anchor", MID_JANUARY, 2, "W-WED"),
+    FutureTimestampsCaseSpec("weekly-saturday", MID_JANUARY, 2, "W-SAT"),
+    FutureTimestampsCaseSpec("month-start-mid-month", MID_JANUARY, 3, "MS"),
+    FutureTimestampsCaseSpec("month-start-on-anchor", ("2025-02-01T06:00:00.000Z",), 3, "MS"),
+    FutureTimestampsCaseSpec("month-start-across-epoch", ("1969-11-20T23:00:00.000Z",), 3, "MS"),
+    FutureTimestampsCaseSpec("month-end-mid-month", MID_JANUARY, 3, "ME"),
+    FutureTimestampsCaseSpec("month-end-on-anchor", ("2025-01-31T18:00:00.000Z",), 3, "ME"),
+    FutureTimestampsCaseSpec("month-end-leap-year", ("2024-01-31T00:00:00.000Z",), 4, "ME"),
+    FutureTimestampsCaseSpec("month-end-across-years", ("2023-12-31T00:00:00.000Z",), 14, "ME"),
 )
 
 
@@ -1066,6 +1112,34 @@ def effect_built_in_setting(control: str | bool | int) -> str | dict[str, Any]:
         return {"mode": "on"}
 
     return {"fourierOrder": control, "mode": "on"}
+
+
+def make_future_timestamps_case(spec: FutureTimestampsCaseSpec) -> dict[str, Any]:
+    """Run the unmodified release make_future_dataframe over fit's own history_dates."""
+
+    frame = pd.DataFrame({
+        "ds": pd.to_datetime([prophet_timestamp(timestamp) for timestamp in spec.timestamps], format="mixed")
+    })
+    model = Prophet()
+    # The statement Prophet.fit uses, so the anchor is the same unique, sorted maximum.
+    model.history_dates = pd.to_datetime(pd.Series(frame["ds"].unique(), name="ds")).sort_values()
+    future = model.make_future_dataframe(
+        periods=spec.periods, freq=spec.freq, include_history=spec.include_history
+    )
+
+    return {
+        "id": spec.identifier,
+        "kind": "future-timestamps",
+        "sourceMethod": "Prophet 1.4.0 make_future_dataframe",
+        "trainingTimestamps": list(spec.timestamps),
+        "periods": spec.periods,
+        "freq": spec.freq,
+        "includeHistory": spec.include_history,
+        "expectedTimestamps": [
+            pd.Timestamp(timestamp).tz_localize("UTC").isoformat(timespec="milliseconds").replace("+00:00", "Z")
+            for timestamp in future["ds"]
+        ],
+    }
 
 
 def make_evaluation_cutoff_case(spec: EvaluationCutoffCaseSpec) -> dict[str, Any]:
@@ -3834,6 +3908,10 @@ def write_outputs(output: Path, execution: dict[str, str], reference: dict[str, 
 
     warm_start_path = output / WARM_START_FILENAME
     warm_start_path.write_bytes(stable_json(make_warm_start_fixture()))
+    future_timestamps_path = output / FUTURE_TIMESTAMPS_FILENAME
+    future_timestamps_path.write_bytes(
+        stable_json({"cases": [make_future_timestamps_case(spec) for spec in FUTURE_TIMESTAMPS_CASES]})
+    )
 
     model_path = find_prophet_model()
     manifest = {
@@ -3925,6 +4003,7 @@ def write_outputs(output: Path, execution: dict[str, str], reference: dict[str, 
                 "sha256": sha256_file(stan_same_state_path),
             },
             {"path": WARM_START_FILENAME, "sha256": sha256_file(warm_start_path)},
+            {"path": FUTURE_TIMESTAMPS_FILENAME, "sha256": sha256_file(future_timestamps_path)},
         ],
         "backendArtifacts": [
             {
@@ -3978,6 +4057,7 @@ def compare_outputs(generated: Path, committed: Path) -> None:
         LOGISTIC_PREDICTION_STATE_FILENAME,
         STAN_LOGISTIC_LBFGS_FILENAME,
         STAN_DIFFERENTIAL_SAME_STATE_FILENAME,
+        FUTURE_TIMESTAMPS_FILENAME,
         MANIFEST_FILENAME,
     ):
         generated_path = generated / filename

@@ -40,13 +40,14 @@ history on its own.
 
 1. **History.** Each row has a `timestamp` and a `value`. Timestamps are UTC strings in the exact
    format that `Date.prototype.toISOString()` produces.
-2. **Future dates.** You choose which dates to forecast. They can be in the future or the past.
-3. **Fit, then predict.** `fit` learns the trend and patterns from your history. `predict` uses
-   the fitted model to forecast your chosen dates.
-4. **Run.** Steps 1 to 3 only _describe_ the work. `Effect.runPromise` runs it and gives you a
+2. **Fit, then predict.** `fit` learns the trend and patterns from your history.
+   `makeFutureTimestamps` lists the seven days after the history's last timestamp, and `predict`
+   uses the fitted model to forecast them. You can also pass `predict` any dates you choose, in
+   the future or the past.
+3. **Run.** Steps 1 and 2 only _describe_ the work. `Effect.runPromise` runs it and gives you a
    normal `Promise`. `prophetFittingBackendLayer` supplies the forecasting engine that `fit` needs.
 
-If steps 3 and 4 feel unfamiliar, read [Effect in five minutes](./effect-basics). It is short.
+If steps 2 and 3 feel unfamiliar, read [Effect in five minutes](./effect-basics). It is short.
 
 ## Fit and predict in one call
 

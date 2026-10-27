@@ -15,7 +15,7 @@ from prophet import Prophet
 model = Prophet(changepoint_prior_scale=0.5, weekly_seasonality=False)
 model.fit(df)  # df has `ds` and `y` columns
 
-future = model.make_future_dataframe(periods=7)
+future = model.make_future_dataframe(periods=7, include_history=False)
 forecast = model.predict(future)
 print(forecast[["ds", "yhat"]])
 ```
@@ -26,22 +26,22 @@ And the same program here:
 
 Three differences to notice. `fit` and `predict` return Effects, so you `yield*` them inside
 `Effect.gen` and run the result once at the edge. The forecasting engine comes from
-`prophetFittingBackendLayer`. And you build the future dates yourself. New to Effect? Start with
+`prophetFittingBackendLayer`. And `makeFutureTimestamps` takes the history rather than the model. New to Effect? Start with
 the [five-minute introduction](../guide/effect-basics).
 
 ## Translation table
 
 ### Data
 
-| Python                              | Effect Prophet                                         |
-| ----------------------------------- | ------------------------------------------------------ |
-| `ds` column                         | `timestamp`: an exact UTC ISO string                   |
-| `y` column                          | `value`                                                |
-| `cap` and `floor` columns           | `capacity` and `floor` fields on each row              |
-| extra regressor columns             | a `regressors: { name: number }` object on each row    |
-| condition columns for seasonalities | a `conditions: { name: boolean }` object on each row   |
-| `make_future_dataframe(periods=n)`  | build the timestamps yourself, as in the example above |
-| dropping `NaN` rows                 | leave the row out; see [Your data](../guide/your-data) |
+| Python                              | Effect Prophet                                                                                     |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `ds` column                         | `timestamp`: an exact UTC ISO string                                                               |
+| `y` column                          | `value`                                                                                            |
+| `cap` and `floor` columns           | `capacity` and `floor` fields on each row                                                          |
+| extra regressor columns             | a `regressors: { name: number }` object on each row                                                |
+| condition columns for seasonalities | a `conditions: { name: boolean }` object on each row                                               |
+| `make_future_dataframe(periods=n)`  | `makeFutureTimestamps(history, { periods: n })`; see [Future rows](../guide/your-data#future-rows) |
+| dropping `NaN` rows                 | leave the row out; see [Your data](../guide/your-data)                                             |
 
 ### Model settings
 

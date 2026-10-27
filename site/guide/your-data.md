@@ -80,6 +80,33 @@ To forecast, pass the timestamps you want:
 predict(model, ["2025-02-01T00:00:00.000Z", "2025-02-02T00:00:00.000Z"]);
 ```
 
+`makeFutureTimestamps` lists them for you, like Python's `make_future_dataframe`. It starts after
+the latest timestamp in a history, or after a timestamp you give it:
+
+```ts
+makeFutureTimestamps(history, { periods: 14 }); // the history's dates, then the next 14 days
+makeFutureTimestamps(history, { periods: 14, includeHistory: false }); // only the next 14 days
+makeFutureTimestamps(history, { periods: 24, frequency: "h", includeHistory: false }); // 24 hours
+makeFutureTimestamps("2025-01-15T00:00:00.000Z", { periods: 6, frequency: "ME" }); // month ends
+```
+
+As in Python, a history's own timestamps come first by default, each once and in order, so one
+`predict` call also shows how the model fits the past. Pass `includeHistory: false` for only the
+future dates. A single timestamp has no history, so it gives only future dates.
+
+`frequency` takes pandas' names and defaults to `"D"`:
+
+| `frequency`            | Dates                                                    |
+| ---------------------- | -------------------------------------------------------- |
+| `h`, `D`               | Every hour or every day after the last timestamp         |
+| `W`, `W-MON` … `W-SAT` | Every Sunday (`W` is `W-SUN`), or every Monday, Tuesday… |
+| `MS`                   | The first day of each following month                    |
+| `ME`                   | The last day of each month, including February 29        |
+
+As in pandas, every date keeps the last timestamp's UTC time of day, and none is on or before it.
+Dates are always UTC, so a schedule never shifts for daylight saving time. `periods` can be at
+most 100,000 (`maximumFuturePeriods`).
+
 If your model uses `capacity`, `floor`, `regressors` or `conditions`, pass full rows instead,
 because the model needs those values for the future too:
 

@@ -26,7 +26,7 @@ Requires Node.js 22.19 or newer.
 
 ```ts
 import { Effect } from "effect";
-import { fit, predict, prophetFittingBackendLayer } from "effect-prophet";
+import { fit, makeFutureTimestamps, predict, prophetFittingBackendLayer } from "effect-prophet";
 
 // One row per day: a UTC timestamp and a value.
 const history = Array.from({ length: 90 }, (_, day) => ({
@@ -34,14 +34,12 @@ const history = Array.from({ length: 90 }, (_, day) => ({
   value: 100 + day * 0.5 + 10 * Math.sin((2 * Math.PI * day) / 7),
 }));
 
-// The dates you want forecasts for.
-const nextWeek = Array.from({ length: 7 }, (_, offset) =>
-  new Date(Date.UTC(2025, 0, 91 + offset)).toISOString(),
-);
-
 const forecast = await Effect.runPromise(
   Effect.gen(function* () {
     const model = yield* fit(history);
+
+    // The seven days after the history, like Python's `make_future_dataframe`.
+    const nextWeek = yield* makeFutureTimestamps(history, { periods: 7, includeHistory: false });
 
     return yield* predict(model, nextWeek);
   }).pipe(Effect.provide(prophetFittingBackendLayer)),

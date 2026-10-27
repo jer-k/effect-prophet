@@ -44,7 +44,8 @@ const ObservationSchema: Schema.Codec<Observation, EncodedObservation> = Schema.
   conditions: Schema.optionalKey(Schema.Record(Schema.String, Schema.Boolean)),
 });
 
-const ObservationsSchema: Schema.Codec<Observations, EncodedObservations> =
+/** Codec for a non-empty history, in input order. */
+export const ObservationsSchema: Schema.Codec<Observations, EncodedObservations> =
   Schema.NonEmptyArray(ObservationSchema);
 
 const decodeObservationsSchema = Schema.decodeUnknownEffect(ObservationsSchema, {
