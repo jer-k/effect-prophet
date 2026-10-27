@@ -135,6 +135,20 @@ Effect receipts retain effective CV scaling for holdout; Python's application lo
 original selected configuration. An intentionally missing-capacity candidate inside successful
 search is not a failed benchmark workload.
 
+`evaluation-metrics-monthly` times built-in metrics grouped by calendar month
+(`performance_metrics(monthly=True)`), and `evaluation-metrics-custom` times the custom metrics in
+`tools/prophet/custom_metrics.py`, which Python registers with `register_performance_metric` and
+Effect defines in `tools/prophet/custom-metrics.ts` under the same names. Both run on precomputed
+CV rows. `evaluation-search-custom` ranks candidates by the custom WAPE metric, next to
+`evaluation-search` by MAE.
+
+Cases with these phases add a same-input metric gate. Python records `performance_metrics` for
+built-in and custom metrics, in both horizon units, on its own CV rows, together with the row order
+its unstable horizon sort produced. The report scores those rows with Effect's `performanceMetrics`
+in that order and requires every horizon and score to be identical, with no tolerance. That order
+decides which rows a median or quantile window borrows from a horizon, and the order a horizon's
+values are summed in.
+
 ## Timing, memory and provenance
 
 Effect measures built public package entrypoints and release WASM, not private kernels. Tracing

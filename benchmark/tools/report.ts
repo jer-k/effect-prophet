@@ -11,7 +11,15 @@ import type {
   ImplementationResult,
   RunManifest,
 } from "./result.ts";
+import { metricParityFailure } from "./evaluation.ts";
 import { anomalyAgreement, intervalBoundRatio } from "./uncertainty.ts";
+
+// Evaluation phases whose cases gate Effect's metrics on Python's own CV rows.
+const metricParityPhases: ReadonlySet<BenchmarkPhase> = new Set([
+  "evaluation-metrics-monthly",
+  "evaluation-metrics-custom",
+  "evaluation-search-custom",
+]);
 
 /** Distribution summary derived from retained raw timing samples. */
 export interface TimingSummary {
@@ -835,12 +843,31 @@ const correctnessForCase = (
       }
     }
 
+    const parity = benchmarkCase.phases.some((phase) => metricParityPhases.has(phase));
+
+    if (parity) {
+      for (const projection of pythonProjections) {
+        const evaluation = projection.evaluation;
+
+        const failure =
+          evaluation?.metricParity === undefined
+            ? "Python metric parity evidence is missing."
+            : metricParityFailure(benchmarkCase.workload, evaluation);
+
+        if (failure !== undefined) {
+          return { caseId: benchmarkCase.id, status: "failed", comparison, note: failure };
+        }
+      }
+    }
+
     return {
       caseId: benchmarkCase.id,
       status: "passed",
       comparison,
       maximumDifferences: { ...emptyDifferences(), forecast: maximum },
-      note: "Aligned folds, rows, targets and point forecasts passed; public evaluation/uncertainty/metric/report work differs. Absolute times only.",
+      note: parity
+        ? "Aligned folds, rows, targets and point forecasts passed, and Effect's built-in and custom metrics on Python's own CV rows equal performance_metrics exactly in both horizon units; public evaluation/metric work differs. Absolute times only."
+        : "Aligned folds, rows, targets and point forecasts passed; public evaluation/uncertainty/metric/report work differs. Absolute times only.",
     };
   }
 

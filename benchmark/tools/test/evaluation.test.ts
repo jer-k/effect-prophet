@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 
 import { Effect } from "effect";
-import { decodeOptions, defaultLinearOptimizer } from "effect-prophet";
+import { decodeOptions, defaultLinearOptimizer, performanceMetrics } from "effect-prophet";
 import { describe, expect, it } from "vitest";
 
 import { parseBenchmarkCases, parseBenchmarkDataset } from "../case.ts";
@@ -11,8 +11,10 @@ import { linearGrowthEdgeCases } from "../../cases/growth/linear/edge-cases.ts";
 import {
   evaluationCorrectness,
   evaluationOperation,
+  metricParityFailure,
   preparedEvaluationOperation,
 } from "../evaluation.ts";
+import { customMetrics } from "../../../tools/prophet/custom-metrics.ts";
 import { buildBenchmarkReport } from "../report.ts";
 import type { CorrectnessProjection, ImplementationResult, RunManifest } from "../result.ts";
 
@@ -94,7 +96,7 @@ const report = (left: CorrectnessProjection, right: CorrectnessProjection) =>
 
 describe("evaluation public benchmark", () => {
   it("declares valid fit options, with both libraries' default optimizers for linear growth", async () => {
-    expect(evaluationCases).toHaveLength(14);
+    expect(evaluationCases).toHaveLength(17);
 
     await Effect.runPromise(parseBenchmarkCases(evaluationCases));
 
@@ -211,5 +213,121 @@ describe("evaluation public benchmark", () => {
     expect(encoded()).toBeTypeOf("string");
     expect(decoded()).toMatchObject({ reportKind: "effect-prophet-evaluation" });
     expect(evaluationCorrectness(case_, dataset, 0).evaluation?.assessmentRows).toBe(14);
+  });
+
+  it("times monthly and custom metrics on precomputed rows and searches by a custom objective", async () => {
+    const case_ = evaluationCases.find((item) => item.id === "evaluation-linear-custom-search");
+
+    if (case_ === undefined) throw new Error("Missing custom search workload");
+
+    const dataset = await Effect.runPromise(parseBenchmarkDataset(datasetInput));
+    const monthly = preparedEvaluationOperation(case_, dataset, "evaluation-metrics-monthly")();
+    const custom = preparedEvaluationOperation(case_, dataset, "evaluation-metrics-custom")();
+
+    expect(monthly).toMatchObject({ kind: "overall" });
+    expect(custom).toMatchObject({
+      kind: "overall",
+      bucket: { scores: customMetrics.map(({ name }) => ({ metric: name })) },
+    });
+
+    const search = evaluationOperation(case_, dataset, "evaluation-search-custom");
+
+    expect(search).toMatchObject({ objective: { metric: { name: "wape" } } });
+    expect(evaluationCorrectness(case_, dataset, 0).evaluation?.metricParity).toBeUndefined();
+  });
+
+  it("gates Effect's metrics on Python's rows, in Python's order, with no tolerance", async () => {
+    const case_ = evaluationCases.find((item) => item.id === "evaluation-linear-custom-search");
+
+    const workload = case_?.workload;
+
+    if (case_ === undefined || workload?.kind !== "evaluation") {
+      throw new Error("Missing custom search workload");
+    }
+
+    const dataset = await Effect.runPromise(parseBenchmarkDataset(datasetInput));
+    const evaluation = evaluationCorrectness(base, dataset, 0).evaluation;
+
+    if (evaluation === undefined) throw new Error("Missing evaluation projection");
+
+    const metrics = ["mae", "rmse", "smape", "mdape", ...customMetrics.map(({ name }) => name)];
+
+    // Stand-in Python evidence: the rows scored in reverse, so ties keep a non-input order.
+    const order = evaluation.rows
+      .map((row, index) => ({ index, horizon: row.timestamp - row.cutoff }))
+      .reverse()
+      .sort((left, right) => left.horizon - right.horizon)
+      .map(({ index }) => index);
+
+    const scores = await Effect.runPromise(
+      performanceMetrics(
+        {
+          kind: "point",
+          rows: order.map((index) => {
+            const row = evaluation.rows[index];
+
+            if (row === undefined) throw new Error("Missing row");
+
+            return {
+              ...row,
+              fold: evaluation.cutoffs.indexOf(row.cutoff),
+              horizonMs: row.timestamp - row.cutoff,
+            };
+          }),
+        },
+        {
+          metrics: ["mae", "rmse", "smape", "mdape", ...customMetrics],
+          aggregation: { kind: "overall" },
+        },
+      ),
+    );
+
+    if (scores.kind !== "overall") throw new Error("Expected overall scores");
+
+    const evidence = {
+      horizon: "duration" as const,
+      metrics,
+      order,
+      points: [
+        {
+          horizon: Math.max(...evaluation.rows.map((row) => row.timestamp - row.cutoff)),
+          scores: scores.bucket.scores.map((score) => score.value),
+        },
+      ],
+    };
+
+    const gate = (metricParity: ReadonlyArray<typeof evidence>) =>
+      metricParityFailure(workload, { ...evaluation, metricParity });
+
+    expect(gate([evidence])).toBeUndefined();
+
+    const [first = 0, ...rest] = evidence.points[0]?.scores ?? [];
+
+    expect(
+      gate([
+        { ...evidence, points: [{ horizon: 0, scores: [first * (1 + Number.EPSILON), ...rest] }] },
+      ]),
+    ).toMatch(/differ from performance_metrics/);
+
+    expect(gate([{ ...evidence, order: order.slice(1) }])).toMatch(/not a permutation/);
+    expect(gate([{ ...evidence, order: [...order.slice(1), order.length] }])).toMatch(
+      /missing row/,
+    );
+    expect(gate([{ ...evidence, metrics: ["mae", "unknown"] }])).toMatch(/no definition/);
+
+    const python = { ...evaluationCorrectness(base, dataset, 0), caseId: case_.id };
+
+    const missing = buildBenchmarkReport(
+      { ...manifest, selectedCases: [case_.id] },
+      [{ ...case_, independentRuns: 1 }],
+      result("effect-prophet", python),
+      result("python-prophet", python),
+      new Set(["rolling-origin-evaluation-v1"]),
+    );
+
+    expect(missing.correctness[0]).toMatchObject({
+      status: "failed",
+      note: "Python metric parity evidence is missing.",
+    });
   });
 });

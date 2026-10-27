@@ -8,6 +8,8 @@ import sys
 import unittest
 
 import numpy as np
+import pandas as pd
+from prophet.diagnostics import performance_metrics
 
 BENCHMARK_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(BENCHMARK_ROOT / "tools" / "adapters"))
@@ -389,6 +391,42 @@ class PythonCountryReferenceTest(unittest.TestCase):
         self.assertIsNone(adapter["base_warm_start"](training, no_warm_start))
         with self.assertRaisesRegex(ValueError, "longer history"):
             adapter["base_warm_start"](training.iloc[:89], case)
+
+
+    def test_metric_parity_records_performance_metrics_with_its_horizon_sort_order(self):
+        evaluation = adapter["evaluation_work"]
+        cutoffs = [pd.Timestamp("2020-01-27"), pd.Timestamp("2020-02-24")]
+        rows = [(cutoff, cutoff + pd.Timedelta(days=day)) for cutoff in cutoffs for day in range(1, 41)]
+        result = pd.DataFrame({
+            "ds": [ds for _, ds in rows],
+            "cutoff": [cutoff for cutoff, _ in rows],
+            "y": [10 + (index * 7) % 13 for index in range(len(rows))],
+            "yhat": [9.5 + (index * 5) % 11 for index in range(len(rows))],
+        })
+        case = {"workload": {"metricAggregation": "rolling"}}
+
+        evidence = evaluation.metric_parity(result, case)
+
+        self.assertEqual([entry["horizon"] for entry in evidence], ["duration", "calendar-month"])
+
+        for entry in evidence:
+            monthly = entry["horizon"] == "calendar-month"
+            order = entry["order"]
+            self.assertEqual(sorted(order), list(range(len(result))))
+            months = (result["ds"].dt.to_period("M").astype(int) - result["cutoff"].dt.to_period("M").astype(int)).tolist()
+            horizons = months if monthly else (result["ds"] - result["cutoff"]).tolist()
+            self.assertEqual([horizons[index] for index in order], sorted(horizons))
+
+            expected = performance_metrics(result, metrics=list(evaluation.PARITY_METRICS),
+                                           rolling_window=0.5, monthly=monthly)
+            self.assertEqual(entry["metrics"], list(evaluation.PARITY_METRICS))
+            self.assertEqual([point["scores"] for point in entry["points"]],
+                             [[float(value) for value in row[1:]] for row in expected.itertuples(index=False)])
+
+        self.assertIn("wape", evaluation.PARITY_METRICS)
+
+        with self.assertRaisesRegex(ValueError, "indexed by position"):
+            evaluation.metric_parity(result.iloc[::-1], case)
 
 
 if __name__ == "__main__":

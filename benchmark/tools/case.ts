@@ -48,8 +48,11 @@ export const BenchmarkPhaseSchema = Schema.Literals([
   "evaluation-point",
   "evaluation-intervals",
   "evaluation-metrics",
+  "evaluation-metrics-monthly",
+  "evaluation-metrics-custom",
   "evaluation-baseline",
   "evaluation-search",
+  "evaluation-search-custom",
   "evaluation-holdout",
   "evaluation-report-encode",
   "evaluation-report-decode",
@@ -574,6 +577,7 @@ const validateCaseRelationships = (
 
       const needsSearch =
         phases.includes("evaluation-search") ||
+        phases.includes("evaluation-search-custom") ||
         phases.includes("evaluation-holdout") ||
         phases.includes("evaluation-report-encode") ||
         phases.includes("evaluation-report-decode");

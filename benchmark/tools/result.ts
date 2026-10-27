@@ -164,6 +164,20 @@ export const CorrectnessProjectionSchema = Schema.Struct({
         }),
       ),
       mae: NonNegativeFinite,
+      // Python's performance_metrics on its own rows, which the report scores again with Effect.
+      metricParity: Schema.optionalKey(
+        Schema.Array(
+          Schema.Struct({
+            horizon: Schema.Literals(["duration", "calendar-month"]),
+            metrics: Schema.Array(NonEmptyString).check(Schema.isMinLength(1)),
+            // Row indexes in the order Python's unstable horizon sort left them.
+            order: Schema.Array(NonNegativeInteger),
+            points: Schema.Array(
+              Schema.Struct({ horizon: Schema.Int, scores: Schema.Array(Schema.Finite) }),
+            ),
+          }),
+        ),
+      ),
     }),
   ),
   uncertainty: Schema.optionalKey(

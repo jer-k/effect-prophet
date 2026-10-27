@@ -1,4 +1,4 @@
-import { Effect, Layer } from "effect";
+import { Effect, Exit, Layer } from "effect";
 import {
   crossValidate,
   crossValidateBaseline,
@@ -9,10 +9,15 @@ import {
   planRollingOrigin,
   prophetFittingBackendLayer,
   searchModels,
+  type CrossValidationResult,
   type EncodedProphetOptions,
+  type MetricName,
+  type MetricSelection,
   type ModelSearchResult,
+  type SearchObjective,
 } from "effect-prophet";
 
+import { customMetrics } from "../../tools/prophet/custom-metrics.ts";
 import type { BenchmarkCase, BenchmarkDataset, BenchmarkPhase } from "./case.ts";
 import { effectOptionsForCase } from "./effect-case.ts";
 import type { CorrectnessProjection } from "./result.ts";
@@ -57,16 +62,59 @@ const inputs = (benchmarkCase: BenchmarkCase, dataset: BenchmarkDataset) => {
   };
 };
 
-const metricPolicy = (workload: Extract<BenchmarkCase["workload"], { kind: "evaluation" }>) => ({
+type EvaluationWorkload = Extract<BenchmarkCase["workload"], { kind: "evaluation" }>;
+
+/** The aggregation that matches the Python adapter's `rolling_window` for this workload. */
+const metricAggregation = (workload: EvaluationWorkload) =>
+  workload.metricAggregation === "rolling"
+    ? { kind: "rolling" as const, window: { kind: "fraction" as const, value: 0.5 } }
+    : { kind: workload.metricAggregation };
+
+const metricPolicy = (workload: EvaluationWorkload) => ({
   metrics: ["mae", "rmse", "smape", "mape"] as const,
-  aggregation:
-    workload.metricAggregation === "rolling"
-      ? {
-          kind: "rolling" as const,
-          window: { kind: "fraction" as const, value: 0.5 },
-        }
-      : { kind: workload.metricAggregation },
+  aggregation: metricAggregation(workload),
 });
+
+const builtInMetrics: ReadonlyArray<MetricName> = [
+  "mae",
+  "mse",
+  "rmse",
+  "mape",
+  "mdape",
+  "smape",
+  "coverage",
+];
+
+/** A built-in metric, or the shared custom metric the Python adapter registered under `name`. */
+const metricSelection = (name: string): MetricSelection<string> | undefined =>
+  builtInMetrics.find((metric) => metric === name) ??
+  customMetrics.find((metric) => metric.name === name);
+
+// The custom metric a custom search ranks candidates by, as in the Python adapter.
+const customObjective = customMetrics.find((metric) => metric.name === "wape");
+
+/** The metric work a metrics phase times, on precomputed CV rows. */
+const metricsFor = (
+  result: CrossValidationResult,
+  workload: EvaluationWorkload,
+  phase: "evaluation-metrics" | "evaluation-metrics-monthly" | "evaluation-metrics-custom",
+) => {
+  if (phase === "evaluation-metrics")
+    return run(performanceMetrics(result, metricPolicy(workload)));
+
+  if (phase === "evaluation-metrics-monthly") {
+    return run(
+      performanceMetrics(result, { ...metricPolicy(workload), horizon: "calendar-month" }),
+    );
+  }
+
+  return run(
+    performanceMetrics(result, {
+      metrics: customMetrics,
+      aggregation: metricAggregation(workload),
+    }),
+  );
+};
 
 const candidateOptions = (
   options: EncodedProphetOptions,
@@ -96,7 +144,11 @@ const candidateOptions = (
   return { ...options, map: { ...options.map, changepointPriorScale: prior } };
 };
 
-const search = (benchmarkCase: BenchmarkCase, dataset: BenchmarkDataset): ModelSearchResult => {
+const search = (
+  benchmarkCase: BenchmarkCase,
+  dataset: BenchmarkDataset,
+  metric: SearchObjective["metric"] = "mae",
+): ModelSearchResult => {
   const { workload, development, options, plan } = inputs(benchmarkCase, dataset);
 
   return runFitting(
@@ -106,14 +158,16 @@ const search = (benchmarkCase: BenchmarkCase, dataset: BenchmarkDataset): ModelS
         options: candidateOptions(options, candidate.changepointPriorScale, candidate.growth),
       })),
       plan,
-      objective: {
-        metric: "mae",
-        aggregation: { kind: "overall" },
-        direction: "minimize",
-      },
+      objective: { metric, aggregation: { kind: "overall" }, direction: "minimize" },
       failurePolicy: "record",
     }),
   );
+};
+
+const customSearch = (benchmarkCase: BenchmarkCase, dataset: BenchmarkDataset) => {
+  if (customObjective === undefined) throw new Error("Missing the custom search objective");
+
+  return search(benchmarkCase, dataset, customObjective);
 };
 
 const holdoutUsingSearch = (
@@ -239,12 +293,16 @@ export const evaluationCorrectness = (
       }
     } else if (
       phase === "evaluation-search" ||
+      phase === "evaluation-search-custom" ||
       phase === "evaluation-holdout" ||
       phase === "evaluation-report-encode" ||
       phase === "evaluation-report-decode"
     ) {
-      if (phase === "evaluation-search") {
-        const selection = search(benchmarkCase, dataset);
+      if (phase === "evaluation-search" || phase === "evaluation-search-custom") {
+        const selection =
+          phase === "evaluation-search"
+            ? search(benchmarkCase, dataset)
+            : customSearch(benchmarkCase, dataset);
 
         if (
           selection.candidates.filter((candidate) => candidate.kind === "failure").length !==
@@ -286,10 +344,14 @@ export const preparedEvaluationOperation = (
 ): (() => string | ReturnType<typeof evaluationOperation>) => {
   const { workload, development, options, plan } = inputs(benchmarkCase, dataset);
 
-  if (phase === "evaluation-metrics") {
+  if (
+    phase === "evaluation-metrics" ||
+    phase === "evaluation-metrics-monthly" ||
+    phase === "evaluation-metrics-custom"
+  ) {
     const result = runFitting(crossValidate(development, options, plan));
 
-    return () => run(performanceMetrics(result, metricPolicy(workload)));
+    return () => metricsFor(result, workload, phase);
   }
 
   if (phase === "evaluation-baseline") {
@@ -356,11 +418,10 @@ export const evaluationOperation = (
           uncertainty: workload.interval,
         }),
       );
-    case "evaluation-metrics": {
-      const result = runFitting(crossValidate(development, options, plan));
-
-      return run(performanceMetrics(result, metricPolicy(workload)));
-    }
+    case "evaluation-metrics":
+    case "evaluation-metrics-monthly":
+    case "evaluation-metrics-custom":
+      return metricsFor(runFitting(crossValidate(development, options, plan)), workload, phase);
 
     case "evaluation-baseline": {
       const summary = run(planRollingOrigin(development, options, plan));
@@ -387,6 +448,8 @@ export const evaluationOperation = (
 
     case "evaluation-search":
       return search(benchmarkCase, dataset);
+    case "evaluation-search-custom":
+      return customSearch(benchmarkCase, dataset);
     case "evaluation-holdout":
       return holdout(benchmarkCase, dataset);
     case "evaluation-report-encode":
@@ -400,4 +463,90 @@ export const evaluationOperation = (
     default:
       throw new Error(`Not an evaluation phase: ${phase}`);
   }
+};
+
+/**
+ * Score Python's own CV rows with Effect, in the order Python's horizon sort left them, and require
+ * `performance_metrics`' exact values. Returns why they differ, or `undefined` when every horizon
+ * unit matches.
+ */
+export const metricParityFailure = (
+  workload: EvaluationWorkload,
+  evaluation: NonNullable<CorrectnessProjection["evaluation"]>,
+): string | undefined => {
+  for (const evidence of evaluation.metricParity ?? []) {
+    const rows = [];
+
+    for (const index of evidence.order) {
+      const row = evaluation.rows[index];
+
+      if (row === undefined) return "Python's metric row order names a missing row.";
+
+      rows.push({
+        fold: evaluation.cutoffs.indexOf(row.cutoff),
+        cutoff: row.cutoff,
+        timestamp: row.timestamp,
+        horizonMs: row.timestamp - row.cutoff,
+        actual: row.actual,
+        predicted: row.predicted,
+      });
+    }
+
+    if (new Set(evidence.order).size !== evaluation.rows.length) {
+      return "Python's metric row order is not a permutation of its CV rows.";
+    }
+
+    const [first, ...rest] = evidence.metrics.map(metricSelection);
+    const selections = rest.filter((selection) => selection !== undefined);
+
+    if (first === undefined || selections.length !== rest.length) {
+      return "Python scored a metric Effect has no definition for.";
+    }
+
+    const exit = Effect.runSyncExit(
+      performanceMetrics(
+        { kind: "point", rows },
+        {
+          metrics: [first, ...selections],
+          aggregation: metricAggregation(workload),
+          horizon: evidence.horizon,
+        },
+      ),
+    );
+
+    if (Exit.isFailure(exit)) return `Effect could not score Python's ${evidence.horizon} rows.`;
+    const report = exit.value;
+
+    // Prophet reports an overall score at the largest horizon, which the report doesn't carry.
+    const buckets =
+      report.kind === "overall"
+        ? [{ horizon: evidence.points[0]?.horizon, scores: report.bucket.scores }]
+        : report.points.map((point) => ({
+            horizon: "horizonMonths" in point ? point.horizonMonths : point.horizonMs,
+            scores: point.scores,
+          }));
+
+    const matches =
+      buckets.length === evidence.points.length &&
+      buckets.every((bucket, index) => {
+        const expected = evidence.points[index];
+
+        return (
+          expected !== undefined &&
+          bucket.horizon === expected.horizon &&
+          bucket.scores.length === expected.scores.length &&
+          bucket.scores.every(
+            (score, position) =>
+              score.metric === evidence.metrics[position] &&
+              Object.is(score.value, expected.scores[position]),
+          )
+        );
+      });
+
+    if (!matches) {
+      return `Effect's ${evidence.horizon} metrics on Python's CV rows differ from performance_metrics.`;
+    }
+  }
+
+  return undefined;
 };
