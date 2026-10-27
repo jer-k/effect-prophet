@@ -81,6 +81,7 @@ const expectedDeclarationFiles = [
   "dist/internal/country-holiday-snapshot.d.ts",
   "dist/internal/country-holiday-model.d.ts",
   "dist/internal/fitting-backend.d.ts",
+  "dist/internal/metric-names.d.ts",
   "dist/internal/prophet-fitting-backend.d.ts",
   "dist/linear-optimizer.d.ts",
   "dist/logistic.d.ts",

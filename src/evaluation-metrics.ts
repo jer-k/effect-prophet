@@ -14,21 +14,19 @@ import type {
   PointCrossValidationResult,
 } from "./evaluation";
 import { kahanSum } from "./internal/kahan-sum";
+import {
+  MetricNameSchema,
+  MetricNamesSchema,
+  PointMetricNameSchema,
+} from "./internal/metric-names";
 
 type MetricSource = CrossValidationResult["kind"] | "baseline";
 
-const MetricNameSchema = Schema.Literals([
-  "mae",
-  "mse",
-  "rmse",
-  "mape",
-  "mdape",
-  "smape",
-  "coverage",
-]);
-
 /** One of the seven fixed-release forecast metrics. */
 export type MetricName = typeof MetricNameSchema.Type;
+
+/** A forecast metric that needs only point predictions. */
+type PointMetricName = typeof PointMetricNameSchema.Type;
 
 const AggregationSchema = Schema.Union([
   Schema.Struct({ kind: Schema.Literal("rows") }),
@@ -53,13 +51,7 @@ const AggregationSchema = Schema.Union([
 export type MetricAggregation = typeof AggregationSchema.Type;
 
 const MetricOptionsSchema = Schema.Struct({
-  metrics: Schema.NonEmptyArray(MetricNameSchema).check(
-    Schema.makeFilter((metrics) => {
-      if (new Set(metrics).size !== metrics.length) {
-        return { path: [], issue: "Metric names must be unique" };
-      }
-    }),
-  ),
+  metrics: MetricNamesSchema,
   aggregation: AggregationSchema,
 });
 
@@ -68,10 +60,7 @@ export type MetricOptions = typeof MetricOptionsSchema.Encoded;
 
 /** A finite bucket score. */
 export type MetricScore<Source extends MetricSource = MetricSource> =
-  | {
-      readonly metric: "mae" | "mse" | "rmse" | "mape" | "mdape" | "smape";
-      readonly value: number;
-    }
+  | { readonly metric: PointMetricName; readonly value: number }
   | (Source extends "intervals" ? { readonly metric: "coverage"; readonly value: number } : never);
 
 /** All requested metrics on the same set of forecast instances. */

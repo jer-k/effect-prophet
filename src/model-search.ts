@@ -24,6 +24,7 @@ import {
   type RollingOriginPlanInput,
   type RollingOriginPlanSummary,
 } from "./evaluation";
+import { PointMetricNameSchema } from "./internal/metric-names";
 import { checkedAdd, checkedMultiply } from "./internal/safe-arithmetic";
 import { copyFrozen as ownedInput } from "./internal/owned-input";
 import type { FittingBackend } from "./internal/fitting-backend";
@@ -36,10 +37,8 @@ import { decodeObservations } from "./observation";
 import { decodeOptions, type EncodedProphetOptions, type ProphetOptions } from "./options";
 import { exceedsSimulationBudget } from "./uncertainty";
 
-const ObjectiveMetricSchema = Schema.Literals(["mae", "mse", "rmse", "mape", "mdape", "smape"]);
-
 const ObjectiveSchema = Schema.Struct({
-  metric: ObjectiveMetricSchema,
+  metric: PointMetricNameSchema,
   aggregation: Schema.Struct({ kind: Schema.Literal("overall") }),
   direction: Schema.Literal("minimize"),
 });
