@@ -6,12 +6,77 @@ import {
   EvaluationMetricError,
   performanceMetrics,
   type CrossValidationIntervalRow,
+  type CustomMetric,
   type MetricName,
+  type MetricRow,
+  type MetricSelection,
 } from "../../../src/index";
 
 const day = 86_400_000;
 
 const firstCutoff = Date.UTC(2024, 0, 1);
+
+const absolutePercentageError = (row: MetricRow) =>
+  Math.abs((row.actual - row.predicted) / row.actual);
+
+const apeQuantile = (name: string, probability: number): CustomMetric => ({
+  name,
+  reduce: { kind: "quantile", probability },
+  score: absolutePercentageError,
+});
+
+// The same metrics the fixture generator registers with Prophet's `register_performance_metric`.
+const customMetrics: ReadonlyArray<CustomMetric> = [
+  {
+    name: "pinball75",
+    reduce: "mean",
+    score: (row) => {
+      const error = row.actual - row.predicted;
+
+      return Math.max(0.75 * error, -0.25 * error);
+    },
+  },
+  {
+    name: "root_mse",
+    reduce: "mean",
+    score: (row) => {
+      const error = row.actual - row.predicted;
+
+      return error * error;
+    },
+    finalize: Math.sqrt,
+  },
+  {
+    name: "wape",
+    reduce: "ratio-of-means",
+    score: (row) => [Math.abs(row.actual - row.predicted), Math.abs(row.actual)],
+  },
+  apeQuantile("ape_q0", 0),
+  apeQuantile("ape_q30", 0.3),
+  apeQuantile("ape_q50", 0.5),
+  apeQuantile("ape_q90", 0.9),
+  apeQuantile("ape_q100", 1),
+];
+
+const builtInNames: ReadonlyArray<string> = [
+  "mae",
+  "mse",
+  "rmse",
+  "mape",
+  "mdape",
+  "smape",
+  "coverage",
+] satisfies ReadonlyArray<MetricName>;
+
+const selection = (name: string): MetricSelection<string> => {
+  const builtIn = builtInNames.find((candidate): candidate is MetricName => candidate === name);
+  const custom = customMetrics.find((metric) => metric.name === name);
+  const selected = builtIn ?? custom;
+
+  if (selected === undefined) throw new Error(`Fixture metric ${name} has no Effect definition`);
+
+  return selected;
+};
 
 const monthOf = (epoch: number) =>
   new Date(epoch).getUTCFullYear() * 12 + new Date(epoch).getUTCMonth();
@@ -42,7 +107,11 @@ describe("Prophet 1.4.0 performance_metrics compatibility", () => {
       for (const expected of referenceCase.aggregations) {
         const label = `${referenceCase.id} ${JSON.stringify(expected.aggregation)}`;
         const [first, ...rest] = expected.metrics;
-        const metrics: readonly [MetricName, ...Array<MetricName>] = [first, ...rest];
+
+        const metrics: readonly [MetricSelection<string>, ...Array<MetricSelection<string>>] = [
+          selection(first),
+          ...rest.map(selection),
+        ];
 
         const report = await Effect.runPromise(
           performanceMetrics(source, {

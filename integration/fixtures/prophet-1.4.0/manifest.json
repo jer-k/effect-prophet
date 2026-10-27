@@ -22,7 +22,7 @@
     },
     {
       "path": "evaluation-metrics.json",
-      "sha256": "f463e7d042d6cb25277b43535642fb58917ee1dfdb23bd8088b7160969b112c8"
+      "sha256": "60bb8d4802ad3230dba328c3936f58ca36699ceba4bdaab3758ce878d6ababb0"
     },
     {
       "path": "linear-map-fit.json",
@@ -114,7 +114,7 @@
     "platform": "linux/amd64",
     "uvVersion": "0.8.15"
   },
-  "generatorRevision": "f7c4c031daba627ae57d4ac4af1273bb10459504ccbdf1771df8179639602e1c",
+  "generatorRevision": "3568762da73434fe248f68736d40f1bb6045e31090b5c1d304aeaa3ba0fe0408",
   "numericalEnvironment": [
     {
       "name": "cmdstanpy",

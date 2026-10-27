@@ -563,16 +563,9 @@ const MetricNameSchema = Schema.Literals([
   "coverage",
 ]);
 
-// Prophet drops MAPE for near-zero actuals, so a point carries only the metrics it returned.
-const MetricScoresSchema = Schema.Struct({
-  mae: Schema.optionalKey(Schema.Finite),
-  mse: Schema.optionalKey(Schema.Finite),
-  rmse: Schema.optionalKey(Schema.Finite),
-  mape: Schema.optionalKey(Schema.Finite),
-  mdape: Schema.optionalKey(Schema.Finite),
-  smape: Schema.optionalKey(Schema.Finite),
-  coverage: Schema.optionalKey(Schema.Finite),
-});
+// Prophet drops MAPE for near-zero actuals, so a point carries only the metrics it returned,
+// built-in or registered with `register_performance_metric`.
+const MetricScoresSchema = Schema.Record(Schema.String, Schema.Finite);
 
 const MetricAggregationSchema = Schema.Union([
   Schema.Struct({ kind: Schema.Literals(["rows", "horizons", "overall"]) }),
@@ -606,6 +599,7 @@ const EvaluationMetricsReferenceCaseSchema = Schema.Struct({
   id: Schema.NonEmptyString,
   horizon: Schema.Literals(["duration", "calendar-month"]),
   metrics: Schema.NonEmptyArray(MetricNameSchema),
+  customMetrics: Schema.Array(Schema.NonEmptyString),
   rows: Schema.NonEmptyArray(
     Schema.Struct({
       fold: Schema.Natural,
@@ -621,7 +615,7 @@ const EvaluationMetricsReferenceCaseSchema = Schema.Struct({
       aggregation: MetricAggregationSchema,
       rollingWindow: Schema.Finite,
       windowRows: Schema.optionalKey(Schema.Int.check(Schema.isGreaterThan(0))),
-      metrics: Schema.NonEmptyArray(MetricNameSchema),
+      metrics: Schema.NonEmptyArray(Schema.NonEmptyString),
       points: Schema.NonEmptyArray(MetricPointSchema),
     }),
   ),

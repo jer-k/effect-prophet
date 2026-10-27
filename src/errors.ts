@@ -2,7 +2,7 @@ import { Predicate, Schema, SchemaIssue } from "effect";
 
 import type { CountryHolidayError } from "./country-holidays";
 import type { BaselineForecastError } from "./evaluation-baseline";
-import { MetricNameSchema } from "./internal/metric-names";
+import { AnyMetricNameSchema } from "./internal/metric-names";
 
 /** Runtime schema for one structured validation issue. */
 export const ValidationIssueSchema = Schema.Struct({
@@ -60,18 +60,22 @@ const MetricAggregationKindSchema = Schema.Literals(["rows", "horizons", "rollin
 const MetricFailureReasonSchema = Schema.Literals([
   "unavailable",
   "zero-actual",
+  "zero-denominator",
   "non-finite",
   "misaligned",
 ]);
 
 const MetricFailureStageSchema = Schema.Literals([
   "input",
+  "score",
   "difference",
   "square",
   "division",
   "sum",
   "mean",
   "median",
+  "quantile",
+  "finalize",
 ]);
 
 const ModelSerializationOperationSchema = Schema.Literals(["encode", "decode"]);
@@ -317,7 +321,7 @@ export class HoldoutEvaluationError extends Schema.TaggedError<HoldoutEvaluation
 export class EvaluationMetricError extends Schema.TaggedError<EvaluationMetricError>()(
   "EvaluationMetricError",
   {
-    metric: MetricNameSchema,
+    metric: AnyMetricNameSchema,
     aggregation: MetricAggregationKindSchema,
     bucket: Schema.Natural,
     reason: MetricFailureReasonSchema,
@@ -377,7 +381,7 @@ export const PortableEvaluationFailureSchema = Schema.Union([
   }),
   Schema.Struct({
     tag: Schema.Literal("EvaluationMetricError"),
-    metric: MetricNameSchema,
+    metric: AnyMetricNameSchema,
     aggregation: MetricAggregationKindSchema,
     bucket: Schema.Natural,
     reason: MetricFailureReasonSchema,

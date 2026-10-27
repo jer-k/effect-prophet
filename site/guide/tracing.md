@@ -216,3 +216,7 @@ Every attribute name starts with `effect_prophet.`.
 | `effect-prophet.evaluation.fold`                | `operation`, `fold.index`, `fold.count`, `training.count`, `assessment.count`, `growth`, `model.type`, `evaluation.scaling.mode`, `uncertainty.enabled`, `sample.count` |
 | `effect-prophet.evaluation.candidate`           | `operation`, `candidate.index`, `candidate.count`, `fold.count`, `objective`, `uncertainty.enabled`, `evaluation.scaling.mode`                                          |
 | `effect-prophet.evaluation.holdout`             | `operation`, `growth`, `model.type`, `training.count`, `assessment.count`, `baseline.count`, `uncertainty.enabled`                                                      |
+
+`objective` is the built-in metric name, such as `mae`, or `custom` for a
+[custom metric](../examples/cross-validation#your-own-metrics). A custom metric's own name is
+never recorded, because you choose it.

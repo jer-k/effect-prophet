@@ -15,6 +15,7 @@ import {
   type HoldoutEvaluationInput,
   type ModelSearchResult,
 } from "../src/index";
+import { collectTestSpans } from "./internal/tracing-test-helpers";
 
 const day = 86_400_000;
 
@@ -35,7 +36,9 @@ const holdout: EncodedObservations = [
   { timestamp: timestamp(19), value: 22 },
 ];
 
-const find = async (): Promise<ModelSearchResult> =>
+const find = async (
+  metric: ModelSearchResult["objective"]["metric"] = "mae",
+): Promise<ModelSearchResult> =>
   Effect.runPromise(
     searchModels(observations, {
       candidates: [
@@ -65,11 +68,7 @@ const find = async (): Promise<ModelSearchResult> =>
           timestamps: [timestamp(11), timestamp(14)],
         },
       },
-      objective: {
-        metric: "mae",
-        aggregation: { kind: "overall" },
-        direction: "minimize",
-      },
+      objective: { metric, aggregation: { kind: "overall" }, direction: "minimize" },
       failurePolicy: "record",
     }).pipe(Effect.provide(prophetFittingBackendLayer)),
   );
@@ -337,6 +336,28 @@ describe("evaluateHoldout", () => {
       expect(result._tag).toBe("Failure");
     }
 
+    expect(spans.some((span) => span.name === "effect-prophet.evaluation.holdout")).toBe(false);
+    expect(spans.some((span) => span.name === "effect-prophet.wasm.fit")).toBe(false);
+  });
+
+  it("rejects a custom search objective, which a report cannot encode, before the execution span", async () => {
+    const search = await find({
+      name: "absolute_error",
+      reduce: "mean",
+      score: (row) => Math.abs(row.actual - row.predicted),
+    });
+
+    const { spans, tracer } = collectTestSpans();
+
+    const failure = await Effect.runPromise(
+      Effect.flip(run(input(search)).pipe(Effect.withTracer(tracer))),
+    );
+
+    expect(failure).toBeInstanceOf(InputValidationError);
+    expect(failure).toMatchObject({
+      input: "evaluation-holdout",
+      issues: [{ path: ["search", "objective", "metric"] }],
+    });
     expect(spans.some((span) => span.name === "effect-prophet.evaluation.holdout")).toBe(false);
     expect(spans.some((span) => span.name === "effect-prophet.wasm.fit")).toBe(false);
   });

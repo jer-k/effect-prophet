@@ -4444,7 +4444,7 @@
   },
   "generatorSources": {
     "tools/prophet/calendar_collection.py": "7d7c3ae653df9d21211a61e39496ff7553bcd9d01809a9e89e17b241fc1adec3",
-    "tools/prophet/generate.py": "6765a8f9626ead5250b87859f7445431c91e3c50f5fa017be13ac0652819c6ea",
+    "tools/prophet/generate.py": "129976d5f87eccc3ad7563213979130e56c113e660767567d9ac86776f5e8630",
     "tools/prophet/generate_calendars.py": "25c5be803eedd9133af6eb22858e898084cf6f4faf10d0e399c87b370a93147f",
     "tools/prophet/linear_optimizer_evidence.py": "3efd26543501753ae1d00b8fba6ea174e7006774a2b79ab0fcc7ca0c78b3af6a"
   },
@@ -4468,5 +4468,5 @@
     "version": "1.4.0"
   },
   "schemaVersion": 1,
-  "snapshotId": "sha256:8f69e7a2c43c8fca1b6d22c31642564a312452512712e3b9a9b6a7eae9226a5d"
+  "snapshotId": "sha256:6c534ff8c0933a948be7cee360d59c27e0ec2bbe5cb5c65b04c6d782da71b660"
 }

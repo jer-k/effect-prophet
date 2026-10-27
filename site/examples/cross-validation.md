@@ -98,6 +98,63 @@ forecasts are totalled month by month instead of horizon by horizon, as in Pytho
 
 `comparePerformance` takes the same option and groups the model and every baseline the same way.
 
+## Your own metrics
+
+Python adds a metric with `register_performance_metric`. Here you pass a definition in `metrics`,
+next to the built-in names:
+
+<<< @/snippets/custom-metrics.ts
+
+```txt [Output]
+mae 1.882
+wape 0.013
+p90_error 2.982
+pinball75 0.943
+```
+
+`score` gives each forecast a number, and `reduce` combines a group's numbers using the same
+windows as the built-in metrics:
+
+| `reduce`                            | Each score is                                                                                  | Like                 |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------- | -------------------- |
+| `"mean"`                            | The average of the forecasts' numbers                                                          | `mae`, `mse`, `mape` |
+| `"median"`                          | Their median                                                                                   | `mdape`              |
+| `{ kind: "quantile", probability }` | numpy's `np.quantile` of them, from `0` (the smallest) to `1` (the largest)                    |                      |
+| `"ratio-of-means"`                  | `score` returns `[numerator, denominator]`; the average numerator over the average denominator | WAPE                 |
+
+`finalize` changes each combined score, the way `rmse` is the square root of `mse`:
+
+```ts
+const rootSquaredError = {
+  name: "root_squared_error",
+  reduce: "mean",
+  score: (row) => (row.actual - row.predicted) ** 2,
+  finalize: Math.sqrt,
+} as const satisfies CustomMetric;
+```
+
+Writing `as const satisfies CustomMetric` checks the definition and keeps its name in the
+report's types.
+
+Some rules:
+
+- A name is 1 to 64 letters, digits and underscores, not starting with a digit, as a Python
+  function name would be. It can't repeat another metric's name or reuse a built-in one.
+- `score` gets a frozen copy of the forecast: `fold`, `cutoff`, `timestamp`, `horizonMs`,
+  `actual` and `predicted`, plus `lower` and `upper` when the result has uncertainty ranges.
+- A `score` or `finalize` that returns something other than a finite number fails with an
+  `EvaluationMetricError` whose `reason` is `"non-finite"`. A `"ratio-of-means"` whose average
+  denominator is zero fails with `"zero-denominator"`. If `score` throws, the error isn't
+  caught.
+- The same definitions work in `comparePerformance`, and as the `objective` of `searchModels`.
+  `evaluateHoldout` needs a built-in objective, because its saved report can't store a
+  function.
+
+A metric that needs more than one forecast at a time, or the data a round trained on, doesn't
+fit these shapes. Compute it from `result.rows`, which lists every forecast with its round,
+cutoff and horizon. To choose settings by such a score, run `searchModels` with
+`includeCrossValidation: true` and rank the candidates' `crossValidation` rows yourself.
+
 ## Actual values of zero
 
 `mape` and `mdape` divide by the actual value, so they fail with an `EvaluationMetricError` whose

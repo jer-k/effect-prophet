@@ -24,7 +24,10 @@ import numpy as np
 import pandas as pd
 import prophet
 from prophet import Prophet
-from prophet.diagnostics import generate_cutoffs, performance_metrics
+from prophet.diagnostics import (
+    generate_cutoffs, performance_metrics, register_performance_metric, rolling_mean_by_h,
+    rolling_median_by_h,
+)
 from prophet.utilities import warm_start_params
 
 from linear_optimizer_evidence import (
@@ -1181,6 +1184,110 @@ def make_evaluation_cutoff_case(spec: EvaluationCutoffCaseSpec) -> dict[str, Any
 
 EVALUATION_METRIC_NAMES = ("mae", "mse", "rmse", "mape", "mdape", "smape", "coverage")
 
+
+def rolling_statistic_by_h(
+    x: np.ndarray, h: np.ndarray, w: int, name: str, statistic: Any
+) -> pd.DataFrame:
+    """Prophet's `rolling_median_by_h` windows, written independently, with any statistic.
+
+    `performance_metrics` passes values sorted by horizon. Each horizon's window is its own rows,
+    filled to `w` with the rows just before them when it has fewer; a horizon that can't be filled
+    gets no value.
+    """
+
+    horizons, starts = np.unique(h, return_index=True)
+    ends = [*starts[1:], len(h)]
+    windows = [(horizon, min(start, end - w), end) for horizon, start, end in zip(horizons, starts, ends)]
+
+    return pd.DataFrame({
+        "horizon": [horizon for horizon, first, _ in windows if first >= 0],
+        name: [statistic(x[first:end]) for _, first, end in windows if first >= 0],
+    })
+
+
+def per_row_metric(df: pd.DataFrame, name: str, values: pd.Series) -> pd.DataFrame:
+    """A custom metric's `rolling_window < 0` result, as Prophet's built-in metrics return it."""
+
+    return pd.DataFrame({"horizon": df["horizon"], name: values})
+
+
+# Custom metrics registered in Prophet's own registry, as a Python user adds them. Effect defines
+# each with a per-row score and a reducer of the same name. Every score is a short binary fraction
+# on these cases, or shares one value within a horizon, as the built-in metrics' scores do.
+@register_performance_metric
+def pinball75(df: pd.DataFrame, w: int) -> pd.DataFrame:
+    error = df["y"] - df["yhat"]
+    loss = np.maximum(0.75 * error, -0.25 * error)
+
+    if w < 0:
+        return per_row_metric(df, "pinball75", loss)
+
+    return rolling_mean_by_h(x=loss.values, h=df["horizon"].values, w=w, name="pinball75")
+
+
+@register_performance_metric
+def root_mse(df: pd.DataFrame, w: int) -> pd.DataFrame:
+    error = df["y"] - df["yhat"]
+    square = error * error
+
+    if w < 0:
+        return per_row_metric(df, "root_mse", np.sqrt(square))
+
+    result = rolling_mean_by_h(x=square.values, h=df["horizon"].values, w=w, name="root_mse")
+    result["root_mse"] = np.sqrt(result["root_mse"])
+
+    return result
+
+
+@register_performance_metric
+def wape(df: pd.DataFrame, w: int) -> pd.DataFrame:
+    error = (df["y"] - df["yhat"]).abs()
+    actual = df["y"].abs()
+
+    if w < 0:
+        return per_row_metric(df, "wape", error / actual)
+
+    numerator = rolling_mean_by_h(x=error.values, h=df["horizon"].values, w=w, name="wape")
+    denominator = rolling_mean_by_h(x=actual.values, h=df["horizon"].values, w=w, name="wape")
+    numerator["wape"] = numerator["wape"] / denominator["wape"]
+
+    return numerator
+
+
+def register_ape_quantile(name: str, probability: float) -> str:
+    """Register numpy's linear quantile of absolute percentage errors over the median's windows."""
+
+    def metric(df: pd.DataFrame, w: int) -> pd.DataFrame:
+        ape = np.abs((df["y"] - df["yhat"]) / df["y"])
+
+        if w < 0:
+            return per_row_metric(df, name, ape)
+
+        return rolling_statistic_by_h(
+            ape.values,
+            df["horizon"].values,
+            w,
+            name,
+            lambda values: float(np.quantile(values, probability, method="linear")),
+        )
+
+    metric.__name__ = name
+    register_performance_metric(metric)
+
+    return name
+
+
+EVALUATION_CUSTOM_METRIC_NAMES = (
+    "pinball75",
+    "root_mse",
+    "wape",
+    register_ape_quantile("ape_q0", 0.0),
+    register_ape_quantile("ape_q30", 0.3),
+    register_ape_quantile("ape_q50", 0.5),
+    register_ape_quantile("ape_q90", 0.9),
+    register_ape_quantile("ape_q100", 1.0),
+)
+
 # Rows are (fold, horizon days, actual, predicted, lower, upper), in cross-validation order.
 EvaluationMetricRow = tuple[int, int, float, float, float, float]
 
@@ -1200,6 +1307,7 @@ EVALUATION_METRIC_CASES: tuple[dict[str, Any], ...] = (
     {
         "id": "cross-validation",
         "metrics": EVALUATION_METRIC_NAMES,
+        "customMetrics": EVALUATION_CUSTOM_METRIC_NAMES,
         "rows": (
             ratio_row(0, 1, 2.0, 0.0, 0.0, 2.0),
             ratio_row(0, 2, 0.5, 7.0, 0.5, 0.5),
@@ -1269,6 +1377,7 @@ EVALUATION_METRIC_CASES: tuple[dict[str, Any], ...] = (
         "id": "calendar-months",
         "horizon": "calendar-month",
         "metrics": EVALUATION_METRIC_NAMES,
+        "customMetrics": EVALUATION_CUSTOM_METRIC_NAMES,
         "rows": (
             ratio_row(4, 1, 2.0, 3.0, 1.0, 7.0),
             ratio_row(8, 3, -1.0, 3.0, -4.0, 0.0),
@@ -1337,12 +1446,35 @@ def evaluation_metric_points(
     return {"metrics": returned, "points": points}
 
 
+def check_rolling_statistic_windows(frame: pd.DataFrame, rolling_window: float, monthly: bool) -> None:
+    """Prove the quantile metrics' independent windows are Prophet's own median windows."""
+
+    if rolling_window < 0:
+        return
+
+    sorted_frame = frame.copy()
+    sorted_frame["horizon"] = (
+        sorted_frame["ds"].dt.to_period("M").astype(int) - sorted_frame["cutoff"].dt.to_period("M").astype(int)
+        if monthly
+        else sorted_frame["ds"] - sorted_frame["cutoff"]
+    )
+    sorted_frame = sorted_frame.sort_values("horizon")
+    window = min(max(int(rolling_window * len(frame)), 1), len(frame))
+    values = (sorted_frame["y"] - sorted_frame["yhat"]).abs().values
+    horizons = sorted_frame["horizon"].values
+
+    expected = rolling_median_by_h(x=values, h=horizons, w=window, name="median")
+    actual = rolling_statistic_by_h(values, horizons, window, "median", np.median)
+
+    pd.testing.assert_frame_equal(actual, expected, check_exact=True)
+
+
 def make_evaluation_metrics_fixture() -> dict[str, Any]:
     """Pin unmodified Prophet 1.4.0 `performance_metrics` on cross-validation-shaped rows.
 
     Cases repeat horizons, split horizon groups at window boundaries, cover every row in one
-    window, borrow earlier rows for MDAPE, drop MAPE for near-zero actuals, and group by calendar
-    month with `monthly=True`. pandas' `sort_values`
+    window, borrow earlier rows for MDAPE, drop MAPE for near-zero actuals, group by calendar
+    month with `monthly=True`, and score metrics added with `register_performance_metric`. pandas' `sort_values`
     leaves equal horizons in an unspecified order, so each result is recomputed on shuffled inputs
     and must be identical: every expected value is independent of that order. The remaining
     arithmetic is IEEE addition, subtraction, multiplication, division and square root, so the
@@ -1356,6 +1488,8 @@ def make_evaluation_metrics_fixture() -> dict[str, Any]:
         count = len(rows)
         horizon = spec.get("horizon", "duration")
         monthly = horizon == "calendar-month"
+        custom_metrics = list(spec.get("customMetrics", ()))
+        metrics = [*spec["metrics"], *custom_metrics]
         frame = evaluation_metric_frame(rows)
         windows: list[tuple[dict[str, Any], float]] = [
             ({"kind": "rows"}, -1.0),
@@ -1375,11 +1509,12 @@ def make_evaluation_metrics_fixture() -> dict[str, Any]:
         shuffles = np.random.default_rng(119)
 
         for aggregation, rolling_window in windows:
-            expected = evaluation_metric_points(frame, spec["metrics"], rolling_window, monthly)
+            expected = evaluation_metric_points(frame, metrics, rolling_window, monthly)
+            check_rolling_statistic_windows(frame, rolling_window, monthly)
 
             for _ in range(32):
                 shuffled = frame.iloc[shuffles.permutation(count)]
-                assert evaluation_metric_points(shuffled, spec["metrics"], rolling_window, monthly) == expected, (
+                assert evaluation_metric_points(shuffled, metrics, rolling_window, monthly) == expected, (
                     f"{spec['id']} {aggregation} depends on the order of equal horizons"
                 )
 
@@ -1394,6 +1529,7 @@ def make_evaluation_metrics_fixture() -> dict[str, Any]:
             "id": spec["id"],
             "horizon": horizon,
             "metrics": list(spec["metrics"]),
+            "customMetrics": custom_metrics,
             "rows": [
                 {"fold": fold, "horizonMs": days * DAY_MILLISECONDS, "actual": actual, "predicted": predicted, "lower": lower, "upper": upper}
                 for fold, days, actual, predicted, lower, upper in rows

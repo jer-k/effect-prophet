@@ -27,6 +27,7 @@ import {
   MetricNameSchema,
   MetricNamesSchema,
   PointMetricNameSchema,
+  isPointMetricName,
 } from "./internal/metric-names";
 import { copyFrozen, freezeOwned } from "./internal/owned-input";
 import { checkedAdd } from "./internal/safe-arithmetic";
@@ -629,6 +630,17 @@ export const evaluateHoldout = Effect.fn("Prophet.evaluateHoldout")(function* (
 
   const { search, selectedCandidate } = input;
   const selected = search?.candidates?.[search.selected?.candidateIndex];
+  const objective = search?.objective?.metric;
+
+  // A custom metric is a function, which a report can neither encode nor score again on decode.
+  if (objective !== undefined && !isPointMetricName(objective)) {
+    return yield* Effect.fail(
+      invalid(
+        ["search", "objective", "metric"],
+        "Holdout evaluation supports only built-in search objectives",
+      ),
+    );
+  }
 
   if (
     !Array.isArray(search?.candidates) ||

@@ -8,7 +8,10 @@ import {
   planRollingOrigin,
   simulationIdentity,
   type CrossValidationPointRow,
+  type CustomMetric,
   type IntervalCrossValidationResult,
+  type MetricReport,
+  type MetricRow,
   type PointCrossValidationResult,
   type RollingOriginPlanSummary,
 } from "../src/index";
@@ -631,5 +634,308 @@ describe("performanceMetrics with calendar-month horizons", () => {
     );
 
     expect(invalid).toBeInstanceOf(InputValidationError);
+  });
+});
+
+describe("performanceMetrics with custom metrics", () => {
+  // Every horizon has a different row count, so windows split groups and MDAPE borrows rows.
+  const source = point(
+    Array.from({ length: 13 }, (_, index) => {
+      const horizon = (index % 4) + 1 + (index % 3 === 0 ? 1 : 0);
+
+      return [
+        index % 2,
+        horizon * day,
+        ((index * 37) % 19) + 1.25,
+        ((index * 11) % 13) - 4,
+      ] as const;
+    }),
+  );
+
+  const aggregations = [
+    { kind: "rows" },
+    { kind: "horizons" },
+    { kind: "rolling", window: { kind: "count", rows: 4 } },
+    { kind: "rolling", window: { kind: "fraction", value: 0.5 } },
+    { kind: "overall" },
+  ] as const;
+
+  const scores = (report: MetricReport<"point", "duration", string>, metric: string) =>
+    (report.kind === "overall" ? [report.bucket] : report.points).map(
+      (bucket) => bucket.scores.find((score) => score.metric === metric)?.value,
+    );
+
+  it("reproduces built-in metrics bit for bit through mean, median and finalize", async () => {
+    const absoluteError = {
+      name: "absolute_error",
+      reduce: "mean",
+      score: (row) => Math.abs(row.actual - row.predicted),
+    } as const satisfies CustomMetric;
+
+    const rootSquares = {
+      name: "root_squares",
+      reduce: "mean",
+      score: (row) => (row.actual - row.predicted) ** 2,
+      finalize: Math.sqrt,
+    } as const satisfies CustomMetric;
+
+    const medianPercentage = {
+      name: "median_percentage",
+      reduce: "median",
+      score: (row) => Math.abs((row.actual - row.predicted) / row.actual),
+    } as const satisfies CustomMetric;
+
+    for (const aggregation of aggregations) {
+      const report = await Effect.runPromise(
+        performanceMetrics(source, {
+          metrics: ["mae", "rmse", "mdape", absoluteError, rootSquares, medianPercentage],
+          aggregation,
+        }),
+      );
+
+      expect(scores(report, "absolute_error"), aggregation.kind).toEqual(scores(report, "mae"));
+      expect(scores(report, "root_squares"), aggregation.kind).toEqual(scores(report, "rmse"));
+      expect(scores(report, "median_percentage"), aggregation.kind).toEqual(
+        scores(report, "mdape"),
+      );
+    }
+  });
+
+  it("takes numpy's linear quantile over Prophet's median windows", async () => {
+    // One horizon with five absolute errors: 1, 2, 4, 8 and 16.
+    const errors = point([1, 2, 4, 8, 16].map((error) => [0, day, error, 0] as const));
+
+    const at = (probability: number) =>
+      ({
+        name: `q${Math.round(probability * 100)}`,
+        reduce: { kind: "quantile", probability },
+        score: (row: MetricRow) => row.actual,
+      }) as const;
+
+    const report = await Effect.runPromise(
+      performanceMetrics(errors, {
+        metrics: [at(0), at(0.25), at(0.5), at(0.6), at(0.9), at(1)],
+        aggregation: { kind: "overall" },
+      }),
+    );
+
+    // (n - 1) * q is 0, 1, 2, 2.4, 3.6 and 4; 3.6 has weight 0.6, so it works back from 16.
+    expect(report.kind === "overall" && report.bucket.scores.map((score) => score.value)).toEqual([
+      1,
+      2,
+      4,
+      4 + (8 - 4) * (4 * 0.6 - 2),
+      16 - (16 - 8) * (1 - (4 * 0.9 - 3)),
+      16,
+    ]);
+
+    // A window borrows the rows just before a short horizon, as the median does.
+    const borrowed = await Effect.runPromise(
+      performanceMetrics(
+        point([
+          [0, day, 1, 0],
+          [0, day, 3, 0],
+          [1, day, 5, 0],
+          [0, 2 * day, 7, 0],
+        ]),
+        { metrics: [at(1)], aggregation: { kind: "rolling", window: { kind: "count", rows: 3 } } },
+      ),
+    );
+
+    expect(
+      borrowed.kind === "rolling" &&
+        borrowed.points.map((entry) => [entry.horizonMs, entry.scores[0]?.value]),
+    ).toEqual([
+      [day, 5],
+      [2 * day, 7],
+    ]);
+  });
+
+  it("divides window means for ratio-of-means, row by row and per horizon", async () => {
+    const wape = {
+      name: "wape",
+      reduce: "ratio-of-means",
+      score: (row) => [Math.abs(row.actual - row.predicted), Math.abs(row.actual)],
+    } as const satisfies CustomMetric;
+
+    const ratios = point([
+      [0, day, 4, 3],
+      [1, day, 4, 1],
+      [0, 2 * day, 2, 0],
+    ]);
+
+    const perRow = await Effect.runPromise(
+      performanceMetrics(ratios, { metrics: [wape], aggregation: { kind: "rows" } }),
+    );
+
+    const horizons = await Effect.runPromise(
+      performanceMetrics(ratios, { metrics: [wape], aggregation: { kind: "horizons" } }),
+    );
+
+    const overall = await Effect.runPromise(
+      performanceMetrics(ratios, { metrics: [wape], aggregation: { kind: "overall" } }),
+    );
+
+    expect(perRow.kind === "rows" && perRow.points.map((entry) => entry.scores[0]?.value)).toEqual([
+      1 / 4,
+      3 / 4,
+      1,
+    ]);
+    expect(
+      horizons.kind === "horizons" && horizons.points.map((entry) => entry.scores[0]?.value),
+    ).toEqual([4 / 2 / (8 / 2), 1]);
+    expect(overall.kind === "overall" && overall.bucket.scores[0]).toEqual({
+      metric: "wape",
+      value: 6 / 3 / (10 / 3),
+    });
+
+    const zero = await Effect.runPromise(
+      Effect.flip(
+        performanceMetrics(
+          point([
+            [0, day, 0, 1],
+            [1, day, 0, 2],
+          ]),
+          { metrics: [wape], aggregation: { kind: "horizons" } },
+        ),
+      ),
+    );
+
+    expect(zero).toBeInstanceOf(EvaluationMetricError);
+    expect(zero).toMatchObject({
+      metric: "wape",
+      reason: "zero-denominator",
+      stage: "division",
+      bucket: 0,
+    });
+  });
+
+  it("scores frozen copies of each row, with interval bounds only for interval sources", async () => {
+    const seen: Array<MetricRow> = [];
+
+    const recorder = {
+      name: "recorder",
+      reduce: "mean",
+      score: (row: MetricRow) => {
+        seen.push(row);
+
+        return 0;
+      },
+    } as const;
+
+    const points = point([[0, day, 1, 2]]);
+    const intervals = interval([[0, day, 1, 2, 0, 3]]);
+
+    await Effect.runPromise(
+      performanceMetrics(points, { metrics: [recorder], aggregation: { kind: "overall" } }),
+    );
+
+    await Effect.runPromise(
+      performanceMetrics(intervals, { metrics: [recorder], aggregation: { kind: "overall" } }),
+    );
+
+    expect(seen.every((row) => Object.isFrozen(row))).toBe(true);
+    expect(seen[0]).not.toBe(points.rows[0]);
+    expect(seen[0]).not.toHaveProperty("lower");
+    expect(seen[1]).toMatchObject({ actual: 1, predicted: 2, lower: 0, upper: 3 });
+    expect(Object.isFrozen(points.rows[0])).toBe(false);
+  });
+
+  it("types scores by name and fails non-finite scores and finalizers", async () => {
+    const constant = (name: string, value: number): CustomMetric => ({
+      name,
+      reduce: "mean",
+      score: () => value,
+    });
+
+    const report = await Effect.runPromise(
+      performanceMetrics(source, {
+        metrics: ["mae", { name: "zero", reduce: "mean", score: () => 0 }],
+        aggregation: { kind: "overall" },
+      }),
+    );
+
+    // A custom name joins the score's metric type.
+    type ScoreName = Extract<
+      typeof report,
+      { kind: "overall" }
+    >["bucket"]["scores"][number]["metric"];
+
+    const custom: Extract<ScoreName, "zero"> = "zero";
+
+    expect(report.kind === "overall" && report.bucket.scores.map((score) => score.metric)).toEqual([
+      "mae",
+      custom,
+    ]);
+
+    for (const [metric, stage] of [
+      [constant("infinite", Infinity), "score"],
+      [constant("missing", Number.NaN), "score"],
+      [{ ...constant("negative_root", -1), finalize: Math.sqrt }, "finalize"],
+    ] as const) {
+      for (const aggregation of [{ kind: "rows" }, { kind: "overall" }] as const) {
+        const error = await Effect.runPromise(
+          Effect.flip(performanceMetrics(source, { metrics: [metric], aggregation })),
+        );
+
+        expect(error).toBeInstanceOf(EvaluationMetricError);
+        expect(error).toMatchObject({ metric: metric.name, reason: "non-finite", stage });
+      }
+    }
+
+    const notPair = await Effect.runPromise(
+      Effect.flip(
+        performanceMetrics(source, {
+          metrics: [
+            {
+              name: "short",
+              reduce: "ratio-of-means",
+              score: () => JSON.parse("[1]"),
+            },
+          ],
+          aggregation: { kind: "overall" },
+        }),
+      ),
+    );
+
+    expect(notPair).toMatchObject({ metric: "short", reason: "non-finite", stage: "score" });
+  });
+
+  it("rejects invalid, repeated and built-in names and malformed reducers before scoring", async () => {
+    let scored = 0;
+
+    const score = () => {
+      scored += 1;
+
+      return 1;
+    };
+
+    // Malformed definitions as JavaScript callers could pass them; "function" stands for `score`.
+    for (const metrics of [
+      [{ name: "mae", reduce: "mean", score: "function" }],
+      [
+        { name: "same", reduce: "mean", score: "function" },
+        { name: "same", reduce: "median", score: "function" },
+      ],
+      [{ name: "1st", reduce: "mean", score: "function" }],
+      [{ name: "has-dash", reduce: "mean", score: "function" }],
+      [{ name: "x".repeat(65), reduce: "mean", score: "function" }],
+      [{ name: "quantile", reduce: { kind: "quantile", probability: 1.5 }, score: "function" }],
+      [{ name: "unknown_reducer", reduce: "sum", score: "function" }],
+      [{ name: "no_score", reduce: "mean" }],
+      [{ name: "string_score", reduce: "mean", score: "row.actual" }],
+      [{ name: "bad_finalize", reduce: "mean", score: "function", finalize: 2 }],
+    ]) {
+      const options = JSON.parse(
+        JSON.stringify({ metrics, aggregation: { kind: "overall" } }),
+        (key, value) => (key === "score" && value === "function" ? score : value),
+      );
+
+      const invalid = await Effect.runPromise(Effect.flip(performanceMetrics(source, options)));
+
+      expect(invalid, JSON.stringify(metrics)).toBeInstanceOf(InputValidationError);
+    }
+
+    expect(scored).toBe(0);
   });
 });

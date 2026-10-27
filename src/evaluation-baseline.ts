@@ -20,6 +20,7 @@ import {
   type MetricOptions,
   type MetricReport,
 } from "./evaluation-metrics";
+import { metricName } from "./internal/metric-names";
 import { checkedAdd } from "./internal/safe-arithmetic";
 import { decodeObservations, type Observation } from "./observation";
 
@@ -48,11 +49,14 @@ export interface BaselineCrossValidationResult {
 }
 
 /** Side-by-side metric values computed from one shared, explicit metric policy. */
-export interface ComparisonReport<Horizon extends MetricHorizonUnit = "duration"> {
-  readonly model: MetricReport<"point" | "intervals", Horizon>;
+export interface ComparisonReport<
+  Horizon extends MetricHorizonUnit = "duration",
+  Name extends string = never,
+> {
+  readonly model: MetricReport<"point" | "intervals", Horizon, Name>;
   readonly baselines: ReadonlyArray<{
     readonly baseline: BaselineDefinition;
-    readonly metrics: MetricReport<"baseline", Horizon>;
+    readonly metrics: MetricReport<"baseline", Horizon, Name>;
   }>;
 }
 
@@ -257,14 +261,15 @@ const samePlan = (left: RollingOriginPlanSummary, right: RollingOriginPlanSummar
 /** Compare aligned model and baseline forecasts under one shared metric policy. */
 export const comparePerformance = Effect.fn("Prophet.comparePerformance")(function* <
   Horizon extends MetricHorizonUnit = "duration",
+  const Name extends string = never,
 >(
   model: CrossValidationResult,
   baselines: ReadonlyArray<BaselineCrossValidationResult>,
-  options: MetricOptions<Horizon>,
-): Effect.fn.Return<ComparisonReport<Horizon>, InputValidationError | EvaluationMetricError> {
+  options: MetricOptions<Horizon, Name>,
+): Effect.fn.Return<ComparisonReport<Horizon, Name>, InputValidationError | EvaluationMetricError> {
   // Parse metric options through the existing metrics operation before alignment diagnostics.
   const modelMetrics = yield* performanceMetrics(model, options);
-  const first = options.metrics[0];
+  const first = options.metrics[0] === undefined ? undefined : metricName(options.metrics[0]);
 
   if (first === undefined) {
     return yield* Effect.fail(
@@ -276,7 +281,7 @@ export const comparePerformance = Effect.fn("Prophet.comparePerformance")(functi
     );
   }
 
-  const compared: Array<ComparisonReport<Horizon>["baselines"][number]> = [];
+  const compared: Array<ComparisonReport<Horizon, Name>["baselines"][number]> = [];
 
   for (const [baselineIndex, baseline] of baselines.entries()) {
     if (!samePlan(model.plan, baseline.plan) || baseline.rows.length !== model.rows.length) {
