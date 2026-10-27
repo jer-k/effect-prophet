@@ -44,9 +44,11 @@ export {
 
 export {
   performanceMetrics,
+  type HorizonCoordinate,
   type HorizonMetricPoint,
   type MetricAggregation,
   type MetricBucket,
+  type MetricHorizonUnit,
   type MetricName,
   type MetricOptions,
   type MetricReport,

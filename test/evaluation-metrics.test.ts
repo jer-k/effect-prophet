@@ -500,3 +500,136 @@ describe("performanceMetrics", () => {
     expect(square).toBeInstanceOf(EvaluationMetricError);
   });
 });
+
+describe("performanceMetrics with calendar-month horizons", () => {
+  const calendar = (
+    values: ReadonlyArray<readonly [number, string, string, number, number]>,
+  ): PointCrossValidationResult => ({
+    kind: "point",
+    plan,
+    folds: [],
+    rows: values.map(([fold, cutoff, timestamp, actual, predicted]) => ({
+      fold,
+      cutoff: Date.parse(cutoff),
+      timestamp: Date.parse(timestamp),
+      horizonMs: Date.parse(timestamp) - Date.parse(cutoff),
+      actual,
+      predicted,
+    })),
+  });
+
+  // Same-month, leap-day, month-end and year-rollover forecasts, deliberately out of month order.
+  const source = calendar([
+    [0, "2024-02-26T00:00:00.000Z", "2024-03-01T00:00:00.000Z", 4, 2],
+    [0, "2024-02-26T00:00:00.000Z", "2024-02-29T23:59:59.999Z", 1, 0],
+    [1, "2024-12-30T00:00:00.000Z", "2024-12-31T00:00:00.000Z", 3, 0],
+    [1, "2024-12-30T00:00:00.000Z", "2025-01-01T00:00:00.000Z", 8, 0],
+    [1, "2024-12-30T00:00:00.000Z", "2025-02-28T00:00:00.000Z", 2, 1],
+  ]);
+
+  it("counts months from the cutoff's UTC month, with zero for the cutoff month", async () => {
+    const report = await Effect.runPromise(
+      performanceMetrics(source, {
+        metrics: ["mae"],
+        aggregation: { kind: "rows" },
+        horizon: "calendar-month",
+      }),
+    );
+
+    expect(report.kind === "rows" && report.horizon).toBe("calendar-month");
+    expect(
+      report.kind === "rows" &&
+        report.points.map((entry) => [
+          entry.fold,
+          entry.horizonMonths,
+          entry.horizonMs,
+          entry.scores[0]?.value,
+        ]),
+    ).toEqual([
+      [0, 0, Date.parse("2024-02-29T23:59:59.999Z") - Date.parse("2024-02-26T00:00:00.000Z"), 1],
+      [1, 0, day, 3],
+      [0, 1, 4 * day, 2],
+      [1, 1, 2 * day, 8],
+      [1, 2, 60 * day, 1],
+    ]);
+  });
+
+  it("groups and rolls by month exactly as Prophet's monthly windows do", async () => {
+    const options = { metrics: ["mae", "mdape"], horizon: "calendar-month" } as const;
+
+    const horizons = await Effect.runPromise(
+      performanceMetrics(source, { ...options, aggregation: { kind: "horizons" } }),
+    );
+
+    const rolling = await Effect.runPromise(
+      performanceMetrics(source, {
+        ...options,
+        aggregation: { kind: "rolling", window: { kind: "count", rows: 3 } },
+      }),
+    );
+
+    expect(
+      horizons.kind === "horizons" &&
+        horizons.points.map((entry) => [
+          entry.horizonMonths,
+          entry.rowCount,
+          entry.scores.map((score) => score.value),
+        ]),
+    ).toEqual([
+      [0, 2, [2, 1]],
+      [1, 2, [5, 0.75]],
+      [2, 1, [1, 0.5]],
+    ]);
+
+    // Month 2's window is months 1 and 2. Month 1's window takes half of month 0's sum, and its
+    // MDAPE borrows month 0's last row in input order.
+    expect(
+      rolling.kind === "rolling" &&
+        rolling.points.map((entry) => [
+          entry.horizonMonths,
+          entry.scores.map((score) => score.value),
+        ]),
+    ).toEqual([
+      [1, [(4 + 10 - 2) / 3, 1]],
+      [2, [(10 + 1) / 3, 0.5]],
+    ]);
+  });
+
+  it("scores overall like duration horizons and tags only bucketed reports with their unit", async () => {
+    const overall = {
+      metrics: ["mae", "rmse", "mdape"],
+      aggregation: { kind: "overall" },
+    } as const;
+
+    const monthly = await Effect.runPromise(
+      performanceMetrics(source, { ...overall, horizon: "calendar-month" }),
+    );
+
+    const duration = await Effect.runPromise(performanceMetrics(source, overall));
+
+    expect(monthly).toEqual(duration);
+    expect(monthly).not.toHaveProperty("horizon");
+
+    const exact = await Effect.runPromise(
+      performanceMetrics(source, { metrics: ["mae"], aggregation: { kind: "horizons" } }),
+    );
+
+    expect(exact.kind === "horizons" && exact.horizon).toBe("duration");
+    expect(exact.kind === "horizons" && exact.points[0]).not.toHaveProperty("horizonMonths");
+  });
+
+  it("rejects unknown horizon units", async () => {
+    const invalid = await Effect.runPromise(
+      Effect.flip(
+        performanceMetrics(
+          source,
+          JSON.parse(
+            JSON.stringify({ metrics: ["mae"], aggregation: { kind: "rows" }, horizon: "M" }),
+          ),
+        ),
+      ),
+    );
+
+    expect(invalid).toBeInstanceOf(InputValidationError);
+  });
+});

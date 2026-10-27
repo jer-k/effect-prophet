@@ -13,6 +13,15 @@ All notable changes to this project are documented here. The format follows
   `includeHistory: false`. It takes pandas' `h`, `D`, `W`, `W-MON` to `W-SAT`, `MS` and `ME`, and
   matches pandas on month ends, leap years and time of day. See
   [Future rows](https://jer-k.github.io/effect-prophet/guide/your-data#future-rows).
+- `performanceMetrics` and `comparePerformance` take `horizon: "calendar-month"` to group forecasts
+  by UTC calendar months from their cutoff, like Python's `performance_metrics(monthly=True)`.
+  Scores then carry `horizonMonths` instead of `horizonMs`. See
+  [Grouping by calendar month](https://jer-k.github.io/effect-prophet/examples/cross-validation#grouping-by-calendar-month).
+
+### Changed
+
+- `rows`, `horizons` and `rolling` metric reports include a `horizon` field, `"duration"` or
+  `"calendar-month"`, saying which unit their horizons use.
 
 ### Fixed
 

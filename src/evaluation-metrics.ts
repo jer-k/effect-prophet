@@ -13,6 +13,7 @@ import type {
   IntervalCrossValidationResult,
   PointCrossValidationResult,
 } from "./evaluation";
+import { utcMonth } from "./internal/calendar-month";
 import { kahanSum } from "./internal/kahan-sum";
 import {
   MetricNameSchema,
@@ -50,13 +51,25 @@ const AggregationSchema = Schema.Union([
 /** A row, exact-horizon, rolling or overall aggregation, with Prophet's window semantics. */
 export type MetricAggregation = typeof AggregationSchema.Type;
 
+const HorizonUnitSchema = Schema.Literals(["duration", "calendar-month"]);
+
+/**
+ * How forecast instances are grouped by distance from their cutoff: exact elapsed milliseconds,
+ * or Prophet's `monthly=True` count of UTC calendar months from the cutoff's month.
+ */
+export type MetricHorizonUnit = typeof HorizonUnitSchema.Type;
+
 const MetricOptionsSchema = Schema.Struct({
   metrics: MetricNamesSchema,
   aggregation: AggregationSchema,
+  horizon: Schema.optionalKey(HorizonUnitSchema),
 });
 
-/** Encoded metric selection and explicit aggregation. */
-export type MetricOptions = typeof MetricOptionsSchema.Encoded;
+/** Encoded metric selection, explicit aggregation and horizon unit, `"duration"` when omitted. */
+export type MetricOptions<Horizon extends MetricHorizonUnit = "duration"> = Omit<
+  typeof MetricOptionsSchema.Encoded,
+  "horizon"
+> & { readonly horizon?: Horizon };
 
 /** A finite bucket score. */
 export type MetricScore<Source extends MetricSource = MetricSource> =
@@ -69,48 +82,69 @@ export interface MetricBucket<Source extends MetricSource = MetricSource> {
   readonly scores: ReadonlyArray<MetricScore<Source>>;
 }
 
+/** A bucket's horizon: elapsed milliseconds, or calendar months from the cutoff's month. */
+export type HorizonCoordinate<Horizon extends MetricHorizonUnit = "duration"> =
+  Horizon extends "calendar-month"
+    ? { readonly horizonMonths: number }
+    : { readonly horizonMs: number };
+
 /** A score for one forecast instance, in horizon order. */
-export interface RowMetricPoint<
+export type RowMetricPoint<
   Source extends MetricSource = MetricSource,
-> extends MetricBucket<Source> {
+  Horizon extends MetricHorizonUnit = "duration",
+> = MetricBucket<Source> & {
   readonly fold: number;
   readonly cutoff: number;
   readonly timestamp: number;
   readonly horizonMs: number;
-}
+} & (Horizon extends "calendar-month" ? { readonly horizonMonths: number } : unknown);
 
-/** A score over every forecast instance at one exact horizon. */
-export interface HorizonMetricPoint<
+/** A score over every forecast instance at one horizon. */
+export type HorizonMetricPoint<
   Source extends MetricSource = MetricSource,
-> extends MetricBucket<Source> {
-  readonly horizonMs: number;
-}
+  Horizon extends MetricHorizonUnit = "duration",
+> = MetricBucket<Source> & HorizonCoordinate<Horizon>;
 
 /** A score over exactly the report's `windowRows` forecast instances, at the window's right edge. */
-export interface RollingMetricPoint<Source extends MetricSource = MetricSource> {
-  readonly horizonMs: number;
-  readonly scores: ReadonlyArray<MetricScore<Source>>;
-}
+export type RollingMetricPoint<
+  Source extends MetricSource = MetricSource,
+  Horizon extends MetricHorizonUnit = "duration",
+> = { readonly scores: ReadonlyArray<MetricScore<Source>> } & HorizonCoordinate<Horizon>;
 
-/** The aggregation determines which bucket coordinates are available. */
-export type MetricReport<Source extends MetricSource = MetricSource> =
-  | {
-      readonly source: Source;
-      readonly kind: "rows";
-      readonly points: ReadonlyArray<RowMetricPoint<Source>>;
-    }
-  | {
-      readonly source: Source;
-      readonly kind: "horizons";
-      readonly points: ReadonlyArray<HorizonMetricPoint<Source>>;
-    }
-  | {
-      readonly source: Source;
-      readonly kind: "rolling";
-      readonly windowRows: number;
-      readonly points: ReadonlyArray<RollingMetricPoint<Source>>;
-    }
-  | { readonly source: Source; readonly kind: "overall"; readonly bucket: MetricBucket<Source> };
+/**
+ * The aggregation determines which bucket coordinates are available. An overall score covers
+ * every forecast instance in either unit, so it carries no horizon.
+ */
+export type MetricReport<
+  Source extends MetricSource = MetricSource,
+  Horizon extends MetricHorizonUnit = "duration",
+> = Horizon extends MetricHorizonUnit
+  ?
+      | {
+          readonly source: Source;
+          readonly kind: "rows";
+          readonly horizon: Horizon;
+          readonly points: ReadonlyArray<RowMetricPoint<Source, Horizon>>;
+        }
+      | {
+          readonly source: Source;
+          readonly kind: "horizons";
+          readonly horizon: Horizon;
+          readonly points: ReadonlyArray<HorizonMetricPoint<Source, Horizon>>;
+        }
+      | {
+          readonly source: Source;
+          readonly kind: "rolling";
+          readonly horizon: Horizon;
+          readonly windowRows: number;
+          readonly points: ReadonlyArray<RollingMetricPoint<Source, Horizon>>;
+        }
+      | {
+          readonly source: Source;
+          readonly kind: "overall";
+          readonly bucket: MetricBucket<Source>;
+        }
+  : never;
 
 type Row = CrossValidationPointRow | CrossValidationIntervalRow;
 
@@ -119,7 +153,7 @@ type MetricInput =
   | { readonly kind: "intervals"; readonly rows: ReadonlyArray<CrossValidationIntervalRow> }
   | { readonly kind: "baseline"; readonly rows: ReadonlyArray<CrossValidationPointRow> };
 
-type Group = { readonly horizonMs: number; readonly start: number; end: number };
+type Group = { readonly horizon: number; readonly start: number; end: number };
 
 type Failure = (
   bucket: number,
@@ -322,10 +356,23 @@ const rollingMedians = (
   return medians;
 };
 
+type AnyMetricReport = MetricReport<MetricSource, MetricHorizonUnit>;
+
+const bucketed = (report: {
+  readonly source: MetricSource;
+  readonly kind: "rows" | "horizons" | "rolling";
+  readonly horizon: MetricHorizonUnit;
+  readonly windowRows?: number;
+  readonly points: ReadonlyArray<object>;
+}): AnyMetricReport =>
+  // SAFETY: computeMetrics builds every point's coordinate from the same decoded unit as
+  // `horizon`, and only rolling reports carry `windowRows`.
+  Object.freeze({ ...report, points: Object.freeze(report.points) }) as AnyMetricReport;
+
 const computeMetrics = (
   result: MetricInput,
-  input: MetricOptions,
-): Effect.Effect<MetricReport, InputValidationError | EvaluationMetricError> =>
+  input: MetricOptions<MetricHorizonUnit>,
+): Effect.Effect<AnyMetricReport, InputValidationError | EvaluationMetricError> =>
   Effect.gen(function* () {
     const options = yield* decodeOptions(input).pipe(
       Effect.mapError((error) => inputValidationErrorFromIssue("evaluation-metrics", error.issue)),
@@ -372,28 +419,36 @@ const computeMetrics = (
       }
     }
 
+    const unit = options.horizon ?? "duration";
+
+    // Prophet's `monthly=True` subtracts the cutoff's month period from the forecast's.
+    const horizonOf = (row: Row) =>
+      unit === "calendar-month" ? utcMonth(row.timestamp) - utcMonth(row.cutoff) : row.horizonMs;
+
+    const coordinate = (horizon: number) =>
+      unit === "calendar-month" ? { horizonMonths: horizon } : { horizonMs: horizon };
+
     // Prophet sorts by horizon with an unstable sort; a stable sort keeps equal horizons in input order.
-    const ordered = Array.from(rows).sort((left, right) => left.horizonMs - right.horizonMs);
+    const ordered = rows
+      .map((row) => ({ row, horizon: horizonOf(row) }))
+      .sort((left, right) => left.horizon - right.horizon);
+
     const groups: Array<Group> = [];
 
-    for (const row of ordered) {
+    for (const { horizon } of ordered) {
       const previous = groups[groups.length - 1];
 
-      if (previous !== undefined && previous.horizonMs === row.horizonMs) {
+      if (previous !== undefined && previous.horizon === horizon) {
         previous.end += 1;
       } else {
-        groups.push({
-          horizonMs: row.horizonMs,
-          start: previous?.end ?? 0,
-          end: (previous?.end ?? 0) + 1,
-        });
+        groups.push({ horizon, start: previous?.end ?? 0, end: (previous?.end ?? 0) + 1 });
       }
     }
 
     if (aggregation.kind === "rows") {
-      const points: Array<RowMetricPoint> = [];
+      const points: Array<RowMetricPoint<MetricSource, MetricHorizonUnit>> = [];
 
-      for (const [index, row] of ordered.entries()) {
+      for (const [index, { row, horizon }] of ordered.entries()) {
         const scores: Array<MetricScore> = [];
 
         for (const metric of options.metrics) {
@@ -406,23 +461,21 @@ const computeMetrics = (
           );
         }
 
+        const entry = {
+          rowCount: 1,
+          scores: Object.freeze(scores),
+          fold: row.fold,
+          cutoff: row.cutoff,
+          timestamp: row.timestamp,
+          horizonMs: row.horizonMs,
+        };
+
         points.push(
-          Object.freeze({
-            rowCount: 1,
-            scores: Object.freeze(scores),
-            fold: row.fold,
-            cutoff: row.cutoff,
-            timestamp: row.timestamp,
-            horizonMs: row.horizonMs,
-          }),
+          Object.freeze(unit === "calendar-month" ? { ...entry, horizonMonths: horizon } : entry),
         );
       }
 
-      return Object.freeze({
-        source: result.kind,
-        kind: "rows" as const,
-        points: Object.freeze(points),
-      });
+      return bucketed({ source: result.kind, kind: "rows", horizon: unit, points });
     }
 
     // Prophet scores each horizon as a one-row window and the whole result as an n-row window.
@@ -457,7 +510,7 @@ const computeMetrics = (
 
       for (const [index, group] of groups.entries()) {
         for (let position = group.start; position < group.end; position += 1) {
-          const row = ordered[position];
+          const row = ordered[position]?.row;
 
           if (row === undefined) continue;
           const value = contribution(row, metric, bucket(index), fail);
@@ -497,60 +550,54 @@ const computeMetrics = (
       const points = groups
         .slice(firstPoint)
         .map((group, offset) =>
-          Object.freeze({ horizonMs: group.horizonMs, scores: scoresAt(firstPoint + offset) }),
+          Object.freeze({ ...coordinate(group.horizon), scores: scoresAt(firstPoint + offset) }),
         );
 
-      return Object.freeze({
-        source: result.kind,
-        kind: "rolling" as const,
-        windowRows,
-        points: Object.freeze(points),
-      });
+      return bucketed({ source: result.kind, kind: "rolling", horizon: unit, windowRows, points });
     }
 
     const points = groups.map((group, index) =>
       Object.freeze({
         rowCount: group.end - group.start,
         scores: scoresAt(index),
-        horizonMs: group.horizonMs,
+        ...coordinate(group.horizon),
       }),
     );
 
-    return Object.freeze({
-      source: result.kind,
-      kind: "horizons" as const,
-      points: Object.freeze(points),
-    });
+    return bucketed({ source: result.kind, kind: "horizons", horizon: unit, points });
   });
 
-/** Compute Prophet's point-error and interval-coverage metrics over trusted CV forecast instances. */
-export function performanceMetrics(
-  result: BaselineCrossValidationResult,
-  input: MetricOptions,
-): Effect.Effect<MetricReport<"baseline">, InputValidationError | EvaluationMetricError>;
-export function performanceMetrics(
-  result: PointCrossValidationResult,
-  input: MetricOptions,
-): Effect.Effect<MetricReport<"point">, InputValidationError | EvaluationMetricError>;
-export function performanceMetrics(
-  result: IntervalCrossValidationResult,
-  input: MetricOptions,
-): Effect.Effect<MetricReport<"intervals">, InputValidationError | EvaluationMetricError>;
-export function performanceMetrics(
-  result: CrossValidationResult,
-  input: MetricOptions,
-): Effect.Effect<
-  MetricReport<CrossValidationResult["kind"]>,
+type MetricEffect<Source extends MetricSource, Horizon extends MetricHorizonUnit> = Effect.Effect<
+  MetricReport<Source, Horizon>,
   InputValidationError | EvaluationMetricError
 >;
+
+/** Compute Prophet's point-error and interval-coverage metrics over trusted CV forecast instances. */
+export function performanceMetrics<Horizon extends MetricHorizonUnit = "duration">(
+  result: BaselineCrossValidationResult,
+  input: MetricOptions<Horizon>,
+): MetricEffect<"baseline", Horizon>;
+export function performanceMetrics<Horizon extends MetricHorizonUnit = "duration">(
+  result: PointCrossValidationResult,
+  input: MetricOptions<Horizon>,
+): MetricEffect<"point", Horizon>;
+export function performanceMetrics<Horizon extends MetricHorizonUnit = "duration">(
+  result: IntervalCrossValidationResult,
+  input: MetricOptions<Horizon>,
+): MetricEffect<"intervals", Horizon>;
+export function performanceMetrics<Horizon extends MetricHorizonUnit = "duration">(
+  result: CrossValidationResult,
+  input: MetricOptions<Horizon>,
+): MetricEffect<CrossValidationResult["kind"], Horizon>;
 /** Compute metrics from owned forecast rows without requiring a rolling-origin plan. */
-export function performanceMetrics(
+export function performanceMetrics<Horizon extends MetricHorizonUnit = "duration">(
   result: MetricInput,
-  input: MetricOptions,
-): Effect.Effect<MetricReport, InputValidationError | EvaluationMetricError>;
-export function performanceMetrics(
+  input: MetricOptions<Horizon>,
+): MetricEffect<MetricSource, Horizon>;
+export function performanceMetrics<Horizon extends MetricHorizonUnit>(
   result: MetricInput,
-  input: MetricOptions,
-): Effect.Effect<MetricReport, InputValidationError | EvaluationMetricError> {
-  return computeMetrics(result, input);
+  input: MetricOptions<Horizon>,
+): MetricEffect<MetricSource, Horizon> {
+  // SAFETY: The report's unit is the decoded `input.horizon`, which `Horizon` describes.
+  return computeMetrics(result, input) as MetricEffect<MetricSource, Horizon>;
 }

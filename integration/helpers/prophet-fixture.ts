@@ -588,8 +588,23 @@ const MetricAggregationSchema = Schema.Union([
   }),
 ]);
 
+// `performance_metrics` reports a duration horizon, or a month count with `monthly=True`.
+const MetricPointSchema = Schema.Union([
+  Schema.Struct({
+    row: Schema.optionalKey(Schema.Natural),
+    horizonMs: Schema.Int.check(Schema.isGreaterThan(0)),
+    scores: MetricScoresSchema,
+  }),
+  Schema.Struct({
+    row: Schema.optionalKey(Schema.Natural),
+    horizonMonths: Schema.Natural,
+    scores: MetricScoresSchema,
+  }),
+]);
+
 const EvaluationMetricsReferenceCaseSchema = Schema.Struct({
   id: Schema.NonEmptyString,
+  horizon: Schema.Literals(["duration", "calendar-month"]),
   metrics: Schema.NonEmptyArray(MetricNameSchema),
   rows: Schema.NonEmptyArray(
     Schema.Struct({
@@ -607,13 +622,7 @@ const EvaluationMetricsReferenceCaseSchema = Schema.Struct({
       rollingWindow: Schema.Finite,
       windowRows: Schema.optionalKey(Schema.Int.check(Schema.isGreaterThan(0))),
       metrics: Schema.NonEmptyArray(MetricNameSchema),
-      points: Schema.NonEmptyArray(
-        Schema.Struct({
-          row: Schema.optionalKey(Schema.Natural),
-          horizonMs: Schema.Int.check(Schema.isGreaterThan(0)),
-          scores: MetricScoresSchema,
-        }),
-      ),
+      points: Schema.NonEmptyArray(MetricPointSchema),
     }),
   ),
 });

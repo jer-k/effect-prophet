@@ -13,8 +13,15 @@ const day = 86_400_000;
 
 const firstCutoff = Date.UTC(2024, 0, 1);
 
+const monthOf = (epoch: number) =>
+  new Date(epoch).getUTCFullYear() * 12 + new Date(epoch).getUTCMonth();
+
+// A bucket's horizon in the case's unit: elapsed milliseconds or calendar months.
+const horizonOf = (point: { readonly horizonMs: number } | { readonly horizonMonths: number }) =>
+  "horizonMonths" in point ? point.horizonMonths : point.horizonMs;
+
 describe("Prophet 1.4.0 performance_metrics compatibility", () => {
-  it("reproduces every aggregation bit for bit, including split windows and borrowed rows", async () => {
+  it("reproduces every aggregation bit for bit, including split windows, borrowed rows and calendar months", async () => {
     const { evaluationMetrics } = await Effect.runPromise(loadProphetFixtureBundle());
 
     for (const referenceCase of evaluationMetrics.cases) {
@@ -26,18 +33,31 @@ describe("Prophet 1.4.0 performance_metrics compatibility", () => {
 
       const source = { kind: "intervals" as const, rows };
 
+      // Prophet's `monthly=True` subtracts month periods; this recomputes them independently.
+      const rowHorizon = (row: CrossValidationIntervalRow) =>
+        referenceCase.horizon === "calendar-month"
+          ? monthOf(row.timestamp) - monthOf(row.cutoff)
+          : row.horizonMs;
+
       for (const expected of referenceCase.aggregations) {
         const label = `${referenceCase.id} ${JSON.stringify(expected.aggregation)}`;
         const [first, ...rest] = expected.metrics;
         const metrics: readonly [MetricName, ...Array<MetricName>] = [first, ...rest];
 
         const report = await Effect.runPromise(
-          performanceMetrics(source, { metrics, aggregation: expected.aggregation }),
+          performanceMetrics(source, {
+            metrics,
+            aggregation: expected.aggregation,
+            horizon: referenceCase.horizon,
+          }),
         );
 
+        if (report.kind !== "overall") expect(report.horizon, label).toBe(referenceCase.horizon);
+
+        // Prophet reports an overall score at the largest horizon, in the case's unit.
         const points =
           report.kind === "overall"
-            ? [{ horizonMs: Math.max(...rows.map((row) => row.horizonMs)), ...report.bucket }]
+            ? [{ horizonMs: Math.max(...rows.map(rowHorizon)), ...report.bucket }]
             : report.points;
 
         if (report.kind === "rolling") expect(report.windowRows, label).toBe(expected.windowRows);
@@ -47,7 +67,7 @@ describe("Prophet 1.4.0 performance_metrics compatibility", () => {
         // with equal horizons in input order.
         const order = rows
           .map((row, index) => ({ row, index }))
-          .sort((left, right) => left.row.horizonMs - right.row.horizonMs)
+          .sort((left, right) => rowHorizon(left.row) - rowHorizon(right.row))
           .map(({ index }) => index);
 
         if (report.kind === "rows") {
@@ -65,7 +85,9 @@ describe("Prophet 1.4.0 performance_metrics compatibility", () => {
         for (const [index, point] of points.entries()) {
           const reference = references[index];
 
-          expect(point.horizonMs, `${label} point ${index}`).toBe(reference?.horizonMs);
+          expect(horizonOf(point), `${label} point ${index}`).toBe(
+            reference === undefined ? undefined : horizonOf(reference),
+          );
 
           for (const score of point.scores) {
             expect(score.value, `${label} point ${index} ${score.metric}`).toBe(
@@ -81,6 +103,7 @@ describe("Prophet 1.4.0 performance_metrics compatibility", () => {
               performanceMetrics(source, {
                 metrics: ["mape"],
                 aggregation: expected.aggregation,
+                horizon: referenceCase.horizon,
               }),
             ),
           );

@@ -1017,6 +1017,7 @@
           "windowRows": 13
         }
       ],
+      "horizon": "duration",
       "id": "cross-validation",
       "metrics": [
         "mae",
@@ -1418,6 +1419,7 @@
           "windowRows": 3
         }
       ],
+      "horizon": "duration",
       "id": "near-zero-actual",
       "metrics": [
         "mae",
@@ -1646,6 +1648,7 @@
           "windowRows": 1
         }
       ],
+      "horizon": "duration",
       "id": "threshold-actual",
       "metrics": [
         "mae",
@@ -1916,6 +1919,7 @@
           "windowRows": 3
         }
       ],
+      "horizon": "duration",
       "id": "zero-actual",
       "metrics": [
         "mae",
@@ -1965,6 +1969,846 @@
           "lower": 5.0,
           "predicted": 4.75,
           "upper": 6.0
+        }
+      ]
+    },
+    {
+      "aggregations": [
+        {
+          "aggregation": {
+            "kind": "rows"
+          },
+          "metrics": [
+            "mae",
+            "mse",
+            "rmse",
+            "mape",
+            "mdape",
+            "smape",
+            "coverage"
+          ],
+          "points": [
+            {
+              "horizonMonths": 0,
+              "row": 0,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 4.0,
+                "mape": 2.0,
+                "mdape": 2.0,
+                "mse": 16.0,
+                "rmse": 4.0,
+                "smape": 1.0
+              }
+            },
+            {
+              "horizonMonths": 0,
+              "row": 1,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 2.0,
+                "mape": 2.0,
+                "mdape": 2.0,
+                "mse": 4.0,
+                "rmse": 2.0,
+                "smape": 1.0
+              }
+            },
+            {
+              "horizonMonths": 0,
+              "row": 2,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 1.0,
+                "mape": 2.0,
+                "mdape": 2.0,
+                "mse": 1.0,
+                "rmse": 1.0,
+                "smape": 1.0
+              }
+            },
+            {
+              "horizonMonths": 0,
+              "row": 3,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 8.0,
+                "mape": 2.0,
+                "mdape": 2.0,
+                "mse": 64.0,
+                "rmse": 8.0,
+                "smape": 1.0
+              }
+            },
+            {
+              "horizonMonths": 1,
+              "row": 4,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 6.0,
+                "mape": 6.0,
+                "mdape": 6.0,
+                "mse": 36.0,
+                "rmse": 6.0,
+                "smape": 1.5
+              }
+            },
+            {
+              "horizonMonths": 1,
+              "row": 5,
+              "scores": {
+                "coverage": 0.0,
+                "mae": 12.0,
+                "mape": 6.0,
+                "mdape": 6.0,
+                "mse": 144.0,
+                "rmse": 12.0,
+                "smape": 1.5
+              }
+            },
+            {
+              "horizonMonths": 1,
+              "row": 6,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 1.5,
+                "mape": 6.0,
+                "mdape": 6.0,
+                "mse": 2.25,
+                "rmse": 1.5,
+                "smape": 1.5
+              }
+            },
+            {
+              "horizonMonths": 1,
+              "row": 7,
+              "scores": {
+                "coverage": 0.0,
+                "mae": 48.0,
+                "mape": 6.0,
+                "mdape": 6.0,
+                "mse": 2304.0,
+                "rmse": 48.0,
+                "smape": 1.5
+              }
+            },
+            {
+              "horizonMonths": 1,
+              "row": 8,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 3.0,
+                "mape": 6.0,
+                "mdape": 6.0,
+                "mse": 9.0,
+                "rmse": 3.0,
+                "smape": 1.5
+              }
+            },
+            {
+              "horizonMonths": 2,
+              "row": 9,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 2.0,
+                "mape": 1.0,
+                "mdape": 1.0,
+                "mse": 4.0,
+                "rmse": 2.0,
+                "smape": 2.0
+              }
+            },
+            {
+              "horizonMonths": 2,
+              "row": 10,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 4.0,
+                "mape": 1.0,
+                "mdape": 1.0,
+                "mse": 16.0,
+                "rmse": 4.0,
+                "smape": 2.0
+              }
+            },
+            {
+              "horizonMonths": 2,
+              "row": 11,
+              "scores": {
+                "coverage": 0.0,
+                "mae": 16.0,
+                "mape": 1.0,
+                "mdape": 1.0,
+                "mse": 256.0,
+                "rmse": 16.0,
+                "smape": 2.0
+              }
+            },
+            {
+              "horizonMonths": 2,
+              "row": 12,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 1.0,
+                "mape": 1.0,
+                "mdape": 1.0,
+                "mse": 1.0,
+                "rmse": 1.0,
+                "smape": 2.0
+              }
+            },
+            {
+              "horizonMonths": 3,
+              "row": 13,
+              "scores": {
+                "coverage": 0.0,
+                "mae": 0.8000000000000003,
+                "mape": 0.21621621621621628,
+                "mdape": 0.21621621621621628,
+                "mse": 0.6400000000000005,
+                "rmse": 0.8000000000000003,
+                "smape": 0.24242424242424251
+              }
+            }
+          ],
+          "rollingWindow": -1.0
+        },
+        {
+          "aggregation": {
+            "kind": "horizons"
+          },
+          "metrics": [
+            "mae",
+            "mse",
+            "rmse",
+            "mape",
+            "mdape",
+            "smape",
+            "coverage"
+          ],
+          "points": [
+            {
+              "horizonMonths": 0,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 3.75,
+                "mape": 2.0,
+                "mdape": 2.0,
+                "mse": 21.25,
+                "rmse": 4.6097722286464435,
+                "smape": 1.0
+              }
+            },
+            {
+              "horizonMonths": 1,
+              "scores": {
+                "coverage": 0.6000000000000001,
+                "mae": 14.100000000000001,
+                "mape": 6.0,
+                "mdape": 6.0,
+                "mse": 499.04999999999995,
+                "rmse": 22.339427029357758,
+                "smape": 1.5
+              }
+            },
+            {
+              "horizonMonths": 2,
+              "scores": {
+                "coverage": 0.75,
+                "mae": 5.75,
+                "mape": 1.0,
+                "mdape": 1.0,
+                "mse": 69.25,
+                "rmse": 8.32165848854662,
+                "smape": 2.0
+              }
+            },
+            {
+              "horizonMonths": 3,
+              "scores": {
+                "coverage": 0.0,
+                "mae": 0.8000000000000003,
+                "mape": 0.21621621621621628,
+                "mdape": 0.21621621621621628,
+                "mse": 0.6400000000000005,
+                "rmse": 0.8000000000000003,
+                "smape": 0.24242424242424251
+              }
+            }
+          ],
+          "rollingWindow": 0.0
+        },
+        {
+          "aggregation": {
+            "kind": "overall"
+          },
+          "metrics": [
+            "mae",
+            "mse",
+            "rmse",
+            "mape",
+            "mdape",
+            "smape",
+            "coverage"
+          ],
+          "points": [
+            {
+              "horizonMonths": 3,
+              "scores": {
+                "coverage": 0.7142857142857143,
+                "mae": 7.807142857142857,
+                "mape": 3.0154440154440154,
+                "mdape": 2.0,
+                "mse": 204.135,
+                "rmse": 14.287582020761946,
+                "smape": 1.4101731601731602
+              }
+            }
+          ],
+          "rollingWindow": 1.0
+        },
+        {
+          "aggregation": {
+            "kind": "rolling",
+            "window": {
+              "kind": "fraction",
+              "value": 0.1
+            }
+          },
+          "metrics": [
+            "mae",
+            "mse",
+            "rmse",
+            "mape",
+            "mdape",
+            "smape",
+            "coverage"
+          ],
+          "points": [
+            {
+              "horizonMonths": 0,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 3.75,
+                "mape": 2.0,
+                "mdape": 2.0,
+                "mse": 21.25,
+                "rmse": 4.6097722286464435,
+                "smape": 1.0
+              }
+            },
+            {
+              "horizonMonths": 1,
+              "scores": {
+                "coverage": 0.6000000000000001,
+                "mae": 14.100000000000001,
+                "mape": 6.0,
+                "mdape": 6.0,
+                "mse": 499.04999999999995,
+                "rmse": 22.339427029357758,
+                "smape": 1.5
+              }
+            },
+            {
+              "horizonMonths": 2,
+              "scores": {
+                "coverage": 0.75,
+                "mae": 5.75,
+                "mape": 1.0,
+                "mdape": 1.0,
+                "mse": 69.25,
+                "rmse": 8.32165848854662,
+                "smape": 2.0
+              }
+            },
+            {
+              "horizonMonths": 3,
+              "scores": {
+                "coverage": 0.0,
+                "mae": 0.8000000000000003,
+                "mape": 0.21621621621621628,
+                "mdape": 0.21621621621621628,
+                "mse": 0.6400000000000005,
+                "rmse": 0.8000000000000003,
+                "smape": 0.24242424242424251
+              }
+            }
+          ],
+          "rollingWindow": 0.1,
+          "windowRows": 1
+        },
+        {
+          "aggregation": {
+            "kind": "rolling",
+            "window": {
+              "kind": "fraction",
+              "value": 0.25
+            }
+          },
+          "metrics": [
+            "mae",
+            "mse",
+            "rmse",
+            "mape",
+            "mdape",
+            "smape",
+            "coverage"
+          ],
+          "points": [
+            {
+              "horizonMonths": 0,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 3.75,
+                "mape": 2.0,
+                "mdape": 2.0,
+                "mse": 21.25,
+                "rmse": 4.6097722286464435,
+                "smape": 1.0
+              }
+            },
+            {
+              "horizonMonths": 1,
+              "scores": {
+                "coverage": 0.6,
+                "mae": 14.1,
+                "mape": 6.0,
+                "mdape": 6.0,
+                "mse": 499.05,
+                "rmse": 22.339427029357758,
+                "smape": 1.5
+              }
+            },
+            {
+              "horizonMonths": 2,
+              "scores": {
+                "coverage": 0.75,
+                "mae": 5.75,
+                "mape": 1.0,
+                "mdape": 1.0,
+                "mse": 69.25,
+                "rmse": 8.32165848854662,
+                "smape": 2.0
+              }
+            },
+            {
+              "horizonMonths": 3,
+              "scores": {
+                "coverage": 0.5,
+                "mae": 4.1000000000000005,
+                "mape": 0.7387387387387389,
+                "mdape": 1.0,
+                "mse": 46.379999999999995,
+                "rmse": 6.810286337592568,
+                "smape": 1.4141414141414141
+              }
+            }
+          ],
+          "rollingWindow": 0.25,
+          "windowRows": 3
+        },
+        {
+          "aggregation": {
+            "kind": "rolling",
+            "window": {
+              "kind": "fraction",
+              "value": 0.5
+            }
+          },
+          "metrics": [
+            "mae",
+            "mse",
+            "rmse",
+            "mape",
+            "mdape",
+            "smape",
+            "coverage"
+          ],
+          "points": [
+            {
+              "horizonMonths": 1,
+              "scores": {
+                "coverage": 0.7142857142857143,
+                "mae": 11.142857142857142,
+                "mape": 4.857142857142857,
+                "mdape": 6.0,
+                "mse": 362.5357142857143,
+                "rmse": 19.040370644651702,
+                "smape": 1.3571428571428572
+              }
+            },
+            {
+              "horizonMonths": 2,
+              "scores": {
+                "coverage": 0.6857142857142857,
+                "mae": 9.328571428571427,
+                "mape": 3.142857142857143,
+                "mdape": 1.0,
+                "mse": 253.45000000000002,
+                "rmse": 15.920113064925136,
+                "smape": 1.7857142857142858
+              }
+            },
+            {
+              "horizonMonths": 3,
+              "scores": {
+                "coverage": 0.6,
+                "mae": 7.428571428571429,
+                "mape": 2.316602316602317,
+                "mdape": 1.0,
+                "mse": 182.2485714285714,
+                "rmse": 13.499947089843404,
+                "smape": 1.606060606060606
+              }
+            }
+          ],
+          "rollingWindow": 0.5,
+          "windowRows": 7
+        },
+        {
+          "aggregation": {
+            "kind": "rolling",
+            "window": {
+              "kind": "fraction",
+              "value": 1.0
+            }
+          },
+          "metrics": [
+            "mae",
+            "mse",
+            "rmse",
+            "mape",
+            "mdape",
+            "smape",
+            "coverage"
+          ],
+          "points": [
+            {
+              "horizonMonths": 3,
+              "scores": {
+                "coverage": 0.7142857142857143,
+                "mae": 7.807142857142857,
+                "mape": 3.0154440154440154,
+                "mdape": 2.0,
+                "mse": 204.135,
+                "rmse": 14.287582020761946,
+                "smape": 1.4101731601731602
+              }
+            }
+          ],
+          "rollingWindow": 1.0,
+          "windowRows": 14
+        },
+        {
+          "aggregation": {
+            "kind": "rolling",
+            "window": {
+              "kind": "count",
+              "rows": 2
+            }
+          },
+          "metrics": [
+            "mae",
+            "mse",
+            "rmse",
+            "mape",
+            "mdape",
+            "smape",
+            "coverage"
+          ],
+          "points": [
+            {
+              "horizonMonths": 0,
+              "scores": {
+                "coverage": 1.0,
+                "mae": 3.75,
+                "mape": 2.0,
+                "mdape": 2.0,
+                "mse": 21.25,
+                "rmse": 4.6097722286464435,
+                "smape": 1.0
+              }
+            },
+            {
+              "horizonMonths": 1,
+              "scores": {
+                "coverage": 0.6,
+                "mae": 14.100000000000001,
+                "mape": 6.0,
+                "mdape": 6.0,
+                "mse": 499.04999999999995,
+                "rmse": 22.339427029357758,
+                "smape": 1.5
+              }
+            },
+            {
+              "horizonMonths": 2,
+              "scores": {
+                "coverage": 0.75,
+                "mae": 5.75,
+                "mape": 1.0,
+                "mdape": 1.0,
+                "mse": 69.25,
+                "rmse": 8.32165848854662,
+                "smape": 2.0
+              }
+            },
+            {
+              "horizonMonths": 3,
+              "scores": {
+                "coverage": 0.375,
+                "mae": 3.2750000000000004,
+                "mape": 0.6081081081081083,
+                "mdape": 0.6081081081081081,
+                "mse": 34.94499999999999,
+                "rmse": 5.911429607125505,
+                "smape": 1.121212121212121
+              }
+            }
+          ],
+          "rollingWindow": 0.14285714285714285,
+          "windowRows": 2
+        },
+        {
+          "aggregation": {
+            "kind": "rolling",
+            "window": {
+              "kind": "count",
+              "rows": 5
+            }
+          },
+          "metrics": [
+            "mae",
+            "mse",
+            "rmse",
+            "mape",
+            "mdape",
+            "smape",
+            "coverage"
+          ],
+          "points": [
+            {
+              "horizonMonths": 1,
+              "scores": {
+                "coverage": 0.6,
+                "mae": 14.1,
+                "mape": 6.0,
+                "mdape": 6.0,
+                "mse": 499.05,
+                "rmse": 22.339427029357758,
+                "smape": 1.5
+              }
+            },
+            {
+              "horizonMonths": 2,
+              "scores": {
+                "coverage": 0.72,
+                "mae": 7.42,
+                "mape": 2.0,
+                "mdape": 1.0,
+                "mse": 155.20999999999998,
+                "rmse": 12.458330546265016,
+                "smape": 1.9
+              }
+            },
+            {
+              "horizonMonths": 3,
+              "scores": {
+                "coverage": 0.6,
+                "mae": 4.76,
+                "mape": 0.8432432432432433,
+                "mdape": 1.0,
+                "mse": 55.528,
+                "rmse": 7.451711212869162,
+                "smape": 1.6484848484848484
+              }
+            }
+          ],
+          "rollingWindow": 0.35714285714285715,
+          "windowRows": 5
+        },
+        {
+          "aggregation": {
+            "kind": "rolling",
+            "window": {
+              "kind": "count",
+              "rows": 9
+            }
+          },
+          "metrics": [
+            "mae",
+            "mse",
+            "rmse",
+            "mape",
+            "mdape",
+            "smape",
+            "coverage"
+          ],
+          "points": [
+            {
+              "horizonMonths": 1,
+              "scores": {
+                "coverage": 0.7777777777777778,
+                "mae": 9.5,
+                "mape": 4.222222222222222,
+                "mdape": 6.0,
+                "mse": 286.69444444444446,
+                "rmse": 16.932053757428378,
+                "smape": 1.2777777777777777
+              }
+            },
+            {
+              "horizonMonths": 2,
+              "scores": {
+                "coverage": 0.6666666666666666,
+                "mae": 10.38888888888889,
+                "mape": 3.7777777777777777,
+                "mdape": 6.0,
+                "mse": 308.02777777777777,
+                "rmse": 17.550720149833676,
+                "smape": 1.7222222222222223
+              }
+            },
+            {
+              "horizonMonths": 3,
+              "scores": {
+                "coverage": 0.6000000000000001,
+                "mae": 8.911111111111111,
+                "mape": 3.135135135135135,
+                "mdape": 1.0,
+                "mse": 252.64888888888885,
+                "rmse": 15.894932805422263,
+                "smape": 1.5824915824915824
+              }
+            }
+          ],
+          "rollingWindow": 0.6428571428571429,
+          "windowRows": 9
+        }
+      ],
+      "horizon": "calendar-month",
+      "id": "calendar-months",
+      "metrics": [
+        "mae",
+        "mse",
+        "rmse",
+        "mape",
+        "mdape",
+        "smape",
+        "coverage"
+      ],
+      "rows": [
+        {
+          "actual": 2.0,
+          "fold": 4,
+          "horizonMs": 86400000,
+          "lower": 1.0,
+          "predicted": 6.0,
+          "upper": 7.0
+        },
+        {
+          "actual": -1.0,
+          "fold": 8,
+          "horizonMs": 259200000,
+          "lower": -4.0,
+          "predicted": -3.0,
+          "upper": 0.0
+        },
+        {
+          "actual": 0.5,
+          "fold": 52,
+          "horizonMs": 86400000,
+          "lower": 0.0,
+          "predicted": 1.5,
+          "upper": 1.0
+        },
+        {
+          "actual": 4.0,
+          "fold": 0,
+          "horizonMs": 2592000000,
+          "lower": 3.0,
+          "predicted": 12.0,
+          "upper": 13.0
+        },
+        {
+          "actual": 1.0,
+          "fold": 4,
+          "horizonMs": 259200000,
+          "lower": 0.0,
+          "predicted": 7.0,
+          "upper": 8.0
+        },
+        {
+          "actual": -2.0,
+          "fold": 4,
+          "horizonMs": 2678400000,
+          "lower": -15.0,
+          "predicted": -14.0,
+          "upper": -14.0
+        },
+        {
+          "actual": 0.25,
+          "fold": 8,
+          "horizonMs": 345600000,
+          "lower": 0.0,
+          "predicted": 1.75,
+          "upper": 1.0
+        },
+        {
+          "actual": 8.0,
+          "fold": 52,
+          "horizonMs": 172800000,
+          "lower": 50.0,
+          "predicted": 56.0,
+          "upper": 60.0
+        },
+        {
+          "actual": -0.5,
+          "fold": 0,
+          "horizonMs": 2678400000,
+          "lower": -1.0,
+          "predicted": -3.5,
+          "upper": 0.0
+        },
+        {
+          "actual": 2.0,
+          "fold": 4,
+          "horizonMs": 2764800000,
+          "lower": 1.0,
+          "predicted": 0.0,
+          "upper": 3.0
+        },
+        {
+          "actual": -4.0,
+          "fold": 8,
+          "horizonMs": 3456000000,
+          "lower": -5.0,
+          "predicted": -0.0,
+          "upper": -3.0
+        },
+        {
+          "actual": 16.0,
+          "fold": 52,
+          "horizonMs": 2851200000,
+          "lower": 0.0,
+          "predicted": 0.0,
+          "upper": 1.0
+        },
+        {
+          "actual": 1.0,
+          "fold": 52,
+          "horizonMs": 5184000000,
+          "lower": 0.0,
+          "predicted": 0.0,
+          "upper": 2.0
+        },
+        {
+          "actual": 3.7,
+          "fold": 52,
+          "horizonMs": 5270400000,
+          "lower": 2.5,
+          "predicted": 2.9,
+          "upper": 3.5
         }
       ]
     }

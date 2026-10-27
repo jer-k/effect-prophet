@@ -80,6 +80,7 @@ The defaults are Prophet's, so a fit with no options produces the same model as 
 | `regressor_coefficients(model)`                  | `getRegressorCoefficients(model)`                                                            |
 | `cross_validation`                               | `crossValidate`                                                                              |
 | `performance_metrics`                            | `performanceMetrics`                                                                         |
+| `performance_metrics(df, monthly=True)`          | `performanceMetrics(result, { ..., horizon: "calendar-month" })`                             |
 | `model_to_json`, `model_from_json`               | `encodeFittedModel`, `decodeFittedModel`; the format is not Python's                         |
 | a loop over parameter grids                      | `searchModels` and `evaluateHoldout`                                                         |
 

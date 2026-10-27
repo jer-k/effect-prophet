@@ -72,6 +72,32 @@ of forecasts, as in Python:
 
 The scores match Python Prophet's to the last digit.
 
+## Grouping by calendar month
+
+Horizons are exact durations by default, so forecasts 30 and 31 days out land in different
+groups. To group them by calendar month instead, as Python's `monthly=True` does, pass
+`horizon: "calendar-month"`:
+
+```ts
+performanceMetrics(result, {
+  metrics: ["mae", "mape"],
+  aggregation: { kind: "horizons" },
+  horizon: "calendar-month",
+});
+```
+
+A forecast's horizon is then the number of UTC calendar months between its round's cutoff and its
+own timestamp. A forecast in the same month as the cutoff has horizon `0`, so a cutoff of
+December 30 puts December 31 at `0` and January 1 at `1`. Every `aggregation` works the same way
+on these month counts.
+
+Each score carries `horizonMonths` instead of `horizonMs`, `rows` scores carry both, and the
+report's `horizon` field says which unit it uses. An `overall` score covers every forecast in
+either unit, so it has no `horizon` field. Its last digit can still differ between units, because
+forecasts are totalled month by month instead of horizon by horizon, as in Python.
+
+`comparePerformance` takes the same option and groups the model and every baseline the same way.
+
 ## Actual values of zero
 
 `mape` and `mdape` divide by the actual value, so they fail with an `EvaluationMetricError` whose

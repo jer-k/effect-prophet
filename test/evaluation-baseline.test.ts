@@ -281,6 +281,19 @@ describe("forecast baselines", () => {
     expect(comparison.baselines[0]?.metrics).toMatchObject({ source: "baseline", kind: "overall" });
     expect(comparison.model).toMatchObject({ source: "point", kind: "overall" });
 
+    const monthly = await Effect.runPromise(
+      comparePerformance(model, [baseline], {
+        metrics: ["mae"],
+        aggregation: { kind: "horizons" },
+        horizon: "calendar-month",
+      }),
+    );
+
+    for (const report of [monthly.model, monthly.baselines[0]?.metrics]) {
+      expect(report).toMatchObject({ kind: "horizons", horizon: "calendar-month" });
+      expect(report?.kind === "horizons" && report.points[0]).toHaveProperty("horizonMonths");
+    }
+
     const altered = {
       ...baseline,
       rows: baseline.rows.map((row, index) => (index === 0 ? { ...row, actual: 900 } : row)),

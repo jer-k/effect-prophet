@@ -9,7 +9,7 @@ Python, where it differs on purpose, and the smaller behavior differences.
 - Full Bayesian fitting (`mcmc_samples`)
 - Forecasting regressors with their own models. Every future row must supply its regressor
   values.
-- Monthly horizons and custom metrics in cross-validation
+- Custom metrics in cross-validation
 
 ## Different on purpose
 

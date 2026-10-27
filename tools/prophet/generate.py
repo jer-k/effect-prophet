@@ -1262,6 +1262,34 @@ EVALUATION_METRIC_CASES: tuple[dict[str, Any], ...] = (
         "fractions": (0.5,),
         "counts": (3,),
     },
+    {
+        # `monthly=True` horizons from weekly cutoffs on 2024-01-01, 01-29, 02-26 and 12-30: month
+        # 0 is the cutoff's month, the leap day stays in February, and December rolls into the
+        # next year. Each multi-row month shares one ratio, as the duration cases' horizons do.
+        "id": "calendar-months",
+        "horizon": "calendar-month",
+        "metrics": EVALUATION_METRIC_NAMES,
+        "rows": (
+            ratio_row(4, 1, 2.0, 3.0, 1.0, 7.0),
+            ratio_row(8, 3, -1.0, 3.0, -4.0, 0.0),
+            ratio_row(52, 1, 0.5, 3.0, 0.0, 1.0),
+            ratio_row(0, 30, 4.0, 3.0, 3.0, 13.0),
+            ratio_row(4, 3, 1.0, 7.0, 0.0, 8.0),
+            ratio_row(4, 31, -2.0, 7.0, -15.0, -14.0),
+            ratio_row(8, 4, 0.25, 7.0, 0.0, 1.0),
+            ratio_row(52, 2, 8.0, 7.0, 50.0, 60.0),
+            ratio_row(0, 31, -0.5, 7.0, -1.0, 0.0),
+            ratio_row(4, 32, 2.0, 0.0, 1.0, 3.0),
+            ratio_row(8, 40, -4.0, 0.0, -5.0, -3.0),
+            ratio_row(52, 33, 16.0, 0.0, 0.0, 1.0),
+            ratio_row(52, 60, 1.0, 0.0, 0.0, 2.0),
+            (52, 61, 3.7, 2.9, 2.5, 3.5),
+        ),
+        # Fourteen rows over months 0 to 3: windows clamp to one row, split months 0 and 1, and
+        # span every month.
+        "fractions": (0.1, 0.25, 0.5, 1.0),
+        "counts": (2, 5, 9),
+    },
 )
 
 
@@ -1281,18 +1309,23 @@ def evaluation_metric_frame(rows: Sequence[EvaluationMetricRow]) -> pd.DataFrame
     })
 
 
-def evaluation_metric_points(frame: pd.DataFrame, metrics: Sequence[str], rolling_window: float) -> dict[str, Any]:
+def evaluation_metric_points(
+    frame: pd.DataFrame, metrics: Sequence[str], rolling_window: float, monthly: bool
+) -> dict[str, Any]:
     """Run unmodified `performance_metrics` and keep every score at full precision."""
 
-    result = performance_metrics(frame, metrics=list(metrics), rolling_window=rolling_window)
+    result = performance_metrics(frame, metrics=list(metrics), rolling_window=rolling_window, monthly=monthly)
     assert result is not None
     returned = [name for name in metrics if name in result.columns]
 
     def point(row: Any) -> dict[str, Any]:
-        return {
-            "horizonMs": int(row.horizon / pd.Timedelta(milliseconds=1)),
-            "scores": {name: float(getattr(row, name)) for name in returned},
-        }
+        horizon = (
+            {"horizonMonths": int(row.horizon)}
+            if monthly
+            else {"horizonMs": int(row.horizon / pd.Timedelta(milliseconds=1))}
+        )
+
+        return {**horizon, "scores": {name: float(getattr(row, name)) for name in returned}}
 
     if rolling_window < 0:
         # Per-row results keep the input index; Prophet's order among equal horizons is unspecified.
@@ -1308,7 +1341,8 @@ def make_evaluation_metrics_fixture() -> dict[str, Any]:
     """Pin unmodified Prophet 1.4.0 `performance_metrics` on cross-validation-shaped rows.
 
     Cases repeat horizons, split horizon groups at window boundaries, cover every row in one
-    window, borrow earlier rows for MDAPE, and drop MAPE for near-zero actuals. pandas' `sort_values`
+    window, borrow earlier rows for MDAPE, drop MAPE for near-zero actuals, and group by calendar
+    month with `monthly=True`. pandas' `sort_values`
     leaves equal horizons in an unspecified order, so each result is recomputed on shuffled inputs
     and must be identical: every expected value is independent of that order. The remaining
     arithmetic is IEEE addition, subtraction, multiplication, division and square root, so the
@@ -1320,6 +1354,8 @@ def make_evaluation_metrics_fixture() -> dict[str, Any]:
     for spec in EVALUATION_METRIC_CASES:
         rows = spec["rows"]
         count = len(rows)
+        horizon = spec.get("horizon", "duration")
+        monthly = horizon == "calendar-month"
         frame = evaluation_metric_frame(rows)
         windows: list[tuple[dict[str, Any], float]] = [
             ({"kind": "rows"}, -1.0),
@@ -1339,11 +1375,11 @@ def make_evaluation_metrics_fixture() -> dict[str, Any]:
         shuffles = np.random.default_rng(119)
 
         for aggregation, rolling_window in windows:
-            expected = evaluation_metric_points(frame, spec["metrics"], rolling_window)
+            expected = evaluation_metric_points(frame, spec["metrics"], rolling_window, monthly)
 
             for _ in range(32):
                 shuffled = frame.iloc[shuffles.permutation(count)]
-                assert evaluation_metric_points(shuffled, spec["metrics"], rolling_window) == expected, (
+                assert evaluation_metric_points(shuffled, spec["metrics"], rolling_window, monthly) == expected, (
                     f"{spec['id']} {aggregation} depends on the order of equal horizons"
                 )
 
@@ -1356,6 +1392,7 @@ def make_evaluation_metrics_fixture() -> dict[str, Any]:
 
         cases.append({
             "id": spec["id"],
+            "horizon": horizon,
             "metrics": list(spec["metrics"]),
             "rows": [
                 {"fold": fold, "horizonMs": days * DAY_MILLISECONDS, "actual": actual, "predicted": predicted, "lower": lower, "upper": upper}
