@@ -74,6 +74,7 @@ const expectedDeclarationFiles = [
   "dist/feature-name.d.ts",
   "dist/fitted-model.d.ts",
   "dist/forecast.d.ts",
+  "dist/future-timestamps.d.ts",
   "dist/index.d.ts",
   "dist/internal/additional-features.d.ts",
   "dist/internal/cross-validation-options.d.ts",
