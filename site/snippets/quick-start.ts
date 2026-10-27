@@ -1,5 +1,5 @@
 import { Effect } from "effect";
-import { fit, predict, prophetFittingBackendLayer } from "effect-prophet";
+import { fit, makeFutureTimestamps, predict, prophetFittingBackendLayer } from "effect-prophet";
 
 // 1. Your history: one row per day, each with a timestamp and a value.
 const history = Array.from({ length: 90 }, (_, day) => ({
@@ -7,19 +7,15 @@ const history = Array.from({ length: 90 }, (_, day) => ({
   value: 100 + day * 0.5 + 10 * Math.sin((2 * Math.PI * day) / 7),
 }));
 
-// 2. The dates you want a forecast for: the next seven days.
-const nextWeek = Array.from({ length: 7 }, (_, offset) =>
-  new Date(Date.UTC(2025, 0, 91 + offset)).toISOString(),
-);
-
-// 3. Describe the work: fit a model to the history, then predict.
+// 2. Describe the work: fit a model to the history, list the next seven days, then predict.
 const program = Effect.gen(function* () {
   const model = yield* fit(history);
+  const nextWeek = yield* makeFutureTimestamps(history, { periods: 7, includeHistory: false });
 
   return yield* predict(model, nextWeek);
 });
 
-// 4. Run it. The layer plugs in the forecasting engine.
+// 3. Run it. The layer plugs in the forecasting engine.
 const forecast = await Effect.runPromise(program.pipe(Effect.provide(prophetFittingBackendLayer)));
 
 for (const row of forecast) {

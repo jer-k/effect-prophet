@@ -6,6 +6,14 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `makeFutureTimestamps` lists the dates to forecast after a history or a timestamp, like Python's
+  `make_future_dataframe`. As in Python, the history's own dates come first unless you pass
+  `includeHistory: false`. It takes pandas' `h`, `D`, `W`, `W-MON` to `W-SAT`, `MS` and `ME`, and
+  matches pandas on month ends, leap years and time of day. See
+  [Future rows](https://jer-k.github.io/effect-prophet/guide/your-data#future-rows).
+
 ### Fixed
 
 - The `effect-prophet.wasm.fit` span for a flat trend now counts one parameter per changepoint

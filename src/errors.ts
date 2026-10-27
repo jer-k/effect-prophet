@@ -14,6 +14,7 @@ const ValidationInputSchema = Schema.Literals([
   "options",
   "prediction-timestamps",
   "prediction-rows",
+  "future-timestamps",
   "uncertainty-options",
   "evaluation-plan",
   "evaluation-metrics",
@@ -62,6 +63,7 @@ export type ValidationInput =
   | "options"
   | "prediction-timestamps"
   | "prediction-rows"
+  | "future-timestamps"
   | "uncertainty-options"
   | "evaluation-plan"
   | "evaluation-metrics"

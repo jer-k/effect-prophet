@@ -105,6 +105,13 @@ export {
 export { forecast } from "./forecast";
 
 export {
+  makeFutureTimestamps,
+  maximumFuturePeriods,
+  type FutureFrequency,
+  type FutureTimestampOptions,
+} from "./future-timestamps";
+
+export {
   searchModels,
   type ModelSearchInput,
   type ModelSearchResult,

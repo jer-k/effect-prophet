@@ -94,6 +94,7 @@ Each of these functions creates a span named after it:
 | `Prophet.forecast`                                                                                 | `forecast`, around `Prophet.decodeObservations`, `Prophet.fit` and `Prophet.predict`          |
 | `Prophet.anomalies`                                                                                | `anomalies`, around `Prophet.decodeObservations`, `Prophet.fit` and `Prophet.detectAnomalies` |
 | `Prophet.crossValidate`                                                                            | `crossValidate`                                                                               |
+| `Prophet.makeFutureTimestamps`                                                                     | `makeFutureTimestamps`                                                                        |
 | `Prophet.planRollingOrigin`                                                                        | `planRollingOrigin`                                                                           |
 | `Prophet.searchModels`                                                                             | `searchModels`                                                                                |
 | `Prophet.evaluateHoldout`                                                                          | `evaluateHoldout`                                                                             |
@@ -148,6 +149,13 @@ Every attribute name starts with `effect_prophet.`.
 | `regressor.count`                                      | Extra factors (regressors). Only present when there are some.                                                                                   |
 | `event.count`                                          | Holidays and events, including country holidays. Only present when there are some.                                                              |
 | `seasonality.condition.count`                          | Conditions used by conditional seasonalities. Only present when there are some.                                                                 |
+
+**`Prophet.makeFutureTimestamps`**
+
+| Attribute         | Meaning                                                                          |
+| ----------------- | -------------------------------------------------------------------------------- |
+| `frequency`       | The `frequency` used, such as `D` or `MS`                                        |
+| `timestamp.count` | Timestamps returned, history included. Neither is set when the input is invalid. |
 
 **`effect-prophet.wasm.fit`**
 

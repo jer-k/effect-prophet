@@ -17,7 +17,9 @@ Python, where it differs on purpose, and the smaller behavior differences.
   are `{ timestamp, value }` instead of `ds` and `y`.
 - Strict UTC timestamps; no guessing at formats or time zones
 - Missing values are rejected rather than silently dropped
-- You supply future dates; there is no `make_future_dataframe`
+- `makeFutureTimestamps` accepts only the pandas frequencies `h`, `D`, `W`, `W-SUN` to `W-SAT`,
+  `MS` and `ME`, never infers one (`freq=None`), and generates at most 100,000 future dates per
+  call
 - No built-in plotting
 - Saved models use their own format, not Python's JSON
 - Country calendars are offline Prophet 1.4.0 / `holidays` 0.104 snapshots with an outer
