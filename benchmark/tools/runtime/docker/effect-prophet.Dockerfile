@@ -59,5 +59,7 @@ COPY calendars ./calendars
 COPY --from=build /build-tools ./build-tools
 COPY benchmark/tools/artifacts.ts benchmark/tools/case.ts benchmark/tools/differential.ts benchmark/tools/effect-case.ts benchmark/tools/country-holidays.ts benchmark/tools/evaluation.ts benchmark/tools/result.ts benchmark/tools/report.ts benchmark/tools/report-cli.ts benchmark/tools/uncertainty.ts ./benchmark/tools/
 COPY benchmark/tools/adapters/effect-prophet.ts benchmark/tools/adapters/effect-differential.ts ./benchmark/tools/adapters/
+# The custom metric definitions the Python adapter registers under the same names.
+COPY tools/prophet/custom-metrics.ts ./tools/prophet/
 
 CMD ["node", "benchmark/tools/adapters/effect-prophet.ts"]

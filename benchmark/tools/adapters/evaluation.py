@@ -5,10 +5,25 @@ from __future__ import annotations
 import copy
 import json
 import math
+import sys
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from prophet.diagnostics import cross_validation, performance_metrics
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "tools" / "prophet"))
+from custom_metrics import CUSTOM_METRIC_NAMES
+
+POINT_METRICS = ["mae", "rmse", "smape", "mape"]
+
+# Built-in metrics that never drop out of performance_metrics' result, then every custom metric.
+PARITY_METRICS = ["mae", "rmse", "smape", "mdape", *CUSTOM_METRIC_NAMES]
+
+PARITY_PHASES = ("evaluation-metrics-monthly", "evaluation-metrics-custom", "evaluation-search-custom")
+
+# The custom metric a custom search ranks candidates by.
+CUSTOM_OBJECTIVE = "wape"
 
 
 def metric_window(case):
@@ -45,7 +60,7 @@ def cv(case, dataset, configure_model, fit_model, records_frame, intervals=False
     return cross_validation(model, horizon=horizon, cutoffs=cutoffs, parallel=None, disable_tqdm=True)
 
 
-def search(case, dataset, configure_model, fit_model, records_frame):
+def search(case, dataset, configure_model, fit_model, records_frame, objective="mae"):
     config = case["workload"]
     candidates = []
     for candidate in config["candidates"]:
@@ -56,7 +71,7 @@ def search(case, dataset, configure_model, fit_model, records_frame):
             request["workload"]["configuration"]["growth"] = "logistic"
         try:
             result = cv(request, dataset, configure_model, fit_model, records_frame)
-            score = float(performance_metrics(result, metrics=["mae"], rolling_window=1)["mae"].iloc[0])
+            score = float(performance_metrics(result, metrics=[objective], rolling_window=1)[objective].iloc[0])
             if not math.isfinite(score):
                 raise ValueError("Nonfinite search score")
             candidates.append({"id": candidate["id"], "score": score})
@@ -85,6 +100,44 @@ def holdout(case, dataset, configure_model, fit_model, records_frame, selection=
             "mae": float(np.mean(np.abs(actual - forecast))), "baselines": baselines}
 
 
+def metrics(result, case, phase):
+    """The metric work a metrics phase times, on precomputed CV rows."""
+    if phase == "evaluation-metrics":
+        return performance_metrics(result, metrics=list(POINT_METRICS), rolling_window=metric_window(case))
+    if phase == "evaluation-metrics-monthly":
+        return performance_metrics(result, metrics=list(POINT_METRICS), rolling_window=metric_window(case), monthly=True)
+    return performance_metrics(result, metrics=list(CUSTOM_METRIC_NAMES), rolling_window=metric_window(case))
+
+
+def metric_parity(result, case):
+    """Python's metrics on its own CV rows, with the row order its horizon sort produced.
+
+    `performance_metrics` sorts by horizon with pandas' unstable sort, which decides which rows a
+    window borrows from a horizon and the order a horizon's values are summed in. Repeating the same
+    copy, horizon column and sort here gives that order, so Effect can score the rows in it.
+    """
+    if not result.index.equals(pd.RangeIndex(len(result))):
+        raise ValueError("Python CV rows are not indexed by position")
+    evidence = []
+    for horizon in ("duration", "calendar-month"):
+        monthly = horizon == "calendar-month"
+        frame = result.copy()
+        if monthly:
+            frame["horizon"] = frame["ds"].dt.to_period("M").astype(int) - frame["cutoff"].dt.to_period("M").astype(int)
+        else:
+            frame["horizon"] = frame["ds"] - frame["cutoff"]
+        frame.sort_values("horizon", inplace=True)
+        scores = performance_metrics(result, metrics=list(PARITY_METRICS), rolling_window=metric_window(case), monthly=monthly)
+        if list(scores.columns) != ["horizon", *PARITY_METRICS]:
+            raise ValueError("Python dropped a parity metric")
+        points = [{"horizon": int(row.horizon) if monthly else int(row.horizon / pd.Timedelta(milliseconds=1)),
+                   "scores": [float(getattr(row, name)) for name in PARITY_METRICS]}
+                  for row in scores.itertuples()]
+        evidence.append({"horizon": horizon, "metrics": list(PARITY_METRICS),
+                         "order": [int(index) for index in frame.index], "points": points})
+    return evidence
+
+
 def operation(case, dataset, phase, configure_model, fit_model, records_frame):
     history, _ = partition(dataset, case, records_frame)
     if phase == "evaluation-input-conversion":
@@ -98,9 +151,8 @@ def operation(case, dataset, phase, configure_model, fit_model, records_frame):
         return cv(case, dataset, configure_model, fit_model, records_frame)
     if phase == "evaluation-intervals":
         return cv(case, dataset, configure_model, fit_model, records_frame, intervals=True)
-    if phase == "evaluation-metrics":
-        result = cv(case, dataset, configure_model, fit_model, records_frame)
-        return performance_metrics(result, metrics=["mae", "rmse", "smape", "mape"], rolling_window=metric_window(case))
+    if phase in ("evaluation-metrics", "evaluation-metrics-monthly", "evaluation-metrics-custom"):
+        return metrics(cv(case, dataset, configure_model, fit_model, records_frame), case, phase)
     if phase == "evaluation-baseline":
         result = []
         for cutoff in cutoffs:
@@ -113,6 +165,8 @@ def operation(case, dataset, phase, configure_model, fit_model, records_frame):
         return result
     if phase == "evaluation-search":
         return search(case, dataset, configure_model, fit_model, records_frame)
+    if phase == "evaluation-search-custom":
+        return search(case, dataset, configure_model, fit_model, records_frame, CUSTOM_OBJECTIVE)
     if phase == "evaluation-holdout":
         return holdout(case, dataset, configure_model, fit_model, records_frame)
     if phase == "evaluation-report-encode":
@@ -124,9 +178,9 @@ def operation(case, dataset, phase, configure_model, fit_model, records_frame):
 
 def prepare_operation(case, dataset, phase, configure_model, fit_model, records_frame):
     """Exclude CV/search setup from independent pure-phase boundaries."""
-    if phase == "evaluation-metrics":
+    if phase in ("evaluation-metrics", "evaluation-metrics-monthly", "evaluation-metrics-custom"):
         result = cv(case, dataset, configure_model, fit_model, records_frame)
-        return lambda: performance_metrics(result, metrics=["mae", "rmse", "smape", "mape"], rolling_window=metric_window(case))
+        return lambda: metrics(result, case, phase)
     if phase == "evaluation-holdout":
         selection = search(case, dataset, configure_model, fit_model, records_frame)
         return lambda: holdout(case, dataset, configure_model, fit_model, records_frame, selection)
@@ -160,19 +214,24 @@ def correctness(case, dataset, configure_model, fit_model, records_frame, run):
                          "actual": float(row.y), "predicted": float(row.yhat)})
     if len(rows) != assessment:
         raise ValueError("Python CV assessment dimensions differ")
+    if [(row["cutoff"], row["timestamp"]) for row in rows] != [
+            (int(row.cutoff.value // 1_000_000), int(row.ds.value // 1_000_000)) for row in result.itertuples()]:
+        raise ValueError("Python CV rows are not in result order")
     if "evaluation-intervals" in case["phases"]:
         interval = operation(case, dataset, "evaluation-intervals", configure_model, fit_model, records_frame)
         if len(interval) != assessment or not np.isfinite(interval[["yhat_lower", "yhat_upper"]].to_numpy()).all() or (interval["yhat_lower"] > interval["yhat_upper"]).any():
             raise ValueError("Python intervals failed finite dimension/order checks")
     for phase in case["phases"]:
-        if phase in ("evaluation-search", "evaluation-holdout", "evaluation-report-encode", "evaluation-report-decode"):
+        if phase in ("evaluation-search", "evaluation-search-custom", "evaluation-holdout", "evaluation-report-encode", "evaluation-report-decode"):
             outcome = operation(case, dataset, phase, configure_model, fit_model, records_frame)
-            if phase == "evaluation-search" and len([candidate for candidate in outcome[0] if "failure" in candidate]) != case["workload"].get("expectedFailures", 0):
+            if phase in ("evaluation-search", "evaluation-search-custom") and len([candidate for candidate in outcome[0] if "failure" in candidate]) != case["workload"].get("expectedFailures", 0):
                 raise ValueError("Unexpected Python candidate failure count")
     mae = float(np.mean([abs(row["actual"] - row["predicted"]) for row in rows]))
+    evaluation = {"cutoffs": [int(cutoff.value // 1_000_000) for cutoff in cutoffs],
+                  "trainingRows": training, "assessmentRows": assessment, "rows": rows, "mae": mae}
+    if any(phase in PARITY_PHASES for phase in case["phases"]):
+        evaluation["metricParity"] = metric_parity(result, case)
     return {"caseId": case["id"], "run": run, "status": "locally-passed",
             "modelKind": case["workload"]["configuration"]["growth"],
             "changepointTimestamps": [], "seasonalities": [], "events": [], "regressors": [], "forecasts": [],
-            "evaluation": {"cutoffs": [int(cutoff.value // 1_000_000) for cutoff in cutoffs],
-                           "trainingRows": training, "assessmentRows": assessment,
-                           "rows": rows, "mae": mae}}
+            "evaluation": evaluation}

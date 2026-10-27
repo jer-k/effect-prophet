@@ -13,6 +13,22 @@ All notable changes to this project are documented here. The format follows
   `includeHistory: false`. It takes pandas' `h`, `D`, `W`, `W-MON` to `W-SAT`, `MS` and `ME`, and
   matches pandas on month ends, leap years and time of day. See
   [Future rows](https://jer-k.github.io/effect-prophet/guide/your-data#future-rows).
+- `performanceMetrics` and `comparePerformance` take `horizon: "calendar-month"` to group forecasts
+  by UTC calendar months from their cutoff, like Python's `performance_metrics(monthly=True)`.
+  Scores then carry `horizonMonths` instead of `horizonMs`. See
+  [Grouping by calendar month](https://jer-k.github.io/effect-prophet/examples/cross-validation#grouping-by-calendar-month).
+- Custom metrics, like Python's `register_performance_metric`. Pass a definition next to the
+  built-in names in `performanceMetrics` or `comparePerformance`, or as the `objective` of
+  `searchModels`. It scores each forecast and combines them with a mean, median, quantile or
+  ratio of means, using Prophet's windows. See
+  [Your own metrics](https://jer-k.github.io/effect-prophet/examples/cross-validation#your-own-metrics).
+
+### Changed
+
+- `rows`, `horizons` and `rolling` metric reports include a `horizon` field, `"duration"` or
+  `"calendar-month"`, saying which unit their horizons use.
+- `EvaluationMetricError.metric` can be a custom metric's name, and its `reason` can be
+  `"zero-denominator"`, with new stages `score`, `quantile` and `finalize`.
 
 ### Fixed
 

@@ -238,6 +238,12 @@ export const linearCaseDescriptions = {
     summary:
       "Three candidates, one of which is designed to fail. The search records it and continues.",
   },
+  "evaluation-linear-custom-search": {
+    group: "evaluation",
+    title: "Choosing settings by a custom metric",
+    summary:
+      "Two candidate settings ranked by a custom WAPE metric, next to the same search by MAE.",
+  },
   "evaluation-training-duplicates": {
     group: "evaluation",
     title: "Cross-validation with repeated timestamps",

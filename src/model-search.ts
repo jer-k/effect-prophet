@@ -15,7 +15,13 @@ import {
   type PortableEvaluationFailure,
 } from "./errors";
 import { CountryHolidayError } from "./country-holidays";
-import { performanceMetrics, type MetricName, type MetricReport } from "./evaluation-metrics";
+import {
+  CustomMetricSchema,
+  performanceMetrics,
+  type CustomMetric,
+  type MetricName,
+  type MetricReport,
+} from "./evaluation-metrics";
 import {
   crossValidateCandidate,
   planRollingOrigin,
@@ -24,6 +30,7 @@ import {
   type RollingOriginPlanInput,
   type RollingOriginPlanSummary,
 } from "./evaluation";
+import { PointMetricNameSchema, isPointMetricName, metricName } from "./internal/metric-names";
 import { checkedAdd, checkedMultiply } from "./internal/safe-arithmetic";
 import { copyFrozen as ownedInput } from "./internal/owned-input";
 import type { FittingBackend } from "./internal/fitting-backend";
@@ -36,10 +43,8 @@ import { decodeObservations } from "./observation";
 import { decodeOptions, type EncodedProphetOptions, type ProphetOptions } from "./options";
 import { exceedsSimulationBudget } from "./uncertainty";
 
-const ObjectiveMetricSchema = Schema.Literals(["mae", "mse", "rmse", "mape", "mdape", "smape"]);
-
 const ObjectiveSchema = Schema.Struct({
-  metric: ObjectiveMetricSchema,
+  metric: Schema.Union([PointMetricNameSchema, CustomMetricSchema]),
   aggregation: Schema.Struct({ kind: Schema.Literal("overall") }),
   direction: Schema.Literal("minimize"),
 });
@@ -63,6 +68,10 @@ const SearchSchema = Schema.Struct({
   includeCrossValidation: Schema.optionalKey(Schema.Boolean),
 });
 
+// Custom metric names come from callers, so telemetry records only that the objective is custom.
+const objectiveAttribute = (metric: SearchObjective["metric"]) =>
+  isPointMetricName(metric) ? metric : "custom";
+
 const decodeSearch = Schema.decodeUnknownEffect(SearchSchema, {
   errors: "all",
   onExcessProperty: "error",
@@ -74,9 +83,12 @@ export interface SearchCandidateInput {
   readonly options: EncodedProphetOptions;
 }
 
-/** One finite overall point-error objective; coverage cannot select a model. */
+/**
+ * One finite overall objective: a built-in point-error metric or a custom metric. Coverage cannot
+ * select a model.
+ */
 export interface SearchObjective {
-  readonly metric: Exclude<MetricName, "coverage">;
+  readonly metric: Exclude<MetricName, "coverage"> | CustomMetric;
   readonly aggregation: { readonly kind: "overall" };
   readonly direction: "minimize";
 }
@@ -91,7 +103,10 @@ export interface ModelSearchInput {
   readonly includeCrossValidation?: boolean;
 }
 
-type OverallReport = Extract<MetricReport<"point" | "intervals">, { readonly kind: "overall" }>;
+type OverallReport = Extract<
+  MetricReport<"point" | "intervals", "duration", string>,
+  { readonly kind: "overall" }
+>;
 
 /** An executed candidate, with full rows only when explicitly requested. */
 export type SearchCandidateResult =
@@ -410,7 +425,7 @@ export const searchModels = Effect.fn("Prophet.searchModels")(function* (
       if (score === undefined || !Number.isFinite(score)) {
         return yield* Effect.fail(
           new EvaluationMetricError({
-            metric: objective.metric,
+            metric: metricName(objective.metric),
             aggregation: "overall",
             bucket: 0,
             reason: "non-finite",
@@ -442,7 +457,7 @@ export const searchModels = Effect.fn("Prophet.searchModels")(function* (
               "effect_prophet.candidate.index": candidateIndex,
               "effect_prophet.candidate.count": candidates.length,
               "effect_prophet.fold.count": sharedPlan.folds.length,
-              "effect_prophet.objective": objective.metric,
+              "effect_prophet.objective": objectiveAttribute(objective.metric),
               "effect_prophet.uncertainty.enabled": mode.mode === "intervals",
               "effect_prophet.evaluation.scaling.mode":
                 controls.scaling ?? defaultTargetScalingMode,

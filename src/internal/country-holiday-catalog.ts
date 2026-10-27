@@ -1516,5 +1516,5 @@ export const countryHolidayCatalog = freezeOwned({
     "prophet": "1.4.0"
   },
   "schemaVersion": 1,
-  "snapshotId": "sha256:4a3668498a904f18865f0e388e4cb3f565091a915bef67a2b8e7aed7ba2eb245"
+  "snapshotId": "sha256:a2721b933d853f07a045fbf910e71d02ef659535712b0f15dc09faef7a68ad4b"
 } as const);

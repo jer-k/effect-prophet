@@ -69,6 +69,7 @@ describe("flat-growth reconciliation catalog", () => {
       "evaluation-flat-mixed-search",
       "evaluation-flat-large-point",
       "evaluation-flat-large-intervals",
+      "evaluation-flat-large-months-metrics",
     ]);
 
     expect(flatGrowthCases.some(({ id }) => id.endsWith("-absmax-control"))).toBe(false);

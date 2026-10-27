@@ -23,6 +23,12 @@ import {
 import type { CountryHolidayError } from "./country-holidays";
 import type { FittedProphet } from "./fitted-model";
 import type { FittingBackend } from "./internal/fitting-backend";
+import {
+  MetricNameSchema,
+  MetricNamesSchema,
+  PointMetricNameSchema,
+  isPointMetricName,
+} from "./internal/metric-names";
 import { copyFrozen, freezeOwned } from "./internal/owned-input";
 import { checkedAdd } from "./internal/safe-arithmetic";
 import { encodeTimestamp, isValidTimestamp } from "./internal/timestamp";
@@ -50,7 +56,7 @@ const maximumRows = 10_000;
 const EpochSchema = Schema.Int.check(Schema.makeFilter(isValidTimestamp));
 
 const ScoreSchema = Schema.Struct({
-  metric: Schema.Literals(["mae", "mse", "rmse", "mape", "mdape", "smape", "coverage"]),
+  metric: MetricNameSchema,
   value: Schema.Finite,
 });
 
@@ -75,23 +81,12 @@ const BaselineSchema = Schema.Union([
 ]);
 
 const MetricOptionsSchema = Schema.Struct({
-  metrics: Schema.NonEmptyArray(
-    Schema.Literals(["mae", "mse", "rmse", "mape", "mdape", "smape", "coverage"]),
-  ).check(
-    Schema.makeFilter((metrics) =>
-      new Set(metrics).size === metrics.length
-        ? undefined
-        : {
-            path: [],
-            issue: "Metric names must be unique",
-          },
-    ),
-  ),
+  metrics: MetricNamesSchema,
   aggregation: Schema.Struct({ kind: Schema.Literal("overall") }),
 });
 
 const ObjectiveSchema = Schema.Struct({
-  metric: Schema.Literals(["mae", "mse", "rmse", "mape", "mdape", "smape"]),
+  metric: PointMetricNameSchema,
   aggregation: Schema.Struct({ kind: Schema.Literal("overall") }),
   direction: Schema.Literal("minimize"),
 });
@@ -635,6 +630,17 @@ export const evaluateHoldout = Effect.fn("Prophet.evaluateHoldout")(function* (
 
   const { search, selectedCandidate } = input;
   const selected = search?.candidates?.[search.selected?.candidateIndex];
+  const objective = search?.objective?.metric;
+
+  // A custom metric is a function, which a report can neither encode nor score again on decode.
+  if (objective !== undefined && !isPointMetricName(objective)) {
+    return yield* Effect.fail(
+      invalid(
+        ["search", "objective", "metric"],
+        "Holdout evaluation supports only built-in search objectives",
+      ),
+    );
+  }
 
   if (
     !Array.isArray(search?.candidates) ||

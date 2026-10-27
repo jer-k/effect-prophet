@@ -281,6 +281,41 @@ describe("forecast baselines", () => {
     expect(comparison.baselines[0]?.metrics).toMatchObject({ source: "baseline", kind: "overall" });
     expect(comparison.model).toMatchObject({ source: "point", kind: "overall" });
 
+    const monthly = await Effect.runPromise(
+      comparePerformance(model, [baseline], {
+        metrics: ["mae"],
+        aggregation: { kind: "horizons" },
+        horizon: "calendar-month",
+      }),
+    );
+
+    for (const report of [monthly.model, monthly.baselines[0]?.metrics]) {
+      expect(report).toMatchObject({ kind: "horizons", horizon: "calendar-month" });
+      expect(report?.kind === "horizons" && report.points[0]).toHaveProperty("horizonMonths");
+    }
+
+    // A custom metric scores the model and every baseline under the same definition.
+    const custom = await Effect.runPromise(
+      comparePerformance(model, [baseline], {
+        metrics: [
+          "mae",
+          {
+            name: "absolute_error",
+            reduce: "mean",
+            score: (row) => Math.abs(row.actual - row.predicted),
+          },
+        ],
+        aggregation: { kind: "overall" },
+      }),
+    );
+
+    for (const report of [custom.model, custom.baselines[0]?.metrics]) {
+      const scores = report?.kind === "overall" ? report.bucket.scores : [];
+
+      expect(scores.map((score) => score.metric)).toEqual(["mae", "absolute_error"]);
+      expect(scores[1]?.value).toBe(scores[0]?.value);
+    }
+
     const altered = {
       ...baseline,
       rows: baseline.rows.map((row, index) => (index === 0 ? { ...row, actual: 900 } : row)),

@@ -44,13 +44,18 @@ export {
 
 export {
   performanceMetrics,
+  type CustomMetric,
+  type HorizonCoordinate,
   type HorizonMetricPoint,
   type MetricAggregation,
   type MetricBucket,
+  type MetricHorizonUnit,
   type MetricName,
   type MetricOptions,
   type MetricReport,
+  type MetricRow,
   type MetricScore,
+  type MetricSelection,
   type RollingMetricPoint,
   type RowMetricPoint,
 } from "./evaluation-metrics";

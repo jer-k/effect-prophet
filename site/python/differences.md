@@ -9,7 +9,6 @@ Python, where it differs on purpose, and the smaller behavior differences.
 - Full Bayesian fitting (`mcmc_samples`)
 - Forecasting regressors with their own models. Every future row must supply its regressor
   values.
-- Monthly horizons and custom metrics in cross-validation
 
 ## Different on purpose
 
@@ -29,6 +28,12 @@ Python, where it differs on purpose, and the smaller behavior differences.
   selected snapshot and never silently adopt installed updates. See
   [Country holiday calendars](/guide/holiday-calendars).
 - Cross-validation and model search run one fold after another, with no worker parallelism
+- Custom metrics are definitions you pass to each call, not entries in a global registry, and
+  can't replace a built-in metric. Each scores one forecast at a time and combines a group with
+  a mean, median, quantile or ratio of means, using Prophet's windows. Python's
+  `register_performance_metric` takes any function of the whole result. Python has no
+  quantile helper; the quantile follows numpy's `np.quantile` over the windows `mdape` uses. See
+  [Your own metrics](../examples/cross-validation#your-own-metrics).
 - `predict` never simulates, so point forecasts never pay for it. Ranges come from
   [`predictWithIntervals`](../examples/uncertainty), or `predictUncertainty` for ranges alone.
   They need a seed, so results are repeatable.

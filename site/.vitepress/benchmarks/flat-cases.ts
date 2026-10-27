@@ -220,4 +220,10 @@ export const flatCaseDescriptions = {
     title: "Cross-validation with ranges, eight months",
     summary: "The same long folds with simulated futures for interval coverage.",
   },
+  "evaluation-flat-large-months-metrics": {
+    group: "evaluation",
+    title: "Monthly and custom metrics",
+    summary:
+      "Three 91-day folds scored by calendar month and with custom metrics, in rolling windows. The scores Effect gives Python's own forecasts must equal Python's exactly.",
+  },
 } satisfies Record<string, CaseDescription>;

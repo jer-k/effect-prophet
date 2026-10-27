@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { fixedPiecewiseParameters } from "./helpers/fixed-piecewise-model";
 
 import { makeTestFittingBackend } from "./internal/fitting-backend-test-layer";
+import { collectTestSpans } from "./internal/tracing-test-helpers";
 
 import {
   CountryHolidayError,
@@ -14,6 +15,7 @@ import {
   performanceMetrics,
   prophetFittingBackendLayer,
   searchModels,
+  type CustomMetric,
   type EncodedObservations,
   type ModelSearchInput,
 } from "../src/index";
@@ -603,6 +605,87 @@ describe("searchModels", () => {
 
     if (Predicate.isTagged("Failure")(failure)) {
       expect(failure.failure).toMatchObject({ input: "evaluation-search" });
+    }
+  });
+
+  it("ranks by a custom objective and records only that it is custom in spans", async () => {
+    const absoluteError = {
+      name: "sensitive_metric_name",
+      reduce: "mean",
+      score: (row) => Math.abs(row.actual - row.predicted),
+    } as const satisfies CustomMetric;
+
+    const builtIn = await Effect.runPromise(
+      search({ candidates: options, plan, objective, failurePolicy: "record" }),
+    );
+
+    const { spans, tracer } = collectTestSpans();
+
+    const custom = await Effect.runPromise(
+      search({
+        candidates: options,
+        plan,
+        objective: { ...objective, metric: absoluteError },
+        failurePolicy: "record",
+      }).pipe(Effect.withTracer(tracer)),
+    );
+
+    // The same per-row errors through the same window give the same scores and winner.
+    expect(custom.selected).toEqual(builtIn.selected);
+    expect(
+      custom.candidates.map((candidate) => candidate.kind === "success" && candidate.score),
+    ).toEqual(
+      builtIn.candidates.map((candidate) => candidate.kind === "success" && candidate.score),
+    );
+    expect(custom.objective.metric).toMatchObject({
+      name: "sensitive_metric_name",
+      reduce: "mean",
+    });
+
+    const candidates = spans.filter((span) => span.name === "effect-prophet.evaluation.candidate");
+
+    expect(candidates).toHaveLength(options.length);
+
+    for (const candidate of candidates) {
+      expect(candidate.attributes.get("effect_prophet.objective")).toBe("custom");
+    }
+
+    expect(
+      spans.some((span) =>
+        JSON.stringify(Object.fromEntries(span.attributes)).includes("sensitive_metric_name"),
+      ),
+    ).toBe(false);
+
+    const failing = await Effect.runPromise(
+      Effect.result(
+        search({
+          candidates: [{ id: "one", options: firstOption }],
+          plan,
+          objective: {
+            ...objective,
+            metric: { name: "unbounded", reduce: "mean", score: () => Infinity },
+          },
+          failurePolicy: "record",
+        }),
+      ),
+    );
+
+    expect(failing._tag).toBe("Failure");
+
+    if (Predicate.isTagged("Failure")(failing)) {
+      expect(failing.failure).toMatchObject({
+        reason: "no-success",
+        outcomes: [
+          {
+            failure: {
+              tag: "EvaluationMetricError",
+              metric: "unbounded",
+              reason: "non-finite",
+              stage: "score",
+            },
+          },
+        ],
+      });
     }
   });
 

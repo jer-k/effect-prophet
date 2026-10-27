@@ -21,6 +21,6 @@ RUN uv sync --project benchmark/tools/runtime/python --frozen --no-dev --no-inst
 
 # Cases, datasets, evidence, and results are bind mounts, not image/build-cache inputs.
 COPY benchmark/tools/adapters/python-prophet.py benchmark/tools/adapters/python-differential.py benchmark/tools/adapters/evaluation.py ./benchmark/tools/adapters/
-COPY tools/prophet/linear_optimizer_evidence.py ./tools/prophet/
+COPY tools/prophet/linear_optimizer_evidence.py tools/prophet/custom_metrics.py ./tools/prophet/
 
 CMD ["/opt/effect-prophet-benchmark/bin/python", "benchmark/tools/adapters/python-prophet.py"]

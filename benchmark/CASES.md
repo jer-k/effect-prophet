@@ -31,6 +31,9 @@ Serialization is exercised by lifecycle phases rather than copied into separate 
 | `evaluation-logistic-large-point` | [v1/logistic-implicit-floor-large.json](inputs/v1/logistic-implicit-floor-large.json) | different-public-work | 6 |
 | `evaluation-logistic-large-intervals` | [v1/logistic-implicit-floor-large.json](inputs/v1/logistic-implicit-floor-large.json) | different-public-work | 1 |
 | `evaluation-linear-failure-search` | [v1/linear-offset-scaling.json](inputs/v1/linear-offset-scaling.json) | different-public-work | 4 |
+| `evaluation-flat-large-months-metrics` | [v1/flat-mixed-components-large.json](inputs/v1/flat-mixed-components-large.json) | different-public-work | 3 |
+| `evaluation-logistic-large-months-metrics` | [v1/logistic-implicit-floor-large.json](inputs/v1/logistic-implicit-floor-large.json) | different-public-work | 3 |
+| `evaluation-linear-custom-search` | [v1/linear-offset-scaling.json](inputs/v1/linear-offset-scaling.json) | different-public-work | 2 |
 
 ## growth/flat
 

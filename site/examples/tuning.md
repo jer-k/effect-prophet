@@ -31,6 +31,10 @@ first:
 
 You can compare up to 32 candidates in one search.
 
+To pick the winner by a score of your own, pass a
+[custom metric](./cross-validation#your-own-metrics) as `objective.metric`. The final holdout
+check below needs a built-in metric.
+
 ## Comparing against simple rules
 
 Before trusting a model, check that it beats the obvious guesses:
