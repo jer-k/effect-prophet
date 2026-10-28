@@ -76,6 +76,7 @@ The defaults are Prophet's, so a fit with no options produces the same model as 
 | `interval_width`, `uncertainty_samples`          | `intervalWidth` and `samples` on `predictWithIntervals` or `predictUncertainty`              |
 | comparing `y` with `yhat_lower`, `yhat_upper`    | `detectAnomalies(model, observations, { seed })`                                             |
 | the same, on the history the model was fitted on | `anomalies(history, { seed })`, which fits and checks in one call                            |
+| `df.y - m.predict(df).yhat`                      | `residuals(model, observations)`: `actual`, `predicted` and `residual` per row               |
 | `predictive_samples`                             | `predictUncertainty(..., { output: "samples" })`                                             |
 | `regressor_coefficients(model)`                  | `getRegressorCoefficients(model)`                                                            |
 | `cross_validation`                               | `crossValidate`                                                                              |

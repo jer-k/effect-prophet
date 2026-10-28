@@ -7,7 +7,7 @@ import type { FittingBackend } from "./internal/fitting-backend";
 import { decodeObservations } from "./observation";
 import type { EncodedProphetOptions } from "./options";
 import { predictWithIntervals } from "./predict-with-intervals";
-import { predictionRowFromObservation } from "./prediction-row";
+import { pairForecastsWithObservations, predictionRowFromObservation } from "./prediction-row";
 import { fit } from "./prophet";
 import {
   exceedsSimulationBudget,
@@ -99,32 +99,22 @@ export const detectAnomalies = Effect.fn("Prophet.detectAnomalies")(function* (
     { seed: options.seed, samples: options.samples, intervalWidth: options.intervalWidth },
   );
 
-  const rows: Array<AnomalyAssessment> = [];
+  const pairs = yield* pairForecastsWithObservations(
+    observations,
+    forecast.rows,
+    "Anomaly assessment is misaligned with its observations",
+  );
 
-  for (const [index, observation] of observations.entries()) {
-    const row = forecast.rows[index];
-
-    if (row?.timestamp !== observation.timestamp) {
-      return yield* Effect.fail(
-        new PredictionError({
-          reason: "backend-failure",
-          timestamp: observation.timestamp,
-          message: "Anomaly assessment is misaligned with its observations",
-        }),
-      );
-    }
-
-    rows.push(
-      Object.freeze({
-        timestamp: observation.timestamp,
-        actual: observation.value,
-        predicted: row.value,
-        lower: row.valueInterval.lower,
-        upper: row.valueInterval.upper,
-        position: anomalyPosition(observation.value, row.valueInterval),
-      }),
-    );
-  }
+  const rows = pairs.map(([observation, row]) =>
+    Object.freeze({
+      timestamp: observation.timestamp,
+      actual: observation.value,
+      predicted: row.value,
+      lower: row.valueInterval.lower,
+      upper: row.valueInterval.upper,
+      position: anomalyPosition(observation.value, row.valueInterval),
+    }),
+  );
 
   const anomalies = rows.filter((row) => row.position !== "within");
 

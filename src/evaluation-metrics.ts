@@ -15,6 +15,7 @@ import type {
 } from "./evaluation";
 import { utcMonth } from "./internal/calendar-month";
 import { kahanSum } from "./internal/kahan-sum";
+import { residualOf } from "./internal/residual";
 import {
   CustomMetricNameSchema,
   MetricNameSchema,
@@ -290,9 +291,9 @@ const contribution = (
   bucket: number,
   fail: Failure,
 ): number | EvaluationMetricError => {
-  const error = row.actual - row.predicted;
+  const error = residualOf(row.actual, row.predicted);
 
-  if (!Number.isFinite(error)) return fail(bucket, "non-finite", "difference");
+  if (error === undefined) return fail(bucket, "non-finite", "difference");
 
   switch (metric) {
     case "mae":

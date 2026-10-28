@@ -1,6 +1,6 @@
 import { Effect, Predicate, Schema } from "effect";
 
-import { InputValidationError, inputValidationErrorFromIssue } from "./errors";
+import { InputValidationError, PredictionError, inputValidationErrorFromIssue } from "./errors";
 import { encodeTimestamp, TimestampSchema } from "./internal/timestamp";
 import type { Observation } from "./observation";
 
@@ -119,4 +119,37 @@ export const predictionRowFromObservation = (
   const { value: _actual, timestamp, ...known } = observation;
 
   return Object.freeze({ ...known, timestamp: encodeTimestamp(timestamp) });
+};
+
+/**
+ * Pair each observation with the forecast predicted from its own row, by position.
+ *
+ * Forecasts come from `observations.map(predictionRowFromObservation)`, so position is the
+ * join: tied timestamps keep their own rows, and a timestamp mismatch means the forecast
+ * does not belong to these observations.
+ */
+export const pairForecastsWithObservations = <Forecast extends { readonly timestamp: number }>(
+  observations: ReadonlyArray<Observation>,
+  forecasts: ReadonlyArray<Forecast>,
+  message: string,
+): Effect.Effect<ReadonlyArray<readonly [Observation, Forecast]>, PredictionError> => {
+  const pairs: Array<readonly [Observation, Forecast]> = [];
+
+  for (const [index, observation] of observations.entries()) {
+    const forecast = forecasts[index];
+
+    if (forecast?.timestamp !== observation.timestamp || forecasts.length !== observations.length) {
+      return Effect.fail(
+        new PredictionError({
+          reason: "backend-failure",
+          timestamp: observation.timestamp,
+          message,
+        }),
+      );
+    }
+
+    pairs.push([observation, forecast]);
+  }
+
+  return Effect.succeed(pairs);
 };
