@@ -29,11 +29,63 @@ first:
 - `seasonalityMode`: `"additive"` or `"multiplicative"`
 - `priorScale` on each seasonality: try `0.1`, `1`, `10`
 
-You can compare up to 32 candidates in one search.
+You can compare up to 32 candidates in one search (`maximumSearchCandidates`).
 
 To pick the winner by a score of your own, pass a
 [custom metric](./cross-validation#your-own-metrics) as `objective.metric`. The final holdout
 check below needs a built-in metric.
+
+## Trying every combination
+
+Rather than writing out each candidate, give `makeParameterGrid` the options every candidate
+shares and the values to try for each setting. It returns one candidate per combination, ready
+for `searchModels`:
+
+<<< @/snippets/parameter-grid.ts
+
+```txt [Output]
+grid-0-0 0.01 additive 7.236
+grid-0-1 0.01 multiplicative 5.006
+grid-1-0 0.1 additive 2.946
+grid-1-1 0.1 multiplicative 1.822
+grid-2-0 0.5 additive 2.773
+grid-2-1 0.5 multiplicative 1.685
+best: grid-2-1
+```
+
+These settings can be varied:
+
+| Setting                 | Replaces                    | Example values                                                   |
+| ----------------------- | --------------------------- | ---------------------------------------------------------------- |
+| `changepointPriorScale` | `map.changepointPriorScale` | `[0.01, 0.1, 0.5]`                                               |
+| `changepoints`          | `map.changepoints`          | `[{ mode: "auto", range: 0.8 }, { mode: "auto", range: 0.95 }]`  |
+| `seasonalityMode`       | `seasonalityMode`           | `["additive", "multiplicative"]`                                 |
+| `holidaysMode`          | `holidaysMode`              | `["additive", "multiplicative"]`                                 |
+| `builtInSeasonalities`  | `builtInSeasonalities`      | `[{ yearly: { mode: "on", priorScale: 1 } }, {}]`                |
+| `seasonalities`         | `seasonalities`             | `[[], [{ name: "monthly", periodDays: 30.5, fourierOrder: 5 }]]` |
+| `scaling`               | `scaling`                   | `["absmax", "minmax"]`                                           |
+
+Each value replaces the base's setting outright. A list or object, such as a set of seasonalities,
+counts as one value; it isn't combined any further. To try a prior scale on a seasonality, give
+each version of the whole `seasonalities` list as a value.
+
+Candidates come out in the order of the table, with the first setting changing slowest, whatever
+order you write the axes in. Each ID is `grid` followed by the position of its value in each
+setting you gave: `grid-2-1` above is the third `changepointPriorScale` and the second
+`seasonalityMode`. With no axes, the one candidate is the base, with the ID `grid`.
+
+`makeParameterGrid` checks the whole grid before you start a search, and fails with an
+`InputValidationError` whose `input` is `"parameter-grid"` when:
+
+- the grid has more than 32 combinations (checked before any value is read),
+- a setting has no values, or the same value twice, or isn't in the table,
+- the base options are invalid (the issue's path starts with `base`),
+- a combination is invalid. When the problem is in one value, the issue's path points at it,
+  such as `["axes", "changepointPriorScale", 1]`. When it comes from how values combine, such as a
+  seasonality named like a base regressor, the path points at the candidate:
+  `["candidates", 3, "options", ...]`.
+
+It fits nothing and needs no fitting backend.
 
 ## Comparing against simple rules
 

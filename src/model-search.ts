@@ -34,6 +34,7 @@ import { PointMetricNameSchema, isPointMetricName, metricName } from "./internal
 import { checkedAdd, checkedMultiply } from "./internal/safe-arithmetic";
 import { copyFrozen as ownedInput } from "./internal/owned-input";
 import type { FittingBackend } from "./internal/fitting-backend";
+import { maximumSearchCandidates } from "./internal/search-limits";
 import {
   crossValidationFitOptions,
   parseCrossValidationInput,
@@ -52,8 +53,8 @@ const ObjectiveSchema = Schema.Struct({
 const SearchSchema = Schema.Struct({
   candidates: Schema.Array(Schema.Struct({ id: CandidateIdSchema, options: Schema.Unknown })).check(
     Schema.makeFilter((candidates) => {
-      if (candidates.length === 0 || candidates.length > 32) {
-        return { path: [], issue: "Expected 1 to 32 candidates" };
+      if (candidates.length === 0 || candidates.length > maximumSearchCandidates) {
+        return { path: [], issue: `Expected 1 to ${maximumSearchCandidates} candidates` };
       }
 
       if (new Set(candidates.map((candidate) => candidate.id)).size !== candidates.length) {

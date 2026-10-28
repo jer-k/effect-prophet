@@ -26,9 +26,16 @@ All notable changes to this project are documented here. The format follows
   `residual` (`actual - predicted`) per row, ready to chart. It never refits, and tied timestamps
   keep their own regressors, capacities and conditions. See
   [Checking the fit](https://jer-k.github.io/effect-prophet/examples/residuals).
+- `makeParameterGrid` expands base options and lists of values to try into every combination, as
+  candidates for `searchModels`, and checks each one before the search starts. It varies
+  `changepointPriorScale`, `changepoints`, `seasonalityMode`, `holidaysMode`,
+  `builtInSeasonalities`, `seasonalities` and `scaling`. `maximumSearchCandidates` (32) is
+  exported. See
+  [Trying every combination](https://jer-k.github.io/effect-prophet/examples/tuning#trying-every-combination).
 
 ### Changed
 
+- `InputValidationError.input` can be `"parameter-grid"`.
 - `rows`, `horizons` and `rolling` metric reports include a `horizon` field, `"duration"` or
   `"calendar-month"`, saying which unit their horizons use.
 - `EvaluationMetricError.metric` can be a custom metric's name, and its `reason` can be

@@ -23,6 +23,7 @@ import {
 import type { CountryHolidayError } from "./country-holidays";
 import type { FittedProphet } from "./fitted-model";
 import type { FittingBackend } from "./internal/fitting-backend";
+import { maximumSearchCandidates } from "./internal/search-limits";
 import {
   MetricNameSchema,
   MetricNamesSchema,
@@ -160,7 +161,7 @@ const CommonReportSchema = {
   holdout: RangeSchema,
   selected: Schema.Struct({
     id: CandidateIdSchema,
-    candidateIndex: Schema.Natural.check(Schema.isLessThan(32)),
+    candidateIndex: Schema.Natural.check(Schema.isLessThan(maximumSearchCandidates)),
     options: Schema.Unknown,
     searchObjective: ObjectiveSchema,
     developmentScore: Schema.Finite,
@@ -170,17 +171,17 @@ const CommonReportSchema = {
       Schema.Struct({
         kind: Schema.Literal("success"),
         id: CandidateIdSchema,
-        candidateIndex: Schema.Natural.check(Schema.isLessThan(32)),
+        candidateIndex: Schema.Natural.check(Schema.isLessThan(maximumSearchCandidates)),
         score: Schema.Finite,
       }),
       Schema.Struct({
         kind: Schema.Literal("failure"),
         id: CandidateIdSchema,
-        candidateIndex: Schema.Natural.check(Schema.isLessThan(32)),
+        candidateIndex: Schema.Natural.check(Schema.isLessThan(maximumSearchCandidates)),
         failure: PortableEvaluationFailureSchema,
       }),
     ]),
-  ).check(Schema.isMaxLength(32)),
+  ).check(Schema.isMaxLength(maximumSearchCandidates)),
   searchPlan: Schema.Struct({
     horizonMs: Schema.Int.check(
       Schema.isGreaterThan(0),
@@ -428,7 +429,7 @@ const reportConsistency = (
       winner?.kind !== "success" ||
       winner.id !== selected.id ||
       winner.score !== selected.developmentScore ||
-      report.candidates.length > 32 ||
+      report.candidates.length > maximumSearchCandidates ||
       report.candidates.some(
         (candidate, index) =>
           candidate.candidateIndex !== index ||
@@ -645,7 +646,7 @@ export const evaluateHoldout = Effect.fn("Prophet.evaluateHoldout")(function* (
   if (
     !Array.isArray(search?.candidates) ||
     search.candidates.length === 0 ||
-    search.candidates.length > 32 ||
+    search.candidates.length > maximumSearchCandidates ||
     selected?.kind !== "success" ||
     selected.id !== search.selected.id ||
     selected.candidateIndex !== search.selected.candidateIndex ||

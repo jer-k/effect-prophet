@@ -84,7 +84,7 @@ The defaults are Prophet's, so a fit with no options produces the same model as 
 | `performance_metrics(df, monthly=True)`          | `performanceMetrics(result, { ..., horizon: "calendar-month" })`                             |
 | `register_performance_metric`                    | a custom metric definition in `metrics`                                                      |
 | `model_to_json`, `model_from_json`               | `encodeFittedModel`, `decodeFittedModel`; the format is not Python's                         |
-| a loop over parameter grids                      | `searchModels` and `evaluateHoldout`                                                         |
+| a loop over parameter grids                      | `makeParameterGrid` to build the candidates, then `searchModels` and `evaluateHoldout`       |
 
 ## Gotchas for Python users
 

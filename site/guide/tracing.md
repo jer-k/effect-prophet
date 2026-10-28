@@ -97,6 +97,7 @@ Each of these functions creates a span named after it:
 | `Prophet.crossValidate`                                                                            | `crossValidate`                                                                               |
 | `Prophet.makeFutureTimestamps`                                                                     | `makeFutureTimestamps`                                                                        |
 | `Prophet.planRollingOrigin`                                                                        | `planRollingOrigin`                                                                           |
+| `Prophet.makeParameterGrid`                                                                        | `makeParameterGrid`, around one `Prophet.decodeOptions` for the base and one per candidate    |
 | `Prophet.searchModels`                                                                             | `searchModels`                                                                                |
 | `Prophet.evaluateHoldout`                                                                          | `evaluateHoldout`                                                                             |
 | `Prophet.crossValidateBaseline`                                                                    | `crossValidateBaseline`                                                                       |
@@ -157,6 +158,16 @@ Every attribute name starts with `effect_prophet.`.
 | ----------------- | -------------------------------------------------------------------------------- |
 | `frequency`       | The `frequency` used, such as `D` or `MS`                                        |
 | `timestamp.count` | Timestamps returned, history included. Neither is set when the input is invalid. |
+
+**`Prophet.makeParameterGrid`**
+
+| Attribute         | Meaning                                               |
+| ----------------- | ----------------------------------------------------- |
+| `axis.count`      | Settings varied. Set only when the grid is valid.     |
+| `candidate.count` | Candidates returned. Set only when the grid is valid. |
+
+A grid that is too large, has an empty or repeated setting, or isn't shaped like a grid fails
+before any `Prophet.decodeOptions` span.
 
 **`effect-prophet.wasm.fit`**
 
