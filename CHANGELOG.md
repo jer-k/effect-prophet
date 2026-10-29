@@ -4,56 +4,66 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows
 [Semantic Versioning](https://semver.org/). Before 1.0, minor versions may include breaking changes.
 
-## [Unreleased]
+## [0.5.0] - 2026-10-29
+
+Helpers for the steps around a forecast: list the dates to forecast, check how well a model fits,
+score forecasts by month or with your own metrics, and try every combination of settings. Existing
+code works as before.
 
 ### Added
 
-- `makeFutureTimestamps` lists the dates to forecast after a history or a timestamp, like Python's
-  `make_future_dataframe`. As in Python, the history's own dates come first unless you pass
+- **`makeFutureTimestamps`** lists the dates to forecast after a history or a timestamp, like
+  Python's `make_future_dataframe`. The history's own dates come first unless you pass
   `includeHistory: false`. It takes pandas' `h`, `D`, `W`, `W-MON` to `W-SAT`, `MS` and `ME`, and
   matches pandas on month ends, leap years and time of day. See
   [Future rows](https://jer-k.github.io/effect-prophet/guide/your-data#future-rows).
-- `performanceMetrics` and `comparePerformance` take `horizon: "calendar-month"` to group forecasts
-  by UTC calendar months from their cutoff, like Python's `performance_metrics(monthly=True)`.
-  Scores then carry `horizonMonths` instead of `horizonMs`. See
-  [Grouping by calendar month](https://jer-k.github.io/effect-prophet/examples/cross-validation#grouping-by-calendar-month).
-- Custom metrics, like Python's `register_performance_metric`. Pass a definition next to the
-  built-in names in `performanceMetrics` or `comparePerformance`, or as the `objective` of
-  `searchModels`. It scores each forecast and combines them with a mean, median, quantile or
-  ratio of means, using Prophet's windows. See
-  [Your own metrics](https://jer-k.github.io/effect-prophet/examples/cross-validation#your-own-metrics).
-- `residuals` predicts each measurement with a fitted model and returns `actual`, `predicted` and
-  `residual` (`actual - predicted`) per row, ready to chart. It never refits, and tied timestamps
-  keep their own regressors, capacities and conditions. See
+- **`residuals`** predicts each measurement with a fitted model and returns `actual`, `predicted`
+  and `residual` per row, ready to chart. It never refits. See
   [Checking the fit](https://jer-k.github.io/effect-prophet/examples/residuals).
-- `makeParameterGrid` expands base options and lists of values to try into every combination, as
-  candidates for `searchModels`, and checks each one before the search starts. It varies
-  `changepointPriorScale`, `changepoints`, `seasonalityMode`, `holidaysMode`,
-  `builtInSeasonalities`, `seasonalities` and `scaling`. `maximumSearchCandidates` (32) is
-  exported. See
+- **Monthly horizons.** `performanceMetrics` and `comparePerformance` take
+  `horizon: "calendar-month"` to group forecasts by calendar months from their cutoff, like
+  Python's `performance_metrics(monthly=True)`. Scores then carry `horizonMonths` instead of
+  `horizonMs`. See
+  [Grouping by calendar month](https://jer-k.github.io/effect-prophet/examples/cross-validation#grouping-by-calendar-month).
+- **Custom metrics**, like Python's `register_performance_metric`. Pass your own definition next to
+  the built-in names in `performanceMetrics` or `comparePerformance`, or as the `objective` of
+  `searchModels`. See
+  [Your own metrics](https://jer-k.github.io/effect-prophet/examples/cross-validation#your-own-metrics).
+- **`makeParameterGrid`** expands base options and lists of values into every combination, as
+  candidates for `searchModels`, and checks each one before the search starts. See
   [Trying every combination](https://jer-k.github.io/effect-prophet/examples/tuning#trying-every-combination).
-- `seasonalityPriorScale` and `holidaysPriorScale` fit options, like Python's
-  `seasonality_prior_scale` and `holidays_prior_scale`. Both default to `10`, and each is the prior
-  for every component that doesn't set its own `priorScale`: built-in and custom seasonalities for
-  the first; events, country holidays and regressors for the second. As in Python, regressors
-  follow `holidaysPriorScale`. `makeParameterGrid` can vary both. See
+- **`seasonalityPriorScale` and `holidaysPriorScale`**, like Python's `seasonality_prior_scale` and
+  `holidays_prior_scale`. Both default to `10` and set the prior for every seasonality, or every
+  event, country holiday and regressor, that doesn't set its own `priorScale`. As in Python,
+  regressors follow `holidaysPriorScale`. See
   [Choosing settings](https://jer-k.github.io/effect-prophet/examples/tuning#comparing-settings).
+- `maximumSearchCandidates` (32) is exported.
 
 ### Changed
 
-- `parseEventCalendar`, `parseRegressorDefinitions` and `parseCountryHolidays` take an optional
-  default prior scale for entries without their own. Called alone, they still default to `10`.
-- `InputValidationError.input` can be `"parameter-grid"`.
 - `rows`, `horizons` and `rolling` metric reports include a `horizon` field, `"duration"` or
   `"calendar-month"`, saying which unit their horizons use.
-- `EvaluationMetricError.metric` can be a custom metric's name, and its `reason` can be
-  `"zero-denominator"`, with new stages `score`, `quantile` and `finalize`.
+- Error fields accept new values: `InputValidationError.input` can be `"parameter-grid"`, and
+  `EvaluationMetricError.metric` can be a custom metric's name, with a new `"zero-denominator"`
+  reason and `score`, `quantile` and `finalize` stages. Update exhaustive checks on these fields.
+- `parseEventCalendar`, `parseRegressorDefinitions` and `parseCountryHolidays` take an optional
+  default prior scale for entries without their own. Called alone, they still default to `10`.
 
 ### Fixed
 
-- The `effect-prophet.wasm.fit` span for a flat trend now counts one parameter per changepoint
-  in `parameter.count`, matching what the engine solves for. `changepoint.count` stays `0`,
-  because a flat trend never bends.
+- The fit span for a flat trend now counts one parameter per changepoint in `parameter.count`,
+  matching what the engine solves for. `changepoint.count` stays `0`, because a flat trend never
+  bends.
+
+### Verification against Python Prophet
+
+- **New fixtures** check `makeFutureTimestamps` against `make_future_dataframe`, monthly and custom
+  metrics against `performance_metrics`, and the global prior scales against Python's constructor
+  options.
+- **New benchmarks** score cross-validation by calendar month and with custom metrics against the
+  same work in Python, on identical forecast rows, and rank a model search by a custom metric.
+- **New benchmarks** fit country holidays, events, a seasonality and a regressor with small global
+  prior scales, with and without per-component overrides.
 
 ## [0.4.0] - 2026-10-25
 
@@ -337,6 +347,7 @@ These Python Prophet features are not implemented in this release:
 - Inputs that cannot define a trend, such as every row sharing one timestamp, return an error where
   Python returns `NaN` forecasts.
 
+[0.5.0]: https://github.com/jer-k/effect-prophet/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/jer-k/effect-prophet/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/jer-k/effect-prophet/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/jer-k/effect-prophet/compare/v0.1.1...v0.2.0
