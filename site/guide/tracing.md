@@ -91,6 +91,7 @@ Each of these functions creates a span named after it:
 | `Prophet.predictUncertainty`                                                                       | `predictUncertainty`                                                                          |
 | `Prophet.predictWithIntervals`                                                                     | `predictWithIntervals`, around its `Prophet.predictUncertainty` and `Prophet.predict` spans   |
 | `Prophet.detectAnomalies`                                                                          | `detectAnomalies`, around `Prophet.decodeObservations` and `Prophet.predictWithIntervals`     |
+| `Prophet.residuals`                                                                                | `residuals`, around `Prophet.decodeObservations` and `Prophet.predict`                        |
 | `Prophet.forecast`                                                                                 | `forecast`, around `Prophet.decodeObservations`, `Prophet.fit` and `Prophet.predict`          |
 | `Prophet.anomalies`                                                                                | `anomalies`, around `Prophet.decodeObservations`, `Prophet.fit` and `Prophet.detectAnomalies` |
 | `Prophet.crossValidate`                                                                            | `crossValidate`                                                                               |
@@ -198,6 +199,12 @@ Every attribute name starts with `effect_prophet.`.
 | ------------------- | ------------------------------------------------------- |
 | `observation.count` | Measurements checked. Set only when the check succeeds. |
 | `anomaly.count`     | Measurements outside their range. Set only on success.  |
+
+**`Prophet.residuals`**
+
+| Attribute           | Meaning                                                          |
+| ------------------- | ---------------------------------------------------------------- |
+| `observation.count` | Measurements compared. Set only when every residual is computed. |
 
 **Country calendars**
 

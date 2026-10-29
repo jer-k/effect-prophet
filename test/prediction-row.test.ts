@@ -1,8 +1,12 @@
 import { Effect } from "effect";
 import { describe, expect, it } from "vitest";
 
-import { InputValidationError } from "../src/errors";
-import { decodePredictionRows, predictionRowFromObservation } from "../src/prediction-row";
+import { InputValidationError, PredictionError } from "../src/errors";
+import {
+  decodePredictionRows,
+  pairForecastsWithObservations,
+  predictionRowFromObservation,
+} from "../src/prediction-row";
 
 describe("decodePredictionRows", () => {
   it("parses mixed timestamp and object rows without reordering duplicates", async () => {
@@ -80,5 +84,50 @@ describe("predictionRowFromObservation", () => {
     expect(predictionRowFromObservation({ timestamp: 0, value: 1 })).toEqual({
       timestamp: "1970-01-01T00:00:00.000Z",
     });
+  });
+});
+
+describe("pairForecastsWithObservations", () => {
+  const observations = [
+    { timestamp: 1, value: 10, regressors: { promotion: 1 } },
+    { timestamp: 1, value: 11, regressors: { promotion: 0 } },
+    { timestamp: 2, value: 12 },
+  ];
+
+  it("pairs by position, keeping tied rows apart", async () => {
+    const forecasts = [
+      { timestamp: 1, value: 9 },
+      { timestamp: 1, value: 8 },
+      { timestamp: 2, value: 7 },
+    ];
+
+    const pairs = await Effect.runPromise(
+      pairForecastsWithObservations(observations, forecasts, "misaligned"),
+    );
+
+    expect(pairs).toEqual(
+      observations.map((observation, index) => [observation, forecasts[index]]),
+    );
+    expect(pairs[0]?.[0]).toBe(observations[0]);
+    expect(pairs[1]?.[1]).toBe(forecasts[1]);
+  });
+
+  it("rejects reordered, short or long forecasts", async () => {
+    for (const forecasts of [
+      [{ timestamp: 2 }, { timestamp: 1 }, { timestamp: 1 }],
+      [{ timestamp: 1 }, { timestamp: 1 }],
+      [{ timestamp: 1 }, { timestamp: 1 }, { timestamp: 2 }, { timestamp: 3 }],
+    ]) {
+      const error = await Effect.runPromise(
+        Effect.flip(pairForecastsWithObservations(observations, forecasts, "misaligned")),
+      );
+
+      expect(error).toBeInstanceOf(PredictionError);
+      expect(error).toMatchObject({
+        reason: "backend-failure",
+        timestamp: 1,
+        message: "misaligned",
+      });
+    }
   });
 });

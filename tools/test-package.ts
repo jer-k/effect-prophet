@@ -22,6 +22,7 @@ import {
   comparePerformance,
   performanceMetrics,
   prophetFittingBackendLayer,
+  residuals,
   searchModels,
   inspectCountryHolidays,
   warmStartParameters,
@@ -93,6 +94,7 @@ const expectedDeclarationFiles = [
   "dist/prediction-row.d.ts",
   "dist/prophet.d.ts",
   "dist/regressor.d.ts",
+  "dist/residuals.d.ts",
   "dist/seasonality.d.ts",
   "dist/target-scaling.d.ts",
   "dist/uncertainty.d.ts",
@@ -507,6 +509,14 @@ assert.equal(assessed.intervalWidth, 0.99);
 assert.equal(assessed.rows[0]?.predicted, regressorForecast?.value);
 
 assert.equal(assessed.anomalies[0]?.position, "above");
+
+const [residual] = await Effect.runPromise(
+  residuals(regressorModel, [
+    { timestamp: "2024-01-01T00:00:04.000Z", value: 1_000, regressors: { promotion: 1 } },
+  ]),
+);
+
+assert.equal(residual?.residual, 1_000 - (regressorForecast?.value ?? NaN));
 
 const flagged = await Effect.runPromise(
   anomalies(

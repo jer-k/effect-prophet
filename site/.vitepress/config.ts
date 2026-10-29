@@ -44,6 +44,7 @@ export default defineConfig({
           { text: "Flat trends", link: "/examples/flat-trend" },
           { text: "Uncertainty ranges", link: "/examples/uncertainty" },
           { text: "Finding anomalies", link: "/examples/anomalies" },
+          { text: "Checking the fit", link: "/examples/residuals" },
           { text: "Saving and loading models", link: "/examples/saving-models" },
           { text: "Testing forecast accuracy", link: "/examples/cross-validation" },
           { text: "Choosing settings", link: "/examples/tuning" },

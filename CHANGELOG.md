@@ -22,6 +22,10 @@ All notable changes to this project are documented here. The format follows
   `searchModels`. It scores each forecast and combines them with a mean, median, quantile or
   ratio of means, using Prophet's windows. See
   [Your own metrics](https://jer-k.github.io/effect-prophet/examples/cross-validation#your-own-metrics).
+- `residuals` predicts each measurement with a fitted model and returns `actual`, `predicted` and
+  `residual` (`actual - predicted`) per row, ready to chart. It never refits, and tied timestamps
+  keep their own regressors, capacities and conditions. See
+  [Checking the fit](https://jer-k.github.io/effect-prophet/examples/residuals).
 
 ### Changed
 

@@ -204,6 +204,8 @@ export {
 
 export { type LogisticFloorPolicy, type LogisticTargetScaling } from "./logistic";
 
+export { residuals, type ResidualRow } from "./residuals";
+
 export {
   defaultSeasonalityPriorScale,
   type EncodedSeasonality,
