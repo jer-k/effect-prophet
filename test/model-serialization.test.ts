@@ -8,7 +8,9 @@ import {
   fit,
   predict,
   prophetFittingBackendLayer,
+  warmStartParameters,
   type EncodedFittedModel,
+  type EncodedProphetOptions,
   type FittedPiecewiseMapProphet,
 } from "../src/index";
 import { fixedPiecewiseModel as fittedModel } from "./helpers/fixed-piecewise-model";
@@ -78,6 +80,76 @@ describe("fitted model serialization", () => {
     expect(await Effect.runPromise(predict(restoredLegacy, timestamps))).toEqual(
       await Effect.runPromise(predict(model, timestamps)),
     );
+  });
+
+  it("stores global prior scales only as resolved component priors", async () => {
+    const day = 86_400_000;
+    const start = Date.UTC(2024, 5, 20);
+
+    const observations = Array.from({ length: 30 }, (_, index) => ({
+      timestamp: new Date(start + index * day).toISOString(),
+      value: 20 + 0.1 * index + Math.sin(index) + (index === 14 ? 2 : 0),
+      regressors: { promotion: index % 3 },
+    }));
+
+    const fitWith = (options: EncodedProphetOptions) =>
+      Effect.runPromise(
+        fit(observations, options).pipe(Effect.provide(prophetFittingBackendLayer)),
+      );
+
+    const common = {
+      map: { changepoints: { mode: "explicit", timestamps: [] } },
+      builtInSeasonalities: { daily: "off", yearly: "off" },
+    } as const;
+
+    const globals = await fitWith({
+      ...common,
+      seasonalityPriorScale: 0.5,
+      holidaysPriorScale: 0.25,
+      countryHolidays: { country: "US" },
+      seasonalities: [{ name: "three-day", periodDays: 3, fourierOrder: 1 }],
+      events: [{ name: "launch", date: "2024-07-04" }],
+      regressors: [{ name: "promotion" }],
+    });
+
+    // Every prior written out, except automatic weekly's, which only the global value can set.
+    const explicit = await fitWith({
+      ...common,
+      seasonalityPriorScale: 0.5,
+      countryHolidays: { country: "US", priorScale: 0.25 },
+      seasonalities: [{ name: "three-day", periodDays: 3, fourierOrder: 1, priorScale: 0.5 }],
+      events: [{ name: "launch", date: "2024-07-04", priorScale: 0.25 }],
+      regressors: [{ name: "promotion", priorScale: 0.25 }],
+    });
+
+    const encoded = await Effect.runPromise(encodeFittedModel(globals));
+
+    expect(encoded).toEqual(await Effect.runPromise(encodeFittedModel(explicit)));
+
+    const decoded = await Effect.runPromise(decodeFittedModel(JSON.parse(JSON.stringify(encoded))));
+
+    const rows = [
+      { timestamp: "2024-07-20T00:00:00.000Z", regressors: { promotion: 1 } },
+      { timestamp: "2025-07-04T00:00:00.000Z", regressors: { promotion: 2 } },
+    ];
+
+    expect(decoded).toEqual(globals);
+    expect(await Effect.runPromise(predict(decoded, rows))).toEqual(
+      await Effect.runPromise(predict(globals, rows)),
+    );
+
+    const warm = await fitWith({
+      ...common,
+      seasonalityPriorScale: 0.5,
+      holidaysPriorScale: 0.25,
+      countryHolidays: { country: "US" },
+      seasonalities: [{ name: "three-day", periodDays: 3, fourierOrder: 1 }],
+      events: [{ name: "launch", date: "2024-07-04" }],
+      regressors: [{ name: "promotion" }],
+      map: { ...common.map, warmStart: warmStartParameters(decoded) },
+    });
+
+    expect(warm.events).toEqual(globals.events);
   });
 
   it("decodes legacy MAP payloads with their historical absmax scale", async () => {

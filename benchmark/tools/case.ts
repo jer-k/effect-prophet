@@ -114,7 +114,8 @@ const BenchmarkSeasonalitySchema = Schema.Struct({
   name: NonEmptyString,
   periodDays: PositiveFinite,
   fourierOrder: PositiveInteger,
-  priorScale: PositiveFinite,
+  // Omitted priors take the configuration's global prior scale on both sides.
+  priorScale: Schema.optionalKey(PositiveFinite),
   conditionName: Schema.optionalKey(NonEmptyString),
   mode: Schema.optionalKey(Schema.Literals(["additive", "multiplicative"])),
 });
@@ -128,12 +129,12 @@ const BenchmarkEventSchema = Schema.Struct({
   ),
   lowerWindowDays: Schema.Int,
   upperWindowDays: Schema.Int,
-  priorScale: PositiveFinite,
+  priorScale: Schema.optionalKey(PositiveFinite),
 });
 
 const BenchmarkRegressorSchema = Schema.Struct({
   name: NonEmptyString,
-  priorScale: PositiveFinite,
+  priorScale: Schema.optionalKey(PositiveFinite),
   standardization: Schema.Literals(["auto", "always", "never"]),
   mode: Schema.optionalKey(Schema.Literals(["additive", "multiplicative"])),
 });
@@ -153,7 +154,8 @@ const BenchmarkChangepointsSchema = Schema.Union([
 const CountryHolidaysSchema = Schema.Struct({
   country: NonEmptyString,
   coverage: Schema.Literals(["reject-known-gaps", "allow-known-gaps"]),
-  priorScale: PositiveFinite,
+  // Parsing fills an omitted prior from the configuration's `holidaysPriorScale`.
+  priorScale: Schema.optionalKey(PositiveFinite),
 });
 
 const LinearMapWorkloadSchema = Schema.Struct({
@@ -196,6 +198,9 @@ export const MapWorkloadSchema = Schema.Struct({
     scaling: Schema.Literals(["absmax", "minmax"]),
     seasonalityMode: Schema.Literals(["additive", "multiplicative"]),
     holidaysMode: Schema.Literals(["additive", "multiplicative"]),
+    // Prophet's `seasonality_prior_scale` and `holidays_prior_scale`; both default to 10.
+    seasonalityPriorScale: Schema.optionalKey(PositiveFinite),
+    holidaysPriorScale: Schema.optionalKey(PositiveFinite),
     changepoints: BenchmarkChangepointsSchema,
     changepointPriorScale: PositiveFinite,
     seasonalities: Schema.Array(BenchmarkSeasonalitySchema),
@@ -663,6 +668,8 @@ const validateCaseRelationships = (
         configuration.scaling !== "absmax" ||
         configuration.seasonalityMode !== "additive" ||
         configuration.holidaysMode !== "additive" ||
+        configuration.seasonalityPriorScale !== undefined ||
+        configuration.holidaysPriorScale !== undefined ||
         configuration.changepointPriorScale !== 0.05 ||
         // Prophet resolves the same default grid for every growth. Retained flat evidence
         // recorded it as explicit `[]` before flat growth accepted changepoint settings.
@@ -737,7 +744,10 @@ export const parseBenchmarkCases = (
           );
         }
 
-        return parseCountryHolidays(selection).pipe(
+        const holidaysPriorScale =
+          workload.kind === "linear-map" ? undefined : workload.configuration.holidaysPriorScale;
+
+        return parseCountryHolidays(selection, holidaysPriorScale).pipe(
           Effect.mapError(
             (error) => new BenchmarkInputError({ input: "cases", message: error.message }),
           ),

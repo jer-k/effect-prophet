@@ -61,6 +61,14 @@ describe("seasonality domain", () => {
     expect(definitions[0]?.name).toBe("business-week");
   });
 
+  it("gives definitions without a prior the caller's default", async () => {
+    const definitions = await Effect.runPromise(
+      parseSeasonalities(encodedSeasonalities, "additive", 0.5),
+    );
+
+    expect(definitions.map((definition) => definition.priorScale)).toEqual([0.5, 3]);
+  });
+
   it("uses exact case-sensitive names without normalization", async () => {
     const definitions = await Effect.runPromise(
       parseSeasonalities([

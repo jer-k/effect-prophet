@@ -30,7 +30,8 @@ class names; names such as `UnitedStates` and silently normalized inputs are rej
 ## Model behavior
 
 `countryHolidays: { country: "US" }` selects country-level provider defaults. Registered aliases
-such as `USA`, `UK` and `TU` resolve to canonical codes. Optional `priorScale` defaults to 10;
+such as `USA`, `UK` and `TU` resolve to canonical codes. Optional `priorScale` defaults to the
+model's `holidaysPriorScale`, which defaults to 10;
 `coverage` defaults to `"reject-known-gaps"`. Country occurrences have zero-day windows and use
 `holidaysMode` (which defaults to `seasonalityMode`). Custom events retain their own priors/windows;
 a shared name must have one consistent prior. Names must remain distinct from seasonalities,

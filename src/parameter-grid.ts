@@ -32,6 +32,8 @@ export interface ParameterGridAxes {
   /** Replaces `map.changepoints`. */
   readonly changepoints?: ReadonlyArray<EncodedChangepointSetting>;
 
+  readonly seasonalityPriorScale?: ReadonlyArray<number>;
+  readonly holidaysPriorScale?: ReadonlyArray<number>;
   readonly seasonalityMode?: ReadonlyArray<ComponentMode>;
   readonly holidaysMode?: ReadonlyArray<ComponentMode>;
   readonly builtInSeasonalities?: ReadonlyArray<EncodedBuiltInSeasonalities>;
@@ -58,6 +60,8 @@ type Choice = {
 const axisOrder = [
   "changepointPriorScale",
   "changepoints",
+  "seasonalityPriorScale",
+  "holidaysPriorScale",
   "seasonalityMode",
   "holidaysMode",
   "builtInSeasonalities",
@@ -69,6 +73,8 @@ const axisOrder = [
 const axisPaths: Readonly<Record<Axis, ReadonlyArray<string>>> = {
   changepointPriorScale: ["map", "changepointPriorScale"],
   changepoints: ["map", "changepoints"],
+  seasonalityPriorScale: ["seasonalityPriorScale"],
+  holidaysPriorScale: ["holidaysPriorScale"],
   seasonalityMode: ["seasonalityMode"],
   holidaysMode: ["holidaysMode"],
   builtInSeasonalities: ["builtInSeasonalities"],
@@ -83,6 +89,8 @@ const GridSchema = Schema.Struct({
   axes: Schema.Struct({
     changepointPriorScale: Schema.optionalKey(AxisValuesSchema),
     changepoints: Schema.optionalKey(AxisValuesSchema),
+    seasonalityPriorScale: Schema.optionalKey(AxisValuesSchema),
+    holidaysPriorScale: Schema.optionalKey(AxisValuesSchema),
     seasonalityMode: Schema.optionalKey(AxisValuesSchema),
     holidaysMode: Schema.optionalKey(AxisValuesSchema),
     builtInSeasonalities: Schema.optionalKey(AxisValuesSchema),
@@ -123,6 +131,10 @@ const withChoice = (options: EncodedProphetOptions, choice: Choice): EncodedProp
       return { ...options, map: { ...options.map, changepointPriorScale: choice.value } };
     case "changepoints":
       return { ...options, map: { ...options.map, changepoints: choice.value } };
+    case "seasonalityPriorScale":
+      return { ...options, seasonalityPriorScale: choice.value };
+    case "holidaysPriorScale":
+      return { ...options, holidaysPriorScale: choice.value };
     case "seasonalityMode":
       return { ...options, seasonalityMode: choice.value };
     case "holidaysMode":
@@ -142,6 +154,10 @@ const choicesOf = (axes: ParameterGridAxes, axis: Axis): ReadonlyArray<Choice> =
     case "changepointPriorScale":
       return (axes[axis] ?? []).map((value) => ({ axis, value }));
     case "changepoints":
+      return (axes[axis] ?? []).map((value) => ({ axis, value }));
+    case "seasonalityPriorScale":
+      return (axes[axis] ?? []).map((value) => ({ axis, value }));
+    case "holidaysPriorScale":
       return (axes[axis] ?? []).map((value) => ({ axis, value }));
     case "seasonalityMode":
       return (axes[axis] ?? []).map((value) => ({ axis, value }));
@@ -164,10 +180,10 @@ const startsWith = (path: ReadonlyArray<PropertyKey>, prefix: ReadonlyArray<Prop
  * for `searchModels`.
  *
  * Axes vary in a fixed order, the first slowest: `changepointPriorScale`, `changepoints`,
- * `seasonalityMode`, `holidaysMode`, `builtInSeasonalities`, `seasonalities`, `scaling`. Each axis
- * value replaces the base's value outright. A candidate's ID is `grid` followed by the index of its
- * value on each given axis, in that order, such as `grid-2-0`; with no axes the one candidate is
- * the base, with ID `grid`.
+ * `seasonalityPriorScale`, `holidaysPriorScale`, `seasonalityMode`, `holidaysMode`,
+ * `builtInSeasonalities`, `seasonalities`, `scaling`. Each axis value replaces the base's value
+ * outright. A candidate's ID is `grid` followed by the index of its value on each given axis, in
+ * that order, such as `grid-2-0`; with no axes the one candidate is the base, with ID `grid`.
  *
  * Every candidate is checked with the same rules as `fit` before any is returned. Nothing is
  * fitted or evaluated.

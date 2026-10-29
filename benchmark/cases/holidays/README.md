@@ -1,6 +1,6 @@
 # Country-calendar benchmark contract
 
-[`country-calendars.ts`](country-calendars.ts) declares 33 country/control cases through the
+[`country-calendars.ts`](country-calendars.ts) declares 35 country/control cases through the
 existing public-API harness. Declarations are coverage, not release evidence. The snapshot/provider
 identity is frozen into each run's `cases.json`; its manifest, coverage inventory and compiled
 catalog are hashed with the gate sources. Python uses real `add_country_holidays` with Prophet
@@ -16,6 +16,11 @@ catalog are hashed with the gate sources. Python uses real `add_country_holidays
   no-calendar control; India's 2036/2037 partial output with explicit `allow-known-gaps`.
 - US country/custom events with conditional weekly seasonality and a regressor; seeded scalar
   uncertainty through the existing uncertainty owner and evidence class.
+- The same mixed features with `seasonalityPriorScale` and `holidaysPriorScale` (Python's
+  `seasonality_prior_scale` and `holidays_prior_scale`): once with no per-component priors, so the
+  regressor follows `holidaysPriorScale` as in Python, and once with explicit overrides that leave
+  only the country calendar on it. Python has no per-country prior, so the adapter rejects a
+  country `priorScale` it can't express as `holidays_prior_scale`.
 - Sweden's occurrence-heavy and China's name-rich calendars: 730/2,190 daily training rows and
   512-row prediction batches, plus Sweden's identical long history with 32 future rows. Each
   scaling dataset also has a no-calendar control (`country-none-flat-*`), and each country case

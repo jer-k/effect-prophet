@@ -9,6 +9,7 @@ import {
 } from "./country-holidays";
 import { InputValidationError, inputValidationErrorFromIssue } from "./errors";
 import {
+  defaultEventPriorScale,
   emptyEventCalendar,
   parseEventCalendar,
   type EncodedEventOccurrence,
@@ -31,6 +32,7 @@ import {
   type RegressorDefinition,
 } from "./regressor";
 import {
+  defaultSeasonalityPriorScale,
   parseSeasonalities,
   type EncodedSeasonality,
   type InvalidSeasonality,
@@ -42,7 +44,10 @@ import { WarmStartParametersSchema, type WarmStartParameters } from "./warm-star
 /** Valid trend forms represented by the current public fitting configuration. */
 export type Growth = "flat" | "linear" | "logistic";
 
-/** A public control for one built-in daily, weekly, or yearly seasonality. */
+/**
+ * A public control for one built-in daily, weekly, or yearly seasonality. `"auto"`, and `"on"`
+ * without a `priorScale`, use the options' `seasonalityPriorScale`.
+ */
 export type EncodedBuiltInSeasonalitySetting =
   | "off"
   | "auto"
@@ -80,6 +85,20 @@ interface EncodedBuiltInOptions {
   readonly countryHolidays?: EncodedCountryHolidays;
   readonly seasonalityMode?: ComponentMode;
   readonly holidaysMode?: ComponentMode;
+
+  /**
+   * Like Python's `seasonality_prior_scale`: the prior scale for built-in and custom seasonalities
+   * that do not set their own. Defaults to `10`.
+   */
+  readonly seasonalityPriorScale?: number;
+
+  /**
+   * Like Python's `holidays_prior_scale`: the prior scale for events, country holidays and
+   * regressors that do not set their own. Defaults to `10`. Regressors follow it as in Python, so
+   * give them their own `priorScale` to tune holidays alone.
+   */
+  readonly holidaysPriorScale?: number;
+
   readonly builtInSeasonalities?: EncodedBuiltInSeasonalities;
   readonly events?: ReadonlyArray<EncodedEventOccurrence>;
   readonly regressors?: ReadonlyArray<EncodedRegressorDefinition>;
@@ -222,6 +241,8 @@ interface ParsedBuiltInOptions {
   readonly countryHolidays?: CountryHolidays;
   readonly seasonalityMode: ComponentMode;
   readonly holidaysMode: ComponentMode;
+  readonly seasonalityPriorScale: number;
+  readonly holidaysPriorScale: number;
   readonly builtInSeasonalities: BuiltInSeasonalities;
   readonly events: EventCalendar;
   readonly regressors: ReadonlyArray<RegressorDefinition>;
@@ -317,6 +338,8 @@ export const defaultProphetOptions: LinearTrendOptions = Object.freeze({
   growth: "linear",
   seasonalityMode: "additive",
   holidaysMode: "additive",
+  seasonalityPriorScale: defaultSeasonalityPriorScale,
+  holidaysPriorScale: defaultEventPriorScale,
   seasonalities: emptySeasonalities,
   builtInSeasonalities: defaultBuiltInSeasonalities,
   events: emptyEventCalendar,
@@ -326,8 +349,6 @@ export const defaultProphetOptions: LinearTrendOptions = Object.freeze({
 
 const GrowthSchema = Schema.Literals(["flat", "linear", "logistic"]);
 
-const BuiltInPriorScale = PositiveFinite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(10)));
-
 const builtInSettingSchema = (defaultOrder: number) =>
   Schema.Union([
     Schema.Literals(["off", "auto"]),
@@ -336,7 +357,7 @@ const builtInSettingSchema = (defaultOrder: number) =>
       fourierOrder: PositiveFourierOrder.pipe(
         Schema.withDecodingDefaultKey(Effect.succeed(defaultOrder)),
       ),
-      priorScale: BuiltInPriorScale,
+      priorScale: Schema.optionalKey(PositiveFinite),
     }),
   ]);
 
@@ -393,6 +414,12 @@ const ProphetOptionsSyntaxSchema = Schema.Struct({
     Schema.withDecodingDefaultKey(Effect.succeed("additive")),
   ),
   holidaysMode: Schema.optionalKey(ComponentModeSchema),
+  seasonalityPriorScale: PositiveFinite.pipe(
+    Schema.withDecodingDefaultKey(Effect.succeed(defaultSeasonalityPriorScale)),
+  ),
+  holidaysPriorScale: PositiveFinite.pipe(
+    Schema.withDecodingDefaultKey(Effect.succeed(defaultEventPriorScale)),
+  ),
   seasonalities: Schema.Array(Schema.Unknown).pipe(
     Schema.withDecodingDefaultKey(Effect.succeed(defaultProphetOptions.seasonalities)),
   ),
@@ -412,14 +439,31 @@ const decodeProphetOptionsSyntax = Schema.decodeUnknownEffect(ProphetOptionsSynt
 
 const emptyOptions: EncodedLinearTrendOptions = {};
 
-const freezeBuiltInSetting = (setting: BuiltInSeasonalitySetting): BuiltInSeasonalitySetting =>
-  setting === "off" || setting === "auto" ? setting : Object.freeze(setting);
+type DecodedBuiltInSeasonalities = typeof BuiltInSeasonalitiesSchema.Type;
 
-const freezeBuiltInSeasonalities = (seasonalities: BuiltInSeasonalities): BuiltInSeasonalities =>
+type DecodedBuiltInSeasonalitySetting = DecodedBuiltInSeasonalities["daily"];
+
+// "auto" stays a request; fit-time resolution gives it the same default prior scale.
+const resolveBuiltInSetting = (
+  setting: DecodedBuiltInSeasonalitySetting,
+  defaultPriorScale: number,
+): BuiltInSeasonalitySetting =>
+  setting === "off" || setting === "auto"
+    ? setting
+    : Object.freeze({
+        mode: setting.mode,
+        fourierOrder: setting.fourierOrder,
+        priorScale: setting.priorScale ?? defaultPriorScale,
+      });
+
+const resolveBuiltInSeasonalities = (
+  seasonalities: DecodedBuiltInSeasonalities,
+  defaultPriorScale: number,
+): BuiltInSeasonalities =>
   Object.freeze({
-    daily: freezeBuiltInSetting(seasonalities.daily),
-    weekly: freezeBuiltInSetting(seasonalities.weekly),
-    yearly: freezeBuiltInSetting(seasonalities.yearly),
+    daily: resolveBuiltInSetting(seasonalities.daily, defaultPriorScale),
+    weekly: resolveBuiltInSetting(seasonalities.weekly, defaultPriorScale),
+    yearly: resolveBuiltInSetting(seasonalities.yearly, defaultPriorScale),
   });
 
 const freezeMapOptions = <Optimizer extends object>(
@@ -589,30 +633,39 @@ export const decodeOptions = Effect.fn("Prophet.decodeOptions")(function* (
     Effect.mapError((error) => inputValidationErrorFromIssue("options", error.issue)),
   );
 
+  // Each component without its own prior scale takes the global one, as in Python.
+  const { seasonalityPriorScale, holidaysPriorScale } = syntax;
+
   const countryHolidays =
     syntax.countryHolidays === undefined
       ? undefined
-      : yield* parseCountryHolidays(syntax.countryHolidays);
+      : yield* parseCountryHolidays(syntax.countryHolidays, holidaysPriorScale);
 
   const seasonalities = yield* parseSeasonalities(
     syntax.seasonalities,
     syntax.seasonalityMode,
+    seasonalityPriorScale,
   ).pipe(Effect.mapError(optionsValidationErrorFromSeasonality));
 
   const holidaysMode = syntax.holidaysMode ?? syntax.seasonalityMode;
 
-  const events = yield* parseEventCalendar(syntax.events, holidaysMode).pipe(
+  const events = yield* parseEventCalendar(syntax.events, holidaysMode, holidaysPriorScale).pipe(
     Effect.mapError(optionsValidationErrorFromEvents),
   );
 
+  // Python's add_regressor falls back to holidays_prior_scale, not seasonality_prior_scale.
   const regressors = yield* parseRegressorDefinitions(
     syntax.regressors,
     syntax.seasonalityMode,
+    holidaysPriorScale,
   ).pipe(Effect.mapError(optionsValidationErrorFromRegressors));
 
   yield* checkOptionFeatureNames(seasonalities, events, regressors);
 
-  const builtInSeasonalities = freezeBuiltInSeasonalities(syntax.builtInSeasonalities);
+  const builtInSeasonalities = resolveBuiltInSeasonalities(
+    syntax.builtInSeasonalities,
+    seasonalityPriorScale,
+  );
 
   const optimizer =
     syntax.map?.optimizer === undefined
@@ -652,6 +705,8 @@ export const decodeOptions = Effect.fn("Prophet.decodeOptions")(function* (
     ...calendarOptions,
     seasonalityMode: syntax.seasonalityMode,
     holidaysMode,
+    seasonalityPriorScale,
+    holidaysPriorScale,
   } as const;
 
   const firstSeasonality = seasonalities[0];

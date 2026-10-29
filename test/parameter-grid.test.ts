@@ -63,6 +63,51 @@ describe("makeParameterGrid", () => {
     ]);
   });
 
+  it("varies the global prior scales after changepoints and before the modes", async () => {
+    const candidates = await run({
+      base: { events: [{ name: "launch", date: "2025-01-10" }] },
+      axes: {
+        seasonalityMode: ["additive", "multiplicative"],
+        holidaysPriorScale: [0.1, 10],
+        seasonalityPriorScale: [0.01, 1],
+        changepoints: [{ mode: "auto", count: 10 }],
+      },
+    });
+
+    expect(candidates).toHaveLength(8);
+    expect(candidates[5]).toEqual({
+      id: "grid-0-1-0-1",
+      options: {
+        events: [{ name: "launch", date: "2025-01-10" }],
+        map: { changepoints: { mode: "auto", count: 10 } },
+        seasonalityPriorScale: 1,
+        holidaysPriorScale: 0.1,
+        seasonalityMode: "multiplicative",
+      },
+    });
+
+    expect(
+      candidates.map(({ options }) => [
+        options.seasonalityPriorScale,
+        options.holidaysPriorScale,
+        options.seasonalityMode,
+      ]),
+    ).toEqual([
+      [0.01, 0.1, "additive"],
+      [0.01, 0.1, "multiplicative"],
+      [0.01, 10, "additive"],
+      [0.01, 10, "multiplicative"],
+      [1, 0.1, "additive"],
+      [1, 0.1, "multiplicative"],
+      [1, 10, "additive"],
+      [1, 10, "multiplicative"],
+    ]);
+
+    const decoded = await Effect.runPromise(decodeOptions(candidates[5]?.options));
+
+    expect(decoded.events.layout.priorScales).toEqual([0.1]);
+  });
+
   it("returns the base alone when there are no axes", async () => {
     expect(await run({ base: { growth: "flat" }, axes: {} })).toEqual([
       { id: "grid", options: { growth: "flat" } },
@@ -171,6 +216,9 @@ describe("makeParameterGrid", () => {
       ['{"axes":{},"typo":1}', ["typo"]],
       ['{"base":{}}', ["axes"]],
       ['{"axes":{"changepointPriorScale":[0.1,0.5,0.1]}}', ["axes", "changepointPriorScale", 2]],
+      ['{"axes":{"seasonalityPriorScale":[1,1]}}', ["axes", "seasonalityPriorScale", 1]],
+      ['{"axes":{"holidaysPriorScale":[0.1,10,0.1]}}', ["axes", "holidaysPriorScale", 2]],
+      ['{"axes":{"holidaysPriorScale":[]}}', ["axes", "holidaysPriorScale"]],
       [
         JSON.stringify({ axes: { seasonalities: [[monthly], [{ ...monthly }]] } }),
         ["axes", "seasonalities", 1],
@@ -213,6 +261,8 @@ describe("makeParameterGrid", () => {
       {
         axes: {
           changepointPriorScale: repeated,
+          seasonalityPriorScale: repeated,
+          holidaysPriorScale: repeated,
           seasonalityMode: Array.from({ length: 200 }, () => "additive" as const),
           holidaysMode: Array.from({ length: 200 }, () => "additive" as const),
           scaling: Array.from({ length: 200 }, () => "absmax" as const),
@@ -248,6 +298,37 @@ describe("makeParameterGrid", () => {
     });
 
     expect(nested.issues?.[0]?.path).toEqual(["axes", "seasonalities", 1, 0, "fourierOrder"]);
+
+    for (const axis of ["seasonalityPriorScale", "holidaysPriorScale"] as const) {
+      const prior = await failure({ axes: { [axis]: [1, 0] } });
+
+      expect(prior.message).toBe("Parameter grid candidate grid-1 has invalid options");
+      expect(prior.issues).toEqual([
+        { path: ["axes", axis, 1], message: "Expected a value greater than 0" },
+      ]);
+    }
+
+    // A default-filled event prior only conflicts with an explicit one under some global values.
+    const conflict = await failure({
+      base: {
+        holidaysPriorScale: 3,
+        events: [
+          { name: "launch", date: "2025-01-10" },
+          { name: "launch", date: "2026-01-10", priorScale: 3 },
+        ],
+      },
+      axes: { holidaysPriorScale: [3, 10] },
+    });
+
+    expect(conflict.message).toBe("Parameter grid candidate grid-1 has invalid options");
+    expect(conflict.issues?.[0]?.path).toEqual([
+      "candidates",
+      1,
+      "options",
+      "events",
+      1,
+      "priorScale",
+    ]);
 
     const base = await failure({
       base: { map: { changepointPriorScale: 0 } },

@@ -40,8 +40,9 @@ more likely to chase noise. The built-in defaults are 3 for weekly, 10 for yearl
 daily.
 :::
 
-Each pattern also accepts a `priorScale`, default `10`. Lower it to keep a pattern's effect small
-unless the data strongly supports it.
+Each pattern also accepts a `priorScale`. Lower it to keep a pattern's effect small unless the
+data strongly supports it. Patterns without one, including the built-in ones, use
+`seasonalityPriorScale`, which defaults to `10`. Set it to tune them all at once.
 
 ## Effects that grow with the trend
 

@@ -53,6 +53,7 @@ TARGET_SCALING_FILENAME = "target-scaling.json"
 REGRESSOR_STANDARDIZATION_FILENAME = "regressor-standardization.json"
 MIXED_MAP_FILENAME = "mixed-map.json"
 COUNTRY_HOLIDAYS_FILENAME = "country-holidays.json"
+GLOBAL_PRIOR_SCALES_FILENAME = "global-prior-scales.json"
 LOGISTIC_MAP_FILENAME = "logistic-map.json"
 MAP_UNCERTAINTY_FILENAME = "map-uncertainty.json"
 STAN_LINEAR_OPTIMIZER_FILENAME = "stan-linear-optimizer.json"
@@ -3951,6 +3952,12 @@ def write_outputs(output: Path, execution: dict[str, str], reference: dict[str, 
 
     country_holidays_path = output / COUNTRY_HOLIDAYS_FILENAME
     country_holidays_path.write_bytes(stable_json(make_country_holiday_fixture(canonical_fitted_float, fail)))
+    from global_prior_scale_fixtures import make_global_prior_scale_fixture
+
+    global_prior_scales_path = output / GLOBAL_PRIOR_SCALES_FILENAME
+    global_prior_scales_path.write_bytes(
+        stable_json(make_global_prior_scale_fixture(canonical_fitted_float, fail))
+    )
     mixed_map_path = output / MIXED_MAP_FILENAME
     mixed_map_path.write_bytes(stable_json(make_mixed_map_fixture()))
     logistic_map_path = output / LOGISTIC_MAP_FILENAME
@@ -4041,6 +4048,10 @@ def write_outputs(output: Path, execution: dict[str, str], reference: dict[str, 
                 "sha256": sha256_file(country_holidays_path),
             },
             {
+                "path": GLOBAL_PRIOR_SCALES_FILENAME,
+                "sha256": sha256_file(global_prior_scales_path),
+            },
+            {
                 "path": LOGISTIC_MAP_FILENAME,
                 "sha256": sha256_file(logistic_map_path),
             },
@@ -4086,6 +4097,7 @@ def write_outputs(output: Path, execution: dict[str, str], reference: dict[str, 
             GENERATOR_PATH.read_bytes() + b"\0"
             + GENERATOR_PATH.with_name("linear_optimizer_evidence.py").read_bytes() + b"\0"
             + GENERATOR_PATH.with_name("country_holiday_fixtures.py").read_bytes() + b"\0"
+            + GENERATOR_PATH.with_name("global_prior_scale_fixtures.py").read_bytes() + b"\0"
             + GENERATOR_PATH.with_name("custom_metrics.py").read_bytes() + b"\0"
             + DIFFERENTIAL_ADAPTER_PATH.read_bytes()
         ).hexdigest(),
@@ -4119,6 +4131,7 @@ def compare_outputs(generated: Path, committed: Path) -> None:
         REGRESSOR_STANDARDIZATION_FILENAME,
         MIXED_MAP_FILENAME,
         COUNTRY_HOLIDAYS_FILENAME,
+        GLOBAL_PRIOR_SCALES_FILENAME,
         LOGISTIC_MAP_FILENAME,
         MAP_UNCERTAINTY_FILENAME,
         STAN_LINEAR_OPTIMIZER_FILENAME,

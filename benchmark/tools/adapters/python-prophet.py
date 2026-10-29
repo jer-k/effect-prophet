@@ -143,9 +143,26 @@ def holidays_frame(events: list[dict[str, Any]]) -> pd.DataFrame | None:
             "ds": pd.to_datetime([event["date"] for event in ordered]),
             "lower_window": [event["lowerWindowDays"] for event in ordered],
             "upper_window": [event["upperWindowDays"] for event in ordered],
-            "prior_scale": [event["priorScale"] for event in ordered],
+            # Prophet fills a NaN prior from holidays_prior_scale, as Effect fills an omitted one.
+            "prior_scale": [event.get("priorScale", np.nan) for event in ordered],
         }
     )
+
+
+def holidays_prior_scale(benchmark_case: dict[str, Any]) -> float:
+    """Python has no per-country prior, so a country prior must be holidays_prior_scale itself."""
+
+    configuration = benchmark_case["workload"]["configuration"]
+    country = configuration.get("countryHolidays") or {}
+    country_prior = country.get("priorScale")
+    configured = configuration.get("holidaysPriorScale")
+    if country_prior is None or country_prior == configured:
+        return configured if configured is not None else 10.0
+    # Events and regressors without a prior take holidays_prior_scale in both libraries.
+    defaulted = any("priorScale" not in item for item in configuration["events"] + configuration["regressors"])
+    if configured is not None or (defaulted and country_prior != 10.0):
+        raise ValueError(f"Case {benchmark_case['id']}: Python gives country holidays holidays_prior_scale")
+    return country_prior
 
 
 def configure_model(benchmark_case: dict[str, Any]) -> Prophet:
@@ -176,6 +193,8 @@ def configure_model(benchmark_case: dict[str, Any]) -> Prophet:
     # Flat growth takes changepoints and their prior too: its trend ignores them, but they
     # size and scale the prior-only coordinates in Prophet's flat Stan state, as in Effect.
     common["changepoint_prior_scale"] = configuration["changepointPriorScale"]
+    common["seasonality_prior_scale"] = configuration.get("seasonalityPriorScale", 10.0)
+    common["holidays_prior_scale"] = holidays_prior_scale(benchmark_case)
 
     if changepoints["mode"] == "explicit":
         common["changepoints"] = [
@@ -189,7 +208,6 @@ def configure_model(benchmark_case: dict[str, Any]) -> Prophet:
     if country is not None:
         if importlib.metadata.version("holidays") != "0.104":
             raise ValueError("Country benchmarks require holidays 0.104")
-        common["holidays_prior_scale"] = country["priorScale"]
     model = Prophet(**common)
     if country is not None:
         model.add_country_holidays(country_name=country["country"])
@@ -198,7 +216,7 @@ def configure_model(benchmark_case: dict[str, Any]) -> Prophet:
             name=seasonality["name"],
             period=seasonality["periodDays"],
             fourier_order=seasonality["fourierOrder"],
-            prior_scale=seasonality["priorScale"],
+            prior_scale=seasonality.get("priorScale"),
             mode=seasonality.get("mode", configuration.get("seasonalityMode", "additive")),
             condition_name=seasonality.get("conditionName"),
         )
@@ -206,7 +224,7 @@ def configure_model(benchmark_case: dict[str, Any]) -> Prophet:
     for regressor in configuration["regressors"]:
         model.add_regressor(
             name=regressor["name"],
-            prior_scale=regressor["priorScale"],
+            prior_scale=regressor.get("priorScale"),
             standardize=standardization[regressor["standardization"]],
             mode=regressor.get("mode", configuration.get("seasonalityMode", "additive")),
         )

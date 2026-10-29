@@ -32,9 +32,17 @@ All notable changes to this project are documented here. The format follows
   `builtInSeasonalities`, `seasonalities` and `scaling`. `maximumSearchCandidates` (32) is
   exported. See
   [Trying every combination](https://jer-k.github.io/effect-prophet/examples/tuning#trying-every-combination).
+- `seasonalityPriorScale` and `holidaysPriorScale` fit options, like Python's
+  `seasonality_prior_scale` and `holidays_prior_scale`. Both default to `10`, and each is the prior
+  for every component that doesn't set its own `priorScale`: built-in and custom seasonalities for
+  the first; events, country holidays and regressors for the second. As in Python, regressors
+  follow `holidaysPriorScale`. `makeParameterGrid` can vary both. See
+  [Choosing settings](https://jer-k.github.io/effect-prophet/examples/tuning#comparing-settings).
 
 ### Changed
 
+- `parseEventCalendar`, `parseRegressorDefinitions` and `parseCountryHolidays` take an optional
+  default prior scale for entries without their own. Called alone, they still default to `10`.
 - `InputValidationError.input` can be `"parameter-grid"`.
 - `rows`, `horizons` and `rolling` metric reports include a `horizon` field, `"duration"` or
   `"calendar-month"`, saying which unit their horizons use.

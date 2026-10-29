@@ -26,8 +26,15 @@ This data has a sudden change in growth, so the most flexible trend wins. Good s
 first:
 
 - `changepointPriorScale`: try `0.01`, `0.05`, `0.1`, `0.5`
+- `seasonalityPriorScale`: try `0.01`, `0.1`, `1`, `10`
+- `holidaysPriorScale`: try `0.01`, `0.1`, `1`, `10`, if you have events, country holidays or
+  regressors
 - `seasonalityMode`: `"additive"` or `"multiplicative"`
-- `priorScale` on each seasonality: try `0.1`, `1`, `10`
+
+`seasonalityPriorScale` and `holidaysPriorScale` set the prior for every seasonality, or every
+event, country holiday and regressor, that doesn't set its own `priorScale`. Lower values keep
+those effects small. As in Python Prophet, regressors follow `holidaysPriorScale`, so give each
+regressor its own `priorScale` if you want to tune holidays alone.
 
 You can compare up to 32 candidates in one search (`maximumSearchCandidates`).
 
@@ -59,6 +66,8 @@ These settings can be varied:
 | ----------------------- | --------------------------- | ---------------------------------------------------------------- |
 | `changepointPriorScale` | `map.changepointPriorScale` | `[0.01, 0.1, 0.5]`                                               |
 | `changepoints`          | `map.changepoints`          | `[{ mode: "auto", range: 0.8 }, { mode: "auto", range: 0.95 }]`  |
+| `seasonalityPriorScale` | `seasonalityPriorScale`     | `[0.01, 0.1, 1, 10]`                                             |
+| `holidaysPriorScale`    | `holidaysPriorScale`        | `[0.01, 0.1, 1, 10]`                                             |
 | `seasonalityMode`       | `seasonalityMode`           | `["additive", "multiplicative"]`                                 |
 | `holidaysMode`          | `holidaysMode`              | `["additive", "multiplicative"]`                                 |
 | `builtInSeasonalities`  | `builtInSeasonalities`      | `[{ yearly: { mode: "on", priorScale: 1 } }, {}]`                |
@@ -66,8 +75,8 @@ These settings can be varied:
 | `scaling`               | `scaling`                   | `["absmax", "minmax"]`                                           |
 
 Each value replaces the base's setting outright. A list or object, such as a set of seasonalities,
-counts as one value; it isn't combined any further. To try a prior scale on a seasonality, give
-each version of the whole `seasonalities` list as a value.
+counts as one value; it isn't combined any further. To try one seasonality's own prior scale
+instead of `seasonalityPriorScale`, give each version of the whole `seasonalities` list as a value.
 
 Candidates come out in the order of the table, with the first setting changing slowest, whatever
 order you write the axes in. Each ID is `grid` followed by the position of its value in each

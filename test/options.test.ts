@@ -45,6 +45,8 @@ describe("decodeOptions", () => {
       growth: "linear",
       seasonalityMode: "additive",
       holidaysMode: "additive",
+      seasonalityPriorScale: 10,
+      holidaysPriorScale: 10,
       seasonalities: [],
       builtInSeasonalities: { daily: "auto", weekly: "auto", yearly: "auto" },
       events: emptyEventCalendar,
@@ -68,6 +70,8 @@ describe("decodeOptions", () => {
         growth,
         seasonalityMode: "additive",
         holidaysMode: "additive",
+        seasonalityPriorScale: 10,
+        holidaysPriorScale: 10,
         seasonalities: [],
         builtInSeasonalities: { daily: "auto", weekly: "auto", yearly: "auto" },
         events: emptyEventCalendar,
@@ -111,6 +115,8 @@ describe("decodeOptions", () => {
       growth: "flat",
       seasonalityMode: "additive",
       holidaysMode: "additive",
+      seasonalityPriorScale: 10,
+      holidaysPriorScale: 10,
       seasonalities: [
         {
           name: "work-week",
@@ -149,6 +155,8 @@ describe("decodeOptions", () => {
       growth: "linear",
       seasonalityMode: "additive",
       holidaysMode: "additive",
+      seasonalityPriorScale: 10,
+      holidaysPriorScale: 10,
       seasonalities: [
         {
           name: "work-week",
@@ -490,6 +498,99 @@ describe("decodeOptions", () => {
     expect(Object.isFrozen(options.builtInSeasonalities)).toBe(true);
     expect(Object.isFrozen(options.builtInSeasonalities.weekly)).toBe(true);
   });
+
+  it("gives every component without its own prior scale the matching global one", async () => {
+    const options = await Effect.runPromise(
+      decodeOptions({
+        seasonalityPriorScale: 0.5,
+        holidaysPriorScale: 0.25,
+        countryHolidays: { country: "US" },
+        builtInSeasonalities: {
+          daily: "auto",
+          weekly: { mode: "on" },
+          yearly: { mode: "on", fourierOrder: 6 },
+        },
+        seasonalities: [{ name: "quarter", periodDays: 91.25, fourierOrder: 2 }],
+        events: [{ name: "launch", date: "2025-01-01" }],
+        regressors: [{ name: "promotion" }],
+      }),
+    );
+
+    expect(options.seasonalityPriorScale).toBe(0.5);
+    expect(options.holidaysPriorScale).toBe(0.25);
+    expect(options.builtInSeasonalities).toEqual({
+      daily: "auto",
+      weekly: { mode: "on", fourierOrder: 3, priorScale: 0.5 },
+      yearly: { mode: "on", fourierOrder: 6, priorScale: 0.5 },
+    });
+    expect(options.seasonalities.map((seasonality) => seasonality.priorScale)).toEqual([0.5]);
+    expect(options.events.occurrences.map((occurrence) => occurrence.priorScale)).toEqual([0.25]);
+    expect(options.events.layout.priorScales).toEqual([0.25]);
+    expect(options.countryHolidays?.priorScale).toBe(0.25);
+
+    // Python's add_regressor falls back to holidays_prior_scale.
+    expect(options.regressors.map((regressor) => regressor.priorScale)).toEqual([0.25]);
+  });
+
+  it("keeps every explicit per-component prior scale over the global ones", async () => {
+    const options = await Effect.runPromise(
+      decodeOptions({
+        seasonalityPriorScale: 0.5,
+        holidaysPriorScale: 0.25,
+        countryHolidays: { country: "US", priorScale: 4 },
+        builtInSeasonalities: {
+          daily: "off",
+          weekly: { mode: "on", priorScale: 2 },
+          yearly: "off",
+        },
+        seasonalities: [{ name: "quarter", periodDays: 91.25, fourierOrder: 2, priorScale: 3 }],
+        events: [{ name: "launch", date: "2025-01-01", priorScale: 5 }],
+        regressors: [{ name: "promotion", priorScale: 6 }],
+      }),
+    );
+
+    expect(options.builtInSeasonalities.weekly).toEqual({
+      mode: "on",
+      fourierOrder: 3,
+      priorScale: 2,
+    });
+    expect(options.seasonalities.map((seasonality) => seasonality.priorScale)).toEqual([3]);
+    expect(options.events.layout.priorScales).toEqual([5]);
+    expect(options.countryHolidays?.priorScale).toBe(4);
+    expect(options.regressors.map((regressor) => regressor.priorScale)).toEqual([6]);
+  });
+
+  it("checks event prior conflicts after filling in holidaysPriorScale", async () => {
+    const events = [
+      { name: "launch", date: "2025-01-01" },
+      { name: "launch", date: "2026-01-01", priorScale: 3 },
+    ];
+
+    const matching = await Effect.runPromise(decodeOptions({ holidaysPriorScale: 3, events }));
+
+    expect(matching.events.layout.priorScales).toEqual([3]);
+
+    const error = await expectOptionsFailure({ events });
+
+    expect(error.issues).toEqual([
+      {
+        path: ["events", 1, "priorScale"],
+        message: "Event 'launch' must use one consistent prior scale",
+      },
+    ]);
+  });
+
+  it.each(["seasonalityPriorScale", "holidaysPriorScale"] as const)(
+    "rejects a non-positive or non-finite %s at its path",
+    async (key) => {
+      for (const value of [0, -1, Number.NaN, Number.POSITIVE_INFINITY, "10"]) {
+        const error = await expectOptionsFailure({ [key]: value });
+
+        expect(error.issues.length).toBeGreaterThan(0);
+        expect(error.issues.every((issue) => issue.path?.join() === key)).toBe(true);
+      }
+    },
+  );
 
   it.each([
     ["unknown setting", { daily: "sometimes" }, "daily"],

@@ -42,8 +42,8 @@ this verification. Ordinary `npm test` includes those artifact tests too.
 checks, compact JSON encoding, and license copying. The exploratory `measure_holidays.py` reuses
 that implementation but retains its separate diagnostic/measurement outputs under `.generated/`.
 The shared calendar helper consumes `generate.py`'s environment, stable JSON and hash helpers.
-The compatibility generator additionally calls `country_holiday_fixtures.py` and hashes that helper
-in fixture provenance. Calendar regeneration incorporates shared-generator changes into snapshot
+The compatibility generator additionally calls `country_holiday_fixtures.py` and
+`global_prior_scale_fixtures.py` and hashes both helpers in fixture provenance. Calendar regeneration incorporates shared-generator changes into snapshot
 identity, even when occurrence bytes are unchanged.
 
 ## Schema version 1

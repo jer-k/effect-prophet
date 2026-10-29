@@ -22,7 +22,10 @@ import {
 import { PositiveFinite } from "./internal/numeric-schemas";
 import { millisecondsPerDay } from "./internal/time";
 
-/** Prophet-compatible default prior for custom and generated holiday occurrences. */
+/**
+ * Prophet's default `holidays_prior_scale`, used for events, country holidays and regressors when
+ * no other prior scale is given.
+ */
 export const defaultEventPriorScale = 10;
 
 const maximumExpandedColumns = 10_000;
@@ -90,9 +93,7 @@ const EncodedEventOccurrenceSchema = Schema.Struct({
   date: Schema.String,
   lowerWindowDays: WindowInteger.pipe(Schema.withDecodingDefaultKey(Effect.succeed(0))),
   upperWindowDays: WindowInteger.pipe(Schema.withDecodingDefaultKey(Effect.succeed(0))),
-  priorScale: PositiveFinite.pipe(
-    Schema.withDecodingDefaultKey(Effect.succeed(defaultEventPriorScale)),
-  ),
+  priorScale: Schema.optionalKey(PositiveFinite),
 });
 
 const EncodedEventCalendarSchema = Schema.Array(EncodedEventOccurrenceSchema);
@@ -531,10 +532,16 @@ export const mergeEventOccurrences = (
   return Effect.succeed(Object.freeze(builder.occurrences));
 };
 
-/** Parse event occurrences and derive their deterministic Prophet-compatible column layout. */
+/**
+ * Parse event occurrences and derive their deterministic Prophet-compatible column layout.
+ *
+ * An occurrence without `priorScale` takes `defaultPriorScale` before prior conflicts are checked,
+ * as Python fills a missing holiday prior from `holidays_prior_scale`.
+ */
 export const parseEventCalendar = Effect.fn("Prophet.parseEventCalendar")(function* (
   input: Parameters<typeof decodeEventCalendarSyntax>[0],
   mode: ComponentMode = "additive",
+  defaultPriorScale: number = defaultEventPriorScale,
 ): Effect.fn.Return<EventCalendar, InvalidEventCalendar> {
   const encoded = yield* decodeEventCalendarSyntax(input).pipe(
     Effect.mapError((error) => invalidFromIssue(error.issue)),
@@ -595,7 +602,7 @@ export const parseEventCalendar = Effect.fn("Prophet.parseEventCalendar")(functi
         epochDay,
         lowerWindowDays: occurrence.lowerWindowDays,
         upperWindowDays: occurrence.upperWindowDays,
-        priorScale: occurrence.priorScale,
+        priorScale: occurrence.priorScale ?? defaultPriorScale,
       }),
       index,
     );

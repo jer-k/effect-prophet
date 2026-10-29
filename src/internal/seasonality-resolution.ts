@@ -45,6 +45,7 @@ export interface ResolvedSeasonalities {
 /** Parsed seasonality controls consumed by the training-dependent resolver. */
 export interface SeasonalityResolutionInput {
   readonly seasonalityMode: ComponentMode;
+  readonly seasonalityPriorScale: number;
   readonly seasonalities: ReadonlyArray<Seasonality.SeasonalityDefinition>;
   readonly builtInSeasonalities: BuiltInSeasonalities;
 }
@@ -146,6 +147,7 @@ const resolveBuiltIn = (
   setting: BuiltInSeasonalitySetting,
   history: HistorySummary,
   mode: ComponentMode,
+  automaticPriorScale: number,
 ): SelectedBuiltIn => {
   if (setting === "off") {
     return {
@@ -195,7 +197,7 @@ const resolveBuiltIn = (
     specification,
     "automatic-enabled",
     specification.defaultOrder,
-    Seasonality.defaultSeasonalityPriorScale,
+    automaticPriorScale,
     mode,
   );
 };
@@ -239,6 +241,7 @@ export const resolveSeasonalities = (
         settingFor(input.builtInSeasonalities, specification.name),
         history,
         input.seasonalityMode,
+        input.seasonalityPriorScale,
       );
 
       decisions.push(selected.decision);

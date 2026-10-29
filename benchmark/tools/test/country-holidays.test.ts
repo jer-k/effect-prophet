@@ -45,7 +45,7 @@ describe("country benchmark contract", () => {
     const catalog = await Effect.runPromise(loadCaseCatalog());
     const countries = catalog.filter((item) => item.id.startsWith("country-"));
 
-    expect(countries).toHaveLength(33);
+    expect(countries).toHaveLength(35);
 
     for (const item of countries) {
       const description = countryDescriptionsFor(suiteForCase(item))[item.id];
@@ -76,6 +76,29 @@ describe("country benchmark contract", () => {
           priorScale: 10,
         });
       }
+    }
+
+    for (const id of ["country-global-priors-linear", "country-global-priors-overrides-linear"]) {
+      const declared = countries.find((item) => item.id === id);
+
+      if (declared === undefined) throw new Error(`Missing ${id}`);
+
+      const options = effectOptionsForCase(declared);
+
+      expect(options).toMatchObject({ seasonalityPriorScale: 0.1, holidaysPriorScale: 0.05 });
+
+      // Parsing fills the country prior from holidaysPriorScale, as Python's constructor does.
+      expect(options?.countryHolidays?.priorScale).toBe(0.05);
+
+      const explicit = id.includes("overrides") ? 10 : undefined;
+
+      expect(options?.seasonalities?.map((seasonality) => seasonality.priorScale)).toEqual([
+        explicit,
+      ]);
+      expect(options?.regressors?.map((regressor) => regressor.priorScale)).toEqual([explicit]);
+      expect(new Set(options?.events?.map((event) => event.priorScale))).toEqual(
+        new Set([explicit]),
+      );
     }
 
     for (const [country, suffix] of [

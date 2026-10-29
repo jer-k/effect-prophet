@@ -18,6 +18,7 @@ const resolve = async (
     readonly fourierOrder: number;
     readonly priorScale?: number;
   }> = [],
+  seasonalityPriorScale = 10,
 ) => {
   const observations = await Effect.runPromise(
     decodeObservations(
@@ -32,6 +33,7 @@ const resolve = async (
     decodeOptions({
       builtInSeasonalities,
       seasonalities,
+      seasonalityPriorScale,
     }),
   );
 
@@ -169,6 +171,29 @@ describe("seasonality resolution", () => {
         mode: "additive",
       },
     ]);
+  });
+
+  it("gives every seasonality without its own prior the seasonalityPriorScale", async () => {
+    const resolved = await resolve(
+      [0, DAY / 2, 14 * DAY],
+      { yearly: { mode: "on", priorScale: 2 }, weekly: "auto", daily: { mode: "on" } },
+      [
+        { name: "weekly-custom", periodDays: 7, fourierOrder: 1 },
+        { name: "daily-custom", periodDays: 1, fourierOrder: 2, priorScale: 4 },
+      ],
+      0.5,
+    );
+
+    expect(
+      resolved.layout.components.map(({ definition }) => [definition.name, definition.priorScale]),
+    ).toEqual([
+      ["weekly-custom", 0.5],
+      ["daily-custom", 4],
+      ["yearly", 2],
+      ["weekly", 0.5],
+      ["daily", 0.5],
+    ]);
+    expect(decisionFor(resolved, "weekly")?.reason).toBe("automatic-enabled");
   });
 
   it("keeps custom order, allows overlapping periods, then appends built-ins", async () => {

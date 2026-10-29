@@ -1222,6 +1222,77 @@ const CountryHolidayReferenceFileSchema = Schema.Struct({
   ),
 });
 
+const GlobalPriorScaleBuiltInSchema = Schema.Union([
+  Schema.Literals(["off", "auto"]),
+  Schema.Struct({ mode: Schema.Literal("on"), fourierOrder: Schema.Int }),
+]);
+
+const GlobalPriorScaleReferenceFileSchema = Schema.Struct({
+  provider: Schema.Struct({ prophet: Schema.Literal("1.4.0"), holidays: Schema.Literal("0.104") }),
+  fittedCases: Schema.NonEmptyArray(
+    Schema.Struct({
+      id: Schema.NonEmptyString,
+      // Effect options equivalent to the Python constructor, with every omitted prior left out.
+      options: Schema.Struct({
+        seasonalityPriorScale: Schema.optionalKey(PositiveFinite),
+        holidaysPriorScale: Schema.optionalKey(PositiveFinite),
+        countryHolidays: Schema.optionalKey(Schema.Struct({ country: Schema.String })),
+        builtInSeasonalities: Schema.Struct({
+          daily: GlobalPriorScaleBuiltInSchema,
+          weekly: GlobalPriorScaleBuiltInSchema,
+          yearly: GlobalPriorScaleBuiltInSchema,
+        }),
+        seasonalities: Schema.optionalKey(
+          Schema.Array(
+            Schema.Struct({
+              name: Schema.String,
+              periodDays: PositiveFinite,
+              fourierOrder: Schema.Int,
+              priorScale: Schema.optionalKey(PositiveFinite),
+            }),
+          ),
+        ),
+        events: Schema.optionalKey(
+          Schema.Array(
+            Schema.Struct({
+              name: Schema.String,
+              date: Schema.String,
+              priorScale: Schema.optionalKey(PositiveFinite),
+            }),
+          ),
+        ),
+        regressors: Schema.optionalKey(
+          Schema.Array(
+            Schema.Struct({ name: Schema.String, priorScale: Schema.optionalKey(PositiveFinite) }),
+          ),
+        ),
+      }),
+      observations: Schema.NonEmptyArray(
+        Schema.Struct({
+          timestamp: CanonicalTimestamp,
+          value: Schema.Finite,
+          regressors: Schema.optionalKey(Schema.Record(Schema.String, Schema.Finite)),
+        }),
+      ),
+      predictionRows: Schema.Array(
+        Schema.Struct({
+          timestamp: CanonicalTimestamp,
+          regressors: Schema.optionalKey(Schema.Record(Schema.String, Schema.Finite)),
+        }),
+      ),
+      expected: Schema.Struct({
+        // Each component's prior as Prophet fitted it, by component name.
+        priorScales: Schema.Record(Schema.String, PositiveFinite),
+        trend: Schema.Array(Schema.Finite),
+        value: Schema.Array(Schema.Finite),
+        additive: Schema.Array(Schema.Finite),
+        multiplicative: Schema.Array(Schema.Finite),
+      }),
+      tolerance: NumericToleranceSchema,
+    }),
+  ),
+});
+
 const ArtifactPath = Schema.String.check(
   Schema.makeFilter(
     (value) =>
@@ -1469,6 +1540,7 @@ const FixtureManifestSchema = Schema.Struct({
       "regressor-standardization.json",
       "mixed-map.json",
       "country-holidays.json",
+      "global-prior-scales.json",
       "logistic-map.json",
       "map-uncertainty.json",
       "stan-linear-optimizer.json",
@@ -2194,6 +2266,28 @@ export const loadProphetFixtureBundle = Effect.fn("ProphetFixture.loadBundle")(f
     ),
   );
 
+  const globalPriorScalesPath = nodePath.join(root, "global-prior-scales.json");
+  const globalPriorScalesContents = yield* readFixtureText(globalPriorScalesPath);
+
+  const globalPriorScalesInput: unknown = yield* Effect.try({
+    try: () => JSON.parse(globalPriorScalesContents),
+    catch: (cause) => invalidJson(globalPriorScalesPath, cause),
+  });
+
+  const globalPriorScales = yield* Schema.decodeUnknownEffect(GlobalPriorScaleReferenceFileSchema)(
+    globalPriorScalesInput,
+  ).pipe(
+    Effect.mapError(
+      (cause) =>
+        new FixtureLoadError({
+          operation: "schema",
+          fixturePath: globalPriorScalesPath,
+          message: formatSchemaIssue(cause.issue),
+          cause,
+        }),
+    ),
+  );
+
   const mapUncertaintyPath = nodePath.join(root, "map-uncertainty.json");
   const mapUncertaintyContents = yield* readFixtureText(mapUncertaintyPath);
 
@@ -2278,6 +2372,7 @@ export const loadProphetFixtureBundle = Effect.fn("ProphetFixture.loadBundle")(f
     manifest,
     mixedMap,
     countryHolidays,
+    globalPriorScales,
     piecewiseLinear,
     regressorStandardization,
     seasonalityResolution,

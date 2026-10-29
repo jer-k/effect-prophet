@@ -21,7 +21,8 @@ Fixture generation runs in the `prophet-fixtures-generate` Compose service. Its 
 The manifest records the base image, platform, Python and uv versions, dependency-lock digest,
 numerical package versions, generator source-bundle digest, source commit, and Prophet's bundled
 model-binary digest. `generatorRevision` is SHA-256 of `generate.py`,
-`linear_optimizer_evidence.py`, `country_holiday_fixtures.py`, `custom_metrics.py` and the
+`linear_optimizer_evidence.py`, `country_holiday_fixtures.py`,
+`global_prior_scale_fixtures.py`, `custom_metrics.py` and the
 benchmark's Python adapter (`benchmark/tools/adapters/python-prophet.py`), joined by NUL bytes.
 That covers case construction, the shared executable-probe protocol, the custom metrics the
 benchmark also registers, and the adapter the differential comparison reuses. Editing

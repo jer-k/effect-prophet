@@ -51,8 +51,22 @@ export const effectOptionsForCase = (
   };
 
   if (workload.kind === "map" || workload.kind === "evaluation") {
+    const { seasonalityPriorScale, holidaysPriorScale } = workload.configuration;
+
+    const priorScales: Pick<EncodedProphetOptions, "seasonalityPriorScale" | "holidaysPriorScale"> =
+      {};
+
+    if (seasonalityPriorScale !== undefined) {
+      Object.assign(priorScales, { seasonalityPriorScale });
+    }
+
+    if (holidaysPriorScale !== undefined) {
+      Object.assign(priorScales, { holidaysPriorScale });
+    }
+
     const options = {
       ...common,
+      ...priorScales,
       scaling: workload.configuration.scaling,
       seasonalityMode: workload.configuration.seasonalityMode,
       holidaysMode: workload.configuration.holidaysMode,
