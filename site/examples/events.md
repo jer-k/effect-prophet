@@ -27,8 +27,8 @@ December 13.
 - **Dates are calendar days** in `YYYY-MM-DD` form.
 - **Windows:** `lowerWindowDays: -2` also covers the two days before, and `upperWindowDays: 1`
   also covers the day after. Each day in the window gets its own learned effect.
-- **`priorScale`** (default `10`) limits how large an event's effect can be. Lower it if an event
-  has only a few past occurrences.
+- **`priorScale`** limits how large an event's effect can be. Lower it if an event has only a few
+  past occurrences. It defaults to the model's `holidaysPriorScale`, which defaults to `10`.
 - Set `holidaysMode: "multiplicative"` if event effects should be percentages instead of fixed
   amounts.
 

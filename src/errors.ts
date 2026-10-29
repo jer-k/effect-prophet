@@ -3,6 +3,7 @@ import { Predicate, Schema, SchemaIssue } from "effect";
 import type { CountryHolidayError } from "./country-holidays";
 import type { BaselineForecastError } from "./evaluation-baseline";
 import { AnyMetricNameSchema } from "./internal/metric-names";
+import { maximumSearchCandidates } from "./internal/search-limits";
 
 /** Runtime schema for one structured validation issue. */
 export const ValidationIssueSchema = Schema.Struct({
@@ -22,6 +23,7 @@ const ValidationInputSchema = Schema.Literals([
   "evaluation-baseline",
   "evaluation-search",
   "evaluation-holdout",
+  "parameter-grid",
 ]);
 
 /** Why a country calendar could not be selected, resolved or combined with a model's features. */
@@ -93,7 +95,8 @@ export type ValidationInput =
   | "evaluation-metrics"
   | "evaluation-baseline"
   | "evaluation-search"
-  | "evaluation-holdout";
+  | "evaluation-holdout"
+  | "parameter-grid";
 
 export type CountryHolidayFailureReason = typeof CountryHolidayFailureReasonSchema.Type;
 
@@ -399,7 +402,10 @@ export type PortableEvaluationFailure = typeof PortableEvaluationFailureSchema.T
 
 const PortableCandidateOutcomeSchema = Schema.Struct({
   id: CandidateIdSchema,
-  candidateIndex: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0), Schema.isLessThan(32)),
+  candidateIndex: Schema.Int.check(
+    Schema.isGreaterThanOrEqualTo(0),
+    Schema.isLessThan(maximumSearchCandidates),
+  ),
   failure: PortableEvaluationFailureSchema,
 });
 
@@ -412,7 +418,10 @@ export class EvaluationSearchError extends Schema.TaggedError<EvaluationSearchEr
   {
     reason: Schema.Literals(["invalid-candidate", "candidate-failed", "no-success"]),
     candidateIndex: Schema.optionalKey(
-      Schema.Int.check(Schema.isGreaterThanOrEqualTo(0), Schema.isLessThan(32)),
+      Schema.Int.check(
+        Schema.isGreaterThanOrEqualTo(0),
+        Schema.isLessThan(maximumSearchCandidates),
+      ),
     ),
     candidateId: Schema.optionalKey(CandidateIdSchema),
     outcomes: Schema.optionalKey(Schema.Array(PortableCandidateOutcomeSchema)),

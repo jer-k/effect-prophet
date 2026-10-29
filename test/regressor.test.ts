@@ -24,6 +24,18 @@ describe("regressor domain", () => {
     expect(Object.isFrozen(definitions[0])).toBe(true);
   });
 
+  it("gives definitions without a prior the caller's default", async () => {
+    const definitions = await Effect.runPromise(
+      parseRegressorDefinitions(
+        [{ name: "price" }, { name: "promotion", priorScale: 2 }],
+        "multiplicative",
+        0.5,
+      ),
+    );
+
+    expect(definitions.map((definition) => definition.priorScale)).toEqual([0.5, 2]);
+  });
+
   it("rejects duplicates, reserved names, nonpositive priors, and unknown fields", async () => {
     for (const input of [
       [{ name: "price" }, { name: "price" }],

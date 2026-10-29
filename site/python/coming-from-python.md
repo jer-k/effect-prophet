@@ -51,6 +51,8 @@ the [five-minute introduction](../guide/effect-basics).
 | `n_changepoints`, `changepoint_range`                                             | `map.changepoints: { mode: "auto", count, range }`                                                                  |
 | `changepoints=[...]`                                                              | `map.changepoints: { mode: "explicit", timestamps }`                                                                |
 | `changepoint_prior_scale`                                                         | `map.changepointPriorScale`                                                                                         |
+| `seasonality_prior_scale`                                                         | `seasonalityPriorScale`: the prior for every seasonality without its own `priorScale`                               |
+| `holidays_prior_scale`                                                            | `holidaysPriorScale`: the prior for every event, country holiday and regressor without its own `priorScale`         |
 | `fit(algorithm="Newton", iter=n)`                                                 | `map.optimizer: { algorithm: "newton", maxIterations: n }`                                                          |
 | `fit(df, init=warm_start_params(m))`                                              | `map.warmStart: warmStartParameters(model)`                                                                         |
 | `yearly_seasonality`, `weekly_seasonality`, `daily_seasonality`                   | `builtInSeasonalities: { yearly, weekly, daily }`: `"auto"`, `"off"`, or `{ mode: "on", fourierOrder, priorScale }` |
@@ -84,7 +86,7 @@ The defaults are Prophet's, so a fit with no options produces the same model as 
 | `performance_metrics(df, monthly=True)`          | `performanceMetrics(result, { ..., horizon: "calendar-month" })`                             |
 | `register_performance_metric`                    | a custom metric definition in `metrics`                                                      |
 | `model_to_json`, `model_from_json`               | `encodeFittedModel`, `decodeFittedModel`; the format is not Python's                         |
-| a loop over parameter grids                      | `searchModels` and `evaluateHoldout`                                                         |
+| a loop over parameter grids                      | `makeParameterGrid` to build the candidates, then `searchModels` and `evaluateHoldout`       |
 
 ## Gotchas for Python users
 

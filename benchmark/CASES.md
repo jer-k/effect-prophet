@@ -160,6 +160,8 @@ Serialization is exercised by lifecycle phases rather than copied into separate 
 | `country-estimated-sg-flat` | [v5/country-estimated-96.json](inputs/v5/country-estimated-96.json) | equivalent-objective | 9 |
 | `country-partial-in-flat` | [v5/country-partial-96.json](inputs/v5/country-partial-96.json) | equivalent-objective | 9 |
 | `country-mixed-us-flat` | [v5/country-mixed-96.json](inputs/v5/country-mixed-96.json) | equivalent-objective | 9 |
+| `country-global-priors-linear` | [v5/country-mixed-96.json](inputs/v5/country-mixed-96.json) | equivalent-objective | 9 |
+| `country-global-priors-overrides-linear` | [v5/country-mixed-96.json](inputs/v5/country-mixed-96.json) | equivalent-objective | 9 |
 | `country-none-flat-730` | [v5/country-scaling-730.json](inputs/v5/country-scaling-730.json) | equivalent-objective | 5 |
 | `country-se-flat-730` | [v5/country-scaling-730.json](inputs/v5/country-scaling-730.json) | equivalent-objective | 5 |
 | `country-explicit-se-flat-730` | [v5/country-scaling-730.json](inputs/v5/country-scaling-730.json) | equivalent-objective | 5 |

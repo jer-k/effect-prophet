@@ -116,6 +116,14 @@ export {
   type FutureTimestampOptions,
 } from "./future-timestamps";
 
+export { maximumSearchCandidates } from "./internal/search-limits";
+
+export {
+  makeParameterGrid,
+  type ParameterGridAxes,
+  type ParameterGridInput,
+} from "./parameter-grid";
+
 export {
   searchModels,
   type ModelSearchInput,

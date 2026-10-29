@@ -52,7 +52,11 @@ const selectionFields = {
   ),
 };
 
-const SelectionSyntax = Schema.Struct({ country: Schema.String, ...selectionFields });
+const SelectionSyntax = Schema.Struct({
+  country: Schema.String,
+  coverage: selectionFields.coverage,
+  priorScale: Schema.optionalKey(PositiveFinite),
+});
 
 /** Fully parsed canonical selection, ready for training-year or inspection resolution. */
 export const CountryHolidaysSchema = Schema.Struct({
@@ -97,9 +101,15 @@ const invalidSelection = (error: Schema.SchemaError): CountryHolidayError =>
     message: validationMessageFromIssue(error.issue),
   });
 
-/** Parse country syntax and aliases without reading calendar files or resolving training years. */
+/**
+ * Parse country syntax and aliases without reading calendar files or resolving training years.
+ *
+ * A selection without `priorScale` takes `defaultPriorScale`, as Python gives every country holiday
+ * the model's `holidays_prior_scale`.
+ */
 export const parseCountryHolidays = Effect.fn("Prophet.parseCountryHolidays")(function* (
   input: Parameters<typeof decodeSelection>[0],
+  defaultPriorScale: number = defaultEventPriorScale,
 ): Effect.fn.Return<CountryHolidays, CountryHolidayError> {
   const selection = yield* decodeSelection(input).pipe(Effect.mapError(invalidSelection));
 
@@ -116,10 +126,13 @@ export const parseCountryHolidays = Effect.fn("Prophet.parseCountryHolidays")(fu
     );
   }
 
-  return yield* Schema.decodeUnknownEffect(CountryHolidaysSchema)({ ...selection, country }).pipe(
-    Effect.mapError(invalidSelection),
-    Effect.map(copyFrozen),
-  );
+  const priorScale = selection.priorScale ?? defaultPriorScale;
+
+  return yield* Schema.decodeUnknownEffect(CountryHolidaysSchema)({
+    ...selection,
+    country,
+    priorScale,
+  }).pipe(Effect.mapError(invalidSelection), Effect.map(copyFrozen));
 });
 
 const parseYears = (input: Parameters<typeof decodeYears>[0]) =>

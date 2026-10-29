@@ -7,6 +7,7 @@ import {
   validationMessageFromIssue,
 } from "./errors";
 import { FeatureNameSchema, type FeatureName } from "./feature-name";
+import { defaultEventPriorScale } from "./event";
 import { PositiveFinite } from "./internal/numeric-schemas";
 
 /** Public control for fitting-time regressor standardization. */
@@ -181,7 +182,7 @@ export const FittedRegressorSchema = FittedRegressorFieldsSchema.check(
 
 const EncodedRegressorDefinitionSchema = Schema.Struct({
   name: FeatureNameSchema,
-  priorScale: PositiveFinite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(10))),
+  priorScale: Schema.optionalKey(PositiveFinite),
   standardization: RegressorStandardizationSchema.pipe(
     Schema.withDecodingDefaultKey(Effect.succeed("auto")),
   ),
@@ -220,10 +221,16 @@ const invalidFromIssue = (issue: SchemaIssue.Issue): InvalidRegressors =>
     message: validationMessageFromIssue(issue),
   });
 
-/** Parse ordered additive regressor definitions and apply defaults. */
+/**
+ * Parse ordered additive regressor definitions and apply defaults.
+ *
+ * A definition without `priorScale` takes `defaultPriorScale`. Python's `add_regressor` takes the
+ * model's `holidays_prior_scale`, so fit options pass `holidaysPriorScale` here.
+ */
 export const parseRegressorDefinitions = Effect.fn("Prophet.parseRegressorDefinitions")(function* (
   input: Parameters<typeof decodeRegressorDefinitions>[0],
   inheritedMode: ComponentMode = "additive",
+  defaultPriorScale: number = defaultEventPriorScale,
 ): Effect.fn.Return<ReadonlyArray<RegressorDefinition>, InvalidRegressors> {
   const definitions = yield* decodeRegressorDefinitions(input).pipe(
     Effect.mapError((error) => invalidFromIssue(error.issue)),
@@ -231,7 +238,11 @@ export const parseRegressorDefinitions = Effect.fn("Prophet.parseRegressorDefini
 
   return Object.freeze(
     definitions.map((definition) =>
-      Object.freeze({ ...definition, mode: definition.mode ?? inheritedMode }),
+      Object.freeze({
+        ...definition,
+        priorScale: definition.priorScale ?? defaultPriorScale,
+        mode: definition.mode ?? inheritedMode,
+      }),
     ),
   );
 });

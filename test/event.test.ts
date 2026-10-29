@@ -33,6 +33,25 @@ describe("event calendar", () => {
     expect(Object.isFrozen(calendar)).toBe(true);
   });
 
+  it("fills a missing prior from the caller's default before checking prior conflicts", async () => {
+    const occurrences = [
+      { name: "launch", date: "2024-01-01" },
+      { name: "launch", date: "2025-01-01", priorScale: 3 },
+      { name: "sale", date: "2024-06-01", priorScale: 7 },
+    ];
+
+    const calendar = await Effect.runPromise(parseEventCalendar(occurrences, "additive", 3));
+
+    expect(calendar.occurrences.map((occurrence) => occurrence.priorScale)).toEqual([3, 3, 7]);
+    expect(calendar.layout.priorScales).toEqual([3, 7]);
+
+    const error = await Effect.runPromise(Effect.flip(parseEventCalendar(occurrences)));
+
+    expect(error.issues).toEqual([
+      { path: [1, "priorScale"], message: "Event 'launch' must use one consistent prior scale" },
+    ]);
+  });
+
   it("builds the parser's exact calendar from already-parsed occurrences", async () => {
     const encoded = [
       { name: "launch", date: "2024-01-01", lowerWindowDays: -1, upperWindowDays: 1 },

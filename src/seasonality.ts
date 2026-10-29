@@ -14,7 +14,7 @@ import {
 } from "./feature-name";
 import { PositiveFinite, PositiveFourierOrder } from "./internal/numeric-schemas";
 
-/** The Stage B default ridge penalty control for a seasonal component. */
+/** Prophet's default `seasonality_prior_scale`, used when no other prior scale is given. */
 export const defaultSeasonalityPriorScale = 10;
 
 const builtInSeasonalityNames: ReadonlySet<string> = new Set(["daily", "weekly", "yearly"]);
@@ -90,7 +90,7 @@ const CustomSeasonalityDefinitionSchema = Schema.Struct({
   ),
   periodDays: PositiveFinite,
   fourierOrder: PositiveFourierOrder,
-  priorScale: priorScaleSchema,
+  priorScale: Schema.optionalKey(PositiveFinite),
   mode: Schema.optionalKey(ComponentModeSchema),
   conditionName: Schema.optionalKey(FeatureNameSchema),
 });
@@ -280,21 +280,25 @@ const freezeLayout = (layout: SeasonalityLayout): SeasonalityLayout => {
 /**
  * Parse untrusted custom seasonality definitions without changing their order or names.
  *
- * Missing `priorScale` values receive the Stage B penalty-control default of `10`. This is not
- * a promise of equivalent Prophet MAP behavior.
+ * A definition without `priorScale` takes `defaultPriorScale`, as Python's `add_seasonality` takes
+ * the model's `seasonality_prior_scale`.
  *
  * @param input - Untrusted seasonality definitions.
+ * @param inheritedMode - The mode for definitions that do not set one.
+ * @param defaultPriorScale - The prior scale for definitions that do not set one.
  * @returns Parsed, fresh, frozen definitions or structured seasonality issues.
  */
 export const parseSeasonalities = (
   input: Parameters<typeof decodeSeasonalities>[0],
   inheritedMode: ComponentMode = "additive",
+  defaultPriorScale: number = defaultSeasonalityPriorScale,
 ): Effect.Effect<ReadonlyArray<SeasonalityDefinition>, InvalidSeasonality> =>
   decodeSeasonalities(input).pipe(
     Effect.flatMap((definitions) =>
       decodeSeasonalityDefinitions(
         definitions.map((definition) => ({
           ...definition,
+          priorScale: definition.priorScale ?? defaultPriorScale,
           mode: definition.mode ?? inheritedMode,
         })),
       ),

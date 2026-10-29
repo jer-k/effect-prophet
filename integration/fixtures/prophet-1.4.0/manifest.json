@@ -57,6 +57,10 @@
       "sha256": "90737eebdca4d63e8396aa46de3b292a2cf946d81c414596d352a0fd040a519d"
     },
     {
+      "path": "global-prior-scales.json",
+      "sha256": "71c30dc3e6eabede0e4f6b1dd1ee7c91520359c38cb32787a5d8200545ba722f"
+    },
+    {
       "path": "logistic-map.json",
       "sha256": "b8710f7b996c0f92497518b146b3c5f245bbd2f39b964a423d3dd09ec8e92884"
     },
@@ -114,7 +118,7 @@
     "platform": "linux/amd64",
     "uvVersion": "0.8.15"
   },
-  "generatorRevision": "78ea08505a6942c7049bc2d596df383994f829ddf70f35b70c28250b29d6501b",
+  "generatorRevision": "8789d8a82f27faea4d4449022fed23f7f54390a87c139288d47b37dabbc7efbb",
   "numericalEnvironment": [
     {
       "name": "cmdstanpy",

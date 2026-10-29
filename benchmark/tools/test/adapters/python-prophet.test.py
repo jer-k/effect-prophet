@@ -270,6 +270,36 @@ class PythonCountryReferenceTest(unittest.TestCase):
                     restored = adapter["model_from_json"](before)
                     np.testing.assert_array_equal(restored.predict(future)["yhat"], model.predict(future)["yhat"])
 
+    def test_global_priors_reach_python_defaults_and_country_priors_stay_consistent(self):
+        case = self.case(growth="linear")
+        configuration = case["workload"]["configuration"]
+        configuration.update({
+            "seasonalityPriorScale": 0.5, "holidaysPriorScale": 0.25,
+            "countryHolidays": {"country": "US", "coverage": "reject-known-gaps"},
+            "seasonalities": [{"name": "weekly-custom", "periodDays": 7, "fourierOrder": 1}],
+            "events": [{"name": "launch", "date": "2024-01-05", "lowerWindowDays": 0, "upperWindowDays": 0}],
+            "regressors": [{"name": "promotion", "standardization": "never"}],
+        })
+        model = adapter["configure_model"](case)
+        self.assertEqual(model.seasonality_prior_scale, 0.5)
+        self.assertEqual(model.holidays_prior_scale, 0.25)
+        self.assertEqual(model.seasonalities["weekly-custom"]["prior_scale"], 0.5)
+        self.assertTrue(np.isnan(model.holidays["prior_scale"]).all())
+        self.assertEqual(model.extra_regressors["promotion"]["prior_scale"], 0.25)
+
+        # A country prior Python can express only as holidays_prior_scale.
+        configuration["countryHolidays"]["priorScale"] = 0.25
+        self.assertEqual(adapter["configure_model"](case).holidays_prior_scale, 0.25)
+        configuration["countryHolidays"]["priorScale"] = 4
+        with self.assertRaisesRegex(ValueError, "holidays_prior_scale"):
+            adapter["configure_model"](case)
+        del configuration["holidaysPriorScale"]
+        with self.assertRaisesRegex(ValueError, "holidays_prior_scale"):
+            adapter["configure_model"](case)
+        configuration["events"][0]["priorScale"] = 10
+        configuration["regressors"][0]["priorScale"] = 10
+        self.assertEqual(adapter["configure_model"](case).holidays_prior_scale, 4)
+
     def test_actual_future_features_include_observed_spillovers_but_ignore_unseen_names(self):
         dataset = json.loads((BENCHMARK_ROOT / "inputs" / "v5" / "country-boundary-96.json").read_text())
         training, future = adapter["prepare_input"](dataset)

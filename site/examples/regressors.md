@@ -37,8 +37,13 @@ with its future regressor value:
   changes per one unit of each regressor, in your data's units.
 - **Options for each regressor:**
 
-| Option            | Default      | Meaning                                                                                     |
-| ----------------- | ------------ | ------------------------------------------------------------------------------------------- |
-| `priorScale`      | `10`         | Lower values keep the effect small unless the data clearly supports it                      |
-| `mode`            | `"additive"` | `"multiplicative"` makes the effect a percentage of the trend                               |
-| `standardization` | `"auto"`     | Rescales the values internally for a stable fit. `"auto"` leaves yes/no (0/1) values alone. |
+| Option            | Default              | Meaning                                                                                     |
+| ----------------- | -------------------- | ------------------------------------------------------------------------------------------- |
+| `priorScale`      | `holidaysPriorScale` | Lower values keep the effect small unless the data clearly supports it                      |
+| `mode`            | `"additive"`         | `"multiplicative"` makes the effect a percentage of the trend                               |
+| `standardization` | `"auto"`             | Rescales the values internally for a stable fit. `"auto"` leaves yes/no (0/1) values alone. |
+
+As in Python Prophet, a regressor without its own `priorScale` uses the model's
+`holidaysPriorScale` (default `10`), not `seasonalityPriorScale`. Changing `holidaysPriorScale`
+therefore changes those regressors too. To tune holidays alone, give each regressor its own
+`priorScale`.

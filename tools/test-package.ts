@@ -21,6 +21,8 @@ import {
   crossValidateBaseline,
   comparePerformance,
   performanceMetrics,
+  makeParameterGrid,
+  maximumSearchCandidates,
   prophetFittingBackendLayer,
   residuals,
   searchModels,
@@ -84,12 +86,14 @@ const expectedDeclarationFiles = [
   "dist/internal/fitting-backend.d.ts",
   "dist/internal/metric-names.d.ts",
   "dist/internal/prophet-fitting-backend.d.ts",
+  "dist/internal/search-limits.d.ts",
   "dist/linear-optimizer.d.ts",
   "dist/logistic.d.ts",
   "dist/model-search.d.ts",
   "dist/model-serialization.d.ts",
   "dist/observation.d.ts",
   "dist/options.d.ts",
+  "dist/parameter-grid.d.ts",
   "dist/predict-with-intervals.d.ts",
   "dist/prediction-row.d.ts",
   "dist/prophet.d.ts",
@@ -315,6 +319,19 @@ const selection = await Effect.runPromise(
 assert.equal(selection.candidates.length, 2);
 
 assert.equal(selection.selected.id, "one");
+
+const grid = await Effect.runPromise(
+  makeParameterGrid({
+    axes: { changepointPriorScale: [0.01, 0.5], seasonalityMode: ["additive"] },
+  }),
+);
+
+assert.deepEqual(
+  grid.map((candidate) => candidate.id),
+  ["grid-0-0", "grid-1-0"],
+);
+
+assert.equal(maximumSearchCandidates, 32);
 
 const baseline = await Effect.runPromise(
   crossValidateBaseline(

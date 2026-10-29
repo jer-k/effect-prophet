@@ -47,6 +47,25 @@ export const countryDescriptionsFor = (
     ]);
   }
 
+  if (growth === "linear") {
+    entries.push(
+      [
+        "country-global-priors-linear",
+        description(
+          "Global prior scales",
+          "The mixed-feature rows with seasonalityPriorScale 0.1 and holidaysPriorScale 0.05. The seasonality, custom events, regressor and US holidays set no prior of their own, so each takes the global one; the regressor follows holidaysPriorScale, as in Python.",
+        ),
+      ],
+      [
+        "country-global-priors-overrides-linear",
+        description(
+          "Global prior scales with explicit overrides",
+          "The same global priors, but the seasonality, custom events and regressor each set a prior of 10, so only the US holidays take holidaysPriorScale.",
+        ),
+      ],
+    );
+  }
+
   if (growth === "flat") {
     entries.push(
       [

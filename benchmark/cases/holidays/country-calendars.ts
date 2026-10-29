@@ -69,7 +69,15 @@ export const countryHolidayCases = Effect.fn("benchmark.catalog.country-holidays
     id: string,
     dataset: string,
     growth: Configuration["growth"],
-    fields: Pick<Configuration, "countryHolidays" | "events" | "seasonalities" | "regressors">,
+    fields: Pick<
+      Configuration,
+      | "countryHolidays"
+      | "events"
+      | "seasonalities"
+      | "regressors"
+      | "seasonalityPriorScale"
+      | "holidaysPriorScale"
+    >,
     mode: Configuration["holidaysMode"] = "additive",
   ): BenchmarkCase => {
     const quality: Pick<BenchmarkCase, "optimizerQuality"> = {};
@@ -176,6 +184,29 @@ export const countryHolidayCases = Effect.fn("benchmark.catalog.country-holidays
       },
       "multiplicative",
     ),
+  );
+
+  // Small global priors reach every component that omits its own, as in Python's constructor.
+  // Regressors follow holidays_prior_scale; explicit priors keep only the country calendar on it.
+  const omitted = {
+    seasonalityPriorScale: 0.1,
+    holidaysPriorScale: 0.05,
+    countryHolidays: { country: "US", coverage: "reject-known-gaps" },
+    events: customEvents.map(({ priorScale: _prior, ...event }) => event),
+    seasonalities: [
+      { name: "weekly-active", periodDays: 7, fourierOrder: 1, conditionName: "active" },
+    ],
+    regressors: [{ name: "promotion", standardization: "never" }],
+  } as const;
+
+  cases.push(
+    make("global-priors-linear", "v5/country-mixed-96.json", "linear", omitted),
+    make("global-priors-overrides-linear", "v5/country-mixed-96.json", "linear", {
+      ...omitted,
+      events: customEvents,
+      seasonalities: [{ ...omitted.seasonalities[0], priorScale: 10 }],
+      regressors: [{ ...omitted.regressors[0], priorScale: 10 }],
+    }),
   );
 
   const scalingPhases = [

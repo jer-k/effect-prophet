@@ -14,6 +14,7 @@ import {
   fitCountryHolidayEvents,
   predictCountryHolidayEvents,
 } from "../../src/internal/country-holiday-model";
+import { decodeOptions } from "../../src/options";
 
 const noon = (year: number, month: number, day: number) => Date.UTC(year, month - 1, day, 12);
 
@@ -131,6 +132,45 @@ describe("country holiday model state", () => {
     expect(
       merged.events.occurrences.filter((event) => event.name === "Independence Day"),
     ).toHaveLength(2);
+  });
+
+  it("compares custom and country priors after holidaysPriorScale fills both in", async () => {
+    const events = [{ name: "Independence Day", date: "2024-07-05" }];
+
+    const fitOptions = (options: Parameters<typeof decodeOptions>[0]) =>
+      Effect.gen(function* () {
+        const decoded = yield* decodeOptions(options);
+
+        if (decoded.countryHolidays === undefined) {
+          return yield* Effect.die("Expected a country selection");
+        }
+
+        return yield* fitCountryHolidayEvents(
+          decoded.countryHolidays,
+          trainingTimestamps,
+          decoded.events,
+        );
+      });
+
+    const merged = await Effect.runPromise(
+      fitOptions({ holidaysPriorScale: 3, countryHolidays: { country: "US" }, events }),
+    );
+
+    expect(new Set(merged.events.layout.priorScales)).toEqual(new Set([3]));
+
+    // An explicit country prior keeps the default-filled custom event from matching it.
+    const failure = await Effect.runPromise(
+      Effect.flip(
+        fitOptions({
+          holidaysPriorScale: 3,
+          countryHolidays: { country: "US", priorScale: 10 },
+          events,
+        }),
+      ),
+    );
+
+    expect(failure).toBeInstanceOf(CountryHolidayError);
+    expect(failure).toMatchObject({ reason: "conflicting-event-prior" });
   });
 
   it("expands prediction years into trained names only, keeping the fitted columns", async () => {

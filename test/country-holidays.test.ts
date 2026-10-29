@@ -34,6 +34,17 @@ describe("country holiday inspection", () => {
     expect((await Effect.runPromise(parseCountryHolidays({ country: "USA" }))).country).toBe("US");
   });
 
+  it("gives a selection without a prior the caller's default", async () => {
+    const defaulted = await Effect.runPromise(parseCountryHolidays({ country: "US" }, 0.5));
+
+    const explicit = await Effect.runPromise(
+      parseCountryHolidays({ country: "US", priorScale: 4 }, 0.5),
+    );
+
+    expect(defaulted.priorScale).toBe(0.5);
+    expect(explicit.priorScale).toBe(4);
+  });
+
   it.each(["us", " US", "UnitedStates", "United States", "ZZ", "../US", "__proto__"])(
     "rejects unregistered or normalized country %s before the loader boundary",
     async (country) => {
