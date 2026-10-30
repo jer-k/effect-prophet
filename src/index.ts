@@ -157,6 +157,7 @@ export {
   type EncodedFlatMapModel,
   type EncodedLogisticMapModel,
   type EncodedPiecewiseMapModel,
+  type EncodedRegressorModel,
   type SerializableFittedModel,
 } from "./model-serialization";
 
@@ -187,6 +188,7 @@ export {
   type MapOptions,
   type ChangepointSetting,
   type ProphetOptions,
+  type RegressorModelRequest,
 } from "./options";
 
 export {
@@ -208,6 +210,7 @@ export {
   type FlatMapParameters,
   type LogisticMapParameters,
   type PiecewiseMapParameters,
+  type RegressorModel,
 } from "./fitted-model";
 
 export { type LogisticFloorPolicy, type LogisticTargetScaling } from "./logistic";
@@ -263,6 +266,7 @@ export { warmStartParameters, type WarmStartParameters } from "./warm-start";
 export {
   parseRegressorDefinitions,
   type EncodedRegressorDefinition,
+  type EncodedRegressorModelOptions,
   type EncodedRegressorStandardization,
   type FittedRegressor,
   type RegressorCoefficient,

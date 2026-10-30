@@ -45,24 +45,25 @@ the [five-minute introduction](../guide/effect-basics).
 
 ### Model settings
 
-| Python                                                                            | Effect Prophet                                                                                                      |
-| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `growth="linear"`, `"flat"`, `"logistic"`                                         | `growth: "linear" \| "flat" \| "logistic"` (linear is the default)                                                  |
-| `n_changepoints`, `changepoint_range`                                             | `map.changepoints: { mode: "auto", count, range }`                                                                  |
-| `changepoints=[...]`                                                              | `map.changepoints: { mode: "explicit", timestamps }`                                                                |
-| `changepoint_prior_scale`                                                         | `map.changepointPriorScale`                                                                                         |
-| `seasonality_prior_scale`                                                         | `seasonalityPriorScale`: the prior for every seasonality without its own `priorScale`                               |
-| `holidays_prior_scale`                                                            | `holidaysPriorScale`: the prior for every event, country holiday and regressor without its own `priorScale`         |
-| `fit(algorithm="Newton", iter=n)`                                                 | `map.optimizer: { algorithm: "newton", maxIterations: n }`                                                          |
-| `fit(df, init=warm_start_params(m))`                                              | `map.warmStart: warmStartParameters(model)`                                                                         |
-| `yearly_seasonality`, `weekly_seasonality`, `daily_seasonality`                   | `builtInSeasonalities: { yearly, weekly, daily }`: `"auto"`, `"off"`, or `{ mode: "on", fourierOrder, priorScale }` |
-| `seasonality_mode="multiplicative"`                                               | `seasonalityMode: "multiplicative"`                                                                                 |
-| `holidays_mode`                                                                   | `holidaysMode`                                                                                                      |
-| `scaling="minmax"`                                                                | `scaling: "minmax"`                                                                                                 |
-| `add_seasonality(name, period, fourier_order, prior_scale, mode, condition_name)` | an entry in `seasonalities`: `{ name, periodDays, fourierOrder, priorScale, mode, conditionName }`                  |
-| `add_regressor(name, prior_scale, standardize, mode)`                             | an entry in `regressors`: `{ name, priorScale, standardization, mode }`                                             |
-| `holidays` dataframe                                                              | `events`: one `{ name, date, lowerWindowDays, upperWindowDays, priorScale }` per occurrence                         |
-| `add_country_holidays(country_name="US")`                                         | `countryHolidays: { country: "US", coverage, priorScale }`                                                          |
+| Python                                                                            | Effect Prophet                                                                                                            |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `growth="linear"`, `"flat"`, `"logistic"`                                         | `growth: "linear" \| "flat" \| "logistic"` (linear is the default)                                                        |
+| `n_changepoints`, `changepoint_range`                                             | `map.changepoints: { mode: "auto", count, range }`                                                                        |
+| `changepoints=[...]`                                                              | `map.changepoints: { mode: "explicit", timestamps }`                                                                      |
+| `changepoint_prior_scale`                                                         | `map.changepointPriorScale`                                                                                               |
+| `seasonality_prior_scale`                                                         | `seasonalityPriorScale`: the prior for every seasonality without its own `priorScale`                                     |
+| `holidays_prior_scale`                                                            | `holidaysPriorScale`: the prior for every event, country holiday and regressor without its own `priorScale`               |
+| `fit(algorithm="Newton", iter=n)`                                                 | `map.optimizer: { algorithm: "newton", maxIterations: n }`                                                                |
+| `fit(df, init=warm_start_params(m))`                                              | `map.warmStart: warmStartParameters(model)`                                                                               |
+| `yearly_seasonality`, `weekly_seasonality`, `daily_seasonality`                   | `builtInSeasonalities: { yearly, weekly, daily }`: `"auto"`, `"off"`, or `{ mode: "on", fourierOrder, priorScale }`       |
+| `seasonality_mode="multiplicative"`                                               | `seasonalityMode: "multiplicative"`                                                                                       |
+| `holidays_mode`                                                                   | `holidaysMode`                                                                                                            |
+| `scaling="minmax"`                                                                | `scaling: "minmax"`                                                                                                       |
+| `add_seasonality(name, period, fourier_order, prior_scale, mode, condition_name)` | an entry in `seasonalities`: `{ name, periodDays, fourierOrder, priorScale, mode, conditionName }`                        |
+| `add_regressor(name, prior_scale, standardize, mode)`                             | an entry in `regressors`: `{ name, priorScale, standardization, mode }`                                                   |
+| `add_regressor(name, regressor_predictor=True)` or a dict of constructor options  | `predictor: true` or options on that entry; see [Forecasting a regressor](../examples/regressors#forecasting-a-regressor) |
+| `holidays` dataframe                                                              | `events`: one `{ name, date, lowerWindowDays, upperWindowDays, priorScale }` per occurrence                               |
+| `add_country_holidays(country_name="US")`                                         | `countryHolidays: { country: "US", coverage, priorScale }`                                                                |
 
 The defaults are Prophet's, so a fit with no options produces the same model as Python. See
 [How close are the results?](./accuracy) for the evidence.
@@ -94,7 +95,8 @@ The defaults are Prophet's, so a fit with no options produces the same model as 
   no format guessing and no time-zone conversion.
 - **Missing values:** leave the row out instead of using `NaN`. A row without a value is rejected.
 - **Future rows carry their own inputs.** Every future row needs its `capacity` (and `floor`),
-  regressor values and condition flags, because there is no dataframe to look them up in.
+  regressor values and condition flags, because there is no dataframe to look them up in. The
+  exception is a regressor with its own model (`regressor_predictor`), which forecasts it.
 - **The seed is required** for uncertainty ranges, so results are repeatable.
 - **Intervals are a separate call.** `predict` returns point forecasts only, so you never pay for
   simulations you didn't ask for.

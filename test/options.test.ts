@@ -51,6 +51,7 @@ describe("decodeOptions", () => {
       builtInSeasonalities: { daily: "auto", weekly: "auto", yearly: "auto" },
       events: emptyEventCalendar,
       regressors: [],
+      regressorModels: [],
       map: defaultAutomaticMapOptions,
     });
   });
@@ -76,6 +77,7 @@ describe("decodeOptions", () => {
         builtInSeasonalities: { daily: "auto", weekly: "auto", yearly: "auto" },
         events: emptyEventCalendar,
         regressors: [],
+        regressorModels: [],
       };
 
       const { optimizer: _optimizer, ...flatMap } = defaultAutomaticMapOptions;
@@ -129,6 +131,7 @@ describe("decodeOptions", () => {
       builtInSeasonalities: { daily: "auto", weekly: "auto", yearly: "auto" },
       events: emptyEventCalendar,
       regressors: [],
+      regressorModels: [],
       map: {
         changepoints: defaultAutomaticMapOptions.changepoints,
         changepointPriorScale: defaultAutomaticMapOptions.changepointPriorScale,
@@ -176,6 +179,7 @@ describe("decodeOptions", () => {
       builtInSeasonalities: { daily: "auto", weekly: "auto", yearly: "auto" },
       events: emptyEventCalendar,
       regressors: [],
+      regressorModels: [],
       map: defaultAutomaticMapOptions,
     });
     expect(Object.isFrozen(options.seasonalities)).toBe(true);
@@ -649,5 +653,60 @@ describe("decodeOptions", () => {
       message: "Expected no excess property",
       path: ["seasonality"],
     });
+  });
+
+  it("parses each regressor model's options with the main model's fit settings", async () => {
+    const warmStart = { k: 0.1, m: 0.2, sigmaObs: 0.3, delta: [], beta: [] };
+
+    const options = await Effect.runPromise(
+      decodeOptions({
+        map: { optimizer: { algorithm: "newton" }, warmStart },
+        regressors: [
+          { name: "price", predictor: { growth: "flat", seasonalityPriorScale: 2 } },
+          { name: "promotion" },
+          { name: "temperature", predictor: true },
+        ],
+      }),
+    );
+
+    expect(options.regressors.map((regressor) => regressor.name)).toEqual([
+      "price",
+      "promotion",
+      "temperature",
+    ]);
+    expect(options.regressorModels.map((request) => request.name)).toEqual([
+      "price",
+      "temperature",
+    ]);
+
+    const [price, temperature] = options.regressorModels;
+
+    expect(price?.options.growth).toBe("flat");
+    expect(price?.options.seasonalityPriorScale).toBe(2);
+    expect(price?.options.map.optimizer).toEqual({ algorithm: "newton", maxIterations: 10_000 });
+    expect(price?.options.map.warmStart).toEqual(warmStart);
+    expect(temperature?.options.growth).toBe("linear");
+    expect(temperature?.options.regressorModels).toEqual([]);
+    expect(Object.isFrozen(options.regressorModels)).toBe(true);
+  });
+
+  it("keeps Prophet's optimizer policy for a regressor model when none is requested", async () => {
+    const options = await Effect.runPromise(
+      decodeOptions({ regressors: [{ name: "price", predictor: { growth: "flat" } }] }),
+    );
+
+    expect(options.regressorModels[0]?.options.map.optimizer).toBeUndefined();
+    expect(options.regressorModels[0]?.options.map.warmStart).toBeUndefined();
+  });
+
+  it("reports regressor model option failures under the regressor's predictor", async () => {
+    const error = await expectOptionsFailure({
+      regressors: [
+        { name: "price" },
+        { name: "promotion", predictor: { seasonalityPriorScale: 0 } },
+      ],
+    });
+
+    expect(error.issues[0]?.path).toEqual(["regressors", 1, "predictor", "seasonalityPriorScale"]);
   });
 });

@@ -161,6 +161,9 @@ export class FittingError extends Schema.TaggedError<FittingError>()("FittingErr
   parameterCount: Schema.optionalKey(Schema.Natural),
   memoryLimitBytes: Schema.optionalKey(Schema.Natural),
   backendPhase: Schema.optionalKey(WasmFailurePhaseSchema),
+
+  /** The regressor whose own model failed to fit, when the failure came from that model. */
+  regressor: Schema.optionalKey(Schema.String),
   message: Schema.String,
 }) {
   /** Original runtime failure, retained in memory but excluded from the portable schema. */
@@ -175,6 +178,7 @@ export class FittingError extends Schema.TaggedError<FittingError>()("FittingErr
       readonly parameterCount?: number;
       readonly memoryLimitBytes?: number;
       readonly backendPhase?: WasmFailurePhase;
+      readonly regressor?: string;
       readonly message: string;
     },
     options?: RuntimeCauseOptions,
@@ -189,6 +193,9 @@ export class PredictionError extends Schema.TaggedError<PredictionError>()("Pred
   reason: PredictionFailureReasonSchema,
   timestamp: Schema.Int,
   backendPhase: Schema.optionalKey(WasmFailurePhaseSchema),
+
+  /** The regressor whose own model failed to forecast, when the failure came from that model. */
+  regressor: Schema.optionalKey(Schema.String),
   message: Schema.String,
 }) {
   /** Original runtime failure, retained in memory but excluded from the portable schema. */
@@ -201,6 +208,7 @@ export class PredictionError extends Schema.TaggedError<PredictionError>()("Pred
       readonly reason: PredictionFailureReason;
       readonly timestamp: number;
       readonly backendPhase?: WasmFailurePhase;
+      readonly regressor?: string;
       readonly message: string;
     },
     options?: RuntimeCauseOptions,

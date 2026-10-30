@@ -7,8 +7,10 @@ Python, where it differs on purpose, and the smaller behavior differences.
 ## Not available yet
 
 - Full Bayesian fitting (`mcmc_samples`)
-- Forecasting regressors with their own models. Every future row must supply its regressor
-  values.
+- Uncertainty ranges for models whose regressors are
+  [forecast by their own models](../examples/regressors#forecasting-a-regressor).
+  `predictWithIntervals` and `predictUncertainty` reject them; Python widens the ranges with the
+  regressor models' own uncertainty.
 
 ## Different on purpose
 
@@ -34,6 +36,12 @@ Python, where it differs on purpose, and the smaller behavior differences.
   `register_performance_metric` takes any function of the whole result. Python has no
   quantile helper; the quantile follows numpy's `np.quantile` over the windows `mdape` uses. See
   [Your own metrics](../examples/cross-validation#your-own-metrics).
+- Saved models keep the models that
+  [forecast their regressors](../examples/regressors#forecasting-a-regressor), so a loaded model
+  forecasts exactly as before. Python's `model_to_json` drops them, and a loaded model then asks
+  for the regressor values.
+- A regressor model's `predictor: {}` uses the default settings, like `predictor: true`. In
+  Python, `regressor_predictor={}` counts as false and fits no regressor model.
 - `predict` never simulates, so point forecasts never pay for it. Ranges come from
   [`predictWithIntervals`](../examples/uncertainty), or `predictUncertainty` for ranges alone.
   They need a seed, so results are repeatable.

@@ -2,6 +2,7 @@ import { Effect } from "effect";
 import { describe, expect, it } from "vitest";
 
 import { emptyEventCalendar, parseEventCalendar } from "../src/event";
+import { fit, prophetFittingBackendLayer } from "../src/index";
 import {
   InvalidFittedModel,
   parseFittedModel,
@@ -267,5 +268,99 @@ describe("fitted model domain", () => {
       }),
       "optimization",
     );
+  });
+
+  describe("regressor models", () => {
+    const fitWithRegressorModel = () =>
+      Effect.runPromise(
+        fit(
+          Array.from({ length: 12 }, (_, index) => ({
+            timestamp: new Date(Date.UTC(2025, 0, index + 1)).toISOString(),
+            value: 5 + index + (index % 3),
+            regressors: { price: 2 + Math.sin(index), promotion: index % 2 },
+          })),
+          {
+            regressors: [{ name: "price", predictor: true }, { name: "promotion" }],
+          },
+        ).pipe(Effect.provide(prophetFittingBackendLayer)),
+      );
+
+    it("parses fresh copies and freezes the regressor models", async () => {
+      const model = await fitWithRegressorModel();
+      const parsed = await Effect.runPromise(parseFittedModel(structuredClone(model)));
+      const regressorModel = parsed.regressorModels?.[0];
+
+      expect(parsed).toEqual(model);
+      expect(Object.isFrozen(regressorModel?.timestamps)).toBe(true);
+      expect(Object.isFrozen(regressorModel?.model)).toBe(true);
+
+      if (regressorModel === undefined) {
+        throw new Error("Expected a regressor model");
+      }
+
+      // Each regressor model is parsed with its main model, so parsing it again returns it.
+      expect(await Effect.runPromise(parseFittedModel(regressorModel.model))).toBe(
+        regressorModel.model,
+      );
+    });
+
+    it.each([
+      ["an unknown regressor", { name: "other" }, ["regressorModels", 0, "name"]],
+      [
+        "a regressor without a feature name",
+        { name: "promotion " },
+        ["regressorModels", 0, "name"],
+      ],
+      ["misaligned training values", { values: [1, 2] }, ["regressorModels", 0, "values"]],
+      [
+        "decreasing training timestamps",
+        { timestamps: Array.from({ length: 12 }, (_, index) => Date.UTC(2025, 0, 12 - index)) },
+        ["regressorModels", 0, "timestamps"],
+      ],
+      [
+        "training timestamps outside the main model's bounds",
+        { timestamps: Array.from({ length: 12 }, (_, index) => Date.UTC(2025, 1, index + 1)) },
+        ["regressorModels", 0, "timestamps"],
+      ],
+    ])("rejects %s", async (_, change, path) => {
+      const model = await fitWithRegressorModel();
+      const [regressorModel] = model.regressorModels ?? [];
+
+      const error = await Effect.runPromise(
+        Effect.flip(
+          // SAFETY: deliberately inconsistent state, as an untrusted payload could hold.
+          parseFittedModel({
+            ...model,
+            regressorModels: [{ ...regressorModel, ...change }],
+          } as never),
+        ),
+      );
+
+      expect(error).toBeInstanceOf(InvalidFittedModel);
+      expect(error.issues.map((issue) => issue.path)).toContainEqual(path);
+    });
+
+    it("rejects repeated regressor models and a regressor model with regressors", async () => {
+      const model = await fitWithRegressorModel();
+      const [regressorModel] = model.regressorModels ?? [];
+
+      if (regressorModel === undefined || model.model === "logistic-piecewise-map") {
+        throw new Error("Expected a linear model with a regressor model");
+      }
+
+      const { regressorModels: _, ...main } = model;
+
+      for (const regressorModels of [
+        [regressorModel, regressorModel],
+        [{ ...regressorModel, model: main }],
+      ]) {
+        const error = await Effect.runPromise(
+          // SAFETY: deliberately inconsistent state, as an untrusted payload could hold.
+          Effect.flip(parseFittedModel({ ...model, regressorModels } as never)),
+        );
+
+        expect(error).toBeInstanceOf(InvalidFittedModel);
+      }
+    });
   });
 });
