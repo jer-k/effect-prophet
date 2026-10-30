@@ -40,6 +40,9 @@ jobs:
       - name: Type check
         run: npm run typecheck
 
+      - name: Effect diagnostics
+        run: npm run effect:check
+
       - name: Test
         run: npm test
 

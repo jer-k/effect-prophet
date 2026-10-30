@@ -44,6 +44,25 @@ describe("typed domain errors", () => {
     expect(Schema.encodeSync(HoldoutEvaluationError)(holdout)).not.toHaveProperty("cause");
     expect(Schema.encodeSync(EvaluationReportError)(report)).toMatchObject({ operation: "decode" });
   });
+  it("decodes errors whose constructors accept a runtime cause", () => {
+    const original = new FittingError(
+      { reason: "rank-deficient", observationCount: 3, message: "Rank deficient" },
+      { cause: new Error("private path") },
+    );
+
+    const encoded = Schema.encodeSync(FittingError)(original);
+
+    const decoded = Schema.decodeUnknownSync(FittingError)(encoded);
+
+    expect(decoded).toBeInstanceOf(FittingError);
+    expect(decoded).toMatchObject({ reason: "rank-deficient", observationCount: 3 });
+    expect(decoded).not.toHaveProperty("cause");
+    expect(Schema.encodeSync(FittingError)(decoded)).toStrictEqual(encoded);
+    expect(() =>
+      Schema.decodeUnknownSync(FittingError)({ ...encoded, observationCount: -1 }),
+    ).toThrow();
+  });
+
   it("encodes structured evaluation-plan validation issues", () => {
     const error = new InputValidationError({
       input: "evaluation-plan",

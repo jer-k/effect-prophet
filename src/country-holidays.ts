@@ -274,7 +274,7 @@ export const resolveCountryHolidays = (
   Effect.gen(function* () {
     const years = yield* parseYears(requestedYears);
 
-    return yield* Effect.fn("Prophet.resolveCountryHolidays")(function* () {
+    return yield* Effect.gen(function* () {
       yield* Effect.annotateCurrentSpan({
         "effect_prophet.calendar.source": retained === undefined ? "bundled" : "embedded",
         "effect_prophet.calendar.coverage": selection.coverage,
@@ -360,7 +360,7 @@ export const resolveCountryHolidays = (
           completeOfficialCoverageVerified: false as const,
         }),
       });
-    })();
+    }).pipe(Effect.withSpan("Prophet.resolveCountryHolidays"));
   });
 
 /** Inspect one registered country calendar without Python, network access or application services. */

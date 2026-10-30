@@ -16,7 +16,8 @@
     "noImplicitOverride": true,
     "noFallthroughCasesInSwitch": true,
     "noEmit": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "plugins": [{ "name": "@effect/language-service" }]
   },
   "include": [
     "src/**/*.ts",

@@ -51,6 +51,7 @@ describe("FittingBackend", () => {
     expectTypeOf(program).toEqualTypeOf<Effect.Effect<Parameters, FittingError, FittingBackend>>();
 
     // @ts-expect-error -- The unprovided program intentionally still requires FittingBackend.
+    // @effect-diagnostics-next-line missingEffectContext:off -- Asserted by the @ts-expect-error above.
     void runnableWithoutServices(program);
 
     const providedProgram = program.pipe(Effect.provide(testBackend.layer));
