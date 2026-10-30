@@ -4,8 +4,8 @@ use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::logistic_map::{LogisticParameters, predict_logistic_map};
 use crate::map_uncertainty::{
-  SimulationError, SimulationOptions, SimulationRows, SimulationTrend, checked_cells,
-  checked_interval_budget, simulate_intervals, simulate_map,
+  SampleOffsets, SimulationError, SimulationOptions, SimulationRows, SimulationTrend,
+  checked_cells, checked_interval_budget, simulate_intervals, simulate_map,
 };
 use crate::mixed_map::{MixedTrendModel, predict_mixed_map};
 use crate::piecewise_linear::PiecewiseTrend;
@@ -51,6 +51,10 @@ fn prediction_error(error: PiecewiseMapPredictionError) -> Vec<f64> {
 /// `[trend_low, trend_high, value_low, value_high]` or two N*S arrays for samples.
 /// Failure frames contain a bounded status (1 request, 2 model, 3 limit, 4 nonfinite),
 /// optionally followed by a row or row/sample index. No borrowed WASM view escapes.
+///
+/// `offset_rows` lists strictly increasing rows whose additive and multiplicative terms change
+/// per sample, with `offset_additive` and `offset_multiplicative` holding one value per listed row
+/// and sample, row-major. All three are empty when no row changes.
 #[must_use]
 #[wasm_bindgen]
 #[allow(clippy::too_many_arguments)]
@@ -77,6 +81,9 @@ pub fn simulate_map_with_features(
   additional_component_offsets: &[f64],
   additional_component_counts: &[f64],
   column_modes: &[f64],
+  offset_rows: &[f64],
+  offset_additive: &[f64],
+  offset_multiplicative: &[f64],
   seed: f64,
   sample_count: f64,
   interval_width: f64,
@@ -100,6 +107,9 @@ pub fn simulate_map_with_features(
   if let Err(error) = checked_budget(timestamps.len(), samples, output_code) {
     return error_frame(error);
   }
+  let Some(offset_rows) = parse_offset_rows(offset_rows) else {
+    return vec![INVALID_REQUEST];
+  };
   if changepoint_timestamps.len() > 10_000 || deltas.len() > 10_000 {
     return vec![RESOURCE_LIMIT];
   }
@@ -205,6 +215,7 @@ pub fn simulate_map_with_features(
       timestamps,
       additive: &additive,
       multiplicative: &multiplicative,
+      offsets: sample_offsets(&offset_rows, offset_additive, offset_multiplicative),
     },
     SimulationOptions {
       seed,
@@ -244,6 +255,9 @@ pub fn simulate_logistic_map_with_features(
   additional_component_offsets: &[f64],
   additional_component_counts: &[f64],
   column_modes: &[f64],
+  offset_rows: &[f64],
+  offset_additive: &[f64],
+  offset_multiplicative: &[f64],
   seed: f64,
   sample_count: f64,
   interval_width: f64,
@@ -266,6 +280,9 @@ pub fn simulate_logistic_map_with_features(
   if let Err(error) = checked_budget(timestamps.len(), samples, output_code) {
     return error_frame(error);
   }
+  let Some(offset_rows) = parse_offset_rows(offset_rows) else {
+    return vec![INVALID_REQUEST];
+  };
   if changepoint_timestamps.len() > 10_000 || deltas.len() > 10_000 {
     return vec![RESOURCE_LIMIT];
   }
@@ -366,6 +383,7 @@ pub fn simulate_logistic_map_with_features(
       timestamps,
       additive: &additive,
       multiplicative: &multiplicative,
+      offsets: sample_offsets(&offset_rows, offset_additive, offset_multiplicative),
     },
     SimulationOptions {
       seed,
@@ -374,6 +392,30 @@ pub fn simulate_logistic_map_with_features(
     },
     output_code,
   )
+}
+
+/// Parse offset row indexes; the simulation checks their order, bounds and value counts.
+fn parse_offset_rows(rows: &[f64]) -> Option<Vec<usize>> {
+  rows
+    .iter()
+    .map(|&row| parse_nonnegative_integer(row))
+    .collect()
+}
+
+fn sample_offsets<'a>(
+  rows: &'a [usize],
+  additive: &'a [f64],
+  multiplicative: &'a [f64],
+) -> Option<SampleOffsets<'a>> {
+  if rows.is_empty() && additive.is_empty() && multiplicative.is_empty() {
+    None
+  } else {
+    Some(SampleOffsets {
+      rows,
+      additive,
+      multiplicative,
+    })
+  }
 }
 
 /// Interval output streams rows, so only sample output is bounded by its full draw matrix.

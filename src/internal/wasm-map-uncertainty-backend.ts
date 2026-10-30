@@ -26,6 +26,23 @@ import {
 /** Injectable production-used lazy loader for real generated-binding and failure tests. */
 export type WasmMapUncertaintyLoader = () => MapUncertaintyWasmBindings;
 
+/**
+ * Per-sample changes to some rows' additive and multiplicative terms, such as a forecast
+ * regressor's draws. `rows` lists strictly increasing row indexes; the other two hold one value per
+ * listed row and sample, row-major. They draw nothing, so the seed's paths are unchanged.
+ */
+export interface SimulationOffsets {
+  readonly rows: Float64Array;
+  readonly additive: Float64Array;
+  readonly multiplicative: Float64Array;
+}
+
+const noOffsets: SimulationOffsets = {
+  rows: new Float64Array(),
+  additive: new Float64Array(),
+  multiplicative: new Float64Array(),
+};
+
 const protocolFailure = (timestamp: number): PredictionError =>
   wasmPredictionError(timestamp, {
     reason: "backend-failure",
@@ -42,6 +59,7 @@ export const simulateMapWithWasm = (
   options: UncertaintyOptions,
   loader: WasmMapUncertaintyLoader = loadProphetWasmModule,
   logisticBounds?: LogisticPredictionBounds,
+  offsets: SimulationOffsets = noOffsets,
 ): Effect.Effect<UncertaintyResult, PredictionError> => {
   if (model.model === "logistic-piecewise-map" && logisticBounds === undefined) {
     return Effect.fail(
@@ -110,6 +128,9 @@ export const simulateMapWithWasm = (
               additional.offsets,
               additional.counts,
               coefficientModeCodes(model.seasonalities, features),
+              offsets.rows,
+              offsets.additive,
+              offsets.multiplicative,
               options.seed,
               options.samples,
               options.intervalWidth,
@@ -140,6 +161,9 @@ export const simulateMapWithWasm = (
               additional.offsets,
               additional.counts,
               coefficientModeCodes(model.seasonalities, features),
+              offsets.rows,
+              offsets.additive,
+              offsets.multiplicative,
               options.seed,
               options.samples,
               options.intervalWidth,

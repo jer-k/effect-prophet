@@ -4870,6 +4870,1119 @@
       }
     }
   ],
+  "intervalCases": [
+    {
+      "expected": {
+        "pointWidths": [
+          0.176966182677,
+          0.184540921761,
+          0.171628681451,
+          0.179636736824,
+          0.180744254933,
+          0.170339424297,
+          0.189545681175,
+          0.177276646895,
+          0.181642814795,
+          0.169914918342,
+          0.177559904788,
+          0.170693822809,
+          0.168564918702,
+          0.192993810739
+        ],
+        "widenedWidths": [
+          0.451245467875,
+          0.464185817049,
+          0.461664248014,
+          0.471883801203,
+          0.443609285501,
+          0.469881768056,
+          0.480514481583,
+          0.451682383068,
+          0.465722013177,
+          0.460935054454,
+          0.469798789185,
+          0.449986511793,
+          0.457019321918,
+          0.452044724293
+        ]
+      },
+      "id": "regressor-model-intervals",
+      "intervalWidth": 0.8,
+      "observations": [
+        {
+          "regressors": {
+            "price": 10.0,
+            "promotion": 1.0
+          },
+          "timestamp": "2024-01-01T00:00:00.000Z",
+          "value": 43.1
+        },
+        {
+          "regressors": {
+            "price": 11.3909886957,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-01-02T00:00:00.000Z",
+          "value": 43.9706551441
+        },
+        {
+          "regressors": {
+            "price": 11.704091149,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-01-03T00:00:00.000Z",
+          "value": 44.1766980716
+        },
+        {
+          "regressors": {
+            "price": 10.7392764698,
+            "promotion": 1.0
+          },
+          "timestamp": "2024-01-04T00:00:00.000Z",
+          "value": 43.6531620401
+        },
+        {
+          "regressors": {
+            "price": 9.31885397655,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-01-05T00:00:00.000Z",
+          "value": 41.1458329265
+        },
+        {
+          "regressors": {
+            "price": 8.59650006661,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-01-06T00:00:00.000Z",
+          "value": 40.463965477
+        },
+        {
+          "regressors": {
+            "price": 9.129561049,
+            "promotion": 1.0
+          },
+          "timestamp": "2024-01-07T00:00:00.000Z",
+          "value": 42.1553626221
+        },
+        {
+          "regressors": {
+            "price": 10.4776336468,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-01-08T00:00:00.000Z",
+          "value": 43.1249151149
+        },
+        {
+          "regressors": {
+            "price": 11.6097306623,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-01-09T00:00:00.000Z",
+          "value": 44.4555970715
+        },
+        {
+          "regressors": {
+            "price": 11.7308846895,
+            "promotion": 1.0
+          },
+          "timestamp": "2024-01-10T00:00:00.000Z",
+          "value": 45.2619867373
+        },
+        {
+          "regressors": {
+            "price": 10.8508275674,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-01-11T00:00:00.000Z",
+          "value": 43.3164010804
+        },
+        {
+          "regressors": {
+            "price": 9.69924489842,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-01-12T00:00:00.000Z",
+          "value": 42.0176200411
+        },
+        {
+          "regressors": {
+            "price": 9.13602283467,
+            "promotion": 1.0
+          },
+          "timestamp": "2024-01-13T00:00:00.000Z",
+          "value": 42.3819310122
+        },
+        {
+          "regressors": {
+            "price": 9.54460716915,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-01-14T00:00:00.000Z",
+          "value": 42.3224853798
+        },
+        {
+          "regressors": {
+            "price": 10.6206236713,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-01-15T00:00:00.000Z",
+          "value": 43.7081004926
+        },
+        {
+          "regressors": {
+            "price": 11.6303901552,
+            "promotion": 1.0
+          },
+          "timestamp": "2024-01-16T00:00:00.000Z",
+          "value": 45.6055455508
+        },
+        {
+          "regressors": {
+            "price": 11.9126229687,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-01-17T00:00:00.000Z",
+          "value": 44.9304735093
+        },
+        {
+          "regressors": {
+            "price": 11.3010258035,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-01-18T00:00:00.000Z",
+          "value": 44.0791265926
+        },
+        {
+          "regressors": {
+            "price": 10.2319091388,
+            "promotion": 1.0
+          },
+          "timestamp": "2024-01-19T00:00:00.000Z",
+          "value": 43.7113626109
+        },
+        {
+          "regressors": {
+            "price": 9.47503963747,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-01-20T00:00:00.000Z",
+          "value": 42.320248261
+        },
+        {
+          "regressors": {
+            "price": 9.62548251444,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-01-21T00:00:00.000Z",
+          "value": 42.8366866935
+        },
+        {
+          "regressors": {
+            "price": 10.6609625264,
+            "promotion": 1.0
+          },
+          "timestamp": "2024-01-22T00:00:00.000Z",
+          "value": 45.0277297148
+        },
+        {
+          "regressors": {
+            "price": 11.8920960784,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-01-23T00:00:00.000Z",
+          "value": 45.5878740703
+        },
+        {
+          "regressors": {
+            "price": 12.415687869,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-01-24T00:00:00.000Z",
+          "value": 45.9438620209
+        },
+        {
+          "regressors": {
+            "price": 11.8016826276,
+            "promotion": 1.0
+          },
+          "timestamp": "2024-01-25T00:00:00.000Z",
+          "value": 45.8029717894
+        },
+        {
+          "regressors": {
+            "price": 10.4890223977,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-01-26T00:00:00.000Z",
+          "value": 43.4689736163
+        },
+        {
+          "regressors": {
+            "price": 9.51362013935,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-01-27T00:00:00.000Z",
+          "value": 42.5891046048
+        },
+        {
+          "regressors": {
+            "price": 9.70935535965,
+            "promotion": 1.0
+          },
+          "timestamp": "2024-01-28T00:00:00.000Z",
+          "value": 43.9933156409
+        },
+        {
+          "regressors": {
+            "price": 11.0044569911,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-01-29T00:00:00.000Z",
+          "value": 44.9735447513
+        },
+        {
+          "regressors": {
+            "price": 12.425824919,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-01-30T00:00:00.000Z",
+          "value": 46.6473134839
+        },
+        {
+          "regressors": {
+            "price": 12.8623742403,
+            "promotion": 1.0
+          },
+          "timestamp": "2024-01-31T00:00:00.000Z",
+          "value": 47.751758372
+        },
+        {
+          "regressors": {
+            "price": 11.97917037,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-02-01T00:00:00.000Z",
+          "value": 45.6834190488
+        },
+        {
+          "regressors": {
+            "price": 10.5093377015,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-02-02T00:00:00.000Z",
+          "value": 43.9011590131
+        },
+        {
+          "regressors": {
+            "price": 9.66054845496,
+            "promotion": 1.0
+          },
+          "timestamp": "2024-02-03T00:00:00.000Z",
+          "value": 43.886383129
+        },
+        {
+          "regressors": {
+            "price": 10.128318456,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-02-04T00:00:00.000Z",
+          "value": 43.9438492432
+        },
+        {
+          "regressors": {
+            "price": 11.5435949186,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-02-05T00:00:00.000Z",
+          "value": 45.8431781493
+        },
+        {
+          "regressors": {
+            "price": 12.8019497402,
+            "promotion": 1.0
+          },
+          "timestamp": "2024-02-06T00:00:00.000Z",
+          "value": 48.1561074361
+        },
+        {
+          "regressors": {
+            "price": 12.970440005,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-02-07T00:00:00.000Z",
+          "value": 47.4171881926
+        },
+        {
+          "regressors": {
+            "price": 12.0070681443,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-02-08T00:00:00.000Z",
+          "value": 46.1376555902
+        },
+        {
+          "regressors": {
+            "price": 10.7325667531,
+            "promotion": 1.0
+          },
+          "timestamp": "2024-02-09T00:00:00.000Z",
+          "value": 45.4415222334
+        },
+        {
+          "regressors": {
+            "price": 10.1411485167,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-02-10T00:00:00.000Z",
+          "value": 44.1297125187
+        },
+        {
+          "regressors": {
+            "price": 10.6470722243,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-02-11T00:00:00.000Z",
+          "value": 44.9722408548
+        },
+        {
+          "regressors": {
+            "price": 11.8395904233,
+            "promotion": 1.0
+          },
+          "timestamp": "2024-02-12T00:00:00.000Z",
+          "value": 47.3172530471
+        },
+        {
+          "regressors": {
+            "price": 12.8577069698,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-02-13T00:00:00.000Z",
+          "value": 47.6695256911
+        },
+        {
+          "regressors": {
+            "price": 13.0310131984,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-02-14T00:00:00.000Z",
+          "value": 47.7126880534
+        },
+        {
+          "regressors": {
+            "price": 12.3122486178,
+            "promotion": 1.0
+          },
+          "timestamp": "2024-02-15T00:00:00.000Z",
+          "value": 47.5628051266
+        },
+        {
+          "regressors": {
+            "price": 11.2548370901,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-02-16T00:00:00.000Z",
+          "value": 45.6061307935
+        },
+        {
+          "regressors": {
+            "price": 10.6157538135,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-02-17T00:00:00.000Z",
+          "value": 45.1217724889
+        },
+        {
+          "regressors": {
+            "price": 10.861346303,
+            "promotion": 1.0
+          },
+          "timestamp": "2024-02-18T00:00:00.000Z",
+          "value": 46.5024391296
+        },
+        {
+          "regressors": {
+            "price": 11.8653590806,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-02-19T00:00:00.000Z",
+          "value": 47.01389913
+        },
+        {
+          "regressors": {
+            "price": 12.972796189,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-02-20T00:00:00.000Z",
+          "value": 48.2115841004
+        },
+        {
+          "regressors": {
+            "price": 13.4156387601,
+            "promotion": 1.0
+          },
+          "timestamp": "2024-02-21T00:00:00.000Z",
+          "value": 49.2910435647
+        },
+        {
+          "regressors": {
+            "price": 12.8520748966,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-02-22T00:00:00.000Z",
+          "value": 47.6558671931
+        },
+        {
+          "regressors": {
+            "price": 11.6659239129,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-02-23T00:00:00.000Z",
+          "value": 46.3224271128
+        },
+        {
+          "regressors": {
+            "price": 10.7548484836,
+            "promotion": 1.0
+          },
+          "timestamp": "2024-02-24T00:00:00.000Z",
+          "value": 46.3491336098
+        },
+        {
+          "regressors": {
+            "price": 10.8824312579,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-02-25T00:00:00.000Z",
+          "value": 46.0677619093
+        },
+        {
+          "regressors": {
+            "price": 12.05137869,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-02-26T00:00:00.000Z",
+          "value": 47.6614101699
+        },
+        {
+          "regressors": {
+            "price": 13.4264529528,
+            "promotion": 1.0
+          },
+          "timestamp": "2024-02-27T00:00:00.000Z",
+          "value": 50.0295878243
+        },
+        {
+          "regressors": {
+            "price": 13.9471592197,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-02-28T00:00:00.000Z",
+          "value": 49.5936734706
+        },
+        {
+          "regressors": {
+            "price": 13.1865955426,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-02-29T00:00:00.000Z",
+          "value": 48.4592923177
+        },
+        {
+          "regressors": {
+            "price": 11.7438641605,
+            "promotion": 1.0
+          },
+          "timestamp": "2024-03-01T00:00:00.000Z",
+          "value": 47.5306941774
+        },
+        {
+          "regressors": {
+            "price": 10.7970207976,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-03-02T00:00:00.000Z",
+          "value": 45.8438014809
+        },
+        {
+          "regressors": {
+            "price": 11.1487355784,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-03-03T00:00:00.000Z",
+          "value": 46.6105352377
+        },
+        {
+          "regressors": {
+            "price": 12.5567817619,
+            "promotion": 1.0
+          },
+          "timestamp": "2024-03-04T00:00:00.000Z",
+          "value": 49.3298812406
+        },
+        {
+          "regressors": {
+            "price": 13.9246325506,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-03-05T00:00:00.000Z",
+          "value": 50.169563675
+        },
+        {
+          "regressors": {
+            "price": 14.1996869865,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-03-06T00:00:00.000Z",
+          "value": 50.3227271909
+        },
+        {
+          "regressors": {
+            "price": 13.223493348,
+            "promotion": 1.0
+          },
+          "timestamp": "2024-03-07T00:00:00.000Z",
+          "value": 49.7776965689
+        },
+        {
+          "regressors": {
+            "price": 11.8307959685,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-03-08T00:00:00.000Z",
+          "value": 47.298866903
+        },
+        {
+          "regressors": {
+            "price": 11.1449730261,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-03-09T00:00:00.000Z",
+          "value": 46.6613788057
+        },
+        {
+          "regressors": {
+            "price": 11.683449505,
+            "promotion": 1.0
+          },
+          "timestamp": "2024-03-10T00:00:00.000Z",
+          "value": 48.3648746167
+        },
+        {
+          "regressors": {
+            "price": 12.9999040317,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-03-11T00:00:00.000Z",
+          "value": 49.3045095728
+        },
+        {
+          "regressors": {
+            "price": 14.0979018819,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-03-12T00:00:00.000Z",
+          "value": 50.6009468757
+        },
+        {
+          "regressors": {
+            "price": 14.2197394819,
+            "promotion": 1.0
+          },
+          "timestamp": "2024-03-13T00:00:00.000Z",
+          "value": 51.4103423209
+        },
+        {
+          "regressors": {
+            "price": 13.374401657,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-03-14T00:00:00.000Z",
+          "value": 49.5030885891
+        },
+        {
+          "regressors": {
+            "price": 12.2536324924,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-03-15T00:00:00.000Z",
+          "value": 48.2340025302
+        },
+        {
+          "regressors": {
+            "price": 11.6836449036,
+            "promotion": 1.0
+          },
+          "timestamp": "2024-03-16T00:00:00.000Z",
+          "value": 48.5823881268
+        },
+        {
+          "regressors": {
+            "price": 12.0552781018,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-03-17T00:00:00.000Z",
+          "value": 48.4739405008
+        },
+        {
+          "regressors": {
+            "price": 13.1045383449,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-03-18T00:00:00.000Z",
+          "value": 49.8281255542
+        },
+        {
+          "regressors": {
+            "price": 14.1269828944,
+            "promotion": 1.0
+          },
+          "timestamp": "2024-03-19T00:00:00.000Z",
+          "value": 51.746481208
+        },
+        {
+          "regressors": {
+            "price": 14.4474734097,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-03-20T00:00:00.000Z",
+          "value": 51.1253554421
+        },
+        {
+          "regressors": {
+            "price": 13.8579052692,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-03-21T00:00:00.000Z",
+          "value": 50.3070405625
+        },
+        {
+          "regressors": {
+            "price": 12.7705154631,
+            "promotion": 1.0
+          },
+          "timestamp": "2024-03-22T00:00:00.000Z",
+          "value": 49.9194034229
+        },
+        {
+          "regressors": {
+            "price": 11.9750396848,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-03-23T00:00:00.000Z",
+          "value": 48.4785072407
+        },
+        {
+          "regressors": {
+            "price": 12.1087323883,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-03-24T00:00:00.000Z",
+          "value": 48.9675068646
+        },
+        {
+          "regressors": {
+            "price": 13.1676230497,
+            "promotion": 1.0
+          },
+          "timestamp": "2024-03-25T00:00:00.000Z",
+          "value": 51.1788712228
+        },
+        {
+          "regressors": {
+            "price": 14.4367447348,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-03-26T00:00:00.000Z",
+          "value": 51.7800520844
+        },
+        {
+          "regressors": {
+            "price": 14.9713884156,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-03-27T00:00:00.000Z",
+          "value": 52.1501148234
+        },
+        {
+          "regressors": {
+            "price": 14.3294212301,
+            "promotion": 1.0
+          },
+          "timestamp": "2024-03-28T00:00:00.000Z",
+          "value": 51.981462412
+        },
+        {
+          "regressors": {
+            "price": 12.9803422513,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-03-29T00:00:00.000Z",
+          "value": 49.6118093862
+        },
+        {
+          "regressors": {
+            "price": 11.9998631305,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-03-30T00:00:00.000Z",
+          "value": 48.7323663448
+        },
+        {
+          "regressors": {
+            "price": 12.2274114095,
+            "promotion": 1.0
+          },
+          "timestamp": "2024-03-31T00:00:00.000Z",
+          "value": 50.176676202
+        },
+        {
+          "regressors": {
+            "price": 13.5564504634,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-04-01T00:00:00.000Z",
+          "value": 51.1940538276
+        },
+        {
+          "regressors": {
+            "price": 14.9767930991,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-04-02T00:00:00.000Z",
+          "value": 52.8591983085
+        },
+        {
+          "regressors": {
+            "price": 15.3784748607,
+            "promotion": 1.0
+          },
+          "timestamp": "2024-04-03T00:00:00.000Z",
+          "value": 53.9140681817
+        },
+        {
+          "regressors": {
+            "price": 14.464664703,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-04-04T00:00:00.000Z",
+          "value": 51.8045647225
+        },
+        {
+          "regressors": {
+            "price": 13.0019338076,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-04-05T00:00:00.000Z",
+          "value": 50.0317741738
+        },
+        {
+          "regressors": {
+            "price": 12.190193522,
+            "promotion": 1.0
+          },
+          "timestamp": "2024-04-06T00:00:00.000Z",
+          "value": 50.0673427944
+        },
+        {
+          "regressors": {
+            "price": 12.6844722799,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-04-07T00:00:00.000Z",
+          "value": 50.1646754
+        },
+        {
+          "regressors": {
+            "price": 14.0867483201,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-04-08T00:00:00.000Z",
+          "value": 52.0548411592
+        },
+        {
+          "regressors": {
+            "price": 15.3068005026,
+            "promotion": 1.0
+          },
+          "timestamp": "2024-04-09T00:00:00.000Z",
+          "value": 54.3235984246
+        },
+        {
+          "regressors": {
+            "price": 15.4535433327,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-04-10T00:00:00.000Z",
+          "value": 53.5548847872
+        },
+        {
+          "regressors": {
+            "price": 14.5087450069,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-04-11T00:00:00.000Z",
+          "value": 52.2901933153
+        },
+        {
+          "regressors": {
+            "price": 13.2728408174,
+            "promotion": 1.0
+          },
+          "timestamp": "2024-04-12T00:00:00.000Z",
+          "value": 51.6326823431
+        },
+        {
+          "regressors": {
+            "price": 12.697864128,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-04-13T00:00:00.000Z",
+          "value": 50.3362798106
+        },
+        {
+          "regressors": {
+            "price": 13.1801062777,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-04-14T00:00:00.000Z",
+          "value": 51.1514722077
+        },
+        {
+          "regressors": {
+            "price": 14.3346992042,
+            "promotion": 1.0
+          },
+          "timestamp": "2024-04-15T00:00:00.000Z",
+          "value": 53.4569517592
+        },
+        {
+          "regressors": {
+            "price": 15.3420917955,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-04-16T00:00:00.000Z",
+          "value": 53.8044176997
+        },
+        {
+          "regressors": {
+            "price": 15.5435946077,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-04-17T00:00:00.000Z",
+          "value": 53.887770657
+        },
+        {
+          "regressors": {
+            "price": 14.8611337041,
+            "promotion": 1.0
+          },
+          "timestamp": "2024-04-18T00:00:00.000Z",
+          "value": 53.7831107768
+        },
+        {
+          "regressors": {
+            "price": 13.8084600071,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-04-19T00:00:00.000Z",
+          "value": 51.8283043329
+        },
+        {
+          "regressors": {
+            "price": 13.1373711767,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-04-20T00:00:00.000Z",
+          "value": 51.2980411477
+        },
+        {
+          "regressors": {
+            "price": 13.3491906454,
+            "promotion": 1.0
+          },
+          "timestamp": "2024-04-21T00:00:00.000Z",
+          "value": 52.6305277671
+        },
+        {
+          "regressors": {
+            "price": 14.3545703543,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-04-22T00:00:00.000Z",
+          "value": 53.1394205501
+        },
+        {
+          "regressors": {
+            "price": 15.497020553,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-04-23T00:00:00.000Z",
+          "value": 54.3803374246
+        },
+        {
+          "regressors": {
+            "price": 15.9702597966,
+            "promotion": 1.0
+          },
+          "timestamp": "2024-04-24T00:00:00.000Z",
+          "value": 55.5023408265
+        },
+        {
+          "regressors": {
+            "price": 15.3992584684,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-04-25T00:00:00.000Z",
+          "value": 53.8663053202
+        },
+        {
+          "regressors": {
+            "price": 14.1759636019,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-04-26T00:00:00.000Z",
+          "value": 52.4945628132
+        },
+        {
+          "regressors": {
+            "price": 13.2386289949,
+            "promotion": 1.0
+          },
+          "timestamp": "2024-04-27T00:00:00.000Z",
+          "value": 52.4912839511
+        },
+        {
+          "regressors": {
+            "price": 13.3795335297,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-04-28T00:00:00.000Z",
+          "value": 52.2219618996
+        },
+        {
+          "regressors": {
+            "price": 14.5868255374,
+            "promotion": 0.0
+          },
+          "timestamp": "2024-04-29T00:00:00.000Z",
+          "value": 53.85407645
+        }
+      ],
+      "options": {
+        "builtInSeasonalities": {
+          "daily": "off",
+          "yearly": "off"
+        },
+        "map": {
+          "optimizer": {
+            "algorithm": "newton",
+            "maxIterations": 10000
+          }
+        },
+        "regressors": [
+          {
+            "name": "price",
+            "predictor": true
+          },
+          {
+            "name": "promotion"
+          }
+        ]
+      },
+      "predictionRows": [
+        {
+          "regressors": {
+            "promotion": 0.0
+          },
+          "timestamp": "2024-04-30T00:00:00.000Z"
+        },
+        {
+          "regressors": {
+            "promotion": 1.0
+          },
+          "timestamp": "2024-05-01T00:00:00.000Z"
+        },
+        {
+          "regressors": {
+            "promotion": 0.0
+          },
+          "timestamp": "2024-05-02T00:00:00.000Z"
+        },
+        {
+          "regressors": {
+            "promotion": 1.0
+          },
+          "timestamp": "2024-05-03T00:00:00.000Z"
+        },
+        {
+          "regressors": {
+            "promotion": 0.0
+          },
+          "timestamp": "2024-05-04T00:00:00.000Z"
+        },
+        {
+          "regressors": {
+            "promotion": 1.0
+          },
+          "timestamp": "2024-05-05T00:00:00.000Z"
+        },
+        {
+          "regressors": {
+            "promotion": 0.0
+          },
+          "timestamp": "2024-05-06T00:00:00.000Z"
+        },
+        {
+          "regressors": {
+            "promotion": 1.0
+          },
+          "timestamp": "2024-05-07T00:00:00.000Z"
+        },
+        {
+          "regressors": {
+            "promotion": 0.0
+          },
+          "timestamp": "2024-05-08T00:00:00.000Z"
+        },
+        {
+          "regressors": {
+            "promotion": 1.0
+          },
+          "timestamp": "2024-05-09T00:00:00.000Z"
+        },
+        {
+          "regressors": {
+            "promotion": 0.0
+          },
+          "timestamp": "2024-05-10T00:00:00.000Z"
+        },
+        {
+          "regressors": {
+            "promotion": 1.0
+          },
+          "timestamp": "2024-05-11T00:00:00.000Z"
+        },
+        {
+          "regressors": {
+            "promotion": 0.0
+          },
+          "timestamp": "2024-05-12T00:00:00.000Z"
+        },
+        {
+          "regressors": {
+            "promotion": 1.0
+          },
+          "timestamp": "2024-05-13T00:00:00.000Z"
+        }
+      ],
+      "sampleCount": 1000,
+      "tolerance": {
+        "meanWidthRelative": 0.1
+      }
+    }
+  ],
   "provider": {
     "prophet": "1.4.0"
   }

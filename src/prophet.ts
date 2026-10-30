@@ -51,7 +51,10 @@ import {
 import { resolveSeasonalities } from "./internal/seasonality-resolution";
 import { createSeasonalityMasks } from "./internal/seasonality-masks";
 import { predictFlatMapWithWasm } from "./internal/wasm-flat-map-backend";
-import { simulateMapWithWasm } from "./internal/wasm-map-uncertainty-backend";
+import {
+  simulateMapWithWasm,
+  type SimulationOffsets,
+} from "./internal/wasm-map-uncertainty-backend";
 import { predictLogisticMapWithWasm } from "./internal/wasm-logistic-map-backend";
 import {
   predictMixedFlatMapWithWasm,
@@ -84,10 +87,12 @@ import {
 import type { SeasonalityLayout } from "./seasonality";
 import { defaultTargetScalingMode } from "./target-scaling";
 import {
+  deriveRegressorModelSeed,
   exceedsSimulationBudget,
   parseUncertaintyOptions,
   simulationIdentity,
   type EncodedUncertaintyOptions,
+  type UncertaintyOptions,
   type UncertaintyResult,
 } from "./uncertainty";
 
@@ -1351,7 +1356,30 @@ const predictRows = Effect.fnUntraced(function* (
   );
 });
 
-/** Simulate seeded MAP predictive samples or intervals for complete MAP rows. */
+const emptyUncertaintyResult = (options: UncertaintyOptions): UncertaintyResult =>
+  options.output === "samples"
+    ? {
+        kind: "samples",
+        simulation: simulationIdentity,
+        sampleCount: options.samples,
+        timestamps: [],
+        trend: new Float64Array(),
+        value: new Float64Array(),
+      }
+    : {
+        kind: "intervals",
+        simulation: simulationIdentity,
+        sampleCount: options.samples,
+        intervalWidth: options.intervalWidth,
+        rows: [],
+      };
+
+/**
+ * Simulate seeded MAP predictive samples or intervals for complete MAP rows.
+ *
+ * A regressor forecast by its own model varies with that model's draws, as in Python, so its
+ * uncertainty widens the main model's after the history.
+ */
 export const predictUncertainty = Effect.fn("Prophet.predictUncertainty")(function* (
   model: FittedProphet,
   rowsInput: Parameters<typeof decodePredictionRows>[0],
@@ -1365,22 +1393,7 @@ export const predictUncertainty = Effect.fn("Prophet.predictUncertainty")(functi
   const firstRow = rows[0];
 
   if (firstRow === undefined) {
-    return options.output === "samples"
-      ? {
-          kind: "samples",
-          simulation: simulationIdentity,
-          sampleCount: options.samples,
-          timestamps: [],
-          trend: new Float64Array(),
-          value: new Float64Array(),
-        }
-      : {
-          kind: "intervals",
-          simulation: simulationIdentity,
-          sampleCount: options.samples,
-          intervalWidth: options.intervalWidth,
-          rows: [],
-        };
+    return emptyUncertaintyResult(options);
   }
 
   const parsedModel = yield* parseFittedModel(model).pipe(
@@ -1394,13 +1407,99 @@ export const predictUncertainty = Effect.fn("Prophet.predictUncertainty")(functi
     ),
   );
 
-  // Python widens intervals with draws from each regressor model, which simulation cannot yet do.
-  if (parsedModel.regressorModels !== undefined && parsedModel.regressorModels.length > 0) {
-    return yield* new InputValidationError({
-      input: "uncertainty-options",
-      issues: [{ message: "Intervals are not available yet for models with regressor models" }],
-      message: "Intervals are not available yet for models with regressor models",
-    });
+  const filledRows = yield* fillRegressorModelValues(parsedModel, rows);
+
+  return yield* simulateRows(parsedModel, filledRows, options);
+});
+
+/**
+ * Each forecast regressor's draws as per-sample changes to the rows after the history.
+ *
+ * Python's predictive samples swap each regressor model's draws in for its point forecast, one
+ * draw per sample. A regressor's effect is linear in its value, so each draw changes its row by
+ * the coefficient times its distance from the point forecast. Earlier rows keep their values.
+ */
+const regressorModelOffsets = Effect.fnUntraced(function* (
+  model: FittedProphet,
+  rows: PredictionRows,
+  future: ReadonlyArray<number>,
+  options: UncertaintyOptions,
+): Effect.fn.Return<
+  SimulationOffsets | undefined,
+  InputValidationError | PredictionError | CountryHolidayError
+> {
+  if (future.length === 0) {
+    return undefined;
+  }
+
+  const { samples } = options;
+  const additive = new Float64Array(future.length * samples);
+  const multiplicative = new Float64Array(future.length * samples);
+  const futureRows = future.map((index) => ({ timestamp: rows[index]?.timestamp ?? 0 }));
+
+  for (const [index, regressorModel] of (model.regressorModels ?? []).entries()) {
+    const { name } = regressorModel;
+    const regressor = model.regressors.find((fitted) => fitted.definition.name === name);
+
+    const draws = yield* simulateRows(regressorModel.model, futureRows, {
+      ...options,
+      seed: deriveRegressorModelSeed(options.seed, index),
+      output: "samples",
+    }).pipe(
+      Effect.mapError((error) => regressorModelPredictionError(error, name)),
+      Effect.withSpan("Prophet.simulateRegressorModel"),
+    );
+
+    if (regressor === undefined || draws.kind !== "samples") {
+      return yield* new PredictionError({
+        reason: "invalid-model",
+        timestamp: futureRows[0]?.timestamp ?? 0,
+        regressor: name,
+        message: `The model for regressor '${name}' returned no draws`,
+      });
+    }
+
+    const { coefficient } = projectRegressorCoefficient(regressor);
+    const target = regressor.definition.mode === "additive" ? additive : multiplicative;
+
+    for (const [position, rowIndex] of future.entries()) {
+      const point = rows[rowIndex]?.regressors?.[name] ?? Number.NaN;
+
+      for (let sample = 0; sample < samples; sample += 1) {
+        const cell = position * samples + sample;
+
+        target[cell] =
+          (target[cell] ?? 0) + coefficient * ((draws.value[cell] ?? Number.NaN) - point);
+      }
+    }
+  }
+
+  return { rows: Float64Array.from(future), additive, multiplicative };
+});
+
+/** The rows after the training history, which regressor models forecast. */
+const regressorModelFutureRows = (model: FittedProphet, rows: PredictionRows): Array<number> => {
+  // Every regressor model is trained on the same history.
+  const historyEnd = model.regressorModels?.[0]?.timestamps.at(-1);
+
+  return historyEnd === undefined
+    ? []
+    : rows.flatMap((row, index) => (row.timestamp > historyEnd ? [index] : []));
+};
+
+/** Simulate rows whose forecast regressor values are already filled. */
+const simulateRows = Effect.fnUntraced(function* (
+  parsedModel: FittedProphet,
+  rows: PredictionRows,
+  options: UncertaintyOptions,
+): Effect.fn.Return<
+  UncertaintyResult,
+  InputValidationError | PredictionError | CountryHolidayError
+> {
+  const firstRow = rows[0];
+
+  if (firstRow === undefined) {
+    return emptyUncertaintyResult(options);
   }
 
   const logisticBounds =
@@ -1436,8 +1535,12 @@ export const predictUncertainty = Effect.fn("Prophet.predictUncertainty")(functi
       ? Math.max(0, (Math.max(...timestamps) - parsedModel.timeOrigin) / parsedModel.timeScale - 1)
       : 0;
 
+  const future = regressorModelFutureRows(parsedModel, rows);
+
+  // Regressor model draws are held in full, so their rows are bounded like sample output.
   if (
     exceedsSimulationBudget(timestamps.length, options.samples, options.output) ||
+    exceedsSimulationBudget(future.length, options.samples, "samples") ||
     (parsedModel.model !== "flat-map" && parsedModel.deltas.length > 10_000) ||
     horizon > 20 ||
     (parsedModel.model !== "flat-map" && parsedModel.deltas.length * horizon > 256)
@@ -1457,6 +1560,8 @@ export const predictUncertainty = Effect.fn("Prophet.predictUncertainty")(functi
     parsedModel.regressors,
   );
 
+  const offsets = yield* regressorModelOffsets(parsedModel, rows, future, options);
+
   return yield* simulateMapWithWasm(
     parsedModel,
     timestamps,
@@ -1465,5 +1570,6 @@ export const predictUncertainty = Effect.fn("Prophet.predictUncertainty")(functi
     options,
     undefined,
     logisticBounds,
+    offsets,
   );
 });

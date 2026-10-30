@@ -2,7 +2,7 @@ import { Effect } from "effect";
 import { describe, expect, it } from "vitest";
 
 import { loadProphetFixtureBundle } from "../../helpers/prophet-fixture";
-import { fit, predict, prophetFittingBackendLayer } from "../../../src/index";
+import { fit, predict, predictWithIntervals, prophetFittingBackendLayer } from "../../../src/index";
 
 const within = (
   actual: number,
@@ -59,6 +59,53 @@ describe("Prophet 1.4.0 regressor models", () => {
           );
         }
       }
+    }
+  }, 60_000);
+});
+
+describe("Prophet 1.4.0 regressor model intervals", () => {
+  it("widens future intervals with the regressor model's draws as much as Python does", async () => {
+    const { regressorModels: fixture } = await Effect.runPromise(loadProphetFixtureBundle());
+
+    for (const reference of fixture.intervalCases) {
+      const model = await Effect.runPromise(
+        fit(reference.observations, reference.options).pipe(
+          Effect.provide(prophetFittingBackendLayer),
+        ),
+      );
+
+      const mean = (values: ReadonlyArray<number>) =>
+        values.reduce((sum, value) => sum + value, 0) / values.length;
+
+      // Draws come from different generators, so several seeds are averaged against Python's.
+      const widths: Array<number> = [];
+
+      for (const seed of [1, 2, 3, 4]) {
+        const forecasts = await Effect.runPromise(
+          predictWithIntervals(model, reference.predictionRows, {
+            seed,
+            samples: reference.sampleCount,
+            intervalWidth: reference.intervalWidth,
+          }),
+        );
+
+        widths.push(
+          mean(
+            forecasts.rows.map(({ valueInterval }) => valueInterval.upper - valueInterval.lower),
+          ),
+        );
+      }
+
+      const expected = mean(reference.expected.widenedWidths);
+
+      expect(Math.abs(mean(widths) - expected) / expected, reference.id).toBeLessThanOrEqual(
+        reference.tolerance.meanWidthRelative,
+      );
+
+      // The fixture's point-forecast widths are far narrower, so the comparison has power.
+      expect(mean(reference.expected.pointWidths)).toBeLessThan(
+        expected * (1 - 2 * reference.tolerance.meanWidthRelative),
+      );
     }
   }, 60_000);
 });

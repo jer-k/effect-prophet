@@ -114,15 +114,16 @@ Each of these functions creates a span named after it:
 A regressor [forecast by its own model](../examples/regressors#forecasting-a-regressor) adds a
 span for that model's work:
 
-| Span                            | Covers                                                                                                                       |
-| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `Prophet.fitRegressorModel`     | Fitting one regressor's model inside `Prophet.fit`, with its own `effect-prophet.wasm.fit` span and `Prophet.fit` attributes |
-| `Prophet.predictRegressorModel` | Forecasting one regressor inside `Prophet.predict`, with its own `effect-prophet.wasm.predict` span                          |
+| Span                             | Covers                                                                                                                         |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `Prophet.fitRegressorModel`      | Fitting one regressor's model inside `Prophet.fit`, with its own `effect-prophet.wasm.fit` span and `Prophet.fit` attributes   |
+| `Prophet.predictRegressorModel`  | Forecasting one regressor inside `Prophet.predict`, with its own `effect-prophet.wasm.predict` span                            |
+| `Prophet.simulateRegressorModel` | Simulating one regressor's future values inside `Prophet.predictUncertainty`, with its own `effect-prophet.wasm.simulate` span |
 
 Each regressor model is fitted before the main model, so its `effect-prophet.wasm.fit` span comes
 first. A prediction whose rows all fall inside the history needs no regressor forecast and creates
-no `Prophet.predictRegressorModel` span. Options that fail validation create no
-`Prophet.fitRegressorModel` span.
+no `Prophet.predictRegressorModel` or `Prophet.simulateRegressorModel` span. Options that fail
+validation create no `Prophet.fitRegressorModel` span.
 
 ### Engine and evaluation steps
 

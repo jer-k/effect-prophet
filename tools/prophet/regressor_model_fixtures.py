@@ -242,5 +242,44 @@ def make_regressor_model_fixture(
         {"algorithm": "Newton", "iter": 2, "require_converged": False, "init": init},
     )
 
+    # Prophet widens future intervals with each regressor model's predictive samples. Draws come
+    # from numpy's generator, so they are compared as widths, beside the narrower widths of the
+    # same main model given only the regressor's point forecast.
+    def interval_model(predictor: bool | None) -> Prophet:
+        model = Prophet(yearly_seasonality=False, daily_seasonality=False, uncertainty_samples=1_000)
+        model.add_regressor("price", regressor_predictor=predictor)
+        model.add_regressor("promotion")
+        return model.fit(training, algorithm="Newton", iter=10_000)
+
+    widened_model = interval_model(True)
+    point_model = interval_model(None)
+    future_rows = prediction[prediction["ds"] > dates[-1]][["ds", "promotion"]].reset_index(drop=True)
+    point_rows = future_rows.assign(
+        price=widened_model.extra_regressors["price"]["predictor"].predict(future_rows[["ds"]])["yhat"]
+    )
+
+    def widths(model: Prophet, rows: pd.DataFrame) -> list[float]:
+        np.random.seed(20_261_030)
+        forecast = model.predict(rows)
+        return [canonical(value) for value in forecast["yhat_upper"] - forecast["yhat_lower"]]
+
+    interval_case = {
+        "id": "regressor-model-intervals",
+        "options": default_case["options"],
+        "observations": default_case["observations"],
+        "predictionRows": [
+            {"timestamp": timestamp(day), "regressors": {"promotion": float(promotion)}}
+            for day, promotion in zip(future_rows["ds"], future_rows["promotion"], strict=True)
+        ],
+        "sampleCount": 1_000,
+        "intervalWidth": 0.8,
+        "expected": {
+            "widenedWidths": widths(widened_model, future_rows),
+            "pointWidths": widths(point_model, point_rows),
+        },
+        "tolerance": {"meanWidthRelative": 0.1},
+    }
+
     return {"provider": {"prophet": "1.4.0"},
-            "fittedCases": [default_case, configured_case, flat_case, warm_case]}
+            "fittedCases": [default_case, configured_case, flat_case, warm_case],
+            "intervalCases": [interval_case]}

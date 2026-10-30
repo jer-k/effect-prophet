@@ -1,9 +1,28 @@
 import { Effect, Schema } from "effect";
 
 import { InputValidationError, inputValidationErrorFromIssue } from "./errors";
+import { fnv1aSeed } from "./internal/seed-hash";
 
 /** Versioned scalar-path algorithm identity returned with every result. */
 export const simulationIdentity = "prophet-map-scalar-xoshiro128ss-v2" as const;
+
+/** Stable schedule for regressor model draws; independent of the simulator's own version. */
+const regressorModelSeedSchedule = "effect-prophet-regressor-model-seed-v1";
+
+/**
+ * The seed for one regressor model's draws, from the call's seed and the model's position.
+ *
+ * Python draws each regressor model's samples from the same global generator before the main
+ * model's. Here each regressor model has its own stream, so the main model's draws are the same
+ * with or without regressor models.
+ */
+export const deriveRegressorModelSeed = (seed: number, index: number): number =>
+  fnv1aSeed(({ byte, bytes, uint32 }) => {
+    bytes(new TextEncoder().encode(regressorModelSeedSchedule));
+    byte(0);
+    uint32(seed);
+    uint32(index);
+  });
 
 const OptionsSchema = Schema.Struct({
   seed: Schema.Int.check(

@@ -1230,66 +1230,66 @@ const RegressorModelBuiltInSchema = Schema.Struct({
   ),
 });
 
+// Effect options equivalent to the Python constructor and add_regressor calls.
+const RegressorModelOptionsSchema = Schema.Struct({
+  seasonalityMode: Schema.optionalKey(Schema.Literals(["additive", "multiplicative"])),
+  builtInSeasonalities: RegressorModelBuiltInSchema,
+  regressors: Schema.Array(
+    Schema.Struct({
+      name: Schema.String,
+      mode: Schema.optionalKey(Schema.Literals(["additive", "multiplicative"])),
+      predictor: Schema.optionalKey(
+        Schema.Union([
+          Schema.Literal(true),
+          Schema.Struct({
+            growth: Schema.optionalKey(Schema.Literal("flat")),
+            builtInSeasonalities: RegressorModelBuiltInSchema,
+            map: Schema.Struct({
+              changepoints: Schema.Struct({ mode: Schema.Literal("auto"), count: Schema.Int }),
+              changepointPriorScale: PositiveFinite,
+            }),
+          }),
+        ]),
+      ),
+    }),
+  ),
+  map: Schema.Struct({
+    optimizer: Schema.Struct({ algorithm: Schema.Literal("newton"), maxIterations: Schema.Int }),
+    warmStart: Schema.optionalKey(
+      Schema.Struct({
+        k: Schema.Finite,
+        m: Schema.Finite,
+        sigmaObs: Schema.Finite,
+        delta: Schema.Array(Schema.Finite),
+        beta: Schema.Array(Schema.Finite),
+      }),
+    ),
+  }),
+});
+
+const RegressorModelObservationsSchema = Schema.NonEmptyArray(
+  Schema.Struct({
+    timestamp: CanonicalTimestamp,
+    value: Schema.Finite,
+    regressors: Schema.Record(Schema.String, Schema.Finite),
+  }),
+);
+
+const RegressorModelRowsSchema = Schema.Array(
+  Schema.Struct({
+    timestamp: CanonicalTimestamp,
+    regressors: Schema.Record(Schema.String, Schema.Finite),
+  }),
+);
+
 const RegressorModelReferenceFileSchema = Schema.Struct({
   provider: Schema.Struct({ prophet: Schema.Literal("1.4.0") }),
   fittedCases: Schema.NonEmptyArray(
     Schema.Struct({
       id: Schema.NonEmptyString,
-      // Effect options equivalent to the Python constructor and add_regressor calls.
-      options: Schema.Struct({
-        seasonalityMode: Schema.optionalKey(Schema.Literals(["additive", "multiplicative"])),
-        builtInSeasonalities: RegressorModelBuiltInSchema,
-        regressors: Schema.Array(
-          Schema.Struct({
-            name: Schema.String,
-            mode: Schema.optionalKey(Schema.Literals(["additive", "multiplicative"])),
-            predictor: Schema.optionalKey(
-              Schema.Union([
-                Schema.Literal(true),
-                Schema.Struct({
-                  growth: Schema.optionalKey(Schema.Literal("flat")),
-                  builtInSeasonalities: RegressorModelBuiltInSchema,
-                  map: Schema.Struct({
-                    changepoints: Schema.Struct({
-                      mode: Schema.Literal("auto"),
-                      count: Schema.Int,
-                    }),
-                    changepointPriorScale: PositiveFinite,
-                  }),
-                }),
-              ]),
-            ),
-          }),
-        ),
-        map: Schema.Struct({
-          optimizer: Schema.Struct({
-            algorithm: Schema.Literal("newton"),
-            maxIterations: Schema.Int,
-          }),
-          warmStart: Schema.optionalKey(
-            Schema.Struct({
-              k: Schema.Finite,
-              m: Schema.Finite,
-              sigmaObs: Schema.Finite,
-              delta: Schema.Array(Schema.Finite),
-              beta: Schema.Array(Schema.Finite),
-            }),
-          ),
-        }),
-      }),
-      observations: Schema.NonEmptyArray(
-        Schema.Struct({
-          timestamp: CanonicalTimestamp,
-          value: Schema.Finite,
-          regressors: Schema.Record(Schema.String, Schema.Finite),
-        }),
-      ),
-      predictionRows: Schema.Array(
-        Schema.Struct({
-          timestamp: CanonicalTimestamp,
-          regressors: Schema.Record(Schema.String, Schema.Finite),
-        }),
-      ),
+      options: RegressorModelOptionsSchema,
+      observations: RegressorModelObservationsSchema,
+      predictionRows: RegressorModelRowsSchema,
       expected: Schema.Struct({
         regressor: Schema.String,
         // The regressor model's own forecast at the rows after the training history.
@@ -1303,6 +1303,22 @@ const RegressorModelReferenceFileSchema = Schema.Struct({
         multiplicative: Schema.Array(Schema.Finite),
       }),
       tolerance: NumericToleranceSchema,
+    }),
+  ),
+  intervalCases: Schema.NonEmptyArray(
+    Schema.Struct({
+      id: Schema.NonEmptyString,
+      options: RegressorModelOptionsSchema,
+      observations: RegressorModelObservationsSchema,
+      predictionRows: RegressorModelRowsSchema,
+      sampleCount: Schema.Int,
+      intervalWidth: PositiveFinite,
+      // Python's widths with the regressor model's draws, and with its point forecast alone.
+      expected: Schema.Struct({
+        widenedWidths: Schema.Array(Schema.Finite),
+        pointWidths: Schema.Array(Schema.Finite),
+      }),
+      tolerance: Schema.Struct({ meanWidthRelative: PositiveFinite }),
     }),
   ),
 });

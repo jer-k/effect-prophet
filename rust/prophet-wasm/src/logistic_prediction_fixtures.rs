@@ -86,6 +86,7 @@ fn fixed_public_logistic_states_match_python_finite_and_singular_rows() {
           timestamps: &times[row..row + 1],
           additive: &[0.0],
           multiplicative: &[0.0],
+          offsets: None,
         },
         SimulationOptions {
           seed: 19,

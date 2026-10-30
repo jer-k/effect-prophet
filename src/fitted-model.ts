@@ -684,6 +684,7 @@ const regressorModelIssues = (
   }> = [];
 
   const names = parameters.regressors.map((regressor) => regressor.definition.name);
+  const firstTimestamps = parameters.regressorModels?.[0]?.timestamps;
   let previous = -1;
 
   for (const [index, regressorModel] of (parameters.regressorModels ?? []).entries()) {
@@ -698,10 +699,13 @@ const regressorModelIssues = (
 
     previous = Math.max(previous, position);
 
-    if (regressorModel.timestamps.length !== parameters.fitSummary.observationCount) {
+    if (
+      regressorModel.timestamps.length !== parameters.fitSummary.observationCount ||
+      regressorModel.timestamps.some((timestamp, row) => timestamp !== firstTimestamps?.[row])
+    ) {
       issues.push({
         path: ["regressorModels", index, "timestamps"],
-        issue: "A regressor model must be trained on the main model's history",
+        issue: "Every regressor model must be trained on the main model's history",
       });
     }
 

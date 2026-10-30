@@ -11,7 +11,8 @@ All notable changes to this project are documented here. The format follows
 - **Regressors forecast by their own models.** Set `predictor: true`, or options, on a regressor,
   like Python's `regressor_predictor`, and `fit` fits a model to that regressor's history.
   `predict` uses its forecast in every row after the history, so future rows need no value for
-  it. Saved models keep these models. Intervals for such models are not available yet. See
+  it. Intervals include each regressor model's own uncertainty, as in Python, and saved models
+  keep these models. See
   [Forecasting a regressor](https://jer-k.github.io/effect-prophet/examples/regressors#forecasting-a-regressor).
 - `FittingError` and `PredictionError` have an optional `regressor` naming the regressor whose own
   model failed.

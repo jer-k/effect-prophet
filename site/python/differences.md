@@ -7,10 +7,6 @@ Python, where it differs on purpose, and the smaller behavior differences.
 ## Not available yet
 
 - Full Bayesian fitting (`mcmc_samples`)
-- Uncertainty ranges for models whose regressors are
-  [forecast by their own models](../examples/regressors#forecasting-a-regressor).
-  `predictWithIntervals` and `predictUncertainty` reject them; Python widens the ranges with the
-  regressor models' own uncertainty.
 
 ## Different on purpose
 
@@ -54,7 +50,15 @@ Python, where it differs on purpose, and the smaller behavior differences.
   two agree: in our long-history benchmark, the average trend width of future ranges was 17.7
   for the shortcut and 17.8 for the per-path method over eight seeds.
 - **Size limits on uncertainty.** One call takes up to 10,000 rows and 2,048 samples. Python has
-  no such limits. See [Uncertainty ranges](../examples/uncertainty) for details. Because
+  no such limits. With [regressors forecast by their own models](../examples/regressors#forecasting-a-regressor),
+  the rows after the history × samples can be at most 1,000,000, because those models' draws are
+  kept for every sample.
+- **Draws from regressor models.** Python draws as many samples from each regressor model as its
+  `uncertainty_samples`, 1,000 unless its options set another, and reuses them in turn when the
+  main model draws more, all from numpy's one global generator. Each regressor model here draws
+  as many samples as the call asks for, from its own seed derived from the call's, so the main
+  model's draws are the same as without regressor models. Ranges agree in width: in the fixture,
+  the average future range was 0.465 here over eight seeds and 0.461 in Python. See [Uncertainty ranges](../examples/uncertainty) for details. Because
   `anomalies` simulates its whole history, it takes histories of up to 10,000 rows; see
   [Finding anomalies](../examples/anomalies#looking-back-over-a-history) for longer ones.
 - **Memory limit for Newton's method.** Newton's method, used for histories under 100 rows and

@@ -4,10 +4,13 @@ import { describe, expect, it } from "vitest";
 import {
   FittingError,
   InputValidationError,
+  PredictionError,
   decodeFittedModel,
   encodeFittedModel,
   fit,
+  getRegressorCoefficients,
   predict,
+  predictUncertainty,
   predictWithIntervals,
   prophetFittingBackendLayer,
   warmStartParameters,
@@ -16,6 +19,7 @@ import {
   type FittedProphet,
 } from "../src/index";
 import { FittingBackend } from "../src/internal/fitting-backend";
+import { deriveRegressorModelSeed } from "../src/uncertainty";
 import { collectTestSpans, requireEndedSpan } from "./internal/tracing-test-helpers";
 
 const day = 86_400_000;
@@ -384,21 +388,126 @@ describe("regressor models", () => {
     });
   });
 
-  it("rejects intervals until regressor model draws can widen them", async () => {
+  it("widens future samples with the regressor model's draws, as Python's predictive samples do", async () => {
+    const model = await fitModel();
+    const byHand = await fitByHand();
+    const regressorModel = regressorModelOf(model);
+    const coefficient = getRegressorCoefficients(model)[0]?.coefficient ?? Number.NaN;
+    const samples = 64;
+
+    const prices = await Effect.runPromise(predict(regressorModel.model, futureTimestamps));
+    const rows = futureTimestamps.map((timestamp) => ({ timestamp, regressors: { promotion: 1 } }));
+
+    const pointRows = futureTimestamps.map((timestamp, index) => ({
+      timestamp,
+      regressors: { price: prices[index]?.value ?? Number.NaN, promotion: 1 },
+    }));
+
+    const simulate = (fitted: FittedProphet, input: Parameters<typeof predict>[1], seed: number) =>
+      Effect.runPromise(predictUncertainty(fitted, input, { seed, samples, output: "samples" }));
+
+    const widened = await simulate(model, rows, 7);
+    const plain = await simulate(byHand.main, pointRows, 7);
+
+    const draws = await simulate(
+      regressorModel.model,
+      futureTimestamps,
+      deriveRegressorModelSeed(7, 0),
+    );
+
+    if (widened.kind !== "samples" || plain.kind !== "samples" || draws.kind !== "samples") {
+      throw new Error("Expected samples");
+    }
+
+    // The same seed gives the same trend paths and noise; only the regressor's draws differ.
+    expect(widened.trend).toEqual(plain.trend);
+
+    for (const [row, price] of prices.entries()) {
+      for (let sample = 0; sample < samples; sample += 1) {
+        const cell = row * samples + sample;
+        const shift = coefficient * ((draws.value[cell] ?? Number.NaN) - price.value);
+
+        expect(widened.value[cell]).toBeCloseTo((plain.value[cell] ?? Number.NaN) + shift, 9);
+      }
+    }
+  });
+
+  it("keeps history-only intervals equal to supplying the values, as Python tiles them", async () => {
+    const model = await fitModel();
+    const byHand = await fitByHand();
+    const indexes = [3, 30, lastIndex];
+
+    const intervals = (fitted: FittedProphet, withPrice: boolean) =>
+      Effect.runPromise(
+        predictWithIntervals(
+          fitted,
+          indexes.map((index) => ({
+            timestamp: timestamp(index),
+            regressors: withPrice
+              ? { price: history[index]?.regressors.price ?? Number.NaN, promotion: 0 }
+              : { promotion: 0 },
+          })),
+          { seed: 3, samples: 200 },
+        ),
+      );
+
+    expect(await intervals(model, false)).toEqual(await intervals(byHand.main, true));
+  });
+
+  it("gives wider future intervals than the regressor's point forecast alone", async () => {
+    const model = await fitModel();
+    const byHand = await fitByHand();
+
+    const prices = await Effect.runPromise(
+      predict(regressorModelOf(model).model, futureTimestamps),
+    );
+
+    const width = async (fitted: FittedProphet, rows: Parameters<typeof predict>[1]) => {
+      const forecasts = await Effect.runPromise(
+        predictWithIntervals(fitted, rows, { seed: 11, samples: 1_000 }),
+      );
+
+      const widths = forecasts.rows.map(
+        ({ valueInterval }) => valueInterval.upper - valueInterval.lower,
+      );
+
+      return widths.reduce((sum, value) => sum + value, 0) / widths.length;
+    };
+
+    const widened = await width(
+      model,
+      futureTimestamps.map((timestamp) => ({ timestamp, regressors: { promotion: 0 } })),
+    );
+
+    const plain = await width(
+      byHand.main,
+      futureTimestamps.map((timestamp, index) => ({
+        timestamp,
+        regressors: { price: prices[index]?.value ?? Number.NaN, promotion: 0 },
+      })),
+    );
+
+    expect(widened).toBeGreaterThan(plain * 1.05);
+  });
+
+  it("bounds regressor model draws like sample output", async () => {
     const model = await fitModel();
 
     const error = await Effect.runPromise(
       Effect.flip(
-        predictWithIntervals(
+        predictUncertainty(
           model,
-          futureTimestamps.map((timestamp) => ({ timestamp, regressors: { promotion: 1 } })),
-          { seed: 1 },
+          Array.from({ length: 500 }, (_, index) => ({
+            timestamp: new Date(start + (lastIndex + 1) * day + index * 3_600_000).toISOString(),
+            regressors: { promotion: 0 },
+          })),
+          { seed: 1, samples: 2_048 },
         ),
       ),
     );
 
-    expect(error).toBeInstanceOf(InputValidationError);
-    expect(error).toMatchObject({ input: "uncertainty-options" });
+    expect(error).toBeInstanceOf(PredictionError);
+    expect(error).toMatchObject({ reason: "simulation-limit" });
   });
 
   it("saves and restores the regressor models, giving exactly the same forecasts", async () => {
@@ -492,6 +601,58 @@ describe("regressor models", () => {
     expect(publicFit.attributes.get("effect_prophet.regressor_model.count")).toBe(1);
     expect(publicFit.attributes.get("effect_prophet.regressor.count")).toBe(2);
     expect(regressorFit.attributes.has("effect_prophet.regressor_model.count")).toBe(false);
+  });
+
+  it("traces each regressor model's draws inside the uncertainty span", async () => {
+    const model = await fitModel();
+    const { spans, tracer } = collectTestSpans();
+    const options = { seed: 5, samples: 100 };
+
+    await Effect.runPromise(
+      Effect.gen(function* () {
+        // History rows only: no regressor model draws, so no span for them.
+        yield* predictUncertainty(
+          model,
+          [{ timestamp: timestamp(1), regressors: { promotion: 0 } }],
+          options,
+        );
+
+        yield* predictUncertainty(
+          model,
+          futureTimestamps.map((timestamp) => ({ timestamp, regressors: { promotion: 0 } })),
+          options,
+        );
+      }).pipe(Effect.withSpan("forecast.job"), Effect.withTracer(tracer)),
+    );
+
+    const named = (name: string) => spans.filter((span) => span.name === name);
+    const [historyCall, futureCall] = named("Prophet.predictUncertainty");
+    const regressorDraws = named("Prophet.simulateRegressorModel");
+    const simulations = named("effect-prophet.wasm.simulate");
+
+    expect(regressorDraws).toHaveLength(1);
+    expect(simulations).toHaveLength(3);
+
+    const [draws] = regressorDraws;
+
+    if (historyCall === undefined || futureCall === undefined || draws === undefined) {
+      throw new Error("Expected complete regressor model simulation spans");
+    }
+
+    expect(Option.getOrUndefined(draws.parent)?.spanId).toBe(futureCall.spanId);
+
+    expect(simulations.map((span) => Option.getOrUndefined(span.parent)?.spanId)).toEqual([
+      historyCall.spanId,
+      draws.spanId,
+      futureCall.spanId,
+    ]);
+
+    expect(simulations[1]?.attributes.get("effect_prophet.output.kind")).toBe("samples");
+    expect(Exit.isSuccess(requireEndedSpan(draws).exit)).toBe(true);
+    expect(draws.traceId).toBe(futureCall.traceId);
+    expect(requireEndedSpan(draws).endTime).toBeLessThanOrEqual(
+      requireEndedSpan(futureCall).endTime,
+    );
   });
 
   it("does not open a regressor model span when options are rejected first", async () => {

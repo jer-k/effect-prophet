@@ -60,8 +60,10 @@ actual   401.3, 410.0, 389.4, 355.6, 335.0
 - Regressors without a `predictor` still need a value in every row.
 - Saved models keep the regressor models, so a loaded model forecasts the same way. Python's saved
   models drop them.
-- `predictWithIntervals` and `predictUncertainty` don't support these models yet. Python widens
-  the intervals with the regressor model's own uncertainty, which isn't implemented here yet.
+- **Ranges include the regressor's uncertainty.** As in Python, `predictWithIntervals` and
+  `predictUncertainty` give each simulated future one of the regressor model's own simulated
+  values, so ranges after the history are wider than with the point forecast alone. Ranges for
+  rows inside the history use the values those rows have.
 
 ## Things to know
 
