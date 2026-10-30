@@ -21,6 +21,10 @@ All notable changes to this project are documented here. The format follows
 
 - New benchmarks for regressors forecast by their own models, on flat and linear growth, checked
   against Python Prophet for forecasts, uncertainty ranges and cross-validation.
+- Twelve-fold cross-validation and model search benchmarks, one for each growth. Python Prophet is
+  timed sequentially and with `cross_validation`'s `parallel="threads"` and
+  `parallel="processes"`, which must give the same forecasts and scores as running sequentially.
+  Effect Prophet still runs folds one at a time.
 
 ## [0.5.1] - 2026-10-31
 

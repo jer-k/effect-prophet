@@ -25,6 +25,7 @@ import {
 import {
   parseBenchmarkCases,
   parseBenchmarkDataset,
+  pythonParallelPhases,
   type BenchmarkCase,
   type BenchmarkDataset,
   type BenchmarkPhase,
@@ -1364,6 +1365,9 @@ const runWorker = async (
 
   if (stage !== "correctness") {
     for (const phase of benchmarkCase.phases) {
+      // Effect runs folds one at a time, so only Python measures its parallel modes.
+      if (pythonParallelPhases.has(phase)) continue;
+
       measurements.push(await measurementForPhase(benchmarkCase, dataset, run, phase));
     }
   }

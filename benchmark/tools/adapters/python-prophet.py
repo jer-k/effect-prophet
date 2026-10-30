@@ -1192,6 +1192,10 @@ def collect_environment() -> dict[str, Any]:
         "resources": [
             {"name": "input-numeric-dtype", "value": "float64"},
             {"name": "logical-cpu-count", "value": str(os.cpu_count() or "unavailable")},
+            # The default pool sizes cross_validation's parallel modes get: Prophet constructs both
+            # executors without max_workers.
+            {"name": "cross-validation-thread-workers", "value": str(min(32, (os.cpu_count() or 1) + 4))},
+            {"name": "cross-validation-process-workers", "value": str(os.cpu_count() or 1)},
             {
                 "name": "runtime-total-memory-bytes",
                 "value": str(os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES")),

@@ -17,10 +17,15 @@ const milliseconds = (ms: number) =>
       ? `${ms.toPrecision(3)} ms`
       : `${(ms / 1000).toPrecision(3)} s`;
 
+const optionalMilliseconds = (ms: number | undefined) =>
+  ms === undefined ? "—" : milliseconds(ms);
+
 const ratio = ({ effectMs, pythonMs }: PhaseTiming) =>
-  effectMs <= pythonMs
-    ? `${(pythonMs / effectMs).toPrecision(2)}× faster`
-    : `${(effectMs / pythonMs).toPrecision(2)}× slower`;
+  effectMs === undefined
+    ? "—"
+    : effectMs <= pythonMs
+      ? `${(pythonMs / effectMs).toPrecision(2)}× faster`
+      : `${(effectMs / pythonMs).toPrecision(2)}× slower`;
 
 const difference = (value: number) =>
   value === 0 ? "0" : value < 1e-4 ? value.toExponential(1) : value.toPrecision(2);
@@ -74,8 +79,8 @@ const caseRow = (suite: BenchmarkSuite, item: CaseResult) =>
         ? difference(item.maximumDifference)
         : "—",
     item.headline?.label ?? "—",
-    item.headline === undefined ? "—" : milliseconds(item.headline.effectMs),
-    item.headline === undefined ? "—" : milliseconds(item.headline.pythonMs),
+    optionalMilliseconds(item.headline?.effectMs),
+    optionalMilliseconds(item.headline?.pythonMs),
   ].join(" | ");
 
 const caseTable = (suite: BenchmarkSuite, cases: ReadonlyArray<CaseResult>) =>
@@ -281,12 +286,18 @@ const timingTable = (item: CaseResult) =>
     ? "This case isn't timed, because only matching cases are."
     : [
         "Median of all measured repetitions.",
+        ...(item.timings.some((timing) => timing.effectMs === undefined)
+          ? [
+              "",
+              "Effect Prophet runs cross-validation folds one at a time, so only Python Prophet has parallel timings.",
+            ]
+          : []),
         "",
         "| Step | Effect Prophet | Python Prophet | Effect Prophet is |",
         "| --- | ---: | ---: | --- |",
         ...item.timings.map(
           (timing) =>
-            `| ${timing.label} | ${milliseconds(timing.effectMs)} | ${milliseconds(timing.pythonMs)} | ${ratio(timing)} |`,
+            `| ${timing.label} | ${optionalMilliseconds(timing.effectMs)} | ${milliseconds(timing.pythonMs)} | ${ratio(timing)} |`,
         ),
       ].join("\n");
 

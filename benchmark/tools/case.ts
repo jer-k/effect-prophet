@@ -46,12 +46,18 @@ export const BenchmarkPhaseSchema = Schema.Literals([
   "evaluation-input-conversion",
   "evaluation-plan",
   "evaluation-point",
+  "evaluation-point-threads",
+  "evaluation-point-processes",
   "evaluation-intervals",
+  "evaluation-intervals-threads",
+  "evaluation-intervals-processes",
   "evaluation-metrics",
   "evaluation-metrics-monthly",
   "evaluation-metrics-custom",
   "evaluation-baseline",
   "evaluation-search",
+  "evaluation-search-threads",
+  "evaluation-search-processes",
   "evaluation-search-custom",
   "evaluation-holdout",
   "evaluation-report-encode",
@@ -61,6 +67,19 @@ export const BenchmarkPhaseSchema = Schema.Literals([
 
 /** A phase measured by the public benchmark adapters. */
 export type BenchmarkPhase = typeof BenchmarkPhaseSchema.Type;
+
+/**
+ * Prophet's `cross_validation(parallel="threads" | "processes")`, which only Python measures. Each
+ * names the sequential phase whose work it parallelizes.
+ */
+export const pythonParallelPhases: ReadonlyMap<BenchmarkPhase, BenchmarkPhase> = new Map([
+  ["evaluation-point-threads", "evaluation-point"],
+  ["evaluation-point-processes", "evaluation-point"],
+  ["evaluation-intervals-threads", "evaluation-intervals"],
+  ["evaluation-intervals-processes", "evaluation-intervals"],
+  ["evaluation-search-threads", "evaluation-search"],
+  ["evaluation-search-processes", "evaluation-search"],
+]);
 
 /** Development-era evidence IDs recorded by retained runs, and the names that replaced them. */
 const retiredEvidenceIds: ReadonlyMap<string, string> = new Map([
@@ -581,10 +600,27 @@ const validateCaseRelationships = (
     if (benchmarkCase.workload.kind === "evaluation") {
       const workload = benchmarkCase.workload;
       const phases = benchmarkCase.phases;
-      const needsIntervals = phases.includes("evaluation-intervals");
+
+      const needsIntervals = phases.some(
+        (phase) => (pythonParallelPhases.get(phase) ?? phase) === "evaluation-intervals",
+      );
+
+      // Python times its parallel modes next to the sequential work they parallelize, through
+      // `cross_validation`, which regressor-model cases replace with a fit at each cutoff.
+      const unpairedParallel = phases.some((phase) => {
+        const sequential = pythonParallelPhases.get(phase);
+
+        return (
+          sequential !== undefined &&
+          (!phases.includes(sequential) ||
+            workload.configuration.regressors.some((regressor) => regressor.predictor === true))
+        );
+      });
 
       const needsSearch =
-        phases.includes("evaluation-search") ||
+        phases.some(
+          (phase) => (pythonParallelPhases.get(phase) ?? phase) === "evaluation-search",
+        ) ||
         phases.includes("evaluation-search-custom") ||
         phases.includes("evaluation-holdout") ||
         phases.includes("evaluation-report-encode") ||
@@ -595,6 +631,7 @@ const validateCaseRelationships = (
           (phase) => !phase.startsWith("evaluation-") && phase !== "cold-first-evaluation",
         ) ||
         (needsIntervals && workload.interval === undefined) ||
+        unpairedParallel ||
         workload.plan.cutoffs.length > 128 ||
         workload.plan.horizonMs > 315_360_000_000 ||
         (benchmarkCase.datasetIdentity !== undefined &&

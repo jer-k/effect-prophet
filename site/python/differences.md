@@ -25,7 +25,8 @@ Python, where it differs on purpose, and the smaller behavior differences.
   defaults are supported, not subdivisions/languages/categories. Saved models embed their
   selected snapshot and never silently adopt installed updates. See
   [Country holiday calendars](/guide/holiday-calendars).
-- Cross-validation and model search run one fold after another, with no worker parallelism
+- Cross-validation and model search run one fold after another. There's no counterpart to
+  `cross_validation`'s `parallel` argument yet.
 - Custom metrics are definitions you pass to each call, not entries in a global registry, and
   can't replace a built-in metric. Each scores one forecast at a time and combines a group with
   a mean, median, quantile or ratio of means, using Prophet's windows. Python's
