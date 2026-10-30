@@ -923,3 +923,57 @@ describe("searchModels", () => {
     ).toBe(false);
   });
 });
+
+// A regressor with a trend and a weekly cycle, forecast by its own model.
+const regressorModelRows = Array.from({ length: 60 }, (_, index) => {
+  const price = 10 + 0.05 * index + 2 * Math.sin((2 * Math.PI * index) / 7);
+
+  return {
+    timestamp: new Date(Date.UTC(2025, 0, 1) + index * dayMs).toISOString(),
+    value: 40 + 0.1 * index + 1.5 * price + 0.2 * Math.cos(index),
+    regressors: { price },
+  };
+});
+
+const regressorModelOptions = {
+  builtInSeasonalities: { yearly: "off", daily: "off" },
+  regressors: [{ name: "price", predictor: true }],
+} as const;
+
+describe("searchModels with regressor models", () => {
+  it("fits each candidate's regressor models per fold and keeps their options", async () => {
+    const result = await Effect.runPromise(
+      searchModels(regressorModelRows.slice(0, 55), {
+        candidates: [
+          { id: "default", options: regressorModelOptions },
+          {
+            id: "flexible",
+            options: {
+              ...regressorModelOptions,
+              regressors: [{ name: "price", predictor: { map: { changepointPriorScale: 0.5 } } }],
+            },
+          },
+        ],
+        plan: {
+          horizonMs: 5 * dayMs,
+          cutoffs: {
+            mode: "explicit",
+            timestamps: [40, 48].map((index) => regressorModelRows[index]?.timestamp ?? ""),
+          },
+        },
+        objective,
+        failurePolicy: "fail-fast",
+      }).pipe(Effect.provide(prophetFittingBackendLayer)),
+    );
+
+    expect(result.candidates.map((candidate) => candidate.kind)).toEqual(["success", "success"]);
+
+    const flexible = result.candidates[1];
+
+    if (flexible?.kind !== "success") throw new Error("Expected a successful candidate");
+
+    expect(flexible.options.regressors?.[0]?.predictor).toEqual({
+      map: { changepointPriorScale: 0.5 },
+    });
+  });
+});

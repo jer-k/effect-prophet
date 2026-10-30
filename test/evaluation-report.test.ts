@@ -720,3 +720,83 @@ describe("evaluateHoldout", () => {
     expect(JSON.stringify(Object.fromEntries(holdoutSpan.attributes))).not.toContain("early");
   });
 });
+
+describe("evaluateHoldout with regressor models", () => {
+  // A regressor with a trend and a weekly cycle, forecast by its own model.
+  const rows = Array.from({ length: 60 }, (_, index) => {
+    const price = 10 + 0.05 * index + 2 * Math.sin((2 * Math.PI * index) / 7);
+
+    return {
+      timestamp: timestamp(index),
+      value: 40 + 0.1 * index + 1.5 * price + 0.2 * Math.cos(index),
+      regressors: { price },
+    };
+  });
+
+  const options = {
+    builtInSeasonalities: { yearly: "off", daily: "off" },
+    regressors: [{ name: "price", predictor: true }],
+  } as const;
+
+  it("forecasts the holdout's regressor values and keeps the options in the report", async () => {
+    const development = rows.slice(0, 55);
+
+    const search = await Effect.runPromise(
+      searchModels(development, {
+        candidates: [{ id: "regressor-model", options }],
+        plan: {
+          horizonMs: 5 * day,
+          cutoffs: { mode: "explicit", timestamps: [timestamp(40), timestamp(48)] },
+        },
+        objective: { metric: "mae", aggregation: { kind: "overall" }, direction: "minimize" },
+        failurePolicy: "fail-fast",
+      }).pipe(Effect.provide(prophetFittingBackendLayer)),
+    );
+
+    const [selected] = search.candidates;
+
+    if (selected?.kind !== "success") throw new Error("Expected a successful candidate");
+
+    const report = await Effect.runPromise(
+      run({
+        development,
+        holdout: rows.slice(55),
+        search,
+        selectedCandidate: {
+          id: selected.id,
+          candidateIndex: selected.candidateIndex,
+          options: selected.options,
+          score: selected.score,
+        },
+        metrics: { metrics: ["mae", "coverage"], aggregation: { kind: "overall" } },
+        baselines: [{ kind: "last-observation" }],
+        uncertainty: { seed: 42, samples: 100, intervalWidth: 0.8 },
+        provenance: { build: "local-test", environment: "node" },
+      }),
+    );
+
+    // The holdout's actual regressor values are replaced, as a fit at the end of development would.
+    const model = await Effect.runPromise(
+      fit(development, options).pipe(Effect.provide(prophetFittingBackendLayer)),
+    );
+
+    const forecasts = await Effect.runPromise(
+      predict(
+        model,
+        rows.slice(55).map(({ value: _value, ...row }) => row),
+      ),
+    );
+
+    expect(report.forecasts.map(({ predicted }) => predicted)).toEqual(
+      forecasts.map((forecast) => forecast.value),
+    );
+
+    const encoded = await Effect.runPromise(encodeEvaluationReport(report));
+
+    const decoded = await Effect.runPromise(
+      decodeEvaluationReport(JSON.parse(JSON.stringify(encoded))),
+    );
+
+    expect(decoded).toEqual(report);
+  });
+});

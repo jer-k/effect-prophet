@@ -2084,3 +2084,71 @@ describe("crossValidate intervals", () => {
     }
   });
 });
+
+// A regressor with a trend and a weekly cycle, forecast by its own model.
+const regressorModelRows = Array.from({ length: 60 }, (_, index) => {
+  const price = 10 + 0.05 * index + 2 * Math.sin((2 * Math.PI * index) / 7);
+
+  return {
+    timestamp: new Date(Date.UTC(2025, 0, 1) + index * dayMs).toISOString(),
+    value: 40 + 0.1 * index + 1.5 * price + 0.2 * Math.cos(index),
+    regressors: { price },
+  };
+});
+
+const regressorModelOptions = {
+  builtInSeasonalities: { yearly: "off", daily: "off" },
+  regressors: [{ name: "price", predictor: true }],
+} as const;
+
+describe("crossValidate with regressor models", () => {
+  const cutoffs = [40, 48].map((index) => regressorModelRows[index]?.timestamp ?? "");
+
+  const plan = {
+    horizonMs: 5 * dayMs,
+    cutoffs: { mode: "explicit", timestamps: cutoffs },
+  } as const;
+
+  const development = regressorModelRows.slice(0, 55);
+
+  const runFitting = <A, E>(effect: Effect.Effect<A, E, FittingBackend>) =>
+    Effect.runPromise(effect.pipe(Effect.provide(prophetFittingBackendLayer)));
+
+  it("fits each fold's regressor model to that fold's own training values", async () => {
+    const result = await runFitting(crossValidate(development, regressorModelOptions, plan));
+
+    // As a fit at the cutoff would: the assessment rows' actual regressor values are replaced.
+    for (const [position, cutoff] of [40, 48].entries()) {
+      const model = await runFitting(fit(development.slice(0, cutoff + 1), regressorModelOptions));
+
+      const forecasts = await Effect.runPromise(
+        predict(
+          model,
+          development.slice(cutoff + 1, cutoff + 6).map(({ value: _value, ...row }) => row),
+        ),
+      );
+
+      expect(
+        result.rows.filter((row) => row.fold === position).map((row) => row.predicted),
+      ).toEqual(forecasts.map((forecast) => forecast.value));
+    }
+  });
+
+  it("simulates each fold's intervals with its regressor model's draws", async () => {
+    const intervals = (seed: number) =>
+      runFitting(
+        crossValidate(development, regressorModelOptions, plan, {
+          mode: "intervals",
+          uncertainty: { seed, samples: 100, intervalWidth: 0.8 },
+        }),
+      );
+
+    const result = await intervals(5);
+
+    expect(result.rows).toHaveLength(10);
+    expect(result.rows.every((row) => row.lower < row.predicted && row.predicted < row.upper)).toBe(
+      true,
+    );
+    expect(await intervals(5)).toEqual(result);
+  });
+});

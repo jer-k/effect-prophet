@@ -15,6 +15,7 @@ import { logisticReconciliationCases } from "../cases/growth/logistic/public-api
 import { warmStartCases } from "../cases/growth/warm-start.ts";
 import { anomalyCases } from "../cases/uncertainty/anomalies.ts";
 import { uncertaintyCases } from "../cases/uncertainty/public-api.ts";
+import { regressorModelCases } from "../cases/regressors/regressor-models.ts";
 import { BenchmarkArtifactError, readJson } from "./artifacts.ts";
 import { parseBenchmarkCases, type BenchmarkCase } from "./case.ts";
 
@@ -60,6 +61,7 @@ export const loadCaseCatalog = Effect.fn("benchmark.catalog.load")(function* () 
     ...flatGrowthCases,
     ...flatDefaultOptimizerCases,
     ...logisticReconciliationCases,
+    ...regressorModelCases,
   ]);
 });
 

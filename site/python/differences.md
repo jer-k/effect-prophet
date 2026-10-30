@@ -75,6 +75,15 @@ Python, where it differs on purpose, and the smaller behavior differences.
   produces, and the median may or may not hide it. `performanceMetrics` fails the same way for
   that actual. A score that overflows fails with `"non-finite"` where Python returns infinity.
   See [Actual values of zero](../examples/cross-validation#actual-values-of-zero).
+- **Cross-validation with regressor models.** Each fold fits its
+  [regressor models](../examples/regressors#forecasting-a-regressor) to that fold's own regressor
+  values, exactly as `fit` at the cutoff would. Python's `cross_validation` refits them on the
+  model's stored history, where Prophet has already standardized the regressor values. Prophet's
+  scaling doesn't treat a shifted series the same, so Python's fold forecasts drift from fitting
+  at the cutoff. The gap depends on the data: about 2% in fold errors on one test series, but
+  about 15% too high on the flat regressor-model benchmark history, where fitting at the cutoff
+  matches the actual values. The benchmarks therefore compare against Python fitted at each
+  cutoff.
 - **Order of forecasts with the same horizon.** Python sorts forecasts by horizon with a sort
   that leaves equal horizons in no fixed order. `performanceMetrics` keeps them in the order
   `crossValidate` returns them, oldest round first. This decides the order of `rows` scores and

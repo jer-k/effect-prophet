@@ -58,6 +58,8 @@ actual   401.3, 410.0, 389.4, 355.6, 335.0
   timestamp. If that timestamp isn't in the history, or the history repeats timestamps, `predict`
   fails and asks for the value.
 - Regressors without a `predictor` still need a value in every row.
+- [Cross-validation](./cross-validation) and model search fit each fold's regressor models to that
+  fold's history, so assessment rows are forecast as a fit at the cutoff would forecast them.
 - Saved models keep the regressor models, so a loaded model forecasts the same way. Python's saved
   models drop them.
 - **Ranges include the regressor's uncertainty.** As in Python, `predictWithIntervals` and

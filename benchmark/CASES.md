@@ -34,6 +34,10 @@ Serialization is exercised by lifecycle phases rather than copied into separate 
 | `evaluation-flat-large-months-metrics` | [v1/flat-mixed-components-large.json](inputs/v1/flat-mixed-components-large.json) | different-public-work | 3 |
 | `evaluation-logistic-large-months-metrics` | [v1/logistic-implicit-floor-large.json](inputs/v1/logistic-implicit-floor-large.json) | different-public-work | 3 |
 | `evaluation-linear-custom-search` | [v1/linear-offset-scaling.json](inputs/v1/linear-offset-scaling.json) | different-public-work | 2 |
+| `evaluation-flat-regressor-model-point` | [v4/flat-correlated-regressors.json](inputs/v4/flat-correlated-regressors.json) | different-public-work | 6 |
+| `evaluation-flat-regressor-model-intervals` | [v4/flat-correlated-regressors.json](inputs/v4/flat-correlated-regressors.json) | different-public-work | 1 |
+| `evaluation-linear-regressor-model-point` | [v1/map-regressors-medium.json](inputs/v1/map-regressors-medium.json) | different-public-work | 6 |
+| `evaluation-linear-regressor-model-intervals` | [v1/map-regressors-medium.json](inputs/v1/map-regressors-medium.json) | different-public-work | 1 |
 
 ## growth/flat
 
@@ -70,6 +74,7 @@ Serialization is exercised by lifecycle phases rather than copied into separate 
 | `flat-additive-components-large` | [v1/flat-mixed-components-large.json](inputs/v1/flat-mixed-components-large.json) | equivalent-objective | 9 |
 | `flat-mixed-components-absmax-defaults` | [v1/flat-mixed-components.json](inputs/v1/flat-mixed-components.json) | equivalent-objective | 9 |
 | `flat-correlated-regressors` | [v4/flat-correlated-regressors.json](inputs/v4/flat-correlated-regressors.json) | equivalent-objective | 9 |
+| `flat-regressor-model` | [v4/flat-correlated-regressors.json](inputs/v4/flat-correlated-regressors.json) | equivalent-objective | 6 |
 
 ## growth/linear
 
@@ -95,6 +100,7 @@ Serialization is exercised by lifecycle phases rather than copied into separate 
 | `linear-offset-scaling-absmax` | [v1/linear-offset-scaling.json](inputs/v1/linear-offset-scaling.json) | equivalent-objective | 9 |
 | `linear-offset-scaling-minmax` | [v1/linear-offset-scaling.json](inputs/v1/linear-offset-scaling.json) | equivalent-objective | 9 |
 | `linear-mixed-components` | [v1/linear-mixed-components.json](inputs/v1/linear-mixed-components.json) | equivalent-objective | 9 |
+| `linear-regressor-model` | [v1/map-regressors-medium.json](inputs/v1/map-regressors-medium.json) | equivalent-objective | 6 |
 
 ## growth/logistic
 
@@ -211,6 +217,8 @@ Serialization is exercised by lifecycle phases rather than copied into separate 
 | `uncertainty-logistic-explicit-floor-minmax-full-samples-128` | [v1/logistic-explicit-floor.json](inputs/v1/logistic-explicit-floor.json) | equivalent-objective | 6 |
 | `uncertainty-logistic-explicit-floor-minmax-mixed-conditions-events-intervals-128` | [v1/logistic-uncertainty-mixed.json](inputs/v1/logistic-uncertainty-mixed.json) | equivalent-objective | 6 |
 | `uncertainty-logistic-explicit-floor-minmax-mixed-conditions-events-samples-128` | [v1/logistic-uncertainty-mixed.json](inputs/v1/logistic-uncertainty-mixed.json) | equivalent-objective | 6 |
+| `uncertainty-flat-regressor-model-intervals-1000` | [v4/flat-correlated-regressors.json](inputs/v4/flat-correlated-regressors.json) | equivalent-objective | 3 |
+| `uncertainty-linear-regressor-model-intervals-1000` | [v1/map-regressors-medium.json](inputs/v1/map-regressors-medium.json) | equivalent-objective | 3 |
 
 ## warm-start
 
