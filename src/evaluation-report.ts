@@ -391,7 +391,7 @@ const reportConsistency = (
           baseline.forecasts.length !== forecasts.length,
       )
     ) {
-      return yield* Effect.fail(reportError(operation, [], "Inconsistent holdout report metadata"));
+      return yield* reportError(operation, [], "Inconsistent holdout report metadata");
     }
 
     const options = yield* decodeOptions(selected.options).pipe(
@@ -414,12 +414,10 @@ const reportConsistency = (
           report.model.fitSummary.method,
         ))
     ) {
-      return yield* Effect.fail(
-        reportError(
-          operation,
-          ["model"],
-          "Model summary disagrees with selected fit options or development count",
-        ),
+      return yield* reportError(
+        operation,
+        ["model"],
+        "Model summary disagrees with selected fit options or development count",
       );
     }
 
@@ -438,8 +436,10 @@ const reportConsistency = (
               (candidate.score === selected.developmentScore && index < selected.candidateIndex))),
       )
     ) {
-      return yield* Effect.fail(
-        reportError(operation, ["candidates"], "Inconsistent search candidate outcomes"),
+      return yield* reportError(
+        operation,
+        ["candidates"],
+        "Inconsistent search candidate outcomes",
       );
     }
 
@@ -452,7 +452,7 @@ const reportConsistency = (
           report.searchPlan.folds[index]?.index !== index,
       )
     ) {
-      return yield* Effect.fail(reportError(operation, ["searchPlan"], "Inconsistent search plan"));
+      return yield* reportError(operation, ["searchPlan"], "Inconsistent search plan");
     }
 
     let previous = development.lastTimestamp;
@@ -464,12 +464,10 @@ const reportConsistency = (
         row.timestamp < previous ||
         (report.kind === "intervals" && (interval === undefined || interval.lower > interval.upper))
       ) {
-        return yield* Effect.fail(
-          reportError(
-            operation,
-            ["forecasts", index],
-            "Invalid holdout forecast order or interval",
-          ),
+        return yield* reportError(
+          operation,
+          ["forecasts", index],
+          "Invalid holdout forecast order or interval",
         );
       }
 
@@ -477,9 +475,7 @@ const reportConsistency = (
     }
 
     if (forecasts[0]?.timestamp !== holdout.firstTimestamp || previous !== holdout.lastTimestamp) {
-      return yield* Effect.fail(
-        reportError(operation, ["holdout"], "Holdout range differs from forecast rows"),
-      );
+      return yield* reportError(operation, ["holdout"], "Holdout range differs from forecast rows");
     }
 
     const expected = yield* performanceMetrics(
@@ -496,9 +492,7 @@ const reportConsistency = (
     ).pipe(Effect.mapError(() => reportError(operation, ["metrics"], "Invalid report metrics")));
 
     if (!same(expected, metrics)) {
-      return yield* Effect.fail(
-        reportError(operation, ["metrics"], "Holdout metrics do not match forecasts"),
-      );
+      return yield* reportError(operation, ["metrics"], "Holdout metrics do not match forecasts");
     }
 
     for (const [index, baseline] of report.baselines.entries()) {
@@ -506,9 +500,7 @@ const reportConsistency = (
       const first = pointMetrics[0];
 
       if (first === undefined) {
-        return yield* Effect.fail(
-          reportError(operation, ["metricPolicy"], "Baseline needs point metrics"),
-        );
+        return yield* reportError(operation, ["metricPolicy"], "Baseline needs point metrics");
       }
 
       const policy: MetricOptions = {
@@ -532,8 +524,10 @@ const reportConsistency = (
       );
 
       if (!same(computed, baseline.metrics)) {
-        return yield* Effect.fail(
-          reportError(operation, ["baselines", index], "Baseline scores do not match forecasts"),
+        return yield* reportError(
+          operation,
+          ["baselines", index],
+          "Baseline scores do not match forecasts",
         );
       }
     }
@@ -548,12 +542,10 @@ export const decodeEvaluationReport = Effect.fn("Prophet.decodeEvaluationReport"
 
   // Metrics are re-scored on decode, so a report scored by another policy version cannot match.
   if (Option.isSome(version) && version.value.policyVersion !== policyVersion) {
-    return yield* Effect.fail(
-      reportError(
-        "decode",
-        ["policyVersion"],
-        `Unsupported report policy version; expected ${policyVersion}`,
-      ),
+    return yield* reportError(
+      "decode",
+      ["policyVersion"],
+      `Unsupported report policy version; expected ${policyVersion}`,
     );
   }
 
@@ -624,8 +616,9 @@ export const evaluateHoldout = Effect.fn("Prophet.evaluateHoldout")(function* (
     horizon === undefined ||
     horizon <= 0
   ) {
-    return yield* Effect.fail(
-      invalid(["holdout"], "Expected bounded, strictly later development and holdout partitions"),
+    return yield* invalid(
+      ["holdout"],
+      "Expected bounded, strictly later development and holdout partitions",
     );
   }
 
@@ -635,11 +628,9 @@ export const evaluateHoldout = Effect.fn("Prophet.evaluateHoldout")(function* (
 
   // A custom metric is a function, which a report can neither encode nor score again on decode.
   if (objective !== undefined && !isPointMetricName(objective)) {
-    return yield* Effect.fail(
-      invalid(
-        ["search", "objective", "metric"],
-        "Holdout evaluation supports only built-in search objectives",
-      ),
+    return yield* invalid(
+      ["search", "objective", "metric"],
+      "Holdout evaluation supports only built-in search objectives",
     );
   }
 
@@ -667,8 +658,9 @@ export const evaluateHoldout = Effect.fn("Prophet.evaluateHoldout")(function* (
             (candidate.score === selected.score && index < selected.candidateIndex))),
     )
   ) {
-    return yield* Effect.fail(
-      invalid(["selectedCandidate"], "Selected receipt does not match development search"),
+    return yield* invalid(
+      ["selectedCandidate"],
+      "Selected receipt does not match development search",
     );
   }
 
@@ -681,9 +673,7 @@ export const evaluateHoldout = Effect.fn("Prophet.evaluateHoldout")(function* (
   );
 
   if (!metricPolicy.metrics.includes(search.objective.metric)) {
-    return yield* Effect.fail(
-      invalid(["metrics"], "Holdout metrics must retain the search objective"),
-    );
+    return yield* invalid(["metrics"], "Holdout metrics must retain the search objective");
   }
 
   const provenance = yield* decodeProvenance(input.provenance).pipe(
@@ -693,10 +683,10 @@ export const evaluateHoldout = Effect.fn("Prophet.evaluateHoldout")(function* (
   const definitions = input.baselines ?? [];
 
   if (definitions.length > 16)
-    return yield* Effect.fail(invalid(["baselines"], "At most 16 baselines are supported"));
+    return yield* invalid(["baselines"], "At most 16 baselines are supported");
 
   if (definitions.length > 0 && metricPolicy.metrics.every((metric) => metric === "coverage")) {
-    return yield* Effect.fail(invalid(["metrics"], "Baselines require a point-error metric"));
+    return yield* invalid(["metrics"], "Baselines require a point-error metric");
   }
 
   for (const [index, baseline] of definitions.entries()) {
@@ -705,9 +695,7 @@ export const evaluateHoldout = Effect.fn("Prophet.evaluateHoldout")(function* (
     );
 
     if (definitions.slice(0, index).some((previous) => same(previous, baseline))) {
-      return yield* Effect.fail(
-        invalid(["baselines", index], "Baseline definitions must be unique"),
-      );
+      return yield* invalid(["baselines", index], "Baseline definitions must be unique");
     }
   }
 
@@ -719,13 +707,11 @@ export const evaluateHoldout = Effect.fn("Prophet.evaluateHoldout")(function* (
     (uncertainty !== undefined &&
       exceedsSimulationBudget(holdout.length, uncertainty.samples, "intervals"))
   ) {
-    return yield* Effect.fail(
-      invalid(["uncertainty"], "Holdout requires bounded interval-only simulation"),
-    );
+    return yield* invalid(["uncertainty"], "Holdout requires bounded interval-only simulation");
   }
 
   if (uncertainty === undefined && metricPolicy.metrics.includes("coverage")) {
-    return yield* Effect.fail(invalid(["metrics"], "Coverage requires interval simulation"));
+    return yield* invalid(["metrics"], "Coverage requires interval simulation");
   }
 
   const executed = yield* Effect.gen(function* () {
@@ -749,7 +735,7 @@ export const evaluateHoldout = Effect.fn("Prophet.evaluateHoldout")(function* (
     );
 
     if (forecasts.length !== holdout.length) {
-      return yield* Effect.fail(failure("result", "result-mismatch"));
+      return yield* failure("result", "result-mismatch");
     }
 
     const points: Array<CrossValidationPointRow> = [];
@@ -758,7 +744,7 @@ export const evaluateHoldout = Effect.fn("Prophet.evaluateHoldout")(function* (
       const forecast = forecasts[index];
 
       if (forecast?.timestamp !== row.timestamp || !Number.isFinite(forecast.value)) {
-        return yield* Effect.fail(failure("result", "result-mismatch", undefined, index));
+        return yield* failure("result", "result-mismatch", undefined, index);
       }
 
       points.push({
@@ -781,11 +767,11 @@ export const evaluateHoldout = Effect.fn("Prophet.evaluateHoldout")(function* (
       const alignment = alignIntervalRows(intervals, uncertainty, points);
 
       if (alignment.kind === "frame-mismatch") {
-        return yield* Effect.fail(failure("result", "result-mismatch"));
+        return yield* failure("result", "result-mismatch");
       }
 
       if (alignment.kind === "row-mismatch") {
-        return yield* Effect.fail(failure("result", "result-mismatch", undefined, alignment.index));
+        return yield* failure("result", "result-mismatch", undefined, alignment.index);
       }
 
       rows = alignment.rows.map(({ row, interval }) => ({
@@ -828,9 +814,7 @@ export const evaluateHoldout = Effect.fn("Prophet.evaluateHoldout")(function* (
       const first = pointMetrics[0];
 
       if (first === undefined) {
-        return yield* Effect.fail(
-          invalid(["metrics"], "Baselines require at least one point-error metric"),
-        );
+        return yield* invalid(["metrics"], "Baselines require at least one point-error metric");
       }
 
       const baselinePolicy: MetricOptions = {

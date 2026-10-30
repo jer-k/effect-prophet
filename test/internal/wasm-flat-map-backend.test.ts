@@ -340,7 +340,7 @@ describe("Rust/WASM flat MAP tracing", () => {
       },
     });
 
-    await Effect.runPromise(
+    await Effect.runPromiseExit(
       fit(
         [
           { timestamp: "1970-01-01T00:00:00.000Z", value: 1 },
@@ -348,7 +348,7 @@ describe("Rust/WASM flat MAP tracing", () => {
         ],
         // @ts-expect-error -- Unknown options exercise the untyped runtime boundary.
         { growth: "flat", unknown: true },
-      ).pipe(Effect.provide(prophetFittingBackendLayer), Effect.withTracer(tracer), Effect.exit),
+      ).pipe(Effect.provide(prophetFittingBackendLayer), Effect.withTracer(tracer)),
     );
 
     expect(spans.some((span) => span.name === "effect-prophet.wasm.fit")).toBe(false);

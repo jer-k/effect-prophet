@@ -555,18 +555,16 @@ export const checkOptionFeatureNames = (
       }
 
       if (seasonalityNames.has(conditionName)) {
-        return yield* Effect.fail(
-          new InputValidationError({
-            input: "options",
-            issues: [
-              {
-                path: ["seasonalities", index, "conditionName"],
-                message: `Condition name '${conditionName}' collides with a seasonality`,
-              },
-            ],
-            message: "Condition and seasonality names must be distinct",
-          }),
-        );
+        return yield* new InputValidationError({
+          input: "options",
+          issues: [
+            {
+              path: ["seasonalities", index, "conditionName"],
+              message: `Condition name '${conditionName}' collides with a seasonality`,
+            },
+          ],
+          message: "Condition and seasonality names must be distinct",
+        });
       }
 
       conditionNames.add(conditionName);
@@ -580,18 +578,16 @@ export const checkOptionFeatureNames = (
           : undefined;
 
       if (collision !== undefined) {
-        return yield* Effect.fail(
-          new InputValidationError({
-            input: "options",
-            issues: [
-              {
-                path: ["events", index, "name"],
-                message: `Feature name '${occurrence.name}' collides with ${collision}`,
-              },
-            ],
-            message: "Event names must be globally distinct",
-          }),
-        );
+        return yield* new InputValidationError({
+          input: "options",
+          issues: [
+            {
+              path: ["events", index, "name"],
+              message: `Feature name '${occurrence.name}' collides with ${collision}`,
+            },
+          ],
+          message: "Event names must be globally distinct",
+        });
       }
     }
 
@@ -607,18 +603,16 @@ export const checkOptionFeatureNames = (
             : undefined;
 
       if (collision !== undefined) {
-        return yield* Effect.fail(
-          new InputValidationError({
-            input: "options",
-            issues: [
-              {
-                path: ["regressors", index, "name"],
-                message: `Feature name '${regressor.name}' collides with ${collision}`,
-              },
-            ],
-            message: "Regressor names must be globally distinct",
-          }),
-        );
+        return yield* new InputValidationError({
+          input: "options",
+          issues: [
+            {
+              path: ["regressors", index, "name"],
+              message: `Feature name '${regressor.name}' collides with ${collision}`,
+            },
+          ],
+          message: "Regressor names must be globally distinct",
+        });
       }
     }
   });

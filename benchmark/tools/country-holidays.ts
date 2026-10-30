@@ -55,9 +55,7 @@ export const projectCountryHolidays = Effect.fn("benchmark.calendar.project")(fu
 
   if (selection === undefined) {
     if (state !== undefined)
-      return yield* Effect.fail(
-        new BenchmarkArtifactError({ message: "Unrequested country state" }),
-      );
+      return yield* new BenchmarkArtifactError({ message: "Unrequested country state" });
 
     return undefined;
   }
@@ -66,11 +64,9 @@ export const projectCountryHolidays = Effect.fn("benchmark.calendar.project")(fu
     state === undefined ||
     state.snapshot.snapshotId !== benchmarkCase.calendarSnapshot?.snapshotId
   ) {
-    return yield* Effect.fail(
-      new BenchmarkArtifactError({
-        message: "Country benchmark omitted or replaced the pinned snapshot",
-      }),
-    );
+    return yield* new BenchmarkArtifactError({
+      message: "Country benchmark omitted or replaced the pinned snapshot",
+    });
   }
 
   const trainingTimestamps = dataset.observations.map((row) => row.timestamp);
@@ -86,11 +82,9 @@ export const projectCountryHolidays = Effect.fn("benchmark.calendar.project")(fu
     selection.priorScale !== state.selection.priorScale ||
     selection.coverage !== state.selection.coverage
   ) {
-    return yield* Effect.fail(
-      new BenchmarkArtifactError({
-        message: "Country selection or represented training years changed",
-      }),
-    );
+    return yield* new BenchmarkArtifactError({
+      message: "Country selection or represented training years changed",
+    });
   }
 
   const fittedNames = new Set(model.events.columns.map((column) => column.eventName));
@@ -110,11 +104,9 @@ export const projectCountryHolidays = Effect.fn("benchmark.calendar.project")(fu
       JSON.stringify(forecast.events.map((component) => component.name)) !==
       JSON.stringify(model.events.layout.components.map((component) => component.name))
     ) {
-      return yield* Effect.fail(
-        new BenchmarkArtifactError({
-          message: "Prediction changed the frozen country event layout",
-        }),
-      );
+      return yield* new BenchmarkArtifactError({
+        message: "Prediction changed the frozen country event layout",
+      });
     }
 
     for (const [index, component] of model.events.layout.components.entries()) {
@@ -134,11 +126,9 @@ export const projectCountryHolidays = Effect.fn("benchmark.calendar.project")(fu
       const value = actual?.mode === "multiplicative" ? actual.factor : actual?.value;
 
       if (value === undefined || !Number.isFinite(expected) || Math.abs(value - expected) > 1e-8) {
-        return yield* Effect.fail(
-          new BenchmarkArtifactError({
-            message: "Country event effects do not match dynamic year activations",
-          }),
-        );
+        return yield* new BenchmarkArtifactError({
+          message: "Country event effects do not match dynamic year activations",
+        });
       }
     }
   }

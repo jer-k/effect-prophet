@@ -1151,23 +1151,22 @@ describe("predictUncertainty", () => {
     await Effect.runPromise(
       predictUncertainty(model, [], { seed: 42 }).pipe(Effect.withTracer(tracer)),
     );
-    await Effect.runPromise(
-      predictUncertainty(model, future, { seed: -1 }).pipe(Effect.withTracer(tracer), Effect.exit),
+    await Effect.runPromiseExit(
+      predictUncertainty(model, future, { seed: -1 }).pipe(Effect.withTracer(tracer)),
     );
 
     const excessiveRows = Array.from({ length: 500 }, () => future[0] ?? "");
-    await Effect.runPromise(
+    await Effect.runPromiseExit(
       predictUncertainty(model, excessiveRows, { seed: 1, samples: 2048, output: "samples" }).pipe(
         Effect.withTracer(tracer),
-        Effect.exit,
       ),
     );
 
     if (model.model === "linear-piecewise-map") {
-      await Effect.runPromise(
+      await Effect.runPromiseExit(
         predictUncertainty({ ...model, noiseScale: -1 }, future, {
           seed: 1,
-        }).pipe(Effect.withTracer(tracer), Effect.exit),
+        }).pipe(Effect.withTracer(tracer)),
       );
     }
 

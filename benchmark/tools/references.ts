@@ -35,9 +35,9 @@ export const resolveRunReference = Effect.fn("benchmark.results.resolve-referenc
   const target = file.baselines[reference];
 
   if (target === undefined || !target.startsWith("retained/")) {
-    return yield* Effect.fail(
-      new BenchmarkArtifactError({ message: `Unknown retained baseline: ${reference}` }),
-    );
+    return yield* new BenchmarkArtifactError({
+      message: `Unknown retained baseline: ${reference}`,
+    });
   }
 
   yield* Effect.forEach(target.split("/"), parseArtifactId);

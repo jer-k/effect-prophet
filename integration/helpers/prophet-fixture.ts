@@ -2069,14 +2069,12 @@ const verifyArtifact = Effect.fn("ProphetFixture.verifyArtifact")(function* (
   const actual = createHash("sha256").update(contents).digest("hex");
 
   if (actual !== artifact.sha256) {
-    return yield* Effect.fail(
-      new FixtureLoadError({
-        operation: "integrity",
-        fixturePath: path,
-        message: `Prophet fixture artifact digest does not match its manifest: ${path}`,
-        cause: { actual, expected: artifact.sha256 },
-      }),
-    );
+    return yield* new FixtureLoadError({
+      operation: "integrity",
+      fixturePath: path,
+      message: `Prophet fixture artifact digest does not match its manifest: ${path}`,
+      cause: { actual, expected: artifact.sha256 },
+    });
   }
 });
 

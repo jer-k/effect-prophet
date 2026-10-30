@@ -339,7 +339,7 @@ export const planRollingOriginIndexes = (
       ? resolveSeasonalities(observations, options).pipe(
           Effect.mapError(optionsValidationErrorFromSeasonality),
         )
-      : Effect.succeed(undefined);
+      : Effect.undefined;
 
   return resolution.pipe(
     Effect.flatMap((resolved) => {
@@ -490,11 +490,9 @@ const prepareRollingOrigin = (
           nextTotal === undefined ||
           nextTotal > maximumIntervalCells
         ) {
-          return yield* Effect.fail(
-            invalidPlan(
-              ["uncertainty", "samples"],
-              "Interval simulation exceeds the assessment work limit",
-            ),
+          return yield* invalidPlan(
+            ["uncertainty", "samples"],
+            "Interval simulation exceeds the assessment work limit",
           );
         }
 
@@ -539,7 +537,7 @@ export const resolveBaselinePlan = (
       summary.folds.length !== summary.cutoffs.length ||
       summary.cutoffs.some((cutoff) => !validEpoch(cutoff))
     ) {
-      return yield* Effect.fail(invalidPlan(["summary"], "Invalid rolling-origin plan summary"));
+      return yield* invalidPlan(["summary"], "Invalid rolling-origin plan summary");
     }
 
     const plan = yield* decodePlan({
@@ -569,8 +567,9 @@ export const resolveBaselinePlan = (
         supplied.trainingCount !== fold.trainingCount ||
         supplied.assessmentCount !== fold.assessmentCount
       ) {
-        return yield* Effect.fail(
-          invalidPlan(["summary", "folds", index], "Fold summary does not match history"),
+        return yield* invalidPlan(
+          ["summary", "folds", index],
+          "Fold summary does not match history",
         );
       }
     }
@@ -658,9 +657,7 @@ const crossValidateOperation = Effect.fn("Prophet.crossValidate")(function* (
         );
 
   if (seeds.some((seed) => seed === undefined)) {
-    return yield* Effect.fail(
-      invalidPlan(["cutoffs"], "Interval seed inputs exceed the integer range"),
-    );
+    return yield* invalidPlan(["cutoffs"], "Interval seed inputs exceed the integer range");
   }
 
   const rows: Array<CrossValidationPointRow> = [];
@@ -702,16 +699,14 @@ const crossValidateOperation = Effect.fn("Prophet.crossValidate")(function* (
       );
 
       if (forecasts.length !== assessment.length) {
-        return yield* Effect.fail(
-          foldFailure(
-            fold,
-            "result",
-            new PredictionError({
-              reason: "backend-failure",
-              timestamp: assessment[0]?.timestamp ?? fold.cutoff,
-              message: "Evaluation forecast count does not match assessment rows",
-            }),
-          ),
+        return yield* foldFailure(
+          fold,
+          "result",
+          new PredictionError({
+            reason: "backend-failure",
+            timestamp: assessment[0]?.timestamp ?? fold.cutoff,
+            message: "Evaluation forecast count does not match assessment rows",
+          }),
         );
       }
 
@@ -725,17 +720,15 @@ const crossValidateOperation = Effect.fn("Prophet.crossValidate")(function* (
           forecast.timestamp !== actual.timestamp ||
           !Number.isFinite(forecast.value)
         ) {
-          return yield* Effect.fail(
-            foldFailure(
-              fold,
-              "result",
-              new PredictionError({
-                reason: "backend-failure",
-                timestamp: actual.timestamp,
-                message: "Evaluation forecast is misaligned or non-finite",
-              }),
-              rowIndex,
-            ),
+          return yield* foldFailure(
+            fold,
+            "result",
+            new PredictionError({
+              reason: "backend-failure",
+              timestamp: actual.timestamp,
+              message: "Evaluation forecast is misaligned or non-finite",
+            }),
+            rowIndex,
           );
         }
 
@@ -770,31 +763,27 @@ const crossValidateOperation = Effect.fn("Prophet.crossValidate")(function* (
         const alignment = alignIntervalRows(intervals, uncertainty, pointRows);
 
         if (alignment.kind === "frame-mismatch") {
-          return yield* Effect.fail(
-            foldFailure(
-              fold,
-              "interval-result",
-              new PredictionError({
-                reason: "backend-failure",
-                timestamp: assessment[0]?.timestamp ?? fold.cutoff,
-                message: "Evaluation interval frame does not match the fold request",
-              }),
-            ),
+          return yield* foldFailure(
+            fold,
+            "interval-result",
+            new PredictionError({
+              reason: "backend-failure",
+              timestamp: assessment[0]?.timestamp ?? fold.cutoff,
+              message: "Evaluation interval frame does not match the fold request",
+            }),
           );
         }
 
         if (alignment.kind === "row-mismatch") {
-          return yield* Effect.fail(
-            foldFailure(
-              fold,
-              "interval-result",
-              new PredictionError({
-                reason: "backend-failure",
-                timestamp: alignment.timestamp,
-                message: "Evaluation interval is misaligned or non-finite",
-              }),
-              alignment.index,
-            ),
+          return yield* foldFailure(
+            fold,
+            "interval-result",
+            new PredictionError({
+              reason: "backend-failure",
+              timestamp: alignment.timestamp,
+              message: "Evaluation interval is misaligned or non-finite",
+            }),
+            alignment.index,
           );
         }
 

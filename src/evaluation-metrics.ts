@@ -648,19 +648,15 @@ const computeMetrics = (
     const custom = columns.length > options.metrics.filter(Predicate.isString).length;
 
     if (rows.length === 0 || rows.length > 1_000_000) {
-      return yield* Effect.fail(
-        new InputValidationError({
-          input: "evaluation-metrics",
-          issues: [{ path: ["rows"], message: "Expected 1 to 1,000,000 forecast instances" }],
-          message: "Expected 1 to 1,000,000 forecast instances",
-        }),
-      );
+      return yield* new InputValidationError({
+        input: "evaluation-metrics",
+        issues: [{ path: ["rows"], message: "Expected 1 to 1,000,000 forecast instances" }],
+        message: "Expected 1 to 1,000,000 forecast instances",
+      });
     }
 
     if (result.kind !== "intervals" && options.metrics.some((metric) => metric === "coverage")) {
-      return yield* Effect.fail(
-        metricFailure("coverage", aggregation.kind)(0, "unavailable", "input"),
-      );
+      return yield* metricFailure("coverage", aggregation.kind)(0, "unavailable", "input");
     }
 
     // Results from crossValidate are trusted; guard against malformed values at JS call sites.
@@ -678,9 +674,7 @@ const computeMetrics = (
             !Number.isFinite(result.rows[index]?.upper) ||
             (result.rows[index]?.lower ?? Infinity) > (result.rows[index]?.upper ?? -Infinity)))
       ) {
-        return yield* Effect.fail(
-          metricFailure(first, aggregation.kind)(index, "misaligned", "input"),
-        );
+        return yield* metricFailure(first, aggregation.kind)(index, "misaligned", "input");
       }
     }
 
@@ -725,15 +719,15 @@ const computeMetrics = (
           const fail = metricFailure(column.metric, "rows");
           const raw = column.value(entry, index, fail);
 
-          if (raw instanceof EvaluationMetricError) return yield* Effect.fail(raw);
+          if (raw instanceof EvaluationMetricError) return yield* raw;
 
           // Prophet's per-row windows hold one value, so a ratio is just this row's.
           const single = Predicate.isNumber(raw) ? raw : ratio(raw[0], raw[1], index, fail);
 
-          if (single instanceof EvaluationMetricError) return yield* Effect.fail(single);
+          if (single instanceof EvaluationMetricError) return yield* single;
           const value = finalized(column, single, index, fail);
 
-          if (value instanceof EvaluationMetricError) return yield* Effect.fail(value);
+          if (value instanceof EvaluationMetricError) return yield* value;
           scores.push(Object.freeze({ metric: column.metric, value }));
         }
 
@@ -765,15 +759,13 @@ const computeMetrics = (
             : Math.max(1, Math.floor(aggregation.window.value * rows.length));
 
     if (windowRows > rows.length) {
-      return yield* Effect.fail(
-        new InputValidationError({
-          input: "evaluation-metrics",
-          issues: [
-            { path: ["aggregation", "window"], message: "Window exceeds forecast instance count" },
-          ],
-          message: "Window exceeds forecast instance count",
-        }),
-      );
+      return yield* new InputValidationError({
+        input: "evaluation-metrics",
+        issues: [
+          { path: ["aggregation", "window"], message: "Window exceeds forecast instance count" },
+        ],
+        message: "Window exceeds forecast instance count",
+      });
     }
 
     const bucket = (group: number) => (aggregation.kind === "overall" ? 0 : group);
@@ -792,7 +784,7 @@ const computeMetrics = (
           if (entry === undefined) continue;
           const value = column.value(entry, bucket(index), fail);
 
-          if (value instanceof EvaluationMetricError) return yield* Effect.fail(value);
+          if (value instanceof EvaluationMetricError) return yield* value;
 
           if (Predicate.isNumber(value)) {
             values.push(value);
@@ -814,13 +806,13 @@ const computeMetrics = (
         fail,
       );
 
-      if (aggregated instanceof EvaluationMetricError) return yield* Effect.fail(aggregated);
+      if (aggregated instanceof EvaluationMetricError) return yield* aggregated;
       const results: Array<number> = [];
 
       for (let index = firstPoint; index < groups.length; index += 1) {
         const value = finalized(column, aggregated[index] ?? Number.NaN, bucket(index), fail);
 
-        if (value instanceof EvaluationMetricError) return yield* Effect.fail(value);
+        if (value instanceof EvaluationMetricError) return yield* value;
         results[index] = value;
       }
 

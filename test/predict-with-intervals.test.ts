@@ -353,10 +353,9 @@ describe("predictWithIntervals", () => {
 
     const { spans, tracer } = collectTestSpans();
 
-    const failed = await Effect.runPromise(
+    const failed = await Effect.runPromiseExit(
       predictWithIntervals({ ...model, noiseScale: -1 }, future, { seed: 1 }).pipe(
         Effect.withTracer(tracer),
-        Effect.exit,
       ),
     );
 
@@ -384,7 +383,7 @@ describe("predictWithIntervals", () => {
       predictWithIntervals(model, future, { seed: -1 }),
       predictWithIntervals(model, future, JSON.parse('{"seed":1,"output":"samples"}')),
     ]) {
-      await Effect.runPromise(request.pipe(Effect.withTracer(tracer), Effect.exit));
+      await Effect.runPromiseExit(request.pipe(Effect.withTracer(tracer)));
     }
 
     expect(spans.map((span) => span.name)).toEqual([

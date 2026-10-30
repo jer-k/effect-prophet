@@ -376,11 +376,9 @@ export const searchModels = Effect.fn("Prophet.searchModels")(function* (
     );
 
     if (sharedPlan !== undefined && !planMatches(sharedPlan, planned)) {
-      return yield* Effect.fail(
-        invalidSearch(
-          ["candidates", index, "options"],
-          "Candidates produce different cutoffs; supply a common explicit or generated initial window",
-        ),
+      return yield* invalidSearch(
+        ["candidates", index, "options"],
+        "Candidates produce different cutoffs; supply a common explicit or generated initial window",
       );
     }
 
@@ -424,16 +422,14 @@ export const searchModels = Effect.fn("Prophet.searchModels")(function* (
       const score = report.bucket.scores[0]?.value;
 
       if (score === undefined || !Number.isFinite(score)) {
-        return yield* Effect.fail(
-          new EvaluationMetricError({
-            metric: metricName(objective.metric),
-            aggregation: "overall",
-            bucket: 0,
-            reason: "non-finite",
-            stage: "mean",
-            message: "Search objective is not finite",
-          }),
-        );
+        return yield* new EvaluationMetricError({
+          metric: metricName(objective.metric),
+          aggregation: "overall",
+          bucket: 0,
+          reason: "non-finite",
+          stage: "mean",
+          message: "Search objective is not finite",
+        });
       }
 
       const success = {
@@ -448,39 +444,35 @@ export const searchModels = Effect.fn("Prophet.searchModels")(function* (
       return Object.freeze(
         parsed.includeCrossValidation === true ? { ...success, crossValidation: cv } : success,
       );
-    })
-      .pipe(
-        Effect.withSpan(
-          "effect-prophet.evaluation.candidate",
-          {
-            attributes: {
-              "effect_prophet.operation": "model-search",
-              "effect_prophet.candidate.index": candidateIndex,
-              "effect_prophet.candidate.count": candidates.length,
-              "effect_prophet.fold.count": sharedPlan.folds.length,
-              "effect_prophet.objective": objectiveAttribute(objective.metric),
-              "effect_prophet.uncertainty.enabled": mode.mode === "intervals",
-              "effect_prophet.evaluation.scaling.mode":
-                controls.scaling ?? defaultTargetScalingMode,
-            },
+    }).pipe(
+      Effect.withSpan(
+        "effect-prophet.evaluation.candidate",
+        {
+          attributes: {
+            "effect_prophet.operation": "model-search",
+            "effect_prophet.candidate.index": candidateIndex,
+            "effect_prophet.candidate.count": candidates.length,
+            "effect_prophet.fold.count": sharedPlan.folds.length,
+            "effect_prophet.objective": objectiveAttribute(objective.metric),
+            "effect_prophet.uncertainty.enabled": mode.mode === "intervals",
+            "effect_prophet.evaluation.scaling.mode": controls.scaling ?? defaultTargetScalingMode,
           },
-          { captureStackTrace: false },
-        ),
-      )
-      .pipe(Effect.result);
+        },
+        { captureStackTrace: false },
+      ),
+      Effect.result,
+    );
 
     if (Predicate.isTagged("Failure")(attempt)) {
       if (parsed.failurePolicy === "fail-fast") {
-        return yield* Effect.fail(
-          new EvaluationSearchError(
-            {
-              reason: "candidate-failed",
-              candidateId: candidate.id,
-              candidateIndex,
-              message: "Search candidate failed",
-            },
-            { cause: attempt.failure },
-          ),
+        return yield* new EvaluationSearchError(
+          {
+            reason: "candidate-failed",
+            candidateId: candidate.id,
+            candidateIndex,
+            message: "Search candidate failed",
+          },
+          { cause: attempt.failure },
         );
       }
 
@@ -515,13 +507,11 @@ export const searchModels = Effect.fn("Prophet.searchModels")(function* (
         : [],
     );
 
-    return yield* Effect.fail(
-      new EvaluationSearchError({
-        reason: "no-success",
-        outcomes: Object.freeze(failures),
-        message: "No search candidate succeeded",
-      }),
-    );
+    return yield* new EvaluationSearchError({
+      reason: "no-success",
+      outcomes: Object.freeze(failures),
+      message: "No search candidate succeeded",
+    });
   }
 
   return Object.freeze({

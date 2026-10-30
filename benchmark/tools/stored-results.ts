@@ -56,9 +56,7 @@ export const loadStoredReport = Effect.fn("benchmark.results.load")(function* (d
   );
 
   if (manifest.runId !== report.run.runId) {
-    return yield* Effect.fail(
-      new BenchmarkArtifactError({ message: "Report and manifest run IDs differ" }),
-    );
+    return yield* new BenchmarkArtifactError({ message: "Report and manifest run IDs differ" });
   }
 
   return { manifest, report };
@@ -92,9 +90,9 @@ export const loadRunEvidence = Effect.fn("benchmark.results.evidence")(function*
     recorded.report.correctness.length !== ids.length ||
     ids.some((id) => !recorded.report.correctness.some((entry) => entry.caseId === id))
   ) {
-    return yield* Effect.fail(
-      new BenchmarkArtifactError({ message: "Incomplete or inconsistent selected case evidence" }),
-    );
+    return yield* new BenchmarkArtifactError({
+      message: "Incomplete or inconsistent selected case evidence",
+    });
   }
 
   for (const item of selected) {
@@ -109,11 +107,9 @@ export const loadRunEvidence = Effect.fn("benchmark.results.evidence")(function*
         );
 
         if (projections.length > 1 || (projections.length === 0 && failures.length === 0)) {
-          return yield* Effect.fail(
-            new BenchmarkArtifactError({
-              message: `Missing or duplicate independent correctness evidence for ${item.id}`,
-            }),
-          );
+          return yield* new BenchmarkArtifactError({
+            message: `Missing or duplicate independent correctness evidence for ${item.id}`,
+          });
         }
       }
     }

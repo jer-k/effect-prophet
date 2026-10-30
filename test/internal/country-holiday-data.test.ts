@@ -22,7 +22,7 @@ const loaderName = "effect-prophet.calendar.load-snapshot";
 describe("packaged country snapshot loader", () => {
   it("loads every allowlisted country through real files and preserves canonical identity", async () => {
     for (const code of Object.keys(countryHolidayCatalog.countries)) {
-      const country = Schema.decodeUnknownSync(CanonicalCountrySchema)(code);
+      const country = Schema.decodeSync(CanonicalCountrySchema)(code);
       const snapshot = await Effect.runPromise(loadCountryHolidaySnapshot(country));
 
       expect(snapshot.country).toBe(code);

@@ -557,40 +557,32 @@ export const parseEventCalendar = Effect.fn("Prophet.parseEventCalendar")(functi
     const epochDay = parseEpochDay(occurrence.date);
 
     if (epochDay === undefined) {
-      return yield* Effect.fail(
-        invalid(
-          [index, "date"],
-          "Event dates must be valid zero-padded Gregorian YYYY-MM-DD values",
-        ),
+      return yield* invalid(
+        [index, "date"],
+        "Event dates must be valid zero-padded Gregorian YYYY-MM-DD values",
       );
     }
 
     if (occurrence.lowerWindowDays > 0) {
-      return yield* Effect.fail(
-        invalid(
-          [index, "lowerWindowDays"],
-          "Lower event windows must be less than or equal to zero",
-        ),
+      return yield* invalid(
+        [index, "lowerWindowDays"],
+        "Lower event windows must be less than or equal to zero",
       );
     }
 
     if (occurrence.upperWindowDays < 0) {
-      return yield* Effect.fail(
-        invalid(
-          [index, "upperWindowDays"],
-          "Upper event windows must be greater than or equal to zero",
-        ),
+      return yield* invalid(
+        [index, "upperWindowDays"],
+        "Upper event windows must be greater than or equal to zero",
       );
     }
 
     const width = occurrence.upperWindowDays - occurrence.lowerWindowDays + 1;
 
     if (!Number.isSafeInteger(width) || width > maximumExpandedColumns) {
-      return yield* Effect.fail(
-        invalid(
-          [index],
-          `One event occurrence cannot expand beyond ${maximumExpandedColumns} columns`,
-        ),
+      return yield* invalid(
+        [index],
+        `One event occurrence cannot expand beyond ${maximumExpandedColumns} columns`,
       );
     }
 
@@ -608,7 +600,7 @@ export const parseEventCalendar = Effect.fn("Prophet.parseEventCalendar")(functi
     );
 
     if (added !== undefined) {
-      return yield* Effect.fail(added);
+      return yield* added;
     }
   }
 

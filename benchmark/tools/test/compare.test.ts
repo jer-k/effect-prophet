@@ -216,11 +216,10 @@ describe("benchmark developer comparisons", () => {
       const before = await fixture.writeRun("before");
       const after = await fixture.writeRun("after");
 
-      const success = await Effect.runPromise(
+      const success = await Effect.runPromiseExit(
         compareRuns(before, after).pipe(
           Effect.withSpan("benchmark.test"),
           Effect.withTracer(successTrace.tracer),
-          Effect.exit,
         ),
       );
 
@@ -231,11 +230,10 @@ describe("benchmark developer comparisons", () => {
         "benchmark.artifacts.read-json",
       );
 
-      const failure = await Effect.runPromise(
+      const failure = await Effect.runPromiseExit(
         compareRuns(resolve(fixture.root, "missing"), after).pipe(
           Effect.withSpan("benchmark.test"),
           Effect.withTracer(failureTrace.tracer),
-          Effect.exit,
         ),
       );
 
@@ -293,8 +291,7 @@ describe("benchmark developer comparisons", () => {
       expect(overview).toContain("flat-growth/retained/report.md");
       expect(overview).not.toContain("local-only");
       expect(
-        (await Effect.runPromise(resolveRunReference(results, "runs/../outside").pipe(Effect.exit)))
-          ._tag,
+        (await Effect.runPromiseExit(resolveRunReference(results, "runs/../outside")))._tag,
       ).toBe("Failure");
     } finally {
       await rm(fixture.root, { recursive: true, force: true });

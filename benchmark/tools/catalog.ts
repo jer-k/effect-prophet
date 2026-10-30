@@ -40,11 +40,9 @@ export const loadCaseCatalog = Effect.fn("benchmark.catalog.load")(function* () 
   const template = originals.find((item) => item.id === "map-events-small");
 
   if (template === undefined)
-    return yield* Effect.fail(
-      new BenchmarkArtifactError({
-        message: "Country cases require the core explicit-event lifecycle declaration",
-      }),
-    );
+    return yield* new BenchmarkArtifactError({
+      message: "Country cases require the core explicit-event lifecycle declaration",
+    });
 
   const countries = yield* countryHolidayCases(template);
 

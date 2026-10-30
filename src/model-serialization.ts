@@ -163,15 +163,15 @@ const EncodedEventOccurrencesSchema = Schema.Array(
   Schema.Struct({
     name: Schema.String,
     date: Schema.String,
-    lowerWindowDays: Schema.optionalKey(Schema.Number),
-    upperWindowDays: Schema.optionalKey(Schema.Number),
-    priorScale: Schema.optionalKey(Schema.Number),
+    lowerWindowDays: Schema.optionalKey(Schema.Finite),
+    upperWindowDays: Schema.optionalKey(Schema.Finite),
+    priorScale: Schema.optionalKey(Schema.Finite),
   }),
 );
 
 const EncodedFittedRegressorSchema = Schema.Struct({
   name: Schema.String,
-  priorScale: Schema.Number,
+  priorScale: Schema.Finite,
   standardization: Schema.Literals(["auto", "always", "never"]),
   mode: Schema.optionalKey(ComponentModeSchema),
   transform: Schema.Union([
@@ -181,8 +181,8 @@ const EncodedFittedRegressorSchema = Schema.Struct({
     }),
     Schema.Struct({
       mode: Schema.Literal("standardized"),
-      mean: Schema.Number,
-      sampleStandardDeviation: Schema.Number,
+      mean: Schema.Finite,
+      sampleStandardDeviation: Schema.Finite,
     }),
   ]),
 });
@@ -192,10 +192,10 @@ const EncodedFlatMapModelSchema = Schema.Struct({
   countryHolidays: Schema.optionalKey(CountryHolidayModelSchema),
   targetScaling: Schema.optionalKey(TargetScalingSchema),
   coefficients: Schema.Struct({
-    level: Schema.Number,
-    seasonal: Schema.Array(Schema.Number),
-    events: Schema.Array(Schema.Number).pipe(Schema.withDecodingDefaultKey(Effect.succeed([]))),
-    regressors: Schema.Array(Schema.Number).pipe(Schema.withDecodingDefaultKey(Effect.succeed([]))),
+    level: Schema.Finite,
+    seasonal: Schema.Array(Schema.Finite),
+    events: Schema.Array(Schema.Finite).pipe(Schema.withDecodingDefaultKey(Effect.succeed([]))),
+    regressors: Schema.Array(Schema.Finite).pipe(Schema.withDecodingDefaultKey(Effect.succeed([]))),
   }),
   holidaysMode: ComponentModeSchema.pipe(Schema.withDecodingDefaultKey(Effect.succeed("additive"))),
   events: EncodedEventOccurrencesSchema.pipe(Schema.withDecodingDefaultKey(Effect.succeed([]))),
@@ -205,14 +205,14 @@ const EncodedFlatMapModelSchema = Schema.Struct({
   seasonalities: Schema.Array(
     Schema.Struct({
       name: Schema.String,
-      periodDays: Schema.Number,
-      fourierOrder: Schema.Number,
-      priorScale: Schema.Number,
+      periodDays: Schema.Finite,
+      fourierOrder: Schema.Finite,
+      priorScale: Schema.Finite,
       conditionName: Schema.optionalKey(Schema.String),
       mode: ComponentModeSchema.pipe(Schema.withDecodingDefaultKey(Effect.succeed("additive"))),
     }),
   ),
-  noiseScale: Schema.Number,
+  noiseScale: Schema.Finite,
   fitSummary: FlatMapFitSummarySchema,
 });
 
@@ -221,12 +221,12 @@ const EncodedPiecewiseMapModelSchema = Schema.Struct({
   countryHolidays: Schema.optionalKey(CountryHolidayModelSchema),
   targetScaling: Schema.optionalKey(TargetScalingSchema),
   coefficients: Schema.Struct({
-    intercept: Schema.Number,
-    slope: Schema.Number,
-    deltas: Schema.Array(Schema.Number),
-    seasonal: Schema.Array(Schema.Number),
-    events: Schema.Array(Schema.Number).pipe(Schema.withDecodingDefaultKey(Effect.succeed([]))),
-    regressors: Schema.Array(Schema.Number).pipe(Schema.withDecodingDefaultKey(Effect.succeed([]))),
+    intercept: Schema.Finite,
+    slope: Schema.Finite,
+    deltas: Schema.Array(Schema.Finite),
+    seasonal: Schema.Array(Schema.Finite),
+    events: Schema.Array(Schema.Finite).pipe(Schema.withDecodingDefaultKey(Effect.succeed([]))),
+    regressors: Schema.Array(Schema.Finite).pipe(Schema.withDecodingDefaultKey(Effect.succeed([]))),
   }),
   regressors: Schema.Array(EncodedFittedRegressorSchema).pipe(
     Schema.withDecodingDefaultKey(Effect.succeed([])),
@@ -234,21 +234,21 @@ const EncodedPiecewiseMapModelSchema = Schema.Struct({
   events: EncodedEventOccurrencesSchema.pipe(Schema.withDecodingDefaultKey(Effect.succeed([]))),
   holidaysMode: ComponentModeSchema.pipe(Schema.withDecodingDefaultKey(Effect.succeed("additive"))),
   timeScaling: Schema.Struct({
-    origin: Schema.Number,
-    scale: Schema.Number,
+    origin: Schema.Finite,
+    scale: Schema.Finite,
   }),
-  changepointTimestamps: Schema.Array(Schema.Number),
+  changepointTimestamps: Schema.Array(Schema.Finite),
   seasonalities: Schema.Array(
     Schema.Struct({
       name: Schema.String,
-      periodDays: Schema.Number,
-      fourierOrder: Schema.Number,
-      priorScale: Schema.Number,
+      periodDays: Schema.Finite,
+      fourierOrder: Schema.Finite,
+      priorScale: Schema.Finite,
       conditionName: Schema.optionalKey(Schema.String),
       mode: ComponentModeSchema.pipe(Schema.withDecodingDefaultKey(Effect.succeed("additive"))),
     }),
   ),
-  noiseScale: Schema.Number,
+  noiseScale: Schema.Finite,
   fitSummary: PiecewiseMapFitSummarySchema,
 });
 
@@ -257,38 +257,38 @@ const EncodedLogisticMapModelSchema = Schema.Struct({
   countryHolidays: Schema.optionalKey(CountryHolidayModelSchema),
   targetScaling: Schema.Struct({
     mode: Schema.Literals(["absmax", "minmax"]),
-    scale: Schema.Number,
+    scale: Schema.Finite,
     floorPolicy: Schema.Union([
-      Schema.Struct({ kind: Schema.Literal("implicit"), floor: Schema.Number }),
+      Schema.Struct({ kind: Schema.Literal("implicit"), floor: Schema.Finite }),
       Schema.Struct({ kind: Schema.Literal("explicit") }),
     ]),
   }),
   parameters: Schema.Struct({
-    rate: Schema.Number,
-    offset: Schema.Number,
-    deltas: Schema.Array(Schema.Number),
+    rate: Schema.Finite,
+    offset: Schema.Finite,
+    deltas: Schema.Array(Schema.Finite),
   }),
   coefficients: Schema.Struct({
-    seasonal: Schema.Array(Schema.Number),
-    events: Schema.Array(Schema.Number),
-    regressors: Schema.Array(Schema.Number),
+    seasonal: Schema.Array(Schema.Finite),
+    events: Schema.Array(Schema.Finite),
+    regressors: Schema.Array(Schema.Finite),
   }),
   events: EncodedEventOccurrencesSchema,
   holidaysMode: ComponentModeSchema,
   regressors: Schema.Array(EncodedFittedRegressorSchema),
-  timeScaling: Schema.Struct({ origin: Schema.Number, scale: Schema.Number }),
-  changepointTimestamps: Schema.Array(Schema.Number),
+  timeScaling: Schema.Struct({ origin: Schema.Finite, scale: Schema.Finite }),
+  changepointTimestamps: Schema.Array(Schema.Finite),
   seasonalities: Schema.Array(
     Schema.Struct({
       name: Schema.String,
-      periodDays: Schema.Number,
-      fourierOrder: Schema.Number,
-      priorScale: Schema.Number,
+      periodDays: Schema.Finite,
+      fourierOrder: Schema.Finite,
+      priorScale: Schema.Finite,
       conditionName: Schema.optionalKey(Schema.String),
       mode: ComponentModeSchema,
     }),
   ),
-  noiseScale: Schema.Number,
+  noiseScale: Schema.Finite,
   fitSummary: LogisticMapFitSummarySchema,
 });
 
@@ -741,18 +741,16 @@ export const encodeFittedModel = Effect.fn("Prophet.encodeFittedModel")(function
     return encodeLogisticMapModel(parsedModel);
   }
 
-  return yield* Effect.fail(
-    new ModelSerializationError({
-      operation: "encode",
-      issues: [
-        {
-          path: ["model"],
-          message: "Expected a serializable fitted model kind",
-        },
-      ],
-      message: "The fitted model kind cannot be serialized",
-    }),
-  );
+  return yield* new ModelSerializationError({
+    operation: "encode",
+    issues: [
+      {
+        path: ["model"],
+        message: "Expected a serializable fitted model kind",
+      },
+    ],
+    message: "The fitted model kind cannot be serialized",
+  });
 });
 
 /**

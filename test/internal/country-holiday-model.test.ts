@@ -95,7 +95,7 @@ describe("country holiday model state", () => {
     expect(Object.isFrozen(encoded)).toBe(false);
 
     const validated = await Effect.runPromise(
-      Schema.decodeUnknownEffect(CountryHolidayModelSchema)(structuredClone(fitted.state)),
+      Schema.decodeEffect(CountryHolidayModelSchema)(structuredClone(fitted.state)),
     );
 
     const trusted = decodedCountryHolidayFields(validated).countryHolidays;

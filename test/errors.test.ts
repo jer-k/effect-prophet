@@ -52,15 +52,13 @@ describe("typed domain errors", () => {
 
     const encoded = Schema.encodeSync(FittingError)(original);
 
-    const decoded = Schema.decodeUnknownSync(FittingError)(encoded);
+    const decoded = Schema.decodeSync(FittingError)(encoded);
 
     expect(decoded).toBeInstanceOf(FittingError);
     expect(decoded).toMatchObject({ reason: "rank-deficient", observationCount: 3 });
     expect(decoded).not.toHaveProperty("cause");
     expect(Schema.encodeSync(FittingError)(decoded)).toStrictEqual(encoded);
-    expect(() =>
-      Schema.decodeUnknownSync(FittingError)({ ...encoded, observationCount: -1 }),
-    ).toThrow();
+    expect(() => Schema.decodeSync(FittingError)({ ...encoded, observationCount: -1 })).toThrow();
   });
 
   it("encodes structured evaluation-plan validation issues", () => {

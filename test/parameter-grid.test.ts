@@ -411,8 +411,8 @@ describe("makeParameterGrid", () => {
     ] satisfies ReadonlyArray<ParameterGridInput>) {
       spans.length = 0;
 
-      const exit = await Effect.runPromise(
-        makeParameterGrid(input).pipe(Effect.withTracer(tracer), Effect.exit),
+      const exit = await Effect.runPromiseExit(
+        makeParameterGrid(input).pipe(Effect.withTracer(tracer)),
       );
 
       const operation = spans.find((span) => span.name === "Prophet.makeParameterGrid");
@@ -429,11 +429,8 @@ describe("makeParameterGrid", () => {
 
     spans.length = 0;
 
-    await Effect.runPromise(
-      makeParameterGrid({ axes: { changepointPriorScale: [-1] } }).pipe(
-        Effect.withTracer(tracer),
-        Effect.exit,
-      ),
+    await Effect.runPromiseExit(
+      makeParameterGrid({ axes: { changepointPriorScale: [-1] } }).pipe(Effect.withTracer(tracer)),
     );
 
     const failedDecode = spans.filter((span) => span.name === "Prophet.decodeOptions").at(-1);

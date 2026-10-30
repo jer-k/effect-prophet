@@ -722,7 +722,7 @@ const checkCountryHolidayModel = <Model extends FittedProphet>(
     );
 
     if (!matches) {
-      return yield* Effect.fail(invalidState);
+      return yield* invalidState;
     }
 
     if (model.model !== "flat-map") {
@@ -730,7 +730,7 @@ const checkCountryHolidayModel = <Model extends FittedProphet>(
       const lastYear = new Date(model.timeOrigin + model.timeScale).getUTCFullYear();
 
       if (state.trainingYears[0] !== firstYear || state.trainingYears.at(-1) !== lastYear) {
-        return yield* Effect.fail(invalidState);
+        return yield* invalidState;
       }
     }
 

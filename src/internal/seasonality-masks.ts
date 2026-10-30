@@ -36,33 +36,27 @@ export const createSeasonalityMasks = (
 
     for (const [index, name] of conditions.names.entries()) {
       if (actualSet.has(name)) {
-        return yield* Effect.fail(
-          makeInvalidConditionValues(
-            [{ path: ["names", index], message: `Condition name '${name}' is duplicated` }],
-            `Condition name '${name}' is duplicated`,
-          ),
+        return yield* makeInvalidConditionValues(
+          [{ path: ["names", index], message: `Condition name '${name}' is duplicated` }],
+          `Condition name '${name}' is duplicated`,
         );
       }
 
       actualSet.add(name);
 
       if (!expectedSet.has(name)) {
-        return yield* Effect.fail(
-          makeInvalidConditionValues(
-            [{ path: ["names", index], message: `Unexpected aligned condition '${name}'` }],
-            `Unexpected aligned condition '${name}'`,
-          ),
+        return yield* makeInvalidConditionValues(
+          [{ path: ["names", index], message: `Unexpected aligned condition '${name}'` }],
+          `Unexpected aligned condition '${name}'`,
         );
       }
     }
 
     for (const name of expectedNames) {
       if (!actualSet.has(name)) {
-        return yield* Effect.fail(
-          makeInvalidConditionValues(
-            [{ path: ["names", name], message: `Missing aligned condition '${name}'` }],
-            `Missing aligned condition '${name}'`,
-          ),
+        return yield* makeInvalidConditionValues(
+          [{ path: ["names", name], message: `Missing aligned condition '${name}'` }],
+          `Missing aligned condition '${name}'`,
         );
       }
     }
@@ -70,26 +64,22 @@ export const createSeasonalityMasks = (
     const expectedValueCount = checkedElementCount(conditions.rowCount, conditions.names.length);
 
     if (expectedValueCount === undefined || conditions.values.length !== expectedValueCount) {
-      return yield* Effect.fail(
-        makeInvalidConditionValues(
-          [{ path: ["values"], message: "Aligned condition dimensions are inconsistent" }],
-          "Aligned condition dimensions are inconsistent",
-        ),
+      return yield* makeInvalidConditionValues(
+        [{ path: ["values"], message: "Aligned condition dimensions are inconsistent" }],
+        "Aligned condition dimensions are inconsistent",
       );
     }
 
     for (const [index, value] of conditions.values.entries()) {
       if (value !== 0 && value !== 1) {
-        return yield* Effect.fail(
-          makeInvalidConditionValues(
-            [
-              {
-                path: ["values", index],
-                message: "Aligned condition values must be exactly zero or one",
-              },
-            ],
-            "Aligned condition values must be exactly zero or one",
-          ),
+        return yield* makeInvalidConditionValues(
+          [
+            {
+              path: ["values", index],
+              message: "Aligned condition values must be exactly zero or one",
+            },
+          ],
+          "Aligned condition values must be exactly zero or one",
         );
       }
     }
@@ -97,11 +87,9 @@ export const createSeasonalityMasks = (
     const maskCount = checkedElementCount(conditions.rowCount, layout.components.length);
 
     if (maskCount === undefined) {
-      return yield* Effect.fail(
-        makeInvalidConditionValues(
-          [{ path: [], message: "Seasonality mask dimensions exceed safe integer arithmetic" }],
-          "Seasonality mask dimensions exceed safe integer arithmetic",
-        ),
+      return yield* makeInvalidConditionValues(
+        [{ path: [], message: "Seasonality mask dimensions exceed safe integer arithmetic" }],
+        "Seasonality mask dimensions exceed safe integer arithmetic",
       );
     }
 
@@ -124,16 +112,14 @@ export const createSeasonalityMasks = (
         const conditionIndex = conditionIndexes.get(conditionName);
 
         if (conditionIndex === undefined) {
-          return yield* Effect.fail(
-            makeInvalidConditionValues(
-              [
-                {
-                  path: ["names", conditionName],
-                  message: `Missing aligned condition '${conditionName}'`,
-                },
-              ],
-              `Missing aligned condition '${conditionName}'`,
-            ),
+          return yield* makeInvalidConditionValues(
+            [
+              {
+                path: ["names", conditionName],
+                message: `Missing aligned condition '${conditionName}'`,
+              },
+            ],
+            `Missing aligned condition '${conditionName}'`,
           );
         }
 

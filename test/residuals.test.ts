@@ -319,8 +319,8 @@ describe("residuals", () => {
 
     const { spans, tracer } = collectTestSpans();
 
-    const failed = await Effect.runPromise(
-      residuals({ ...model, noiseScale: -1 }, history).pipe(Effect.withTracer(tracer), Effect.exit),
+    const failed = await Effect.runPromiseExit(
+      residuals({ ...model, noiseScale: -1 }, history).pipe(Effect.withTracer(tracer)),
     );
 
     const operation = spans.find((span) => span.name === "Prophet.residuals");
@@ -336,9 +336,7 @@ describe("residuals", () => {
 
     spans.length = 0;
 
-    await Effect.runPromise(
-      residuals(model, JSON.parse("[]")).pipe(Effect.withTracer(tracer), Effect.exit),
-    );
+    await Effect.runPromiseExit(residuals(model, JSON.parse("[]")).pipe(Effect.withTracer(tracer)));
 
     expect(spans.some((span) => span.name === "Prophet.predict")).toBe(false);
     expect(spans.filter((span) => span.name.startsWith("effect-prophet.wasm."))).toEqual([]);

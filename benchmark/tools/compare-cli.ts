@@ -17,12 +17,10 @@ const root = fileURLToPath(new URL("../results/", import.meta.url));
 await Effect.runPromise(
   Effect.gen(function* () {
     if (before === undefined || after === undefined || process.argv.length !== 4) {
-      return yield* Effect.fail(
-        new BenchmarkArtifactError({
-          message:
-            "Usage: npm run benchmark:compare -- <results-relative-before> <results-relative-after>",
-        }),
-      );
+      return yield* new BenchmarkArtifactError({
+        message:
+          "Usage: npm run benchmark:compare -- <results-relative-before> <results-relative-after>",
+      });
     }
 
     const beforeDirectory = yield* resolveRunReference(root, before);

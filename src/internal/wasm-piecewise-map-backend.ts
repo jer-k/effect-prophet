@@ -573,14 +573,12 @@ export const makeWasmPiecewiseMapAdapter = (
       const predictFeatures = module.predict_piecewise_map_with_features_and_scaling;
 
       if (predictFeatures === undefined) {
-        return yield* Effect.fail(
-          new PredictionError({
-            reason: "backend-failure",
-            timestamp: firstTimestamp,
-            backendPhase: "load",
-            message: "WASM linear MAP feature prediction export is unavailable",
-          }),
-        );
+        return yield* new PredictionError({
+          reason: "backend-failure",
+          timestamp: firstTimestamp,
+          backendPhase: "load",
+          message: "WASM linear MAP feature prediction export is unavailable",
+        });
       }
 
       const { periods, orders } = packSeasonalitiesForPrediction(model.seasonalities);

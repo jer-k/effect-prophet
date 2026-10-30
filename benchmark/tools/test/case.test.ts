@@ -126,14 +126,10 @@ describe("benchmark case parsing", () => {
   });
 
   it("rejects duplicate ids and dataset traversal", async () => {
-    const duplicate = await Effect.runPromise(
-      parseBenchmarkCases([validCase, validCase]).pipe(Effect.exit),
-    );
+    const duplicate = await Effect.runPromiseExit(parseBenchmarkCases([validCase, validCase]));
 
-    const traversal = await Effect.runPromise(
-      parseBenchmarkCases([{ ...validCase, id: "traversal", dataset: "../secret.json" }]).pipe(
-        Effect.exit,
-      ),
+    const traversal = await Effect.runPromiseExit(
+      parseBenchmarkCases([{ ...validCase, id: "traversal", dataset: "../secret.json" }]),
     );
 
     expect(duplicate._tag).toBe("Failure");
@@ -152,7 +148,7 @@ describe("benchmark case parsing", () => {
       },
     };
 
-    const result = await Effect.runPromise(parseBenchmarkCases([invalid]).pipe(Effect.exit));
+    const result = await Effect.runPromiseExit(parseBenchmarkCases([invalid]));
 
     expect(result._tag).toBe("Failure");
   });
@@ -243,7 +239,7 @@ describe("benchmark case parsing", () => {
 
 describe("benchmark dataset parsing", () => {
   it("preserves unsorted source observations for public-boundary correctness cases", async () => {
-    const result = await Effect.runPromise(
+    const result = await Effect.runPromiseExit(
       parseBenchmarkDataset({
         id: "unordered",
         recipe: "test-v1",
@@ -252,7 +248,7 @@ describe("benchmark dataset parsing", () => {
           { timestamp: "2024-01-01T00:00:00.000Z", value: 1 },
         ],
         predictionRows: [],
-      }).pipe(Effect.exit),
+      }),
     );
 
     expect(result._tag).toBe("Success");

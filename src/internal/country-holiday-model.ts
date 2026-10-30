@@ -218,7 +218,7 @@ export const fitCountryHolidayEvents = Effect.fnUntraced(function* (
   );
 
   if (conflict !== undefined) {
-    return yield* Effect.fail(conflict);
+    return yield* conflict;
   }
 
   const events = yield* mergeCountryEvents(customEvents, resolved.inspection.occurrences);
@@ -306,7 +306,7 @@ export const predictCountryHolidayEvents = Effect.fnUntraced(function* (
   const conflict = conflictingPrior(state.customEvents, generated, state.selection.priorScale);
 
   if (conflict !== undefined) {
-    return yield* Effect.fail(conflict);
+    return yield* conflict;
   }
 
   // Same deduplication rules as parsing, but the fitted columns are kept as they are, so

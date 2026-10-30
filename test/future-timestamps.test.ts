@@ -262,10 +262,9 @@ describe("makeFutureTimestamps tracing", () => {
   it("ends the operation span as failed without attributes on invalid input", async () => {
     const { spans, tracer } = collectTestSpans();
 
-    const exit = await Effect.runPromise(
+    const exit = await Effect.runPromiseExit(
       makeFutureTimestamps("2025-01-15T00:00:00.000Z", { periods: -1 }).pipe(
         Effect.withTracer(tracer),
-        Effect.exit,
       ),
     );
 

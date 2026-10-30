@@ -393,7 +393,7 @@ describe("planRollingOrigin", () => {
 
     spans.length = 0;
 
-    const failed = await Effect.runPromise(
+    const failed = await Effect.runPromiseExit(
       planRollingOrigin(
         history([0, 1, 2]),
         {},
@@ -401,7 +401,7 @@ describe("planRollingOrigin", () => {
           horizonMs: dayMs,
           cutoffs: { mode: "explicit", timestamps: [at(0)] },
         },
-      ).pipe(Effect.withSpan("evaluation.parent"), Effect.withTracer(tracer), Effect.exit),
+      ).pipe(Effect.withSpan("evaluation.parent"), Effect.withTracer(tracer)),
     );
 
     const failedParent = spans.find((span) => span.name === "evaluation.parent");

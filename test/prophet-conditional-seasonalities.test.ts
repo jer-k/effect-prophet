@@ -491,8 +491,8 @@ describe("conditional seasonality public lifecycle", () => {
       (span) => span.name === "effect-prophet.wasm.predict",
     ).length;
 
-    await Effect.runPromise(
-      predict(model, ["2025-01-16T00:00:00.000Z"]).pipe(Effect.withTracer(tracer), Effect.exit),
+    await Effect.runPromiseExit(
+      predict(model, ["2025-01-16T00:00:00.000Z"]).pipe(Effect.withTracer(tracer)),
     );
 
     expect(spans.filter((span) => span.name === "effect-prophet.wasm.predict")).toHaveLength(

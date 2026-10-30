@@ -21,11 +21,9 @@ await Effect.runPromise(
       (process.argv.length !== 4 &&
         !(process.argv.length === 5 && process.argv[4] === "--baseline"))
     ) {
-      return yield* Effect.fail(
-        new BenchmarkArtifactError({
-          message: "Usage: npm run benchmark:retain -- <run-id> <tested-capability> [--baseline]",
-        }),
-      );
+      return yield* new BenchmarkArtifactError({
+        message: "Usage: npm run benchmark:retain -- <run-id> <tested-capability> [--baseline]",
+      });
     }
 
     const root = fileURLToPath(new URL("../", import.meta.url));

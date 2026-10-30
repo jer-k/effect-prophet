@@ -425,11 +425,8 @@ describe("detectAnomalies", () => {
 
     const { spans, tracer } = collectTestSpans();
 
-    const failed = await Effect.runPromise(
-      detectAnomalies({ ...model, noiseScale: -1 }, later, options).pipe(
-        Effect.withTracer(tracer),
-        Effect.exit,
-      ),
+    const failed = await Effect.runPromiseExit(
+      detectAnomalies({ ...model, noiseScale: -1 }, later, options).pipe(Effect.withTracer(tracer)),
     );
 
     const operation = spans.find((span) => span.name === "Prophet.detectAnomalies");
@@ -450,7 +447,7 @@ describe("detectAnomalies", () => {
       detectAnomalies(model, later, { seed: -1 }),
       detectAnomalies(model, later, JSON.parse('{"seed":1,"output":"samples"}')),
     ]) {
-      await Effect.runPromise(request.pipe(Effect.withTracer(tracer), Effect.exit));
+      await Effect.runPromiseExit(request.pipe(Effect.withTracer(tracer)));
     }
 
     expect(spans.some((span) => span.name === "Prophet.predictWithIntervals")).toBe(false);
@@ -705,11 +702,10 @@ describe("anomalies", () => {
   it("ends a failed span, and fits nothing when validation or the row budget fails", async () => {
     const { spans, tracer } = collectTestSpans();
 
-    const failed = await Effect.runPromise(
+    const failed = await Effect.runPromiseExit(
       anomalies([{ timestamp: day(0), value: 1 }], options).pipe(
         Effect.withTracer(tracer),
         Effect.provide(prophetFittingBackendLayer),
-        Effect.exit,
       ),
     );
 
@@ -732,12 +728,8 @@ describe("anomalies", () => {
       anomalies(disturbed, JSON.parse('{"seed":1,"output":"samples"}')),
       anomalies(tooLong, { seed: 1, samples: 1 }),
     ]) {
-      await Effect.runPromise(
-        request.pipe(
-          Effect.withTracer(tracer),
-          Effect.provide(prophetFittingBackendLayer),
-          Effect.exit,
-        ),
+      await Effect.runPromiseExit(
+        request.pipe(Effect.withTracer(tracer), Effect.provide(prophetFittingBackendLayer)),
       );
     }
 

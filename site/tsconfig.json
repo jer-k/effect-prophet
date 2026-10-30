@@ -9,7 +9,18 @@
       {
         "name": "@effect/language-service",
         // The tracing guide exports spans with Effect's OTLP layers, which have no stable equivalent.
-        "allowedUnstableApis": ["effect/observability", "effect/http/FetchHttpClient#layer"]
+        "allowedUnstableApis": ["effect/observability", "effect/http/FetchHttpClient#layer"],
+        // A plugin entry here replaces the root one, so repeat its severities.
+        "diagnosticSeverity": {
+          "schemaClassMissingBrand": "off",
+          "unnecessaryFailYieldableError": "warning",
+          "runOfExitToRunExit": "warning",
+          "schemaNumber": "warning",
+          "preferTypedSchemaDecoder": "warning",
+          "effectSucceedWithVoid": "warning",
+          "unnecessaryPipeChain": "warning",
+          "multipleCatchTag": "warning"
+        }
       }
     ]
   },

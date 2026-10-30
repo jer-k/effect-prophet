@@ -116,19 +116,17 @@ export const parseCountryHolidays = Effect.fn("Prophet.parseCountryHolidays")(fu
   const country = codes.get(selection.country);
 
   if (country === undefined) {
-    return yield* Effect.fail(
-      new CountryHolidayError({
-        reason: "unknown-country",
-        issues: [{ path: ["country"], message: "Country code is not registered in the snapshot" }],
-        coverageIssues: [],
-        message: "Country code is not registered in the snapshot",
-      }),
-    );
+    return yield* new CountryHolidayError({
+      reason: "unknown-country",
+      issues: [{ path: ["country"], message: "Country code is not registered in the snapshot" }],
+      coverageIssues: [],
+      message: "Country code is not registered in the snapshot",
+    });
   }
 
   const priorScale = selection.priorScale ?? defaultPriorScale;
 
-  return yield* Schema.decodeUnknownEffect(CountryHolidaysSchema)({
+  return yield* Schema.decodeEffect(CountryHolidaysSchema)({
     ...selection,
     country,
     priorScale,
@@ -154,19 +152,17 @@ const parseYears = (input: Parameters<typeof decodeYears>[0]) =>
 
     for (const [index, year] of years.entries()) {
       if (year < countryHolidayHorizon.firstYear || year > countryHolidayHorizon.lastYear) {
-        return yield* Effect.fail(
-          new CountryHolidayError({
-            reason: "outside-snapshot-horizon",
-            issues: [
-              {
-                path: ["years", index],
-                message: "Requested year is outside the 1995–2060 snapshot horizon",
-              },
-            ],
-            coverageIssues: [],
-            message: "Requested year is outside the 1995–2060 snapshot horizon",
-          }),
-        );
+        return yield* new CountryHolidayError({
+          reason: "outside-snapshot-horizon",
+          issues: [
+            {
+              path: ["years", index],
+              message: "Requested year is outside the 1995–2060 snapshot horizon",
+            },
+          ],
+          coverageIssues: [],
+          message: "Requested year is outside the 1995–2060 snapshot horizon",
+        });
       }
     }
 
@@ -239,14 +235,12 @@ export const countryHolidayOccurrences = (
       const name = data.names[nameIndex];
 
       if (name === undefined) {
-        return yield* Effect.fail(
-          new CountryHolidayError({
-            reason: "corrupt-snapshot",
-            issues: [],
-            coverageIssues: [],
-            message: "Unresolved retained holiday name index",
-          }),
-        );
+        return yield* new CountryHolidayError({
+          reason: "corrupt-snapshot",
+          issues: [],
+          coverageIssues: [],
+          message: "Unresolved retained holiday name index",
+        });
       }
 
       occurrences.push({
@@ -301,19 +295,17 @@ export const resolveCountryHolidays = (
         });
 
       if (snapshot.data.country !== selection.country) {
-        return yield* Effect.fail(
-          new CountryHolidayError({
-            reason: "invalid-selection",
-            issues: [
-              {
-                path: ["country"],
-                message: "Retained snapshot must belong to the selected country",
-              },
-            ],
-            coverageIssues: [],
-            message: "Retained snapshot must belong to the selected country",
-          }),
-        );
+        return yield* new CountryHolidayError({
+          reason: "invalid-selection",
+          issues: [
+            {
+              path: ["country"],
+              message: "Retained snapshot must belong to the selected country",
+            },
+          ],
+          coverageIssues: [],
+          message: "Retained snapshot must belong to the selected country",
+        });
       }
 
       const issues = countryHolidayCoverageIssues(snapshot.data, years);
@@ -321,15 +313,13 @@ export const resolveCountryHolidays = (
       const restrictions = issues.filter((issue) => issue.disposition === "restriction");
 
       if (selection.coverage === "reject-known-gaps" && restrictions.length > 0) {
-        return yield* Effect.fail(
-          new CountryHolidayError({
-            reason: "known-coverage-restriction",
-            issues: [],
-            coverageIssues: issues,
-            message:
-              "Requested calendar years intersect reviewed coverage restrictions; explicit allow-known-gaps is required",
-          }),
-        );
+        return yield* new CountryHolidayError({
+          reason: "known-coverage-restriction",
+          issues: [],
+          coverageIssues: issues,
+          message:
+            "Requested calendar years intersect reviewed coverage restrictions; explicit allow-known-gaps is required",
+        });
       }
 
       const occurrences = yield* countryHolidayOccurrences(

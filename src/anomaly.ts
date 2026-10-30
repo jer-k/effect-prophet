@@ -168,13 +168,11 @@ export const anomalies = Effect.fn("Prophet.anomalies")(function* (
 
   // Every history row is simulated, so reject a history too long for that before fitting it.
   if (exceedsSimulationBudget(observations.length, options.samples, "intervals")) {
-    return yield* Effect.fail(
-      new PredictionError({
-        reason: "simulation-limit",
-        timestamp: observations[0].timestamp,
-        message: "Anomaly detection exceeds the simulation row budget",
-      }),
-    );
+    return yield* new PredictionError({
+      reason: "simulation-limit",
+      timestamp: observations[0].timestamp,
+      message: "Anomaly detection exceeds the simulation row budget",
+    });
   }
 
   const model = yield* fit(historyInput, modelOptionsInput);
