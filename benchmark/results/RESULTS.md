@@ -6,15 +6,15 @@ Recorded historical outcomes are not recomputed using current gates. Architectur
 
 | Scope | Run | Passed | Failed | Provenance | Report |
 | --- | --- | ---: | ---: | --- | --- |
-| flat-growth | `2026-10-25T172048-197Z-5f551f20` | 65 | 0 | clean tree | [results](retained/flat-growth/2026-10-25T172048-197Z-5f551f20/report.md) |
-| linear-growth | `2026-10-25T170328-932Z-5f551f20` | 41 | 2 | clean tree | [results](retained/linear-growth/2026-10-25T170328-932Z-5f551f20/report.md) |
-| logistic-growth | `2026-10-25T174545-762Z-5f551f20` | 54 | 0 | clean tree | [results](retained/logistic-growth/2026-10-25T174545-762Z-5f551f20/report.md) |
+| flat-growth | `2026-10-29T232708-963Z-c8e0ac69` | 66 | 0 | clean tree | [results](retained/flat-growth/2026-10-29T232708-963Z-c8e0ac69/report.md) |
+| linear-growth | `2026-10-29T230816-711Z-c8e0ac69` | 44 | 2 | clean tree | [results](retained/linear-growth/2026-10-29T230816-711Z-c8e0ac69/report.md) |
+| logistic-growth | `2026-10-29T235232-725Z-c8e0ac69` | 55 | 0 | clean tree | [results](retained/logistic-growth/2026-10-29T235232-725Z-c8e0ac69/report.md) |
 
 ## Case outcomes
 
 Only passed gates admit timing. Diagnostic invalid-domain cases remain failed; they are not relabeled as successful fits.
 
-### flat-growth/2026-10-25T172048-197Z-5f551f20
+### flat-growth/2026-10-29T232708-963Z-c8e0ac69
 
 | Case | Outcome | Contract |
 | --- | --- | --- |
@@ -56,6 +56,7 @@ Only passed gates admit timing. Diagnostic invalid-domain cases remain failed; t
 | `evaluation-flat-mixed-search` | passed | different-public-work |
 | `evaluation-flat-large-point` | passed | different-public-work |
 | `evaluation-flat-large-intervals` | passed | different-public-work |
+| `evaluation-flat-large-months-metrics` | passed | different-public-work |
 | `flat-defaults-level` | passed | equivalent-objective |
 | `flat-defaults-seasonal` | passed | equivalent-objective |
 | `flat-defaults-negative` | passed | equivalent-objective |
@@ -84,7 +85,7 @@ Only passed gates admit timing. Diagnostic invalid-domain cases remain failed; t
 | `flat-mixed-components-absmax-defaults` | passed | equivalent-objective |
 | `flat-correlated-regressors` | passed | equivalent-objective |
 
-### linear-growth/2026-10-25T170328-932Z-5f551f20
+### linear-growth/2026-10-29T230816-711Z-c8e0ac69
 
 | Case | Outcome | Contract |
 | --- | --- | --- |
@@ -101,6 +102,8 @@ Only passed gates admit timing. Diagnostic invalid-domain cases remain failed; t
 | `country-us-linear-multiplicative` | passed | equivalent-objective |
 | `country-explicit-us-linear-multiplicative` | passed | equivalent-objective |
 | `country-boundary-linear` | passed | equivalent-objective |
+| `country-global-priors-linear` | passed | equivalent-objective |
+| `country-global-priors-overrides-linear` | passed | equivalent-objective |
 | `linear-defaults-small` | passed | equivalent-objective |
 | `linear-defaults-medium` | passed | equivalent-objective |
 | `linear-defaults-irregular` | passed | equivalent-objective |
@@ -131,8 +134,9 @@ Only passed gates admit timing. Diagnostic invalid-domain cases remain failed; t
 | `evaluation-linear-intervals` | passed | different-public-work |
 | `evaluation-linear-search` | passed | different-public-work |
 | `evaluation-linear-failure-search` | passed | different-public-work |
+| `evaluation-linear-custom-search` | passed | different-public-work |
 
-### logistic-growth/2026-10-25T174545-762Z-5f551f20
+### logistic-growth/2026-10-29T235232-725Z-c8e0ac69
 
 | Case | Outcome | Contract |
 | --- | --- | --- |
@@ -161,6 +165,7 @@ Only passed gates admit timing. Diagnostic invalid-domain cases remain failed; t
 | `evaluation-logistic-search` | passed | different-public-work |
 | `evaluation-logistic-large-point` | passed | different-public-work |
 | `evaluation-logistic-large-intervals` | passed | different-public-work |
+| `evaluation-logistic-large-months-metrics` | passed | different-public-work |
 | `logistic-reconcile-basic-96-empty-absmax` | passed | equivalent-objective |
 | `logistic-reconcile-basic-96-explicit-absmax` | passed | equivalent-objective |
 | `logistic-reconcile-basic-96-auto-absmax` | passed | equivalent-objective |

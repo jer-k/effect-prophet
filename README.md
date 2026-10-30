@@ -56,11 +56,13 @@ New to [Effect](https://effect.website)? The docs have a
 - Linear, flat and capped (logistic) trends with automatic changepoints
 - Weekly, yearly and daily patterns, plus your own custom ones
 - Holidays and events, and extra factors such as temperature or ad spend
-- Fitting and forecasting in one call
+- Fitting and forecasting in one call, with the future dates listed for you
 - Uncertainty ranges, on their own or alongside each forecast
 - Finding anomalies, in new measurements or across a history
+- Residuals, to check how well a model fits
 - Saving and loading fitted models, and warm-starting a refit from an earlier one
-- Cross-validation, accuracy metrics and choosing between settings
+- Cross-validation, accuracy metrics by period or calendar month, and your own metrics
+- Choosing between settings, including every combination from a grid
 - Tracing built in: every fit and forecast is traced, ready for any OpenTelemetry backend
 
 See the [examples](https://jer-k.github.io/effect-prophet/examples/trend) for each one.

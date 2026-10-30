@@ -3,7 +3,7 @@
     "id": "country-us-logistic-additive",
     "dataset": "v5/country-logistic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:a14370273fba01e9cb27ee517ec9ba221510f8e9fba706dcd872c63ac2ea7d88",
+      "snapshotId": "sha256:4965576c053594e7b7feb32f08acd4bc5b1ae4a2e185db3c2862da16ef0f3e00",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -145,7 +145,7 @@
     "id": "country-explicit-us-logistic-additive",
     "dataset": "v5/country-logistic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:a14370273fba01e9cb27ee517ec9ba221510f8e9fba706dcd872c63ac2ea7d88",
+      "snapshotId": "sha256:4965576c053594e7b7feb32f08acd4bc5b1ae4a2e185db3c2862da16ef0f3e00",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -436,7 +436,7 @@
     "id": "country-us-logistic-multiplicative",
     "dataset": "v5/country-logistic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:a14370273fba01e9cb27ee517ec9ba221510f8e9fba706dcd872c63ac2ea7d88",
+      "snapshotId": "sha256:4965576c053594e7b7feb32f08acd4bc5b1ae4a2e185db3c2862da16ef0f3e00",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -578,7 +578,7 @@
     "id": "country-explicit-us-logistic-multiplicative",
     "dataset": "v5/country-logistic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:a14370273fba01e9cb27ee517ec9ba221510f8e9fba706dcd872c63ac2ea7d88",
+      "snapshotId": "sha256:4965576c053594e7b7feb32f08acd4bc5b1ae4a2e185db3c2862da16ef0f3e00",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -2986,6 +2986,98 @@
     },
     "phases": [
       "evaluation-intervals"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 900,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.25,
+        "relative": 0.02
+      },
+      "component": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "additive": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "forecast": {
+        "absolute": 0.3,
+        "relative": 0.02
+      },
+      "noiseScale": {
+        "absolute": 0.1,
+        "relative": 0.2
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-implicit-floor-large-v1:n=256:h=64:changing-capacity:weekly",
+      "sha256": "61b169aa9c925333f6dd11301febfdeb82e9ae7f2b95f3cb4c222e6dcfb080d9",
+      "trainingRows": 256,
+      "predictionRows": 64,
+      "futureRows": 64,
+      "horizonDays": 64
+    }
+  },
+  {
+    "id": "evaluation-logistic-large-months-metrics",
+    "dataset": "v1/logistic-implicit-floor-large.json",
+    "workload": {
+      "kind": "evaluation",
+      "comparison": {
+        "kind": "different-public-work",
+        "evidenceId": "rolling-origin-evaluation-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "minmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "explicit",
+          "timestamps": [
+            "2020-02-10T00:00:00.000Z"
+          ]
+        },
+        "changepointPriorScale": 0.2,
+        "seasonalities": [
+          {
+            "name": "weekly-custom",
+            "periodDays": 7,
+            "fourierOrder": 2,
+            "priorScale": 10
+          }
+        ],
+        "events": [],
+        "regressors": []
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      },
+      "plan": {
+        "horizonMs": 7862400000,
+        "cutoffs": [
+          "2020-05-01T00:00:00.000Z",
+          "2020-05-29T00:00:00.000Z",
+          "2020-06-12T00:00:00.000Z"
+        ]
+      },
+      "metricAggregation": "horizons"
+    },
+    "phases": [
+      "evaluation-metrics",
+      "evaluation-metrics-monthly",
+      "evaluation-metrics-custom"
     ],
     "warmupIterations": 1,
     "measuredIterations": 2,

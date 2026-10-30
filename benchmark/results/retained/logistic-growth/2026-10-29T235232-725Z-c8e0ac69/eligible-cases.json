@@ -26,6 +26,7 @@
     "evaluation-logistic-search",
     "evaluation-logistic-large-point",
     "evaluation-logistic-large-intervals",
+    "evaluation-logistic-large-months-metrics",
     "logistic-reconcile-basic-96-empty-absmax",
     "logistic-reconcile-basic-96-explicit-absmax",
     "logistic-reconcile-basic-96-auto-absmax",

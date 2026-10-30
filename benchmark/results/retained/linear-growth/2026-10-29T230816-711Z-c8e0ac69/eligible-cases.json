@@ -14,6 +14,8 @@
     "country-us-linear-multiplicative",
     "country-explicit-us-linear-multiplicative",
     "country-boundary-linear",
+    "country-global-priors-linear",
+    "country-global-priors-overrides-linear",
     "linear-defaults-small",
     "linear-defaults-medium",
     "linear-defaults-irregular",
@@ -41,6 +43,7 @@
     "evaluation-linear-point",
     "evaluation-linear-intervals",
     "evaluation-linear-search",
-    "evaluation-linear-failure-search"
+    "evaluation-linear-failure-search",
+    "evaluation-linear-custom-search"
   ]
 }
