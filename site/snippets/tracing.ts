@@ -26,8 +26,7 @@ const forecast = await Effect.runPromise(
   }).pipe(
     // Your own span. Effect Prophet's spans appear underneath it.
     Effect.withSpan("weekly-sales-forecast"),
-    Effect.provide(prophetFittingBackendLayer),
-    Effect.provide(tracing),
+    Effect.provide([prophetFittingBackendLayer, tracing]),
   ),
 );
 

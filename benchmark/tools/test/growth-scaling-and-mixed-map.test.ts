@@ -53,7 +53,7 @@ describe("growth, scaling, and mixed-component MAP benchmark workloads", () => {
       throw new Error("Missing growth and mixed-component MAP cases");
     }
 
-    const noPoints = await Effect.runPromise(
+    const noPoints = await Effect.runPromiseExit(
       parseBenchmarkCases([
         {
           ...logistic,
@@ -65,10 +65,10 @@ describe("growth, scaling, and mixed-component MAP benchmark workloads", () => {
             },
           },
         },
-      ]).pipe(Effect.exit),
+      ]),
     );
 
-    const flatOptimizer = await Effect.runPromise(
+    const flatOptimizer = await Effect.runPromiseExit(
       parseBenchmarkCases([
         {
           ...flat,
@@ -77,10 +77,10 @@ describe("growth, scaling, and mixed-component MAP benchmark workloads", () => {
             effectOptimizer: defaultLinearOptimizer,
           },
         },
-      ]).pipe(Effect.exit),
+      ]),
     );
 
-    const flatChangepoints = await Effect.runPromise(
+    const flatChangepoints = await Effect.runPromiseExit(
       parseBenchmarkCases([
         {
           ...flat,
@@ -92,7 +92,7 @@ describe("growth, scaling, and mixed-component MAP benchmark workloads", () => {
             },
           },
         },
-      ]).pipe(Effect.exit),
+      ]),
     );
 
     expect(noPoints._tag).toBe("Success");

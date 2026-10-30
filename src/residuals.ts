@@ -62,13 +62,11 @@ export const residuals = Effect.fn("Prophet.residuals")(function* (
     const residual = residualOf(observation.value, forecast.value);
 
     if (residual === undefined) {
-      return yield* Effect.fail(
-        new PredictionError({
-          reason: "non-finite-forecast",
-          timestamp: observation.timestamp,
-          message: "Residual is not finite",
-        }),
-      );
+      return yield* new PredictionError({
+        reason: "non-finite-forecast",
+        timestamp: observation.timestamp,
+        message: "Residual is not finite",
+      });
     }
 
     rows.push(

@@ -29,7 +29,7 @@ describe("built-in metric names", () => {
   });
 
   it("accepts a selection of unique names", () => {
-    expect(Schema.decodeUnknownSync(MetricNamesSchema)(["rmse", "coverage"])).toEqual([
+    expect(Schema.decodeSync(MetricNamesSchema)(["rmse", "coverage"])).toEqual([
       "rmse",
       "coverage",
     ]);
@@ -55,7 +55,7 @@ describe("built-in metric names", () => {
 });
 
 describe("custom metric names", () => {
-  const accepts = (name: string) => Schema.decodeUnknownExit(CustomMetricNameSchema)(name)._tag;
+  const accepts = (name: string) => Schema.decodeExit(CustomMetricNameSchema)(name)._tag;
 
   it("accepts Python identifiers of up to 64 ASCII characters", () => {
     for (const name of ["wape", "_private", "p90_error", "Q1", "x".repeat(64)]) {

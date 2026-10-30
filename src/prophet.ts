@@ -391,13 +391,11 @@ export const fit = Effect.fn("Prophet.fit")(function* (
   const conditionNames = conditionNamesFromLayout(resolved.layout);
 
   if (observations.length < 2) {
-    return yield* Effect.fail(
-      new FittingError({
-        reason: "insufficient-observations",
-        observationCount: observations.length,
-        message: "At least two observations are required to fit a model",
-      }),
-    );
+    return yield* new FittingError({
+      reason: "insufficient-observations",
+      observationCount: observations.length,
+      message: "At least two observations are required to fit a model",
+    });
   }
 
   yield* checkExplicitChangepointBounds(observations, options);
@@ -554,13 +552,11 @@ export const fit = Effect.fn("Prophet.fit")(function* (
     !fittedRegressorsMatch(regressorFeatures.regressors, returnedRegressors) ||
     !eventsMatch
   ) {
-    return yield* Effect.fail(
-      new FittingError({
-        reason: "backend-failure",
-        observationCount: observations.length,
-        message: "Fitting backend returned misaligned feature metadata",
-      }),
-    );
+    return yield* new FittingError({
+      reason: "backend-failure",
+      observationCount: observations.length,
+      message: "Fitting backend returned misaligned feature metadata",
+    });
   }
 
   if (countryHolidays === undefined) {
@@ -612,13 +608,11 @@ const forecastsFromSeasonalBatch = (
       const value = batch.values[rowOffset + 2];
 
       if (trend === undefined || additive === undefined || value === undefined) {
-        return yield* Effect.fail(
-          new PredictionError({
-            reason: "backend-failure",
-            timestamp,
-            message: `WASM ${backend} prediction backend omitted an expected forecast value`,
-          }),
-        );
+        return yield* new PredictionError({
+          reason: "backend-failure",
+          timestamp,
+          message: `WASM ${backend} prediction backend omitted an expected forecast value`,
+        });
       }
 
       const seasonalities: Array<SeasonalForecastComponent> = [];
@@ -627,13 +621,11 @@ const forecastsFromSeasonalBatch = (
         const componentValue = batch.values[rowOffset + 3 + componentIndex];
 
         if (componentValue === undefined) {
-          return yield* Effect.fail(
-            new PredictionError({
-              reason: "backend-failure",
-              timestamp,
-              message: `WASM ${backend} prediction backend omitted a seasonal component`,
-            }),
-          );
+          return yield* new PredictionError({
+            reason: "backend-failure",
+            timestamp,
+            message: `WASM ${backend} prediction backend omitted a seasonal component`,
+          });
         }
 
         seasonalities.push({
@@ -650,13 +642,11 @@ const forecastsFromSeasonalBatch = (
           batch.values[rowOffset + 3 + seasonalComponentCount + componentIndex];
 
         if (componentValue === undefined) {
-          return yield* Effect.fail(
-            new PredictionError({
-              reason: "backend-failure",
-              timestamp,
-              message: `WASM ${backend} prediction backend omitted an event component`,
-            }),
-          );
+          return yield* new PredictionError({
+            reason: "backend-failure",
+            timestamp,
+            message: `WASM ${backend} prediction backend omitted an event component`,
+          });
         }
 
         eventComponents.push({ name: component.name, mode: "additive", value: componentValue });
@@ -671,13 +661,11 @@ const forecastsFromSeasonalBatch = (
           ];
 
         if (componentValue === undefined) {
-          return yield* Effect.fail(
-            new PredictionError({
-              reason: "backend-failure",
-              timestamp,
-              message: `WASM ${backend} prediction backend omitted a regressor component`,
-            }),
-          );
+          return yield* new PredictionError({
+            reason: "backend-failure",
+            timestamp,
+            message: `WASM ${backend} prediction backend omitted a regressor component`,
+          });
         }
 
         regressors.push({
@@ -726,13 +714,11 @@ const forecastsFromMixedBatch = (
         multiplicative === undefined ||
         value === undefined
       ) {
-        return yield* Effect.fail(
-          new PredictionError({
-            reason: "backend-failure",
-            timestamp,
-            message: "WASM mixed MAP prediction backend omitted an expected forecast value",
-          }),
-        );
+        return yield* new PredictionError({
+          reason: "backend-failure",
+          timestamp,
+          message: "WASM mixed MAP prediction backend omitted an expected forecast value",
+        });
       }
 
       // Synchronous per component: yielding an Effect for every row and component dominated
@@ -773,7 +759,7 @@ const forecastsFromMixedBatch = (
         const projected = project(component.definition.name, component.definition.mode, index);
 
         if (projected instanceof PredictionError) {
-          return yield* Effect.fail(projected);
+          return yield* projected;
         }
 
         seasonalities.push(projected);
@@ -785,7 +771,7 @@ const forecastsFromMixedBatch = (
         const projected = project(component.name, component.mode, seasonalComponentCount + index);
 
         if (projected instanceof PredictionError) {
-          return yield* Effect.fail(projected);
+          return yield* projected;
         }
 
         events.push(projected);
@@ -801,7 +787,7 @@ const forecastsFromMixedBatch = (
         );
 
         if (projected instanceof PredictionError) {
-          return yield* Effect.fail(projected);
+          return yield* projected;
         }
 
         regressors.push(projected);
@@ -1064,13 +1050,11 @@ export const predict = Effect.fn("Prophet.predict")(function* (
 
   if (parsedModel.model === "logistic-piecewise-map") {
     if (logisticBounds === undefined) {
-      return yield* Effect.fail(
-        new PredictionError({
-          reason: "invalid-model",
-          timestamp: firstRow.timestamp,
-          message: "Logistic prediction bounds were not resolved",
-        }),
-      );
+      return yield* new PredictionError({
+        reason: "invalid-model",
+        timestamp: firstRow.timestamp,
+        message: "Logistic prediction bounds were not resolved",
+      });
     }
 
     return yield* predictLogisticMapForecasts(
@@ -1174,13 +1158,11 @@ export const predictUncertainty = Effect.fn("Prophet.predictUncertainty")(functi
     horizon > 20 ||
     (parsedModel.model !== "flat-map" && parsedModel.deltas.length * horizon > 256)
   ) {
-    return yield* Effect.fail(
-      new PredictionError({
-        reason: "simulation-limit",
-        timestamp: firstRow.timestamp,
-        message: "MAP simulation exceeds its bounded row, draw or horizon budget",
-      }),
-    );
+    return yield* new PredictionError({
+      reason: "simulation-limit",
+      timestamp: firstRow.timestamp,
+      message: "MAP simulation exceeds its bounded row, draw or horizon budget",
+    });
   }
 
   const { features } = yield* makePredictionFeatures(

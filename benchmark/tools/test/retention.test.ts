@@ -32,9 +32,7 @@ describe("explicit benchmark retention", () => {
       );
       expect(
         Exit.isFailure(
-          await Effect.runPromise(
-            retainRun(fixture.benchmarkRoot, "passing", "flat-growth").pipe(Effect.exit),
-          ),
+          await Effect.runPromiseExit(retainRun(fixture.benchmarkRoot, "passing", "flat-growth")),
         ),
       ).toBe(true);
 
@@ -60,8 +58,8 @@ describe("explicit benchmark retention", () => {
       await rm(resolve(source, "python-prophet.json"));
       expect(
         Exit.isFailure(
-          await Effect.runPromise(
-            retainRun(fixture.benchmarkRoot, "incomplete", "flat-growth").pipe(Effect.exit),
+          await Effect.runPromiseExit(
+            retainRun(fixture.benchmarkRoot, "incomplete", "flat-growth"),
           ),
         ),
       ).toBe(true);
@@ -72,16 +70,14 @@ describe("explicit benchmark retention", () => {
       );
       expect(
         Exit.isFailure(
-          await Effect.runPromise(
-            retainRun(fixture.benchmarkRoot, "changed-input", "flat-growth").pipe(Effect.exit),
+          await Effect.runPromiseExit(
+            retainRun(fixture.benchmarkRoot, "changed-input", "flat-growth"),
           ),
         ),
       ).toBe(true);
       expect(
         Exit.isFailure(
-          await Effect.runPromise(
-            retainRun(fixture.benchmarkRoot, "incomplete", "../escape").pipe(Effect.exit),
-          ),
+          await Effect.runPromiseExit(retainRun(fixture.benchmarkRoot, "incomplete", "../escape")),
         ),
       ).toBe(true);
     } finally {
@@ -98,8 +94,8 @@ describe("explicit benchmark retention", () => {
       const operation = retainRun(fixture.benchmarkRoot, "trace-run", "flat-growth");
 
       const execute = () =>
-        Effect.runPromise(
-          operation.pipe(Effect.withSpan("benchmark.test"), Effect.withTracer(tracer), Effect.exit),
+        Effect.runPromiseExit(
+          operation.pipe(Effect.withSpan("benchmark.test"), Effect.withTracer(tracer)),
         );
 
       expect(Exit.isSuccess(await execute())).toBe(true);
@@ -128,11 +124,8 @@ describe("explicit benchmark retention", () => {
       }
 
       const before = spans.length;
-      await Effect.runPromise(
-        retainRun(fixture.benchmarkRoot, "trace-run", "../bad").pipe(
-          Effect.withTracer(tracer),
-          Effect.exit,
-        ),
+      await Effect.runPromiseExit(
+        retainRun(fixture.benchmarkRoot, "trace-run", "../bad").pipe(Effect.withTracer(tracer)),
       );
       expect(
         spans.slice(before).some((span) => span.name === "benchmark.retention.filesystem"),

@@ -64,14 +64,12 @@ export const predictWithIntervals = Effect.fn("Prophet.predictWithIntervals")(fu
   const alignment = alignIntervalRows(intervals, options, forecasts);
 
   if (alignment.kind !== "aligned" || forecasts.length !== rows.length) {
-    return yield* Effect.fail(
-      new PredictionError({
-        reason: "backend-failure",
-        timestamp:
-          alignment.kind === "row-mismatch" ? alignment.timestamp : (rows[0]?.timestamp ?? 0),
-        message: "Point forecasts and intervals are misaligned",
-      }),
-    );
+    return yield* new PredictionError({
+      reason: "backend-failure",
+      timestamp:
+        alignment.kind === "row-mismatch" ? alignment.timestamp : (rows[0]?.timestamp ?? 0),
+      message: "Point forecasts and intervals are misaligned",
+    });
   }
 
   return Object.freeze({

@@ -262,7 +262,7 @@ describe("linear piecewise MAP tracing", () => {
       },
     });
 
-    await Effect.runPromise(
+    await Effect.runPromiseExit(
       fit(
         [
           { timestamp: "2024-01-01T00:00:00.000Z", value: 1 },
@@ -276,7 +276,7 @@ describe("linear piecewise MAP tracing", () => {
             },
           },
         },
-      ).pipe(Effect.provide(prophetFittingBackendLayer), Effect.withTracer(tracer), Effect.exit),
+      ).pipe(Effect.provide(prophetFittingBackendLayer), Effect.withTracer(tracer)),
     );
 
     expect(spans.some((span) => span.name === "effect-prophet.wasm.fit")).toBe(false);

@@ -66,7 +66,7 @@ describe("logistic Python reconciliation catalog", () => {
 
     if (item === undefined) throw new Error("Missing defaults-256 case");
 
-    const fixture = Schema.decodeUnknownSync(
+    const fixture = Schema.decodeSync(
       Schema.fromJsonString(
         Schema.Struct({
           cases: Schema.NonEmptyArray(
@@ -121,10 +121,8 @@ describe("logistic Python reconciliation catalog", () => {
       { ...item.workload.configuration, scaling: "minmax" },
       { ...item.workload.configuration, changepoints: { mode: "explicit", timestamps: [] } },
     ]) {
-      const result = await Effect.runPromise(
-        parseBenchmarkCases([{ ...item, workload: { ...item.workload, configuration } }]).pipe(
-          Effect.exit,
-        ),
+      const result = await Effect.runPromiseExit(
+        parseBenchmarkCases([{ ...item, workload: { ...item.workload, configuration } }]),
       );
 
       expect(Exit.isFailure(result)).toBe(true);

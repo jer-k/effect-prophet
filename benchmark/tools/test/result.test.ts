@@ -91,7 +91,7 @@ describe("benchmark result parsing", () => {
   });
 
   it("rejects successful measurements without samples", async () => {
-    const result = await Effect.runPromise(
+    const result = await Effect.runPromiseExit(
       parseImplementationResult({
         schemaVersion: 1,
         implementation: "effect-prophet",
@@ -111,7 +111,7 @@ describe("benchmark result parsing", () => {
         ],
         failures: [],
         correctness: [correctness],
-      }).pipe(Effect.exit),
+      }),
     );
 
     expect(result._tag).toBe("Failure");

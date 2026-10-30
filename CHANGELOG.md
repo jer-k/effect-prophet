@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows
 [Semantic Versioning](https://semver.org/). Before 1.0, minor versions may include breaking changes.
 
+## [Unreleased]
+
+### Changed
+
+- The published type declarations are now built with [tsrs](https://github.com/oxc-project/tsrs)
+  instead of TypeScript 7.0. They describe the same types; only the order of some union members
+  differs.
+- The [tracing guide](https://jer-k.github.io/effect-prophet/guide/tracing) example provides its
+  layers in one `Effect.provide` call.
+
 ## [0.5.0] - 2026-10-29
 
 Helpers for the steps around a forecast: list the dates to forecast, check how well a model fits,

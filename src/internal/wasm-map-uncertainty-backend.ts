@@ -64,7 +64,7 @@ export const simulateMapWithWasm = (
     const firstTimestamp = timestamps[0];
 
     if (firstTimestamp === undefined) {
-      return yield* Effect.fail(protocolFailure(0));
+      return yield* protocolFailure(0);
     }
 
     const seasonal = packSeasonalitiesForPrediction(model.seasonalities);
@@ -152,7 +152,7 @@ export const simulateMapWithWasm = (
     const status = readWasmStatus(packed);
 
     if (status === undefined) {
-      return yield* Effect.fail(protocolFailure(firstTimestamp));
+      return yield* protocolFailure(firstTimestamp);
     }
 
     if (status !== 0) {
@@ -173,7 +173,7 @@ export const simulateMapWithWasm = (
             sample >= options.samples)) ||
         (status !== 4 && packed.length !== 1)
       ) {
-        return yield* Effect.fail(protocolFailure(firstTimestamp));
+        return yield* protocolFailure(firstTimestamp);
       }
 
       let reason: "simulation-limit" | "non-finite-forecast" | "invalid-model" | "backend-failure";
@@ -192,14 +192,12 @@ export const simulateMapWithWasm = (
           reason = "backend-failure";
       }
 
-      return yield* Effect.fail(
-        wasmPredictionError(
-          status === 4 ? (timestamps[row ?? 0] ?? firstTimestamp) : firstTimestamp,
-          {
-            reason,
-            message: "WASM MAP simulation rejected the request",
-          },
-        ),
+      return yield* wasmPredictionError(
+        status === 4 ? (timestamps[row ?? 0] ?? firstTimestamp) : firstTimestamp,
+        {
+          reason,
+          message: "WASM MAP simulation rejected the request",
+        },
       );
     }
 
@@ -216,7 +214,7 @@ export const simulateMapWithWasm = (
       packed[2] !== timestamps.length ||
       packed[3] !== options.samples
     ) {
-      return yield* Effect.fail(protocolFailure(firstTimestamp));
+      return yield* protocolFailure(firstTimestamp);
     }
 
     if (outputCode === 1 && cells !== undefined) {
@@ -227,7 +225,7 @@ export const simulateMapWithWasm = (
         trend.some((entry) => !Number.isFinite(entry)) ||
         value.some((entry) => !Number.isFinite(entry))
       ) {
-        return yield* Effect.fail(protocolFailure(firstTimestamp));
+        return yield* protocolFailure(firstTimestamp);
       }
 
       return {
@@ -259,7 +257,7 @@ export const simulateMapWithWasm = (
         trendLower > trendUpper ||
         valueLower > valueUpper
       ) {
-        return yield* Effect.fail(protocolFailure(timestamp));
+        return yield* protocolFailure(timestamp);
       }
 
       rows.push({

@@ -211,8 +211,9 @@ export const makeParameterGrid = Effect.fn("Prophet.makeParameterGrid")(function
   }
 
   if (count === undefined || count > maximumSearchCandidates) {
-    return yield* Effect.fail(
-      invalidGrid(["axes"], `Parameter grid exceeds ${maximumSearchCandidates} candidates`),
+    return yield* invalidGrid(
+      ["axes"],
+      `Parameter grid exceeds ${maximumSearchCandidates} candidates`,
     );
   }
 
@@ -227,9 +228,7 @@ export const makeParameterGrid = Effect.fn("Prophet.makeParameterGrid")(function
         .some((earlier) => Equal.equals(earlier.value, choice.value));
 
       if (repeated) {
-        return yield* Effect.fail(
-          invalidGrid(["axes", axis, index], "Parameter grid choice is repeated"),
-        );
+        return yield* invalidGrid(["axes", axis, index], "Parameter grid choice is repeated");
       }
     }
   }

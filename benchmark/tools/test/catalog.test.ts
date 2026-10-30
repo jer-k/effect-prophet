@@ -44,9 +44,7 @@ describe("capability catalog", () => {
     );
 
     expect(selected.map((item) => item.id)).toEqual(["flat-constant-minmax"]);
-    expect(
-      (await Effect.runPromise(selectCases(catalog, ["missing"]).pipe(Effect.exit)))._tag,
-    ).toBe("Failure");
+    expect((await Effect.runPromiseExit(selectCases(catalog, ["missing"])))._tag).toBe("Failure");
   });
 
   it("owns focused features once and generates a deterministic coverage inventory", async () => {
@@ -90,9 +88,7 @@ describe("trend suites", () => {
     expect(selected.every((item) => ["flat", "logistic"].includes(suiteForCase(item)))).toBe(true);
     expect(selected).toHaveLength(catalog.filter((item) => suiteForCase(item) !== "linear").length);
     expect(await Effect.runPromise(casesInSuites(catalog, []))).toEqual([]);
-    expect(
-      (await Effect.runPromise(casesInSuites(catalog, ["cubic"]).pipe(Effect.exit)))._tag,
-    ).toBe("Failure");
+    expect((await Effect.runPromiseExit(casesInSuites(catalog, ["cubic"])))._tag).toBe("Failure");
   });
 
   it("only points a baseline at runs that cover every declared case of their suites", async () => {

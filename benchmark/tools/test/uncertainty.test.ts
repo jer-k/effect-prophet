@@ -135,7 +135,7 @@ describe("anomaly benchmark declarations", () => {
       { ...selected, rowSelection: { historical: 365, future: 1, stride: 1 } },
       { ...selected, rowSelection: { historical: 365, future: 0, stride: 2 } },
     ]) {
-      const exit = await Effect.runPromise(Effect.exit(parseBenchmarkCases([invalid])));
+      const exit = await Effect.runPromiseExit(parseBenchmarkCases([invalid]));
 
       expect(exit._tag).toBe("Failure");
     }

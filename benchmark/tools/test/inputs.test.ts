@@ -27,11 +27,10 @@ describe("immutable shared inputs", () => {
       );
       const { spans, tracer } = makeRecordingTracer();
 
-      const success = await Effect.runPromise(
+      const success = await Effect.runPromiseExit(
         loadInputDataset(directory, item).pipe(
           Effect.withSpan("benchmark.test"),
           Effect.withTracer(tracer),
-          Effect.exit,
         ),
       );
 
@@ -39,11 +38,10 @@ describe("immutable shared inputs", () => {
       const bytes = await readFile(resolve(directory, item.dataset), "utf8");
       await writeFile(resolve(directory, item.dataset), `${bytes} `);
 
-      const failure = await Effect.runPromise(
+      const failure = await Effect.runPromiseExit(
         loadInputDataset(directory, item).pipe(
           Effect.withSpan("benchmark.test"),
           Effect.withTracer(tracer),
-          Effect.exit,
         ),
       );
 
@@ -80,10 +78,9 @@ describe("immutable shared inputs", () => {
       }
 
       const before = spans.length;
-      await Effect.runPromise(
+      await Effect.runPromiseExit(
         loadInputDataset(directory, { ...item, dataset: "../outside.json" }).pipe(
           Effect.withTracer(tracer),
-          Effect.exit,
         ),
       );
       expect(spans.slice(before).some((span) => span.name === "benchmark.inputs.filesystem")).toBe(
@@ -104,7 +101,7 @@ describe("immutable shared inputs", () => {
       await Effect.runPromise(generateBenchmarkData(root));
       expect(await readFile(new URL("manifest.json", root))).toEqual(manifest);
       await writeFile(new URL("flat-level.json", root), "changed input\n");
-      const result = await Effect.runPromise(generateBenchmarkData(root).pipe(Effect.exit));
+      const result = await Effect.runPromiseExit(generateBenchmarkData(root));
       expect(Exit.isFailure(result)).toBe(true);
       expect(await readFile(new URL("flat-level.json", root), "utf8")).toBe("changed input\n");
     } finally {

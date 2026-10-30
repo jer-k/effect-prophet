@@ -167,6 +167,7 @@ export class FittingError extends Schema.TaggedError<FittingError>()("FittingErr
   declare readonly cause?: unknown;
 
   /** Construct a fitting failure with optional runtime-only diagnostic context. */
+  // @effect-diagnostics-next-line overriddenSchemaConstructor:off -- Optional runtime cause only; decoding is covered in test/errors.test.ts.
   constructor(
     fields: {
       readonly reason: FittingFailureReason;
@@ -194,6 +195,7 @@ export class PredictionError extends Schema.TaggedError<PredictionError>()("Pred
   declare readonly cause?: unknown;
 
   /** Construct a prediction failure with optional runtime-only diagnostic context. */
+  // @effect-diagnostics-next-line overriddenSchemaConstructor:off -- Optional runtime cause only; decoding is covered in test/errors.test.ts.
   constructor(
     fields: {
       readonly reason: PredictionFailureReason;
@@ -240,6 +242,7 @@ export class EvaluationError extends Schema.TaggedError<EvaluationError>()("Eval
     | CountryHolidayError;
 
   /** Construct fold context without flattening the underlying expected failure. */
+  // @effect-diagnostics-next-line overriddenSchemaConstructor:off -- Optional runtime cause only; decoding is covered in test/errors.test.ts.
   constructor(
     fields: {
       readonly fold: number;
@@ -292,6 +295,7 @@ export class HoldoutEvaluationError extends Schema.TaggedError<HoldoutEvaluation
     | BaselineForecastError;
 
   /** Construct holdout context without exposing runtime causes in JSON. */
+  // @effect-diagnostics-next-line overriddenSchemaConstructor:off -- Optional runtime cause only; decoding is covered in test/errors.test.ts.
   constructor(
     fields: {
       readonly step: "fit" | "predict" | "uncertainty" | "result" | "report" | "baseline";
@@ -436,6 +440,7 @@ export class EvaluationSearchError extends Schema.TaggedError<EvaluationSearchEr
     | CountryHolidayError;
 
   /** Construct search context without serializing a runtime cause. */
+  // @effect-diagnostics-next-line overriddenSchemaConstructor:off -- Optional runtime cause only; decoding is covered in test/errors.test.ts.
   constructor(
     fields: {
       readonly reason: "invalid-candidate" | "candidate-failed" | "no-success";

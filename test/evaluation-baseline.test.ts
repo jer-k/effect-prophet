@@ -461,11 +461,11 @@ describe("forecast baselines", () => {
 
     spans.length = 0;
 
-    const failure = await Effect.runPromise(
+    const failure = await Effect.runPromiseExit(
       crossValidateBaseline(observations, await plan(), {
         kind: "seasonal-naive",
         lagMs: 6 * day,
-      }).pipe(Effect.withSpan("baseline.parent"), Effect.withTracer(tracer), Effect.exit),
+      }).pipe(Effect.withSpan("baseline.parent"), Effect.withTracer(tracer)),
     );
 
     const failed = spans.find((span) => span.name === "Prophet.crossValidateBaseline");

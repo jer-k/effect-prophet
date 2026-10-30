@@ -54,9 +54,9 @@ export const loadInputDataset = Effect.fn("benchmark.inputs.load")(function* (
         identity.recipe !== dataset.recipe ||
         identity.trainingRows !== dataset.observations.length
       ) {
-        return yield* Effect.fail(
-          new BenchmarkArtifactError({ message: `Recorded input identity changed for ${item.id}` }),
-        );
+        return yield* new BenchmarkArtifactError({
+          message: `Recorded input identity changed for ${item.id}`,
+        });
       }
     } else {
       const manifest = yield* readJson(
@@ -74,11 +74,9 @@ export const loadInputDataset = Effect.fn("benchmark.inputs.load")(function* (
       );
 
       if (entry === undefined || entry.sha256 !== sha256 || entry.recipe !== dataset.recipe) {
-        return yield* Effect.fail(
-          new BenchmarkArtifactError({
-            message: `Versioned input changed for ${item.id}; create a new input version`,
-          }),
-        );
+        return yield* new BenchmarkArtifactError({
+          message: `Versioned input changed for ${item.id}; create a new input version`,
+        });
       }
     }
 

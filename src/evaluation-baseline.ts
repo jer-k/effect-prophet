@@ -108,7 +108,7 @@ const baselineValues = (
     const last = training[training.length - 1];
 
     if (last === undefined) {
-      return yield* Effect.fail(new BaselineForecastError({ reason: "baseline-unavailable" }));
+      return yield* new BaselineForecastError({ reason: "baseline-unavailable" });
     }
 
     let predicted = last.value;
@@ -124,7 +124,7 @@ const baselineValues = (
         const corrected = correction + term;
 
         if (!Number.isFinite(next) || !Number.isFinite(corrected)) {
-          return yield* Effect.fail(new BaselineForecastError({ reason: "non-finite" }));
+          return yield* new BaselineForecastError({ reason: "non-finite" });
         }
 
         sum = next;
@@ -135,7 +135,7 @@ const baselineValues = (
       predicted = total / training.length;
 
       if (!Number.isFinite(total) || !Number.isFinite(predicted)) {
-        return yield* Effect.fail(new BaselineForecastError({ reason: "non-finite" }));
+        return yield* new BaselineForecastError({ reason: "non-finite" });
       }
     }
 
@@ -159,9 +159,10 @@ const baselineValues = (
           lagTimestamp === undefined ? undefined : trainingByTimestamp.get(lagTimestamp);
 
         if (value === undefined) {
-          return yield* Effect.fail(
-            new BaselineForecastError({ reason: "baseline-unavailable", rowIndex: index }),
-          );
+          return yield* new BaselineForecastError({
+            reason: "baseline-unavailable",
+            rowIndex: index,
+          });
         }
 
         forecast = value;
@@ -272,29 +273,25 @@ export const comparePerformance = Effect.fn("Prophet.comparePerformance")(functi
   const first = options.metrics[0] === undefined ? undefined : metricName(options.metrics[0]);
 
   if (first === undefined) {
-    return yield* Effect.fail(
-      new InputValidationError({
-        input: "evaluation-metrics",
-        issues: [{ path: ["metrics"], message: "At least one metric is required" }],
-        message: "At least one metric is required",
-      }),
-    );
+    return yield* new InputValidationError({
+      input: "evaluation-metrics",
+      issues: [{ path: ["metrics"], message: "At least one metric is required" }],
+      message: "At least one metric is required",
+    });
   }
 
   const compared: Array<ComparisonReport<Horizon, Name>["baselines"][number]> = [];
 
   for (const [baselineIndex, baseline] of baselines.entries()) {
     if (!samePlan(model.plan, baseline.plan) || baseline.rows.length !== model.rows.length) {
-      return yield* Effect.fail(
-        new EvaluationMetricError({
-          metric: first,
-          aggregation: options.aggregation.kind,
-          bucket: baselineIndex,
-          reason: "misaligned",
-          stage: "input",
-          message: "Baseline plan or assessment count differs from model",
-        }),
-      );
+      return yield* new EvaluationMetricError({
+        metric: first,
+        aggregation: options.aggregation.kind,
+        bucket: baselineIndex,
+        reason: "misaligned",
+        stage: "input",
+        message: "Baseline plan or assessment count differs from model",
+      });
     }
 
     for (const [index, row] of model.rows.entries()) {
@@ -308,16 +305,14 @@ export const comparePerformance = Effect.fn("Prophet.comparePerformance")(functi
         row.horizonMs !== other.horizonMs ||
         !Object.is(row.actual, other.actual)
       ) {
-        return yield* Effect.fail(
-          new EvaluationMetricError({
-            metric: first,
-            aggregation: options.aggregation.kind,
-            bucket: index,
-            reason: "misaligned",
-            stage: "input",
-            message: "Baseline assessment row differs from model",
-          }),
-        );
+        return yield* new EvaluationMetricError({
+          metric: first,
+          aggregation: options.aggregation.kind,
+          bucket: index,
+          reason: "misaligned",
+          stage: "input",
+          message: "Baseline assessment row differs from model",
+        });
       }
     }
 

@@ -91,27 +91,23 @@ export const loadCountryHolidaySnapshot = (
     );
 
     if (header.schemaVersion !== countryHolidayCatalog.schemaVersion) {
-      return yield* Effect.fail(
-        new CountryHolidayDataError({
-          reason: "unsupported-snapshot-version",
-          issues: [
-            { path: ["schemaVersion"], message: "Unsupported country snapshot schema version" },
-          ],
-          message: "Unsupported country snapshot schema version",
-        }),
-      );
+      return yield* new CountryHolidayDataError({
+        reason: "unsupported-snapshot-version",
+        issues: [
+          { path: ["schemaVersion"], message: "Unsupported country snapshot schema version" },
+        ],
+        message: "Unsupported country snapshot schema version",
+      });
     }
 
     const digest = createHash("sha256").update(bytes).digest("hex");
 
     if (bytes.length !== identity.bytes || digest !== identity.sha256) {
-      return yield* Effect.fail(
-        new CountryHolidayDataError({
-          reason: "corrupt-snapshot",
-          issues: [],
-          message: "Packaged country snapshot integrity check failed",
-        }),
-      );
+      return yield* new CountryHolidayDataError({
+        reason: "corrupt-snapshot",
+        issues: [],
+        message: "Packaged country snapshot integrity check failed",
+      });
     }
 
     const snapshot = yield* parseCountryHolidaySnapshot(json).pipe(
@@ -126,15 +122,13 @@ export const loadCountryHolidaySnapshot = (
     );
 
     if (snapshot.country !== country) {
-      return yield* Effect.fail(
-        new CountryHolidayDataError({
-          reason: "corrupt-snapshot",
-          issues: [
-            { path: ["country"], message: "Packaged data must belong to the selected country" },
-          ],
-          message: "Packaged data must belong to the selected country",
-        }),
-      );
+      return yield* new CountryHolidayDataError({
+        reason: "corrupt-snapshot",
+        issues: [
+          { path: ["country"], message: "Packaged data must belong to the selected country" },
+        ],
+        message: "Packaged data must belong to the selected country",
+      });
     }
 
     yield* Effect.annotateCurrentSpan({

@@ -231,7 +231,7 @@ describe("country holiday inspection", () => {
 
     // Embedded snapshots arrive deeply frozen from a parsed fitted model.
     const old = freezeOwned(
-      Schema.decodeUnknownSync(RetainedCountryHolidaySnapshotSchema)({
+      Schema.decodeSync(RetainedCountryHolidaySnapshotSchema)({
         ...bundled.snapshot,
         snapshotId: `sha256:${"a".repeat(64)}`,
         // A synthetic earlier payload proves that embedded resolution does not

@@ -133,18 +133,16 @@ export const makeFutureTimestamps = Effect.fn("Prophet.makeFutureTimestamps")(fu
 
   // Periods only move forward, so a representable last timestamp bounds every earlier one.
   if (options.periods > 0 && !isValidTimestamp(timestampAt(options.periods))) {
-    return yield* Effect.fail(
-      new InputValidationError({
-        input: "future-timestamps",
-        issues: [
-          {
-            path: ["periods"],
-            message: "Future timestamps must stay inside the supported timestamp range",
-          },
-        ],
-        message: "Future timestamps must stay inside the supported timestamp range",
-      }),
-    );
+    return yield* new InputValidationError({
+      input: "future-timestamps",
+      issues: [
+        {
+          path: ["periods"],
+          message: "Future timestamps must stay inside the supported timestamp range",
+        },
+      ],
+      message: "Future timestamps must stay inside the supported timestamp range",
+    });
   }
 
   yield* Effect.annotateCurrentSpan({

@@ -296,8 +296,8 @@ describe("additional regressor public lifecycle", () => {
       fit(history, options).pipe(Effect.provide(prophetFittingBackendLayer)),
     );
 
-    await Effect.runPromise(
-      predict(model, ["2025-01-09T00:00:00.000Z"]).pipe(Effect.withTracer(tracer), Effect.exit),
+    await Effect.runPromiseExit(
+      predict(model, ["2025-01-09T00:00:00.000Z"]).pipe(Effect.withTracer(tracer)),
     );
 
     expect(spans.some((span) => span.name === "Prophet.predict")).toBe(true);

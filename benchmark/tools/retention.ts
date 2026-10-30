@@ -25,9 +25,9 @@ export const retainRun = Effect.fn("benchmark.retention.retain")(function* (
   const evidence = yield* loadRunEvidence(source);
 
   if (evidence.manifest.runId !== runId) {
-    return yield* Effect.fail(
-      new BenchmarkArtifactError({ message: "Selected directory does not match recorded run ID" }),
-    );
+    return yield* new BenchmarkArtifactError({
+      message: "Selected directory does not match recorded run ID",
+    });
   }
 
   // New runs reference shared versioned inputs. Their exact bytes must exist in HEAD before retention.
@@ -50,9 +50,9 @@ export const retainRun = Effect.fn("benchmark.retention.retain")(function* (
     }).pipe(Effect.withSpan("benchmark.retention.committed-input"));
 
     if (createHash("sha256").update(committed.stdout).digest("hex") !== loaded.sha256) {
-      return yield* Effect.fail(
-        new BenchmarkArtifactError({ message: `Committed input bytes differ for ${item.id}` }),
-      );
+      return yield* new BenchmarkArtifactError({
+        message: `Committed input bytes differ for ${item.id}`,
+      });
     }
   }
 

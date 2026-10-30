@@ -16,7 +16,24 @@
     "noImplicitOverride": true,
     "noFallthroughCasesInSwitch": true,
     "noEmit": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "plugins": [
+      {
+        "name": "@effect/language-service",
+        "diagnosticSeverity": {
+          // Branding Schema classes would make public types nominal and reject structurally equal values.
+          "schemaClassMissingBrand": "off",
+          // Keep these at zero now that the codebase follows them.
+          "unnecessaryFailYieldableError": "warning",
+          "runOfExitToRunExit": "warning",
+          "schemaNumber": "warning",
+          "preferTypedSchemaDecoder": "warning",
+          "effectSucceedWithVoid": "warning",
+          "unnecessaryPipeChain": "warning",
+          "multipleCatchTag": "warning"
+        }
+      }
+    ]
   },
   "include": [
     "src/**/*.ts",
