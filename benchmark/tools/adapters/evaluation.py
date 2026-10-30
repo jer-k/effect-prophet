@@ -47,8 +47,42 @@ def plan(case):
     return cutoffs, horizon
 
 
+def forecasts_regressors(case):
+    return any(regressor.get("predictor") for regressor in case["workload"]["configuration"]["regressors"])
+
+
+def cutoff_folds(case, history, fit_model, intervals):
+    """Rolling-origin folds fitted at each cutoff, in cross_validation's frame layout.
+
+    Prophet's cross_validation refits regressor models on the stored history, whose regressor values
+    it has already standardized, so its fold forecasts drift from a fit at the cutoff: by about 15%
+    on the flat regressor-model history. Effect fits each fold as fit at the cutoff would, so these
+    cases do that same work through Prophet's public fit and predict.
+    """
+    config = case["workload"]
+    cutoffs, horizon = plan(case)
+    if intervals:
+        np.random.seed(config["interval"]["seed"])
+    frames = []
+    for cutoff in cutoffs:
+        training = history.loc[history["ds"] <= cutoff]
+        assessment = history.loc[(history["ds"] > cutoff) & (history["ds"] <= cutoff + horizon)]
+        model = fit_model(training, case)
+        if intervals:
+            model.uncertainty_samples = config["interval"]["samples"]
+            model.interval_width = config["interval"]["intervalWidth"]
+        predicted = model.predict(assessment.drop(columns="y"))
+        frame = predicted[["ds", "yhat", *(["yhat_lower", "yhat_upper"] if intervals else [])]].copy()
+        frame["y"] = assessment["y"].to_numpy()
+        frame["cutoff"] = cutoff
+        frames.append(frame)
+    return pd.concat(frames, ignore_index=True)
+
+
 def cv(case, dataset, configure_model, fit_model, records_frame, intervals=False):
     history, _ = partition(dataset, case, records_frame)
+    if forecasts_regressors(case):
+        return cutoff_folds(case, history, fit_model, intervals)
     config = case["workload"]
     model = fit_model(history, case)  # Python diagnostics needs a fitted, mutable full-history model.
     if intervals:

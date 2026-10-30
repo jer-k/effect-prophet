@@ -61,6 +61,10 @@
       "sha256": "71c30dc3e6eabede0e4f6b1dd1ee7c91520359c38cb32787a5d8200545ba722f"
     },
     {
+      "path": "regressor-models.json",
+      "sha256": "5e5855ad2507fe8ca13067f1d2115f7d642e6c0b29f378619498760b59df0702"
+    },
+    {
       "path": "logistic-map.json",
       "sha256": "b8710f7b996c0f92497518b146b3c5f245bbd2f39b964a423d3dd09ec8e92884"
     },
@@ -118,7 +122,7 @@
     "platform": "linux/amd64",
     "uvVersion": "0.8.15"
   },
-  "generatorRevision": "8789d8a82f27faea4d4449022fed23f7f54390a87c139288d47b37dabbc7efbb",
+  "generatorRevision": "b8c05f629370ff9f6947a4d4db840ff9f1ee9c816ec4c12969e6b7391042dbae",
   "numericalEnvironment": [
     {
       "name": "cmdstanpy",

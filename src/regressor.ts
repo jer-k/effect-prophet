@@ -1,6 +1,7 @@
 import { Effect, Schema, type SchemaIssue } from "effect";
 
 import { ComponentModeSchema, type ComponentMode } from "./component-mode";
+import type { EncodedEventOccurrence } from "./event";
 import {
   ValidationIssueSchema,
   validationIssuesFromIssue,
@@ -9,9 +10,36 @@ import {
 import { FeatureNameSchema, type FeatureName } from "./feature-name";
 import { defaultEventPriorScale } from "./event";
 import { PositiveFinite } from "./internal/numeric-schemas";
+import type { EncodedBuiltInSeasonalities, EncodedChangepointSetting } from "./options";
+import type { TargetScalingMode } from "./target-scaling";
 
 /** Public control for fitting-time regressor standardization. */
 export type EncodedRegressorStandardization = "auto" | "always" | "never";
+
+/**
+ * Options for the model that forecasts one regressor, like the keyword arguments of Python's
+ * `regressor_predictor`, which go to the `Prophet` constructor.
+ *
+ * Only constructor settings are accepted. Custom seasonalities, regressors and country holidays
+ * are added after construction in Python, so a regressor model cannot have them, and logistic
+ * growth would need a capacity no future row supplies. The main model's `map.optimizer` and
+ * `map.warmStart`, when set, apply to the regressor model too, as Python passes its fit arguments
+ * on.
+ */
+export interface EncodedRegressorModelOptions {
+  readonly growth?: "linear" | "flat";
+  readonly seasonalityMode?: ComponentMode;
+  readonly holidaysMode?: ComponentMode;
+  readonly seasonalityPriorScale?: number;
+  readonly holidaysPriorScale?: number;
+  readonly builtInSeasonalities?: EncodedBuiltInSeasonalities;
+  readonly events?: ReadonlyArray<EncodedEventOccurrence>;
+  readonly scaling?: TargetScalingMode;
+  readonly map?: {
+    readonly changepoints?: EncodedChangepointSetting;
+    readonly changepointPriorScale?: number;
+  };
+}
 
 /** One additive regressor definition accepted by public fit options. */
 export interface EncodedRegressorDefinition {
@@ -19,6 +47,13 @@ export interface EncodedRegressorDefinition {
   readonly priorScale?: number;
   readonly standardization?: EncodedRegressorStandardization;
   readonly mode?: ComponentMode;
+
+  /**
+   * Forecast this regressor with its own model, like Python's `regressor_predictor`. `true` uses
+   * the default options. The model is fitted to the regressor's training values, and its point
+   * forecast replaces the regressor's value in every row after the training history.
+   */
+  readonly predictor?: true | EncodedRegressorModelOptions;
 }
 
 /** One parsed and fully defaulted additive regressor definition. */
@@ -180,6 +215,24 @@ export const FittedRegressorSchema = FittedRegressorFieldsSchema.check(
   finiteOriginalUnitProjection,
 );
 
+// Only the keys are checked here; the options decoder validates their values.
+const RegressorModelOptionsSyntaxSchema = Schema.Struct({
+  growth: Schema.optionalKey(Schema.Literals(["linear", "flat"])),
+  seasonalityMode: Schema.optionalKey(Schema.Unknown),
+  holidaysMode: Schema.optionalKey(Schema.Unknown),
+  seasonalityPriorScale: Schema.optionalKey(Schema.Unknown),
+  holidaysPriorScale: Schema.optionalKey(Schema.Unknown),
+  builtInSeasonalities: Schema.optionalKey(Schema.Unknown),
+  events: Schema.optionalKey(Schema.Unknown),
+  scaling: Schema.optionalKey(Schema.Unknown),
+  map: Schema.optionalKey(
+    Schema.Struct({
+      changepoints: Schema.optionalKey(Schema.Unknown),
+      changepointPriorScale: Schema.optionalKey(Schema.Unknown),
+    }),
+  ),
+});
+
 const EncodedRegressorDefinitionSchema = Schema.Struct({
   name: FeatureNameSchema,
   priorScale: Schema.optionalKey(PositiveFinite),
@@ -187,6 +240,9 @@ const EncodedRegressorDefinitionSchema = Schema.Struct({
     Schema.withDecodingDefaultKey(Effect.succeed("auto")),
   ),
   mode: Schema.optionalKey(ComponentModeSchema),
+  predictor: Schema.optionalKey(
+    Schema.Union([Schema.Literal(true), RegressorModelOptionsSyntaxSchema]),
+  ),
 });
 
 const uniqueRegressorNames = Schema.makeFilter<ReadonlyArray<{ readonly name: string }>>(
@@ -221,23 +277,30 @@ const invalidFromIssue = (issue: SchemaIssue.Issue): InvalidRegressors =>
     message: validationMessageFromIssue(issue),
   });
 
-/**
- * Parse ordered additive regressor definitions and apply defaults.
- *
- * A definition without `priorScale` takes `defaultPriorScale`. Python's `add_regressor` takes the
- * model's `holidays_prior_scale`, so fit options pass `holidaysPriorScale` here.
- */
-export const parseRegressorDefinitions = Effect.fn("Prophet.parseRegressorDefinitions")(function* (
+/** A regressor to forecast with its own model, with that model's options still unchecked. */
+export interface RegressorModelSyntax {
+  readonly index: number;
+  readonly name: FeatureName;
+  readonly options: typeof RegressorModelOptionsSyntaxSchema.Type;
+}
+
+const parseDefinitionsAndModels = Effect.fnUntraced(function* (
   input: Parameters<typeof decodeRegressorDefinitions>[0],
-  inheritedMode: ComponentMode = "additive",
-  defaultPriorScale: number = defaultEventPriorScale,
-): Effect.fn.Return<ReadonlyArray<RegressorDefinition>, InvalidRegressors> {
-  const definitions = yield* decodeRegressorDefinitions(input).pipe(
+  inheritedMode: ComponentMode,
+  defaultPriorScale: number,
+): Effect.fn.Return<
+  {
+    readonly definitions: ReadonlyArray<RegressorDefinition>;
+    readonly models: ReadonlyArray<RegressorModelSyntax>;
+  },
+  InvalidRegressors
+> {
+  const decoded = yield* decodeRegressorDefinitions(input).pipe(
     Effect.mapError((error) => invalidFromIssue(error.issue)),
   );
 
-  return Object.freeze(
-    definitions.map((definition) =>
+  const definitions = Object.freeze(
+    decoded.map(({ predictor: _predictor, ...definition }) =>
       Object.freeze({
         ...definition,
         priorScale: definition.priorScale ?? defaultPriorScale,
@@ -245,7 +308,35 @@ export const parseRegressorDefinitions = Effect.fn("Prophet.parseRegressorDefini
       }),
     ),
   );
+
+  const models = decoded.flatMap(({ name, predictor }, index) =>
+    predictor === undefined ? [] : [{ index, name, options: predictor === true ? {} : predictor }],
+  );
+
+  return { definitions, models: Object.freeze(models) };
 });
+
+/**
+ * Parse ordered additive regressor definitions and apply defaults.
+ *
+ * A definition without `priorScale` takes `defaultPriorScale`. Python's `add_regressor` takes the
+ * model's `holidays_prior_scale`, so fit options pass `holidaysPriorScale` here. A `predictor` is
+ * checked for unsupported keys but not returned; fit options validate and keep it.
+ */
+export const parseRegressorDefinitions = Effect.fn("Prophet.parseRegressorDefinitions")(function* (
+  input: Parameters<typeof decodeRegressorDefinitions>[0],
+  inheritedMode: ComponentMode = "additive",
+  defaultPriorScale: number = defaultEventPriorScale,
+): Effect.fn.Return<ReadonlyArray<RegressorDefinition>, InvalidRegressors> {
+  const { definitions } = yield* parseDefinitionsAndModels(input, inheritedMode, defaultPriorScale);
+
+  return definitions;
+});
+
+/** Parse definitions as `parseRegressorDefinitions` does, with the regressor models they request. */
+export const parseRegressorDefinitionsAndModels = Effect.fn("Prophet.parseRegressorDefinitions")(
+  parseDefinitionsAndModels,
+);
 
 /** Project a fitted transformed-feature coefficient into original regressor units. */
 export const projectRegressorCoefficient = (regressor: FittedRegressor): RegressorCoefficient =>

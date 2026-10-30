@@ -137,6 +137,9 @@ const BenchmarkRegressorSchema = Schema.Struct({
   priorScale: Schema.optionalKey(PositiveFinite),
   standardization: Schema.Literals(["auto", "always", "never"]),
   mode: Schema.optionalKey(Schema.Literals(["additive", "multiplicative"])),
+  // Forecast with its own default model: Effect's `predictor: true`, Python's
+  // `regressor_predictor=True`.
+  predictor: Schema.optionalKey(Schema.Literal(true)),
 });
 
 const BenchmarkChangepointsSchema = Schema.Union([

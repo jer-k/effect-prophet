@@ -1222,6 +1222,107 @@ const CountryHolidayReferenceFileSchema = Schema.Struct({
   ),
 });
 
+const RegressorModelBuiltInSchema = Schema.Struct({
+  yearly: Schema.Literal("off"),
+  daily: Schema.Literal("off"),
+  weekly: Schema.optionalKey(
+    Schema.Struct({ mode: Schema.Literal("on"), fourierOrder: Schema.Int }),
+  ),
+});
+
+// Effect options equivalent to the Python constructor and add_regressor calls.
+const RegressorModelOptionsSchema = Schema.Struct({
+  seasonalityMode: Schema.optionalKey(Schema.Literals(["additive", "multiplicative"])),
+  builtInSeasonalities: RegressorModelBuiltInSchema,
+  regressors: Schema.Array(
+    Schema.Struct({
+      name: Schema.String,
+      mode: Schema.optionalKey(Schema.Literals(["additive", "multiplicative"])),
+      predictor: Schema.optionalKey(
+        Schema.Union([
+          Schema.Literal(true),
+          Schema.Struct({
+            growth: Schema.optionalKey(Schema.Literal("flat")),
+            builtInSeasonalities: RegressorModelBuiltInSchema,
+            map: Schema.Struct({
+              changepoints: Schema.Struct({ mode: Schema.Literal("auto"), count: Schema.Int }),
+              changepointPriorScale: PositiveFinite,
+            }),
+          }),
+        ]),
+      ),
+    }),
+  ),
+  map: Schema.Struct({
+    optimizer: Schema.Struct({ algorithm: Schema.Literal("newton"), maxIterations: Schema.Int }),
+    warmStart: Schema.optionalKey(
+      Schema.Struct({
+        k: Schema.Finite,
+        m: Schema.Finite,
+        sigmaObs: Schema.Finite,
+        delta: Schema.Array(Schema.Finite),
+        beta: Schema.Array(Schema.Finite),
+      }),
+    ),
+  }),
+});
+
+const RegressorModelObservationsSchema = Schema.NonEmptyArray(
+  Schema.Struct({
+    timestamp: CanonicalTimestamp,
+    value: Schema.Finite,
+    regressors: Schema.Record(Schema.String, Schema.Finite),
+  }),
+);
+
+const RegressorModelRowsSchema = Schema.Array(
+  Schema.Struct({
+    timestamp: CanonicalTimestamp,
+    regressors: Schema.Record(Schema.String, Schema.Finite),
+  }),
+);
+
+const RegressorModelReferenceFileSchema = Schema.Struct({
+  provider: Schema.Struct({ prophet: Schema.Literal("1.4.0") }),
+  fittedCases: Schema.NonEmptyArray(
+    Schema.Struct({
+      id: Schema.NonEmptyString,
+      options: RegressorModelOptionsSchema,
+      observations: RegressorModelObservationsSchema,
+      predictionRows: RegressorModelRowsSchema,
+      expected: Schema.Struct({
+        regressor: Schema.String,
+        // The regressor model's own forecast at the rows after the training history.
+        regressorForecast: Schema.Struct({
+          timestamps: Schema.Array(CanonicalTimestamp),
+          value: Schema.Array(Schema.Finite),
+        }),
+        trend: Schema.Array(Schema.Finite),
+        value: Schema.Array(Schema.Finite),
+        additive: Schema.Array(Schema.Finite),
+        multiplicative: Schema.Array(Schema.Finite),
+      }),
+      tolerance: NumericToleranceSchema,
+    }),
+  ),
+  intervalCases: Schema.NonEmptyArray(
+    Schema.Struct({
+      id: Schema.NonEmptyString,
+      options: RegressorModelOptionsSchema,
+      observations: RegressorModelObservationsSchema,
+      predictionRows: RegressorModelRowsSchema,
+      sampleCount: Schema.Int,
+      intervalWidth: PositiveFinite,
+      // Python's widths with the regressor model's draws, and with its point forecast alone.
+      expected: Schema.Struct({
+        widenedWidths: Schema.Array(Schema.Finite),
+        pointWidths: Schema.Array(Schema.Finite),
+      }),
+      tolerance: Schema.Struct({ meanWidthRelative: PositiveFinite }),
+    }),
+  ),
+});
+
 const GlobalPriorScaleBuiltInSchema = Schema.Union([
   Schema.Literals(["off", "auto"]),
   Schema.Struct({ mode: Schema.Literal("on"), fourierOrder: Schema.Int }),
@@ -1541,6 +1642,7 @@ const FixtureManifestSchema = Schema.Struct({
       "mixed-map.json",
       "country-holidays.json",
       "global-prior-scales.json",
+      "regressor-models.json",
       "logistic-map.json",
       "map-uncertainty.json",
       "stan-linear-optimizer.json",
@@ -2286,6 +2388,28 @@ export const loadProphetFixtureBundle = Effect.fn("ProphetFixture.loadBundle")(f
     ),
   );
 
+  const regressorModelsPath = nodePath.join(root, "regressor-models.json");
+  const regressorModelsContents = yield* readFixtureText(regressorModelsPath);
+
+  const regressorModelsInput: unknown = yield* Effect.try({
+    try: () => JSON.parse(regressorModelsContents),
+    catch: (cause) => invalidJson(regressorModelsPath, cause),
+  });
+
+  const regressorModels = yield* Schema.decodeUnknownEffect(RegressorModelReferenceFileSchema)(
+    regressorModelsInput,
+  ).pipe(
+    Effect.mapError(
+      (cause) =>
+        new FixtureLoadError({
+          operation: "schema",
+          fixturePath: regressorModelsPath,
+          message: formatSchemaIssue(cause.issue),
+          cause,
+        }),
+    ),
+  );
+
   const mapUncertaintyPath = nodePath.join(root, "map-uncertainty.json");
   const mapUncertaintyContents = yield* readFixtureText(mapUncertaintyPath);
 
@@ -2372,6 +2496,7 @@ export const loadProphetFixtureBundle = Effect.fn("ProphetFixture.loadBundle")(f
     countryHolidays,
     globalPriorScales,
     piecewiseLinear,
+    regressorModels,
     regressorStandardization,
     seasonalityResolution,
     targetScaling,

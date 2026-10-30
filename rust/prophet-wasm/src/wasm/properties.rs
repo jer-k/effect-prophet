@@ -687,6 +687,10 @@ fn call_every_entry(case: &WireCase) -> Vec<(&'static str, Vec<f64>)> {
         &case.offsets,
         &case.counts,
         &case.modes,
+        // Arbitrary arrays also reach the per-sample offset parser.
+        &case.counts,
+        &case.additional_values,
+        &case.additional_values,
         s(S::Seed),
         s(S::SampleCount),
         s(S::IntervalWidth),
@@ -720,6 +724,10 @@ fn call_every_entry(case: &WireCase) -> Vec<(&'static str, Vec<f64>)> {
         &case.offsets,
         &case.counts,
         &case.modes,
+        // Arbitrary arrays also reach the per-sample offset parser.
+        &case.counts,
+        &case.additional_values,
+        &case.additional_values,
         s(S::Seed),
         s(S::SampleCount),
         s(S::IntervalWidth),

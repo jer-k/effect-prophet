@@ -26,6 +26,7 @@ import {
   type FittedLogisticMapProphet,
   type FittedPiecewiseMapProphet,
   type FittedProphet,
+  type RegressorModel,
 } from "./fitted-model";
 import {
   parseLogisticPredictionBounds,
@@ -50,7 +51,10 @@ import {
 import { resolveSeasonalities } from "./internal/seasonality-resolution";
 import { createSeasonalityMasks } from "./internal/seasonality-masks";
 import { predictFlatMapWithWasm } from "./internal/wasm-flat-map-backend";
-import { simulateMapWithWasm } from "./internal/wasm-map-uncertainty-backend";
+import {
+  simulateMapWithWasm,
+  type SimulationOffsets,
+} from "./internal/wasm-map-uncertainty-backend";
 import { predictLogisticMapWithWasm } from "./internal/wasm-logistic-map-backend";
 import {
   predictMixedFlatMapWithWasm,
@@ -62,16 +66,17 @@ import {
   predictPiecewiseMapWithWasm,
 } from "./internal/wasm-piecewise-map-backend";
 import { defaultLinearOptimizer } from "./linear-optimizer";
-import { decodeObservations, type Observations } from "./observation";
+import { decodeObservations, type Observation, type Observations } from "./observation";
 import {
   checkExplicitChangepointBounds,
   checkOptionFeatureNames,
   decodeOptions,
   optionsValidationErrorFromSeasonality,
+  prefixOptionsIssues,
   type EncodedProphetOptions,
   type ProphetOptions,
 } from "./options";
-import { decodePredictionRows } from "./prediction-row";
+import { decodePredictionRows, type PredictionRow, type PredictionRows } from "./prediction-row";
 import {
   projectRegressorCoefficient,
   type FittedRegressor,
@@ -82,10 +87,12 @@ import {
 import type { SeasonalityLayout } from "./seasonality";
 import { defaultTargetScalingMode } from "./target-scaling";
 import {
+  deriveRegressorModelSeed,
   exceedsSimulationBudget,
   parseUncertaintyOptions,
   simulationIdentity,
   type EncodedUncertaintyOptions,
+  type UncertaintyOptions,
   type UncertaintyResult,
 } from "./uncertainty";
 
@@ -382,7 +389,113 @@ export const fit = Effect.fn("Prophet.fit")(function* (
   FittingBackend
 > {
   const observations = yield* decodeObservations(observationsInput);
-  let options = yield* decodeOptions(optionsInput);
+  const options = yield* decodeOptions(optionsInput);
+
+  return yield* fitObservations(observations, options);
+});
+
+type Mutable<Fields> = { -readonly [Key in keyof Fields]: Fields[Key] };
+
+/** Name the regressor whose model failed, and move option issues under its `predictor`. */
+const regressorModelFitError = (
+  error: InputValidationError | FittingError | CountryHolidayError,
+  name: string,
+  column: number,
+): InputValidationError | FittingError | CountryHolidayError => {
+  if (Predicate.isTagged("InputValidationError")(error)) {
+    return error.input === "options"
+      ? prefixOptionsIssues(error, ["regressors", column, "predictor"])
+      : error;
+  }
+
+  if (!Predicate.isTagged("FittingError")(error)) {
+    return error;
+  }
+
+  const fields: Mutable<ConstructorParameters<typeof FittingError>[0]> = {
+    reason: error.reason,
+    observationCount: error.observationCount,
+    regressor: name,
+    message: `The model for regressor '${name}' failed to fit: ${error.message}`,
+  };
+
+  if (error.parameterCount !== undefined) {
+    fields.parameterCount = error.parameterCount;
+  }
+
+  if (error.memoryLimitBytes !== undefined) {
+    fields.memoryLimitBytes = error.memoryLimitBytes;
+  }
+
+  if (error.backendPhase !== undefined) {
+    fields.backendPhase = error.backendPhase;
+  }
+
+  return error.cause === undefined
+    ? new FittingError(fields)
+    : new FittingError(fields, { cause: error.cause });
+};
+
+/**
+ * Fit each requested regressor model to its regressor's training values, as Python's
+ * `regressor_predictor` does: the history's timestamps, with the regressor as the target.
+ */
+const fitRegressorModels = Effect.fnUntraced(function* (
+  observations: Observations,
+  options: ProphetOptions,
+  alignedValues: ReadonlyArray<ReadonlyArray<number>>,
+): Effect.fn.Return<
+  ReadonlyArray<RegressorModel>,
+  InputValidationError | FittingError | CountryHolidayError,
+  FittingBackend
+> {
+  const timestamps = observations.map((observation) => observation.timestamp);
+  const regressorModels: Array<RegressorModel> = [];
+
+  for (const request of options.regressorModels) {
+    const column = options.regressors.findIndex((definition) => definition.name === request.name);
+    const values = alignedValues.map((row) => row[column] ?? Number.NaN);
+
+    const training = (observation: Observation, index: number): Observation => ({
+      timestamp: observation.timestamp,
+      value: values[index] ?? Number.NaN,
+    });
+
+    const [first, ...rest] = observations;
+
+    const model = yield* fitObservations(
+      [training(first, 0), ...rest.map((observation, index) => training(observation, index + 1))],
+      request.options,
+    ).pipe(
+      Effect.mapError((error) => regressorModelFitError(error, request.name, column)),
+      Effect.withSpan("Prophet.fitRegressorModel"),
+    );
+
+    // Regressor model options cannot select logistic growth.
+    if (model.model === "logistic-piecewise-map") {
+      return yield* new FittingError({
+        reason: "backend-failure",
+        observationCount: observations.length,
+        regressor: request.name,
+        message: `The model for regressor '${request.name}' must not use logistic growth`,
+      });
+    }
+
+    regressorModels.push({ name: request.name, timestamps, values, model });
+  }
+
+  return regressorModels;
+});
+
+const fitObservations = Effect.fnUntraced(function* (
+  observations: Observations,
+  decodedOptions: ProphetOptions,
+): Effect.fn.Return<
+  FittedProphet,
+  InputValidationError | FittingError | CountryHolidayError,
+  FittingBackend
+> {
+  let options = decodedOptions;
 
   const resolved = yield* resolveSeasonalities(observations, options).pipe(
     Effect.mapError(optionsValidationErrorFromSeasonality),
@@ -513,6 +626,12 @@ export const fit = Effect.fn("Prophet.fit")(function* (
     });
   }
 
+  if (options.regressorModels.length > 0) {
+    yield* Effect.annotateCurrentSpan({
+      "effect_prophet.regressor_model.count": options.regressorModels.length,
+    });
+  }
+
   if (options.events.layout.components.length > 0) {
     yield* Effect.annotateCurrentSpan({
       "effect_prophet.event.count": options.events.layout.components.length,
@@ -524,6 +643,9 @@ export const fit = Effect.fn("Prophet.fit")(function* (
       "effect_prophet.seasonality.condition.count": conditionNames.length,
     });
   }
+
+  // Python fits regressor models after checking the history, before the main model.
+  const regressorModels = yield* fitRegressorModels(observations, options, alignedRegressorValues);
 
   const input = packTrainingInput(observations);
   const backend = yield* FittingBackend;
@@ -549,6 +671,7 @@ export const fit = Effect.fn("Prophet.fit")(function* (
 
   if (
     fittedModel.countryHolidays !== undefined ||
+    fittedModel.regressorModels !== undefined ||
     !fittedRegressorsMatch(regressorFeatures.regressors, returnedRegressors) ||
     !eventsMatch
   ) {
@@ -559,16 +682,22 @@ export const fit = Effect.fn("Prophet.fit")(function* (
     });
   }
 
-  if (countryHolidays === undefined) {
+  if (countryHolidays === undefined && regressorModels.length === 0) {
     return fittedModel;
   }
 
-  // The orchestrator, never the numerical backend, owns selected-country provenance.
-  return yield* parseFittedModel({
-    ...fittedModel,
-    events: options.events,
-    ...countryHolidayModelFields(countryHolidays),
-  }).pipe(Effect.mapError(() => invalidParameters));
+  // The orchestrator, never the numerical backend, owns selected-country provenance and the
+  // regressor models.
+  const provenance =
+    countryHolidays === undefined
+      ? {}
+      : { events: options.events, ...countryHolidayModelFields(countryHolidays) };
+
+  const ownedRegressorModels = regressorModels.length === 0 ? {} : { regressorModels };
+
+  return yield* parseFittedModel({ ...fittedModel, ...provenance, ...ownedRegressorModels }).pipe(
+    Effect.mapError(() => invalidParameters),
+  );
 });
 
 type FittedSeasonalProphet =
@@ -1013,6 +1142,157 @@ export const predict = Effect.fn("Prophet.predict")(function* (
     ),
   );
 
+  const filledRows = yield* fillRegressorModelValues(parsedModel, rows);
+
+  return yield* predictRows(parsedModel, filledRows);
+});
+
+/** Name the regressor whose model failed to forecast. */
+const regressorModelPredictionError = (
+  error: InputValidationError | PredictionError | CountryHolidayError,
+  name: string,
+): InputValidationError | PredictionError | CountryHolidayError => {
+  if (!Predicate.isTagged("PredictionError")(error)) {
+    return error;
+  }
+
+  const fields: Mutable<ConstructorParameters<typeof PredictionError>[0]> = {
+    reason: error.reason,
+    timestamp: error.timestamp,
+    regressor: name,
+    message: `The model for regressor '${name}' failed to forecast: ${error.message}`,
+  };
+
+  if (error.backendPhase !== undefined) {
+    fields.backendPhase = error.backendPhase;
+  }
+
+  return error.cause === undefined
+    ? new PredictionError(fields)
+    : new PredictionError(fields, { cause: error.cause });
+};
+
+const unfilledRegressor = (rowIndex: number, name: string, message: string) =>
+  new InputValidationError({
+    input: "prediction-rows",
+    issues: [{ path: [rowIndex, "regressors", name], message }],
+    message,
+  });
+
+/**
+ * Fill each forecast regressor's values in prediction rows, as Python's `predict` does.
+ *
+ * A row after the training history takes the regressor model's point forecast, even when it
+ * supplies a value. Any other row keeps a supplied value, and a missing one is the training value
+ * at the same timestamp, which must appear exactly once in the history.
+ */
+const fillRegressorModelValues = Effect.fnUntraced(function* (
+  model: FittedProphet,
+  rows: PredictionRows,
+): Effect.fn.Return<PredictionRows, InputValidationError | PredictionError | CountryHolidayError> {
+  const regressorModels = model.regressorModels ?? [];
+
+  if (regressorModels.length === 0) {
+    return rows;
+  }
+
+  const values = rows.map((row) => new Map(Object.entries(row.regressors ?? {})));
+
+  for (const regressorModel of regressorModels) {
+    const { name, timestamps } = regressorModel;
+
+    // Training timestamps are nondecreasing, so the last is the end of the history.
+    const historyEnd = timestamps.at(-1) ?? Number.NEGATIVE_INFINITY;
+    const future = rows.flatMap((row, index) => (row.timestamp > historyEnd ? [index] : []));
+
+    if (future.length > 0) {
+      const forecasts = yield* predictRows(
+        regressorModel.model,
+        future.map((index) => ({ timestamp: rows[index]?.timestamp ?? historyEnd })),
+      ).pipe(
+        Effect.mapError((error) => regressorModelPredictionError(error, name)),
+        Effect.withSpan("Prophet.predictRegressorModel"),
+      );
+
+      for (const [position, index] of future.entries()) {
+        const forecast = forecasts[position];
+
+        if (forecast !== undefined) {
+          values[index]?.set(name, forecast.value);
+        }
+      }
+    }
+
+    let training: Map<number, number> | "repeated" | undefined;
+
+    for (const [index, row] of rows.entries()) {
+      const rowValues = values[index];
+
+      if (row.timestamp > historyEnd || rowValues === undefined || rowValues.has(name)) {
+        continue;
+      }
+
+      training ??= trainingValuesByTimestamp(regressorModel);
+
+      if (training === "repeated") {
+        return yield* unfilledRegressor(
+          index,
+          name,
+          `Regressor '${name}' is missing, and the history repeats timestamps, so its training value cannot be looked up`,
+        );
+      }
+
+      const value = training.get(row.timestamp);
+
+      if (value === undefined) {
+        return yield* unfilledRegressor(
+          index,
+          name,
+          `Regressor '${name}' is missing, and its timestamp is not in the training history`,
+        );
+      }
+
+      rowValues.set(name, value);
+    }
+  }
+
+  return Object.freeze(
+    rows.map((row, index): PredictionRow =>
+      Object.freeze({ ...row, regressors: Object.freeze(Object.fromEntries(values[index] ?? [])) }),
+    ),
+  );
+});
+
+/** Each training timestamp's regressor value, or `"repeated"` when a timestamp repeats. */
+const trainingValuesByTimestamp = (
+  regressorModel: RegressorModel,
+): Map<number, number> | "repeated" => {
+  const training = new Map<number, number>();
+
+  for (const [index, timestamp] of regressorModel.timestamps.entries()) {
+    const value = regressorModel.values[index];
+
+    if (training.has(timestamp) || value === undefined) {
+      return "repeated";
+    }
+
+    training.set(timestamp, value);
+  }
+
+  return training;
+};
+
+/** Predict rows whose forecast regressor values are already filled. */
+const predictRows = Effect.fnUntraced(function* (
+  parsedModel: FittedProphet,
+  rows: PredictionRows,
+): Effect.fn.Return<Forecasts, InputValidationError | PredictionError | CountryHolidayError> {
+  const firstRow = rows[0];
+
+  if (firstRow === undefined) {
+    return [];
+  }
+
   const conditionNames = conditionNamesFromLayout(parsedModel.seasonalities);
 
   let logisticBounds: LogisticPredictionBounds | undefined;
@@ -1076,7 +1356,30 @@ export const predict = Effect.fn("Prophet.predict")(function* (
   );
 });
 
-/** Simulate seeded MAP predictive samples or intervals for complete MAP rows. */
+const emptyUncertaintyResult = (options: UncertaintyOptions): UncertaintyResult =>
+  options.output === "samples"
+    ? {
+        kind: "samples",
+        simulation: simulationIdentity,
+        sampleCount: options.samples,
+        timestamps: [],
+        trend: new Float64Array(),
+        value: new Float64Array(),
+      }
+    : {
+        kind: "intervals",
+        simulation: simulationIdentity,
+        sampleCount: options.samples,
+        intervalWidth: options.intervalWidth,
+        rows: [],
+      };
+
+/**
+ * Simulate seeded MAP predictive samples or intervals for complete MAP rows.
+ *
+ * A regressor forecast by its own model varies with that model's draws, as in Python, so its
+ * uncertainty widens the main model's after the history.
+ */
 export const predictUncertainty = Effect.fn("Prophet.predictUncertainty")(function* (
   model: FittedProphet,
   rowsInput: Parameters<typeof decodePredictionRows>[0],
@@ -1090,22 +1393,7 @@ export const predictUncertainty = Effect.fn("Prophet.predictUncertainty")(functi
   const firstRow = rows[0];
 
   if (firstRow === undefined) {
-    return options.output === "samples"
-      ? {
-          kind: "samples",
-          simulation: simulationIdentity,
-          sampleCount: options.samples,
-          timestamps: [],
-          trend: new Float64Array(),
-          value: new Float64Array(),
-        }
-      : {
-          kind: "intervals",
-          simulation: simulationIdentity,
-          sampleCount: options.samples,
-          intervalWidth: options.intervalWidth,
-          rows: [],
-        };
+    return emptyUncertaintyResult(options);
   }
 
   const parsedModel = yield* parseFittedModel(model).pipe(
@@ -1118,6 +1406,101 @@ export const predictUncertainty = Effect.fn("Prophet.predictUncertainty")(functi
         }),
     ),
   );
+
+  const filledRows = yield* fillRegressorModelValues(parsedModel, rows);
+
+  return yield* simulateRows(parsedModel, filledRows, options);
+});
+
+/**
+ * Each forecast regressor's draws as per-sample changes to the rows after the history.
+ *
+ * Python's predictive samples swap each regressor model's draws in for its point forecast, one
+ * draw per sample. A regressor's effect is linear in its value, so each draw changes its row by
+ * the coefficient times its distance from the point forecast. Earlier rows keep their values.
+ */
+const regressorModelOffsets = Effect.fnUntraced(function* (
+  model: FittedProphet,
+  rows: PredictionRows,
+  future: ReadonlyArray<number>,
+  options: UncertaintyOptions,
+): Effect.fn.Return<
+  SimulationOffsets | undefined,
+  InputValidationError | PredictionError | CountryHolidayError
+> {
+  if (future.length === 0) {
+    return undefined;
+  }
+
+  const { samples } = options;
+  const additive = new Float64Array(future.length * samples);
+  const multiplicative = new Float64Array(future.length * samples);
+  const futureRows = future.map((index) => ({ timestamp: rows[index]?.timestamp ?? 0 }));
+
+  for (const [index, regressorModel] of (model.regressorModels ?? []).entries()) {
+    const { name } = regressorModel;
+    const regressor = model.regressors.find((fitted) => fitted.definition.name === name);
+
+    const draws = yield* simulateRows(regressorModel.model, futureRows, {
+      ...options,
+      seed: deriveRegressorModelSeed(options.seed, index),
+      output: "samples",
+    }).pipe(
+      Effect.mapError((error) => regressorModelPredictionError(error, name)),
+      Effect.withSpan("Prophet.simulateRegressorModel"),
+    );
+
+    if (regressor === undefined || draws.kind !== "samples") {
+      return yield* new PredictionError({
+        reason: "invalid-model",
+        timestamp: futureRows[0]?.timestamp ?? 0,
+        regressor: name,
+        message: `The model for regressor '${name}' returned no draws`,
+      });
+    }
+
+    const { coefficient } = projectRegressorCoefficient(regressor);
+    const target = regressor.definition.mode === "additive" ? additive : multiplicative;
+
+    for (const [position, rowIndex] of future.entries()) {
+      const point = rows[rowIndex]?.regressors?.[name] ?? Number.NaN;
+
+      for (let sample = 0; sample < samples; sample += 1) {
+        const cell = position * samples + sample;
+
+        target[cell] =
+          (target[cell] ?? 0) + coefficient * ((draws.value[cell] ?? Number.NaN) - point);
+      }
+    }
+  }
+
+  return { rows: Float64Array.from(future), additive, multiplicative };
+});
+
+/** The rows after the training history, which regressor models forecast. */
+const regressorModelFutureRows = (model: FittedProphet, rows: PredictionRows): Array<number> => {
+  // Every regressor model is trained on the same history.
+  const historyEnd = model.regressorModels?.[0]?.timestamps.at(-1);
+
+  return historyEnd === undefined
+    ? []
+    : rows.flatMap((row, index) => (row.timestamp > historyEnd ? [index] : []));
+};
+
+/** Simulate rows whose forecast regressor values are already filled. */
+const simulateRows = Effect.fnUntraced(function* (
+  parsedModel: FittedProphet,
+  rows: PredictionRows,
+  options: UncertaintyOptions,
+): Effect.fn.Return<
+  UncertaintyResult,
+  InputValidationError | PredictionError | CountryHolidayError
+> {
+  const firstRow = rows[0];
+
+  if (firstRow === undefined) {
+    return emptyUncertaintyResult(options);
+  }
 
   const logisticBounds =
     parsedModel.model === "logistic-piecewise-map"
@@ -1152,8 +1535,12 @@ export const predictUncertainty = Effect.fn("Prophet.predictUncertainty")(functi
       ? Math.max(0, (Math.max(...timestamps) - parsedModel.timeOrigin) / parsedModel.timeScale - 1)
       : 0;
 
+  const future = regressorModelFutureRows(parsedModel, rows);
+
+  // Regressor model draws are held in full, so their rows are bounded like sample output.
   if (
     exceedsSimulationBudget(timestamps.length, options.samples, options.output) ||
+    exceedsSimulationBudget(future.length, options.samples, "samples") ||
     (parsedModel.model !== "flat-map" && parsedModel.deltas.length > 10_000) ||
     horizon > 20 ||
     (parsedModel.model !== "flat-map" && parsedModel.deltas.length * horizon > 256)
@@ -1173,6 +1560,8 @@ export const predictUncertainty = Effect.fn("Prophet.predictUncertainty")(functi
     parsedModel.regressors,
   );
 
+  const offsets = yield* regressorModelOffsets(parsedModel, rows, future, options);
+
   return yield* simulateMapWithWasm(
     parsedModel,
     timestamps,
@@ -1181,5 +1570,6 @@ export const predictUncertainty = Effect.fn("Prophet.predictUncertainty")(functi
     options,
     undefined,
     logisticBounds,
+    offsets,
   );
 });

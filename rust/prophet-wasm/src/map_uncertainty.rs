@@ -40,6 +40,20 @@ pub struct SimulationRows<'a> {
   pub timestamps: &'a [f64],
   pub additive: &'a [f64],
   pub multiplicative: &'a [f64],
+  /// Changes to some rows' additive and multiplicative terms that differ per sample.
+  pub offsets: Option<SampleOffsets<'a>>,
+}
+
+/// Per-sample changes to the fixed terms of some rows, such as a forecast regressor's draws.
+///
+/// `rows` holds strictly increasing row indexes. `additive` and `multiplicative` hold one value
+/// per listed row and sample, row-major. They draw nothing, so the same seed gives the same
+/// trend paths and observation errors with or without them.
+#[derive(Clone, Copy)]
+pub struct SampleOffsets<'a> {
+  pub rows: &'a [usize],
+  pub additive: &'a [f64],
+  pub multiplicative: &'a [f64],
 }
 
 /// Explicit local simulation options; `seed` zero and `samples` one are valid.
@@ -166,6 +180,27 @@ fn prepare<'a>(
   }
 
   budget(count, options.samples)?;
+
+  if let Some(offsets) = rows.offsets {
+    // Offsets are held in full, so they are bounded like sample output.
+    let cells = checked_cells(offsets.rows.len(), options.samples)?;
+
+    if offsets.additive.len() != cells
+      || offsets.multiplicative.len() != cells
+      || offsets
+        .rows
+        .iter()
+        .enumerate()
+        .any(|(index, &row)| row >= count || (index > 0 && row <= offsets.rows[index - 1]))
+      || offsets
+        .additive
+        .iter()
+        .chain(offsets.multiplicative)
+        .any(|value| !value.is_finite())
+    {
+      return Err(SimulationError::InvalidShape);
+    }
+  }
 
   if !noise_scale.is_finite() || noise_scale <= 0.0 {
     return Err(SimulationError::InvalidModel);
@@ -450,6 +485,16 @@ fn draw_row(
     _ => 0.0,
   };
 
+  let samples = paths.noise.len();
+  let offsets = rows.offsets.and_then(|offsets| {
+    let start = offsets.rows.binary_search(&row).ok()? * samples;
+
+    Some((
+      &offsets.additive[start..start + samples],
+      &offsets.multiplicative[start..start + samples],
+    ))
+  });
+
   for (sample, noise) in paths.noise.iter_mut().enumerate() {
     let events = &paths.events[paths.offsets[sample]..paths.offsets[sample + 1]];
     let shift = future_shift(time, events);
@@ -460,9 +505,14 @@ fn draw_row(
         floor + (capacities[row] - floor) * stable_sigmoid(fixed + shift)
       }
     };
-    let value = trend * (1.0 + rows.multiplicative[row])
-      + rows.additive[row]
-      + prepared.noise_scale * noise.normal();
+    let (additive, multiplicative) = match offsets {
+      Some((additive, multiplicative)) => (
+        rows.additive[row] + additive[sample],
+        rows.multiplicative[row] + multiplicative[sample],
+      ),
+      None => (rows.additive[row], rows.multiplicative[row]),
+    };
+    let value = trend * (1.0 + multiplicative) + additive + prepared.noise_scale * noise.normal();
 
     if !trend.is_finite() || !value.is_finite() {
       return Err(SimulationError::NonFiniteResult { row, sample });
@@ -666,6 +716,7 @@ mod tests {
       timestamps,
       additive,
       multiplicative,
+      offsets: None,
     }
   }
 
@@ -1270,6 +1321,128 @@ mod tests {
         }
       ),
       Err(SimulationError::InvalidOptions)
+    ));
+  }
+
+  #[test]
+  fn sample_offsets_move_values_without_changing_the_draw_stream() {
+    let trend = linear(vec![0.5]);
+    let model = SimulationTrend::Linear {
+      trend: &trend,
+      scaling: SCALING,
+    };
+    let timestamps = [5.0, 12.0, 20.0, 31.0];
+    let additive = [1.0; 4];
+    let multiplicative = [0.0, 0.25, -0.5, 0.0];
+    let plain = simulate_map(
+      model,
+      0.2,
+      rows(&timestamps, &additive, &multiplicative),
+      OPTIONS,
+    )
+    .unwrap();
+
+    // Rows 1 and 3 change per sample; rows 0 and 2 keep their fixed terms.
+    let offset_rows = [1, 3];
+    let shifts: Vec<f64> = (0..2 * OPTIONS.samples)
+      .map(|cell| (cell % 7) as f64 * 0.5 - 1.0)
+      .collect();
+    let factors: Vec<f64> = (0..2 * OPTIONS.samples)
+      .map(|cell| (cell % 5) as f64 * 0.01)
+      .collect();
+    let offset = SimulationRows {
+      offsets: Some(SampleOffsets {
+        rows: &offset_rows,
+        additive: &shifts,
+        multiplicative: &factors,
+      }),
+      ..rows(&timestamps, &additive, &multiplicative)
+    };
+    let shifted = simulate_map(model, 0.2, offset, OPTIONS).unwrap();
+
+    assert_eq!(shifted.trend, plain.trend);
+
+    for row in 0..timestamps.len() {
+      for sample in 0..OPTIONS.samples {
+        let cell = row * OPTIONS.samples + sample;
+        let expected = match offset_rows.binary_search(&row) {
+          Ok(index) => {
+            let at = index * OPTIONS.samples + sample;
+            plain.value[cell] + shifts[at] + plain.trend[cell] * factors[at]
+          }
+          Err(_) => plain.value[cell],
+        };
+
+        assert!((shifted.value[cell] - expected).abs() < 1e-12);
+      }
+    }
+
+    let streamed = simulate_intervals(model, 0.2, offset, OPTIONS).unwrap();
+
+    assert_eq!(
+      streamed.values,
+      reduce_intervals(&shifted, OPTIONS.interval_width)
+        .unwrap()
+        .values
+    );
+  }
+
+  #[test]
+  fn malformed_or_oversized_sample_offsets_fail_before_drawing() {
+    let model = SimulationTrend::Flat {
+      level: 3.0,
+      scaling: SCALING,
+    };
+    let timestamps = [1.0, 2.0, 3.0];
+    let zeros = [0.0; 3];
+    let cells = vec![0.0; 2 * OPTIONS.samples];
+    let short = vec![0.0; OPTIONS.samples];
+    let mut infinite = cells.clone();
+    infinite[3] = f64::INFINITY;
+
+    for (offset_rows, additive, multiplicative) in [
+      (&[2, 1][..], &cells, &cells),
+      (&[1, 1][..], &cells, &cells),
+      (&[1, 3][..], &cells, &cells),
+      (&[0, 1][..], &short, &cells),
+      (&[0, 1][..], &cells, &infinite),
+    ] {
+      let input = SimulationRows {
+        offsets: Some(SampleOffsets {
+          rows: offset_rows,
+          additive,
+          multiplicative,
+        }),
+        ..rows(&timestamps, &zeros, &zeros)
+      };
+
+      assert!(matches!(
+        simulate_intervals(model, 0.2, input, OPTIONS),
+        Err(SimulationError::InvalidShape)
+      ));
+    }
+
+    // Offsets are held in full, so interval output bounds them like sample output.
+    let timestamps: Vec<f64> = (0..1_001).map(|row| row as f64).collect();
+    let zeros = vec![0.0; timestamps.len()];
+    let offset_rows: Vec<usize> = (0..1_001).collect();
+    let options = SimulationOptions {
+      samples: 1_000,
+      ..OPTIONS
+    };
+    let large = vec![0.0; 1_001 * 1_000];
+    let input = SimulationRows {
+      offsets: Some(SampleOffsets {
+        rows: &offset_rows,
+        additive: &large,
+        multiplicative: &large,
+      }),
+      ..rows(&timestamps, &zeros, &zeros)
+    };
+
+    assert!(matches!(
+      simulate_intervals(model, 0.2, input, options),
+      Err(SimulationError::ResourceLimit)
     ));
   }
 }

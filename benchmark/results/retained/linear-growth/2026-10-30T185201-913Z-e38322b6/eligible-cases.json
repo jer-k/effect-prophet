@@ -44,6 +44,10 @@
     "evaluation-linear-intervals",
     "evaluation-linear-search",
     "evaluation-linear-failure-search",
-    "evaluation-linear-custom-search"
+    "evaluation-linear-custom-search",
+    "linear-regressor-model",
+    "uncertainty-linear-regressor-model-intervals-1000",
+    "evaluation-linear-regressor-model-point",
+    "evaluation-linear-regressor-model-intervals"
   ]
 }

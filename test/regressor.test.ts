@@ -49,6 +49,34 @@ describe("regressor domain", () => {
     }
   });
 
+  it("checks a predictor's keys and leaves it out of the definitions", async () => {
+    const definitions = await Effect.runPromise(
+      parseRegressorDefinitions([
+        { name: "price", predictor: true },
+        { name: "promotion", predictor: { growth: "flat", map: { changepointPriorScale: 1 } } },
+      ]),
+    );
+
+    expect(definitions.map((definition) => Object.keys(definition))).toEqual([
+      ["name", "standardization", "priorScale", "mode"],
+      ["name", "standardization", "priorScale", "mode"],
+    ]);
+
+    for (const predictor of [
+      false,
+      { seasonalities: [] },
+      { growth: "logistic" },
+      { map: { optimizer: {} } },
+    ]) {
+      const error = await Effect.runPromise(
+        Effect.flip(parseRegressorDefinitions([{ name: "price", predictor }])),
+      );
+
+      expect(error).toBeInstanceOf(InvalidRegressors);
+      expect(error.issues[0]?.path?.slice(0, 2)).toEqual([0, "predictor"]);
+    }
+  });
+
   it("projects transformed coefficients into original mode-correct units", () => {
     const [definition] = Effect.runSync(
       parseRegressorDefinitions([{ name: "price", priorScale: 10, standardization: "always" }]),

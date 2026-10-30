@@ -3,7 +3,7 @@
     "id": "country-us-flat-additive",
     "dataset": "v5/country-basic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:4965576c053594e7b7feb32f08acd4bc5b1ae4a2e185db3c2862da16ef0f3e00",
+      "snapshotId": "sha256:11cd784d6c90ad62f915def4f2a73bb1dc85446feb1a048eb0ed8fc56937e33b",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -123,7 +123,7 @@
     "id": "country-explicit-us-flat-additive",
     "dataset": "v5/country-basic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:4965576c053594e7b7feb32f08acd4bc5b1ae4a2e185db3c2862da16ef0f3e00",
+      "snapshotId": "sha256:11cd784d6c90ad62f915def4f2a73bb1dc85446feb1a048eb0ed8fc56937e33b",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -392,7 +392,7 @@
     "id": "country-us-flat-multiplicative",
     "dataset": "v5/country-basic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:4965576c053594e7b7feb32f08acd4bc5b1ae4a2e185db3c2862da16ef0f3e00",
+      "snapshotId": "sha256:11cd784d6c90ad62f915def4f2a73bb1dc85446feb1a048eb0ed8fc56937e33b",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -512,7 +512,7 @@
     "id": "country-explicit-us-flat-multiplicative",
     "dataset": "v5/country-basic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:4965576c053594e7b7feb32f08acd4bc5b1ae4a2e185db3c2862da16ef0f3e00",
+      "snapshotId": "sha256:11cd784d6c90ad62f915def4f2a73bb1dc85446feb1a048eb0ed8fc56937e33b",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -781,7 +781,7 @@
     "id": "country-boundary-flat",
     "dataset": "v5/country-boundary-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:4965576c053594e7b7feb32f08acd4bc5b1ae4a2e185db3c2862da16ef0f3e00",
+      "snapshotId": "sha256:11cd784d6c90ad62f915def4f2a73bb1dc85446feb1a048eb0ed8fc56937e33b",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -872,7 +872,7 @@
     "id": "country-empty-bv-flat",
     "dataset": "v5/country-basic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:4965576c053594e7b7feb32f08acd4bc5b1ae4a2e185db3c2862da16ef0f3e00",
+      "snapshotId": "sha256:11cd784d6c90ad62f915def4f2a73bb1dc85446feb1a048eb0ed8fc56937e33b",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -963,7 +963,7 @@
     "id": "country-explicit-empty-flat",
     "dataset": "v5/country-basic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:4965576c053594e7b7feb32f08acd4bc5b1ae4a2e185db3c2862da16ef0f3e00",
+      "snapshotId": "sha256:11cd784d6c90ad62f915def4f2a73bb1dc85446feb1a048eb0ed8fc56937e33b",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -1049,7 +1049,7 @@
     "id": "country-estimated-sg-flat",
     "dataset": "v5/country-estimated-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:4965576c053594e7b7feb32f08acd4bc5b1ae4a2e185db3c2862da16ef0f3e00",
+      "snapshotId": "sha256:11cd784d6c90ad62f915def4f2a73bb1dc85446feb1a048eb0ed8fc56937e33b",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -1140,7 +1140,7 @@
     "id": "country-partial-in-flat",
     "dataset": "v5/country-partial-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:4965576c053594e7b7feb32f08acd4bc5b1ae4a2e185db3c2862da16ef0f3e00",
+      "snapshotId": "sha256:11cd784d6c90ad62f915def4f2a73bb1dc85446feb1a048eb0ed8fc56937e33b",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -1231,7 +1231,7 @@
     "id": "country-mixed-us-flat",
     "dataset": "v5/country-mixed-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:4965576c053594e7b7feb32f08acd4bc5b1ae4a2e185db3c2862da16ef0f3e00",
+      "snapshotId": "sha256:11cd784d6c90ad62f915def4f2a73bb1dc85446feb1a048eb0ed8fc56937e33b",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -1365,7 +1365,7 @@
     "id": "country-none-flat-730",
     "dataset": "v5/country-scaling-730.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:4965576c053594e7b7feb32f08acd4bc5b1ae4a2e185db3c2862da16ef0f3e00",
+      "snapshotId": "sha256:11cd784d6c90ad62f915def4f2a73bb1dc85446feb1a048eb0ed8fc56937e33b",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -1447,7 +1447,7 @@
     "id": "country-se-flat-730",
     "dataset": "v5/country-scaling-730.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:4965576c053594e7b7feb32f08acd4bc5b1ae4a2e185db3c2862da16ef0f3e00",
+      "snapshotId": "sha256:11cd784d6c90ad62f915def4f2a73bb1dc85446feb1a048eb0ed8fc56937e33b",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -1534,7 +1534,7 @@
     "id": "country-explicit-se-flat-730",
     "dataset": "v5/country-scaling-730.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:4965576c053594e7b7feb32f08acd4bc5b1ae4a2e185db3c2862da16ef0f3e00",
+      "snapshotId": "sha256:11cd784d6c90ad62f915def4f2a73bb1dc85446feb1a048eb0ed8fc56937e33b",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -3444,7 +3444,7 @@
     "id": "country-cn-flat-730",
     "dataset": "v5/country-scaling-730.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:4965576c053594e7b7feb32f08acd4bc5b1ae4a2e185db3c2862da16ef0f3e00",
+      "snapshotId": "sha256:11cd784d6c90ad62f915def4f2a73bb1dc85446feb1a048eb0ed8fc56937e33b",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -3531,7 +3531,7 @@
     "id": "country-explicit-cn-flat-730",
     "dataset": "v5/country-scaling-730.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:4965576c053594e7b7feb32f08acd4bc5b1ae4a2e185db3c2862da16ef0f3e00",
+      "snapshotId": "sha256:11cd784d6c90ad62f915def4f2a73bb1dc85446feb1a048eb0ed8fc56937e33b",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -4160,7 +4160,7 @@
     "id": "country-none-flat-2190",
     "dataset": "v5/country-scaling-2190.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:4965576c053594e7b7feb32f08acd4bc5b1ae4a2e185db3c2862da16ef0f3e00",
+      "snapshotId": "sha256:11cd784d6c90ad62f915def4f2a73bb1dc85446feb1a048eb0ed8fc56937e33b",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -4242,7 +4242,7 @@
     "id": "country-se-flat-2190",
     "dataset": "v5/country-scaling-2190.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:4965576c053594e7b7feb32f08acd4bc5b1ae4a2e185db3c2862da16ef0f3e00",
+      "snapshotId": "sha256:11cd784d6c90ad62f915def4f2a73bb1dc85446feb1a048eb0ed8fc56937e33b",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -4329,7 +4329,7 @@
     "id": "country-explicit-se-flat-2190",
     "dataset": "v5/country-scaling-2190.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:4965576c053594e7b7feb32f08acd4bc5b1ae4a2e185db3c2862da16ef0f3e00",
+      "snapshotId": "sha256:11cd784d6c90ad62f915def4f2a73bb1dc85446feb1a048eb0ed8fc56937e33b",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -8059,7 +8059,7 @@
     "id": "country-cn-flat-2190",
     "dataset": "v5/country-scaling-2190.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:4965576c053594e7b7feb32f08acd4bc5b1ae4a2e185db3c2862da16ef0f3e00",
+      "snapshotId": "sha256:11cd784d6c90ad62f915def4f2a73bb1dc85446feb1a048eb0ed8fc56937e33b",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -8146,7 +8146,7 @@
     "id": "country-explicit-cn-flat-2190",
     "dataset": "v5/country-scaling-2190.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:4965576c053594e7b7feb32f08acd4bc5b1ae4a2e185db3c2862da16ef0f3e00",
+      "snapshotId": "sha256:11cd784d6c90ad62f915def4f2a73bb1dc85446feb1a048eb0ed8fc56937e33b",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -9412,7 +9412,7 @@
     "id": "country-none-flat-2190-batch-32",
     "dataset": "v6/country-scaling-2190-batch-32.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:4965576c053594e7b7feb32f08acd4bc5b1ae4a2e185db3c2862da16ef0f3e00",
+      "snapshotId": "sha256:11cd784d6c90ad62f915def4f2a73bb1dc85446feb1a048eb0ed8fc56937e33b",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -9494,7 +9494,7 @@
     "id": "country-se-flat-2190-batch-32",
     "dataset": "v6/country-scaling-2190-batch-32.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:4965576c053594e7b7feb32f08acd4bc5b1ae4a2e185db3c2862da16ef0f3e00",
+      "snapshotId": "sha256:11cd784d6c90ad62f915def4f2a73bb1dc85446feb1a048eb0ed8fc56937e33b",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -9581,7 +9581,7 @@
     "id": "country-explicit-se-flat-2190-batch-32",
     "dataset": "v6/country-scaling-2190-batch-32.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:4965576c053594e7b7feb32f08acd4bc5b1ae4a2e185db3c2862da16ef0f3e00",
+      "snapshotId": "sha256:11cd784d6c90ad62f915def4f2a73bb1dc85446feb1a048eb0ed8fc56937e33b",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -12856,7 +12856,7 @@
     "id": "country-uncertainty-us-flat",
     "dataset": "v5/country-basic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:4965576c053594e7b7feb32f08acd4bc5b1ae4a2e185db3c2862da16ef0f3e00",
+      "snapshotId": "sha256:11cd784d6c90ad62f915def4f2a73bb1dc85446feb1a048eb0ed8fc56937e33b",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -17273,6 +17273,440 @@
     "measuredIterations": 2,
     "independentRuns": 2,
     "timeoutSeconds": 600,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.25,
+        "relative": 0.02
+      },
+      "component": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "additive": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "forecast": {
+        "absolute": 0.3,
+        "relative": 0.02
+      },
+      "noiseScale": {
+        "absolute": 0.1,
+        "relative": 0.2
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "flat-correlated-regressors-v1:level=40+0.6*temperature(yearly-tracking,future+6)+yearly(phase=1)+weekly+constant-baseline+bounded-noise-x5:n=730:h=180",
+      "sha256": "bf69b68aa75b99e49972817a6f5e24654c3deabc452fa563fa2eee0340a9b121",
+      "trainingRows": 730,
+      "predictionRows": 180,
+      "futureRows": 180,
+      "horizonDays": 180
+    }
+  },
+  {
+    "id": "flat-regressor-model",
+    "dataset": "v4/flat-correlated-regressors.json",
+    "workload": {
+      "kind": "map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "flat-map-additive-v1"
+      },
+      "configuration": {
+        "growth": "flat",
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [
+          {
+            "name": "yearly-custom",
+            "periodDays": 365.25,
+            "fourierOrder": 10,
+            "priorScale": 10
+          },
+          {
+            "name": "weekly-custom",
+            "periodDays": 7,
+            "fourierOrder": 2,
+            "priorScale": 10
+          }
+        ],
+        "events": [],
+        "regressors": [
+          {
+            "name": "temperature",
+            "priorScale": 10,
+            "standardization": "auto",
+            "predictor": true
+          },
+          {
+            "name": "baseline",
+            "priorScale": 10,
+            "standardization": "never"
+          }
+        ]
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      }
+    },
+    "phases": [
+      "adapter-input-conversion",
+      "warm-fit",
+      "warm-predict",
+      "warm-fit-predict",
+      "warm-fit-predict-with-conversion",
+      "cold-first-forecast"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 600,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.25,
+        "relative": 0.02
+      },
+      "component": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "additive": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "forecast": {
+        "absolute": 0.3,
+        "relative": 0.02
+      },
+      "noiseScale": {
+        "absolute": 0.1,
+        "relative": 0.2
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "flat-correlated-regressors-v1:level=40+0.6*temperature(yearly-tracking,future+6)+yearly(phase=1)+weekly+constant-baseline+bounded-noise-x5:n=730:h=180",
+      "sha256": "bf69b68aa75b99e49972817a6f5e24654c3deabc452fa563fa2eee0340a9b121",
+      "trainingRows": 730,
+      "predictionRows": 180,
+      "futureRows": 180,
+      "horizonDays": 180
+    }
+  },
+  {
+    "id": "uncertainty-flat-regressor-model-intervals-1000",
+    "dataset": "v4/flat-correlated-regressors.json",
+    "workload": {
+      "kind": "map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "flat-map-additive-v1"
+      },
+      "configuration": {
+        "growth": "flat",
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [
+          {
+            "name": "yearly-custom",
+            "periodDays": 365.25,
+            "fourierOrder": 10,
+            "priorScale": 10
+          },
+          {
+            "name": "weekly-custom",
+            "periodDays": 7,
+            "fourierOrder": 2,
+            "priorScale": 10
+          }
+        ],
+        "events": [],
+        "regressors": [
+          {
+            "name": "temperature",
+            "priorScale": 10,
+            "standardization": "auto",
+            "predictor": true
+          },
+          {
+            "name": "baseline",
+            "priorScale": 10,
+            "standardization": "never"
+          }
+        ]
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      },
+      "uncertainty": {
+        "seed": 19,
+        "samples": 1000,
+        "intervalWidth": 0.8,
+        "output": "intervals",
+        "algorithm": "scalar-continuous-time",
+        "evidence": "docs/validation/uncertainty.md#evidence-classes",
+        "samplerMemoryLimitBytes": 67108864
+      }
+    },
+    "phases": [
+      "uncertainty-input-conversion",
+      "warm-uncertainty",
+      "cold-first-uncertainty"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 3,
+    "independentRuns": 2,
+    "timeoutSeconds": 600,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.25,
+        "relative": 0.02
+      },
+      "component": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "additive": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "forecast": {
+        "absolute": 0.3,
+        "relative": 0.02
+      },
+      "noiseScale": {
+        "absolute": 0.1,
+        "relative": 0.2
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "flat-correlated-regressors-v1:level=40+0.6*temperature(yearly-tracking,future+6)+yearly(phase=1)+weekly+constant-baseline+bounded-noise-x5:n=730:h=180",
+      "sha256": "bf69b68aa75b99e49972817a6f5e24654c3deabc452fa563fa2eee0340a9b121",
+      "trainingRows": 730,
+      "predictionRows": 180,
+      "futureRows": 180,
+      "horizonDays": 180
+    }
+  },
+  {
+    "id": "evaluation-flat-regressor-model-point",
+    "dataset": "v4/flat-correlated-regressors.json",
+    "workload": {
+      "kind": "evaluation",
+      "comparison": {
+        "kind": "different-public-work",
+        "evidenceId": "rolling-origin-evaluation-v1"
+      },
+      "configuration": {
+        "growth": "flat",
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [
+          {
+            "name": "yearly-custom",
+            "periodDays": 365.25,
+            "fourierOrder": 10,
+            "priorScale": 10
+          },
+          {
+            "name": "weekly-custom",
+            "periodDays": 7,
+            "fourierOrder": 2,
+            "priorScale": 10
+          }
+        ],
+        "events": [],
+        "regressors": [
+          {
+            "name": "temperature",
+            "priorScale": 10,
+            "standardization": "auto",
+            "predictor": true
+          },
+          {
+            "name": "baseline",
+            "priorScale": 10,
+            "standardization": "never"
+          }
+        ]
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      },
+      "plan": {
+        "horizonMs": 604800000,
+        "cutoffs": [
+          "2021-12-02T00:00:00.000Z",
+          "2021-12-16T00:00:00.000Z"
+        ]
+      },
+      "metricAggregation": "horizons"
+    },
+    "phases": [
+      "evaluation-input-conversion",
+      "evaluation-plan",
+      "evaluation-point",
+      "evaluation-metrics",
+      "evaluation-baseline",
+      "cold-first-evaluation"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 900,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.25,
+        "relative": 0.02
+      },
+      "component": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "additive": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "forecast": {
+        "absolute": 0.3,
+        "relative": 0.02
+      },
+      "noiseScale": {
+        "absolute": 0.1,
+        "relative": 0.2
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "flat-correlated-regressors-v1:level=40+0.6*temperature(yearly-tracking,future+6)+yearly(phase=1)+weekly+constant-baseline+bounded-noise-x5:n=730:h=180",
+      "sha256": "bf69b68aa75b99e49972817a6f5e24654c3deabc452fa563fa2eee0340a9b121",
+      "trainingRows": 730,
+      "predictionRows": 180,
+      "futureRows": 180,
+      "horizonDays": 180
+    }
+  },
+  {
+    "id": "evaluation-flat-regressor-model-intervals",
+    "dataset": "v4/flat-correlated-regressors.json",
+    "workload": {
+      "kind": "evaluation",
+      "comparison": {
+        "kind": "different-public-work",
+        "evidenceId": "rolling-origin-evaluation-v1"
+      },
+      "configuration": {
+        "growth": "flat",
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [
+          {
+            "name": "yearly-custom",
+            "periodDays": 365.25,
+            "fourierOrder": 10,
+            "priorScale": 10
+          },
+          {
+            "name": "weekly-custom",
+            "periodDays": 7,
+            "fourierOrder": 2,
+            "priorScale": 10
+          }
+        ],
+        "events": [],
+        "regressors": [
+          {
+            "name": "temperature",
+            "priorScale": 10,
+            "standardization": "auto",
+            "predictor": true
+          },
+          {
+            "name": "baseline",
+            "priorScale": 10,
+            "standardization": "never"
+          }
+        ]
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      },
+      "plan": {
+        "horizonMs": 604800000,
+        "cutoffs": [
+          "2021-12-02T00:00:00.000Z",
+          "2021-12-16T00:00:00.000Z"
+        ]
+      },
+      "metricAggregation": "horizons",
+      "interval": {
+        "seed": 19,
+        "samples": 128,
+        "intervalWidth": 0.8
+      }
+    },
+    "phases": [
+      "evaluation-intervals"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 900,
     "correctnessTolerances": {
       "trend": {
         "absolute": 0.25,

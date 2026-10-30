@@ -1,4 +1,4 @@
-import { Effect, Schema } from "effect";
+import { Effect, Predicate, Schema } from "effect";
 
 import { ComponentModeSchema, type ComponentMode } from "./component-mode";
 import {
@@ -8,6 +8,7 @@ import {
   type EncodedCountryHolidays,
 } from "./country-holidays";
 import { InputValidationError, inputValidationErrorFromIssue } from "./errors";
+import type { FeatureName } from "./feature-name";
 import {
   defaultEventPriorScale,
   emptyEventCalendar,
@@ -26,10 +27,11 @@ import {
   type LinearOptimizer,
 } from "./linear-optimizer";
 import {
-  parseRegressorDefinitions,
+  parseRegressorDefinitionsAndModels,
   type EncodedRegressorDefinition,
   type InvalidRegressors,
   type RegressorDefinition,
+  type RegressorModelSyntax,
 } from "./regressor";
 import {
   defaultSeasonalityPriorScale,
@@ -237,6 +239,12 @@ export type EncodedProphetOptions =
   | EncodedFlatAdditiveOptions
   | EncodedLogisticOptions;
 
+/** A regressor forecast by its own model, with that model's parsed options. */
+export interface RegressorModelRequest {
+  readonly name: FeatureName;
+  readonly options: ProphetOptions;
+}
+
 interface ParsedBuiltInOptions {
   readonly countryHolidays?: CountryHolidays;
   readonly seasonalityMode: ComponentMode;
@@ -246,6 +254,9 @@ interface ParsedBuiltInOptions {
   readonly builtInSeasonalities: BuiltInSeasonalities;
   readonly events: EventCalendar;
   readonly regressors: ReadonlyArray<RegressorDefinition>;
+
+  /** The regressors forecast by their own models, in definition order. */
+  readonly regressorModels: ReadonlyArray<RegressorModelRequest>;
   readonly scaling?: TargetScalingMode;
 }
 
@@ -309,6 +320,8 @@ const emptySeasonalities: readonly [] = Object.freeze([]);
 
 const emptyRegressors: readonly [] = Object.freeze([]);
 
+const emptyRegressorModels: readonly [] = Object.freeze([]);
+
 const defaultBuiltInSeasonalities: BuiltInSeasonalities = Object.freeze({
   daily: "auto",
   weekly: "auto",
@@ -344,6 +357,7 @@ export const defaultProphetOptions: LinearTrendOptions = Object.freeze({
   builtInSeasonalities: defaultBuiltInSeasonalities,
   events: emptyEventCalendar,
   regressors: emptyRegressors,
+  regressorModels: emptyRegressorModels,
   map: defaultAutomaticMapOptions,
 });
 
@@ -617,8 +631,72 @@ export const checkOptionFeatureNames = (
     }
   });
 
+/** Move option issues under a path, such as the regressor whose model options they belong to. */
+export const prefixOptionsIssues = (
+  error: InputValidationError,
+  prefix: ReadonlyArray<PropertyKey>,
+): InputValidationError =>
+  new InputValidationError({
+    input: "options",
+    issues: error.issues.map((issue) => ({
+      message: issue.message,
+      path: [...prefix, ...(issue.path ?? [])],
+    })),
+    message: error.message,
+  });
+
+/**
+ * Parse each requested regressor model's options with the main model's fit settings.
+ *
+ * Python passes its fit arguments on to each regressor model, so a requested optimizer and warm
+ * start apply to them too. A warm start's `delta` and `beta` then fall back to their defaults
+ * unless their lengths happen to match the regressor model's, as in Python.
+ */
+const parseRegressorModels = Effect.fnUntraced(function* (
+  models: ReadonlyArray<RegressorModelSyntax>,
+  map: typeof MapOptionsSchema.Type | undefined,
+): Effect.fn.Return<
+  ReadonlyArray<RegressorModelRequest>,
+  InputValidationError | CountryHolidayError
+> {
+  if (models.length === 0) {
+    return emptyRegressorModels;
+  }
+
+  const optimizer = map?.optimizer === undefined ? {} : { optimizer: map.optimizer };
+  const warmStart = map?.warmStart === undefined ? {} : { warmStart: map.warmStart };
+  const inheritsFitSettings = map?.optimizer !== undefined || map?.warmStart !== undefined;
+
+  const requests: Array<RegressorModelRequest> = [];
+
+  for (const { index, name, options } of models) {
+    const inherited =
+      options.map === undefined && !inheritsFitSettings
+        ? options
+        : { ...options, map: { ...options.map, ...optimizer, ...warmStart } };
+
+    const parsed = yield* decodeOptionsInput(inherited).pipe(
+      Effect.mapError((error) =>
+        Predicate.isTagged("InputValidationError")(error)
+          ? prefixOptionsIssues(error, ["regressors", index, "predictor"])
+          : error,
+      ),
+    );
+
+    requests.push(Object.freeze({ name, options: parsed }));
+  }
+
+  return Object.freeze(requests);
+});
+
 /** Decode optional, untrusted fitting options and apply the documented defaults. */
 export const decodeOptions = Effect.fn("Prophet.decodeOptions")(function* (
+  input?: Parameters<typeof decodeProphetOptionsSyntax>[0],
+): Effect.fn.Return<ProphetOptions, InputValidationError | CountryHolidayError> {
+  return yield* decodeOptionsInput(input);
+});
+
+const decodeOptionsInput = Effect.fnUntraced(function* (
   input?: Parameters<typeof decodeProphetOptionsSyntax>[0],
 ): Effect.fn.Return<ProphetOptions, InputValidationError | CountryHolidayError> {
   const encoded = input === undefined ? emptyOptions : input;
@@ -648,11 +726,12 @@ export const decodeOptions = Effect.fn("Prophet.decodeOptions")(function* (
   );
 
   // Python's add_regressor falls back to holidays_prior_scale, not seasonality_prior_scale.
-  const regressors = yield* parseRegressorDefinitions(
-    syntax.regressors,
-    syntax.seasonalityMode,
-    holidaysPriorScale,
-  ).pipe(Effect.mapError(optionsValidationErrorFromRegressors));
+  const { definitions: regressors, models: regressorModelSyntax } =
+    yield* parseRegressorDefinitionsAndModels(
+      syntax.regressors,
+      syntax.seasonalityMode,
+      holidaysPriorScale,
+    ).pipe(Effect.mapError(optionsValidationErrorFromRegressors));
 
   yield* checkOptionFeatureNames(seasonalities, events, regressors);
 
@@ -665,6 +744,8 @@ export const decodeOptions = Effect.fn("Prophet.decodeOptions")(function* (
     syntax.map?.optimizer === undefined
       ? undefined
       : yield* decodeLinearOptimizer(syntax.map.optimizer);
+
+  const regressorModels = yield* parseRegressorModels(regressorModelSyntax, syntax.map);
 
   const warmStart = syntax.map?.warmStart === undefined ? {} : { warmStart: syntax.map.warmStart };
 
@@ -713,6 +794,7 @@ export const decodeOptions = Effect.fn("Prophet.decodeOptions")(function* (
       builtInSeasonalities,
       events,
       regressors,
+      regressorModels,
       map,
       ...scaling,
     };
@@ -727,6 +809,7 @@ export const decodeOptions = Effect.fn("Prophet.decodeOptions")(function* (
         builtInSeasonalities,
         events,
         regressors,
+        regressorModels,
         map: flatMap,
         ...scaling,
       };
@@ -739,6 +822,7 @@ export const decodeOptions = Effect.fn("Prophet.decodeOptions")(function* (
       builtInSeasonalities,
       events,
       regressors,
+      regressorModels,
       map,
       ...scaling,
     };
@@ -757,6 +841,7 @@ export const decodeOptions = Effect.fn("Prophet.decodeOptions")(function* (
       builtInSeasonalities,
       events,
       regressors,
+      regressorModels,
       map: flatMap,
       ...scaling,
     };
@@ -769,6 +854,7 @@ export const decodeOptions = Effect.fn("Prophet.decodeOptions")(function* (
     builtInSeasonalities,
     events,
     regressors,
+    regressorModels,
     map,
     ...scaling,
   };

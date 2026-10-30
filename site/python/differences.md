@@ -7,8 +7,6 @@ Python, where it differs on purpose, and the smaller behavior differences.
 ## Not available yet
 
 - Full Bayesian fitting (`mcmc_samples`)
-- Forecasting regressors with their own models. Every future row must supply its regressor
-  values.
 
 ## Different on purpose
 
@@ -34,6 +32,12 @@ Python, where it differs on purpose, and the smaller behavior differences.
   `register_performance_metric` takes any function of the whole result. Python has no
   quantile helper; the quantile follows numpy's `np.quantile` over the windows `mdape` uses. See
   [Your own metrics](../examples/cross-validation#your-own-metrics).
+- Saved models keep the models that
+  [forecast their regressors](../examples/regressors#forecasting-a-regressor), so a loaded model
+  forecasts exactly as before. Python's `model_to_json` drops them, and a loaded model then asks
+  for the regressor values.
+- A regressor model's `predictor: {}` uses the default settings, like `predictor: true`. In
+  Python, `regressor_predictor={}` counts as false and fits no regressor model.
 - `predict` never simulates, so point forecasts never pay for it. Ranges come from
   [`predictWithIntervals`](../examples/uncertainty), or `predictUncertainty` for ranges alone.
   They need a seed, so results are repeatable.
@@ -46,7 +50,15 @@ Python, where it differs on purpose, and the smaller behavior differences.
   two agree: in our long-history benchmark, the average trend width of future ranges was 17.7
   for the shortcut and 17.8 for the per-path method over eight seeds.
 - **Size limits on uncertainty.** One call takes up to 10,000 rows and 2,048 samples. Python has
-  no such limits. See [Uncertainty ranges](../examples/uncertainty) for details. Because
+  no such limits. With [regressors forecast by their own models](../examples/regressors#forecasting-a-regressor),
+  the rows after the history × samples can be at most 1,000,000, because those models' draws are
+  kept for every sample.
+- **Draws from regressor models.** Python draws as many samples from each regressor model as its
+  `uncertainty_samples`, 1,000 unless its options set another, and reuses them in turn when the
+  main model draws more, all from numpy's one global generator. Each regressor model here draws
+  as many samples as the call asks for, from its own seed derived from the call's, so the main
+  model's draws are the same as without regressor models. Ranges agree in width: in the fixture,
+  the average future range was 0.465 here over eight seeds and 0.461 in Python. See [Uncertainty ranges](../examples/uncertainty) for details. Because
   `anomalies` simulates its whole history, it takes histories of up to 10,000 rows; see
   [Finding anomalies](../examples/anomalies#looking-back-over-a-history) for longer ones.
 - **Memory limit for Newton's method.** Newton's method, used for histories under 100 rows and
@@ -63,6 +75,15 @@ Python, where it differs on purpose, and the smaller behavior differences.
   produces, and the median may or may not hide it. `performanceMetrics` fails the same way for
   that actual. A score that overflows fails with `"non-finite"` where Python returns infinity.
   See [Actual values of zero](../examples/cross-validation#actual-values-of-zero).
+- **Cross-validation with regressor models.** Each fold fits its
+  [regressor models](../examples/regressors#forecasting-a-regressor) to that fold's own regressor
+  values, exactly as `fit` at the cutoff would. Python's `cross_validation` refits them on the
+  model's stored history, where Prophet has already standardized the regressor values. Prophet's
+  scaling doesn't treat a shifted series the same, so Python's fold forecasts drift from fitting
+  at the cutoff. The gap depends on the data: about 2% in fold errors on one test series, but
+  about 15% too high on the flat regressor-model benchmark history, where fitting at the cutoff
+  matches the actual values. The benchmarks therefore compare against Python fitted at each
+  cutoff.
 - **Order of forecasts with the same horizon.** Python sorts forecasts by horizon with a sort
   that leaves equal horizons in no fixed order. `performanceMetrics` keeps them in the order
   `crossValidate` returns them, oldest round first. This decides the order of `rows` scores and

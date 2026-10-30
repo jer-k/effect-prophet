@@ -223,4 +223,52 @@ describe("fitted model serialization", () => {
 
     expect(encoded).toEqual(encodedModel);
   });
+
+  it("decodes regressor models and reports their issues under the regressor model's path", async () => {
+    const model = await Effect.runPromise(
+      fit(
+        Array.from({ length: 12 }, (_, index) => ({
+          timestamp: new Date(Date.UTC(2025, 0, index + 1)).toISOString(),
+          value: 5 + index + (index % 3),
+          regressors: { price: 2 + Math.sin(index) },
+        })),
+        { regressors: [{ name: "price", predictor: true }] },
+      ).pipe(Effect.provide(prophetFittingBackendLayer)),
+    );
+
+    const encoded = await Effect.runPromise(encodeFittedModel(model));
+    const [regressorModel] = encoded.regressorModels ?? [];
+
+    expect(regressorModel?.model.modelKind).toBe("linear-piecewise-map");
+    expect(await Effect.runPromise(decodeFittedModel(encoded))).toEqual(model);
+
+    if (regressorModel === undefined || regressorModel.model.modelKind !== "linear-piecewise-map") {
+      throw new Error("Expected a linear regressor model");
+    }
+
+    const error = await Effect.runPromise(
+      Effect.flip(
+        decodeFittedModel({
+          ...encoded,
+          regressorModels: [
+            {
+              ...regressorModel,
+              model: { ...regressorModel.model, timeScaling: { origin: 0, scale: -1 } },
+            },
+          ],
+        }),
+      ),
+    );
+
+    expect(error).toBeInstanceOf(ModelSerializationError);
+    expect(error.issues[0]?.path?.slice(0, 3)).toEqual(["regressorModels", 0, "model"]);
+
+    await expectDecodeFailure(
+      decodeFittedModel({ ...encoded, regressorModels: [{ ...regressorModel, name: "other" }] }),
+    );
+  });
+
+  it("omits regressor models from payloads without them", async () => {
+    expect(Object.hasOwn(encodedModel, "regressorModels")).toBe(false);
+  });
 });

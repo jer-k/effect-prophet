@@ -6,6 +6,7 @@ import {
   validationMessageFromIssue,
 } from "./errors";
 import { EventCalendarSchema, emptyEventCalendar } from "./event";
+import { FeatureNameSchema } from "./feature-name";
 import { FittedRegressorSchema } from "./regressor";
 import { SeasonalityLayoutSchema } from "./seasonality";
 import {
@@ -310,7 +311,9 @@ const consistentFlatMapParameters = Schema.makeFilter<FlatMapParametersFields>((
   return issues;
 });
 
-const FlatMapParametersSchema = FlatMapParametersFieldsSchema.check(consistentFlatMapParameters);
+const BaseFlatMapParametersSchema = FlatMapParametersFieldsSchema.check(
+  consistentFlatMapParameters,
+);
 
 /** Version-two linear MAP diagnostics with algorithm-consistent completion evidence. */
 export const PiecewiseMapFitSummarySchema = Schema.Struct({
@@ -481,7 +484,7 @@ const consistentPiecewiseMapParameters = Schema.makeFilter<PiecewiseMapParameter
   },
 );
 
-const PiecewiseMapParametersSchema = PiecewiseMapParametersFieldsSchema.check(
+const BasePiecewiseMapParametersSchema = PiecewiseMapParametersFieldsSchema.check(
   consistentPiecewiseMapParameters,
 );
 
@@ -576,8 +579,184 @@ const consistentLogisticMapParameters = Schema.makeFilter<LogisticMapParametersF
   },
 );
 
-const LogisticMapParametersSchema = LogisticMapParametersFieldsSchema.check(
+// A regressor model has no regressors of its own, so the base schemas type it without recursion.
+const RegressorFlatMapModelSchema = BaseFlatMapParametersSchema.pipe(
+  Schema.brand("effect-prophet/FittedFlatMapProphet"),
+);
+
+const RegressorPiecewiseMapModelSchema = BasePiecewiseMapParametersSchema.pipe(
+  Schema.brand("effect-prophet/FittedPiecewiseMapProphet"),
+);
+
+type RegressorFlatMapModelType = typeof RegressorFlatMapModelSchema.Type;
+
+type RegressorPiecewiseMapModelType = typeof RegressorPiecewiseMapModelSchema.Type;
+
+// Interfaces keep declarations naming these types instead of repeating them in every model type.
+
+/** The flat model fitted to one regressor, which has no regressors of its own. */
+export interface RegressorFlatMapModel extends RegressorFlatMapModelType {}
+
+/** The linear model fitted to one regressor, which has no regressors of its own. */
+export interface RegressorPiecewiseMapModel extends RegressorPiecewiseMapModelType {}
+
+const RegressorModelFitSchema: Schema.Codec<
+  RegressorFlatMapModel | RegressorPiecewiseMapModel,
+  unknown
+> = Schema.Union([RegressorFlatMapModelSchema, RegressorPiecewiseMapModelSchema]);
+
+const RegressorModelFieldsSchema = Schema.Struct({
+  name: FeatureNameSchema,
+  timestamps: Schema.Array(Schema.Int),
+  values: Schema.Array(Schema.Finite),
+  model: RegressorModelFitSchema,
+});
+
+const consistentRegressorModel = Schema.makeFilter<typeof RegressorModelFieldsSchema.Type>(
+  (regressorModel) => {
+    const issues: Array<{
+      readonly path: ReadonlyArray<PropertyKey>;
+      readonly issue: string;
+    }> = [];
+
+    if (regressorModel.values.length !== regressorModel.timestamps.length) {
+      issues.push({
+        path: ["values"],
+        issue: "Regressor model training timestamps and values must align",
+      });
+    }
+
+    if (
+      regressorModel.timestamps.some(
+        (timestamp, index) => index > 0 && timestamp < (regressorModel.timestamps[index - 1] ?? 0),
+      )
+    ) {
+      issues.push({
+        path: ["timestamps"],
+        issue: "Regressor model training timestamps must be nondecreasing",
+      });
+    }
+
+    if (regressorModel.model.fitSummary.observationCount !== regressorModel.timestamps.length) {
+      issues.push({
+        path: ["model", "fitSummary", "observationCount"],
+        issue: "A regressor model must be fitted to its own training values",
+      });
+    }
+
+    if (
+      regressorModel.model.regressors.length > 0 ||
+      regressorModel.model.countryHolidays !== undefined
+    ) {
+      issues.push({
+        path: ["model"],
+        issue: "A regressor model cannot have regressors or country holidays",
+      });
+    }
+
+    return issues;
+  },
+);
+
+/** One regressor forecast by its own model, with the training values it was fitted to. */
+export const RegressorModelSchema = RegressorModelFieldsSchema.check(consistentRegressorModel);
+
+const RegressorModelsSchema = Schema.optionalKey(Schema.Array(RegressorModelSchema));
+
+/**
+ * Check that regressor models name regressors in definition order and were trained on the main
+ * model's history, inside its time bounds when it has them.
+ */
+const regressorModelIssues = (
+  parameters: {
+    readonly regressors: ReadonlyArray<typeof FittedRegressorSchema.Type>;
+    readonly regressorModels?: ReadonlyArray<typeof RegressorModelSchema.Type>;
+    readonly fitSummary: { readonly observationCount: number };
+  },
+  bounds?: { readonly start: number; readonly end: number },
+): Array<{
+  readonly path: ReadonlyArray<PropertyKey>;
+  readonly issue: string;
+}> => {
+  const issues: Array<{
+    readonly path: ReadonlyArray<PropertyKey>;
+    readonly issue: string;
+  }> = [];
+
+  const names = parameters.regressors.map((regressor) => regressor.definition.name);
+  const firstTimestamps = parameters.regressorModels?.[0]?.timestamps;
+  let previous = -1;
+
+  for (const [index, regressorModel] of (parameters.regressorModels ?? []).entries()) {
+    const position = names.indexOf(regressorModel.name);
+
+    if (position <= previous) {
+      issues.push({
+        path: ["regressorModels", index, "name"],
+        issue: "Regressor models must name distinct regressors in definition order",
+      });
+    }
+
+    previous = Math.max(previous, position);
+
+    if (
+      regressorModel.timestamps.length !== parameters.fitSummary.observationCount ||
+      regressorModel.timestamps.some((timestamp, row) => timestamp !== firstTimestamps?.[row])
+    ) {
+      issues.push({
+        path: ["regressorModels", index, "timestamps"],
+        issue: "Every regressor model must be trained on the main model's history",
+      });
+    }
+
+    if (
+      bounds !== undefined &&
+      regressorModel.timestamps.some(
+        (timestamp) => timestamp < bounds.start || timestamp > bounds.end,
+      )
+    ) {
+      issues.push({
+        path: ["regressorModels", index, "timestamps"],
+        issue: "Regressor model training timestamps must be inside the training bounds",
+      });
+    }
+  }
+
+  return issues;
+};
+
+const FlatMapParametersSchema = Schema.Struct({
+  ...FlatMapParametersFieldsSchema.fields,
+  regressorModels: RegressorModelsSchema,
+}).check(
+  consistentFlatMapParameters,
+  Schema.makeFilter((parameters) => regressorModelIssues(parameters)),
+);
+
+const PiecewiseMapParametersSchema = Schema.Struct({
+  ...PiecewiseMapParametersFieldsSchema.fields,
+  regressorModels: RegressorModelsSchema,
+}).check(
+  consistentPiecewiseMapParameters,
+  Schema.makeFilter((parameters) =>
+    regressorModelIssues(parameters, {
+      start: parameters.timeOrigin,
+      end: parameters.timeOrigin + parameters.timeScale,
+    }),
+  ),
+);
+
+const LogisticMapParametersSchema = Schema.Struct({
+  ...LogisticMapParametersFieldsSchema.fields,
+  regressorModels: RegressorModelsSchema,
+}).check(
   consistentLogisticMapParameters,
+  Schema.makeFilter((parameters) =>
+    regressorModelIssues(parameters, {
+      start: parameters.timeOrigin,
+      end: parameters.timeOrigin + parameters.timeScale,
+    }),
+  ),
 );
 
 const FittedFlatMapProphetSchema = FlatMapParametersSchema.pipe(
@@ -637,6 +816,9 @@ export type FittedLogisticMapProphet = typeof FittedLogisticMapProphetSchema.Typ
 /** A parsed fitted model accepted by the public prediction operation. */
 export type FittedProphet = typeof FittedProphetSchema.Type;
 
+/** One regressor forecast by its own fitted model, with the training values it was fitted to. */
+export type RegressorModel = typeof RegressorModelSchema.Type;
+
 /** An internal failure to establish the fitted-model invariants. */
 export class InvalidFittedModel extends Schema.TaggedError<InvalidFittedModel>()(
   "InvalidFittedModel",
@@ -693,6 +875,10 @@ const freezeFeatureModel = <
   const frozen = freezeOwned(model);
 
   parsedModels.set(frozen, frozen);
+
+  for (const regressorModel of frozen.regressorModels ?? []) {
+    parsedModels.set(regressorModel.model, regressorModel.model);
+  }
 
   return frozen;
 };

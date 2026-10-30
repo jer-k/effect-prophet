@@ -93,6 +93,11 @@ export interface FitInvestigation {
 
 type FitQualityPolicy = "equality-gate" | "diagnostic-only" | "output-first";
 
+/** Whether any regressor is forecast by its own model, which Python cannot persist. */
+const forecastsRegressors = (benchmarkCase: BenchmarkCase): boolean =>
+  benchmarkCase.workload.kind !== "fixed-linear-prediction" &&
+  benchmarkCase.workload.configuration.regressors.some((regressor) => regressor.predictor === true);
+
 const fitQualityPolicy = (
   quality: NonNullable<BenchmarkCase["optimizerQuality"]>,
 ): FitQualityPolicy => {
@@ -871,7 +876,12 @@ const correctnessForCase = (
     };
   }
 
-  const persistenceFailed = [...effectProjections, ...pythonProjections].some((projection) => {
+  // Prophet's model_to_json drops regressor models, so Python has no round trip to report for them.
+  const persistenceProjections = forecastsRegressors(benchmarkCase)
+    ? effectProjections
+    : [...effectProjections, ...pythonProjections];
+
+  const persistenceFailed = persistenceProjections.some((projection) => {
     const error = projection.persistenceMaximumAbsoluteError;
     const tolerance = benchmarkCase.correctnessTolerances.persistence;
 

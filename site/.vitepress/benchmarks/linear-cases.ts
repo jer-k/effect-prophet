@@ -150,6 +150,29 @@ export const linearCaseDescriptions = {
     summary:
       "256 daily rows with a yes/no regressor and three numeric ones, each standardized differently.",
   },
+  "linear-regressor-model": {
+    group: "features",
+    title: "A regressor forecast by its own model",
+    summary:
+      "The same four regressors on Prophet's defaults, with the smooth cyclical one forecast by its own default model, as with regressor_predictor=True.",
+  },
+  "uncertainty-linear-regressor-model-intervals-1000": {
+    group: "uncertainty",
+    title: "Ranges with a forecast regressor",
+    summary:
+      "80% ranges from 1,000 simulated paths on every past and future date, each future path using one of the regressor model's own simulated values.",
+  },
+  "evaluation-linear-regressor-model-point": {
+    group: "evaluation",
+    title: "Cross-validation with a forecast regressor",
+    summary:
+      "Two cutoffs and a 7-day horizon, fitting the regressor model again in each fold. Python's cross_validation refits it on standardized values, so Python is fitted at each cutoff instead.",
+  },
+  "evaluation-linear-regressor-model-intervals": {
+    group: "evaluation",
+    title: "Cross-validation with a forecast regressor and ranges",
+    summary: "The same folds with simulated futures that include the regressor model's draws.",
+  },
   "map-mixed-features-explicit-small": {
     group: "features",
     title: "Everything at once, small",

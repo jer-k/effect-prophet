@@ -158,6 +158,29 @@ export const flatCaseDescriptions = {
     summary:
       "Two years of daily rows. Temperature follows the yearly pattern closely and a constant regressor duplicates the level. The forecast half-year has an unusually warm winter, so the split between temperature and the yearly pattern shows.",
   },
+  "flat-regressor-model": {
+    group: "features",
+    title: "A regressor forecast by its own model",
+    summary:
+      "The same two years, with temperature forecast by its own default model, as with regressor_predictor=True. Its forecast replaces the half-year of future temperatures.",
+  },
+  "uncertainty-flat-regressor-model-intervals-1000": {
+    group: "uncertainty",
+    title: "Ranges with a forecast regressor",
+    summary:
+      "80% ranges from 1,000 simulated paths on every past and future date, each future path using one of the temperature model's own simulated values.",
+  },
+  "evaluation-flat-regressor-model-point": {
+    group: "evaluation",
+    title: "Cross-validation with a forecast regressor",
+    summary:
+      "Two cutoffs and a 7-day horizon, fitting the temperature model again in each fold. Python's cross_validation refits it on standardized values and drifts by about 15% here, so Python is fitted at each cutoff instead.",
+  },
+  "evaluation-flat-regressor-model-intervals": {
+    group: "evaluation",
+    title: "Cross-validation with a forecast regressor and ranges",
+    summary: "The same folds with simulated futures that include the temperature model's draws.",
+  },
   "flat-mixed-components-large-absmax": {
     group: "features",
     title: "Mixed effects, eight months, absmax scaling",

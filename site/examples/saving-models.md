@@ -11,7 +11,10 @@ load it later, for example to fit once in a nightly job and forecast on demand i
   data and turns it back into a model.
 - **Loading and predicting don't need the forecasting engine**, so no layer is required.
 - **No refitting happens on load.** The restored model gives exactly the same forecasts as the
-  original.
+  original. That includes models whose regressors are
+  [forecast by their own models](./regressors#forecasting-a-regressor): their models and the
+  regressor history they were fitted to are saved too, so the file grows with the history. Python's
+  `model_to_json` drops them.
 - Saved models are meant to be loaded by the **same version** of Effect Prophet. Refit after
   upgrading.
 - This format is not compatible with Python Prophet's `model_to_json`.

@@ -1,3 +1,4 @@
+import { fnv1aSeed } from "./internal/seed-hash";
 import { simulationIdentity } from "./uncertainty";
 
 /** Stable evaluation schedule; independent of the simulator's own version. */
@@ -39,48 +40,21 @@ export const deriveEvaluationFoldSeed = (
     return undefined;
   }
 
-  let hash = 2_166_136_261;
+  return fnv1aSeed(({ byte, bytes, uint32, int64 }) => {
+    bytes(encoder.encode(evaluationSeedSchedule));
+    byte(0);
+    uint32(rootSeed);
+    uint32(simulation.length);
+    bytes(simulation);
+    int64(plan.horizonMs);
+    uint32(plan.cutoffs.length);
 
-  const byte = (value: number): void => {
-    hash = Math.imul(hash ^ value, 16_777_619) >>> 0;
-  };
-
-  const bytes = (values: Uint8Array): void => {
-    for (const value of values) {
-      byte(value);
+    for (const timestamp of plan.cutoffs) {
+      int64(timestamp);
     }
-  };
 
-  const uint32 = (value: number): void => {
-    for (let index = 0; index < 4; index += 1) {
-      byte((value >>> (8 * index)) & 0xff);
-    }
-  };
-
-  const int64 = (value: number): void => {
-    let remaining = BigInt(value);
-
-    for (let index = 0; index < 8; index += 1) {
-      byte(Number(remaining & 0xffn));
-      remaining >>= 8n;
-    }
-  };
-
-  bytes(encoder.encode(evaluationSeedSchedule));
-  byte(0);
-  uint32(rootSeed);
-  uint32(simulation.length);
-  bytes(simulation);
-  int64(plan.horizonMs);
-  uint32(plan.cutoffs.length);
-
-  for (const timestamp of plan.cutoffs) {
-    int64(timestamp);
-  }
-
-  uint32(candidate.length);
-  bytes(candidate);
-  int64(cutoff);
-
-  return hash;
+    uint32(candidate.length);
+    bytes(candidate);
+    int64(cutoff);
+  });
 };

@@ -227,6 +227,7 @@ def configure_model(benchmark_case: dict[str, Any]) -> Prophet:
             prior_scale=regressor.get("priorScale"),
             standardize=standardization[regressor["standardization"]],
             mode=regressor.get("mode", configuration.get("seasonalityMode", "additive")),
+            regressor_predictor=True if regressor.get("predictor") else None,
         )
     model.stan_backend.set_options(
         newton_fallback=workload["pythonOptimizer"]["newtonFallback"]
@@ -722,6 +723,17 @@ def maximum_projection_difference(
     return maximum
 
 
+def persists_model(benchmark_case: dict[str, Any]) -> bool:
+    """Whether Prophet's JSON round trip keeps the model, which it can't with regressor models.
+
+    model_to_json drops each regressor model, so a restored model asks for the regressor's future
+    values instead of forecasting them. Effect still checks its own round trip for these cases.
+    """
+
+    regressors = benchmark_case["workload"].get("configuration", {}).get("regressors", [])
+    return not any(regressor.get("predictor") for regressor in regressors)
+
+
 def persistence_maximum_error(
     model: Prophet,
     prediction_frame: pd.DataFrame,
@@ -773,8 +785,8 @@ def assert_uncertainty(model: Prophet, frame: pd.DataFrame, benchmark_case: dict
     intervals = run_uncertainty(model, frame, benchmark_case, "intervals")
     original = run_uncertainty(model, frame, benchmark_case)
     replay = run_uncertainty(model, frame, benchmark_case)
-    restored = model_from_json(model_to_json(model))
-    reloaded = run_uncertainty(restored, frame, benchmark_case)
+    reloaded = (run_uncertainty(model_from_json(model_to_json(model)), frame, benchmark_case)
+                if persists_model(benchmark_case) else replay)
     if any(draws[key].shape != (length, count) or not np.isfinite(draws[key]).all()
            for key in ("trend", "yhat")) or len(intervals) != length:
         raise ValueError("Uncertainty returned incorrect or non-finite dimensions")
@@ -797,13 +809,14 @@ def assert_uncertainty(model: Prophet, frame: pd.DataFrame, benchmark_case: dict
         for other in (replay, reloaded):
             if not original.equals(other):
                 raise ValueError("Seeded interval replay changed after model reload")
-    verified = subprocess.run(
-        [sys.executable, str(ADAPTER_PATH), "--verify-uncertainty", benchmark_case["id"]],
-        input=json.dumps({"model": model_to_json(model), "expected": uncertainty_digest(original)}),
-        text=True, capture_output=True, timeout=benchmark_case["timeoutSeconds"], check=False,
-    )
-    if verified.returncode != 0 or PROTOCOL_PREFIX not in verified.stdout:
-        raise ValueError(verified.stderr or verified.stdout or "Fresh-process uncertainty replay failed")
+    if persists_model(benchmark_case):
+        verified = subprocess.run(
+            [sys.executable, str(ADAPTER_PATH), "--verify-uncertainty", benchmark_case["id"]],
+            input=json.dumps({"model": model_to_json(model), "expected": uncertainty_digest(original)}),
+            text=True, capture_output=True, timeout=benchmark_case["timeoutSeconds"], check=False,
+        )
+        if verified.returncode != 0 or PROTOCOL_PREFIX not in verified.stdout:
+            raise ValueError(verified.stderr or verified.stdout or "Fresh-process uncertainty replay failed")
 
     bounds = intervals[["trend_lower", "trend_upper", "yhat_lower", "yhat_upper"]].to_numpy(dtype=np.float64)
     return {"algorithm": "prophet-1.4.0-scalar-continuous-time", "output": controls["output"],
@@ -863,20 +876,21 @@ def correctness_projection(
     assert_forecasts(benchmark_case, dataset, projections, model)
     assert_fixed_equation(benchmark_case, projections)
     assert_metadata(benchmark_case, metadata, len(training))
-    verified = subprocess.run(
-        [sys.executable, str(ADAPTER_PATH), "--verify-restored", benchmark_case["id"]],
-        input=json.dumps({
-            "model": model_to_json(model),
-            "forecasts": projections,
-            "tolerance": benchmark_case["correctnessTolerances"]["persistence"]["absolute"],
-        }),
-        text=True,
-        capture_output=True,
-        timeout=benchmark_case["timeoutSeconds"],
-        check=False,
-    )
-    if verified.returncode != 0 or PROTOCOL_PREFIX not in verified.stdout:
-        raise ValueError(verified.stderr or verified.stdout or "Fresh-process restoration failed")
+    if persists_model(benchmark_case):
+        verified = subprocess.run(
+            [sys.executable, str(ADAPTER_PATH), "--verify-restored", benchmark_case["id"]],
+            input=json.dumps({
+                "model": model_to_json(model),
+                "forecasts": projections,
+                "tolerance": benchmark_case["correctnessTolerances"]["persistence"]["absolute"],
+            }),
+            text=True,
+            capture_output=True,
+            timeout=benchmark_case["timeoutSeconds"],
+            check=False,
+        )
+        if verified.returncode != 0 or PROTOCOL_PREFIX not in verified.stdout:
+            raise ValueError(verified.stderr or verified.stdout or "Fresh-process restoration failed")
 
     uncertainty = benchmark_case["workload"].get("uncertainty")
     uncertainty_evidence = (assert_uncertainty(model, prediction_frame, benchmark_case)
@@ -894,9 +908,9 @@ def correctness_projection(
         "serializedModelBytes": len(model_to_json(model).encode("utf-8")),
         **({"countryHolidays": country_projection(model, prediction_frame, benchmark_case, projections)}
            if model.country_holidays is not None else {}),
-        "persistenceMaximumAbsoluteError": persistence_maximum_error(
+        **({"persistenceMaximumAbsoluteError": persistence_maximum_error(
             model, prediction_frame, projections
-        ),
+        )} if persists_model(benchmark_case) else {}),
         **({"uncertainty": uncertainty_evidence} if uncertainty_evidence is not None else {}),
         **({"anomalies": anomaly_evidence} if anomaly_evidence is not None else {}),
         **({"warmStart": warm_start_evidence(benchmark_case, init)} if init is not None else {}),

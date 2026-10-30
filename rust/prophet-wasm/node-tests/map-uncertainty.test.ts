@@ -29,6 +29,9 @@ const request = () =>
     new Float64Array([0]),
     new Float64Array([1]),
     new Float64Array([1]),
+    new Float64Array(),
+    new Float64Array(),
+    new Float64Array(),
     42,
     16,
     0.8,
@@ -56,6 +59,9 @@ const logisticRequest = () =>
     new Float64Array(),
     new Float64Array(),
     0,
+    new Float64Array(),
+    new Float64Array(),
+    new Float64Array(),
     new Float64Array(),
     new Float64Array(),
     new Float64Array(),
@@ -131,8 +137,8 @@ describe("seeded MAP simulation generated WASM boundary", () => {
     assert.deepEqual(invalid(0, new Float64Array([Number.NaN, 20])), [1]);
     assert.deepEqual(invalid(1, new Float64Array([0, 20])), [1]);
     assert.deepEqual(invalid(5, 1), [1]);
-    assert.deepEqual(invalid(24, 2 ** 32), [1]);
-    assert.deepEqual(invalid(25, 2_049), [3]);
+    assert.deepEqual(invalid(27, 2 ** 32), [1]);
+    assert.deepEqual(invalid(28, 2_049), [3]);
 
     const explicit: Array<number | Float64Array> = [...args];
     explicit[2] = new Float64Array([2, 3]);
@@ -186,8 +192,8 @@ describe("seeded MAP simulation generated WASM boundary", () => {
     assert.deepEqual(withExplicitChange(6, 1), [2]);
     assert.deepEqual(invalid(2, new Float64Array([2, 3])), [1]);
     assert.deepEqual(invalid(1, new Float64Array([10])), [1]);
-    assert.deepEqual(invalid(26, 0), [1]);
-    assert.deepEqual(invalid(27, 2), [1]);
+    assert.deepEqual(invalid(29, 0), [1]);
+    assert.deepEqual(invalid(30, 2), [1]);
   });
 
   it("reduces the same seeded saturated logistic samples to ordered finite intervals", () => {
@@ -195,8 +201,8 @@ describe("seeded MAP simulation generated WASM boundary", () => {
     args[0] = Float64Array.from({ length: 64 }, (_, index) => 20 + index);
     args[1] = Float64Array.from({ length: 64 }, (_, index) => 90 + index * 0.12);
     args[8] = 15;
-    args[24] = 19;
-    args[25] = 128;
+    args[27] = 19;
+    args[28] = 128;
 
     const samples = wasm.simulate_logistic_map_with_features(...args);
     const bands = wasm.simulate_logistic_map_with_features(...args.slice(0, -1), 0);
@@ -241,18 +247,18 @@ describe("seeded MAP simulation generated WASM boundary", () => {
     };
 
     for (const seed of [-1, 2 ** 32, 0.5, Number.NaN]) {
-      assert.deepEqual(Array.from(withChange(22, seed)), [1]);
+      assert.deepEqual(Array.from(withChange(25, seed)), [1]);
     }
 
-    assert.deepEqual(Array.from(withChange(22, 0).slice(0, 4)), [0, 1, 3, 16]);
-    assert.deepEqual(Array.from(withChange(22, 2 ** 32 - 1).slice(0, 4)), [0, 1, 3, 16]);
-    assert.deepEqual(Array.from(withChange(23, 0)), [1]);
-    assert.deepEqual(Array.from(withChange(23, -1)), [1]);
-    assert.deepEqual(Array.from(withChange(23, 1.5)), [1]);
-    assert.deepEqual(Array.from(withChange(23, 2_049)), [3]);
-    assert.deepEqual(Array.from(withChange(24, 0)), [1]);
-    assert.deepEqual(Array.from(withChange(24, 1)), [1]);
-    assert.deepEqual(Array.from(withChange(25, 2)), [1]);
+    assert.deepEqual(Array.from(withChange(25, 0).slice(0, 4)), [0, 1, 3, 16]);
+    assert.deepEqual(Array.from(withChange(25, 2 ** 32 - 1).slice(0, 4)), [0, 1, 3, 16]);
+    assert.deepEqual(Array.from(withChange(26, 0)), [1]);
+    assert.deepEqual(Array.from(withChange(26, -1)), [1]);
+    assert.deepEqual(Array.from(withChange(26, 1.5)), [1]);
+    assert.deepEqual(Array.from(withChange(26, 2_049)), [3]);
+    assert.deepEqual(Array.from(withChange(27, 0)), [1]);
+    assert.deepEqual(Array.from(withChange(27, 1)), [1]);
+    assert.deepEqual(Array.from(withChange(28, 2)), [1]);
     assert.deepEqual(Array.from(withChange(0, new Float64Array([Number.NaN, 5, 20]))), [1]);
     assert.deepEqual(Array.from(withChange(21, new Float64Array([0.5]))), [1]);
     assert.deepEqual(Array.from(withChange(17, new Float64Array([1, 0]))), [1]);

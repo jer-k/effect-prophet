@@ -114,4 +114,7 @@ because the model needs those values for the future too:
 predict(model, [{ timestamp: "2025-02-01T00:00:00.000Z", regressors: { temperature: 21 } }]);
 ```
 
+A regressor [forecast by its own model](../examples/regressors#forecasting-a-regressor) needs no
+future values.
+
 Forecasts come back in the same order as the rows you passed.
