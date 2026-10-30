@@ -93,7 +93,7 @@
     "@yielded/effect-tsrs": "0.2.3",
     "effect": "4.0.6",
     "fast-check": "^4.10.2",
-    "oxfmt": "^0.72.0",
+    "oxfmt": "^0.75.0",
     "oxlint": "^1.87.0",
     "rolldown": "^1.2.8",
     "rolldown-plugin-dts": "^0.28.0",
