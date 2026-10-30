@@ -66,6 +66,10 @@
     "flat-additive-components",
     "flat-additive-components-large",
     "flat-mixed-components-absmax-defaults",
-    "flat-correlated-regressors"
+    "flat-correlated-regressors",
+    "flat-regressor-model",
+    "uncertainty-flat-regressor-model-intervals-1000",
+    "evaluation-flat-regressor-model-point",
+    "evaluation-flat-regressor-model-intervals"
   ]
 }

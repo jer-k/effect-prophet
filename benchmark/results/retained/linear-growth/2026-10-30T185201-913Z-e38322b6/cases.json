@@ -962,7 +962,7 @@
     "id": "country-us-linear-additive",
     "dataset": "v5/country-basic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:4965576c053594e7b7feb32f08acd4bc5b1ae4a2e185db3c2862da16ef0f3e00",
+      "snapshotId": "sha256:11cd784d6c90ad62f915def4f2a73bb1dc85446feb1a048eb0ed8fc56937e33b",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -1104,7 +1104,7 @@
     "id": "country-explicit-us-linear-additive",
     "dataset": "v5/country-basic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:4965576c053594e7b7feb32f08acd4bc5b1ae4a2e185db3c2862da16ef0f3e00",
+      "snapshotId": "sha256:11cd784d6c90ad62f915def4f2a73bb1dc85446feb1a048eb0ed8fc56937e33b",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -1395,7 +1395,7 @@
     "id": "country-us-linear-multiplicative",
     "dataset": "v5/country-basic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:4965576c053594e7b7feb32f08acd4bc5b1ae4a2e185db3c2862da16ef0f3e00",
+      "snapshotId": "sha256:11cd784d6c90ad62f915def4f2a73bb1dc85446feb1a048eb0ed8fc56937e33b",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -1537,7 +1537,7 @@
     "id": "country-explicit-us-linear-multiplicative",
     "dataset": "v5/country-basic-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:4965576c053594e7b7feb32f08acd4bc5b1ae4a2e185db3c2862da16ef0f3e00",
+      "snapshotId": "sha256:11cd784d6c90ad62f915def4f2a73bb1dc85446feb1a048eb0ed8fc56937e33b",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -1828,7 +1828,7 @@
     "id": "country-boundary-linear",
     "dataset": "v5/country-boundary-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:4965576c053594e7b7feb32f08acd4bc5b1ae4a2e185db3c2862da16ef0f3e00",
+      "snapshotId": "sha256:11cd784d6c90ad62f915def4f2a73bb1dc85446feb1a048eb0ed8fc56937e33b",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -1941,7 +1941,7 @@
     "id": "country-global-priors-linear",
     "dataset": "v5/country-mixed-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:4965576c053594e7b7feb32f08acd4bc5b1ae4a2e185db3c2862da16ef0f3e00",
+      "snapshotId": "sha256:11cd784d6c90ad62f915def4f2a73bb1dc85446feb1a048eb0ed8fc56937e33b",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -2093,7 +2093,7 @@
     "id": "country-global-priors-overrides-linear",
     "dataset": "v5/country-mixed-96.json",
     "calendarSnapshot": {
-      "snapshotId": "sha256:4965576c053594e7b7feb32f08acd4bc5b1ae4a2e185db3c2862da16ef0f3e00",
+      "snapshotId": "sha256:11cd784d6c90ad62f915def4f2a73bb1dc85446feb1a048eb0ed8fc56937e33b",
       "prophet": "1.4.0",
       "holidays": "0.104"
     },
@@ -5609,6 +5609,500 @@
       "predictionRows": 24,
       "futureRows": 24,
       "horizonDays": 24
+    }
+  },
+  {
+    "id": "linear-regressor-model",
+    "dataset": "v1/map-regressors-medium.json",
+    "workload": {
+      "kind": "map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "linear-output-first-v4"
+      },
+      "configuration": {
+        "growth": "linear",
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [],
+        "events": [],
+        "regressors": [
+          {
+            "name": "binary-auto",
+            "priorScale": 10,
+            "standardization": "auto"
+          },
+          {
+            "name": "numeric-auto",
+            "priorScale": 10,
+            "standardization": "auto",
+            "predictor": true
+          },
+          {
+            "name": "numeric-always",
+            "priorScale": 7,
+            "standardization": "always"
+          },
+          {
+            "name": "numeric-never",
+            "priorScale": 5,
+            "standardization": "never"
+          }
+        ]
+      },
+      "effectOptimizer": {
+        "algorithm": "auto",
+        "maxIterations": 10000,
+        "fallback": "newton",
+        "lbfgs": {
+          "historySize": 5,
+          "initAlpha": 0.001,
+          "tolObj": 1e-12,
+          "tolRelObj": 10000,
+          "tolGrad": 1e-8,
+          "tolRelGrad": 10000000,
+          "tolParam": 1e-8
+        }
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      }
+    },
+    "phases": [
+      "adapter-input-conversion",
+      "warm-fit",
+      "warm-predict",
+      "warm-fit-predict",
+      "warm-fit-predict-with-conversion",
+      "cold-first-forecast"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 600,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.25,
+        "relative": 0.02
+      },
+      "component": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "additive": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "forecast": {
+        "absolute": 0.3,
+        "relative": 0.02
+      },
+      "noiseScale": {
+        "absolute": 0.1,
+        "relative": 0.2
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "map-regressors-v1:piecewise+binary-auto+numeric-auto+numeric-always+numeric-never+bounded-noise:n=256:h=64",
+      "sha256": "804afd5985e47268a8ddae3301fffcdaaf9a2afca3f3cdbdab8e3d028286f525",
+      "trainingRows": 256,
+      "predictionRows": 64,
+      "futureRows": 64,
+      "horizonDays": 64
+    }
+  },
+  {
+    "id": "uncertainty-linear-regressor-model-intervals-1000",
+    "dataset": "v1/map-regressors-medium.json",
+    "workload": {
+      "kind": "map",
+      "comparison": {
+        "kind": "equivalent-objective",
+        "evidenceId": "linear-output-first-v4"
+      },
+      "configuration": {
+        "growth": "linear",
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [],
+        "events": [],
+        "regressors": [
+          {
+            "name": "binary-auto",
+            "priorScale": 10,
+            "standardization": "auto"
+          },
+          {
+            "name": "numeric-auto",
+            "priorScale": 10,
+            "standardization": "auto",
+            "predictor": true
+          },
+          {
+            "name": "numeric-always",
+            "priorScale": 7,
+            "standardization": "always"
+          },
+          {
+            "name": "numeric-never",
+            "priorScale": 5,
+            "standardization": "never"
+          }
+        ]
+      },
+      "effectOptimizer": {
+        "algorithm": "auto",
+        "maxIterations": 10000,
+        "fallback": "newton",
+        "lbfgs": {
+          "historySize": 5,
+          "initAlpha": 0.001,
+          "tolObj": 1e-12,
+          "tolRelObj": 10000,
+          "tolGrad": 1e-8,
+          "tolRelGrad": 10000000,
+          "tolParam": 1e-8
+        }
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      },
+      "uncertainty": {
+        "seed": 19,
+        "samples": 1000,
+        "intervalWidth": 0.8,
+        "output": "intervals",
+        "algorithm": "scalar-continuous-time",
+        "evidence": "docs/validation/uncertainty.md#evidence-classes",
+        "samplerMemoryLimitBytes": 67108864
+      }
+    },
+    "phases": [
+      "uncertainty-input-conversion",
+      "warm-uncertainty",
+      "cold-first-uncertainty"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 3,
+    "independentRuns": 2,
+    "timeoutSeconds": 600,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.25,
+        "relative": 0.02
+      },
+      "component": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "additive": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "forecast": {
+        "absolute": 0.3,
+        "relative": 0.02
+      },
+      "noiseScale": {
+        "absolute": 0.1,
+        "relative": 0.2
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "optimizerQuality": {
+      "kind": "output-first",
+      "investigate": {
+        "objectiveAbsolute": 0.01,
+        "normalizedNoiseAbsolute": 0.0002,
+        "stationarityExcess": 0.01
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "map-regressors-v1:piecewise+binary-auto+numeric-auto+numeric-always+numeric-never+bounded-noise:n=256:h=64",
+      "sha256": "804afd5985e47268a8ddae3301fffcdaaf9a2afca3f3cdbdab8e3d028286f525",
+      "trainingRows": 256,
+      "predictionRows": 64,
+      "futureRows": 64,
+      "horizonDays": 64
+    }
+  },
+  {
+    "id": "evaluation-linear-regressor-model-point",
+    "dataset": "v1/map-regressors-medium.json",
+    "workload": {
+      "kind": "evaluation",
+      "comparison": {
+        "kind": "different-public-work",
+        "evidenceId": "rolling-origin-evaluation-v1"
+      },
+      "configuration": {
+        "growth": "linear",
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [],
+        "events": [],
+        "regressors": [
+          {
+            "name": "binary-auto",
+            "priorScale": 10,
+            "standardization": "auto"
+          },
+          {
+            "name": "numeric-auto",
+            "priorScale": 10,
+            "standardization": "auto",
+            "predictor": true
+          },
+          {
+            "name": "numeric-always",
+            "priorScale": 7,
+            "standardization": "always"
+          },
+          {
+            "name": "numeric-never",
+            "priorScale": 5,
+            "standardization": "never"
+          }
+        ]
+      },
+      "effectOptimizer": {
+        "algorithm": "auto",
+        "maxIterations": 10000,
+        "fallback": "newton",
+        "lbfgs": {
+          "historySize": 5,
+          "initAlpha": 0.001,
+          "tolObj": 1e-12,
+          "tolRelObj": 10000,
+          "tolGrad": 1e-8,
+          "tolRelGrad": 10000000,
+          "tolParam": 1e-8
+        }
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      },
+      "plan": {
+        "horizonMs": 604800000,
+        "cutoffs": [
+          "2020-08-22T00:00:00.000Z",
+          "2020-09-02T00:00:00.000Z"
+        ]
+      },
+      "metricAggregation": "horizons"
+    },
+    "phases": [
+      "evaluation-input-conversion",
+      "evaluation-plan",
+      "evaluation-point",
+      "evaluation-metrics",
+      "evaluation-baseline",
+      "cold-first-evaluation"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 900,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.25,
+        "relative": 0.02
+      },
+      "component": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "additive": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "forecast": {
+        "absolute": 0.3,
+        "relative": 0.02
+      },
+      "noiseScale": {
+        "absolute": 0.1,
+        "relative": 0.2
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "map-regressors-v1:piecewise+binary-auto+numeric-auto+numeric-always+numeric-never+bounded-noise:n=256:h=64",
+      "sha256": "804afd5985e47268a8ddae3301fffcdaaf9a2afca3f3cdbdab8e3d028286f525",
+      "trainingRows": 256,
+      "predictionRows": 64,
+      "futureRows": 64,
+      "horizonDays": 64
+    }
+  },
+  {
+    "id": "evaluation-linear-regressor-model-intervals",
+    "dataset": "v1/map-regressors-medium.json",
+    "workload": {
+      "kind": "evaluation",
+      "comparison": {
+        "kind": "different-public-work",
+        "evidenceId": "rolling-origin-evaluation-v1"
+      },
+      "configuration": {
+        "growth": "linear",
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [],
+        "events": [],
+        "regressors": [
+          {
+            "name": "binary-auto",
+            "priorScale": 10,
+            "standardization": "auto"
+          },
+          {
+            "name": "numeric-auto",
+            "priorScale": 10,
+            "standardization": "auto",
+            "predictor": true
+          },
+          {
+            "name": "numeric-always",
+            "priorScale": 7,
+            "standardization": "always"
+          },
+          {
+            "name": "numeric-never",
+            "priorScale": 5,
+            "standardization": "never"
+          }
+        ]
+      },
+      "effectOptimizer": {
+        "algorithm": "auto",
+        "maxIterations": 10000,
+        "fallback": "newton",
+        "lbfgs": {
+          "historySize": 5,
+          "initAlpha": 0.001,
+          "tolObj": 1e-12,
+          "tolRelObj": 10000,
+          "tolGrad": 1e-8,
+          "tolRelGrad": 10000000,
+          "tolParam": 1e-8
+        }
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      },
+      "plan": {
+        "horizonMs": 604800000,
+        "cutoffs": [
+          "2020-08-22T00:00:00.000Z",
+          "2020-09-02T00:00:00.000Z"
+        ]
+      },
+      "metricAggregation": "horizons",
+      "interval": {
+        "seed": 19,
+        "samples": 128,
+        "intervalWidth": 0.8
+      }
+    },
+    "phases": [
+      "evaluation-intervals"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 900,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.25,
+        "relative": 0.02
+      },
+      "component": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "additive": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "forecast": {
+        "absolute": 0.3,
+        "relative": 0.02
+      },
+      "noiseScale": {
+        "absolute": 0.1,
+        "relative": 0.2
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "map-regressors-v1:piecewise+binary-auto+numeric-auto+numeric-always+numeric-never+bounded-noise:n=256:h=64",
+      "sha256": "804afd5985e47268a8ddae3301fffcdaaf9a2afca3f3cdbdab8e3d028286f525",
+      "trainingRows": 256,
+      "predictionRows": 64,
+      "futureRows": 64,
+      "horizonDays": 64
     }
   }
 ]

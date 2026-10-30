@@ -25,6 +25,11 @@ All notable changes to this project are documented here. The format follows
 - The [tracing guide](https://jer-k.github.io/effect-prophet/guide/tracing) example provides its
   layers in one `Effect.provide` call.
 
+### Benchmarks
+
+- New benchmarks for regressors forecast by their own models, on flat and linear growth, checked
+  against Python Prophet for forecasts, uncertainty ranges and cross-validation.
+
 ## [0.5.0] - 2026-10-29
 
 Helpers for the steps around a forecast: list the dates to forecast, check how well a model fits,
