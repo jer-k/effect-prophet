@@ -88,7 +88,7 @@
     "check": "npm run format:check && npm run format:rust:check && npm run lint && npm run lint:rust && npm run notices:check && npm run typecheck && npm run benchmark:typecheck && npm run effect:check && npm test && npm run benchmark:test && npm run test:integration:prophet && npm run test:rust && npm run test:wasm && npm run test:wasm:optimizer && npm run test:package"
   },
   "devDependencies": {
-    "@oxlint/plugins": "1.88.0",
+    "@oxlint/plugins": "1.90.0",
     "@types/node": "^26.6.5",
     "@yielded/effect-tsrs": "0.2.3",
     "effect": "4.0.6",
