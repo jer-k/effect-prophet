@@ -4,7 +4,9 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows
 [Semantic Versioning](https://semver.org/). Before 1.0, minor versions may include breaking changes.
 
-## [Unreleased]
+## [0.5.1] - 2026-10-31
+
+A maintenance release. The package is built with new tooling, and existing code works as before.
 
 ### Changed
 
@@ -357,6 +359,7 @@ These Python Prophet features are not implemented in this release:
 - Inputs that cannot define a trend, such as every row sharing one timestamp, return an error where
   Python returns `NaN` forecasts.
 
+[0.5.1]: https://github.com/jer-k/effect-prophet/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/jer-k/effect-prophet/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/jer-k/effect-prophet/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/jer-k/effect-prophet/compare/v0.2.0...v0.3.0
