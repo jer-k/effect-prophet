@@ -1,6 +1,6 @@
 {
   "name": "effect-prophet",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Effect-based time-series forecasting with a Rust/WASM numerical backend",
   "keywords": [
     "effect",
