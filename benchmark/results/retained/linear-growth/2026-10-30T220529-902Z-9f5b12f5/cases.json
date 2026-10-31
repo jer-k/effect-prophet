@@ -5612,6 +5612,134 @@
     }
   },
   {
+    "id": "evaluation-linear-long-history-parallel",
+    "dataset": "v3/linear-long-history.json",
+    "workload": {
+      "kind": "evaluation",
+      "comparison": {
+        "kind": "different-public-work",
+        "evidenceId": "rolling-origin-evaluation-v1"
+      },
+      "configuration": {
+        "growth": "linear",
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [
+          {
+            "name": "yearly-custom",
+            "periodDays": 365.25,
+            "fourierOrder": 10,
+            "priorScale": 10
+          },
+          {
+            "name": "weekly-custom",
+            "periodDays": 7,
+            "fourierOrder": 3,
+            "priorScale": 10
+          }
+        ],
+        "events": [],
+        "regressors": []
+      },
+      "effectOptimizer": {
+        "algorithm": "auto",
+        "maxIterations": 10000,
+        "fallback": "newton",
+        "lbfgs": {
+          "historySize": 5,
+          "initAlpha": 0.001,
+          "tolObj": 1e-12,
+          "tolRelObj": 10000,
+          "tolGrad": 1e-8,
+          "tolRelGrad": 10000000,
+          "tolParam": 1e-8
+        }
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      },
+      "plan": {
+        "horizonMs": 2592000000,
+        "cutoffs": [
+          "2022-01-01T00:00:00.000Z",
+          "2022-01-31T00:00:00.000Z",
+          "2022-03-02T00:00:00.000Z",
+          "2022-04-01T00:00:00.000Z",
+          "2022-05-01T00:00:00.000Z",
+          "2022-05-31T00:00:00.000Z",
+          "2022-06-30T00:00:00.000Z",
+          "2022-07-30T00:00:00.000Z",
+          "2022-08-29T00:00:00.000Z",
+          "2022-09-28T00:00:00.000Z",
+          "2022-10-28T00:00:00.000Z",
+          "2022-11-27T00:00:00.000Z"
+        ]
+      },
+      "metricAggregation": "horizons",
+      "interval": {
+        "seed": 19,
+        "samples": 256,
+        "intervalWidth": 0.8
+      }
+    },
+    "phases": [
+      "evaluation-point",
+      "evaluation-point-threads",
+      "evaluation-point-processes",
+      "evaluation-intervals",
+      "evaluation-intervals-threads",
+      "evaluation-intervals-processes"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 900,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.01,
+        "relative": 0.002
+      },
+      "component": {
+        "absolute": 0.01,
+        "relative": 0.002
+      },
+      "additive": {
+        "absolute": 0.01,
+        "relative": 0.002
+      },
+      "forecast": {
+        "absolute": 0.01,
+        "relative": 0.002
+      },
+      "noiseScale": {
+        "absolute": 0.01,
+        "relative": 0.02
+      },
+      "persistence": {
+        "absolute": 1e-10,
+        "relative": 0
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "long-history-v1:piecewise+weekly+yearly+bounded-noise-x20:n=1095:h=365",
+      "sha256": "30f02c063165126f62a0964a83fef842d557b54fab6300c692ef69225bb94d41",
+      "trainingRows": 1095,
+      "predictionRows": 365,
+      "futureRows": 365,
+      "horizonDays": 365
+    }
+  },
+  {
     "id": "linear-regressor-model",
     "dataset": "v1/map-regressors-medium.json",
     "workload": {

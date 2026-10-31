@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "runId": "2026-10-30T191330-012Z-e38322b6",
-  "createdAt": "2026-10-30T19:13:35.019Z",
-  "gitRevision": "e38322b64aa058247a89e2197cd98ad9ea44f2f5",
+  "runId": "2026-10-30T222729-115Z-9f5b12f5",
+  "createdAt": "2026-10-30T22:27:34.078Z",
+  "gitRevision": "9f5b12f53b9529aae2350a864e2c3c632a658951",
   "gitDirty": false,
   "hostPlatform": "darwin",
   "hostRelease": "25.5.0",
@@ -50,6 +50,7 @@
     "evaluation-flat-large-point",
     "evaluation-flat-large-intervals",
     "evaluation-flat-large-months-metrics",
+    "evaluation-flat-large-parallel",
     "flat-defaults-level",
     "flat-defaults-seasonal",
     "flat-defaults-negative",
@@ -161,7 +162,7 @@
     },
     {
       "name": "benchmark/cases/diagnostics/evaluation.ts",
-      "value": "fa2e7d0ee4cec338096d33816601b71372dd5963e5b6ae9b0785ad257b5e1cc9"
+      "value": "56d79c90c6ad023d86dac2f3e61981971685f5a22b7cc8648c2c729d1741eefa"
     },
     {
       "name": "benchmark/cases/growth/flat/public-api.ts",
@@ -185,11 +186,11 @@
     },
     {
       "name": "benchmark/tools/adapters/effect-prophet.ts",
-      "value": "54b1acd1ff5779a6d0bd7f5270a70099de68132e888e71cfe7f8328c72a6b55a"
+      "value": "870a1003744d868e6be9d22b5c4b6fb4ec2a7a77f66aad50af942e5c1ce14e9c"
     },
     {
       "name": "benchmark/tools/adapters/python-prophet.py",
-      "value": "c778024b1cd80cfd2fc29eec33fd0ed0203b40ec583bf16a67f9940185d74c5d"
+      "value": "5605568cb14ff2c26958fd8fa2d84d126700f4c556360ccd32602d0af228f4f0"
     },
     {
       "name": "benchmark/tools/catalog.ts",
@@ -197,11 +198,11 @@
     },
     {
       "name": "benchmark/tools/case.ts",
-      "value": "ffcb054916f5aa66ce0708405e119711efe2a870ce96473aeffba9dec5182763"
+      "value": "e3d9ee8e4396985d8b461ebb3092d58b6728c2a8bb9c3c181a6d64e79c810c5c"
     },
     {
       "name": "benchmark/tools/report.ts",
-      "value": "0553fb0650b8665d84b58c0c88dd628f7189971febbe6b1de29df38d06e6bc60"
+      "value": "7fa52c98d18d9720a0834e2dc84451694701f71b5d52e33a8a4e5fc72a4a447a"
     },
     {
       "name": "benchmark/tools/report-cli.ts",
@@ -213,11 +214,11 @@
     },
     {
       "name": "benchmark/tools/adapters/evaluation.py",
-      "value": "711a9910d8ff2fd72c691e8a2cb06ecd9b1bed85ab9049708e2db96d046c530b"
+      "value": "910a75622a0aa6fcb366c6de6d9024821b0c75442f7e14850620a40186724597"
     },
     {
-      "name": "benchmark/results/runs/2026-10-30T191330-012Z-e38322b6/cases.json",
-      "value": "77071a8cb6c433c6a154b2da04bbbcc46b8225eb003a1d29829f6ae42c51e887"
+      "name": "benchmark/results/runs/2026-10-30T222729-115Z-9f5b12f5/cases.json",
+      "value": "dfb342e11982cfb09dd1ab8577f8e126ed075d312d56ea1214e26fad07c7c0e5"
     },
     {
       "name": "benchmark/evidence/comparisons.json",
@@ -347,11 +348,11 @@
   "containerImages": [
     {
       "name": "effect-prophet/benchmark-effect:local",
-      "value": "sha256:cd8988251fd7923096182d824ed43a8c3f0f87f9df88dacf371f852210b2b070"
+      "value": "sha256:ef20b2858f79a9dbdfa51029f7a079f79b53a70753cb01d859109a068f58850c"
     },
     {
       "name": "effect-prophet/benchmark-python:1.4.0",
-      "value": "sha256:2fab6886e0c60430dea9af2941531e60a69de9161b2f5de67a7e17206490660e"
+      "value": "sha256:5a84d9680b8883e4107a99ca332320d8b42e431fe6e4e0f42b78b76b079484c7"
     }
   ]
 }

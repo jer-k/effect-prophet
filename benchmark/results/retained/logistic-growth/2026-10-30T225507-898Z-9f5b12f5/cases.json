@@ -3119,6 +3119,124 @@
     }
   },
   {
+    "id": "evaluation-logistic-large-parallel",
+    "dataset": "v1/logistic-implicit-floor-large.json",
+    "workload": {
+      "kind": "evaluation",
+      "comparison": {
+        "kind": "different-public-work",
+        "evidenceId": "rolling-origin-evaluation-v1"
+      },
+      "configuration": {
+        "growth": "logistic",
+        "scaling": "minmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "explicit",
+          "timestamps": [
+            "2020-02-10T00:00:00.000Z"
+          ]
+        },
+        "changepointPriorScale": 0.2,
+        "seasonalities": [
+          {
+            "name": "weekly-custom",
+            "periodDays": 7,
+            "fourierOrder": 2,
+            "priorScale": 10
+          }
+        ],
+        "events": [],
+        "regressors": []
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      },
+      "plan": {
+        "horizonMs": 604800000,
+        "cutoffs": [
+          "2020-06-20T00:00:00.000Z",
+          "2020-06-27T00:00:00.000Z",
+          "2020-07-04T00:00:00.000Z",
+          "2020-07-11T00:00:00.000Z",
+          "2020-07-18T00:00:00.000Z",
+          "2020-07-25T00:00:00.000Z",
+          "2020-08-01T00:00:00.000Z",
+          "2020-08-08T00:00:00.000Z",
+          "2020-08-15T00:00:00.000Z",
+          "2020-08-22T00:00:00.000Z",
+          "2020-08-29T00:00:00.000Z",
+          "2020-09-05T00:00:00.000Z"
+        ]
+      },
+      "metricAggregation": "horizons",
+      "candidates": [
+        {
+          "id": "prior-low",
+          "changepointPriorScale": 0.1
+        },
+        {
+          "id": "prior-mid",
+          "changepointPriorScale": 0.2
+        },
+        {
+          "id": "prior-high",
+          "changepointPriorScale": 0.5
+        }
+      ]
+    },
+    "phases": [
+      "evaluation-point",
+      "evaluation-point-threads",
+      "evaluation-point-processes",
+      "evaluation-search",
+      "evaluation-search-threads",
+      "evaluation-search-processes"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 900,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.25,
+        "relative": 0.02
+      },
+      "component": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "additive": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "forecast": {
+        "absolute": 0.3,
+        "relative": 0.02
+      },
+      "noiseScale": {
+        "absolute": 0.1,
+        "relative": 0.2
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "logistic-implicit-floor-large-v1:n=256:h=64:changing-capacity:weekly",
+      "sha256": "61b169aa9c925333f6dd11301febfdeb82e9ae7f2b95f3cb4c222e6dcfb080d9",
+      "trainingRows": 256,
+      "predictionRows": 64,
+      "futureRows": 64,
+      "horizonDays": 64
+    }
+  },
+  {
     "id": "logistic-reconcile-basic-96-empty-absmax",
     "dataset": "v2/logistic-basic-96.json",
     "workload": {
