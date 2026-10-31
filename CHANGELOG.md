@@ -15,6 +15,8 @@ A maintenance release. The package is built with new tooling, and existing code 
   differs.
 - The [tracing guide](https://jer-k.github.io/effect-prophet/guide/tracing) example provides its
   layers in one `Effect.provide` call.
+- The [Handling errors](https://jer-k.github.io/effect-prophet/examples/errors) example handles both
+  errors in one `Effect.catchTags` call.
 
 ## [0.5.0] - 2026-10-29
 
