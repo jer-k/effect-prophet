@@ -43,6 +43,8 @@ jobs:
         run: npm run docs:examples
 
   build:
+    # Named apart from CI's `build` job, so branch protection can require each one.
+    name: docs-build
     runs-on: ubuntu-22.04
 
     steps:
