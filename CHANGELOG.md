@@ -13,6 +13,10 @@ A maintenance release. The package is built with new tooling, and existing code 
 - The published type declarations are now built with [tsrs](https://github.com/oxc-project/tsrs)
   instead of TypeScript 7.0. They describe the same types; only the order of some union members
   differs.
+- The code is now checked with [effect-tsrs](https://github.com/yielded-dev/effect-tsrs), which
+  reports Effect-specific mistakes and simpler ways to write the same code. The source, docs
+  examples and benchmarks were updated to pass with no errors, warnings or suggestions, and CI
+  keeps them there. Behavior is unchanged.
 - The [tracing guide](https://jer-k.github.io/effect-prophet/guide/tracing) example provides its
   layers in one `Effect.provide` call.
 - The [Handling errors](https://jer-k.github.io/effect-prophet/examples/errors) example handles both
