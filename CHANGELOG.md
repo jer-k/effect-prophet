@@ -17,6 +17,15 @@ All notable changes to this project are documented here. The format follows
 - `FittingError` and `PredictionError` have an optional `regressor` naming the regressor whose own
   model failed.
 
+### Benchmarks
+
+- New benchmarks for regressors forecast by their own models, on flat and linear growth, checked
+  against Python Prophet for forecasts, uncertainty ranges and cross-validation.
+
+## [0.5.1] - 2026-10-31
+
+A maintenance release. The package is built with new tooling, and existing code works as before.
+
 ### Changed
 
 - The published type declarations are now built with [tsrs](https://github.com/oxc-project/tsrs)
@@ -24,11 +33,6 @@ All notable changes to this project are documented here. The format follows
   differs.
 - The [tracing guide](https://jer-k.github.io/effect-prophet/guide/tracing) example provides its
   layers in one `Effect.provide` call.
-
-### Benchmarks
-
-- New benchmarks for regressors forecast by their own models, on flat and linear growth, checked
-  against Python Prophet for forecasts, uncertainty ranges and cross-validation.
 
 ## [0.5.0] - 2026-10-29
 
@@ -373,6 +377,7 @@ These Python Prophet features are not implemented in this release:
 - Inputs that cannot define a trend, such as every row sharing one timestamp, return an error where
   Python returns `NaN` forecasts.
 
+[0.5.1]: https://github.com/jer-k/effect-prophet/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/jer-k/effect-prophet/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/jer-k/effect-prophet/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/jer-k/effect-prophet/compare/v0.2.0...v0.3.0
