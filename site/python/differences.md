@@ -34,6 +34,11 @@ Python, where it differs on purpose, and the smaller behavior differences.
   `register_performance_metric` takes any function of the whole result. Python has no
   quantile helper; the quantile follows numpy's `np.quantile` over the windows `mdape` uses. See
   [Your own metrics](../examples/cross-validation#your-own-metrics).
+- `scaledErrorMetric` adds mean absolute scaled error (MASE), which Python doesn't have. Each
+  round's scale comes from a naive rule's error on that round's training rows. See
+  [Scaled errors](../examples/cross-validation#scaled-errors). The
+  [benchmarks](/benchmarks/flat/evaluation-flat-large-months-metrics) check it against MASE
+  registered in Python with `register_performance_metric`.
 - Saved models keep the models that
   [forecast their regressors](../examples/regressors#forecasting-a-regressor), so a loaded model
   forecasts exactly as before. Python's `model_to_json` drops them, and a loaded model then asks

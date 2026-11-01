@@ -102,6 +102,7 @@ Each of these functions creates a span named after it:
 | `Prophet.evaluateHoldout`                                                                          | `evaluateHoldout`                                                                             |
 | `Prophet.crossValidateBaseline`                                                                    | `crossValidateBaseline`                                                                       |
 | `Prophet.comparePerformance`                                                                       | `comparePerformance`                                                                          |
+| `Prophet.scaledErrorMetric`                                                                        | `scaledErrorMetric`, around `Prophet.decodeObservations`                                      |
 | `Prophet.encodeFittedModel`, `Prophet.decodeFittedModel`                                           | Saving and loading models                                                                     |
 | `Prophet.encodeEvaluationReport`, `Prophet.decodeEvaluationReport`                                 | Saving and loading evaluation reports                                                         |
 | `Prophet.decodeObservations`, `Prophet.decodeOptions`                                              | Checking input, also called inside `fit`                                                      |
@@ -227,6 +228,13 @@ before any `Prophet.decodeOptions` span.
 | ------------------- | ------------------------------------------------------- |
 | `observation.count` | Measurements checked. Set only when the check succeeds. |
 | `anomaly.count`     | Measurements outside their range. Set only on success.  |
+
+**`Prophet.scaledErrorMetric`**
+
+| Attribute    | Meaning                                                            |
+| ------------ | ------------------------------------------------------------------ |
+| `metric.lag` | The naive rule: `previous-row` or `duration`. Set only on success. |
+| `fold.count` | Rounds given a scale. Set only when every round has one.           |
 
 **`Prophet.residuals`**
 

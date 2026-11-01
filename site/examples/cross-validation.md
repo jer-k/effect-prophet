@@ -150,10 +150,48 @@ Some rules:
   `evaluateHoldout` needs a built-in objective, because its saved report can't store a
   function.
 
-A metric that needs more than one forecast at a time, or the data a round trained on, doesn't
-fit these shapes. Compute it from `result.rows`, which lists every forecast with its round,
-cutoff and horizon. To choose settings by such a score, run `searchModels` with
-`includeCrossValidation: true` and rank the candidates' `crossValidation` rows yourself.
+A metric that needs more than one forecast at a time doesn't fit these shapes. Compute it from
+`result.rows`, which lists every forecast with its round, cutoff and horizon. To choose settings
+by such a score, run `searchModels` with `includeCrossValidation: true` and rank the candidates'
+`crossValidation` rows yourself. For a metric scaled by the data each round trained on, see the
+next section.
+
+## Scaled errors
+
+`mae` is in the data's own units, so it can't tell you whether 2.1 is good, or compare series of
+different sizes. `mape` divides by each actual value, so it fails near zero. Mean absolute scaled
+error (MASE) does neither. It divides each forecast's error by how far off a naive rule was on
+the days that round trained on. Python Prophet doesn't have it.
+
+<<< @/snippets/scaled-errors.ts
+
+```txt [Output]
+mae 2.063
+mase 0.366
+mase_weekly 0.475
+```
+
+Below 1, the model beat the naive rule; above 1, the naive rule did better. Here the model's
+errors are about a third of repeating yesterday's value, and under half of repeating last week's.
+
+`scaledErrorMetric(history, plan, options)` returns a definition for `metrics`, like your own
+metrics above, so it also works in `comparePerformance` and as the `objective` of
+`searchModels`. Pass the same history and plan the results came from: `result.plan`, or
+`planRollingOrigin` before a search.
+
+- **The naive rule.** By default, `lag: { kind: "previous-row" }` repeats the row before, however
+  far back it is. `lag: { kind: "duration", lagMs }` repeats the value exactly `lagMs` earlier,
+  matched the way the [seasonal-naive rule](./tuning#comparing-against-simple-rules) matches it.
+  Rows with no value at that time are skipped, never filled in.
+- **One scale per round.** Each round's scale is the average naive error over its own training
+  rows, so a later round's data never affects an earlier score.
+- **The name.** It's `mase` unless you pass `name`, which follows the rules for your own metrics.
+  Give each scaled metric a different name to use more than one at a time.
+- **Failures.** A round whose training rows have no pairs for the lag fails with a
+  `MetricScaleError` whose `reason` is `"insufficient-history"`. Training values that never
+  change fail with `"zero-scale"`, and naive errors too large to add up with `"non-finite"`. The
+  error's `fold` and `cutoff` say which round. A result from a different plan fails when scored,
+  with an `EvaluationMetricError` whose `reason` is `"non-finite"`.
 
 ## Actual values of zero
 

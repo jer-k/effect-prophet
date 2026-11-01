@@ -16,6 +16,12 @@ All notable changes to this project are documented here. The format follows
   [Forecasting a regressor](https://jer-k.github.io/effect-prophet/examples/regressors#forecasting-a-regressor).
 - `FittingError` and `PredictionError` have an optional `regressor` naming the regressor whose own
   model failed.
+- **Mean absolute scaled error (MASE).** `scaledErrorMetric` divides each forecast's error by a
+  naive rule's average error on the rows its round trained on, repeating either the previous row
+  or the value a set time earlier. It's a metric definition, so `performanceMetrics`,
+  `comparePerformance` and `searchModels` accept it. Rounds it can't scale fail with the new
+  `MetricScaleError`. Python Prophet has no scaled metrics. See
+  [Scaled errors](https://jer-k.github.io/effect-prophet/examples/cross-validation#scaled-errors).
 
 ### Benchmarks
 
