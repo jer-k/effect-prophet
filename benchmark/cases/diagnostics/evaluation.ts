@@ -151,7 +151,7 @@ const rollingOriginCases: ReadonlyArray<BenchmarkCase> = [
 });
 
 /**
- * Calendar-month and custom metrics on long horizons: three cutoffs four weeks apart, each
+ * Calendar-month, custom and scaled metrics on long horizons: three cutoffs four weeks apart, each
  * forecasting 91 days, so forecasts land zero to three months after their cutoff's month.
  */
 const monthsPlan = {
@@ -177,6 +177,7 @@ const metricCases: ReadonlyArray<BenchmarkCase> = [
       "evaluation-metrics",
       "evaluation-metrics-monthly",
       "evaluation-metrics-custom",
+      "evaluation-metrics-scaled",
     ] as const,
   };
 });

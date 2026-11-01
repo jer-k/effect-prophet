@@ -32,6 +32,8 @@ export {
   type ComparisonReport,
 } from "./evaluation-baseline";
 
+export { scaledErrorMetric, type ScaledErrorLag, type ScaledErrorOptions } from "./scaled-error";
+
 export {
   evaluateHoldout,
   encodeEvaluationReport,
@@ -86,6 +88,7 @@ export {
   HoldoutEvaluationError,
   FittingError,
   InputValidationError,
+  MetricScaleError,
   ModelSerializationError,
   PredictionError,
   type CandidateId,

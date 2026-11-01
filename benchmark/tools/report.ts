@@ -11,7 +11,7 @@ import type {
   ImplementationResult,
   RunManifest,
 } from "./result.ts";
-import { metricParityFailure } from "./evaluation.ts";
+import { metricParityFailure, scaledErrorFailure } from "./evaluation.ts";
 import { anomalyAgreement, intervalBoundRatio } from "./uncertainty.ts";
 
 // Evaluation phases whose cases gate Effect's metrics on Python's own CV rows.
@@ -846,6 +846,14 @@ const correctnessForCase = (
           note: "Cross-language overall MAE exceeds the declared tolerance.",
         };
       }
+
+      if (benchmarkCase.phases.includes("evaluation-metrics-scaled")) {
+        const failure = scaledErrorFailure(effect, python);
+
+        if (failure !== undefined) {
+          return { caseId: benchmarkCase.id, status: "failed", comparison, note: failure };
+        }
+      }
     }
 
     const parity = benchmarkCase.phases.some((phase) => metricParityPhases.has(phase));
@@ -870,9 +878,17 @@ const correctnessForCase = (
       status: "passed",
       comparison,
       maximumDifferences: { ...emptyDifferences(), forecast: maximum },
-      note: parity
-        ? "Aligned folds, rows, targets and point forecasts passed, and Effect's built-in and custom metrics on Python's own CV rows equal performance_metrics exactly in both horizon units; public evaluation/metric work differs. Absolute times only."
-        : "Aligned folds, rows, targets and point forecasts passed; public evaluation/uncertainty/metric/report work differs. Absolute times only.",
+      note: [
+        parity
+          ? "Aligned folds, rows, targets and point forecasts passed, and Effect's built-in and custom metrics on Python's own CV rows equal performance_metrics exactly in both horizon units; public evaluation/metric work differs."
+          : "Aligned folds, rows, targets and point forecasts passed; public evaluation/uncertainty/metric/report work differs.",
+        ...(benchmarkCase.phases.includes("evaluation-metrics-scaled")
+          ? [
+              "MASE fold scales agree within 1e-12 relative, and overall MASE within its forecasts' difference.",
+            ]
+          : []),
+        "Absolute times only.",
+      ].join(" "),
     };
   }
 

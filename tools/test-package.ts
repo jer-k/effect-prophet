@@ -99,6 +99,7 @@ const expectedDeclarationFiles = [
   "dist/prophet.d.ts",
   "dist/regressor.d.ts",
   "dist/residuals.d.ts",
+  "dist/scaled-error.d.ts",
   "dist/seasonality.d.ts",
   "dist/target-scaling.d.ts",
   "dist/uncertainty.d.ts",

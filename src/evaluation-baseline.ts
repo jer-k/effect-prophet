@@ -20,8 +20,8 @@ import {
   type MetricOptions,
   type MetricReport,
 } from "./evaluation-metrics";
+import { laggedValue, valuesByTimestamp } from "./internal/lagged-value";
 import { metricName } from "./internal/metric-names";
-import { checkedAdd } from "./internal/safe-arithmetic";
 import { decodeObservations, type Observation } from "./observation";
 
 const BaselineDefinitionSchema = Schema.Union([
@@ -141,11 +141,8 @@ const baselineValues = (
 
     // Baselines are package/application policies, not Prophet fitting operations.
     // Stable input order makes both last-observation and exact-lag ties last-row-wins.
-    const trainingByTimestamp = new Map<number, number>();
-
-    if (baseline.kind === "seasonal-naive") {
-      for (const row of training) trainingByTimestamp.set(row.timestamp, row.value);
-    }
+    const trainingByTimestamp =
+      baseline.kind === "seasonal-naive" ? valuesByTimestamp(training) : new Map<number, number>();
 
     const forecasts: Array<number> = [];
 
@@ -153,10 +150,7 @@ const baselineValues = (
       let forecast = predicted;
 
       if (baseline.kind === "seasonal-naive") {
-        const lagTimestamp = checkedAdd(row.timestamp, -baseline.lagMs);
-
-        const value =
-          lagTimestamp === undefined ? undefined : trainingByTimestamp.get(lagTimestamp);
+        const value = laggedValue(trainingByTimestamp, row.timestamp, baseline.lagMs);
 
         if (value === undefined) {
           return yield* new BaselineForecastError({

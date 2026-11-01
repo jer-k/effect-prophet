@@ -178,6 +178,16 @@ export const CorrectnessProjectionSchema = Schema.Struct({
           }),
         ),
       ),
+      // Each MASE metric's fold scales, in cutoff order, and its overall score on these rows.
+      scaledErrors: Schema.optionalKey(
+        Schema.Array(
+          Schema.Struct({
+            metric: NonEmptyString,
+            scales: Schema.Array(Schema.Finite.check(Schema.isGreaterThan(0))),
+            overall: NonNegativeFinite,
+          }),
+        ),
+      ),
     }),
   ),
   uncertainty: Schema.optionalKey(

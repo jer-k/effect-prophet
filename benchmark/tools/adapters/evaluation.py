@@ -10,10 +10,10 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from prophet.diagnostics import cross_validation, performance_metrics
+from prophet.diagnostics import cross_validation, performance_metrics, register_performance_metric, rolling_mean_by_h
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "tools" / "prophet"))
-from custom_metrics import CUSTOM_METRIC_NAMES
+from custom_metrics import CUSTOM_METRIC_NAMES, per_row_metric
 
 POINT_METRICS = ["mae", "rmse", "smape", "mape"]
 
@@ -34,6 +34,56 @@ PARALLEL_PHASES = {
 
 # The custom metric a custom search ranks candidates by.
 CUSTOM_OBJECTIVE = "wape"
+
+METRIC_PHASES = ("evaluation-metrics", "evaluation-metrics-monthly", "evaluation-metrics-custom", "evaluation-metrics-scaled")
+
+# MASE as a Python user would register it, for evaluation-metrics-scaled: the lag its naive forecast
+# repeats, the row before when None, as Effect's `scaledErrorMetric` defines each one.
+SCALED_METRICS = {"mase": None, "mase_weekly": pd.Timedelta(days=7)}
+
+
+def naive_errors(training, lag):
+    """Absolute errors of repeating the row before, or the value observed exactly `lag` earlier."""
+    if lag is None:
+        return training["y"].diff().abs().iloc[1:]
+    values = dict(zip(training["ds"], training["y"]))
+    return pd.Series([abs(value - values[timestamp - lag]) for timestamp, value in zip(training["ds"], training["y"])
+                      if timestamp - lag in values], dtype=float)
+
+
+def fold_scales(history, cutoffs, lag):
+    """Each cutoff's MASE scale: the naive forecast's mean absolute error on the rows it trains on."""
+    scales = {}
+    for cutoff in cutoffs:
+        errors = naive_errors(history.loc[history["ds"] <= cutoff], lag)
+        scale = float(errors.mean()) if len(errors) else math.nan
+        if not math.isfinite(scale) or scale == 0:
+            raise ValueError("Python MASE has no usable scale")
+        scales[cutoff] = scale
+    return scales
+
+
+def register_scaled_metrics(history):
+    """Register each MASE metric with Prophet, scaled by `history`, the rows cross-validation saw."""
+    for name, lag in SCALED_METRICS.items():
+        def metric(df, w, name=name, lag=lag):
+            scales = fold_scales(history, df["cutoff"].drop_duplicates(), lag)
+            scaled = (df["y"] - df["yhat"]).abs() / df["cutoff"].map(scales)
+            if w < 0:
+                return per_row_metric(df, name, scaled)
+            return rolling_mean_by_h(x=scaled.values, h=df["horizon"].values, w=w, name=name)
+
+        metric.__name__ = name
+        register_performance_metric(metric)
+
+
+def scaled_errors(history, result, cutoffs):
+    """Each MASE metric's fold scales, in cutoff order, and its overall score on Python's CV rows."""
+    register_scaled_metrics(history)
+    overall = performance_metrics(result, metrics=list(SCALED_METRICS), rolling_window=1)
+    return [{"metric": name, "scales": list(fold_scales(history, cutoffs, lag).values()),
+             "overall": float(overall[name].iloc[0])}
+            for name, lag in SCALED_METRICS.items()]
 
 
 def metric_window(case):
@@ -144,12 +194,15 @@ def holdout(case, dataset, configure_model, fit_model, records_frame, selection=
             "mae": float(np.mean(np.abs(actual - forecast))), "baselines": baselines}
 
 
-def metrics(result, case, phase):
+def metrics(result, case, phase, history):
     """The metric work a metrics phase times, on precomputed CV rows."""
     if phase == "evaluation-metrics":
         return performance_metrics(result, metrics=list(POINT_METRICS), rolling_window=metric_window(case))
     if phase == "evaluation-metrics-monthly":
         return performance_metrics(result, metrics=list(POINT_METRICS), rolling_window=metric_window(case), monthly=True)
+    if phase == "evaluation-metrics-scaled":
+        register_scaled_metrics(history)
+        return performance_metrics(result, metrics=list(SCALED_METRICS), rolling_window=metric_window(case))
     return performance_metrics(result, metrics=list(CUSTOM_METRIC_NAMES), rolling_window=metric_window(case))
 
 
@@ -201,8 +254,8 @@ def operation(case, dataset, phase, configure_model, fit_model, records_frame):
         return cv(case, dataset, configure_model, fit_model, records_frame)
     if phase == "evaluation-intervals":
         return cv(case, dataset, configure_model, fit_model, records_frame, intervals=True)
-    if phase in ("evaluation-metrics", "evaluation-metrics-monthly", "evaluation-metrics-custom"):
-        return metrics(cv(case, dataset, configure_model, fit_model, records_frame), case, phase)
+    if phase in METRIC_PHASES:
+        return metrics(cv(case, dataset, configure_model, fit_model, records_frame), case, phase, history)
     if phase == "evaluation-baseline":
         result = []
         for cutoff in cutoffs:
@@ -228,9 +281,10 @@ def operation(case, dataset, phase, configure_model, fit_model, records_frame):
 
 def prepare_operation(case, dataset, phase, configure_model, fit_model, records_frame):
     """Exclude CV/search setup from independent pure-phase boundaries."""
-    if phase in ("evaluation-metrics", "evaluation-metrics-monthly", "evaluation-metrics-custom"):
+    if phase in METRIC_PHASES:
+        history, _ = partition(dataset, case, records_frame)
         result = cv(case, dataset, configure_model, fit_model, records_frame)
-        return lambda: metrics(result, case, phase)
+        return lambda: metrics(result, case, phase, history)
     if phase == "evaluation-holdout":
         selection = search(case, dataset, configure_model, fit_model, records_frame)
         return lambda: holdout(case, dataset, configure_model, fit_model, records_frame, selection)
@@ -304,6 +358,8 @@ def correctness(case, dataset, configure_model, fit_model, records_frame, run):
                   "trainingRows": training, "assessmentRows": assessment, "rows": rows, "mae": mae}
     if any(phase in PARITY_PHASES for phase in case["phases"]):
         evaluation["metricParity"] = metric_parity(result, case)
+    if "evaluation-metrics-scaled" in case["phases"]:
+        evaluation["scaledErrors"] = scaled_errors(history, result, cutoffs)
     return {"caseId": case["id"], "run": run, "status": "locally-passed",
             "modelKind": case["workload"]["configuration"]["growth"],
             "changepointTimestamps": [], "seasonalities": [], "events": [], "regressors": [], "forecasts": [],

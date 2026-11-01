@@ -345,6 +345,18 @@ export class EvaluationMetricError extends Schema.TaggedError<EvaluationMetricEr
   },
 ) {}
 
+/**
+ * A scaled-error metric's in-sample scale for one fold: the fold's training history has no lag
+ * pairs, its naive errors average to zero, or their sum overflows.
+ */
+export class MetricScaleError extends Schema.TaggedError<MetricScaleError>()("MetricScaleError", {
+  metric: AnyMetricNameSchema,
+  fold: Schema.Natural,
+  cutoff: Schema.Int,
+  reason: Schema.Literals(["insufficient-history", "zero-scale", "non-finite"]),
+  message: Schema.String,
+}) {}
+
 /** A bounded ASCII identity for one declared search candidate. */
 export const CandidateIdSchema = Schema.String.check(
   Schema.makeFilter((id) => /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/.test(id), {
