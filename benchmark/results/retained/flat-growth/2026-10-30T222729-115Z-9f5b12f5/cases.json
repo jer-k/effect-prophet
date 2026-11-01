@@ -14644,6 +14644,135 @@
     }
   },
   {
+    "id": "evaluation-flat-large-parallel",
+    "dataset": "v1/flat-mixed-components-large.json",
+    "workload": {
+      "kind": "evaluation",
+      "comparison": {
+        "kind": "different-public-work",
+        "evidenceId": "rolling-origin-evaluation-v1"
+      },
+      "configuration": {
+        "growth": "flat",
+        "scaling": "minmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [
+          {
+            "name": "weekly-custom",
+            "periodDays": 7,
+            "fourierOrder": 2,
+            "priorScale": 10,
+            "conditionName": "active",
+            "mode": "multiplicative"
+          }
+        ],
+        "events": [
+          {
+            "name": "campaign",
+            "date": "2020-01-22",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          }
+        ],
+        "regressors": [
+          {
+            "name": "promotion",
+            "priorScale": 10,
+            "standardization": "never"
+          }
+        ]
+      },
+      "effectOptimizer": {
+        "algorithm": "lbfgs",
+        "maxIterations": 10000,
+        "fallback": "none",
+        "lbfgs": {
+          "historySize": 5,
+          "initAlpha": 0.001,
+          "tolObj": 1e-12,
+          "tolRelObj": 10000,
+          "tolGrad": 1e-8,
+          "tolRelGrad": 10000000,
+          "tolParam": 1e-8
+        }
+      },
+      "pythonOptimizer": {
+        "algorithm": "LBFGS",
+        "maxIterations": 10000,
+        "newtonFallback": false
+      },
+      "plan": {
+        "horizonMs": 604800000,
+        "cutoffs": [
+          "2020-06-20T00:00:00.000Z",
+          "2020-06-27T00:00:00.000Z",
+          "2020-07-04T00:00:00.000Z",
+          "2020-07-11T00:00:00.000Z",
+          "2020-07-18T00:00:00.000Z",
+          "2020-07-25T00:00:00.000Z",
+          "2020-08-01T00:00:00.000Z",
+          "2020-08-08T00:00:00.000Z",
+          "2020-08-15T00:00:00.000Z",
+          "2020-08-22T00:00:00.000Z",
+          "2020-08-29T00:00:00.000Z",
+          "2020-09-05T00:00:00.000Z"
+        ]
+      },
+      "metricAggregation": "horizons"
+    },
+    "phases": [
+      "evaluation-point",
+      "evaluation-point-threads",
+      "evaluation-point-processes"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 2,
+    "independentRuns": 2,
+    "timeoutSeconds": 900,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0.25,
+        "relative": 0.02
+      },
+      "component": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "additive": {
+        "absolute": 0.15,
+        "relative": 0.04
+      },
+      "forecast": {
+        "absolute": 0.3,
+        "relative": 0.02
+      },
+      "noiseScale": {
+        "absolute": 0.1,
+        "relative": 0.2
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "flat-mixed-components-large-v1:n=256:h=64:conditional-weekly+event+regressor",
+      "sha256": "7ee4bb9692dfb115e926da542b37298a311e06037c0e5a638ca067a1fb937b11",
+      "trainingRows": 256,
+      "predictionRows": 64,
+      "futureRows": 64,
+      "horizonDays": 64
+    }
+  },
+  {
     "id": "flat-defaults-level",
     "dataset": "v1/flat-level.json",
     "workload": {

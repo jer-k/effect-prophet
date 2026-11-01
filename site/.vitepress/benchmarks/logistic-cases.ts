@@ -327,6 +327,12 @@ export const logisticCaseDescriptions = {
     title: "Cross-validation with ranges, eight months",
     summary: "The same long folds with simulated futures for interval coverage.",
   },
+  "evaluation-logistic-large-parallel": {
+    group: "evaluation",
+    title: "Twelve folds and a search, sequential and parallel",
+    summary:
+      'Twelve weekly cutoffs on the 256-day history, then three candidate settings compared on them. Python Prophet is also timed with `parallel="threads"` and `parallel="processes"`, which must give the same forecasts and scores as running sequentially.',
+  },
   "evaluation-logistic-large-months-metrics": {
     group: "evaluation",
     title: "Monthly and custom metrics",

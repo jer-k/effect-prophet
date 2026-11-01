@@ -267,6 +267,12 @@ export const linearCaseDescriptions = {
     summary:
       "Two candidate settings ranked by a custom WAPE metric, next to the same search by MAE.",
   },
+  "evaluation-linear-long-history-parallel": {
+    group: "evaluation",
+    title: "Twelve folds, three years, sequential and parallel",
+    summary:
+      'Prophet\'s default model on three years of daily rows, with twelve monthly cutoffs forecasting 30 days each. Python Prophet is also timed with `parallel="threads"` and `parallel="processes"`, which must give the same forecasts as running sequentially.',
+  },
   "evaluation-training-duplicates": {
     group: "evaluation",
     title: "Cross-validation with repeated timestamps",

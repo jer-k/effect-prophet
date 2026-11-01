@@ -135,6 +135,17 @@ Effect receipts retain effective CV scaling for holdout; Python's application lo
 original selected configuration. An intentionally missing-capacity candidate inside successful
 search is not a failed benchmark workload.
 
+Phases ending in `-threads` or `-processes` time Python's `cross_validation(parallel=...)` for the
+point, interval and search work of the phase without the suffix, which the same case must also
+declare. Only Python measures them; Effect runs folds one at a time. Prophet builds a new pool on
+each call with the executor's default size, so `processes` includes starting workers that import
+Prophet again. Python records both sizes under `resources` (`cross-validation-thread-workers`,
+`cross-validation-process-workers`). Correctness requires each mode's point rows and search scores
+to equal the sequential ones exactly. Interval draws come from numpy's global generator, which
+threads share and processes don't inherit, so parallel intervals are only checked for finite,
+ordered bounds. Regressor-model cases can't declare these phases, because Python fits their folds
+at each cutoff instead of through `cross_validation`.
+
 `evaluation-metrics-monthly` times built-in metrics grouped by calendar month
 (`performance_metrics(monthly=True)`), and `evaluation-metrics-custom` times the custom metrics in
 `tools/prophet/custom_metrics.py`, which Python registers with `register_performance_metric` and

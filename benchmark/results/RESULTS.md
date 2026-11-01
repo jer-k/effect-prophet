@@ -6,15 +6,15 @@ Recorded historical outcomes are not recomputed using current gates. Architectur
 
 | Scope | Run | Passed | Failed | Provenance | Report |
 | --- | --- | ---: | ---: | --- | --- |
-| flat-growth | `2026-10-30T191330-012Z-e38322b6` | 70 | 0 | clean tree | [results](retained/flat-growth/2026-10-30T191330-012Z-e38322b6/report.md) |
-| linear-growth | `2026-10-30T185201-913Z-e38322b6` | 48 | 2 | clean tree | [results](retained/linear-growth/2026-10-30T185201-913Z-e38322b6/report.md) |
-| logistic-growth | `2026-10-30T194147-377Z-e38322b6` | 55 | 0 | clean tree | [results](retained/logistic-growth/2026-10-30T194147-377Z-e38322b6/report.md) |
+| flat-growth | `2026-10-30T222729-115Z-9f5b12f5` | 71 | 0 | clean tree | [results](retained/flat-growth/2026-10-30T222729-115Z-9f5b12f5/report.md) |
+| linear-growth | `2026-10-30T220529-902Z-9f5b12f5` | 49 | 2 | clean tree | [results](retained/linear-growth/2026-10-30T220529-902Z-9f5b12f5/report.md) |
+| logistic-growth | `2026-10-30T225507-898Z-9f5b12f5` | 56 | 0 | clean tree | [results](retained/logistic-growth/2026-10-30T225507-898Z-9f5b12f5/report.md) |
 
 ## Case outcomes
 
 Only passed gates admit timing. Diagnostic invalid-domain cases remain failed; they are not relabeled as successful fits.
 
-### flat-growth/2026-10-30T191330-012Z-e38322b6
+### flat-growth/2026-10-30T222729-115Z-9f5b12f5
 
 | Case | Outcome | Contract |
 | --- | --- | --- |
@@ -57,6 +57,7 @@ Only passed gates admit timing. Diagnostic invalid-domain cases remain failed; t
 | `evaluation-flat-large-point` | passed | different-public-work |
 | `evaluation-flat-large-intervals` | passed | different-public-work |
 | `evaluation-flat-large-months-metrics` | passed | different-public-work |
+| `evaluation-flat-large-parallel` | passed | different-public-work |
 | `flat-defaults-level` | passed | equivalent-objective |
 | `flat-defaults-seasonal` | passed | equivalent-objective |
 | `flat-defaults-negative` | passed | equivalent-objective |
@@ -89,7 +90,7 @@ Only passed gates admit timing. Diagnostic invalid-domain cases remain failed; t
 | `evaluation-flat-regressor-model-point` | passed | different-public-work |
 | `evaluation-flat-regressor-model-intervals` | passed | different-public-work |
 
-### linear-growth/2026-10-30T185201-913Z-e38322b6
+### linear-growth/2026-10-30T220529-902Z-9f5b12f5
 
 | Case | Outcome | Contract |
 | --- | --- | --- |
@@ -139,12 +140,13 @@ Only passed gates admit timing. Diagnostic invalid-domain cases remain failed; t
 | `evaluation-linear-search` | passed | different-public-work |
 | `evaluation-linear-failure-search` | passed | different-public-work |
 | `evaluation-linear-custom-search` | passed | different-public-work |
+| `evaluation-linear-long-history-parallel` | passed | different-public-work |
 | `linear-regressor-model` | passed | equivalent-objective |
 | `uncertainty-linear-regressor-model-intervals-1000` | passed | scalar-process-different-public-work |
 | `evaluation-linear-regressor-model-point` | passed | different-public-work |
 | `evaluation-linear-regressor-model-intervals` | passed | different-public-work |
 
-### logistic-growth/2026-10-30T194147-377Z-e38322b6
+### logistic-growth/2026-10-30T225507-898Z-9f5b12f5
 
 | Case | Outcome | Contract |
 | --- | --- | --- |
@@ -174,6 +176,7 @@ Only passed gates admit timing. Diagnostic invalid-domain cases remain failed; t
 | `evaluation-logistic-large-point` | passed | different-public-work |
 | `evaluation-logistic-large-intervals` | passed | different-public-work |
 | `evaluation-logistic-large-months-metrics` | passed | different-public-work |
+| `evaluation-logistic-large-parallel` | passed | different-public-work |
 | `logistic-reconcile-basic-96-empty-absmax` | passed | equivalent-objective |
 | `logistic-reconcile-basic-96-explicit-absmax` | passed | equivalent-objective |
 | `logistic-reconcile-basic-96-auto-absmax` | passed | equivalent-objective |

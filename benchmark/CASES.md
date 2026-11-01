@@ -34,6 +34,9 @@ Serialization is exercised by lifecycle phases rather than copied into separate 
 | `evaluation-flat-large-months-metrics` | [v1/flat-mixed-components-large.json](inputs/v1/flat-mixed-components-large.json) | different-public-work | 3 |
 | `evaluation-logistic-large-months-metrics` | [v1/logistic-implicit-floor-large.json](inputs/v1/logistic-implicit-floor-large.json) | different-public-work | 3 |
 | `evaluation-linear-custom-search` | [v1/linear-offset-scaling.json](inputs/v1/linear-offset-scaling.json) | different-public-work | 2 |
+| `evaluation-linear-long-history-parallel` | [v3/linear-long-history.json](inputs/v3/linear-long-history.json) | different-public-work | 6 |
+| `evaluation-flat-large-parallel` | [v1/flat-mixed-components-large.json](inputs/v1/flat-mixed-components-large.json) | different-public-work | 3 |
+| `evaluation-logistic-large-parallel` | [v1/logistic-implicit-floor-large.json](inputs/v1/logistic-implicit-floor-large.json) | different-public-work | 6 |
 | `evaluation-flat-regressor-model-point` | [v4/flat-correlated-regressors.json](inputs/v4/flat-correlated-regressors.json) | different-public-work | 6 |
 | `evaluation-flat-regressor-model-intervals` | [v4/flat-correlated-regressors.json](inputs/v4/flat-correlated-regressors.json) | different-public-work | 1 |
 | `evaluation-linear-regressor-model-point` | [v1/map-regressors-medium.json](inputs/v1/map-regressors-medium.json) | different-public-work | 6 |

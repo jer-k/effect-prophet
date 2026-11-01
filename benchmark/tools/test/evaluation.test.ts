@@ -96,7 +96,7 @@ const report = (left: CorrectnessProjection, right: CorrectnessProjection) =>
 
 describe("evaluation public benchmark", () => {
   it("declares valid fit options, with both libraries' default optimizers for linear growth", async () => {
-    expect(evaluationCases).toHaveLength(17);
+    expect(evaluationCases).toHaveLength(20);
 
     await Effect.runPromise(parseBenchmarkCases(evaluationCases));
 
@@ -150,6 +150,64 @@ describe("evaluation public benchmark", () => {
     await expect(
       Effect.runPromise(parseBenchmarkCases([{ ...intervals, workload: withoutControls }])),
     ).rejects.toMatchObject({ input: "cases" });
+  });
+
+  it("times Python's parallel modes only beside the sequential work they parallelize", async () => {
+    const parallel = evaluationCases.find(
+      (item) => item.id === "evaluation-logistic-large-parallel",
+    );
+
+    if (parallel?.workload.kind !== "evaluation") throw new Error("Missing parallel case");
+
+    expect(parallel.workload.plan.cutoffs).toHaveLength(12);
+
+    await expect(
+      Effect.runPromise(
+        parseBenchmarkCases([
+          {
+            ...parallel,
+            phases: parallel.phases.filter((phase) => phase !== "evaluation-search"),
+          },
+        ]),
+      ),
+    ).rejects.toMatchObject({ input: "cases" });
+
+    const { candidates: _candidates, ...withoutCandidates } = parallel.workload;
+
+    await expect(
+      Effect.runPromise(
+        parseBenchmarkCases([
+          { ...parallel, workload: withoutCandidates, phases: ["evaluation-search-threads"] },
+        ]),
+      ),
+    ).rejects.toMatchObject({ input: "cases" });
+
+    // Python fits regressor-model folds at each cutoff instead of through cross_validation.
+    const predicted = {
+      ...parallel,
+      workload: {
+        ...parallel.workload,
+        configuration: {
+          ...parallel.workload.configuration,
+          regressors: [
+            {
+              name: "promotion",
+              priorScale: 10,
+              standardization: "never" as const,
+              predictor: true as const,
+            },
+          ],
+        },
+      },
+    };
+
+    await expect(
+      Effect.runPromise(parseBenchmarkCases([{ ...predicted, phases: ["evaluation-point"] }])),
+    ).resolves.toHaveLength(1);
+
+    await expect(Effect.runPromise(parseBenchmarkCases([predicted]))).rejects.toMatchObject({
+      input: "cases",
+    });
   });
 
   it("checks public fold/row/metric identity and excludes held-out target values from predictions", async () => {

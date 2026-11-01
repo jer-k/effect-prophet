@@ -26,15 +26,24 @@ const phaseLabels: ReadonlyArray<readonly [string, string]> = [
   ["warm-start-fit", "Refit from an earlier fit"],
   ["evaluation-plan", "Plan cross-validation folds"],
   ["evaluation-point", "Cross-validate"],
+  ["evaluation-point-threads", 'Cross-validate, Python `parallel="threads"`'],
+  ["evaluation-point-processes", 'Cross-validate, Python `parallel="processes"`'],
   ["evaluation-intervals", "Cross-validate with ranges"],
+  ["evaluation-intervals-threads", 'Cross-validate with ranges, Python `parallel="threads"`'],
+  ["evaluation-intervals-processes", 'Cross-validate with ranges, Python `parallel="processes"`'],
   ["evaluation-metrics", "Compute metrics"],
   ["evaluation-baseline", "Score baselines"],
   ["evaluation-search", "Search settings"],
+  ["evaluation-search-threads", 'Search settings, Python `parallel="threads"`'],
+  ["evaluation-search-processes", 'Search settings, Python `parallel="processes"`'],
   ["evaluation-holdout", "Final holdout check"],
   ["evaluation-report-encode", "Save report"],
   ["evaluation-report-decode", "Load report"],
   ["cold-first-evaluation", "First cross-validation in a new process"],
 ];
+
+/** Python's parallel cross-validation modes, timed by Python alone. */
+const pythonOnly = (phase: string) => /-(threads|processes)$/.test(phase);
 
 const flagLabels = new Map([
   ["objective", "Fitting objective (lower is a better fit)"],
@@ -65,7 +74,8 @@ export interface ComparedValue {
 export interface PhaseTiming {
   readonly phase: string;
   readonly label: string;
-  readonly effectMs: number;
+  // Missing for Python's parallel cross-validation modes, which Effect has no counterpart for.
+  readonly effectMs: number | undefined;
   readonly pythonMs: number;
 }
 
@@ -212,9 +222,16 @@ export const loadBenchmark = (suite: BenchmarkSuite): Benchmark => {
       const effectNs = median("effect-prophet");
       const pythonNs = median("python-prophet");
 
-      return effectNs === undefined || pythonNs === undefined
+      return pythonNs === undefined || (effectNs === undefined && !pythonOnly(phase))
         ? []
-        : [{ phase, label, effectMs: effectNs / 1e6, pythonMs: pythonNs / 1e6 }];
+        : [
+            {
+              phase,
+              label,
+              effectMs: effectNs === undefined ? undefined : effectNs / 1e6,
+              pythonMs: pythonNs / 1e6,
+            },
+          ];
     });
 
     const headline = headlinePhases

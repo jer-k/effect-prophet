@@ -243,6 +243,12 @@ export const flatCaseDescriptions = {
     title: "Cross-validation with ranges, eight months",
     summary: "The same long folds with simulated futures for interval coverage.",
   },
+  "evaluation-flat-large-parallel": {
+    group: "evaluation",
+    title: "Twelve folds, sequential and parallel",
+    summary:
+      'Twelve weekly cutoffs on the 256-day history. Python Prophet is also timed with `parallel="threads"` and `parallel="processes"`, which must give the same forecasts as running sequentially.',
+  },
   "evaluation-flat-large-months-metrics": {
     group: "evaluation",
     title: "Monthly and custom metrics",

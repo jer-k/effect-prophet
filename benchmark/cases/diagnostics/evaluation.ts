@@ -1,5 +1,8 @@
 import type { BenchmarkCase } from "../../tools/case.ts";
+import { defaultCaseTolerances } from "../growth/defaults.ts";
+import { linearOptimizers } from "../growth/linear/controls.ts";
 import { growthScalingAndMixedMapCases } from "../growth/mixed-map.ts";
+import { prophetDefaultChangepoints } from "../prophet-defaults.ts";
 
 const dayMs = 86_400_000;
 
@@ -202,9 +205,101 @@ const customSearchCase: BenchmarkCase = (() => {
   };
 })();
 
+/** `count` cutoffs `spacingDays` apart, starting at `first`. */
+const cutoffsFrom = (first: string, count: number, spacingDays: number) =>
+  Array.from({ length: count }, (_, index) =>
+    new Date(Date.parse(first) + index * spacingDays * dayMs).toISOString(),
+  );
+
+const pointPhases = [
+  "evaluation-point",
+  "evaluation-point-threads",
+  "evaluation-point-processes",
+] as const;
+
+/**
+ * Twelve folds, enough for parallel work to show, timed sequentially on both sides and through
+ * Python's `parallel="threads"` and `parallel="processes"`. Effect runs folds one at a time.
+ */
+const parallelCases: ReadonlyArray<BenchmarkCase> = [
+  {
+    // Three years of daily rows and Prophet's default model, written out so a fold can't drop
+    // yearly seasonality: monthly cutoffs through the last year, each forecasting 30 days.
+    id: "evaluation-linear-long-history-parallel",
+    dataset: "v3/linear-long-history.json",
+    workload: {
+      kind: "evaluation",
+      comparison: { kind: "different-public-work", evidenceId: "rolling-origin-evaluation-v1" },
+      configuration: {
+        growth: "linear",
+        scaling: "absmax",
+        seasonalityMode: "additive",
+        holidaysMode: "additive",
+        changepoints: prophetDefaultChangepoints,
+        changepointPriorScale: 0.05,
+        seasonalities: [
+          { name: "yearly-custom", periodDays: 365.25, fourierOrder: 10, priorScale: 10 },
+          { name: "weekly-custom", periodDays: 7, fourierOrder: 3, priorScale: 10 },
+        ],
+        events: [],
+        regressors: [],
+      },
+      ...linearOptimizers,
+      metricAggregation: "horizons",
+      plan: { horizonMs: 30 * dayMs, cutoffs: cutoffsFrom("2022-01-01T00:00:00.000Z", 12, 30) },
+      interval: { seed: 19, samples: 256, intervalWidth: 0.8 },
+    },
+    phases: [
+      ...pointPhases,
+      "evaluation-intervals",
+      "evaluation-intervals-threads",
+      "evaluation-intervals-processes",
+    ],
+    warmupIterations: 1,
+    measuredIterations: 2,
+    independentRuns: 2,
+    timeoutSeconds: 900,
+    correctnessTolerances: defaultCaseTolerances,
+  },
+  ...[
+    { id: "flat-large", source: "flat-mixed-components-large" },
+    { id: "logistic-large", source: "logistic-implicit-floor-large" },
+  ].map(({ id, source }): BenchmarkCase => {
+    const { shared, declare } = evaluationSource(source);
+
+    // Weekly cutoffs through the last twelve weeks, each forecasting a week.
+    const declaration = declare(
+      { horizonMs: 7 * dayMs, cutoffs: cutoffsFrom("2020-06-20T00:00:00.000Z", 12, 7) },
+      "horizons",
+    );
+
+    return id === "logistic-large"
+      ? {
+          ...shared,
+          id: `evaluation-${id}-parallel`,
+          workload: {
+            ...declaration,
+            candidates: [
+              { id: "prior-low", changepointPriorScale: 0.1 },
+              { id: "prior-mid", changepointPriorScale: 0.2 },
+              { id: "prior-high", changepointPriorScale: 0.5 },
+            ],
+          },
+          phases: [
+            ...pointPhases,
+            "evaluation-search",
+            "evaluation-search-threads",
+            "evaluation-search-processes",
+          ],
+        }
+      : { ...shared, id: `evaluation-${id}-parallel`, workload: declaration, phases: pointPhases };
+  }),
+];
+
 /** Every evaluation benchmark case. */
 export const evaluationCases: ReadonlyArray<BenchmarkCase> = [
   ...rollingOriginCases,
   ...metricCases,
   customSearchCase,
+  ...parallelCases,
 ];

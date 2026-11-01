@@ -40,6 +40,7 @@
     "evaluation-flat-large-point",
     "evaluation-flat-large-intervals",
     "evaluation-flat-large-months-metrics",
+    "evaluation-flat-large-parallel",
     "flat-defaults-level",
     "flat-defaults-seasonal",
     "flat-defaults-negative",

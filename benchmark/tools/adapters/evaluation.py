@@ -1,4 +1,4 @@
-"""Public Prophet 1.4.0 evaluation mappings; no private diagnostics kernels or parallelism."""
+"""Public Prophet 1.4.0 evaluation mappings; no private diagnostics kernels."""
 
 from __future__ import annotations
 
@@ -21,6 +21,16 @@ POINT_METRICS = ["mae", "rmse", "smape", "mape"]
 PARITY_METRICS = ["mae", "rmse", "smape", "mdape", *CUSTOM_METRIC_NAMES]
 
 PARITY_PHASES = ("evaluation-metrics-monthly", "evaluation-metrics-custom", "evaluation-search-custom")
+
+# Phases timing cross_validation's parallel modes, and the sequential work each one parallelizes.
+PARALLEL_PHASES = {
+    "evaluation-point-threads": ("evaluation-point", "threads"),
+    "evaluation-point-processes": ("evaluation-point", "processes"),
+    "evaluation-intervals-threads": ("evaluation-intervals", "threads"),
+    "evaluation-intervals-processes": ("evaluation-intervals", "processes"),
+    "evaluation-search-threads": ("evaluation-search", "threads"),
+    "evaluation-search-processes": ("evaluation-search", "processes"),
+}
 
 # The custom metric a custom search ranks candidates by.
 CUSTOM_OBJECTIVE = "wape"
@@ -79,7 +89,7 @@ def cutoff_folds(case, history, fit_model, intervals):
     return pd.concat(frames, ignore_index=True)
 
 
-def cv(case, dataset, configure_model, fit_model, records_frame, intervals=False):
+def cv(case, dataset, configure_model, fit_model, records_frame, intervals=False, parallel=None):
     history, _ = partition(dataset, case, records_frame)
     if forecasts_regressors(case):
         return cutoff_folds(case, history, fit_model, intervals)
@@ -91,10 +101,10 @@ def cv(case, dataset, configure_model, fit_model, records_frame, intervals=False
         model.interval_width = controls["intervalWidth"]
         np.random.seed(controls["seed"])
     cutoffs, horizon = plan(case)
-    return cross_validation(model, horizon=horizon, cutoffs=cutoffs, parallel=None, disable_tqdm=True)
+    return cross_validation(model, horizon=horizon, cutoffs=cutoffs, parallel=parallel, disable_tqdm=True)
 
 
-def search(case, dataset, configure_model, fit_model, records_frame, objective="mae"):
+def search(case, dataset, configure_model, fit_model, records_frame, objective="mae", parallel=None):
     config = case["workload"]
     candidates = []
     for candidate in config["candidates"]:
@@ -104,7 +114,7 @@ def search(case, dataset, configure_model, fit_model, records_frame, objective="
         if candidate.get("growth") == "logistic":
             request["workload"]["configuration"]["growth"] = "logistic"
         try:
-            result = cv(request, dataset, configure_model, fit_model, records_frame)
+            result = cv(request, dataset, configure_model, fit_model, records_frame, parallel=parallel)
             score = float(performance_metrics(result, metrics=[objective], rolling_window=1)[objective].iloc[0])
             if not math.isfinite(score):
                 raise ValueError("Nonfinite search score")
@@ -173,6 +183,12 @@ def metric_parity(result, case):
 
 
 def operation(case, dataset, phase, configure_model, fit_model, records_frame):
+    if phase in PARALLEL_PHASES:
+        sequential, parallel = PARALLEL_PHASES[phase]
+        if sequential == "evaluation-search":
+            return search(case, dataset, configure_model, fit_model, records_frame, parallel=parallel)
+        intervals = sequential == "evaluation-intervals"
+        return cv(case, dataset, configure_model, fit_model, records_frame, intervals, parallel)
     history, _ = partition(dataset, case, records_frame)
     if phase == "evaluation-input-conversion":
         return history
@@ -227,6 +243,27 @@ def prepare_operation(case, dataset, phase, configure_model, fit_model, records_
     return lambda: operation(case, dataset, phase, configure_model, fit_model, records_frame)
 
 
+def parallel_matches(case, dataset, phase, sequential, configure_model, fit_model, records_frame):
+    """Check that a parallel mode returns the sequential work's rows, so its timing is the same work.
+
+    Point forecasts and search scores must be identical. Interval draws come from numpy's global
+    generator, which threads share and processes don't inherit, so only their frame is checked.
+    """
+    kind, _ = PARALLEL_PHASES[phase]
+    outcome = operation(case, dataset, phase, configure_model, fit_model, records_frame)
+    if kind == "evaluation-search":
+        if outcome != search(case, dataset, configure_model, fit_model, records_frame):
+            raise ValueError(f"Python {phase} selected differently from sequential search")
+        return
+    columns = ["ds", "cutoff", "y", *(["yhat"] if kind == "evaluation-point" else [])]
+    if not outcome[columns].equals(sequential[columns]):
+        raise ValueError(f"Python {phase} rows differ from sequential cross-validation")
+    if kind == "evaluation-intervals" and (
+            not np.isfinite(outcome[["yhat_lower", "yhat_upper"]].to_numpy()).all()
+            or (outcome["yhat_lower"] > outcome["yhat_upper"]).any()):
+        raise ValueError(f"Python {phase} intervals failed finite/order checks")
+
+
 def correctness(case, dataset, configure_model, fit_model, records_frame, run):
     history, _ = partition(dataset, case, records_frame)
     cutoffs, horizon = plan(case)
@@ -256,6 +293,8 @@ def correctness(case, dataset, configure_model, fit_model, records_frame, run):
         if len(interval) != assessment or not np.isfinite(interval[["yhat_lower", "yhat_upper"]].to_numpy()).all() or (interval["yhat_lower"] > interval["yhat_upper"]).any():
             raise ValueError("Python intervals failed finite dimension/order checks")
     for phase in case["phases"]:
+        if phase in PARALLEL_PHASES:
+            parallel_matches(case, dataset, phase, result, configure_model, fit_model, records_frame)
         if phase in ("evaluation-search", "evaluation-search-custom", "evaluation-holdout", "evaluation-report-encode", "evaluation-report-decode"):
             outcome = operation(case, dataset, phase, configure_model, fit_model, records_frame)
             if phase in ("evaluation-search", "evaluation-search-custom") and len([candidate for candidate in outcome[0] if "failure" in candidate]) != case["workload"].get("expectedFailures", 0):

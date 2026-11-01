@@ -45,6 +45,7 @@
     "evaluation-linear-search",
     "evaluation-linear-failure-search",
     "evaluation-linear-custom-search",
+    "evaluation-linear-long-history-parallel",
     "linear-regressor-model",
     "uncertainty-linear-regressor-model-intervals-1000",
     "evaluation-linear-regressor-model-point",
