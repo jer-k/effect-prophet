@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "runId": "2026-10-30T225507-898Z-9f5b12f5",
-  "createdAt": "2026-10-30T22:55:12.790Z",
-  "gitRevision": "9f5b12f53b9529aae2350a864e2c3c632a658951",
+  "runId": "2026-11-01T045826-233Z-d257017e",
+  "createdAt": "2026-11-01T04:58:31.376Z",
+  "gitRevision": "d257017e74eed1851f8b417b13292b5664bceab4",
   "gitDirty": false,
   "hostPlatform": "darwin",
   "hostRelease": "25.5.0",
@@ -147,7 +147,7 @@
     },
     {
       "name": "benchmark/cases/diagnostics/evaluation.ts",
-      "value": "56d79c90c6ad023d86dac2f3e61981971685f5a22b7cc8648c2c729d1741eefa"
+      "value": "12c5bad7f1727768caa22352f095a5642d66162e9f82dc4cabc4b4acca14d735"
     },
     {
       "name": "benchmark/cases/growth/flat/public-api.ts",
@@ -167,7 +167,7 @@
     },
     {
       "name": "benchmark/tools/result.ts",
-      "value": "cb327e47599ce809b7a31ad3252240c1ab3c1d85e0ae15a5a24a33d7cbffea6c"
+      "value": "3d0f5e0e0e5b8093fe98d2d30c73692ff48a12023cb6391524123ecd26821c80"
     },
     {
       "name": "benchmark/tools/adapters/effect-prophet.ts",
@@ -183,11 +183,11 @@
     },
     {
       "name": "benchmark/tools/case.ts",
-      "value": "e3d9ee8e4396985d8b461ebb3092d58b6728c2a8bb9c3c181a6d64e79c810c5c"
+      "value": "c19b93445dcb06132e365c94e63de202042e82da984eb10e1b2446518aefc96c"
     },
     {
       "name": "benchmark/tools/report.ts",
-      "value": "7fa52c98d18d9720a0834e2dc84451694701f71b5d52e33a8a4e5fc72a4a447a"
+      "value": "988dfe5f1b3232c7c4ec30708a707d8413718d9e299058cc9c80a73ef330d90b"
     },
     {
       "name": "benchmark/tools/report-cli.ts",
@@ -195,15 +195,15 @@
     },
     {
       "name": "benchmark/tools/evaluation.ts",
-      "value": "1ed4db20832fef2b1c360bd32b9f4dd26c14467c728e4da54ce714c32ec675c1"
+      "value": "107316b587d0369029d8b602e306191cf5a6125a823aef69f3e4ae10b6d43b3c"
     },
     {
       "name": "benchmark/tools/adapters/evaluation.py",
-      "value": "910a75622a0aa6fcb366c6de6d9024821b0c75442f7e14850620a40186724597"
+      "value": "3081b3184d6204dbe3c3d0705dfe7e278ceb01a3d0615b6f10dea77d092bb870"
     },
     {
-      "name": "benchmark/results/runs/2026-10-30T225507-898Z-9f5b12f5/cases.json",
-      "value": "35eafb4939434c60aa6afdeb205f20053a3ce58a72f13fd571b70ac4aa8fafaf"
+      "name": "benchmark/results/runs/2026-11-01T045826-233Z-d257017e/cases.json",
+      "value": "501462c7f41e1f31cbbf730e4b054f452ac317ae5373ddcae91c2374b1c42f45"
     },
     {
       "name": "benchmark/evidence/comparisons.json",
@@ -235,7 +235,7 @@
     },
     {
       "name": "package-lock.json",
-      "value": "548a54e14229cdfffcdad92b4c0637f4ec59f73d8f2aa82eb7e4a5b5ca5017a5"
+      "value": "b598c3161aefa25fad3313745e5b7c7c841ba4956314d7cfded7dafcca71cc80"
     },
     {
       "name": "benchmark/inputs/v5/country-logistic-96.json",
@@ -341,11 +341,11 @@
   "containerImages": [
     {
       "name": "effect-prophet/benchmark-effect:local",
-      "value": "sha256:ef20b2858f79a9dbdfa51029f7a079f79b53a70753cb01d859109a068f58850c"
+      "value": "sha256:f392e6fb56de40f0d00e5ccc66468444dc556abc02d29cfa10ba0de95202ccfc"
     },
     {
       "name": "effect-prophet/benchmark-python:1.4.0",
-      "value": "sha256:5a84d9680b8883e4107a99ca332320d8b42e431fe6e4e0f42b78b76b079484c7"
+      "value": "sha256:e0c58934a5fdcefc8fde2f0c0c67c85982d6e9862c3d3165b724a767a8143ce7"
     }
   ]
 }
