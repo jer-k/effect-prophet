@@ -251,8 +251,8 @@ export const flatCaseDescriptions = {
   },
   "evaluation-flat-large-months-metrics": {
     group: "evaluation",
-    title: "Monthly and custom metrics",
+    title: "Monthly, custom and scaled metrics",
     summary:
-      "Three 91-day folds scored by calendar month and with custom metrics, in rolling windows. The scores Effect gives Python's own forecasts must equal Python's exactly.",
+      "Three 91-day folds scored by calendar month, with custom metrics and with MASE, in rolling windows. The scores Effect gives Python's own forecasts must equal Python's exactly. Python Prophet has no MASE, so Python registers its own; each fold's scale must match Effect's.",
   },
 } satisfies Record<string, CaseDescription>;

@@ -160,6 +160,17 @@ in that order and requires every horizon and score to be identical, with no tole
 decides which rows a median or quantile window borrows from a horizon, and the order a horizon's
 values are summed in.
 
+`evaluation-metrics-scaled` times mean absolute scaled error, which Prophet doesn't have. Effect
+builds `mase` (the previous row as the naive forecast) and `mase_weekly` (the value seven days
+earlier) with `scaledErrorMetric`. Python registers both with `register_performance_metric`, each
+scaling a fold by its naive forecast's mean absolute error on the history up to the cutoff, as a
+Python user would write them. The phase covers working out the scales and scoring precomputed CV
+rows. Its gate needs the history, which the report doesn't have, so each side records its own
+fold scales and overall score instead. The scales depend only on the history and must agree
+within `1e-12` relative, the rounding left by summing the naive errors in a different order. Each
+side scores its own forecasts, so overall scores may differ by at most the mean forecast
+difference over each row's fold scale, plus that rounding.
+
 ## Timing, memory and provenance
 
 Effect measures built public package entrypoints and release WASM, not private kernels. Tracing

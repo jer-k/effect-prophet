@@ -54,6 +54,7 @@ export const BenchmarkPhaseSchema = Schema.Literals([
   "evaluation-metrics",
   "evaluation-metrics-monthly",
   "evaluation-metrics-custom",
+  "evaluation-metrics-scaled",
   "evaluation-baseline",
   "evaluation-search",
   "evaluation-search-threads",

@@ -8,12 +8,14 @@ import {
   performanceMetrics,
   planRollingOrigin,
   prophetFittingBackendLayer,
+  scaledErrorMetric,
   searchModels,
   type CrossValidationResult,
   type EncodedProphetOptions,
   type MetricName,
   type MetricSelection,
   type ModelSearchResult,
+  type RollingOriginPlanSummary,
   type SearchObjective,
 } from "effect-prophet";
 
@@ -115,6 +117,70 @@ const metricsFor = (
     }),
   );
 };
+
+type Development = ReturnType<typeof inputs>["development"];
+
+/** The MASE metrics `evaluation-metrics-scaled` times, which the Python adapter registers too. */
+const scaledMetrics = (development: Development, summary: RollingOriginPlanSummary) =>
+  [
+    run(scaledErrorMetric(development, summary, { name: "mase", lag: { kind: "previous-row" } })),
+    run(
+      scaledErrorMetric(development, summary, {
+        name: "mase_weekly",
+        lag: { kind: "duration", lagMs: 7 * 86_400_000 },
+      }),
+    ),
+  ] as const;
+
+/** The work `evaluation-metrics-scaled` times: each fold's scale, then the metrics on CV rows. */
+const scaledMetricsFor = (
+  result: CrossValidationResult,
+  workload: EvaluationWorkload,
+  development: Development,
+  summary: RollingOriginPlanSummary,
+) =>
+  run(
+    performanceMetrics(result, {
+      metrics: scaledMetrics(development, summary),
+      aggregation: metricAggregation(workload),
+    }),
+  );
+
+/** Each MASE metric's fold scales, in cutoff order, and its overall score on Effect's CV rows. */
+const scaledErrorEvidence = (
+  result: CrossValidationResult,
+  development: Development,
+  summary: RollingOriginPlanSummary,
+) =>
+  scaledMetrics(development, summary).map((metric) => {
+    if (metric.reduce !== "mean") throw new Error("Expected a mean scaled metric");
+
+    const report = run(
+      performanceMetrics(result, { metrics: [metric], aggregation: { kind: "overall" } }),
+    );
+
+    const overall = report.kind === "overall" ? report.bucket.scores[0]?.value : undefined;
+
+    if (overall === undefined) throw new Error("Expected an overall scaled score");
+
+    return {
+      metric: metric.name,
+      // The metric doesn't expose its scales: a forecast that misses by one scores one over it.
+      scales: summary.folds.map(
+        (fold) =>
+          1 /
+          metric.score({
+            fold: fold.index,
+            cutoff: fold.cutoff,
+            timestamp: fold.cutoff,
+            horizonMs: 0,
+            actual: 1,
+            predicted: 0,
+          }),
+      ),
+      overall,
+    };
+  });
 
 const candidateOptions = (
   options: EncodedProphetOptions,
@@ -316,6 +382,14 @@ export const evaluationCorrectness = (
     }
   }
 
+  const evaluation: NonNullable<CorrectnessProjection["evaluation"]> = {
+    cutoffs: Array.from(summary.cutoffs),
+    trainingRows: summary.folds.reduce((count, fold) => count + fold.trainingCount, 0),
+    assessmentRows: expectedRows.length,
+    rows,
+    mae,
+  };
+
   return {
     caseId: benchmarkCase.id,
     run: runIndex,
@@ -326,13 +400,9 @@ export const evaluationCorrectness = (
     events: [],
     regressors: [],
     forecasts: [],
-    evaluation: {
-      cutoffs: Array.from(summary.cutoffs),
-      trainingRows: summary.folds.reduce((count, fold) => count + fold.trainingCount, 0),
-      assessmentRows: expectedRows.length,
-      rows,
-      mae,
-    },
+    evaluation: benchmarkCase.phases.includes("evaluation-metrics-scaled")
+      ? { ...evaluation, scaledErrors: scaledErrorEvidence(result, development, summary) }
+      : evaluation,
   };
 };
 
@@ -352,6 +422,13 @@ export const preparedEvaluationOperation = (
     const result = runFitting(crossValidate(development, options, plan));
 
     return () => metricsFor(result, workload, phase);
+  }
+
+  if (phase === "evaluation-metrics-scaled") {
+    const result = runFitting(crossValidate(development, options, plan));
+    const summary = run(planRollingOrigin(development, options, plan));
+
+    return () => scaledMetricsFor(result, workload, development, summary);
   }
 
   if (phase === "evaluation-baseline") {
@@ -422,6 +499,13 @@ export const evaluationOperation = (
     case "evaluation-metrics-monthly":
     case "evaluation-metrics-custom":
       return metricsFor(runFitting(crossValidate(development, options, plan)), workload, phase);
+    case "evaluation-metrics-scaled":
+      return scaledMetricsFor(
+        runFitting(crossValidate(development, options, plan)),
+        workload,
+        development,
+        run(planRollingOrigin(development, options, plan)),
+      );
 
     case "evaluation-baseline": {
       const summary = run(planRollingOrigin(development, options, plan));
@@ -545,6 +629,64 @@ export const metricParityFailure = (
 
     if (!matches) {
       return `Effect's ${evidence.horizon} metrics on Python's CV rows differ from performance_metrics.`;
+    }
+  }
+
+  return undefined;
+};
+
+// Both sides sum the same naive errors in a different order, so only rounding separates scales.
+const scaleTolerance = 1e-12;
+
+/**
+ * Compare the MASE evidence of one Effect run and one Python run. Fold scales come from the history
+ * alone, so they must agree to rounding. Each side divides its own forecasts' errors by them, so
+ * overall scores may differ by the mean forecast difference over each row's scale, plus rounding.
+ * Returns why they differ, or `undefined` when they agree.
+ */
+export const scaledErrorFailure = (
+  effect: NonNullable<CorrectnessProjection["evaluation"]>,
+  python: NonNullable<CorrectnessProjection["evaluation"]>,
+): string | undefined => {
+  const ours = effect.scaledErrors;
+  const theirs = python.scaledErrors;
+
+  if (ours === undefined || theirs === undefined) return "Scaled error evidence is missing.";
+
+  if (ours.length !== theirs.length) return "Scaled error metrics differ.";
+
+  for (const [index, mine] of ours.entries()) {
+    const other = theirs[index];
+
+    if (
+      other?.metric !== mine.metric ||
+      mine.scales.length !== effect.cutoffs.length ||
+      other.scales.length !== mine.scales.length
+    ) {
+      return "Scaled error metrics or fold counts differ.";
+    }
+
+    const scalesAgree = mine.scales.every((scale, fold) => {
+      const pythonScale = other.scales[fold] ?? Number.NaN;
+
+      return Math.abs(scale - pythonScale) <= scaleTolerance * Math.max(scale, pythonScale);
+    });
+
+    if (!scalesAgree) return `${mine.metric} fold scales differ.`;
+
+    // ||a - p| - |a - q|| <= |p - q|, so a row's scaled error moves at most this far.
+    const bound =
+      effect.rows.reduce((sum, row, rowIndex) => {
+        const scale = mine.scales[effect.cutoffs.indexOf(row.cutoff)] ?? Number.NaN;
+        const predicted = python.rows[rowIndex]?.predicted ?? Number.NaN;
+
+        return sum + Math.abs(row.predicted - predicted) / scale;
+      }, 0) / effect.rows.length;
+
+    const allowed = bound + 2 * scaleTolerance * Math.max(mine.overall, other.overall);
+
+    if (!(Math.abs(mine.overall - other.overall) <= allowed)) {
+      return `${mine.metric} differs by more than the forecasts do.`;
     }
   }
 

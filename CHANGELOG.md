@@ -31,6 +31,9 @@ All notable changes to this project are documented here. The format follows
   timed sequentially and with `cross_validation`'s `parallel="threads"` and
   `parallel="processes"`, which must give the same forecasts and scores as running sequentially.
   Effect Prophet still runs folds one at a time.
+- MASE benchmarks on flat and logistic growth. Python Prophet has no MASE, so the Python side
+  registers it with `register_performance_metric`. Each fold's scale must match, and overall
+  scores may differ only as much as the two libraries' forecasts do.
 
 ## [0.5.1] - 2026-10-31
 

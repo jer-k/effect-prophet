@@ -13,6 +13,7 @@ import {
   evaluationOperation,
   metricParityFailure,
   preparedEvaluationOperation,
+  scaledErrorFailure,
 } from "../evaluation.ts";
 import { customMetrics } from "../../../tools/prophet/custom-metrics.ts";
 import { buildBenchmarkReport } from "../report.ts";
@@ -386,6 +387,116 @@ describe("evaluation public benchmark", () => {
     expect(missing.correctness[0]).toMatchObject({
       status: "failed",
       note: "Python metric parity evidence is missing.",
+    });
+  });
+
+  it("times MASE on precomputed rows and gates its scales and scores against Python's", async () => {
+    const case_ = evaluationCases.find(
+      (item) => item.id === "evaluation-flat-large-months-metrics",
+    );
+
+    if (case_ === undefined) throw new Error("Missing scaled metrics workload");
+
+    const input: unknown = JSON.parse(
+      readFileSync(new URL(`../../inputs/${case_.dataset}`, import.meta.url), "utf8"),
+    );
+
+    const dataset = await Effect.runPromise(parseBenchmarkDataset(input));
+    const timed = preparedEvaluationOperation(case_, dataset, "evaluation-metrics-scaled")();
+
+    expect(timed).toMatchObject({
+      kind: "rolling",
+      points: expect.arrayContaining([
+        expect.objectContaining({
+          scores: [
+            expect.objectContaining({ metric: "mase" }),
+            expect.objectContaining({ metric: "mase_weekly" }),
+          ],
+        }),
+      ]),
+    });
+
+    const projection = evaluationCorrectness(case_, dataset, 0);
+    const evaluation = projection.evaluation;
+    const entries = evaluation?.scaledErrors;
+
+    if (evaluation === undefined || entries === undefined) {
+      throw new Error("Missing scaled error evidence");
+    }
+
+    const { scaledErrors: _scaledErrors, ...unscaled } = evaluation;
+
+    // Each scale, computed directly: the mean naive error over the rows up to the cutoff.
+    const values = new Map(
+      dataset.observations.map((row) => [Date.parse(row.timestamp), row.value]),
+    );
+
+    const naiveScale = (cutoff: number, lagMs: number | undefined) => {
+      const training = dataset.observations.filter((row) => Date.parse(row.timestamp) <= cutoff);
+
+      const errors = training.flatMap((row, index) => {
+        const earlier =
+          lagMs === undefined
+            ? training[index - 1]?.value
+            : values.get(Date.parse(row.timestamp) - lagMs);
+
+        return earlier === undefined ? [] : [Math.abs(row.value - earlier)];
+      });
+
+      return errors.reduce((sum, error) => sum + error, 0) / errors.length;
+    };
+
+    const [previousRow, weekly] = entries;
+
+    expect(previousRow?.metric).toBe("mase");
+    expect(weekly?.metric).toBe("mase_weekly");
+
+    for (const [fold, cutoff] of evaluation.cutoffs.entries()) {
+      expect(previousRow?.scales[fold]).toBeCloseTo(naiveScale(cutoff, undefined), 12);
+      expect(weekly?.scales[fold]).toBeCloseTo(naiveScale(cutoff, 7 * 86_400_000), 12);
+    }
+
+    expect(scaledErrorFailure(evaluation, evaluation)).toBeUndefined();
+
+    const scaled = (change: (entry: NonNullable<typeof entries>[number]) => object) => ({
+      ...evaluation,
+      scaledErrors: entries.map((entry) => ({ ...entry, ...change(entry) })),
+    });
+
+    expect(
+      scaledErrorFailure(
+        evaluation,
+        scaled((entry) => ({ scales: entry.scales.map((scale) => scale * (1 + 1e-9)) })),
+      ),
+    ).toBe("mase fold scales differ.");
+
+    expect(
+      scaledErrorFailure(
+        evaluation,
+        scaled((entry) => ({ overall: entry.overall * (1 + 1e-9) })),
+      ),
+    ).toBe("mase differs by more than the forecasts do.");
+
+    // Moving every forecast by 0.01 may move each score by up to 0.01 over its fold's scale.
+    const moved = {
+      ...scaled((entry) => ({ overall: entry.overall + 0.01 / Math.max(...entry.scales) })),
+      rows: evaluation.rows.map((row) => ({ ...row, predicted: row.predicted + 0.01 })),
+    };
+
+    expect(scaledErrorFailure(evaluation, moved)).toBeUndefined();
+    expect(scaledErrorFailure(evaluation, unscaled)).toBe("Scaled error evidence is missing.");
+
+    const missing = buildBenchmarkReport(
+      { ...manifest, selectedCases: [case_.id] },
+      [{ ...case_, independentRuns: 1 }],
+      result("effect-prophet", { ...projection, caseId: case_.id }),
+      result("python-prophet", { ...projection, caseId: case_.id, evaluation: unscaled }),
+      new Set(["rolling-origin-evaluation-v1"]),
+    );
+
+    expect(missing.correctness[0]).toMatchObject({
+      status: "failed",
+      note: "Scaled error evidence is missing.",
     });
   });
 });
