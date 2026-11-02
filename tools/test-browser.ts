@@ -6,16 +6,17 @@ import { tmpdir } from "node:os";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { rspack, type Stats as RspackStats } from "@rspack/core";
 import { Schema } from "effect";
 import { build as esbuild } from "esbuild";
 import { chromium } from "playwright";
 import { build as viteBuild, createServer as createViteServer } from "vite";
 import webpack from "webpack";
 
-// Bundles the packed artifact for the browser with each supported bundler, and serves it through
-// the Vite dev server, then runs every page in headless Chromium: a point fit and forecast, a
-// country-holiday fit and forecast, and a calendar inspection, so the WASM binary and the
-// per-country calendar chunks must both resolve.
+// Bundles the packed artifact for the browser with Vite, webpack, Rspack and esbuild, and serves
+// it through the Vite dev server, then runs every page in headless Chromium: a point fit and
+// forecast, a country-holiday fit and forecast, and a calendar inspection, so the WASM binary and
+// the per-country calendar chunks must both resolve.
 
 const projectRoot = new URL("../", import.meta.url);
 
@@ -196,6 +197,30 @@ try {
 
         assert.ok(stats, "webpack produced no stats");
         assert.ok(!stats.hasErrors(), stats.toString("errors-only"));
+
+        await writeFile(join(outDir, "index.html"), page("main.js", "classic"));
+
+        return serve(outDir);
+      },
+    },
+    {
+      name: "rspack",
+      start: async (outDir) => {
+        const stats = await new Promise<RspackStats | undefined>((resolve, reject) => {
+          rspack(
+            {
+              mode: "production",
+              context: application,
+              entry,
+              output: { path: outDir, filename: "main.js" },
+              performance: { hints: false },
+            },
+            (error, result) => (error ? reject(error) : resolve(result)),
+          );
+        });
+
+        assert.ok(stats, "rspack produced no stats");
+        assert.ok(!stats.hasErrors(), stats.toString({ preset: "errors-only" }));
 
         await writeFile(join(outDir, "index.html"), page("main.js", "classic"));
 

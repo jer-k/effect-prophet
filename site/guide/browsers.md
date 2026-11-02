@@ -1,7 +1,7 @@
 # Browsers and bundlers
 
 Effect Prophet runs in browsers as well as Node.js, from the same package and the same import.
-There is nothing to configure for Vite or webpack. esbuild needs one file copied.
+There is nothing to configure for Vite, webpack or Rspack. esbuild needs one file copied.
 
 ## How the engine loads
 
@@ -45,6 +45,10 @@ asset and each calendar as a chunk.
 
 Works with webpack 5 and no configuration. webpack emits the engine as an asset and each calendar
 as a chunk.
+
+## Rspack
+
+Works with Rspack 2 and no configuration, the same way as webpack.
 
 ## esbuild
 

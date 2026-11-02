@@ -9,7 +9,7 @@ All notable changes to this project are documented here. The format follows
 ### Added
 
 - **Browser and bundler support.** The same package and import now work in browsers. Vite (build
-  and dev server) and webpack need no configuration; esbuild needs the engine binary copied next
+  and dev server), webpack and Rspack need no configuration; esbuild needs the engine binary copied next
   to the bundle. Browsers download the WebAssembly engine once per page, and each country holiday
   calendar is its own chunk, loaded the first time it's used. Node.js still loads the engine
   synchronously, so `Effect.runSync` keeps working there. See
