@@ -19,6 +19,8 @@ Python, where it differs on purpose, and the smaller behavior differences.
   call
 - No built-in plotting
 - Saved models use their own format, not Python's JSON
+- Runs in browsers as well as Node.js, with no Python process or server. See
+  [Browsers and bundlers](/guide/browsers).
 - Country calendars are offline Prophet 1.4.0 / `holidays` 0.104 snapshots with an outer
   1995–2060 horizon. Known missing coverage is rejected unless explicitly accepted with
   `coverage: "allow-known-gaps"`; neither policy guarantees completeness. Only country-level

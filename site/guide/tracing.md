@@ -63,8 +63,9 @@ time. Python Prophet does the same on such data. Real data rarely triggers this.
 fewer changepoints (see [Trends and changepoints](../examples/trend)) make each step cheaper. Let
 the trace tell you whether it helped.
 
-The first engine call in a process also loads the engine. `wasm.cold_start` marks that call so
-the one-time cost isn't mistaken for a slow fit.
+The first engine call in a process also loads the engine. In a browser, that includes downloading
+the binary. `wasm.cold_start` marks that call so the one-time cost isn't mistaken for a slow fit.
+Calls that start while it's loading wait for the same load and aren't marked.
 
 ## What is never recorded
 

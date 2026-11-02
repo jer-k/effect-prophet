@@ -42,7 +42,10 @@
     "rust/prophet-wasm/node-tests/**/*.ts",
     "tools/check-third-party-notices.ts",
     "tools/clean-build.ts",
+    "tools/country-holiday-imports.ts",
+    "tools/generate-country-holiday-imports.ts",
     "tools/prepare-wasm-package.ts",
+    "tools/test-browser.ts",
     "tools/test-package.ts",
     "oxlint.config.ts"
   ]

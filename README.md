@@ -20,7 +20,8 @@ forecasting library, and is tested against Python Prophet 1.4.0.
 npm install effect-prophet effect
 ```
 
-Requires Node.js 22.19 or newer.
+Runs on Node.js 22.19 or newer, and in browsers through Vite, webpack or esbuild. See
+[Browsers and bundlers](https://jer-k.github.io/effect-prophet/guide/browsers).
 
 ## Quick start
 

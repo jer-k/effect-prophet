@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   isProphetWasmModuleInitialized,
   loadProphetWasmModule,
+  makeProphetWasmModuleLoader,
 } from "../../src/internal/prophet-wasm-module";
 import {
   attemptWasmFitting,
@@ -84,6 +85,42 @@ describe("WASM load tracing", () => {
     expect(coldStartOf(spans.find((span) => span.name === "boundary.execute"))).toBeUndefined();
     expect(coldStartOf(failedLoad)).toBeUndefined();
     expect(failedLoad && Exit.isFailure(requireEndedSpan(failedLoad).exit)).toBe(true);
+  });
+
+  it("marks only the call that started a shared asynchronous load as the cold start", async () => {
+    const { spans, tracer } = collectTestSpans();
+    const real = await loadProphetWasmModule();
+
+    const loader = makeProphetWasmModuleLoader(
+      {
+        readBinarySync: () => undefined,
+        initializeSync: () => {},
+        initialize: () => new Promise<void>((resolve) => setTimeout(resolve, 0)),
+      },
+      () => real,
+    );
+
+    const load = (name: string) =>
+      loadWasmForFitting(loader.load, 4, "load failed", loader).pipe(Effect.withSpan(name));
+
+    const [first, joined] = await Effect.runPromise(
+      Effect.all([load("boundary.starts-load"), load("boundary.joins-load")], {
+        concurrency: "unbounded",
+      }).pipe(Effect.withSpan("job"), Effect.withTracer(tracer)),
+    );
+
+    const job = spans.find((span) => span.name === "job");
+
+    expect(first).toBe(real);
+    expect(joined).toBe(real);
+    expect(coldStartOf(spans.find((span) => span.name === "boundary.starts-load"))).toBe(true);
+    expect(coldStartOf(spans.find((span) => span.name === "boundary.joins-load"))).toBe(false);
+
+    for (const span of spans.filter((span) => span.name.startsWith("boundary."))) {
+      expect(span.traceId).toBe(job?.traceId);
+      expect(span.parent.pipe(Option.getOrUndefined)?.spanId).toBe(job?.spanId);
+      expect(Exit.isSuccess(requireEndedSpan(span).exit)).toBe(true);
+    }
   });
 
   it("classifies a rejected asynchronous load as a failed load", async () => {

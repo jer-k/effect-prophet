@@ -13,7 +13,9 @@ Neither the default nor an explicit opt-in guarantees officially complete or con
 
 <<< @/snippets/country-holidays.ts
 
-Inspection uses packaged files, with no Python, network access, or additional Effect services.
+Inspection uses packaged files, with no Python, outside network access, or additional Effect
+services. In a browser, each country's file is a separate chunk fetched from your own site the first
+time it's used; see [Browsers and bundlers](./browsers).
 Years are deduplicated and sorted. Occurrences preserve exact provider names, zero-day windows,
 and a default prior of 10; `priorScale` accepts a positive finite override. Results include the
 canonical country, snapshot/provider identities, outer horizon, and machine-readable coverage

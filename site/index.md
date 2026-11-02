@@ -20,7 +20,7 @@ features:
   - title: Prophet's model, in TypeScript
     details: Uses the same model as Prophet, the forecasting library from Meta, and is tested against Python Prophet 1.4.0 so the results match.
   - title: No Python, no servers
-    details: The math runs in WebAssembly inside your Node.js process. Install one npm package and you are ready to go.
+    details: The math runs in WebAssembly, in your Node.js process or your users' browser. Install one npm package and you are ready to go.
   - title: Explainable forecasts
     details: Every forecast is split into its trend, seasonal patterns, holidays and extra factors, so you can see why it says what it says.
   - title: Tracing built in

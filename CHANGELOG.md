@@ -8,6 +8,12 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- **Browser and bundler support.** The same package and import now work in browsers. Vite (build
+  and dev server) and webpack need no configuration; esbuild needs the engine binary copied next
+  to the bundle. Browsers download the WebAssembly engine once per page, and each country holiday
+  calendar is its own chunk, loaded the first time it's used. Node.js still loads the engine
+  synchronously, so `Effect.runSync` keeps working there. See
+  [Browsers and bundlers](https://jer-k.github.io/effect-prophet/guide/browsers).
 - **Regressors forecast by their own models.** Set `predictor: true`, or options, on a regressor,
   like Python's `regressor_predictor`, and `fit` fits a model to that regressor's history.
   `predict` uses its forecast in every row after the history, so future rows need no value for

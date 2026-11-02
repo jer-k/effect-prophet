@@ -2,22 +2,21 @@ import { Effect, Schema } from "effect";
 
 import { ValidationIssueSchema, validationIssuesFromIssue } from "../errors";
 import { countryHolidayCatalog } from "./country-holiday-catalog";
+import { countryHolidayImports } from "./country-holiday-imports";
 import {
   parseCountryHolidaySnapshot,
   type CanonicalCountry,
   type CountryHolidaySnapshot,
 } from "./country-holiday-snapshot";
 
-const bundledCountries: ReadonlySet<string> = new Set(Object.keys(countryHolidayCatalog.countries));
-
 /** Import one country's calendar file as a JSON module. */
 export type CountryHolidayFileImporter = (
   country: CanonicalCountry,
 ) => Promise<{ readonly default: unknown }>;
 
-// One static pattern lets bundlers split the calendars into a chunk per country.
 const importBundledCountry: CountryHolidayFileImporter = (country) =>
-  import(`../../calendars/countries/${country}.json`, { with: { type: "json" } });
+  countryHolidayImports.get(country)?.() ??
+  Promise.reject(new Error("Country has no bundled calendar import"));
 
 const Header = Schema.Struct({ schemaVersion: Schema.Int });
 
@@ -46,7 +45,7 @@ export const loadCountryHolidaySnapshot = (
   country: CanonicalCountry,
   importCountry: CountryHolidayFileImporter = importBundledCountry,
 ): Effect.Effect<CountryHolidaySnapshot, CountryHolidayDataError> => {
-  if (!bundledCountries.has(country)) {
+  if (!countryHolidayImports.has(country)) {
     return Effect.fail(
       new CountryHolidayDataError({
         reason: "corrupt-snapshot",

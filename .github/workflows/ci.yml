@@ -74,6 +74,13 @@ jobs:
       - name: Build and test package artifact
         run: npm run test:package
 
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      # Reuses the package built in the previous step.
+      - name: Test package in browsers
+        run: node tools/test-browser.ts
+
   rust:
     runs-on: ubuntu-22.04
 
