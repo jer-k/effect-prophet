@@ -102,13 +102,16 @@ The generated source is exempt from reformatting, like the generated JSON.
 
 Runtime snapshot decoding rejects unsupported versions, malformed names/days/indexes, duplicate
 or unordered dictionary/partition entries, missing partitions and inconsistent coverage metadata.
-The loader checks byte count and SHA-256 against the compiled allowlist, reads once per operation,
-and has no mutable cache. It never constructs filesystem paths from raw user strings.
+The loader imports each allowlisted file as a JSON module, so the host's module loader (or a
+bundler's chunk) reads it once per process and the data gets the same trust as the package code.
+Every operation still decodes and freezes its own copy. The catalog's byte counts and SHA-256
+hashes are checked when calendars are generated and verified, not at runtime. The loader never
+builds import paths from raw user strings: only allowlisted canonical codes reach the import.
 
-Public inspection/resolution operations have named Effect spans, and the filesystem boundary
-includes reading, integrity checks, decoding/copying and expected-failure translation. Attributes
+Public inspection/resolution operations have named Effect spans, and the loader boundary
+includes importing, decoding/copying and expected-failure translation. Attributes
 are bounded source/policy enums and counts, not country/holiday names, dates, payloads or errors.
-Tests use real files and native in-memory spans to assert parentage, completion, safe attributes
+Tests use real JSON-module imports and native in-memory spans to assert parentage, completion, safe attributes
 and interval containment, plus validation paths without misleading loader spans.
 
 Optional version-one `countryHolidays` state is supported in every fitted/portable model kind.

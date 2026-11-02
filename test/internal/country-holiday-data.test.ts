@@ -11,6 +11,7 @@ import { countryHolidayCatalog } from "../../src/internal/country-holiday-catalo
 import {
   CountryHolidayDataError,
   loadCountryHolidaySnapshot,
+  type CountryHolidayFileImporter,
 } from "../../src/internal/country-holiday-data";
 import { CanonicalCountrySchema } from "../../src/internal/country-holiday-snapshot";
 import { collectTestSpans, requireEndedSpan } from "./tracing-test-helpers";
@@ -18,6 +19,14 @@ import { collectTestSpans, requireEndedSpan } from "./tracing-test-helpers";
 const root = new URL("../../calendars/", import.meta.url);
 
 const loaderName = "effect-prophet.calendar.load-snapshot";
+
+// Imports from a temporary directory through the same JSON-module loader as the bundled files.
+const importFrom =
+  (directory: string): CountryHolidayFileImporter =>
+  (country) =>
+    import(pathToFileURL(join(directory, `countries/${country}.json`)).href, {
+      with: { type: "json" },
+    });
 
 describe("packaged country snapshot loader", () => {
   it("loads every allowlisted country through real files and preserves canonical identity", async () => {
@@ -35,28 +44,27 @@ describe("packaged country snapshot loader", () => {
 
   it.each([
     ["missing", "snapshot-unavailable"],
-    ["invalid-json", "corrupt-snapshot"],
-    ["changed-bytes", "corrupt-snapshot"],
+    ["invalid-json", "snapshot-unavailable"],
     ["invalid-header", "corrupt-snapshot"],
+    ["other-country", "corrupt-snapshot"],
     ["future-version", "unsupported-snapshot-version"],
   ] as const)(
-    "classifies %s through a real filesystem seam and fails the complete boundary",
+    "classifies %s through a real module loader seam and fails the complete boundary",
     async (fixture, reason) => {
       const directory = await mkdtemp(join(tmpdir(), "effect-prophet-calendar-"));
 
       try {
         const selected = await Effect.runPromise(parseCountryHolidays({ country: "US" }));
-        const countryRoot = pathToFileURL(`${directory}/`);
 
         await mkdir(join(directory, "countries"));
 
         if (fixture !== "missing") {
-          const bundled = await readFile(new URL("countries/US.json", root), "utf8");
+          const other = await readFile(new URL("countries/CA.json", root), "utf8");
 
           const data = Match.value(fixture).pipe(
             Match.when("invalid-json", () => "{"),
-            Match.when("changed-bytes", () => `${bundled} `),
             Match.when("invalid-header", () => "{}"),
+            Match.when("other-country", () => other),
             Match.when("future-version", () => '{"schemaVersion":2}'),
             Match.exhaustive,
           );
@@ -68,7 +76,7 @@ describe("packaged country snapshot loader", () => {
 
         const failure = await Effect.runPromise(
           Effect.flip(
-            loadCountryHolidaySnapshot(selected.country, countryRoot).pipe(
+            loadCountryHolidaySnapshot(selected.country, importFrom(directory)).pipe(
               Effect.withSpan("calendar.adapter.job"),
               Effect.withTracer(tracer),
             ),
@@ -106,32 +114,19 @@ describe("packaged country snapshot loader", () => {
     },
   );
 
-  it("reads afresh on repeated operations rather than hiding file damage in a cache", async () => {
-    const directory = await mkdtemp(join(tmpdir(), "effect-prophet-calendar-"));
+  it("decodes a fresh frozen snapshot per call without freezing the imported module", async () => {
+    const selected = await Effect.runPromise(parseCountryHolidays({ country: "US" }));
+    const imported = await import("../../calendars/countries/US.json", { with: { type: "json" } });
+    const importCountry: CountryHolidayFileImporter = () => Promise.resolve(imported);
 
-    try {
-      const selected = await Effect.runPromise(parseCountryHolidays({ country: "US" }));
-      const countryRoot = pathToFileURL(`${directory}/`);
-      const file = join(directory, "countries/US.json");
+    const load = loadCountryHolidaySnapshot(selected.country, importCountry);
+    const first = await Effect.runPromise(load);
+    const second = await Effect.runPromise(load);
 
-      await mkdir(join(directory, "countries"));
-      await writeFile(file, await readFile(new URL("countries/US.json", root)));
-
-      const snapshot = await Effect.runPromise(
-        loadCountryHolidaySnapshot(selected.country, countryRoot),
-      );
-
-      expect(snapshot.country).toBe("US");
-
-      await writeFile(file, "{}");
-
-      const failure = await Effect.runPromise(
-        Effect.flip(loadCountryHolidaySnapshot(selected.country, countryRoot)),
-      );
-
-      expect(failure.reason).toBe("corrupt-snapshot");
-    } finally {
-      await rm(directory, { recursive: true, force: true });
-    }
+    expect(first).toEqual(second);
+    expect(first).not.toBe(second);
+    expect(Object.isFrozen(first)).toBe(true);
+    expect(Object.isFrozen(imported.default)).toBe(false);
+    expect(Object.isFrozen(imported.default.years)).toBe(false);
   });
 });

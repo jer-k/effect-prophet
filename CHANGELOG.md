@@ -23,6 +23,13 @@ All notable changes to this project are documented here. The format follows
   `MetricScaleError`. Python Prophet has no scaled metrics. See
   [Scaled errors](https://jer-k.github.io/effect-prophet/examples/cross-validation#scaled-errors).
 
+### Changed
+
+- Country holiday calendars are loaded as JSON modules, once per process, instead of being read
+  from disk on every fit. Each use still checks the file's format version and contents. The
+  byte-count and SHA-256 checks against the bundled catalog are gone, and a calendar file that
+  isn't valid JSON now fails with `snapshot-unavailable` instead of `corrupt-snapshot`.
+
 ### Benchmarks
 
 - New benchmarks for regressors forecast by their own models, on flat and linear growth, checked

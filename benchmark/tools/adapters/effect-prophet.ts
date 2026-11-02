@@ -261,8 +261,9 @@ const runFit = (
     Effect.withTracerEnabled(false),
   );
 
-  // Non-country calls keep their synchronous path. Country fitting awaits real filesystem
-  // lookup/decoding inside the public timer; there is no adapter-side preload or calendar cache.
+  // Non-country calls keep their synchronous path. Country fitting awaits the calendar import and
+  // decoding inside the public timer. The module loader keeps each file after its first import, as
+  // in any application; the adapter adds no preload or cache of its own.
   return options?.countryHolidays === undefined
     ? Effect.runSync(operation)
     : Effect.runPromise(operation);

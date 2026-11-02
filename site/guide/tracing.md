@@ -148,7 +148,7 @@ checks the history's length before fitting, so a history too long to simulate cr
 | Span                                    | Covers                                                                                                                                                |
 | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Prophet.resolveCountryHolidays`        | Resolving a country calendar's dates and coverage for the requested years, inside `fit`, `predict`, `predictUncertainty` and `inspectCountryHolidays` |
-| `effect-prophet.calendar.load-snapshot` | Reading and checking a packaged country calendar file, inside a resolution for `fit` or `inspectCountryHolidays`                                      |
+| `effect-prophet.calendar.load-snapshot` | Loading and checking a packaged country calendar file, inside a resolution for `fit` or `inspectCountryHolidays`                                      |
 
 Prediction resolves dates from the snapshot saved in the model, so it reads no file and creates no
 `effect-prophet.calendar.load-snapshot` span. A malformed selection or year list fails before
