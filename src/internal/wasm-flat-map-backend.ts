@@ -3,17 +3,22 @@ import { Effect } from "effect";
 import { PredictionError } from "../errors";
 import type { FittedFlatMapProphet } from "../fitted-model";
 import { targetScalingModeCode } from "../target-scaling";
-import { loadProphetWasmModule, type FlatMapWasmBindings } from "./prophet-wasm-module";
+import {
+  loadProphetWasmModule,
+  type FlatMapWasmBindings,
+  type WasmBindingsLoader,
+} from "./prophet-wasm-module";
 import {
   attemptWasmPrediction,
   decodeSeasonalPredictions,
+  loadWasmForPrediction,
   packSeasonalitiesForPrediction,
   type WasmSeasonalPredictionBatch,
   wasmPredictSpanOptions,
 } from "./wasm-backend";
 
 /** Lazy loader for checked Rust/WASM flat MAP bindings. */
-export type WasmFlatMapLoader = () => FlatMapWasmBindings;
+export type WasmFlatMapLoader = WasmBindingsLoader<FlatMapWasmBindings>;
 
 /** One checked row-major flat MAP prediction batch. */
 export type FlatMapPredictionBatch = WasmSeasonalPredictionBatch;
@@ -52,10 +57,11 @@ export const makeWasmFlatMapAdapter = (loadModule: WasmFlatMapLoader): WasmFlatM
     }
 
     return Effect.gen(function* () {
-      const module = yield* attemptWasmPrediction(loadModule, firstTimestamp, {
-        phase: "load",
-        message: "Failed to load the WASM flat MAP prediction backend",
-      });
+      const module = yield* loadWasmForPrediction(
+        loadModule,
+        firstTimestamp,
+        "Failed to load the WASM flat MAP prediction backend",
+      );
 
       const { periods, orders } = packSeasonalitiesForPrediction(model.seasonalities);
 
@@ -74,7 +80,6 @@ export const makeWasmFlatMapAdapter = (loadModule: WasmFlatMapLoader): WasmFlatM
           ),
         firstTimestamp,
         {
-          phase: "execute",
           message: "Failed to execute the WASM flat MAP prediction backend",
         },
       );

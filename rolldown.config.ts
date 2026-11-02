@@ -15,7 +15,13 @@ const { default: getTsrsPath } = await import(
 
 export default defineConfig({
   input: "src/index.ts",
-  external: [/^effect(?:\/|$)/u, /^node:/u, /[/\\]node_modules[/\\]/u],
+  // The generated WASM glue ships beside `dist` and finds its binary from its own module URL.
+  external: [
+    /^effect(?:\/|$)/u,
+    /^node:/u,
+    /[/\\]node_modules[/\\]/u,
+    /[/\\]wasm[/\\]prophet_wasm\.js$/u,
+  ],
   platform: "node",
   plugins: [
     dts({

@@ -36,6 +36,10 @@ jobs:
       - name: Install pinned wasm-pack version
         run: cargo install wasm-pack --version 0.15.0 --locked
 
+      # The examples import the source, which imports the generated WASM glue.
+      - name: Build WASM
+        run: npm run build:wasm:production
+
       - name: Type check examples
         run: npm run docs:typecheck
 

@@ -28,7 +28,11 @@ import type { WarmStartParameters } from "../warm-start";
 import { targetScalingModeCode, type TargetScalingMode } from "../target-scaling";
 import type { KnownAdditiveFeatures, SeasonalityMaskMatrix } from "./additional-features";
 import type { TrainingInput } from "./fitting-backend";
-import { loadProphetWasmModule, type MixedMapWasmBindings } from "./prophet-wasm-module";
+import {
+  loadProphetWasmModule,
+  type MixedMapWasmBindings,
+  type WasmBindingsLoader,
+} from "./prophet-wasm-module";
 import {
   annotateFittedDimensions,
   attemptWasmFitting,
@@ -38,6 +42,8 @@ import {
   failWasmFitting,
   failWasmPrediction,
   indexedFailureTimestamp,
+  loadWasmForFitting,
+  loadWasmForPrediction,
   packKnownAdditiveFeatures,
   packChangepointsForFit,
   packSeasonalitiesForFit,
@@ -57,7 +63,7 @@ export interface MixedMapPredictionBatch {
 }
 
 /** Lazy loader for checked mixed MAP WASM bindings. */
-export type WasmMixedMapLoader = () => MixedMapWasmBindings;
+export type WasmMixedMapLoader = WasmBindingsLoader<MixedMapWasmBindings>;
 
 const fitStatus = {
   success: 0,
@@ -409,10 +415,11 @@ export const fitMixedLinearMapWithWasm = (
       "effect_prophet.component.mode": "mixed",
     });
 
-    const module = yield* attemptWasmFitting(defaultLoader, observationCount, {
-      phase: "load",
-      message: "Failed to load the WASM mixed linear MAP fitting backend",
-    });
+    const module = yield* loadWasmForFitting(
+      defaultLoader,
+      observationCount,
+      "Failed to load the WASM mixed linear MAP fitting backend",
+    );
 
     const seasonal = packSeasonalitiesForFit(seasonalities);
     const additional = packKnownAdditiveFeatures(masks, features);
@@ -443,7 +450,6 @@ export const fitMixedLinearMapWithWasm = (
         ),
       observationCount,
       {
-        phase: "execute",
         message: "Failed to execute the WASM mixed linear MAP fitting backend",
       },
     );
@@ -505,10 +511,11 @@ export const fitFlatStanMapWithWasm = (
       "effect_prophet.component.mode": componentModeAttribute(seasonalities, features),
     });
 
-    const module = yield* attemptWasmFitting(defaultLoader, observationCount, {
-      phase: "load",
-      message: "Failed to load the WASM flat Stan MAP fitting backend",
-    });
+    const module = yield* loadWasmForFitting(
+      defaultLoader,
+      observationCount,
+      "Failed to load the WASM flat Stan MAP fitting backend",
+    );
 
     const seasonal = packSeasonalitiesForFit(seasonalities);
     const additional = packKnownAdditiveFeatures(masks, features);
@@ -539,7 +546,6 @@ export const fitFlatStanMapWithWasm = (
         ),
       observationCount,
       {
-        phase: "execute",
         message: "Failed to execute the WASM flat Stan MAP fitting backend",
       },
     );
@@ -599,10 +605,11 @@ const predictMixed = (
       "effect_prophet.component.mode": componentModeAttribute(model.seasonalities, features),
     });
 
-    const module = yield* attemptWasmPrediction(defaultLoader, firstTimestamp, {
-      phase: "load",
-      message: "Failed to load the WASM mixed MAP prediction backend",
-    });
+    const module = yield* loadWasmForPrediction(
+      defaultLoader,
+      firstTimestamp,
+      "Failed to load the WASM mixed MAP prediction backend",
+    );
 
     const seasonal = packSeasonalitiesForPrediction(model.seasonalities);
     const additional = packKnownAdditiveFeatures(masks, features);
@@ -649,7 +656,6 @@ const predictMixed = (
           : module.predict_mixed_flat_map(...shared, model.level, ...tail),
       firstTimestamp,
       {
-        phase: "execute",
         message: "Failed to execute the WASM mixed MAP prediction backend",
       },
     );

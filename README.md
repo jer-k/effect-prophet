@@ -124,6 +124,8 @@ npm run docs:dev  # documentation site at http://localhost:5173/effect-prophet/
 ```
 
 Building the WebAssembly requires Rust and [wasm-pack](https://rustwasm.github.io/wasm-pack/).
+Type checking reads the generated bindings, so run `npm run build:wasm` (or `npm test`) once
+before `npm run typecheck`.
 Comparing against Python requires Docker.
 
 ## License

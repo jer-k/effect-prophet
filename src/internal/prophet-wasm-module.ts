@@ -1,6 +1,8 @@
-import { createRequire } from "node:module";
+import { readFileSync } from "node:fs";
 
 import { Predicate } from "effect";
+
+import * as generatedModule from "../../wasm/prophet_wasm.js";
 
 /** Rust/WASM bindings for masked seasonalities and known additive MAP columns. */
 export interface AdditiveFeatureWasmBindings {
@@ -246,10 +248,18 @@ export type ProphetWasmModule = AdditiveFeatureWasmBindings &
   LogisticMapWasmBindings &
   MapUncertaintyWasmBindings;
 
+/**
+ * Lazy loader for checked Rust/WASM bindings.
+ *
+ * A loader may return the bindings directly or settle them asynchronously, so hosts that must
+ * fetch and compile the engine can share the same boundary as hosts that read it synchronously.
+ */
+export type WasmBindingsLoader<Bindings> = () => Bindings | PromiseLike<Bindings>;
+
 /** Lazy loader that returns a checked Rust/WASM module. */
 export type ProphetWasmModuleLoader = () => ProphetWasmModule;
 
-const require = createRequire(import.meta.url);
+const wasmBinaryUrl = new URL("../../wasm/prophet_wasm_bg.wasm", import.meta.url);
 
 const requiredFunctionExports = [
   "fit_piecewise_map_with_features",
@@ -293,23 +303,30 @@ export function assertProphetWasmModule(input: unknown): asserts input is Prophe
   }
 }
 
-let prophetWasmModuleInitialized = false;
+let checkedModule: ProphetWasmModule | undefined;
 
 /** Report whether this process has already loaded and checked the generated Prophet WASM module. */
-export const isProphetWasmModuleInitialized = (): boolean => prophetWasmModuleInitialized;
+export const isProphetWasmModuleInitialized = (): boolean => checkedModule !== undefined;
 
 /**
- * Lazily load and check the generated Node-target Prophet WASM module.
+ * Lazily initialize and check the generated Prophet WASM module.
+ *
+ * Node reads and compiles the engine synchronously on first use, so operations that never wait
+ * on anything else still run under `Effect.runSync`.
  *
  * @returns The checked bindings required by this package version.
- * @throws Error when Node cannot load or initialize the generated module, or
+ * @throws Error when the engine binary cannot be read or instantiated, or
  * TypeError when the loaded module does not satisfy the required export contract.
  */
 export const loadProphetWasmModule: ProphetWasmModuleLoader = () => {
-  const loaded: unknown = require("../../wasm/prophet_wasm.js");
+  if (checkedModule === undefined) {
+    generatedModule.initSync({ module: readFileSync(wasmBinaryUrl) });
 
-  assertProphetWasmModule(loaded);
-  prophetWasmModuleInitialized = true;
+    const loaded: unknown = generatedModule;
 
-  return loaded;
+    assertProphetWasmModule(loaded);
+    checkedModule = loaded;
+  }
+
+  return checkedModule;
 };

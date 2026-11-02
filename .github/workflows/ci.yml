@@ -37,6 +37,10 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      # The source imports the generated WASM glue, so type checking needs it built.
+      - name: Build WASM
+        run: npm run build:wasm:production
+
       - name: Type check
         run: npm run typecheck
 

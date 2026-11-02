@@ -12,11 +12,16 @@ import type { UncertaintyOptions, UncertaintyResult } from "../uncertainty";
 import { simulationIdentity } from "../uncertainty";
 import { targetScalingModeCode } from "../target-scaling";
 import type { KnownAdditiveFeatures, SeasonalityMaskMatrix } from "./additional-features";
-import { loadProphetWasmModule, type MapUncertaintyWasmBindings } from "./prophet-wasm-module";
+import {
+  loadProphetWasmModule,
+  type MapUncertaintyWasmBindings,
+  type WasmBindingsLoader,
+} from "./prophet-wasm-module";
 import {
   attemptWasmPrediction,
   checkedAdd,
   checkedMultiply,
+  loadWasmForPrediction,
   packKnownAdditiveFeatures,
   packSeasonalitiesForPrediction,
   readWasmStatus,
@@ -24,7 +29,7 @@ import {
 } from "./wasm-backend";
 
 /** Injectable production-used lazy loader for real generated-binding and failure tests. */
-export type WasmMapUncertaintyLoader = () => MapUncertaintyWasmBindings;
+export type WasmMapUncertaintyLoader = WasmBindingsLoader<MapUncertaintyWasmBindings>;
 
 /**
  * Per-sample changes to some rows' additive and multiplicative terms, such as a forecast
@@ -93,10 +98,11 @@ export const simulateMapWithWasm = (
       ...model.regressors.map((regressor) => regressor.coefficient),
     ]);
 
-    const module = yield* attemptWasmPrediction(loader, firstTimestamp, {
-      phase: "load",
-      message: "Failed to load the WASM MAP simulation backend",
-    });
+    const module = yield* loadWasmForPrediction(
+      loader,
+      firstTimestamp,
+      "Failed to load the WASM MAP simulation backend",
+    );
 
     const packed = yield* attemptWasmPrediction(
       () =>
@@ -170,7 +176,7 @@ export const simulateMapWithWasm = (
               options.output === "intervals" ? 0 : 1,
             ),
       firstTimestamp,
-      { phase: "execute", message: "Failed to execute the WASM MAP simulation backend" },
+      { message: "Failed to execute the WASM MAP simulation backend" },
     );
 
     const status = readWasmStatus(packed);

@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Predicate } from "effect";
 
 import {
   FittingError,
@@ -12,7 +12,7 @@ import type { ChangepointSetting } from "../options";
 import type { SeasonalityLayout } from "../seasonality";
 import type { TargetScalingMode } from "../target-scaling";
 import type { KnownAdditiveFeatures, SeasonalityMaskMatrix } from "./additional-features";
-import { isProphetWasmModuleInitialized } from "./prophet-wasm-module";
+import { isProphetWasmModuleInitialized, type WasmBindingsLoader } from "./prophet-wasm-module";
 import { checkedAdd, checkedMultiply } from "./safe-arithmetic";
 
 export { checkedAdd, checkedMultiply } from "./safe-arithmetic";
@@ -87,10 +87,25 @@ export const failWasmPrediction = (
   fields: Parameters<typeof wasmPredictionError>[1],
 ): Effect.Effect<never, PredictionError> => Effect.fail(wasmPredictionError(timestamp, fields));
 
-/** Mark whether a successful load step initialized the generated WASM module in this process. */
-const annotateColdStart = <Result, Failure>(load: Effect.Effect<Result, Failure>) =>
+/**
+ * Run one WASM load step, waiting only when the loader settles asynchronously.
+ *
+ * Synchronous loaders keep the step synchronous. A successful step records whether it
+ * initialized the generated module in this process.
+ */
+const attemptWasmLoad = <Bindings, Failure>(
+  loader: WasmBindingsLoader<Bindings>,
+  onFailure: (cause: unknown) => Failure,
+): Effect.Effect<Bindings, Failure> =>
   Effect.suspend(() => {
     const initializedBefore = isProphetWasmModuleInitialized();
+
+    const settle = (loaded: Bindings | PromiseLike<Bindings>): Effect.Effect<Bindings, Failure> =>
+      Predicate.isPromiseLike(loaded)
+        ? Effect.tryPromise({ try: () => loaded, catch: onFailure })
+        : Effect.succeed(loaded);
+
+    const load = Effect.flatMap(Effect.try({ try: loader, catch: onFailure }), settle);
 
     return Effect.tap(load, () =>
       Effect.annotateCurrentSpan({
@@ -99,22 +114,46 @@ const annotateColdStart = <Result, Failure>(load: Effect.Effect<Result, Failure>
     );
   });
 
+/** Load WASM bindings for a fitting operation and classify a failed load. */
+export const loadWasmForFitting = <Bindings>(
+  loader: WasmBindingsLoader<Bindings>,
+  observationCount: number,
+  message: string,
+): Effect.Effect<Bindings, FittingError> =>
+  attemptWasmLoad(loader, (cause) =>
+    wasmFittingError(
+      observationCount,
+      { reason: "backend-failure", backendPhase: "load", message },
+      cause,
+    ),
+  );
+
+/** Load WASM bindings for a prediction operation and classify a failed load. */
+export const loadWasmForPrediction = <Bindings>(
+  loader: WasmBindingsLoader<Bindings>,
+  timestamp: number,
+  message: string,
+): Effect.Effect<Bindings, PredictionError> =>
+  attemptWasmLoad(loader, (cause) =>
+    wasmPredictionError(
+      timestamp,
+      { reason: "backend-failure", backendPhase: "load", message },
+      cause,
+    ),
+  );
+
 /** Run one WASM fitting step and classify a thrown boundary failure. */
 export const attemptWasmFitting = <Result>(
   operation: () => Result,
   observationCount: number,
-  context: {
-    readonly phase: "load" | "execute";
-    readonly message: string;
-    readonly parameterCount?: number;
-  },
-): Effect.Effect<Result, FittingError> => {
-  const attempt = Effect.try({
+  context: { readonly message: string; readonly parameterCount?: number },
+): Effect.Effect<Result, FittingError> =>
+  Effect.try({
     try: operation,
     catch: (cause) => {
       const fields = {
         reason: "backend-failure",
-        backendPhase: context.phase,
+        backendPhase: "execute",
         message: context.message,
       } as const;
 
@@ -128,31 +167,21 @@ export const attemptWasmFitting = <Result>(
     },
   });
 
-  return context.phase === "load" ? annotateColdStart(attempt) : attempt;
-};
-
 /** Run one WASM prediction step and classify a thrown boundary failure. */
 export const attemptWasmPrediction = <Result>(
   operation: () => Result,
   timestamp: number,
-  context: { readonly phase: "load" | "execute"; readonly message: string },
-): Effect.Effect<Result, PredictionError> => {
-  const attempt = Effect.try({
+  context: { readonly message: string },
+): Effect.Effect<Result, PredictionError> =>
+  Effect.try({
     try: operation,
     catch: (cause) =>
       wasmPredictionError(
         timestamp,
-        {
-          reason: "backend-failure",
-          backendPhase: context.phase,
-          message: context.message,
-        },
+        { reason: "backend-failure", backendPhase: "execute", message: context.message },
         cause,
       ),
   });
-
-  return context.phase === "load" ? annotateColdStart(attempt) : attempt;
-};
 
 /** Read an integral status code from a non-empty packed WASM frame. */
 export const readWasmStatus = (packed: Float64Array): number | undefined => {

@@ -1,6 +1,8 @@
-import { createRequire } from "node:module";
+import { readFileSync } from "node:fs";
 
 import { Predicate } from "effect";
+
+import * as generatedModule from "../../../wasm/prophet_wasm.js";
 
 interface FlatMapPredictionStatuses {
   readonly Success: number;
@@ -104,7 +106,7 @@ export interface ProphetWasmNodeBindings {
   readonly simulate_logistic_map_with_features: (...args: ReadonlyArray<unknown>) => Float64Array;
 }
 
-const require = createRequire(import.meta.url);
+const wasmBinaryUrl = new URL("../../../wasm/prophet_wasm_bg.wasm", import.meta.url);
 
 const requiredFunctionExports = [
   "fit_piecewise_map_with_features",
@@ -197,13 +199,15 @@ const assertProphetWasmNodeBindings: (
 };
 
 /**
- * Load and check the generated Node-target WASM bindings.
+ * Initialize and check the generated WASM bindings from the binary on disk.
  *
  * @returns The complete bindings used by the direct Node tests.
  * @throws TypeError when a required generated export is missing or has the wrong runtime kind.
  */
 export const loadProphetWasmNodeBindings = (): ProphetWasmNodeBindings => {
-  const loaded: unknown = require("../../../wasm/prophet_wasm.js");
+  generatedModule.initSync({ module: readFileSync(wasmBinaryUrl) });
+
+  const loaded: unknown = generatedModule;
 
   assertProphetWasmNodeBindings(loaded);
 

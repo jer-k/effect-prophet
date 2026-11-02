@@ -28,6 +28,7 @@ import {
   loadProphetWasmModule,
   type AdditiveFeatureWasmBindings,
   type PiecewiseMapWasmBindings,
+  type WasmBindingsLoader,
 } from "./prophet-wasm-module";
 import {
   annotateFittedDimensions,
@@ -35,6 +36,8 @@ import {
   attemptWasmPrediction,
   decodeSeasonalPredictions,
   failWasmFitting,
+  loadWasmForFitting,
+  loadWasmForPrediction,
   packKnownAdditiveFeatures,
   packChangepointsForFit,
   packSeasonalitiesForFit,
@@ -47,8 +50,9 @@ import {
 } from "./wasm-backend";
 
 /** Lazy loader for checked linear piecewise MAP bindings. */
-export type WasmPiecewiseMapLoader = () => PiecewiseMapWasmBindings &
-  Partial<AdditiveFeatureWasmBindings>;
+export type WasmPiecewiseMapLoader = WasmBindingsLoader<
+  PiecewiseMapWasmBindings & Partial<AdditiveFeatureWasmBindings>
+>;
 
 /** One checked row-major linear piecewise MAP prediction batch. */
 export type PiecewiseMapPredictionBatch = WasmSeasonalPredictionBatch;
@@ -323,10 +327,11 @@ export const makeWasmPiecewiseMapAdapter = (
     return Effect.gen(function* () {
       yield* annotateLinearRequest(optimizer);
 
-      const module = yield* attemptWasmFitting(loadModule, observationCount, {
-        phase: "load",
-        message: "Failed to load the WASM linear MAP fitting backend",
-      });
+      const module = yield* loadWasmForFitting(
+        loadModule,
+        observationCount,
+        "Failed to load the WASM linear MAP fitting backend",
+      );
 
       const { periods, orders, priors } = packSeasonalitiesForFit(seasonalities);
 
@@ -348,7 +353,6 @@ export const makeWasmPiecewiseMapAdapter = (
           ),
         observationCount,
         {
-          phase: "execute",
           message: "Failed to execute the WASM linear MAP fitting backend",
         },
       );
@@ -397,10 +401,11 @@ export const makeWasmPiecewiseMapAdapter = (
     return Effect.gen(function* () {
       yield* annotateLinearRequest(optimizer, warmStart);
 
-      const module = yield* attemptWasmFitting(loadModule, observationCount, {
-        phase: "load",
-        message: "Failed to load the WASM linear MAP feature fitting backend",
-      });
+      const module = yield* loadWasmForFitting(
+        loadModule,
+        observationCount,
+        "Failed to load the WASM linear MAP feature fitting backend",
+      );
 
       const fitFeatures = module.fit_piecewise_map_with_features_and_scaling;
 
@@ -443,7 +448,6 @@ export const makeWasmPiecewiseMapAdapter = (
           ),
         observationCount,
         {
-          phase: "execute",
           message: "Failed to execute the WASM linear MAP feature fitting backend",
         },
       );
@@ -490,10 +494,11 @@ export const makeWasmPiecewiseMapAdapter = (
     }
 
     return Effect.gen(function* () {
-      const module = yield* attemptWasmPrediction(loadModule, firstTimestamp, {
-        phase: "load",
-        message: "Failed to load the WASM linear MAP prediction backend",
-      });
+      const module = yield* loadWasmForPrediction(
+        loadModule,
+        firstTimestamp,
+        "Failed to load the WASM linear MAP prediction backend",
+      );
 
       const { periods, orders } = packSeasonalitiesForPrediction(model.seasonalities);
 
@@ -517,7 +522,6 @@ export const makeWasmPiecewiseMapAdapter = (
           ),
         firstTimestamp,
         {
-          phase: "execute",
           message: "Failed to execute the WASM linear MAP prediction backend",
         },
       );
@@ -565,10 +569,11 @@ export const makeWasmPiecewiseMapAdapter = (
     }
 
     return Effect.gen(function* () {
-      const module = yield* attemptWasmPrediction(loadModule, firstTimestamp, {
-        phase: "load",
-        message: "Failed to load the WASM linear MAP feature prediction backend",
-      });
+      const module = yield* loadWasmForPrediction(
+        loadModule,
+        firstTimestamp,
+        "Failed to load the WASM linear MAP feature prediction backend",
+      );
 
       const predictFeatures = module.predict_piecewise_map_with_features_and_scaling;
 
@@ -615,7 +620,6 @@ export const makeWasmPiecewiseMapAdapter = (
           ),
         firstTimestamp,
         {
-          phase: "execute",
           message: "Failed to execute the WASM linear MAP feature prediction backend",
         },
       );
