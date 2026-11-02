@@ -4,23 +4,25 @@ import { copyFile, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node
 import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { extname, join, normalize } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { rspack, type Stats as RspackStats } from "@rspack/core";
-import { Schema } from "effect";
+import { Effect, Schema } from "effect";
 import { build as esbuild } from "esbuild";
-import { chromium } from "playwright";
+import { chromium, firefox, webkit } from "playwright";
 import { build as viteBuild, createServer as createViteServer } from "vite";
 import webpack from "webpack";
 
 // Bundles the packed artifact for the browser with Vite, webpack, Rspack and esbuild, and serves
-// it through the Vite dev server, then runs every page in headless Chromium: a point fit and
-// forecast, a country-holiday fit and forecast, and a calendar inspection, so the WASM binary and
-// the per-country calendar chunks must both resolve.
+// it through the Vite dev server, then runs every page in headless Chromium, Firefox and WebKit:
+// a point fit and forecast, a country-holiday fit and forecast, and a calendar inspection, so the
+// WASM binary and the per-country calendar chunks must both resolve. Every browser must produce
+// exactly the numbers Node does, since they all run the same engine binary.
 
 const projectRoot = new URL("../", import.meta.url);
 
-const smokeScript = `
+// The same program runs in Node and in every browser, so their results can be compared exactly.
+const smokeModule = `
 import { Effect } from "effect";
 import { fit, inspectCountryHolidays, predict, prophetFittingBackendLayer } from "effect-prophet";
 
@@ -31,7 +33,7 @@ const rows = Array.from({ length: 80 }, (_, index) => ({
 
 const future = ["2025-01-01T12:00:00.000Z", "2025-01-02T12:00:00.000Z"];
 
-const smoke = Effect.gen(function* () {
+export const smoke = Effect.gen(function* () {
   const point = yield* fit(rows);
   const forecasts = yield* predict(point, future);
   const holidays = yield* fit(rows, { countryHolidays: { country: "US" } });
@@ -39,13 +41,17 @@ const smoke = Effect.gen(function* () {
   const calendar = yield* inspectCountryHolidays({ country: "DE" }, [2025]);
 
   return {
-    forecasts: forecasts.length,
-    holidayForecasts: holidayForecasts.length,
-    finite: [...forecasts, ...holidayForecasts].every((row) => Number.isFinite(row.value)),
+    forecasts: forecasts.map((row) => row.value),
+    holidayForecasts: holidayForecasts.map((row) => row.value),
     calendar: calendar.country,
-    christmas: calendar.occurrences.some((event) => event.date === "2025-12-25"),
+    occurrences: calendar.occurrences.map((event) => \`\${event.date} \${event.name}\`),
   };
 }).pipe(Effect.provide(prophetFittingBackendLayer));
+`;
+
+const pageScript = `
+import { Effect } from "effect";
+import { smoke } from "./smoke.js";
 
 const report = (outcome) => {
   document.body.dataset.smoke = JSON.stringify(outcome);
@@ -56,6 +62,13 @@ Effect.runPromise(smoke).then(
   (error) => report({ ok: false, error: String(error?.stack ?? error) }),
 );
 `;
+
+const SmokeResult = Schema.Struct({
+  forecasts: Schema.Array(Schema.Finite),
+  holidayForecasts: Schema.Array(Schema.Finite),
+  calendar: Schema.String,
+  occurrences: Schema.Array(Schema.String),
+});
 
 const page = (script: string, type: "module" | "classic") =>
   `<!doctype html>\n<html><body><script${type === "module" ? ' type="module"' : ""} src="${script}"></script></body></html>\n`;
@@ -140,7 +153,20 @@ try {
 
   const entry = join(application, "src/main.js");
 
-  await writeFile(entry, smokeScript);
+  await writeFile(entry, pageScript);
+  await writeFile(join(application, "src/smoke.js"), smokeModule);
+
+  // Node's run is the reference every browser must match exactly.
+  const { smoke }: { readonly smoke: Effect.Effect<unknown, unknown> } = await import(
+    pathToFileURL(join(application, "src/smoke.js")).href
+  );
+
+  const expected = Schema.decodeUnknownSync(SmokeResult)(await Effect.runPromise(smoke));
+
+  assert.equal(expected.forecasts.length, 2);
+  assert.equal(expected.holidayForecasts.length, 2);
+  assert.equal(expected.calendar, "DE");
+  assert.ok(expected.occurrences.includes("2025-12-25 Christmas Day"));
   await writeFile(join(application, "index.html"), page("/src/main.js", "module"));
 
   const targets: ReadonlyArray<{
@@ -253,57 +279,56 @@ try {
     },
   ];
 
-  const browser = await chromium.launch();
+  const browsers = [
+    { name: "Chromium", browser: await chromium.launch() },
+    { name: "Firefox", browser: await firefox.launch() },
+    { name: "WebKit", browser: await webkit.launch() },
+  ];
 
   try {
-    for (const [index, { name, start }] of targets.entries()) {
-      const { url, close } = await start(join(application, `out-${index}`));
+    for (const [index, target] of targets.entries()) {
+      const { url, close } = await target.start(join(application, `out-${index}`));
 
       try {
-        const tab = await browser.newPage();
-        const problems: Array<string> = [];
+        for (const { name, browser } of browsers) {
+          // A new page has its own context, so nothing is cached from another target's run.
+          const tab = await browser.newPage();
+          const label = `${target.name} in ${name}`;
+          const problems: Array<string> = [];
 
-        tab.on("pageerror", (error) => problems.push(`page error: ${error.message}`));
-        tab.on("console", (message) => {
-          if (message.type() === "error" || message.type() === "warning") {
-            problems.push(`console ${message.type()}: ${message.text()}`);
-          }
-        });
-        tab.on("requestfailed", (request) => problems.push(`request failed: ${request.url()}`));
-        tab.on("response", (response) => {
-          if (!response.ok()) problems.push(`HTTP ${response.status()}: ${response.url()}`);
-        });
+          tab.on("pageerror", (error) => problems.push(`page error: ${error.message}`));
+          tab.on("console", (message) => {
+            if (message.type() === "error" || message.type() === "warning") {
+              problems.push(`console ${message.type()}: ${message.text()}`);
+            }
+          });
+          tab.on("requestfailed", (request) => problems.push(`request failed: ${request.url()}`));
+          tab.on("response", (response) => {
+            if (!response.ok()) problems.push(`HTTP ${response.status()}: ${response.url()}`);
+          });
 
-        await tab.goto(url);
-        await tab.waitForSelector("body[data-smoke]", { state: "attached", timeout: 60_000 });
+          await tab.goto(url);
+          await tab.waitForSelector("body[data-smoke]", { state: "attached", timeout: 60_000 });
 
-        const outcome = JSON.parse((await tab.getAttribute("body", "data-smoke")) ?? "null");
+          const outcome = JSON.parse((await tab.getAttribute("body", "data-smoke")) ?? "null");
 
-        assert.deepEqual(
-          outcome,
-          {
-            ok: true,
-            result: {
-              forecasts: 2,
-              holidayForecasts: 2,
-              finite: true,
-              calendar: "DE",
-              christmas: true,
-            },
-          },
-          `${name}: ${JSON.stringify(outcome)}`,
-        );
-        assert.deepEqual(problems, [], `${name} reported problems`);
+          assert.deepEqual(
+            outcome,
+            { ok: true, result: expected },
+            `${label}: ${JSON.stringify(outcome)}`,
+          );
+          assert.deepEqual(problems, [], `${label} reported problems`);
 
-        await tab.close();
+          await tab.close();
+
+          console.log(`Browser smoke test passed with ${label}`);
+        }
       } finally {
         await close();
       }
-
-      console.log(`Browser smoke test passed with ${name}`);
     }
   } finally {
-    await browser.close();
+    await Promise.all(browsers.map(({ browser }) => browser.close()));
   }
 } finally {
   await rm(application, { recursive: true, force: true });

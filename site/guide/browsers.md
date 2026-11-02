@@ -3,6 +3,10 @@
 Effect Prophet runs in browsers as well as Node.js, from the same package and the same import.
 There is nothing to configure for Vite, webpack or Rspack. esbuild needs one file copied.
 
+Every change is tested in Chromium, Firefox and WebKit (the engine behind Safari) with every
+bundler below. All three give exactly the same forecasts as Node.js, because they all run the
+same engine.
+
 ## How the engine loads
 
 The math runs in a WebAssembly binary, `prophet_wasm_bg.wasm`, which loads the first time a fit
