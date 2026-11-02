@@ -6,15 +6,15 @@ Recorded historical outcomes are not recomputed using current gates. Architectur
 
 | Scope | Run | Passed | Failed | Provenance | Report |
 | --- | --- | ---: | ---: | --- | --- |
-| flat-growth | `2026-11-01T043118-307Z-d257017e` | 71 | 0 | clean tree | [results](retained/flat-growth/2026-11-01T043118-307Z-d257017e/report.md) |
-| linear-growth | `2026-11-01T040906-363Z-d257017e` | 49 | 2 | clean tree | [results](retained/linear-growth/2026-11-01T040906-363Z-d257017e/report.md) |
-| logistic-growth | `2026-11-01T045826-233Z-d257017e` | 56 | 0 | clean tree | [results](retained/logistic-growth/2026-11-01T045826-233Z-d257017e/report.md) |
+| flat-growth | `2026-11-02T043353-755Z-a3424eff` | 71 | 0 | clean tree | [results](retained/flat-growth/2026-11-02T043353-755Z-a3424eff/report.md) |
+| linear-growth | `2026-11-02T040250-297Z-a3424eff` | 49 | 2 | clean tree | [results](retained/linear-growth/2026-11-02T040250-297Z-a3424eff/report.md) |
+| logistic-growth | `2026-11-02T052547-749Z-a3424eff` | 56 | 0 | clean tree | [results](retained/logistic-growth/2026-11-02T052547-749Z-a3424eff/report.md) |
 
 ## Case outcomes
 
 Only passed gates admit timing. Diagnostic invalid-domain cases remain failed; they are not relabeled as successful fits.
 
-### flat-growth/2026-11-01T043118-307Z-d257017e
+### flat-growth/2026-11-02T043353-755Z-a3424eff
 
 | Case | Outcome | Contract |
 | --- | --- | --- |
@@ -90,7 +90,7 @@ Only passed gates admit timing. Diagnostic invalid-domain cases remain failed; t
 | `evaluation-flat-regressor-model-point` | passed | different-public-work |
 | `evaluation-flat-regressor-model-intervals` | passed | different-public-work |
 
-### linear-growth/2026-11-01T040906-363Z-d257017e
+### linear-growth/2026-11-02T040250-297Z-a3424eff
 
 | Case | Outcome | Contract |
 | --- | --- | --- |
@@ -146,7 +146,7 @@ Only passed gates admit timing. Diagnostic invalid-domain cases remain failed; t
 | `evaluation-linear-regressor-model-point` | passed | different-public-work |
 | `evaluation-linear-regressor-model-intervals` | passed | different-public-work |
 
-### logistic-growth/2026-11-01T045826-233Z-d257017e
+### logistic-growth/2026-11-02T052547-749Z-a3424eff
 
 | Case | Outcome | Contract |
 | --- | --- | --- |
