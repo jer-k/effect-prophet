@@ -14,7 +14,7 @@ const expectClose = (actual: number, expected: number, tolerance: number): void 
 describe("Prophet 1.4.0 mixed MAP evidence", () => {
   it("matches linear and flat Newton fits through real mixed WASM operations", async () => {
     const fixture = await Effect.runPromise(loadProphetFixtureBundle());
-    const wasm = loadProphetWasmModule();
+    const wasm = await loadProphetWasmModule();
 
     for (const referenceCase of fixture.mixedMap.fittedCases) {
       const rowCount = referenceCase.observations.length;

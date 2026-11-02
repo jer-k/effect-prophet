@@ -23,6 +23,11 @@ Bad input (observations): Expected a valid canonical UTC timestamp (for example,
 | `MetricScaleError`            | A scaled error like `mase` couldn't get a scale for one round. `reason` is `insufficient-history` when the round's training rows have no pairs for the lag, `zero-scale` when its training values never change, or `non-finite` when the naive errors overflow. `fold` and `cutoff` name the round. | See [scaled errors](/examples/cross-validation#scaled-errors)                                                                                     |
 | `EvaluationError` and friends | Cross-validation, search or holdout checks failed                                                                                                                                                                                                                                                   | `reason` and the wrapped `cause` explain which step                                                                                               |
 
+In a browser, a `FittingError` or `PredictionError` with `reason: "backend-failure"` and
+`backendPhase: "load"` means the engine binary couldn't be downloaded, and a `CountryHolidayError`
+with `reason: "snapshot-unavailable"` means a calendar file couldn't be. See
+[Browsers and bundlers](/guide/browsers#serving-the-files).
+
 ## Without Effect
 
 If you just `await Effect.runPromise(...)` and an error happens, the promise rejects with that

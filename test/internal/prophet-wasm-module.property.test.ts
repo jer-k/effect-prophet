@@ -78,7 +78,7 @@ const wireCall = fc.constantFrom(...exportSignatures).chain(([name, kinds]) =>
     }),
 );
 
-const module = loadProphetWasmModule();
+const module = await loadProphetWasmModule();
 
 /** A WASM export called with generated slices and scalars. */
 interface WireExport {

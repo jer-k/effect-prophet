@@ -37,6 +37,10 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      # The source imports the generated WASM glue, so type checking needs it built.
+      - name: Build WASM
+        run: npm run build:wasm:production
+
       - name: Type check
         run: npm run typecheck
 
@@ -69,6 +73,13 @@ jobs:
 
       - name: Build and test package artifact
         run: npm run test:package
+
+      - name: Install browsers
+        run: npx playwright install --with-deps chromium firefox webkit
+
+      # Reuses the package built in the previous step.
+      - name: Test package in browsers
+        run: node tools/test-browser.ts
 
   rust:
     runs-on: ubuntu-22.04

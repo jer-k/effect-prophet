@@ -8,6 +8,13 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- **Browser and bundler support.** The same package and import now work in browsers. Vite (build
+  and dev server), webpack and Rspack need no configuration; esbuild needs the engine binary copied next
+  to the bundle. Browsers download the WebAssembly engine once per page, and each country holiday
+  calendar is its own chunk, loaded the first time it's used. Tested in Chromium, Firefox and
+  WebKit, which give exactly the same forecasts as Node.js. Node.js still loads the engine
+  synchronously, so `Effect.runSync` keeps working there. See
+  [Browsers and bundlers](https://jer-k.github.io/effect-prophet/guide/browsers).
 - **Regressors forecast by their own models.** Set `predictor: true`, or options, on a regressor,
   like Python's `regressor_predictor`, and `fit` fits a model to that regressor's history.
   `predict` uses its forecast in every row after the history, so future rows need no value for
@@ -22,6 +29,13 @@ All notable changes to this project are documented here. The format follows
   `comparePerformance` and `searchModels` accept it. Rounds it can't scale fail with the new
   `MetricScaleError`. Python Prophet has no scaled metrics. See
   [Scaled errors](https://jer-k.github.io/effect-prophet/examples/cross-validation#scaled-errors).
+
+### Changed
+
+- Country holiday calendars are loaded as JSON modules, once per process, instead of being read
+  from disk on every fit. Each use still checks the file's format version and contents. The
+  byte-count and SHA-256 checks against the bundled catalog are gone, and a calendar file that
+  isn't valid JSON now fails with `snapshot-unavailable` instead of `corrupt-snapshot`.
 
 ### Benchmarks
 

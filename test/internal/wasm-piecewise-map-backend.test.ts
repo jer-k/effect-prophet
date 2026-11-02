@@ -91,7 +91,7 @@ describe("Rust/WASM linear piecewise MAP adapter", () => {
     const empty = new Float64Array();
 
     const valid = Array.from(
-      loadProphetWasmModule().fit_piecewise_map_with_scaling(
+      (await loadProphetWasmModule()).fit_piecewise_map_with_scaling(
         input.timestamps,
         input.values,
         targetScalingModeCode("absmax"),

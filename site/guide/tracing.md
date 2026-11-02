@@ -63,8 +63,9 @@ time. Python Prophet does the same on such data. Real data rarely triggers this.
 fewer changepoints (see [Trends and changepoints](../examples/trend)) make each step cheaper. Let
 the trace tell you whether it helped.
 
-The first engine call in a process also loads the engine. `wasm.cold_start` marks that call so
-the one-time cost isn't mistaken for a slow fit.
+The first engine call in a process also loads the engine. In a browser, that includes downloading
+the binary. `wasm.cold_start` marks that call so the one-time cost isn't mistaken for a slow fit.
+Calls that start while it's loading wait for the same load and aren't marked.
 
 ## What is never recorded
 
@@ -148,7 +149,7 @@ checks the history's length before fitting, so a history too long to simulate cr
 | Span                                    | Covers                                                                                                                                                |
 | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Prophet.resolveCountryHolidays`        | Resolving a country calendar's dates and coverage for the requested years, inside `fit`, `predict`, `predictUncertainty` and `inspectCountryHolidays` |
-| `effect-prophet.calendar.load-snapshot` | Reading and checking a packaged country calendar file, inside a resolution for `fit` or `inspectCountryHolidays`                                      |
+| `effect-prophet.calendar.load-snapshot` | Loading and checking a packaged country calendar file, inside a resolution for `fit` or `inspectCountryHolidays`                                      |
 
 Prediction resolves dates from the snapshot saved in the model, so it reads no file and creates no
 `effect-prophet.calendar.load-snapshot` span. A malformed selection or year list fails before

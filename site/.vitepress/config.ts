@@ -26,6 +26,7 @@ export default defineConfig({
         items: [
           { text: "What is Effect Prophet?", link: "/guide/introduction" },
           { text: "Getting started", link: "/guide/getting-started" },
+          { text: "Browsers and bundlers", link: "/guide/browsers" },
           { text: "Effect in five minutes", link: "/guide/effect-basics" },
           { text: "Preparing your data", link: "/guide/your-data" },
           { text: "Country holiday calendars", link: "/guide/holiday-calendars" },

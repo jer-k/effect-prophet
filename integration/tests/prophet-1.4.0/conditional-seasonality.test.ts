@@ -14,7 +14,7 @@ const expectClose = (actual: number, expected: number, absolute: number, relativ
 describe("Prophet 1.4.0 conditional-seasonality compatibility", () => {
   it("matches strict masks, gated fixed components, and exact false-row zeros", async () => {
     const { conditionalSeasonality } = await Effect.runPromise(loadProphetFixtureBundle());
-    const wasm = loadProphetWasmModule();
+    const wasm = await loadProphetWasmModule();
     const predictWithFeatures = wasm.predict_piecewise_map_with_features;
 
     for (const referenceCase of conditionalSeasonality.cases) {

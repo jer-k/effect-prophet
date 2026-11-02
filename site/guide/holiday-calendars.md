@@ -13,7 +13,9 @@ Neither the default nor an explicit opt-in guarantees officially complete or con
 
 <<< @/snippets/country-holidays.ts
 
-Inspection uses packaged files, with no Python, network access, or additional Effect services.
+Inspection uses packaged files, with no Python, outside network access, or additional Effect
+services. In a browser, each country's file is a separate chunk fetched from your own site the first
+time it's used; see [Browsers and bundlers](./browsers).
 Years are deduplicated and sorted. Occurrences preserve exact provider names, zero-day windows,
 and a default prior of 10; `priorScale` accepts a positive finite override. Results include the
 canonical country, snapshot/provider identities, outer horizon, and machine-readable coverage
@@ -52,7 +54,8 @@ final holdout fitting preserve the selection/policy.
 
 Empty predictions remain successful without calendar resolution. Only fitting and inspection read
 bundled calendar files; restored prediction requires neither those files, Python nor network
-access.
+access. Each country's file is loaded once per process, the first time it's needed, and checked
+every time it's used.
 
 ## Errors
 
@@ -65,8 +68,8 @@ Every calendar failure, from `inspectCountryHolidays`, `decodeOptions`, `fit`, `
 | `invalid-selection`            | The selection or requested years are malformed, e.g. a non-positive `priorScale` |
 | `outside-snapshot-horizon`     | A training or prediction year falls outside 1995–2060                            |
 | `known-coverage-restriction`   | A year has reviewed missing coverage and `coverage` is `"reject-known-gaps"`     |
-| `snapshot-unavailable`         | The packaged calendar file can't be read                                         |
-| `corrupt-snapshot`             | The packaged calendar file fails its integrity or content checks                 |
+| `snapshot-unavailable`         | The packaged calendar file can't be loaded or isn't valid JSON                   |
+| `corrupt-snapshot`             | The packaged calendar file fails its content checks                              |
 | `unsupported-snapshot-version` | The packaged calendar file uses an unknown format version                        |
 | `conflicting-event-prior`      | A custom event shares a country holiday's name but not its prior scale           |
 | `conflicting-feature-name`     | A country holiday name matches a seasonality, condition or regressor name        |

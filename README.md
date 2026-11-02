@@ -20,7 +20,8 @@ forecasting library, and is tested against Python Prophet 1.4.0.
 npm install effect-prophet effect
 ```
 
-Requires Node.js 22.19 or newer.
+Runs on Node.js 22.19 or newer, and in browsers through Vite, webpack, Rspack or esbuild. See
+[Browsers and bundlers](https://jer-k.github.io/effect-prophet/guide/browsers).
 
 ## Quick start
 
@@ -124,6 +125,8 @@ npm run docs:dev  # documentation site at http://localhost:5173/effect-prophet/
 ```
 
 Building the WebAssembly requires Rust and [wasm-pack](https://rustwasm.github.io/wasm-pack/).
+Type checking reads the generated bindings, so run `npm run build:wasm` (or `npm test`) once
+before `npm run typecheck`.
 Comparing against Python requires Docker.
 
 ## License

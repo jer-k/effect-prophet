@@ -669,16 +669,22 @@ try {
     assert.equal(encoded.countryHolidays.selection.country, "US");
     await writeFile("saved-calendar-model.json", JSON.stringify({ encoded, future, forecasts, uncertainty }));
 
-    const path = "node_modules/effect-prophet/calendars/countries/US.json";
-    await writeFile(path, '{"schemaVersion":2}');
-    const version = await Effect.runPromise(Effect.flip(inspectCountryHolidays({ country: "US" }, [2024])));
+    // The module loader keeps each file it has imported, so damage countries this process
+    // has not loaded yet.
+    const countries = "node_modules/effect-prophet/calendars/countries";
+    await writeFile(\`\${countries}/DE.json\`, '{"schemaVersion":2}');
+    const version = await Effect.runPromise(Effect.flip(inspectCountryHolidays({ country: "DE" }, [2024])));
     assert.ok(version instanceof CountryHolidayError);
     assert.equal(version.reason, "unsupported-snapshot-version");
-    await rm(path);
-    const missing = await Effect.runPromise(Effect.flip(inspectCountryHolidays({ country: "US" }, [2024])));
+    await writeFile(\`\${countries}/ES.json\`, "{");
+    const invalid = await Effect.runPromise(Effect.flip(inspectCountryHolidays({ country: "ES" }, [2024])));
+    assert.ok(invalid instanceof CountryHolidayError);
+    assert.equal(invalid.reason, "snapshot-unavailable");
+    await rm(\`\${countries}/FR.json\`);
+    const missing = await Effect.runPromise(Effect.flip(inspectCountryHolidays({ country: "FR" }, [2024])));
     assert.ok(missing instanceof CountryHolidayError);
     assert.equal(missing.reason, "snapshot-unavailable");
-    const fitting = await Effect.runPromise(Effect.flip(fit(rows, { countryHolidays: { country: "US" } }).pipe(Effect.provide(prophetFittingBackendLayer))));
+    const fitting = await Effect.runPromise(Effect.flip(fit(rows, { countryHolidays: { country: "FR" } }).pipe(Effect.provide(prophetFittingBackendLayer))));
     assert.ok(fitting instanceof CountryHolidayError);
     assert.equal(fitting.reason, "snapshot-unavailable");
   `,

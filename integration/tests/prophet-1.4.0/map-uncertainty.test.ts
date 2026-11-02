@@ -9,7 +9,7 @@ const epoch = (timestamp: string): number => new Date(timestamp).getTime();
 describe("Prophet 1.4.0 fixed-state scalar predictive distributions", () => {
   it("compares generated WASM moments and quantiles to the pinned release", async () => {
     const { mapUncertainty } = await Effect.runPromise(loadProphetFixtureBundle());
-    const wasm = loadProphetWasmModule();
+    const wasm = await loadProphetWasmModule();
 
     for (const reference of mapUncertainty.cases) {
       const parameters = reference.parameters;

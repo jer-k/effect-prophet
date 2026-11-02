@@ -7,7 +7,7 @@ npm install effect-prophet effect
 ```
 
 Effect Prophet needs **Node.js 22.19 or newer** and is an ES module, so use `import`, not
-`require`.
+`require`. It also runs in browsers; see [Browsers and bundlers](./browsers).
 
 ## Your first forecast
 

@@ -36,6 +36,8 @@ import {
   failWasmFitting,
   failWasmPrediction,
   indexedFailureTimestamp,
+  loadWasmForFitting,
+  loadWasmForPrediction,
   packKnownAdditiveFeatures,
   packChangepointsForFit,
   packSeasonalitiesForFit,
@@ -242,10 +244,11 @@ export const fitLogisticMapWithWasm = (
 
     yield* annotateStanRequest(optimizer, warmStart);
 
-    const module = yield* attemptWasmFitting(loadProphetWasmModule, observationCount, {
-      phase: "load",
-      message: "Failed to load the WASM logistic MAP fitting backend",
-    });
+    const module = yield* loadWasmForFitting(
+      loadProphetWasmModule,
+      observationCount,
+      "Failed to load the WASM logistic MAP fitting backend",
+    );
 
     const seasonal = packSeasonalitiesForFit(seasonalities);
     const additional = packKnownAdditiveFeatures(masks, features);
@@ -278,7 +281,6 @@ export const fitLogisticMapWithWasm = (
         ),
       observationCount,
       {
-        phase: "execute",
         message: "Failed to execute the WASM logistic MAP fitting backend",
       },
     );
@@ -414,10 +416,11 @@ export const predictLogisticMapWithWasm = (
   }
 
   return Effect.gen(function* () {
-    const module = yield* attemptWasmPrediction(loadProphetWasmModule, firstTimestamp, {
-      phase: "load",
-      message: "Failed to load the WASM logistic MAP prediction backend",
-    });
+    const module = yield* loadWasmForPrediction(
+      loadProphetWasmModule,
+      firstTimestamp,
+      "Failed to load the WASM logistic MAP prediction backend",
+    );
 
     const seasonal = packSeasonalitiesForPrediction(model.seasonalities);
     const additional = packKnownAdditiveFeatures(masks, features);
@@ -459,7 +462,6 @@ export const predictLogisticMapWithWasm = (
         ),
       firstTimestamp,
       {
-        phase: "execute",
         message: "Failed to execute the WASM logistic MAP prediction backend",
       },
     );

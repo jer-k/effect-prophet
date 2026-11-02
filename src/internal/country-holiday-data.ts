@@ -1,24 +1,22 @@
-import { createHash } from "node:crypto";
-import { readFile } from "node:fs/promises";
-
 import { Effect, Schema } from "effect";
 
 import { ValidationIssueSchema, validationIssuesFromIssue } from "../errors";
 import { countryHolidayCatalog } from "./country-holiday-catalog";
+import { countryHolidayImports } from "./country-holiday-imports";
 import {
   parseCountryHolidaySnapshot,
   type CanonicalCountry,
   type CountryHolidaySnapshot,
 } from "./country-holiday-snapshot";
 
-type BundledCountryFile =
-  (typeof countryHolidayCatalog.countries)[keyof typeof countryHolidayCatalog.countries];
+/** Import one country's calendar file as a JSON module. */
+export type CountryHolidayFileImporter = (
+  country: CanonicalCountry,
+) => Promise<{ readonly default: unknown }>;
 
-const files: ReadonlyMap<string, BundledCountryFile> = new Map(
-  Object.entries(countryHolidayCatalog.countries),
-);
-
-const bundledRoot = new URL("../../calendars/", import.meta.url);
+const importBundledCountry: CountryHolidayFileImporter = (country) =>
+  countryHolidayImports.get(country)?.() ??
+  Promise.reject(new Error("Country has no bundled calendar import"));
 
 const Header = Schema.Struct({ schemaVersion: Schema.Int });
 
@@ -37,16 +35,17 @@ export class CountryHolidayDataError extends Schema.TaggedError<CountryHolidayDa
 ) {}
 
 /**
- * Read, integrity-check, decode and own one allowlisted country file without caching.
- * The optional root is a filesystem adapter seam, not a public provider selection.
+ * Import, decode and own one allowlisted country file.
+ *
+ * The module loader reads each file once per process; every call still decodes a fresh, frozen
+ * snapshot, so callers never share the imported value. The optional importer is a test seam,
+ * not a public provider selection.
  */
 export const loadCountryHolidaySnapshot = (
   country: CanonicalCountry,
-  root: URL = bundledRoot,
+  importCountry: CountryHolidayFileImporter = importBundledCountry,
 ): Effect.Effect<CountryHolidaySnapshot, CountryHolidayDataError> => {
-  const identity = files.get(country);
-
-  if (identity === undefined) {
+  if (!countryHolidayImports.has(country)) {
     return Effect.fail(
       new CountryHolidayDataError({
         reason: "corrupt-snapshot",
@@ -57,25 +56,13 @@ export const loadCountryHolidaySnapshot = (
   }
 
   return Effect.gen(function* () {
-    const path = new URL(identity.file, root);
-
-    const bytes = yield* Effect.tryPromise({
-      try: () => readFile(path),
+    const { default: json } = yield* Effect.tryPromise({
+      try: () => importCountry(country),
       catch: () =>
         new CountryHolidayDataError({
           reason: "snapshot-unavailable",
           issues: [],
-          message: "Unable to read the packaged country snapshot",
-        }),
-    });
-
-    const json = yield* Effect.try({
-      try: () => JSON.parse(bytes.toString("utf8")),
-      catch: () =>
-        new CountryHolidayDataError({
-          reason: "corrupt-snapshot",
-          issues: [],
-          message: "Packaged country snapshot is not valid JSON",
+          message: "Unable to load the packaged country snapshot",
         }),
     });
 
@@ -97,16 +84,6 @@ export const loadCountryHolidaySnapshot = (
           { path: ["schemaVersion"], message: "Unsupported country snapshot schema version" },
         ],
         message: "Unsupported country snapshot schema version",
-      });
-    }
-
-    const digest = createHash("sha256").update(bytes).digest("hex");
-
-    if (bytes.length !== identity.bytes || digest !== identity.sha256) {
-      return yield* new CountryHolidayDataError({
-        reason: "corrupt-snapshot",
-        issues: [],
-        message: "Packaged country snapshot integrity check failed",
       });
     }
 

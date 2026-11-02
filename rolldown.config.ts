@@ -15,7 +15,16 @@ const { default: getTsrsPath } = await import(
 
 export default defineConfig({
   input: "src/index.ts",
-  external: [/^effect(?:\/|$)/u, /^node:/u, /[/\\]node_modules[/\\]/u],
+  // The generated WASM glue and the country calendars ship beside `dist`: the glue finds its
+  // binary from its own module URL, and each calendar stays a separate file for applications'
+  // bundlers to split.
+  external: [
+    /^effect(?:\/|$)/u,
+    /^node:/u,
+    /[/\\]node_modules[/\\]/u,
+    /[/\\]wasm[/\\]prophet_wasm\.js$/u,
+    /[/\\]calendars[/\\]countries[/\\][A-Z]{2}\.json$/u,
+  ],
   platform: "node",
   plugins: [
     dts({
