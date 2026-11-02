@@ -4,31 +4,36 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows
 [Semantic Versioning](https://semver.org/). Before 1.0, minor versions may include breaking changes.
 
-## [Unreleased]
+## [0.6.0] - 2026-11-01
+
+Forecasts in the browser, regressors forecast by their own models, and mean absolute scaled
+error. Existing code works as before; only a damaged calendar file reports a different error
+reason.
 
 ### Added
 
 - **Browser and bundler support.** The same package and import now work in browsers. Vite (build
-  and dev server), webpack and Rspack need no configuration; esbuild needs the engine binary copied next
-  to the bundle. Browsers download the WebAssembly engine once per page, and each country holiday
-  calendar is its own chunk, loaded the first time it's used. Tested in Chromium, Firefox and
-  WebKit, which give exactly the same forecasts as Node.js. Node.js still loads the engine
-  synchronously, so `Effect.runSync` keeps working there. See
+  and dev server), webpack and Rspack need no configuration; esbuild needs the engine binary
+  copied next to the bundle. Browsers download the WebAssembly engine once per page, and each
+  country holiday calendar is its own chunk, loaded the first time it's used. Tested in Chromium,
+  Firefox and WebKit, which give exactly the same forecasts as Node.js. Node.js still loads the
+  engine synchronously, so `Effect.runSync` keeps working there. See
   [Browsers and bundlers](https://jer-k.github.io/effect-prophet/guide/browsers).
 - **Regressors forecast by their own models.** Set `predictor: true`, or options, on a regressor,
   like Python's `regressor_predictor`, and `fit` fits a model to that regressor's history.
   `predict` uses its forecast in every row after the history, so future rows need no value for
   it. Intervals include each regressor model's own uncertainty, as in Python, and saved models
-  keep these models. See
+  keep these models. When one of them fails, `FittingError` and `PredictionError` name it in a
+  new optional `regressor` field. See
   [Forecasting a regressor](https://jer-k.github.io/effect-prophet/examples/regressors#forecasting-a-regressor).
-- `FittingError` and `PredictionError` have an optional `regressor` naming the regressor whose own
-  model failed.
 - **Mean absolute scaled error (MASE).** `scaledErrorMetric` divides each forecast's error by a
   naive rule's average error on the rows its round trained on, repeating either the previous row
   or the value a set time earlier. It's a metric definition, so `performanceMetrics`,
   `comparePerformance` and `searchModels` accept it. Rounds it can't scale fail with the new
   `MetricScaleError`. Python Prophet has no scaled metrics. See
   [Scaled errors](https://jer-k.github.io/effect-prophet/examples/cross-validation#scaled-errors).
+- New spans for regressor models and `scaledErrorMetric`. See the
+  [tracing guide](https://jer-k.github.io/effect-prophet/guide/tracing).
 
 ### Changed
 
@@ -37,15 +42,17 @@ All notable changes to this project are documented here. The format follows
   byte-count and SHA-256 checks against the bundled catalog are gone, and a calendar file that
   isn't valid JSON now fails with `snapshot-unavailable` instead of `corrupt-snapshot`.
 
-### Benchmarks
+### Verification against Python Prophet
 
-- New benchmarks for regressors forecast by their own models, on flat and linear growth, checked
-  against Python Prophet for forecasts, uncertainty ranges and cross-validation.
-- Twelve-fold cross-validation and model search benchmarks, one for each growth. Python Prophet is
-  timed sequentially and with `cross_validation`'s `parallel="threads"` and
+- **New fixtures** check regressor models' forecasts against `regressor_predictor`, and that
+  their draws widen future intervals as much as Python's do.
+- **New benchmarks** for regressors forecast by their own models, on flat and linear growth,
+  checked against Python Prophet for forecasts, uncertainty ranges and cross-validation.
+- **Twelve-fold cross-validation and model search benchmarks**, one for each growth. Python
+  Prophet is timed sequentially and with `cross_validation`'s `parallel="threads"` and
   `parallel="processes"`, which must give the same forecasts and scores as running sequentially.
-  Effect Prophet still runs folds one at a time.
-- MASE benchmarks on flat and logistic growth. Python Prophet has no MASE, so the Python side
+  Effect Prophet still runs folds one at a time, and is faster than either parallel mode.
+- **MASE benchmarks** on flat and logistic growth. Python Prophet has no MASE, so the Python side
   registers it with `register_performance_metric`. Each fold's scale must match, and overall
   scores may differ only as much as the two libraries' forecasts do.
 
@@ -410,6 +417,7 @@ These Python Prophet features are not implemented in this release:
 - Inputs that cannot define a trend, such as every row sharing one timestamp, return an error where
   Python returns `NaN` forecasts.
 
+[0.6.0]: https://github.com/jer-k/effect-prophet/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/jer-k/effect-prophet/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/jer-k/effect-prophet/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/jer-k/effect-prophet/compare/v0.3.0...v0.4.0
