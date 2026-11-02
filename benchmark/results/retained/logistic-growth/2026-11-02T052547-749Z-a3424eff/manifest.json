@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "runId": "2026-11-01T045826-233Z-d257017e",
-  "createdAt": "2026-11-01T04:58:31.376Z",
-  "gitRevision": "d257017e74eed1851f8b417b13292b5664bceab4",
+  "runId": "2026-11-02T052547-749Z-a3424eff",
+  "createdAt": "2026-11-02T05:39:53.415Z",
+  "gitRevision": "a3424eff3a47970f12ddc3764fae47fc2aeb41e3",
   "gitDirty": false,
   "hostPlatform": "darwin",
   "hostRelease": "25.5.0",
@@ -171,7 +171,7 @@
     },
     {
       "name": "benchmark/tools/adapters/effect-prophet.ts",
-      "value": "870a1003744d868e6be9d22b5c4b6fb4ec2a7a77f66aad50af942e5c1ce14e9c"
+      "value": "6142f3fee7b4d44b3f3c87a87839ddb759e33227aef21ffc34ed6cad2882bfc5"
     },
     {
       "name": "benchmark/tools/adapters/python-prophet.py",
@@ -202,7 +202,7 @@
       "value": "3081b3184d6204dbe3c3d0705dfe7e278ceb01a3d0615b6f10dea77d092bb870"
     },
     {
-      "name": "benchmark/results/runs/2026-11-01T045826-233Z-d257017e/cases.json",
+      "name": "benchmark/results/runs/2026-11-02T052547-749Z-a3424eff/cases.json",
       "value": "501462c7f41e1f31cbbf730e4b054f452ac317ae5373ddcae91c2374b1c42f45"
     },
     {
@@ -235,7 +235,7 @@
     },
     {
       "name": "package-lock.json",
-      "value": "b598c3161aefa25fad3313745e5b7c7c841ba4956314d7cfded7dafcca71cc80"
+      "value": "89dbd52060cdced6eb4bc7e06c95e18d59a437ef424b101a3644fdc536e1177b"
     },
     {
       "name": "benchmark/inputs/v5/country-logistic-96.json",
@@ -341,7 +341,7 @@
   "containerImages": [
     {
       "name": "effect-prophet/benchmark-effect:local",
-      "value": "sha256:f392e6fb56de40f0d00e5ccc66468444dc556abc02d29cfa10ba0de95202ccfc"
+      "value": "sha256:9f188929a72b1631b26ef01a65b6f50dda889b753e2e869a503d09daeb6f6f4a"
     },
     {
       "name": "effect-prophet/benchmark-python:1.4.0",

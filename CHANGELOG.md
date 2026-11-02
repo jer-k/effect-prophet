@@ -4,7 +4,7 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows
 [Semantic Versioning](https://semver.org/). Before 1.0, minor versions may include breaking changes.
 
-## [0.6.0] - 2026-11-01
+## [0.6.0] - 2026-11-02
 
 Forecasts in the browser, regressors forecast by their own models, and mean absolute scaled
 error. Existing code works as before; only a damaged calendar file reports a different error
