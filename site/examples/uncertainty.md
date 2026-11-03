@@ -40,6 +40,10 @@ row with a promotion and the same date without one each keep their own forecast 
 If you only need the ranges, `predictUncertainty` takes the same arguments and skips the point
 forecast.
 
+A model fitted with [`mcmc`](./bayesian) also covers its parameters' uncertainty, adds
+`componentIntervals` to each row, and runs `ceil(samples / draws)` futures for each posterior
+draw, so its `sampleCount` can exceed `samples`.
+
 ## How it works
 
 The model simulates many possible futures. In each one, the trend might change direction the way

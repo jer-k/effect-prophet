@@ -73,7 +73,7 @@ pub(crate) fn parse_linear_optimizer(
   Some(options.with_warm_start(parse_warm_start(init)?))
 }
 
-fn parse_warm_start(values: &[f64]) -> Option<crate::stan::linear_optimizer::WarmStart> {
+pub(crate) fn parse_warm_start(values: &[f64]) -> Option<crate::stan::linear_optimizer::WarmStart> {
   let [k, m, sigma_obs, delta_count, rest @ ..] = values else {
     return None;
   };

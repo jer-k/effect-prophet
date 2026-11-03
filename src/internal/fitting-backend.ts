@@ -5,6 +5,7 @@ import type { EventCalendar } from "../event";
 import type { Parameters } from "../fitted-model";
 import type { LogisticTrainingBounds } from "../logistic";
 import type { LinearOptimizer } from "../linear-optimizer";
+import type { McmcOptions } from "../mcmc";
 import type { ChangepointSetting } from "../options";
 import type { ResolvedRegressor } from "../regressor";
 import type { TargetScalingMode } from "../target-scaling";
@@ -90,8 +91,33 @@ export interface LogisticPiecewiseMapFitPlan {
   readonly warmStart?: WarmStartParameters;
 }
 
+/** Request for posterior sampling with Stan's NUTS sampler. */
+export interface McmcFitPlan {
+  readonly _tag: "Mcmc";
+  readonly growth: "flat" | "linear" | "logistic";
+
+  /** Training capacities and floor policy, present exactly for logistic growth. */
+  readonly bounds?: LogisticTrainingBounds;
+  readonly scaling: TargetScalingMode;
+  readonly seasonalities: SeasonalityLayout;
+  readonly changepoints: ChangepointSetting;
+  readonly changepointPriorScale: number;
+  readonly mcmc: McmcOptions;
+  readonly seasonalityMasks: SeasonalityMaskMatrix;
+  readonly additionalFeatures: KnownAdditiveFeatures;
+  readonly events: EventCalendar;
+  readonly regressors: ReadonlyArray<ResolvedRegressor>;
+
+  /** Where every chain starts, like Python's `init`; Prophet's initialization otherwise. */
+  readonly warmStart?: WarmStartParameters;
+}
+
 /** Exhaustive set of configurations supported by the public fitting backend. */
-export type FitPlan = LinearPiecewiseMapFitPlan | FlatStanMapFitPlan | LogisticPiecewiseMapFitPlan;
+export type FitPlan =
+  | LinearPiecewiseMapFitPlan
+  | FlatStanMapFitPlan
+  | LogisticPiecewiseMapFitPlan
+  | McmcFitPlan;
 
 /** Constructors and exhaustive matching for supported fitting plans. */
 export const FitPlan = Data.taggedEnum<FitPlan>();

@@ -2,16 +2,27 @@ import { Effect } from "effect";
 
 import type { CountryHolidayError } from "./country-holidays";
 import { PredictionError, type InputValidationError } from "./errors";
-import type { FittedProphet } from "./fitted-model";
+import { posteriorDrawCount, type FittedProphet } from "./fitted-model";
 import { decodePredictionRows } from "./prediction-row";
-import { predict, predictUncertainty, type Forecast } from "./prophet";
+import {
+  predict,
+  predictComponentIntervals,
+  predictUncertainty,
+  type Forecast,
+  type ForecastComponentIntervals,
+} from "./prophet";
 import {
   alignIntervalRows,
+  expectedSimulation,
   parseIntervalOptions,
-  simulationIdentity,
   type EncodedIntervalOptions,
+  type SimulationIdentity,
   type UncertaintyInterval,
 } from "./uncertainty";
+
+export type { ComponentInterval, ForecastComponentIntervals } from "./prophet";
+
+type Mutable<Fields> = { -readonly [Key in keyof Fields]: Fields[Key] };
 
 /** One point forecast with the simulated ranges around its value and trend. */
 export interface ForecastWithIntervals extends Forecast {
@@ -20,11 +31,22 @@ export interface ForecastWithIntervals extends Forecast {
 
   /** Range for `trend` from simulated future trend changes alone. */
   readonly trendInterval: UncertaintyInterval;
+
+  /**
+   * For a model fitted with `mcmc`, each component's range over the posterior draws, like
+   * Python's `_lower` and `_upper` columns. MAP models have no component ranges.
+   */
+  readonly componentIntervals?: ForecastComponentIntervals;
 }
 
 /** Point forecasts with ranges, in the same order as the supplied prediction rows. */
 export interface ForecastsWithIntervals {
-  readonly simulation: typeof simulationIdentity;
+  readonly simulation: SimulationIdentity;
+
+  /**
+   * Simulated paths behind each range: the requested samples for a MAP model, and
+   * `ceil(samples / draws)` paths per draw for a posterior, as in Python.
+   */
   readonly sampleCount: number;
   readonly intervalWidth: number;
   readonly rows: ReadonlyArray<ForecastWithIntervals>;
@@ -61,9 +83,15 @@ export const predictWithIntervals = Effect.fn("Prophet.predictWithIntervals")(fu
   // Simulate first so a simulation-limit failure costs no point prediction.
   const intervals = yield* predictUncertainty(model, rowsInput, options);
   const forecasts = yield* predict(model, rowsInput);
-  const alignment = alignIntervalRows(intervals, options, forecasts);
+  const components = yield* predictComponentIntervals(model, rowsInput, options.intervalWidth);
+  const expected = expectedSimulation(options.samples, posteriorDrawCount(model));
+  const alignment = alignIntervalRows(intervals, options, expected, forecasts);
 
-  if (alignment.kind !== "aligned" || forecasts.length !== rows.length) {
+  if (
+    alignment.kind !== "aligned" ||
+    forecasts.length !== rows.length ||
+    (components !== undefined && components.length !== rows.length)
+  ) {
     return yield* new PredictionError({
       reason: "backend-failure",
       timestamp:
@@ -73,17 +101,25 @@ export const predictWithIntervals = Effect.fn("Prophet.predictWithIntervals")(fu
   }
 
   return Object.freeze({
-    simulation: simulationIdentity,
-    sampleCount: options.samples,
+    simulation: expected.simulation,
+    sampleCount: expected.sampleCount,
     intervalWidth: options.intervalWidth,
     rows: Object.freeze(
-      alignment.rows.map(({ row, interval }) =>
-        Object.freeze({
+      alignment.rows.map(({ row, interval }, index) => {
+        const forecast: Mutable<ForecastWithIntervals> = {
           ...row,
           valueInterval: Object.freeze({ ...interval.value }),
           trendInterval: Object.freeze({ ...interval.trend }),
-        }),
-      ),
+        };
+
+        const componentIntervals = components?.[index];
+
+        if (componentIntervals !== undefined) {
+          forecast.componentIntervals = componentIntervals;
+        }
+
+        return Object.freeze(forecast);
+      }),
     ),
   });
 });

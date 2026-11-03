@@ -6,15 +6,15 @@ Recorded historical outcomes are not recomputed using current gates. Architectur
 
 | Scope | Run | Passed | Failed | Provenance | Report |
 | --- | --- | ---: | ---: | --- | --- |
-| flat-growth | `2026-11-02T043353-755Z-a3424eff` | 71 | 0 | clean tree | [results](retained/flat-growth/2026-11-02T043353-755Z-a3424eff/report.md) |
-| linear-growth | `2026-11-02T040250-297Z-a3424eff` | 49 | 2 | clean tree | [results](retained/linear-growth/2026-11-02T040250-297Z-a3424eff/report.md) |
-| logistic-growth | `2026-11-02T052547-749Z-a3424eff` | 56 | 0 | clean tree | [results](retained/logistic-growth/2026-11-02T052547-749Z-a3424eff/report.md) |
+| flat-growth | `2026-11-03T215626-728Z-0068e212` | 72 | 0 | clean tree | [results](retained/flat-growth/2026-11-03T215626-728Z-0068e212/report.md) |
+| linear-growth | `2026-11-03T212529-303Z-0068e212` | 52 | 2 | clean tree | [results](retained/linear-growth/2026-11-03T212529-303Z-0068e212/report.md) |
+| logistic-growth | `2026-11-03T222602-469Z-0068e212` | 58 | 0 | clean tree | [results](retained/logistic-growth/2026-11-03T222602-469Z-0068e212/report.md) |
 
 ## Case outcomes
 
 Only passed gates admit timing. Diagnostic invalid-domain cases remain failed; they are not relabeled as successful fits.
 
-### flat-growth/2026-11-02T043353-755Z-a3424eff
+### flat-growth/2026-11-03T215626-728Z-0068e212
 
 | Case | Outcome | Contract |
 | --- | --- | --- |
@@ -89,8 +89,9 @@ Only passed gates admit timing. Diagnostic invalid-domain cases remain failed; t
 | `uncertainty-flat-regressor-model-intervals-1000` | passed | scalar-process-different-public-work |
 | `evaluation-flat-regressor-model-point` | passed | different-public-work |
 | `evaluation-flat-regressor-model-intervals` | passed | different-public-work |
+| `mcmc-flat-mixed-components` | passed | equivalent-posterior |
 
-### linear-growth/2026-11-02T040250-297Z-a3424eff
+### linear-growth/2026-11-03T212529-303Z-0068e212
 
 | Case | Outcome | Contract |
 | --- | --- | --- |
@@ -145,8 +146,11 @@ Only passed gates admit timing. Diagnostic invalid-domain cases remain failed; t
 | `uncertainty-linear-regressor-model-intervals-1000` | passed | scalar-process-different-public-work |
 | `evaluation-linear-regressor-model-point` | passed | different-public-work |
 | `evaluation-linear-regressor-model-intervals` | passed | different-public-work |
+| `mcmc-linear-mixed-components` | passed | equivalent-posterior |
+| `mcmc-linear-default-changepoints` | passed | equivalent-posterior |
+| `mcmc-linear-regressor-model` | passed | equivalent-posterior |
 
-### logistic-growth/2026-11-02T052547-749Z-a3424eff
+### logistic-growth/2026-11-03T222602-469Z-0068e212
 
 | Case | Outcome | Contract |
 | --- | --- | --- |
@@ -206,3 +210,5 @@ Only passed gates admit timing. Diagnostic invalid-domain cases remain failed; t
 | `logistic-reconcile-saturated` | passed | equivalent-objective |
 | `logistic-reconcile-constant` | passed | equivalent-objective |
 | `logistic-reconcile-out-of-bounds` | passed | equivalent-objective |
+| `mcmc-logistic-explicit-floor-minmax` | passed | equivalent-posterior |
+| `mcmc-logistic-rate-changes` | passed | equivalent-posterior |

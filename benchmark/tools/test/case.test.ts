@@ -1,6 +1,7 @@
 import { Effect } from "effect";
 import { describe, expect, it } from "vitest";
 
+import { mcmcCases } from "../../cases/bayesian/mcmc.ts";
 import { warmStartCases } from "../../cases/growth/warm-start.ts";
 import { loadCaseCatalog, loadCoreCases } from "../catalog.ts";
 
@@ -188,6 +189,59 @@ describe("benchmark case parsing", () => {
       const failure = await Effect.runPromise(Effect.flip(parseBenchmarkCases([invalid])));
 
       expect(failure.message).toContain("longer history from a calendar-free warm start");
+    }
+  });
+
+  it("pairs sampling with the posterior comparison, interval output and features", async () => {
+    const [declared] = mcmcCases;
+
+    if (declared === undefined || declared.workload.kind !== "map") {
+      throw new Error("Expected a declared posterior case");
+    }
+
+    const { mcmc: _mcmc, ...unsampled } = declared.workload;
+    const { uncertainty: _uncertainty, ...withoutIntervals } = declared.workload;
+    const configuration = declared.workload.configuration;
+
+    expect(await Effect.runPromise(parseBenchmarkCases([declared]))).toHaveLength(1);
+
+    for (const workload of [
+      unsampled,
+      { ...declared.workload, comparison: { kind: "equivalent-objective", evidenceId: "x" } },
+      withoutIntervals,
+      {
+        ...declared.workload,
+        uncertainty: { ...declared.workload.uncertainty, output: "samples" },
+      },
+      // Python's `predict` fails on a posterior with no seasonalities, events or regressors.
+      {
+        ...declared.workload,
+        configuration: { ...configuration, seasonalities: [], events: [], regressors: [] },
+      },
+      // Python passes `chains` on to a regressor model's optimizer, which rejects it.
+      {
+        ...declared.workload,
+        configuration: {
+          ...configuration,
+          regressors: configuration.regressors.map((regressor) => ({
+            ...regressor,
+            predictor: true as const,
+          })),
+        },
+        mcmc: { ...declared.workload.mcmc, chains: 2 },
+      },
+      // 16 chains of 1,251 draws is past the 20,000-draw limit.
+      { ...declared.workload, mcmc: { ...declared.workload.mcmc, samples: 2_502, chains: 16 } },
+    ]) {
+      const failure = await Effect.runPromise(
+        Effect.flip(
+          parseBenchmarkCases([
+            { ...declared, phases: ["warm-fit", "warm-uncertainty"], workload },
+          ]),
+        ),
+      );
+
+      expect(failure.message).toMatch(/posterior intervals and features|uncertainty workload/u);
     }
   });
 

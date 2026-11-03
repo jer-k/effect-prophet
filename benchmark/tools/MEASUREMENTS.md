@@ -74,6 +74,33 @@ Python per-call NumPy seeds are reset. The default vectorized approximation is n
 scalar comparator. Sampling and interval reduction require O(rows × samples) work/space.
 Interval mode is not constant-scratch, and sampler limits are not total-process RSS limits.
 
+## Full Bayesian fitting
+
+Sampled cases fit with Effect's `mcmc` option and Python's `Prophet(mcmc_samples=...)` with
+`fit(seed=..., chains=...)`. Both run Stan's adaptive NUTS with CmdStan's default settings and
+Python's split of `samples // 2` warmup and kept iterations per chain, so the work is the same, but
+their chains can't match draw for draw: the comparison is `equivalent-posterior`. `warm-fit` times
+the whole sampler run; Python's progress bars are turned off. Python's `predict` on a posterior also
+computes every component's range over the draws, which Effect's `predict` leaves to
+`predictWithIntervals`, so `warm-predict` does more work in Python.
+
+Each case also simulates 80% intervals, which both libraries derive from `ceil(samples / draws)`
+futures for every draw, with Python's `vectorized=False` path. The report gates:
+
+- **Draws.** Both libraries keep `chains × (samples // 2)` draws, and both run
+  `ceil(samples / draws) × draws` futures. The gate derives these counts from the declaration.
+- **Posterior means.** Forecasts, trends, components and regressor coefficients are posterior
+  means, whose Monte Carlo error shrinks with the posterior's spread. Each may differ by the case's
+  `pointWidthFraction` (0.15) of the narrowest value interval either library reports in any run.
+  Noise scale keeps its declared 5% relative tolerance.
+- **Interval bounds.** The established bound gate, with the Monte Carlo allowance for the
+  posterior's draw count rather than its futures: futures from one draw share its parameters.
+- **Diagnostics.** Divergences and the largest R-hat over the sampled parameters (CmdStan's
+  `summary()` without `lp__` and Prophet's saved trend) are reported. Short chains leave R-hat
+  well above 1 in both libraries (about 1.2 to 1.4 with 25 changepoints at `mcmc_samples=300`),
+  so the report flags, without failing, only Effect's excess over Python: any extra divergences,
+  or an R-hat more than 0.15 higher.
+
 ## Anomalies
 
 Anomaly cases are in-sample: the prediction rows are exactly the history, and the uncertainty

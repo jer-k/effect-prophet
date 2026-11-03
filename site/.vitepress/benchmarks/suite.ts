@@ -77,6 +77,13 @@ export const benchmarkFeatures: ReadonlyArray<BenchmarkFeature> = [
       "Both libraries simulate possible futures with random draws, so individual simulated values never match. Each range must still match Python's within the variation expected from that many draws, on every trend type. Anomaly cases also check that both libraries flag the outliers in a history.",
   },
   {
+    id: "bayesian",
+    title: "Full Bayesian fitting",
+    group: "bayesian",
+    intro:
+      "`mcmc` fits against Python's `mcmc_samples`, on every trend type. Both libraries run Stan's NUTS sampler with the same settings, so posterior means and ranges must agree within the variation expected from that many posterior draws.",
+  },
+  {
     id: "cross-validation",
     title: "Cross-validation and choosing settings",
     group: "evaluation",

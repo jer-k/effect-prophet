@@ -206,6 +206,27 @@ export interface MapUncertaintyWasmBindings {
   readonly simulate_logistic_map_with_features: (...args: ReadonlyArray<unknown>) => Float64Array;
 }
 
+/** Rust/WASM bindings for posterior sampling, simulation and component ranges. */
+export interface McmcWasmBindings {
+  /** Sample one mixed linear posterior and return a packed protocol frame. */
+  readonly fit_mixed_linear_mcmc: (...args: ReadonlyArray<unknown>) => Float64Array;
+
+  /** Sample one flat posterior and return a packed protocol frame. */
+  readonly fit_mixed_flat_mcmc: (...args: ReadonlyArray<unknown>) => Float64Array;
+
+  /** Sample one floor-aware logistic posterior and return a packed protocol frame. */
+  readonly fit_logistic_mcmc_with_features: (...args: ReadonlyArray<unknown>) => Float64Array;
+
+  /** Simulate one logistic posterior batch and return tagged samples or intervals. */
+  readonly simulate_logistic_mcmc_with_features: (...args: ReadonlyArray<unknown>) => Float64Array;
+
+  /** Simulate one linear/flat posterior batch and return tagged samples or intervals. */
+  readonly simulate_mcmc_with_features: (...args: ReadonlyArray<unknown>) => Float64Array;
+
+  /** Each row's posterior ranges for the component totals and named components. */
+  readonly posterior_component_ranges: (...args: ReadonlyArray<unknown>) => Float64Array;
+}
+
 /** Rust/WASM bindings for floor-aware logistic MAP operations. */
 export interface LogisticMapWasmBindings {
   /** Fit one complete logistic MAP request. */
@@ -244,7 +265,8 @@ export type ProphetWasmModule = AdditiveFeatureWasmBindings &
   PiecewiseMapWasmBindings &
   MixedMapWasmBindings &
   LogisticMapWasmBindings &
-  MapUncertaintyWasmBindings;
+  MapUncertaintyWasmBindings &
+  McmcWasmBindings;
 
 /**
  * Lazy loader for checked Rust/WASM bindings.
@@ -320,6 +342,12 @@ const requiredFunctionExports = [
   "predict_logistic_map_with_features",
   "simulate_map_with_features",
   "simulate_logistic_map_with_features",
+  "fit_mixed_linear_mcmc",
+  "fit_mixed_flat_mcmc",
+  "fit_logistic_mcmc_with_features",
+  "simulate_mcmc_with_features",
+  "simulate_logistic_mcmc_with_features",
+  "posterior_component_ranges",
 ] as const;
 
 /**

@@ -12,6 +12,17 @@ Serialization is exercised by lifecycle phases rather than copied into separate 
 | `anomalies-flat-defaults-99` | [v7/flat-anomalies.json](inputs/v7/flat-anomalies.json) | equivalent-objective | 3 |
 | `anomalies-logistic-defaults-99` | [v7/logistic-anomalies.json](inputs/v7/logistic-anomalies.json) | equivalent-objective | 3 |
 
+## bayesian
+
+| Case | Input | Contract | Phases |
+| --- | --- | --- | ---: |
+| `mcmc-linear-mixed-components` | [v1/linear-mixed-components.json](inputs/v1/linear-mixed-components.json) | equivalent-posterior | 6 |
+| `mcmc-linear-default-changepoints` | [v1/linear-medium.json](inputs/v1/linear-medium.json) | equivalent-posterior | 6 |
+| `mcmc-flat-mixed-components` | [v1/flat-mixed-components.json](inputs/v1/flat-mixed-components.json) | equivalent-posterior | 6 |
+| `mcmc-logistic-explicit-floor-minmax` | [v1/logistic-explicit-floor.json](inputs/v1/logistic-explicit-floor.json) | equivalent-posterior | 6 |
+| `mcmc-logistic-rate-changes` | [v3/logistic-rate-changes.json](inputs/v3/logistic-rate-changes.json) | equivalent-posterior | 6 |
+| `mcmc-linear-regressor-model` | [v1/map-regressors-medium.json](inputs/v1/map-regressors-medium.json) | equivalent-posterior | 3 |
+
 ## diagnostics
 
 | Case | Input | Contract | Phases |
@@ -31,8 +42,8 @@ Serialization is exercised by lifecycle phases rather than copied into separate 
 | `evaluation-logistic-large-point` | [v1/logistic-implicit-floor-large.json](inputs/v1/logistic-implicit-floor-large.json) | different-public-work | 6 |
 | `evaluation-logistic-large-intervals` | [v1/logistic-implicit-floor-large.json](inputs/v1/logistic-implicit-floor-large.json) | different-public-work | 1 |
 | `evaluation-linear-failure-search` | [v1/linear-offset-scaling.json](inputs/v1/linear-offset-scaling.json) | different-public-work | 4 |
-| `evaluation-flat-large-months-metrics` | [v1/flat-mixed-components-large.json](inputs/v1/flat-mixed-components-large.json) | different-public-work | 3 |
-| `evaluation-logistic-large-months-metrics` | [v1/logistic-implicit-floor-large.json](inputs/v1/logistic-implicit-floor-large.json) | different-public-work | 3 |
+| `evaluation-flat-large-months-metrics` | [v1/flat-mixed-components-large.json](inputs/v1/flat-mixed-components-large.json) | different-public-work | 4 |
+| `evaluation-logistic-large-months-metrics` | [v1/logistic-implicit-floor-large.json](inputs/v1/logistic-implicit-floor-large.json) | different-public-work | 4 |
 | `evaluation-linear-custom-search` | [v1/linear-offset-scaling.json](inputs/v1/linear-offset-scaling.json) | different-public-work | 2 |
 | `evaluation-linear-long-history-parallel` | [v3/linear-long-history.json](inputs/v3/linear-long-history.json) | different-public-work | 6 |
 | `evaluation-flat-large-parallel` | [v1/flat-mixed-components-large.json](inputs/v1/flat-mixed-components-large.json) | different-public-work | 3 |

@@ -302,7 +302,13 @@ export const packKnownAdditiveFeatures = (
   return { packedMasks, values, priors, offsets, counts };
 };
 
-type WasmModelType = "flat-map" | "linear-piecewise-map" | "logistic-piecewise-map";
+type WasmModelType =
+  | "flat-map"
+  | "linear-piecewise-map"
+  | "logistic-piecewise-map"
+  | "flat-mcmc"
+  | "linear-piecewise-mcmc"
+  | "logistic-piecewise-mcmc";
 
 type SeasonalPredictionStatuses = {
   readonly success: number;

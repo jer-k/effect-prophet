@@ -133,14 +133,15 @@ validation create no `Prophet.fitRegressorModel` span.
 
 ### Engine and evaluation steps
 
-| Span                                  | Covers                                                          |
-| ------------------------------------- | --------------------------------------------------------------- |
-| `effect-prophet.wasm.fit`             | Fitting in the engine, including loading it and reading results |
-| `effect-prophet.wasm.predict`         | Computing a forecast in the engine                              |
-| `effect-prophet.wasm.simulate`        | Simulating uncertainty ranges in the engine                     |
-| `effect-prophet.evaluation.fold`      | One cross-validation fold: a fit and a forecast                 |
-| `effect-prophet.evaluation.candidate` | One candidate setting during `searchModels`                     |
-| `effect-prophet.evaluation.holdout`   | The final check in `evaluateHoldout`                            |
+| Span                                  | Covers                                                             |
+| ------------------------------------- | ------------------------------------------------------------------ |
+| `effect-prophet.wasm.fit`             | Fitting in the engine, including loading it and reading results    |
+| `effect-prophet.wasm.predict`         | Computing a forecast in the engine                                 |
+| `effect-prophet.wasm.simulate`        | Simulating uncertainty ranges in the engine                        |
+| `effect-prophet.wasm.componentRanges` | Each component's range over a posterior, in `predictWithIntervals` |
+| `effect-prophet.evaluation.fold`      | One cross-validation fold: a fit and a forecast                    |
+| `effect-prophet.evaluation.candidate` | One candidate setting during `searchModels`                        |
+| `effect-prophet.evaluation.holdout`   | The final check in `evaluateHoldout`                               |
 
 Input that fails validation, or a request with nothing to do, such as an empty list of dates,
 returns before reaching the engine and creates no engine span. `forecast` checks its history and
@@ -194,31 +195,36 @@ before any `Prophet.decodeOptions` span.
 
 **`effect-prophet.wasm.fit`**
 
-| Attribute                                                                                              | Meaning                                                                                                     |
-| ------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
-| `backend.type`, `operation`                                                                            | Always `rust-wasm` and `fit`                                                                                |
-| `model.type`, `growth`                                                                                 | `flat-map`, `linear-piecewise-map` or `logistic-piecewise-map`, and the trend type                          |
-| `observation.count`                                                                                    | Rows in the history                                                                                         |
-| `seasonality.count`, `coefficient.count`                                                               | Seasonal, event and regressor components, and the coefficients behind them                                  |
-| `changepoint.count`                                                                                    | Places the trend was allowed to bend. Always `0` for flat trends                                            |
-| `parameter.count`                                                                                      | Total values solved for, including one per changepoint for flat trends, which never use them                |
-| `scaling.mode`                                                                                         | How values were scaled before fitting                                                                       |
-| `component.mode`                                                                                       | `mixed` for multiplicative effects and capped trends; `additive` for flat trends with only additive effects |
-| `wasm.cold_start`                                                                                      | `true` only for the call that loaded the engine                                                             |
-| `optimizer.requested_algorithm`, `optimizer.max_iterations`, `optimizer.fallback`                      | The optimizer settings you passed in `map.optimizer`, or Prophet's defaults                                 |
-| `optimizer.algorithm`, `optimizer.termination`, `optimizer.iteration.count`                            | What ran, why it stopped and how many steps it took                                                         |
-| `optimizer.attempt.count`, `optimizer.failed_attempt.iteration.count`, `optimizer.hessian_reset.count` | Retries and recoveries, when the first method fell back to the second                                       |
-| `optimizer.initialization`                                                                             | `warm-start` when you passed `map.warmStart`. Only present then.                                            |
-| `optimizer.warm_start.delta`, `optimizer.warm_start.beta`                                              | `warm-start`, or `default` when the counts differed. Only present when a warm-started fit ran the optimizer |
+| Attribute                                                                                              | Meaning                                                                                                                                             |
+| ------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `backend.type`, `operation`                                                                            | Always `rust-wasm` and `fit`                                                                                                                        |
+| `model.type`, `growth`                                                                                 | `flat-map`, `linear-piecewise-map`, `logistic-piecewise-map`, `flat-mcmc`, `linear-piecewise-mcmc` or `logistic-piecewise-mcmc`, and the trend type |
+| `observation.count`                                                                                    | Rows in the history                                                                                                                                 |
+| `seasonality.count`, `coefficient.count`                                                               | Seasonal, event and regressor components, and the coefficients behind them                                                                          |
+| `changepoint.count`                                                                                    | Places the trend was allowed to bend. Always `0` for flat trends                                                                                    |
+| `parameter.count`                                                                                      | Total values solved for, including one per changepoint for flat trends, which never use them                                                        |
+| `scaling.mode`                                                                                         | How values were scaled before fitting                                                                                                               |
+| `component.mode`                                                                                       | `mixed` for multiplicative effects and capped trends; `additive` for flat trends with only additive effects                                         |
+| `wasm.cold_start`                                                                                      | `true` only for the call that loaded the engine                                                                                                     |
+| `optimizer.requested_algorithm`, `optimizer.max_iterations`, `optimizer.fallback`                      | The optimizer settings you passed in `map.optimizer`, or Prophet's defaults                                                                         |
+| `optimizer.algorithm`, `optimizer.termination`, `optimizer.iteration.count`                            | What ran, why it stopped and how many steps it took                                                                                                 |
+| `optimizer.attempt.count`, `optimizer.failed_attempt.iteration.count`, `optimizer.hessian_reset.count` | Retries and recoveries, when the first method fell back to the second                                                                               |
+| `optimizer.initialization`                                                                             | `warm-start` when you passed `map.warmStart`. Only present then.                                                                                    |
+| `optimizer.warm_start.delta`, `optimizer.warm_start.beta`                                              | `warm-start`, or `default` when the counts differed. Only present when a warm-started fit ran the optimizer                                         |
+| `mcmc.chains`, `mcmc.samples`, `mcmc.warmup`                                                           | The [Bayesian fitting](../examples/bayesian) settings. Only present with `mcmc`, which has no `optimizer.*` attributes                              |
+| `mcmc.initialization`                                                                                  | `warm-start` when you passed `map.warmStart`, otherwise `default`                                                                                   |
+| `mcmc.termination`, `mcmc.draw.count`                                                                  | `sampled` or `constant-target-shortcut`, and the draws kept                                                                                         |
+| `mcmc.divergence.count`, `mcmc.max_tree_depth.count`                                                   | Divergent draws and draws that hit the tree-depth limit. Absent for the constant-target shortcut                                                    |
 
-**`effect-prophet.wasm.predict` and `effect-prophet.wasm.simulate`**
+**`effect-prophet.wasm.predict`, `effect-prophet.wasm.simulate` and `effect-prophet.wasm.componentRanges`**
 
-| Attribute                           | Meaning                                                              |
-| ----------------------------------- | -------------------------------------------------------------------- |
-| `model.type`, `prediction.count`    | The model and the number of dates forecast                           |
-| `seasonality.count`, `scaling.mode` | As for fitting (`predict` only)                                      |
-| `output.kind`, `sample.count`       | `intervals` or `samples`, and simulations per date (`simulate` only) |
-| `wasm.cold_start`                   | `true` only for the call that loaded the engine                      |
+| Attribute                           | Meaning                                                                                                                 |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `model.type`, `prediction.count`    | The model and the number of dates forecast                                                                              |
+| `seasonality.count`, `scaling.mode` | As for fitting (`predict` only)                                                                                         |
+| `output.kind`, `sample.count`       | `intervals` or `samples`, and simulations per date (`simulate` only); a posterior runs `ceil(samples / draws)` per draw |
+| `mcmc.draw.count`                   | Posterior draws (`simulate` and `componentRanges`, posteriors only)                                                     |
+| `wasm.cold_start`                   | `true` only for the call that loaded the engine                                                                         |
 
 **`Prophet.forecast`**
 

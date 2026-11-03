@@ -25,6 +25,26 @@ pub trait StanMapObjective {
   /// Proportional density and unconstrained gradient, without a Jacobian.
   fn evaluate(&self, parameters: &[f64]) -> Result<LogDensityEvaluation, MapObjectiveError>;
 
+  /// The density Stan's sampler uses: `evaluate` plus the log Jacobian of `sigma = exp(u)`,
+  /// which `optimize` leaves out by default and `sample` always includes.
+  fn evaluate_posterior(
+    &self,
+    parameters: &[f64],
+  ) -> Result<LogDensityEvaluation, MapObjectiveError> {
+    let mut evaluation = self.evaluate(parameters)?;
+    let sigma = self.sigma_index();
+
+    let (Some(log_sigma), Some(derivative)) =
+      (parameters.get(sigma), evaluation.gradient.get_mut(sigma))
+    else {
+      return Err(MapObjectiveError::InvalidDimensions);
+    };
+
+    evaluation.value += log_sigma;
+    *derivative += 1.0;
+    Ok(evaluation)
+  }
+
   /// Complete finite-difference curvature in the pinned unconstrained coordinates.
   fn newton_hessian(
     &self,
@@ -181,7 +201,7 @@ impl Default for LinearOptimizerOptions {
 /// Prophet's initialization, overridden like `CmdStanPyBackend.sanitize_custom_inits`:
 /// `k`, `m` and `sigma_obs` always, and `delta` or `beta` only when its length matches.
 /// Stan reads `sigma_obs` through its lower bound, so the state holds its logarithm.
-fn initial_state(
+pub(crate) fn initial_state(
   objective: &impl StanMapObjective,
   warm_start: Option<&WarmStart>,
 ) -> (Vec<f64>, Initialization) {

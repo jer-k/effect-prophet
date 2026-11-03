@@ -18,6 +18,12 @@ import {
   type InvalidEventCalendar,
 } from "./event";
 import { PositiveFinite, PositiveFourierOrder } from "./internal/numeric-schemas";
+import {
+  McmcOptionsSchema,
+  resolveMcmcOptions,
+  type EncodedMcmcOptions,
+  type McmcOptions,
+} from "./mcmc";
 import { TimestampSchema } from "./internal/timestamp";
 import type { Observations } from "./observation";
 import {
@@ -105,6 +111,12 @@ interface EncodedBuiltInOptions {
   readonly events?: ReadonlyArray<EncodedEventOccurrence>;
   readonly regressors?: ReadonlyArray<EncodedRegressorDefinition>;
   readonly scaling?: TargetScalingMode;
+
+  /**
+   * Fit the full posterior with Stan's NUTS sampler, like Python's `mcmc_samples`, instead of
+   * the MAP estimate. Forecasts then use posterior means, and ranges cover parameter uncertainty.
+   */
+  readonly mcmc?: EncodedMcmcOptions;
 }
 
 /** Public explicit or automatic changepoint configuration for MAP fitting. */
@@ -258,6 +270,9 @@ interface ParsedBuiltInOptions {
   /** The regressors forecast by their own models, in definition order. */
   readonly regressorModels: ReadonlyArray<RegressorModelRequest>;
   readonly scaling?: TargetScalingMode;
+
+  /** Posterior sampling settings; MAP fitting applies when absent. */
+  readonly mcmc?: McmcOptions;
 }
 
 /** Parsed linear-growth options without configured custom seasonalities. */
@@ -444,6 +459,7 @@ const ProphetOptionsSyntaxSchema = Schema.Struct({
   regressors: Schema.Array(Schema.Unknown).pipe(Schema.withDecodingDefaultKey(Effect.succeed([]))),
   scaling: Schema.optionalKey(TargetScalingModeSchema),
   map: Schema.optionalKey(MapOptionsSchema),
+  mcmc: Schema.optionalKey(McmcOptionsSchema),
 });
 
 const decodeProphetOptionsSyntax = Schema.decodeUnknownEffect(ProphetOptionsSyntaxSchema, {
@@ -689,6 +705,19 @@ const parseRegressorModels = Effect.fnUntraced(function* (
   return Object.freeze(requests);
 });
 
+const mcmcConflict = (path: ReadonlyArray<PropertyKey>, message: string) =>
+  new InputValidationError({ input: "options", issues: [{ path, message }], message });
+
+/** Reject an optimizer with `mcmc` rather than ignoring it: sampling never optimizes. */
+const checkMcmcCombination = (
+  map: typeof MapOptionsSchema.Type | undefined,
+): Effect.Effect<void, InputValidationError> =>
+  map?.optimizer === undefined
+    ? Effect.void
+    : Effect.fail(
+        mcmcConflict(["map", "optimizer"], "An optimizer does not apply when sampling with mcmc"),
+      );
+
 /** Decode optional, untrusted fitting options and apply the documented defaults. */
 export const decodeOptions = Effect.fn("Prophet.decodeOptions")(function* (
   input?: Parameters<typeof decodeProphetOptionsSyntax>[0],
@@ -770,6 +799,12 @@ const decodeOptionsInput = Effect.fnUntraced(function* (
 
   const scaling = syntax.scaling === undefined ? {} : { scaling: syntax.scaling };
 
+  if (syntax.mcmc !== undefined) {
+    yield* checkMcmcCombination(syntax.map);
+  }
+
+  const mcmc = syntax.mcmc === undefined ? {} : { mcmc: resolveMcmcOptions(syntax.mcmc) };
+
   const calendarOptions: Pick<ParsedBuiltInOptions, "countryHolidays"> = {};
 
   if (countryHolidays !== undefined) {
@@ -797,6 +832,7 @@ const decodeOptionsInput = Effect.fnUntraced(function* (
       regressorModels,
       map,
       ...scaling,
+      ...mcmc,
     };
   }
 
@@ -812,6 +848,7 @@ const decodeOptionsInput = Effect.fnUntraced(function* (
         regressorModels,
         map: flatMap,
         ...scaling,
+        ...mcmc,
       };
     }
 
@@ -825,6 +862,7 @@ const decodeOptionsInput = Effect.fnUntraced(function* (
       regressorModels,
       map,
       ...scaling,
+      ...mcmc,
     };
   }
 
@@ -844,6 +882,7 @@ const decodeOptionsInput = Effect.fnUntraced(function* (
       regressorModels,
       map: flatMap,
       ...scaling,
+      ...mcmc,
     };
   }
 
@@ -857,5 +896,6 @@ const decodeOptionsInput = Effect.fnUntraced(function* (
     regressorModels,
     map,
     ...scaling,
+    ...mcmc,
   };
 });

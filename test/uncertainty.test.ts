@@ -1176,6 +1176,7 @@ describe("predictUncertainty", () => {
 
 describe("interval-only helpers", () => {
   const options = { samples: 8, intervalWidth: 0.8 } as const;
+  const expected = { simulation: simulationIdentity, sampleCount: 8 } as const;
   const range = { lower: 1, upper: 2 } as const;
 
   const result = (
@@ -1200,7 +1201,7 @@ describe("interval-only helpers", () => {
     ];
 
     const intervals = requested.map(({ timestamp }) => ({ timestamp, trend: range, value: range }));
-    const aligned = alignIntervalRows(result(intervals), options, requested);
+    const aligned = alignIntervalRows(result(intervals), options, expected, requested);
 
     expect(aligned).toEqual({
       kind: "aligned",
@@ -1215,7 +1216,7 @@ describe("interval-only helpers", () => {
     ]) {
       const rows = [intervals[0], broken, intervals[2]].filter(Predicate.isNotUndefined);
 
-      expect(alignIntervalRows(result(rows), options, requested)).toEqual({
+      expect(alignIntervalRows(result(rows), options, expected, requested)).toEqual({
         kind: "row-mismatch",
         index: 1,
         timestamp: 5,
@@ -1223,7 +1224,7 @@ describe("interval-only helpers", () => {
     }
 
     expect(
-      alignIntervalRows(result([{ timestamp: 5, trend: range, value: range }]), options, [
+      alignIntervalRows(result([{ timestamp: 5, trend: range, value: range }]), options, expected, [
         { timestamp: 5 },
       ]).kind,
     ).toBe("aligned");
@@ -1246,7 +1247,9 @@ describe("interval-only helpers", () => {
         value: new Float64Array(8),
       } satisfies UncertaintyResult,
     ]) {
-      expect(alignIntervalRows(frame, options, requested)).toEqual({ kind: "frame-mismatch" });
+      expect(alignIntervalRows(frame, options, expected, requested)).toEqual({
+        kind: "frame-mismatch",
+      });
     }
   });
 

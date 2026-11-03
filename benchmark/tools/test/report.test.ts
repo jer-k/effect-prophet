@@ -3,6 +3,7 @@ import type { WarmStartParameters } from "effect-prophet";
 import { describe, expect, it } from "vitest";
 
 import { parseBenchmarkCases, type BenchmarkCase } from "../case.ts";
+import { mcmcCases } from "../../cases/bayesian/mcmc.ts";
 import { linearGrowthEdgeCases } from "../../cases/growth/linear/edge-cases.ts";
 import { warmStartCases } from "../../cases/growth/warm-start.ts";
 import { anomalyCases } from "../../cases/uncertainty/anomalies.ts";
@@ -791,6 +792,143 @@ describe("benchmark reporting", () => {
     const streamedSmall = await reportWith({ ...checks, reduction: "streamed" });
 
     expect(streamedSmall.correctness[0]?.status).toBe("failed");
+  });
+
+  it("gates sampled cases on draw counts, width-scaled posterior means and draw-scaled bounds", async () => {
+    const selected = mcmcCases[0];
+
+    if (selected === undefined || selected.workload.kind !== "map") {
+      throw new Error("Missing declared posterior case");
+    }
+
+    const [cases, manifest] = await Promise.all([
+      Effect.runPromise(parseBenchmarkCases([{ ...selected, independentRuns: 1 }])),
+      Effect.runPromise(parseRunManifest(manifestInput)),
+    ]);
+
+    const evidence = new Set([selected.workload.comparison.evidenceId]);
+
+    // 4 chains of 150 kept draws; 1,000 requested futures run 2 per draw.
+    const quality = [
+      { name: "posterior-draws", value: 600 },
+      { name: "divergences", value: 0 },
+      { name: "normalized-noise", value: 0.1 },
+      { name: "max-rhat", value: 1.01 },
+    ];
+
+    const intervals = [{ trendLower: 2.5, trendUpper: 3.5, valueLower: 2.5, valueUpper: 3.5 }];
+
+    const checks = {
+      algorithm: "posterior",
+      output: "intervals",
+      rows: 1,
+      samples: 1_200,
+      replay: "passed",
+      reduction: "passed",
+      finite: "passed",
+      intervals,
+    };
+
+    const inputFor = (
+      implementation: "effect-prophet" | "python-prophet",
+      overrides: { value?: number; fitQuality?: typeof quality; checks?: typeof checks } = {},
+    ) => ({
+      ...makeResultInput(implementation, 100),
+      correctness: [
+        {
+          ...correctness,
+          caseId: selected.id,
+          modelKind: "linear-piecewise-mcmc",
+          noiseScale: 0.2,
+          forecasts: [{ ...forecast, value: overrides.value ?? 3, trend: overrides.value ?? 3 }],
+          fitQuality: overrides.fitQuality ?? quality,
+          uncertainty: overrides.checks ?? checks,
+        },
+      ],
+      measurements: [
+        {
+          ...makeResultInput(implementation, 100).measurements[0],
+          caseId: selected.id,
+          phase: "warm-fit",
+          comparison: "equivalent-posterior",
+          evidenceId: selected.workload.comparison.evidenceId,
+        },
+      ],
+    });
+
+    const reportWith = async (python: Parameters<typeof inputFor>[1]) =>
+      buildBenchmarkReport(
+        manifest,
+        cases,
+        await Effect.runPromise(parseImplementationResult(inputFor("effect-prophet"))),
+        await Effect.runPromise(parseImplementationResult(inputFor("python-prophet", python))),
+        evidence,
+      );
+
+    // Posterior means 0.1 apart, inside 0.15 of the unit-wide value interval.
+    const accepted = await reportWith({ value: 3.1 });
+
+    expect(accepted.correctness[0]).toMatchObject({
+      status: "passed",
+      comparison: "equivalent-posterior",
+      investigations: [],
+    });
+    expect(accepted.correctness[0]?.note).toContain("600-draw posterior agreement");
+    expect(accepted.timings).toHaveLength(2);
+
+    const apart = await reportWith({ value: 3.2 });
+
+    expect(apart.correctness[0]?.note).toContain("forecast");
+    expect(apart.timings).toEqual([]);
+
+    // 0.2 widths is inside 6/√600 widths for 600 draws, though not 6/√1200 for the 1,200 futures.
+    const shifted = (by: number) => ({
+      ...checks,
+      intervals: [{ ...intervals[0]!, valueUpper: 3.5 + by }],
+    });
+
+    expect((await reportWith({ checks: shifted(0.2) })).correctness[0]?.status).toBe("passed");
+    expect((await reportWith({ checks: shifted(0.3) })).correctness[0]?.note).toContain(
+      "interval bounds",
+    );
+
+    const fewerDraws = await reportWith({
+      fitQuality: quality.map((entry) =>
+        entry.name === "posterior-draws" ? { ...entry, value: 300 } : entry,
+      ),
+    });
+
+    expect(fewerDraws.correctness[0]?.note).toBe(
+      "Both libraries must keep 600 posterior draws and report sampler diagnostics.",
+    );
+
+    // The requested count, rather than the futures a posterior actually runs.
+    const requested = await reportWith({ checks: { ...checks, samples: 1_000 } });
+
+    expect(requested.correctness[0]?.status).toBe("failed");
+
+    const unconverged = await reportWith({
+      fitQuality: quality.map((entry) =>
+        entry.name === "max-rhat" ? { ...entry, value: 1.2 } : entry,
+      ),
+    });
+
+    // Only Effect mixing worse than Python is flagged.
+    expect(unconverged.correctness[0]?.investigations).toEqual([]);
+
+    const pythonBetter = await reportWith({
+      fitQuality: quality.map((entry) =>
+        entry.name === "max-rhat" ? { ...entry, value: 0.8 } : entry,
+      ),
+    });
+
+    expect(pythonBetter.correctness[0]).toMatchObject({
+      status: "passed",
+      investigations: [{ name: "max-rhat", effectValue: 1.01, pythonValue: 0.8, threshold: 0.15 }],
+    });
+    expect(pythonBetter.correctness[0]?.note).toContain(
+      "Investigate sampler diagnostics: max-rhat.",
+    );
   });
 
   it("passes anomaly cases only when both libraries flag the injected outliers consistently", async () => {

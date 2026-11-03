@@ -89,6 +89,7 @@ const expectedDeclarationFiles = [
   "dist/internal/search-limits.d.ts",
   "dist/linear-optimizer.d.ts",
   "dist/logistic.d.ts",
+  "dist/mcmc.d.ts",
   "dist/model-search.d.ts",
   "dist/model-serialization.d.ts",
   "dist/observation.d.ts",

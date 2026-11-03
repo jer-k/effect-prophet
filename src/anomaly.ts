@@ -12,7 +12,7 @@ import { fit } from "./prophet";
 import {
   exceedsSimulationBudget,
   parseIntervalOptions,
-  simulationIdentity,
+  type SimulationIdentity,
   type EncodedIntervalOptions,
   type UncertaintyInterval,
 } from "./uncertainty";
@@ -46,7 +46,7 @@ export interface AnomalyAssessment {
 
 /** Every assessed observation in chronological order, and the ones outside their range. */
 export interface AnomalyReport {
-  readonly simulation: typeof simulationIdentity;
+  readonly simulation: SimulationIdentity;
   readonly sampleCount: number;
   readonly intervalWidth: number;
   readonly rows: ReadonlyArray<AnomalyAssessment>;

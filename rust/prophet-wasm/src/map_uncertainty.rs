@@ -2,12 +2,13 @@
 
 use crate::logistic_map::{LogisticParameters, LogisticPredictionTrend, stable_sigmoid};
 use crate::piecewise_linear::PiecewiseTrend;
+use crate::quantile::sorted_quantile;
 use crate::simulation_rng::{SamplerError, SimulationRng};
 use crate::target_scaling::{LogisticScaling, TargetScaling};
 
-const MAX_ROWS: usize = 10_000;
-const MAX_SAMPLES: usize = 2_048;
-const MAX_CELLS: usize = 1_000_000;
+pub(crate) const MAX_ROWS: usize = 10_000;
+pub(crate) const MAX_SAMPLES: usize = 2_048;
+pub(crate) const MAX_CELLS: usize = 1_000_000;
 const MAX_NEW_EVENTS: usize = 1_000_000;
 const MAX_POISSON_STEPS: usize = 2_000_000;
 const MAX_WORKSPACE_BYTES: usize = 64 * 1024 * 1024;
@@ -122,7 +123,7 @@ fn finite_scaling(scaling: TargetScaling) -> bool {
   scaling.offset.is_finite() && scaling.scale.is_finite() && scaling.scale > 0.0
 }
 
-fn future_shift(time: f64, events: &[(f64, f64)]) -> f64 {
+pub(crate) fn future_shift(time: f64, events: &[(f64, f64)]) -> f64 {
   events
     .iter()
     .filter(|event| time > event.0)
@@ -130,14 +131,14 @@ fn future_shift(time: f64, events: &[(f64, f64)]) -> f64 {
     .sum()
 }
 
-fn sampler_failure(error: SamplerError, sample: usize) -> SimulationError {
+pub(crate) fn sampler_failure(error: SamplerError, sample: usize) -> SimulationError {
   match error {
     SamplerError::Exhausted => SimulationError::ResourceLimit,
     SamplerError::NonFinite => SimulationError::NonFiniteResult { row: 0, sample },
   }
 }
 
-fn zeroed(length: usize) -> Result<Vec<f64>, SimulationError> {
+pub(crate) fn zeroed(length: usize) -> Result<Vec<f64>, SimulationError> {
   let mut values = Vec::new();
   values
     .try_reserve_exact(length)
@@ -388,42 +389,80 @@ fn prepare<'a>(
 }
 
 /// Each sample's sorted future slope changes and the RNG state that starts its row noise.
-struct SamplePaths {
-  events: Vec<(f64, f64)>,
-  offsets: Vec<usize>,
-  noise: Vec<SimulationRng>,
+pub(crate) struct SamplePaths {
+  pub(crate) events: Vec<(f64, f64)>,
+  pub(crate) offsets: Vec<usize>,
+  pub(crate) noise: Vec<SimulationRng>,
+}
+
+/// Every sample's future changes, borrowed apart from the noise streams.
+#[derive(Clone, Copy)]
+pub(crate) struct SampleEvents<'a> {
+  events: &'a [(f64, f64)],
+  offsets: &'a [usize],
+}
+
+impl<'a> SampleEvents<'a> {
+  /// One sample's future changes as `(time, slope change)`, sorted by time.
+  pub(crate) fn get(self, sample: usize) -> &'a [(f64, f64)] {
+    &self.events[self.offsets[sample]..self.offsets[sample + 1]]
+  }
+}
+
+impl SamplePaths {
+  /// Each sample's future changes beside its mutable noise stream.
+  pub(crate) fn split(&mut self) -> (SampleEvents<'_>, &mut [SimulationRng]) {
+    (
+      SampleEvents {
+        events: &self.events,
+        offsets: &self.offsets,
+      },
+      self.noise.as_mut_slice(),
+    )
+  }
+}
+
+/// The future changepoint process every sample draws from.
+#[derive(Clone, Copy)]
+pub(crate) struct PathProcess {
+  pub(crate) rows: usize,
+  pub(crate) horizon: f64,
+  /// Expected changes per unit of time; zero draws none.
+  pub(crate) rate: f64,
 }
 
 /// Draw every sample's changes in the original sample-major stream order.
 ///
 /// Sample `s` draws its changes, then two uniforms per row of noise, before sample `s + 1`
 /// starts. Saving the stream at each noise start lets rows be emitted in any order with
-/// exactly the draws a sample-major loop would produce.
-fn draw_paths(
-  prepared: &PreparedSimulation<'_>,
-  options: SimulationOptions,
+/// exactly the draws a sample-major loop would produce. `delta_scale` gives each sample's
+/// Laplace scale, which a posterior takes from that sample's draw.
+pub(crate) fn draw_sample_paths(
+  process: PathProcess,
+  seed: u32,
+  samples: usize,
+  delta_scale: impl Fn(usize) -> f64,
 ) -> Result<SamplePaths, SimulationError> {
-  let count = prepared.rows.timestamps.len();
-  let mut rng = SimulationRng::new(options.seed);
+  let mut rng = SimulationRng::new(seed);
   let mut events = Vec::<(f64, f64)>::new();
   let mut offsets = Vec::new();
   let mut noise = Vec::new();
   let mut remaining_steps = MAX_POISSON_STEPS;
 
   offsets
-    .try_reserve_exact(options.samples + 1)
+    .try_reserve_exact(samples + 1)
     .map_err(|_| SimulationError::ResourceLimit)?;
   noise
-    .try_reserve_exact(options.samples)
+    .try_reserve_exact(samples)
     .map_err(|_| SimulationError::ResourceLimit)?;
   offsets.push(0);
 
-  for sample in 0..options.samples {
+  for sample in 0..samples {
     let start = events.len();
 
-    if prepared.rate > 0.0 {
+    if process.rate > 0.0 {
       let changes = rng
-        .poisson(prepared.rate * prepared.horizon, &mut remaining_steps)
+        .poisson(process.rate * process.horizon, &mut remaining_steps)
         .map_err(|error| sampler_failure(error, sample))?;
 
       if changes > MAX_NEW_EVENTS - start {
@@ -434,18 +473,20 @@ fn draw_paths(
         .map_err(|_| SimulationError::ResourceLimit)?;
 
       for _ in 0..changes {
-        events.push((1.0 + prepared.horizon * rng.uniform(), 0.0));
+        events.push((1.0 + process.horizon * rng.uniform(), 0.0));
       }
       events[start..].sort_unstable_by(|left, right| left.0.total_cmp(&right.0));
 
+      let scale = delta_scale(sample);
+
       for event in &mut events[start..] {
-        event.1 = rng.laplace(prepared.delta_scale);
+        event.1 = rng.laplace(scale);
       }
     }
 
     offsets.push(events.len());
     noise.push(rng.clone());
-    rng.discard(2 * count);
+    rng.discard(2 * process.rows);
   }
 
   Ok(SamplePaths {
@@ -453,6 +494,22 @@ fn draw_paths(
     offsets,
     noise,
   })
+}
+
+fn draw_paths(
+  prepared: &PreparedSimulation<'_>,
+  options: SimulationOptions,
+) -> Result<SamplePaths, SimulationError> {
+  draw_sample_paths(
+    PathProcess {
+      rows: prepared.rows.timestamps.len(),
+      horizon: prepared.horizon,
+      rate: prepared.rate,
+    },
+    options.seed,
+    options.samples,
+    |_| prepared.delta_scale,
+  )
 }
 
 /// Fill one row's trend and observation draws for every sample, advancing each noise stream.
@@ -495,9 +552,10 @@ fn draw_row(
     ))
   });
 
-  for (sample, noise) in paths.noise.iter_mut().enumerate() {
-    let events = &paths.events[paths.offsets[sample]..paths.offsets[sample + 1]];
-    let shift = future_shift(time, events);
+  let (events, noise) = paths.split();
+
+  for (sample, noise) in noise.iter_mut().enumerate() {
+    let shift = future_shift(time, events.get(sample));
     let trend = match prepared.model {
       SimulationTrend::Linear { scaling, .. } => fixed + scaling.scale * shift,
       SimulationTrend::Flat { .. } => fixed,
@@ -602,42 +660,19 @@ pub fn simulate_intervals(
   })
 }
 
-fn quantile(sorted: &[f64], probability: f64) -> f64 {
-  let position = (sorted.len() - 1) as f64 * probability;
-  let lower = position.floor() as usize;
-  let upper = position.ceil() as usize;
-  let fraction = position - lower as f64;
-  let start = sorted[lower];
-  let end = sorted[upper];
-
-  // Preserve plateaus exactly: multiplying equal values by complementary weights can
-  // round two quantiles in opposite directions on saturated logistic trends.
-  if start == end || fraction == 0.0 {
-    return start;
-  }
-  if fraction == 1.0 {
-    return end;
-  }
-
-  // The difference avoids cancellation for nearby values, but may overflow when
-  // the finite endpoints have opposite signs. In that case use bounded weights.
-  let difference = end - start;
-  if difference.is_finite() {
-    start + difference * fraction
-  } else {
-    start * (1.0 - fraction) + end * fraction
-  }
-}
-
 /// Sort one row's draws in place and return its equal-tailed `[lower, upper]` bounds.
-fn row_interval(draws: &mut [f64], width: f64, row: usize) -> Result<(f64, f64), SimulationError> {
+pub(crate) fn row_interval(
+  draws: &mut [f64],
+  width: f64,
+  row: usize,
+) -> Result<(f64, f64), SimulationError> {
   if draws.iter().any(|value| !value.is_finite()) {
     return Err(SimulationError::NonFiniteResult { row, sample: 0 });
   }
 
   draws.sort_unstable_by(f64::total_cmp);
-  let lower = quantile(draws, (1.0 - width) / 2.0);
-  let upper = quantile(draws, (1.0 + width) / 2.0);
+  let lower = sorted_quantile(draws, (1.0 - width) / 2.0);
+  let upper = sorted_quantile(draws, (1.0 + width) / 2.0);
 
   if !lower.is_finite() || !upper.is_finite() || lower > upper {
     return Err(SimulationError::NonFiniteResult { row, sample: 0 });

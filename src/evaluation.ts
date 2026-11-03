@@ -34,9 +34,16 @@ import {
   type ProphetOptions,
 } from "./options";
 import { fit, predict, predictUncertainty } from "./prophet";
-import { alignIntervalRows, exceedsSimulationBudget, simulationIdentity } from "./uncertainty";
+import {
+  alignIntervalRows,
+  exceedsSimulationBudget,
+  expectedSimulation,
+  posteriorSimulationIdentity,
+  simulationIdentity,
+  type SimulationIdentity,
+} from "./uncertainty";
 import type { CountryHolidayError } from "./country-holidays";
-import type { FittedProphet } from "./fitted-model";
+import { posteriorDrawCount, type FittedProphet } from "./fitted-model";
 import type { SeasonalityLayout } from "./seasonality";
 import {
   resolveSeasonalities,
@@ -153,7 +160,14 @@ export interface CrossValidationIntervalRow extends CrossValidationPointRow {
 /** Atomically completed interval forecasts, not Monte Carlo point estimates. */
 export interface IntervalCrossValidationResult {
   readonly kind: "intervals";
-  readonly simulation: typeof simulationIdentity;
+
+  /** The MAP simulation, or the posterior one when the options sample with `mcmc`. */
+  readonly simulation: SimulationIdentity;
+
+  /**
+   * Requested simulations per row. A posterior fold runs `ceil(samples / draws)` per draw, as
+   * `predictWithIntervals` does, so it can run more.
+   */
   readonly sampleCount: number;
   readonly intervalWidth: number;
   readonly plan: RollingOriginPlanSummary;
@@ -760,7 +774,12 @@ const crossValidateOperation = Effect.fn("Prophet.crossValidate")(function* (
           output: "intervals",
         }).pipe(Effect.mapError((cause) => foldFailure(fold, "uncertainty", cause)));
 
-        const alignment = alignIntervalRows(intervals, uncertainty, pointRows);
+        const alignment = alignIntervalRows(
+          intervals,
+          uncertainty,
+          expectedSimulation(uncertainty.samples, posteriorDrawCount(model)),
+          pointRows,
+        );
 
         if (alignment.kind === "frame-mismatch") {
           return yield* foldFailure(
@@ -839,7 +858,7 @@ const crossValidateOperation = Effect.fn("Prophet.crossValidate")(function* (
   if (uncertainty !== undefined) {
     return Object.freeze({
       kind: "intervals",
-      simulation: simulationIdentity,
+      simulation: options.mcmc === undefined ? simulationIdentity : posteriorSimulationIdentity,
       sampleCount: uncertainty.samples,
       intervalWidth: uncertainty.intervalWidth,
       plan: foldPlan.summary,

@@ -101,9 +101,26 @@ impl MixedMapPredictionBatch {
   }
 }
 
-/// Fit mixed linear or flat state with Prophet's Stan optimization policy.
+/// Scaled rows, combined design and priors shared by MAP fitting and posterior sampling.
+pub(crate) struct PreparedMixedFit {
+  pub(crate) target_scaling: TargetScaling,
+  pub(crate) target: Vec<f64>,
+  /// Row-major `[trend..., features...]`; flat rows keep `[1, 0]`.
+  pub(crate) design: Vec<f64>,
+  pub(crate) feature_priors: Vec<f64>,
+  pub(crate) seasonal_count: usize,
+  pub(crate) trend_count: usize,
+}
+
+/// Validated mixed training input, or Prophet's constant-target shortcut state.
+pub(crate) enum MixedFitInput {
+  Prepared(PreparedMixedFit),
+  Constant(MixedMapModel),
+}
+
+/// Validate and scale training rows, then build the design both fitting paths start from.
 #[allow(clippy::too_many_arguments)]
-pub fn fit_mixed_map(
+pub(crate) fn prepare_mixed_fit(
   timestamps: &[f64],
   values: &[f64],
   trend_input: MixedTrendInput<'_>,
@@ -113,9 +130,8 @@ pub fn fit_mixed_map(
   additional_layout: AdditionalFeatureLayoutView<'_>,
   column_modes: &[ComponentMode],
   changepoint_prior_scale: f64,
-  controls: LinearOptimizerOptions,
   scaling_mode: ScalingMode,
-) -> Result<MixedMapModel, PiecewiseMapError> {
+) -> Result<MixedFitInput, PiecewiseMapError> {
   validate_common(
     timestamps,
     values,
@@ -183,7 +199,7 @@ pub fn fit_mixed_map(
       },
     };
 
-    return Ok(MixedMapModel {
+    return Ok(MixedFitInput::Constant(MixedMapModel {
       target_scaling,
       trend,
       seasonalities: seasonalities.to_vec(),
@@ -199,7 +215,7 @@ pub fn fit_mixed_map(
         stationarity_residual: 0.0,
         termination: MapTermination::ConstantTargetShortcut,
       },
-    });
+    }));
   }
 
   let column_count = trend_count
@@ -216,14 +232,70 @@ pub fn fit_mixed_map(
       .copy_from_slice(&feature_values[row * feature_count..(row + 1) * feature_count]);
   }
 
+  Ok(MixedFitInput::Prepared(PreparedMixedFit {
+    target_scaling,
+    target,
+    design,
+    feature_priors,
+    seasonal_count,
+    trend_count,
+  }))
+}
+
+/// Normalized changepoint locations in the training span, as the linear objective expects.
+pub(crate) fn normalized_changepoints(timestamps: &[f64], changepoints: &[f64]) -> Vec<f64> {
+  let origin = timestamps[0];
+  let time_scale = timestamps[timestamps.len() - 1] - origin;
+
+  changepoints
+    .iter()
+    .map(|point| (point - origin) / time_scale)
+    .collect()
+}
+
+/// Fit mixed linear or flat state with Prophet's Stan optimization policy.
+#[allow(clippy::too_many_arguments)]
+pub fn fit_mixed_map(
+  timestamps: &[f64],
+  values: &[f64],
+  trend_input: MixedTrendInput<'_>,
+  seasonalities: &[SeasonalitySpec],
+  seasonality_masks: SeasonalityMaskView<'_>,
+  additional_features: FeatureMatrixView<'_>,
+  additional_layout: AdditionalFeatureLayoutView<'_>,
+  column_modes: &[ComponentMode],
+  changepoint_prior_scale: f64,
+  controls: LinearOptimizerOptions,
+  scaling_mode: ScalingMode,
+) -> Result<MixedMapModel, PiecewiseMapError> {
+  let prepared = match prepare_mixed_fit(
+    timestamps,
+    values,
+    trend_input,
+    seasonalities,
+    seasonality_masks,
+    additional_features,
+    additional_layout,
+    column_modes,
+    changepoint_prior_scale,
+    scaling_mode,
+  )? {
+    MixedFitInput::Prepared(prepared) => prepared,
+    MixedFitInput::Constant(model) => return Ok(model),
+  };
+  let PreparedMixedFit {
+    target_scaling,
+    target,
+    design,
+    feature_priors,
+    seasonal_count,
+    trend_count,
+    ..
+  } = prepared;
+
   let fit = match trend_input {
     MixedTrendInput::Linear { changepoints } => {
-      let origin = timestamps[0];
-      let time_scale = timestamps[timestamps.len() - 1] - origin;
-      let points: Vec<f64> = changepoints
-        .iter()
-        .map(|point| (point - origin) / time_scale)
-        .collect();
+      let points = normalized_changepoints(timestamps, changepoints);
 
       crate::map_objective::StanLinearObjective::new(
         &design,
@@ -549,7 +621,7 @@ pub(crate) fn validate_component_modes(
   Ok(())
 }
 
-fn parse_seasonalities(
+pub(crate) fn parse_seasonalities(
   seasonalities: &[SeasonalitySpec],
 ) -> Result<Vec<FourierSeasonality>, PiecewiseMapError> {
   seasonalities

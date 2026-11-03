@@ -116,7 +116,7 @@ describe("Python-default seasonality requests", () => {
 
       expect(partial).toEqual(explicit);
 
-      if (partial.model === "flat-map") throw new Error("Expected a piecewise MAP trend");
+      if (!("changepointTimestamps" in partial)) throw new Error("Expected a piecewise trend");
 
       expect(partial.changepointTimestamps).toHaveLength(25);
     },

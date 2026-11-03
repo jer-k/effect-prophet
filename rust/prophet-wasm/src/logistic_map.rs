@@ -195,9 +195,42 @@ fn prefix_column_sums(row_count: usize, active: &[usize], values: &[f64]) -> Vec
     .collect()
 }
 
-/// Fit floor-aware logistic MAP state with Prophet's Stan optimizer policy.
+/// Scaled rows, normalized times and features shared by MAP fitting and posterior sampling.
+pub(crate) struct PreparedLogisticFit {
+  pub(crate) scaling: LogisticScaling,
+  pub(crate) target: Vec<f64>,
+  pub(crate) capacities: Vec<f64>,
+  pub(crate) times: Vec<f64>,
+  pub(crate) points: Vec<f64>,
+  pub(crate) features: Vec<f64>,
+  pub(crate) priors: Vec<f64>,
+  pub(crate) seasonal_count: usize,
+}
+
+impl PreparedLogisticFit {
+  /// Prophet's Stan objective over the prepared rows.
+  pub(crate) fn objective<'a>(
+    &'a self,
+    column_modes: &'a [ComponentMode],
+    changepoint_prior_scale: f64,
+  ) -> Result<StanLogisticObjective<'a>, PiecewiseMapError> {
+    StanLogisticObjective::new(
+      &self.target,
+      &self.capacities,
+      &self.times,
+      &self.points,
+      &self.features,
+      &self.priors,
+      column_modes,
+      changepoint_prior_scale,
+    )
+    .map_err(map_objective_error)
+  }
+}
+
+/// Validate and scale logistic training rows, then build the inputs both fitting paths share.
 #[allow(clippy::too_many_arguments)]
-pub fn fit_logistic_map(
+pub(crate) fn prepare_logistic_fit(
   timestamps: &[f64],
   values: &[f64],
   capacities: &[f64],
@@ -209,9 +242,8 @@ pub fn fit_logistic_map(
   additional_layout: AdditionalFeatureLayoutView<'_>,
   column_modes: &[ComponentMode],
   changepoint_prior_scale: f64,
-  options: LinearOptimizerOptions,
   scaling_mode: ScalingMode,
-) -> Result<LogisticMapModel, PiecewiseMapError> {
+) -> Result<PreparedLogisticFit, PiecewiseMapError> {
   validate_fit(
     timestamps,
     values,
@@ -255,26 +287,61 @@ pub fn fit_logistic_map(
     .iter()
     .map(|point| (*point - origin) / scale)
     .collect();
-  let objective = StanLogisticObjective::new(
-    &target,
-    &scaled_capacities,
-    &times,
-    &points,
-    &features,
-    &priors,
+
+  Ok(PreparedLogisticFit {
+    scaling,
+    target,
+    capacities: scaled_capacities,
+    times,
+    points,
+    features,
+    priors,
+    seasonal_count,
+  })
+}
+
+/// Fit floor-aware logistic MAP state with Prophet's Stan optimizer policy.
+#[allow(clippy::too_many_arguments)]
+pub fn fit_logistic_map(
+  timestamps: &[f64],
+  values: &[f64],
+  capacities: &[f64],
+  explicit_floors: Option<&[f64]>,
+  changepoints: &[f64],
+  seasonalities: &[SeasonalitySpec],
+  seasonality_masks: SeasonalityMaskView<'_>,
+  additional_features: FeatureMatrixView<'_>,
+  additional_layout: AdditionalFeatureLayoutView<'_>,
+  column_modes: &[ComponentMode],
+  changepoint_prior_scale: f64,
+  options: LinearOptimizerOptions,
+  scaling_mode: ScalingMode,
+) -> Result<LogisticMapModel, PiecewiseMapError> {
+  let prepared = prepare_logistic_fit(
+    timestamps,
+    values,
+    capacities,
+    explicit_floors,
+    changepoints,
+    seasonalities,
+    seasonality_masks,
+    additional_features,
+    additional_layout,
     column_modes,
     changepoint_prior_scale,
-  )
-  .map_err(map_objective_error)?;
-  let fit = objective
+    scaling_mode,
+  )?;
+  let fit = prepared
+    .objective(column_modes, changepoint_prior_scale)?
     .fit_model(options)
     .map_err(PiecewiseMapError::Optimizer)?;
+  let scaling = prepared.scaling;
 
   finish_model(
     timestamps,
     changepoints,
     seasonalities,
-    seasonal_count,
+    prepared.seasonal_count,
     column_modes,
     scaling,
     fit.parameters.rate,
@@ -991,7 +1058,7 @@ fn evaluate(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn finish_model(
+pub(crate) fn finish_model(
   timestamps: &[f64],
   changepoints: &[f64],
   seasonalities: &[SeasonalitySpec],

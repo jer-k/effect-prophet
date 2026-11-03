@@ -70,6 +70,24 @@ const stanBeta = (model: FittedProphet, scale: number): ReadonlyArray<number> =>
   );
 };
 
+/** A linear model's Stan state, from MAP estimates or posterior means. */
+const linearParameters = (
+  linear: {
+    readonly slope: number;
+    readonly intercept: number;
+    readonly deltas: ReadonlyArray<number>;
+  },
+  scale: number,
+  sigmaObs: number,
+  beta: ReadonlyArray<number>,
+): WarmStartParameters => ({
+  k: linear.slope / scale,
+  m: linear.intercept / scale,
+  sigmaObs,
+  delta: orPrivateZero(linear.deltas.map((delta) => delta / scale)),
+  beta,
+});
+
 /**
  * Read a fitted model's parameters for warm-starting another fit, like Python's
  * `warm_start_params`.
@@ -80,6 +98,8 @@ const stanBeta = (model: FittedProphet, scale: number): ReadonlyArray<number> =>
  *
  * Flat models do not keep Stan's prior-only rate state, so their `k` is zero and `delta` is
  * empty. Python's values for these are near zero.
+ *
+ * A model fitted with `mcmc` gives its posterior means, as Python does.
  *
  * @param model - A fitted model returned by `fit` or model decoding.
  * @returns The model's Stan parameters.
@@ -92,14 +112,17 @@ export const warmStartParameters = (model: FittedProphet): WarmStartParameters =
   const parameters: WarmStartParameters = Match.value(model).pipe(
     Match.discriminatorsExhaustive("model")({
       "flat-map": (flat) => ({ k: 0, m: flat.level / scale, sigmaObs, delta: [], beta }),
-      "linear-piecewise-map": (linear) => ({
-        k: linear.slope / scale,
-        m: linear.intercept / scale,
+      "flat-mcmc": (flat) => ({ k: 0, m: flat.level / scale, sigmaObs, delta: [], beta }),
+      "linear-piecewise-map": (linear) => linearParameters(linear, scale, sigmaObs, beta),
+      "linear-piecewise-mcmc": (linear) => linearParameters(linear, scale, sigmaObs, beta),
+      "logistic-piecewise-map": (logistic) => ({
+        k: logistic.rate,
+        m: logistic.offset,
         sigmaObs,
-        delta: orPrivateZero(linear.deltas.map((delta) => delta / scale)),
+        delta: orPrivateZero(logistic.deltas),
         beta,
       }),
-      "logistic-piecewise-map": (logistic) => ({
+      "logistic-piecewise-mcmc": (logistic) => ({
         k: logistic.rate,
         m: logistic.offset,
         sigmaObs,

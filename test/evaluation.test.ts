@@ -39,6 +39,40 @@ const failure = (days: ReadonlyArray<number>, input: Parameters<typeof planRolli
     expectInputValidationError,
   );
 
+describe("crossValidate with mcmc", () => {
+  it("fits each fold's posterior and simulates its paths", async () => {
+    const rows = Array.from({ length: 24 }, (_, day) => ({
+      timestamp: at(day),
+      value: 10 + day * 0.5 + Math.sin(day),
+    }));
+
+    const plan = {
+      horizonMs: 2 * dayMs,
+      cutoffs: { mode: "explicit", timestamps: [at(15), at(19)] },
+    } as const;
+
+    const result = await Effect.runPromise(
+      crossValidate(
+        rows,
+        {
+          builtInSeasonalities: { daily: "off", weekly: "off", yearly: "off" },
+          mcmc: { samples: 40, seed: 2, chains: 2 },
+        },
+        plan,
+        { mode: "intervals", uncertainty: { seed: 5, samples: 50 } },
+      ).pipe(Effect.provide(prophetFittingBackendLayer)),
+    );
+
+    if (result.kind !== "intervals") throw new Error("Expected intervals");
+
+    expect(result.simulation).toBe("prophet-mcmc-scalar-xoshiro128ss-v1");
+    expect(result.rows).toHaveLength(4);
+    expect(
+      result.rows.every((row) => row.lower <= row.predicted && row.predicted <= row.upper),
+    ).toBe(true);
+  });
+});
+
 describe("planRollingOrigin", () => {
   it("preserves duplicate training and assessment rows across public rolling-origin fits", async () => {
     const rows = [5, 1, 0, 1, 2, 3, 3, 4].map((day, index) => ({

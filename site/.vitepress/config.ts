@@ -31,6 +31,7 @@ const sidebar: DefaultTheme.SidebarItem[] = [
       { text: "Growth with a ceiling", link: "/examples/saturating-growth" },
       { text: "Flat trends", link: "/examples/flat-trend" },
       { text: "Uncertainty ranges", link: "/examples/uncertainty" },
+      { text: "Full Bayesian fitting", link: "/examples/bayesian" },
       { text: "Finding anomalies", link: "/examples/anomalies" },
       { text: "Checking the fit", link: "/examples/residuals" },
       { text: "Saving and loading models", link: "/examples/saving-models" },

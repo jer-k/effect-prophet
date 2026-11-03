@@ -64,9 +64,21 @@ export const effectOptionsForCase = (
       Object.assign(priorScales, { holidaysPriorScale });
     }
 
+    // Python's `mcmc_samples` with `fit(seed=...)`; warmup keeps Python's default of half.
+    const sampling: Pick<EncodedProphetOptions, "mcmc"> = {};
+
+    if (workload.kind === "map" && workload.mcmc !== undefined) {
+      const { samples, seed, chains } = workload.mcmc;
+
+      Object.assign(sampling, {
+        mcmc: chains === undefined ? { samples, seed } : { samples, seed, chains },
+      });
+    }
+
     const options = {
       ...common,
       ...priorScales,
+      ...sampling,
       scaling: workload.configuration.scaling,
       seasonalityMode: workload.configuration.seasonalityMode,
       holidaysMode: workload.configuration.holidaysMode,

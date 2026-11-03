@@ -12,6 +12,8 @@ import {
   encodeFittedModel,
   fit,
   getRegressorCoefficients,
+  isLogisticModel,
+  isMcmcModel,
   maximumSampleCells,
   predict,
   predictUncertainty,
@@ -36,7 +38,7 @@ import {
   evaluationOperation,
   preparedEvaluationOperation,
 } from "../evaluation.ts";
-import { percentile } from "../uncertainty.ts";
+import { percentile, posteriorPathCount } from "../uncertainty.ts";
 import {
   maximumWorkerProtocolBytes,
   BenchmarkMeasurementSchema,
@@ -564,17 +566,14 @@ const metadataProjection = (
     | "regressors"
   > = {
     modelKind: model.model,
-    changepointTimestamps:
-      model.model === "linear-piecewise-map" || model.model === "logistic-piecewise-map"
-        ? model.changepointTimestamps
-        : [],
+    changepointTimestamps: "changepointTimestamps" in model ? model.changepointTimestamps : [],
     seasonalities: model.seasonalities.components.map(seasonalityMetadata),
     events: eventMetadata(model),
     eventColumnCount: model.events.columns.length,
     regressors: regressorMetadata(model),
   };
 
-  if (model.model === "logistic-piecewise-map") {
+  if (isLogisticModel(model)) {
     return {
       ...metadata,
       targetScaling: {
@@ -613,11 +612,22 @@ const assertMetadata = (
   const growth =
     benchmarkCase.workload.kind === "map" ? benchmarkCase.workload.configuration.growth : "linear";
 
-  const expectedKind = {
-    flat: "flat-map",
-    linear: "linear-piecewise-map",
-    logistic: "logistic-piecewise-map",
-  }[growth];
+  const sampled =
+    benchmarkCase.workload.kind === "map" && benchmarkCase.workload.mcmc !== undefined;
+
+  const expectedKind = (
+    sampled
+      ? {
+          flat: "flat-mcmc",
+          linear: "linear-piecewise-mcmc",
+          logistic: "logistic-piecewise-mcmc",
+        }
+      : {
+          flat: "flat-map",
+          linear: "linear-piecewise-map",
+          logistic: "logistic-piecewise-map",
+        }
+  )[growth];
 
   if (metadata.modelKind !== expectedKind) {
     throw new Error(`Case ${benchmarkCase.id} did not fit the expected model kind`);
@@ -822,7 +832,11 @@ const assertUncertainty = (
   }
 
   const rows = input.predictionRows.length;
-  const count = controls.samples;
+
+  // A posterior simulates `ceil(samples / draws)` futures for each draw.
+  const count = isMcmcModel(model)
+    ? posteriorPathCount(controls.samples, model.posterior.noiseScale.length)
+    : controls.samples;
 
   // Interval requests past the sample-output budget stream rows; there are no draws to reduce.
   const streamed = controls.output === "intervals" && rows * count > maximumSampleCells;
@@ -1029,6 +1043,29 @@ const assertAnomalies = async (
   };
 };
 
+/**
+ * A posterior's draw count and sampler health, as Python's adapter reads them from CmdStan. The
+ * constant-target shortcut keeps one fixed draw and samples nothing, so it reports no divergences
+ * and an R-hat of 1.
+ */
+const posteriorFitQuality = (model: Extract<FittedProphet, { readonly posterior: unknown }>) => {
+  const diagnostics = model.fitSummary.diagnostics;
+  const maxRhat = diagnostics === null ? 1 : diagnostics.maxRhat;
+
+  const quality = [
+    { name: "posterior-draws", value: model.posterior.noiseScale.length },
+    { name: "divergences", value: diagnostics?.divergences ?? 0 },
+    { name: "normalized-noise", value: model.noiseScale / model.targetScaling.scale },
+  ];
+
+  // An undefined R-hat is left out, which the report treats as missing evidence.
+  if (maxRhat !== null) {
+    quality.push({ name: "max-rhat", value: maxRhat });
+  }
+
+  return quality;
+};
+
 const correctnessProjection = async (
   benchmarkCase: BenchmarkCase,
   dataset: BenchmarkDataset,
@@ -1135,12 +1172,15 @@ const correctnessProjection = async (
     return {
       ...withUncertainty,
       noiseScale: model.noiseScale,
-      fitQuality: [
-        { name: "objective", value: model.fitSummary.objective },
-        { name: "stationarity-residual", value: model.fitSummary.stationarityResidual },
-        { name: "normalized-noise", value: model.noiseScale / model.targetScaling.scale },
-        { name: "iterations", value: model.fitSummary.iterations },
-      ],
+      // A posterior reports a sampler, not an optimizer's progress.
+      fitQuality: isMcmcModel(model)
+        ? posteriorFitQuality(model)
+        : [
+            { name: "objective", value: model.fitSummary.objective },
+            { name: "stationarity-residual", value: model.fitSummary.stationarityResidual },
+            { name: "normalized-noise", value: model.noiseScale / model.targetScaling.scale },
+            { name: "iterations", value: model.fitSummary.iterations },
+          ],
     };
   }
 
@@ -1311,7 +1351,9 @@ const measurementForPhase = async (
     implementation: "effect-prophet",
     phase,
     comparison:
-      benchmarkCase.workload.kind === "map" && benchmarkCase.workload.uncertainty !== undefined
+      benchmarkCase.workload.kind === "map" &&
+      benchmarkCase.workload.mcmc === undefined &&
+      benchmarkCase.workload.uncertainty !== undefined
         ? "scalar-process-different-public-work"
         : benchmarkCase.workload.comparison.kind,
     evidenceId: benchmarkCase.workload.comparison.evidenceId,

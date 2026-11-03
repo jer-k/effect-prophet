@@ -155,24 +155,26 @@ export const stanOptimizerFailure = (
  * Version two starts from Prophet's initialization. Version three appends a warm start:
  * `[k, m, sigmaObs, D, ...delta, B, ...beta]`.
  */
+/** A warm start as `[k, m, sigma_obs, delta count, delta..., beta count, beta...]`, or empty. */
+export const encodeWarmStart = (warmStart?: WarmStartParameters): ReadonlyArray<number> =>
+  warmStart === undefined
+    ? []
+    : [
+        warmStart.k,
+        warmStart.m,
+        warmStart.sigmaObs,
+        warmStart.delta.length,
+        ...warmStart.delta,
+        warmStart.beta.length,
+        ...warmStart.beta,
+      ];
+
 export const encodeStanOptimizer = (
   optimizer: LinearOptimizer,
   warmStart?: WarmStartParameters,
 ): Float64Array => {
   const version = warmStart === undefined ? 2 : 3;
-
-  const init =
-    warmStart === undefined
-      ? []
-      : [
-          warmStart.k,
-          warmStart.m,
-          warmStart.sigmaObs,
-          warmStart.delta.length,
-          ...warmStart.delta,
-          warmStart.beta.length,
-          ...warmStart.beta,
-        ];
+  const init = encodeWarmStart(warmStart);
 
   if (optimizer.algorithm === "newton") {
     return new Float64Array([version, 1, optimizer.maxIterations, ...init]);

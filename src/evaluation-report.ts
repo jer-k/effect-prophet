@@ -21,7 +21,7 @@ import {
   validationMessageFromIssue,
 } from "./errors";
 import type { CountryHolidayError } from "./country-holidays";
-import type { FittedProphet } from "./fitted-model";
+import { isMcmcModel, posteriorDrawCount, type FittedProphet } from "./fitted-model";
 import type { FittingBackend } from "./internal/fitting-backend";
 import { maximumSearchCandidates } from "./internal/search-limits";
 import {
@@ -44,6 +44,8 @@ import {
 import { fit, predict, predictUncertainty } from "./prophet";
 import {
   alignIntervalRows,
+  expectedSimulation,
+  posteriorSimulationIdentity,
   exceedsSimulationBudget,
   simulationIdentity,
   parseUncertaintyOptions,
@@ -124,7 +126,7 @@ const ProvenanceSchema = Schema.Struct({
   environment: ProvenanceLabelSchema,
 });
 
-const ModelSchema = Schema.Struct({
+const MapModelSchema = Schema.Struct({
   kind: Schema.Literals(["flat-map", "linear-piecewise-map", "logistic-piecewise-map"]),
   fitSummary: Schema.Struct({
     method: Schema.Literals([
@@ -152,6 +154,31 @@ const ModelSchema = Schema.Struct({
     stationarityResidual: Schema.Finite.check(Schema.isGreaterThanOrEqualTo(0)),
   }),
 });
+
+/** A posterior's summary: how many draws it kept and the sampler's headline health. */
+const McmcModelSchema = Schema.Struct({
+  kind: Schema.Literals(["flat-mcmc", "linear-piecewise-mcmc", "logistic-piecewise-mcmc"]),
+  fitSummary: Schema.Struct({
+    method: Schema.Literal("stan-nuts-v1"),
+    termination: Schema.Literals(["sampled", "constant-target-shortcut"]),
+    observationCount: Schema.Int.check(Schema.isGreaterThanOrEqualTo(2)),
+    drawCount: Schema.Int.check(Schema.isGreaterThanOrEqualTo(1)),
+    divergences: Schema.Natural,
+    maxRhat: Schema.NullOr(Schema.Finite.check(Schema.isGreaterThanOrEqualTo(0))),
+  }),
+});
+
+const ModelSchema = Schema.Union([MapModelSchema, McmcModelSchema]);
+
+/** The model kind a holdout fit with these options returns. */
+const expectedModelKind = (options: {
+  readonly growth: "flat" | "linear" | "logistic";
+  readonly mcmc?: unknown;
+}): typeof ModelSchema.Type.kind => {
+  const family = options.growth === "flat" ? "flat" : (`${options.growth}-piecewise` as const);
+
+  return options.mcmc === undefined ? `${family}-map` : `${family}-mcmc`;
+};
 
 const CommonReportSchema = {
   reportKind: Schema.Literal("effect-prophet-evaluation"),
@@ -221,7 +248,7 @@ const ReportSchema = Schema.Union([
     kind: Schema.Literal("intervals"),
     forecasts: Schema.NonEmptyArray(IntervalSchema).check(Schema.isMaxLength(maximumRows)),
     simulation: Schema.Struct({
-      algorithm: Schema.Literal(simulationIdentity),
+      algorithm: Schema.Literals([simulationIdentity, posteriorSimulationIdentity]),
       seed: Schema.Int.check(
         Schema.isGreaterThanOrEqualTo(0),
         Schema.isLessThanOrEqualTo(4_294_967_295),
@@ -400,10 +427,12 @@ const reportConsistency = (
       ),
     );
 
+    const expectedAlgorithm =
+      options.mcmc === undefined ? simulationIdentity : posteriorSimulationIdentity;
+
     if (
-      (options.growth === "logistic" && report.model.kind !== "logistic-piecewise-map") ||
-      (options.growth === "flat" && report.model.kind !== "flat-map") ||
-      (options.growth === "linear" && report.model.kind !== "linear-piecewise-map") ||
+      report.model.kind !== expectedModelKind(options) ||
+      (report.kind === "intervals" && report.simulation.algorithm !== expectedAlgorithm) ||
       report.model.fitSummary.observationCount !== development.rowCount ||
       (report.model.kind === "logistic-piecewise-map" &&
         report.model.fitSummary.method !== "logistic-piecewise-map-stan-v2") ||
@@ -764,7 +793,12 @@ export const evaluateHoldout = Effect.fn("Prophet.evaluateHoldout")(function* (
         Effect.mapError((cause) => failure("uncertainty", "operation-failed", cause)),
       );
 
-      const alignment = alignIntervalRows(intervals, uncertainty, points);
+      const alignment = alignIntervalRows(
+        intervals,
+        uncertainty,
+        expectedSimulation(uncertainty.samples, posteriorDrawCount(model)),
+        points,
+      );
 
       if (alignment.kind === "frame-mismatch") {
         return yield* failure("result", "result-mismatch");
@@ -894,7 +928,8 @@ export const evaluateHoldout = Effect.fn("Prophet.evaluateHoldout")(function* (
             ...reportBase,
             kind: "intervals" as const,
             simulation: {
-              algorithm: simulationIdentity,
+              algorithm:
+                options.mcmc === undefined ? simulationIdentity : posteriorSimulationIdentity,
               seed: uncertainty.seed,
               samples: uncertainty.samples,
               intervalWidth: uncertainty.intervalWidth,
@@ -924,7 +959,23 @@ export const evaluateHoldout = Effect.fn("Prophet.evaluateHoldout")(function* (
   return executed;
 });
 
-const modelSummary = (model: FittedProphet) => {
+const modelSummary = (model: FittedProphet): typeof ModelSchema.Type => {
+  if (isMcmcModel(model)) {
+    const { termination, observationCount, diagnostics } = model.fitSummary;
+
+    return {
+      kind: model.model,
+      fitSummary: {
+        method: "stan-nuts-v1",
+        termination,
+        observationCount,
+        drawCount: model.posterior.noiseScale.length,
+        divergences: diagnostics?.divergences ?? 0,
+        maxRhat: diagnostics?.maxRhat ?? null,
+      },
+    };
+  }
+
   const { method, termination, observationCount, iterations, objective, stationarityResidual } =
     model.fitSummary;
 

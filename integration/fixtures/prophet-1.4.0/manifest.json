@@ -122,7 +122,7 @@
     "platform": "linux/amd64",
     "uvVersion": "0.8.15"
   },
-  "generatorRevision": "8a9eb0126d7950578d9d0e92572bb5389832d595c7fcbe70a5ebecc3c02add64",
+  "generatorRevision": "6b0a651ce25cf943614b5b18b07cc703a4f9483d93d059bbeb08cc33b4243a86",
   "numericalEnvironment": [
     {
       "name": "cmdstanpy",

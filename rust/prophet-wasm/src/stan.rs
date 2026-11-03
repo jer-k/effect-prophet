@@ -1,7 +1,9 @@
-//! Stan-compatible optimization and reference-aligned numerical primitives.
+//! Stan-compatible optimization, sampling and reference-aligned numerical primitives.
 
 pub mod lbfgs;
 pub mod linear_optimizer;
+pub mod mcmc_diagnostics;
+pub mod nuts;
 pub mod optimizer;
 
 // Retained only to distinguish the old packetized fitting path in regressions.

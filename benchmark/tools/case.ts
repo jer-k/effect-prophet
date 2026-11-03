@@ -1,6 +1,8 @@
 import { Effect, Schema, SchemaGetter } from "effect";
 import {
   LinearOptimizerSchema,
+  maximumMcmcChains,
+  maximumMcmcDraws,
   maximumSampleCells,
   maximumSimulationRows,
   parseCountryHolidays,
@@ -110,10 +112,20 @@ const EquivalentObjectiveComparisonSchema = Schema.Struct({
   evidenceId: EvidenceIdSchema,
 });
 
+/**
+ * Both libraries sample the same posterior with Stan's NUTS and the same settings. Their chains
+ * differ, so outputs agree within Monte Carlo allowances rather than to an optimizer's precision.
+ */
+const EquivalentPosteriorComparisonSchema = Schema.Struct({
+  kind: Schema.Literal("equivalent-posterior"),
+  evidenceId: EvidenceIdSchema,
+});
+
 /** Why two measurements may be viewed together and which correctness evidence is required. */
 export const BenchmarkComparisonSchema = Schema.Union([
   EquivalentEquationComparisonSchema,
   EquivalentObjectiveComparisonSchema,
+  EquivalentPosteriorComparisonSchema,
 ]);
 
 /** Why two measurements may be viewed together and which correctness evidence is required. */
@@ -213,7 +225,10 @@ const MapWorkloadKind = Schema.Literals(["map", "stage-f-map"]).pipe(
 /** A public MAP fit and prediction with any growth, scaling, modes and features. */
 export const MapWorkloadSchema = Schema.Struct({
   kind: MapWorkloadKind,
-  comparison: EquivalentObjectiveComparisonSchema,
+  comparison: Schema.Union([
+    EquivalentObjectiveComparisonSchema,
+    EquivalentPosteriorComparisonSchema,
+  ]),
   fitRequest: Schema.optionalKey(Schema.Literal("growth-only")),
   configuration: Schema.Struct({
     growth: Schema.Literals(["linear", "flat", "logistic"]),
@@ -248,6 +263,25 @@ export const MapWorkloadSchema = Schema.Struct({
     Schema.Struct({
       // The injected outliers, which both libraries must flag.
       expected: Schema.Array(CanonicalTimestamp).check(Schema.isMinLength(1)),
+    }),
+  ),
+  // Full Bayesian fitting: Effect's `mcmc` option, Python's `mcmc_samples` with `fit(seed=...)`.
+  mcmc: Schema.optionalKey(
+    Schema.Struct({
+      samples: PositiveInteger.check(
+        Schema.isGreaterThanOrEqualTo(2),
+        Schema.isLessThanOrEqualTo(2 * maximumMcmcDraws + 1),
+      ),
+      seed: NonNegativeInteger.check(Schema.isLessThanOrEqualTo(4_294_967_295)),
+      chains: Schema.optionalKey(
+        PositiveInteger.check(Schema.isLessThanOrEqualTo(maximumMcmcChains)),
+      ),
+      // Point forecasts are posterior means. Each forecast quantity may differ by this fraction of
+      // the narrowest value interval either library reports, on top of the declared tolerances.
+      pointWidthFraction: Schema.Finite.check(
+        Schema.isGreaterThan(0),
+        Schema.isLessThanOrEqualTo(1),
+      ),
     }),
   ),
   // Refit the whole history from the parameters of a fit of its first `baseRows` rows.
@@ -554,6 +588,40 @@ const validateCaseRelationships = (
       );
     }
 
+    const mcmc = benchmarkCase.workload.kind === "map" ? benchmarkCase.workload.mcmc : undefined;
+
+    // Posteriors are judged through their intervals, so a sampled case always simulates them.
+    // Python's `predict` fails on a posterior without seasonalities, events or regressors.
+    if (
+      benchmarkCase.workload.kind === "map" &&
+      ((mcmc !== undefined) !==
+        (benchmarkCase.workload.comparison.kind === "equivalent-posterior") ||
+        (mcmc !== undefined &&
+          (uncertainty?.output !== "intervals" ||
+            benchmarkCase.workload.fitRequest !== undefined ||
+            benchmarkCase.workload.anomalies !== undefined ||
+            benchmarkCase.workload.warmStart !== undefined ||
+            benchmarkCase.workload.effectOptimizer !== undefined ||
+            benchmarkCase.optimizerQuality !== undefined ||
+            (mcmc.chains ?? 4) * Math.floor(mcmc.samples / 2) > maximumMcmcDraws ||
+            // Python passes `fit(chains=...)` on to regressor models' optimizer, which rejects it.
+            (mcmc.chains !== undefined &&
+              benchmarkCase.workload.configuration.regressors.some(
+                (regressor) => regressor.predictor === true,
+              )) ||
+            benchmarkCase.workload.configuration.seasonalities.length +
+              benchmarkCase.workload.configuration.events.length +
+              benchmarkCase.workload.configuration.regressors.length ===
+              0)))
+    ) {
+      return Effect.fail(
+        new BenchmarkInputError({
+          input: "cases",
+          message: `Case ${benchmarkCase.id} must pair sampling with posterior intervals and features`,
+        }),
+      );
+    }
+
     const warmStart =
       benchmarkCase.workload.kind === "map" ? benchmarkCase.workload.warmStart : undefined;
 
@@ -681,11 +749,15 @@ const validateCaseRelationships = (
         benchmarkCase.workload.kind === "map" &&
         benchmarkCase.workload.fitRequest === "growth-only";
 
+      const sampled =
+        benchmarkCase.workload.kind === "map" && benchmarkCase.workload.mcmc !== undefined;
+
       // Flat cases may declare any changepoint settings: both libraries size and scale
-      // Prophet's prior-only flat coordinates from them.
+      // Prophet's prior-only flat coordinates from them. Sampled cases have no optimizer.
       if (
         configuration.growth === "linear" &&
         !growthOnly &&
+        !sampled &&
         (emptyPoints || benchmarkCase.workload.effectOptimizer === undefined)
       ) {
         return Effect.fail(

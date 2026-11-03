@@ -27,6 +27,12 @@ const validModule: ProphetWasmModule = {
   predict_logistic_map_with_features: () => new Float64Array([0]),
   simulate_map_with_features: () => new Float64Array([0]),
   simulate_logistic_map_with_features: () => new Float64Array([0]),
+  fit_mixed_linear_mcmc: () => new Float64Array([0]),
+  fit_mixed_flat_mcmc: () => new Float64Array([0]),
+  fit_logistic_mcmc_with_features: () => new Float64Array([0]),
+  simulate_logistic_mcmc_with_features: () => new Float64Array([0]),
+  simulate_mcmc_with_features: () => new Float64Array([0]),
+  posterior_component_ranges: () => new Float64Array([0]),
 };
 
 describe("Prophet WASM module boundary", () => {

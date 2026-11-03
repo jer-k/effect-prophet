@@ -8,12 +8,13 @@ import {
   warmStartParameters,
   type EncodedMapOptions,
   type EncodedProphetOptions,
-  type FittedProphet,
   type Growth,
   type WarmStartParameters,
 } from "../src/index";
 import { expectInputValidationError } from "./helpers/input-validation-error";
 import { collectTestSpans, requireEndedSpan } from "./internal/tracing-test-helpers";
+import { expectMapModel } from "./helpers/map-model";
+import type { FittedMapProphet } from "../src/fitted-model";
 
 const day = (offset: number) => new Date(Date.UTC(2025, 0, 1 + offset)).toISOString();
 
@@ -40,8 +41,10 @@ const logisticHistory = (length: number) =>
 const fitModel = (
   rows: Parameters<typeof fit>[0],
   options: EncodedProphetOptions,
-): Promise<FittedProphet> =>
-  Effect.runPromise(fit(rows, options).pipe(Effect.provide(prophetFittingBackendLayer)));
+): Promise<FittedMapProphet> =>
+  Effect.runPromise(
+    fit(rows, options).pipe(Effect.map(expectMapModel), Effect.provide(prophetFittingBackendLayer)),
+  );
 
 const traceFit = async (rows: Parameters<typeof fit>[0], options: EncodedProphetOptions) => {
   const { spans, tracer } = collectTestSpans();

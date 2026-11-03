@@ -1,5 +1,11 @@
 import { Effect } from "effect";
-import { fit, prophetFittingBackendLayer, warmStartParameters } from "effect-prophet";
+import {
+  fit,
+  isMcmcModel,
+  prophetFittingBackendLayer,
+  warmStartParameters,
+  type FittedProphet,
+} from "effect-prophet";
 
 const date = (day: number) => new Date(Date.UTC(2025, 0, 1 + day)).toISOString();
 
@@ -33,12 +39,12 @@ const report = await Effect.runPromise(
 
 const { model, step, finished } = report;
 
+// Models fitted with `mcmc` report a sampler instead of an optimizer.
+const objective = (fitted: FittedProphet) =>
+  isMcmcModel(fitted) ? Number.NaN : fitted.fitSummary.objective;
+
 console.log(`stopped by:      ${model.fitSummary.termination}`);
 
-console.log(
-  `one step gains:  ${(model.fitSummary.objective - step.fitSummary.objective).toFixed(3)}`,
-);
+console.log(`one step gains:  ${(objective(model) - objective(step)).toFixed(3)}`);
 
-console.log(
-  `Newton gains:    ${(model.fitSummary.objective - finished.fitSummary.objective).toFixed(3)}`,
-);
+console.log(`Newton gains:    ${(objective(model) - objective(finished)).toFixed(3)}`);

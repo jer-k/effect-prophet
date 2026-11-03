@@ -3,8 +3,39 @@ import { Effect, Schema } from "effect";
 import { InputValidationError, inputValidationErrorFromIssue } from "./errors";
 import { fnv1aSeed } from "./internal/seed-hash";
 
-/** Versioned scalar-path algorithm identity returned with every result. */
+/** Versioned scalar-path algorithm identity returned with every MAP result. */
 export const simulationIdentity = "prophet-map-scalar-xoshiro128ss-v2" as const;
+
+/**
+ * Versioned identity of posterior simulations: the same per-path algorithm and stream, with
+ * `ceil(samples / draws)` paths for each posterior draw, as Python runs them.
+ */
+export const posteriorSimulationIdentity = "prophet-mcmc-scalar-xoshiro128ss-v1" as const;
+
+/** The simulation that produced a result. */
+export type SimulationIdentity = typeof simulationIdentity | typeof posteriorSimulationIdentity;
+
+/** The simulation a model runs for a request, and the number of samples it returns. */
+export interface ExpectedSimulation {
+  readonly simulation: SimulationIdentity;
+  readonly sampleCount: number;
+}
+
+/**
+ * The simulation a model with `drawCount` posterior draws runs for `samples` requested paths.
+ * A MAP model has no draws and runs exactly the paths requested. A posterior runs
+ * `ceil(samples / draws)` paths per draw, at least one, so it can return more than requested.
+ */
+export const expectedSimulation = (
+  samples: number,
+  drawCount: number | undefined,
+): ExpectedSimulation =>
+  drawCount === undefined
+    ? { simulation: simulationIdentity, sampleCount: samples }
+    : {
+        simulation: posteriorSimulationIdentity,
+        sampleCount: Math.max(1, Math.ceil(samples / drawCount)) * drawCount,
+      };
 
 /** Stable schedule for regressor model draws; independent of the simulator's own version. */
 const regressorModelSeedSchedule = "effect-prophet-regressor-model-seed-v1";
@@ -85,14 +116,14 @@ export interface UncertaintyIntervalRow {
 export type UncertaintyResult =
   | {
       readonly kind: "intervals";
-      readonly simulation: typeof simulationIdentity;
+      readonly simulation: SimulationIdentity;
       readonly sampleCount: number;
       readonly intervalWidth: number;
       readonly rows: ReadonlyArray<UncertaintyIntervalRow>;
     }
   | {
       readonly kind: "samples";
-      readonly simulation: typeof simulationIdentity;
+      readonly simulation: SimulationIdentity;
       readonly sampleCount: number;
       readonly timestamps: ReadonlyArray<number>;
       readonly trend: Float64Array;
@@ -168,13 +199,14 @@ const isOrderedInterval = (interval: UncertaintyInterval): boolean =>
  */
 export const alignIntervalRows = <Row extends { readonly timestamp: number }>(
   result: UncertaintyResult,
-  options: Pick<UncertaintyOptions, "samples" | "intervalWidth">,
+  options: Pick<UncertaintyOptions, "intervalWidth">,
+  expected: ExpectedSimulation,
   rows: ReadonlyArray<Row>,
 ): IntervalAlignment<Row> => {
   if (
     result.kind !== "intervals" ||
-    result.simulation !== simulationIdentity ||
-    result.sampleCount !== options.samples ||
+    result.simulation !== expected.simulation ||
+    result.sampleCount !== expected.sampleCount ||
     result.intervalWidth !== options.intervalWidth ||
     result.rows.length !== rows.length
   ) {

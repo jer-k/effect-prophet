@@ -1,3 +1,4 @@
+import { bayesianDescriptions, bayesianGroup } from "./bayesian-cases.ts";
 import { countryCalendarGroup, countryDescriptionsFor } from "./country-cases.ts";
 import type { CaseDescription } from "./suite.ts";
 
@@ -28,6 +29,7 @@ export const flatGroups = [
     intro:
       "Both libraries simulate possible futures with random draws, so individual simulated values never match. Each range must still match Python's within the variation expected from that many draws. Anomaly cases also check that both libraries flag the outliers in a history.",
   },
+  bayesianGroup,
   {
     id: "evaluation",
     title: "Cross-validation and choosing settings",
@@ -47,6 +49,7 @@ const prefix = (days: number, scaling: string, length: number): CaseDescription 
 
 /** One entry per benchmarked case ID. The site build fails if a run contains a case without one. */
 export const flatCaseDescriptions = {
+  ...bayesianDescriptions.flat,
   ...countryDescriptionsFor("flat"),
   "flat-defaults-level": {
     group: "defaults",
