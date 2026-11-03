@@ -201,7 +201,7 @@ impl Default for LinearOptimizerOptions {
 /// Prophet's initialization, overridden like `CmdStanPyBackend.sanitize_custom_inits`:
 /// `k`, `m` and `sigma_obs` always, and `delta` or `beta` only when its length matches.
 /// Stan reads `sigma_obs` through its lower bound, so the state holds its logarithm.
-fn initial_state(
+pub(crate) fn initial_state(
   objective: &impl StanMapObjective,
   warm_start: Option<&WarmStart>,
 ) -> (Vec<f64>, Initialization) {

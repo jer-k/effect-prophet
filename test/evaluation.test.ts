@@ -39,6 +39,28 @@ const failure = (days: ReadonlyArray<number>, input: Parameters<typeof planRolli
     expectInputValidationError,
   );
 
+describe("crossValidate with mcmc", () => {
+  it("rejects posterior sampling before fitting any fold", async () => {
+    const rows = [0, 1, 2, 3, 4, 5].map((day) => ({ timestamp: at(day), value: day }));
+
+    const plan = {
+      horizonMs: dayMs,
+      cutoffs: { mode: "explicit", timestamps: [at(3)] },
+    } as const;
+
+    const error = await Effect.runPromise(
+      Effect.flip(
+        crossValidate(rows, { mcmc: { samples: 20, seed: 1 } }, plan).pipe(
+          Effect.provide(prophetFittingBackendLayer),
+        ),
+      ),
+    );
+
+    expect(error._tag).toBe("InputValidationError");
+    expect(error.message).toContain("posterior sampling");
+  });
+});
+
 describe("planRollingOrigin", () => {
   it("preserves duplicate training and assessment rows across public rolling-origin fits", async () => {
     const rows = [5, 1, 0, 1, 2, 3, 3, 4].map((day, index) => ({

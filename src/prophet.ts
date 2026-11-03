@@ -21,8 +21,11 @@ import {
   type CountryHolidayModel,
 } from "./internal/country-holiday-model";
 import {
+  isMcmcModel,
   parseFittedModel,
+  posteriorDrawCount,
   type FittedFlatMapProphet,
+  type FittedMcmcProphet,
   type FittedLogisticMapProphet,
   type FittedPiecewiseMapProphet,
   type FittedProphet,
@@ -57,6 +60,10 @@ import {
 } from "./internal/wasm-map-uncertainty-backend";
 import { predictLogisticMapWithWasm } from "./internal/wasm-logistic-map-backend";
 import {
+  posteriorComponentRangesWithWasm,
+  simulateMcmcWithWasm,
+} from "./internal/wasm-mcmc-backend";
+import {
   predictMixedFlatMapWithWasm,
   predictMixedLinearMapWithWasm,
   type MixedMapPredictionBatch,
@@ -77,7 +84,9 @@ import {
   type ProphetOptions,
 } from "./options";
 import { decodePredictionRows, type PredictionRow, type PredictionRows } from "./prediction-row";
+import { sortedLinearQuantile } from "./internal/linear-quantile";
 import {
+  originalUnitCoefficient,
   projectRegressorCoefficient,
   type FittedRegressor,
   type RegressorCoefficient,
@@ -89,9 +98,10 @@ import { defaultTargetScalingMode } from "./target-scaling";
 import {
   deriveRegressorModelSeed,
   exceedsSimulationBudget,
+  expectedSimulation,
   parseUncertaintyOptions,
-  simulationIdentity,
   type EncodedUncertaintyOptions,
+  type UncertaintyInterval,
   type UncertaintyOptions,
   type UncertaintyResult,
 } from "./uncertainty";
@@ -181,6 +191,22 @@ const makeFitPlan = (
   logisticBounds?: LogisticTrainingBounds,
 ): FitPlan => {
   const warmStart = options.map.warmStart === undefined ? {} : { warmStart: options.map.warmStart };
+
+  if (options.mcmc !== undefined && options.growth !== "logistic") {
+    return FitPlan.Mcmc({
+      growth: options.growth,
+      scaling: options.scaling ?? defaultTargetScalingMode,
+      seasonalities: layout,
+      changepoints: options.map.changepoints,
+      changepointPriorScale: options.map.changepointPriorScale,
+      mcmc: options.mcmc,
+      seasonalityMasks: masks,
+      additionalFeatures,
+      events: options.events,
+      regressors,
+      ...warmStart,
+    });
+  }
 
   if (options.growth === "logistic" && logisticBounds !== undefined) {
     return FitPlan.LogisticPiecewiseMap({
@@ -471,13 +497,13 @@ const fitRegressorModels = Effect.fnUntraced(function* (
       Effect.withSpan("Prophet.fitRegressorModel"),
     );
 
-    // Regressor model options cannot select logistic growth.
-    if (model.model === "logistic-piecewise-map") {
+    // Regressor model options cannot select logistic growth or posterior sampling.
+    if (model.model === "logistic-piecewise-map" || isMcmcModel(model)) {
       return yield* new FittingError({
         reason: "backend-failure",
         observationCount: observations.length,
         regressor: request.name,
-        message: `The model for regressor '${request.name}' must not use logistic growth`,
+        message: `The model for regressor '${request.name}' must be a flat or linear MAP model`,
       });
     }
 
@@ -703,7 +729,8 @@ const fitObservations = Effect.fnUntraced(function* (
 type FittedSeasonalProphet =
   | FittedFlatMapProphet
   | FittedPiecewiseMapProphet
-  | FittedLogisticMapProphet;
+  | FittedLogisticMapProphet
+  | FittedMcmcProphet;
 
 type SeasonalPredictionBatch = {
   readonly values: Float64Array;
@@ -1032,7 +1059,7 @@ const predictPiecewiseMapForecasts = (
       });
 
 const predictMixedMapForecasts = (
-  model: FittedFlatMapProphet | FittedPiecewiseMapProphet,
+  model: FittedFlatMapProphet | FittedPiecewiseMapProphet | FittedMcmcProphet,
   timestamps: PredictionTimestamps,
   alignedRegressorValues: ReadonlyArray<ReadonlyArray<number>>,
   masks: SeasonalityMaskMatrix,
@@ -1048,7 +1075,7 @@ const predictMixedMapForecasts = (
     );
 
     const batch =
-      model.model === "linear-piecewise-map"
+      model.model === "linear-piecewise-map" || model.model === "linear-piecewise-mcmc"
         ? yield* predictMixedLinearMapWithWasm(model, timestamps, masks, features)
         : yield* predictMixedFlatMapWithWasm(model, timestamps, masks, features);
 
@@ -1104,11 +1131,43 @@ const predictFittedSeasonalModel = (
         }),
       );
 
-/** Return fitted regressor coefficients in original input units. */
+/** Python's `interval_width` default, which `regressor_coefficients` uses for its range. */
+const coefficientIntervalWidth = 0.8;
+
+/**
+ * Return fitted regressor coefficients in original input units, like Python's
+ * `regressor_coefficients`.
+ *
+ * For a model fitted with `mcmc`, each coefficient is its posterior mean, and
+ * `coefficientInterval` is the range over the draws at Python's default 80% width, as its
+ * `coef_lower` and `coef_upper` are.
+ */
 export const getRegressorCoefficients = (
   model: FittedProphet,
 ): ReadonlyArray<RegressorCoefficient> =>
-  Object.freeze(model.regressors.map(projectRegressorCoefficient));
+  Object.freeze(
+    model.regressors.map((regressor, index) => {
+      const projected = projectRegressorCoefficient(regressor);
+
+      if (!isMcmcModel(model)) {
+        return projected;
+      }
+
+      const draws = model.posterior.regressorCoefficients
+        .map((row) => originalUnitCoefficient(regressor, row[index] ?? Number.NaN))
+        .sort((left, right) => left - right);
+
+      const tail = (1 - coefficientIntervalWidth) / 2;
+
+      return Object.freeze({
+        ...projected,
+        coefficientInterval: Object.freeze({
+          lower: sortedLinearQuantile(draws, tail) ?? Number.NaN,
+          upper: sortedLinearQuantile(draws, 1 - tail) ?? Number.NaN,
+        }),
+      });
+    }),
+  );
 
 /**
  * Predict point forecasts and decomposed components at validated rows.
@@ -1347,6 +1406,17 @@ const predictRows = Effect.fnUntraced(function* (
     );
   }
 
+  // Python's point forecasts use the posterior means, which a posterior keeps as its fields.
+  if (isMcmcModel(parsedModel)) {
+    return yield* predictMixedMapForecasts(
+      parsedModel,
+      timestamps,
+      alignedRegressorValues,
+      masks,
+      events,
+    );
+  }
+
   return yield* predictFittedSeasonalModel(
     parsedModel,
     timestamps,
@@ -1356,23 +1426,43 @@ const predictRows = Effect.fnUntraced(function* (
   );
 });
 
-const emptyUncertaintyResult = (options: UncertaintyOptions): UncertaintyResult =>
-  options.output === "samples"
+/**
+ * The draws a posterior keeps, for results with no rows to simulate, read without trusting the
+ * model: a malformed one fails later, at the first call that has rows.
+ */
+const keptDrawCount = (model: FittedProphet): number | undefined => {
+  const posterior: unknown = isMcmcModel(model) ? model.posterior : undefined;
+
+  if (!Predicate.hasProperty(posterior, "noiseScale") || !Array.isArray(posterior.noiseScale)) {
+    return undefined;
+  }
+
+  return posterior.noiseScale.length > 0 ? posterior.noiseScale.length : undefined;
+};
+
+const emptyUncertaintyResult = (
+  options: UncertaintyOptions,
+  model: FittedProphet,
+): UncertaintyResult => {
+  const { simulation, sampleCount } = expectedSimulation(options.samples, keptDrawCount(model));
+
+  return options.output === "samples"
     ? {
         kind: "samples",
-        simulation: simulationIdentity,
-        sampleCount: options.samples,
+        simulation,
+        sampleCount,
         timestamps: [],
         trend: new Float64Array(),
         value: new Float64Array(),
       }
     : {
         kind: "intervals",
-        simulation: simulationIdentity,
-        sampleCount: options.samples,
+        simulation,
+        sampleCount,
         intervalWidth: options.intervalWidth,
         rows: [],
       };
+};
 
 /**
  * Simulate seeded MAP predictive samples or intervals for complete MAP rows.
@@ -1393,7 +1483,7 @@ export const predictUncertainty = Effect.fn("Prophet.predictUncertainty")(functi
   const firstRow = rows[0];
 
   if (firstRow === undefined) {
-    return emptyUncertaintyResult(options);
+    return emptyUncertaintyResult(options, model);
   }
 
   const parsedModel = yield* parseFittedModel(model).pipe(
@@ -1487,30 +1577,19 @@ const regressorModelFutureRows = (model: FittedProphet, rows: PredictionRows): A
     : rows.flatMap((row, index) => (row.timestamp > historyEnd ? [index] : []));
 };
 
-/** Simulate rows whose forecast regressor values are already filled. */
-const simulateRows = Effect.fnUntraced(function* (
+/** Align rows' conditions and regressors, and resolve their events and seasonality masks. */
+const alignPredictionRows = Effect.fnUntraced(function* (
   parsedModel: FittedProphet,
   rows: PredictionRows,
-  options: UncertaintyOptions,
 ): Effect.fn.Return<
-  UncertaintyResult,
-  InputValidationError | PredictionError | CountryHolidayError
+  {
+    readonly timestamps: PredictionTimestamps;
+    readonly alignedRegressors: ReadonlyArray<ReadonlyArray<number>>;
+    readonly events: EventCalendar;
+    readonly masks: SeasonalityMaskMatrix;
+  },
+  InputValidationError | CountryHolidayError
 > {
-  const firstRow = rows[0];
-
-  if (firstRow === undefined) {
-    return emptyUncertaintyResult(options);
-  }
-
-  const logisticBounds =
-    parsedModel.model === "logistic-piecewise-map"
-      ? yield* parseLogisticPredictionBounds(rows, parsedModel.targetScaling.floorPolicy)
-      : undefined;
-
-  if (parsedModel.model !== "logistic-piecewise-map") {
-    yield* rejectNonLogisticPredictionBounds(rows);
-  }
-
   const names = conditionNamesFromLayout(parsedModel.seasonalities);
 
   const alignedConditions = yield* alignConditionValues(rows, names, "prediction-rows").pipe(
@@ -1530,25 +1609,185 @@ const simulateRows = Effect.fnUntraced(function* (
     Effect.mapError((error) => conditionValidationError("prediction-rows", error)),
   );
 
+  return { timestamps, alignedRegressors, events, masks };
+});
+
+/** One named component's range over the posterior draws. */
+export interface ComponentInterval {
+  readonly name: string;
+  readonly interval: UncertaintyInterval;
+}
+
+/**
+ * A posterior's ranges for each component at one row, like Python's `_lower` and `_upper`
+ * columns: additive values in observation units, multiplicative ones as factors.
+ */
+export interface ForecastComponentIntervals {
+  readonly additive: UncertaintyInterval;
+  readonly multiplicative: UncertaintyInterval;
+  readonly seasonalities: ReadonlyArray<ComponentInterval>;
+  readonly events: ReadonlyArray<ComponentInterval>;
+  readonly regressors: ReadonlyArray<ComponentInterval>;
+}
+
+/**
+ * Each row's component ranges over a posterior's draws, or `undefined` for a MAP model, whose
+ * components have no spread. Rows must already hold every forecast regressor value.
+ */
+const posteriorComponentIntervals = Effect.fnUntraced(function* (
+  parsedModel: FittedProphet,
+  rows: PredictionRows,
+  intervalWidth: number,
+): Effect.fn.Return<
+  ReadonlyArray<ForecastComponentIntervals> | undefined,
+  InputValidationError | PredictionError | CountryHolidayError
+> {
+  if (!isMcmcModel(parsedModel) || rows.length === 0) {
+    return undefined;
+  }
+
+  const { timestamps, alignedRegressors, events, masks } = yield* alignPredictionRows(
+    parsedModel,
+    rows,
+  );
+
+  const { features } = yield* makePredictionFeatures(
+    timestamps,
+    alignedRegressors,
+    masks,
+    events,
+    parsedModel.regressors,
+  );
+
+  const ranges = yield* posteriorComponentRangesWithWasm(
+    parsedModel,
+    timestamps,
+    masks,
+    features,
+    intervalWidth,
+  );
+
+  const names = [
+    ...parsedModel.seasonalities.components.map((component) => component.definition.name),
+    ...events.layout.components.map((component) => component.name),
+    ...parsedModel.regressors.map((regressor) => regressor.definition.name),
+  ];
+
+  const seasonalCount = parsedModel.seasonalities.components.length;
+  const eventCount = events.layout.components.length;
+  const series = names.length + 2;
+
+  return timestamps.map((_, row) => {
+    const interval = (index: number): UncertaintyInterval =>
+      Object.freeze({
+        lower: ranges[(row * series + index) * 2] ?? Number.NaN,
+        upper: ranges[(row * series + index) * 2 + 1] ?? Number.NaN,
+      });
+
+    const named = (start: number, count: number) =>
+      Object.freeze(
+        names
+          .slice(start, start + count)
+          .map((name, offset) => Object.freeze({ name, interval: interval(2 + start + offset) })),
+      );
+
+    return Object.freeze({
+      additive: interval(0),
+      multiplicative: interval(1),
+      seasonalities: named(0, seasonalCount),
+      events: named(seasonalCount, eventCount),
+      regressors: named(seasonalCount + eventCount, parsedModel.regressors.length),
+    });
+  });
+});
+
+/**
+ * Each row's component ranges over a posterior's draws, for `predictWithIntervals`, or
+ * `undefined` for a MAP model.
+ */
+export const predictComponentIntervals = Effect.fnUntraced(function* (
+  model: FittedProphet,
+  rowsInput: Parameters<typeof decodePredictionRows>[0],
+  intervalWidth: number,
+): Effect.fn.Return<
+  ReadonlyArray<ForecastComponentIntervals> | undefined,
+  InputValidationError | PredictionError | CountryHolidayError
+> {
+  const rows = yield* decodePredictionRows(rowsInput);
+  const firstRow = rows[0];
+
+  if (firstRow === undefined || !isMcmcModel(model)) {
+    return undefined;
+  }
+
+  const parsedModel = yield* parseFittedModel(model).pipe(
+    Effect.mapError(
+      () =>
+        new PredictionError({
+          reason: "invalid-model",
+          timestamp: firstRow.timestamp,
+          message: "Fitted model is invalid",
+        }),
+    ),
+  );
+
+  const filledRows = yield* fillRegressorModelValues(parsedModel, rows);
+
+  return yield* posteriorComponentIntervals(parsedModel, filledRows, intervalWidth);
+});
+
+/** Simulate rows whose forecast regressor values are already filled. */
+const simulateRows = Effect.fnUntraced(function* (
+  parsedModel: FittedProphet,
+  rows: PredictionRows,
+  options: UncertaintyOptions,
+): Effect.fn.Return<
+  UncertaintyResult,
+  InputValidationError | PredictionError | CountryHolidayError
+> {
+  const firstRow = rows[0];
+
+  if (firstRow === undefined) {
+    return emptyUncertaintyResult(options, parsedModel);
+  }
+
+  const logisticBounds =
+    parsedModel.model === "logistic-piecewise-map"
+      ? yield* parseLogisticPredictionBounds(rows, parsedModel.targetScaling.floorPolicy)
+      : undefined;
+
+  if (parsedModel.model !== "logistic-piecewise-map") {
+    yield* rejectNonLogisticPredictionBounds(rows);
+  }
+
+  const { timestamps, alignedRegressors, events, masks } = yield* alignPredictionRows(
+    parsedModel,
+    rows,
+  );
+
+  const trend = "timeOrigin" in parsedModel ? parsedModel : undefined;
+
   const horizon =
-    parsedModel.model !== "flat-map"
-      ? Math.max(0, (Math.max(...timestamps) - parsedModel.timeOrigin) / parsedModel.timeScale - 1)
-      : 0;
+    trend === undefined
+      ? 0
+      : Math.max(0, (Math.max(...timestamps) - trend.timeOrigin) / trend.timeScale - 1);
 
   const future = regressorModelFutureRows(parsedModel, rows);
+  const expected = expectedSimulation(options.samples, posteriorDrawCount(parsedModel));
+  const changepointCount = trend?.deltas.length ?? 0;
 
   // Regressor model draws are held in full, so their rows are bounded like sample output.
   if (
-    exceedsSimulationBudget(timestamps.length, options.samples, options.output) ||
+    exceedsSimulationBudget(timestamps.length, expected.sampleCount, options.output) ||
     exceedsSimulationBudget(future.length, options.samples, "samples") ||
-    (parsedModel.model !== "flat-map" && parsedModel.deltas.length > 10_000) ||
+    changepointCount > 10_000 ||
     horizon > 20 ||
-    (parsedModel.model !== "flat-map" && parsedModel.deltas.length * horizon > 256)
+    changepointCount * horizon > 256
   ) {
     return yield* new PredictionError({
       reason: "simulation-limit",
       timestamp: firstRow.timestamp,
-      message: "MAP simulation exceeds its bounded row, draw or horizon budget",
+      message: "Simulation exceeds its bounded row, draw or horizon budget",
     });
   }
 
@@ -1559,6 +1798,10 @@ const simulateRows = Effect.fnUntraced(function* (
     events,
     parsedModel.regressors,
   );
+
+  if (isMcmcModel(parsedModel)) {
+    return yield* simulateMcmcWithWasm(parsedModel, timestamps, masks, features, options);
+  }
 
   const offsets = yield* regressorModelOffsets(parsedModel, rows, future, options);
 

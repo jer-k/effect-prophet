@@ -146,9 +146,21 @@ export {
 
 export {
   predictWithIntervals,
+  type ComponentInterval,
+  type ForecastComponentIntervals,
   type ForecastWithIntervals,
   type ForecastsWithIntervals,
 } from "./predict-with-intervals";
+
+export {
+  maximumMcmcChains,
+  maximumMcmcDraws,
+  maximumMcmcWarmup,
+  maximumPosteriorValues,
+  type EncodedMcmcOptions,
+  type McmcDiagnostics,
+  type McmcOptions,
+} from "./mcmc";
 
 export { prophetFittingBackendLayer } from "./internal/prophet-fitting-backend";
 
@@ -158,8 +170,10 @@ export {
   type EncodedFittedModel,
   type EncodedFittedRegressor,
   type EncodedFlatMapModel,
+  type EncodedFlatMcmcModel,
   type EncodedLogisticMapModel,
   type EncodedPiecewiseMapModel,
+  type EncodedPiecewiseMcmcModel,
   type EncodedRegressorModel,
   type SerializableFittedModel,
 } from "./model-serialization";
@@ -206,9 +220,14 @@ export {
 } from "./linear-optimizer";
 
 export {
+  isMcmcModel,
   type FittedFlatMapProphet,
+  type FittedFlatMcmcProphet,
   type FittedLogisticMapProphet,
+  type FittedMapProphet,
+  type FittedMcmcProphet,
   type FittedPiecewiseMapProphet,
+  type FittedPiecewiseMcmcProphet,
   type FittedProphet,
   type FlatMapParameters,
   type LogisticMapParameters,
@@ -255,9 +274,11 @@ export {
   defaultIntervalWidth,
   maximumSampleCells,
   maximumSimulationRows,
+  posteriorSimulationIdentity,
   simulationIdentity,
   type EncodedIntervalOptions,
   type EncodedUncertaintyOptions,
+  type SimulationIdentity,
   type UncertaintyInterval,
   type UncertaintyIntervalRow,
   type UncertaintyOptions,
@@ -268,6 +289,7 @@ export { warmStartParameters, type WarmStartParameters } from "./warm-start";
 
 export {
   parseRegressorDefinitions,
+  type CoefficientInterval,
   type EncodedRegressorDefinition,
   type EncodedRegressorModelOptions,
   type EncodedRegressorStandardization,

@@ -7,7 +7,9 @@ import {
   parseFlatMapModel,
   parsePiecewiseMapModel,
   type FittedFlatMapProphet,
+  type FittedFlatMcmcProphet,
   type FittedPiecewiseMapProphet,
+  type FittedPiecewiseMcmcProphet,
   type FlatMapParameters,
   type PiecewiseMapParameters,
 } from "../fitted-model";
@@ -100,7 +102,8 @@ const componentModeAttribute = (
   features: KnownAdditiveFeatures,
 ): "mixed" | "additive" => (hasMultiplicativeMode(seasonalities, features) ? "mixed" : "additive");
 
-const fittingFailure = (
+/** Classify a failed mixed linear or flat fit frame. */
+export const fittingFailure = (
   packed: Float64Array,
   observationCount: number,
   model: "flat" | "linear",
@@ -583,7 +586,11 @@ export const fitFlatStanMapWithWasm = (
 };
 
 const predictMixed = (
-  model: FittedFlatMapProphet | FittedPiecewiseMapProphet,
+  model:
+    | FittedFlatMapProphet
+    | FittedPiecewiseMapProphet
+    | FittedFlatMcmcProphet
+    | FittedPiecewiseMcmcProphet,
   timestamps: ReadonlyArray<number>,
   masks: SeasonalityMaskMatrix,
   features: KnownAdditiveFeatures,
@@ -642,7 +649,7 @@ const predictMixed = (
 
     const packed = yield* attemptWasmPrediction(
       () =>
-        model.model === "linear-piecewise-map"
+        "intercept" in model
           ? module.predict_mixed_linear_map(
               ...shared,
               model.intercept,
@@ -722,7 +729,7 @@ const predictMixed = (
 
 /** Predict mixed linear MAP rows through one coarse Rust/WASM call. */
 export const predictMixedLinearMapWithWasm = (
-  model: FittedPiecewiseMapProphet,
+  model: FittedPiecewiseMapProphet | FittedPiecewiseMcmcProphet,
   timestamps: ReadonlyArray<number>,
   masks: SeasonalityMaskMatrix,
   features: KnownAdditiveFeatures,
@@ -731,7 +738,7 @@ export const predictMixedLinearMapWithWasm = (
 
 /** Predict mixed flat MAP rows through one coarse Rust/WASM call. */
 export const predictMixedFlatMapWithWasm = (
-  model: FittedFlatMapProphet,
+  model: FittedFlatMapProphet | FittedFlatMcmcProphet,
   timestamps: ReadonlyArray<number>,
   masks: SeasonalityMaskMatrix,
   features: KnownAdditiveFeatures,

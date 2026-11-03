@@ -5,6 +5,7 @@ pub(crate) mod flat_map;
 pub(crate) mod logistic_map;
 pub(crate) mod map;
 pub(crate) mod map_uncertainty;
+pub(crate) mod mcmc;
 pub(crate) mod mixed_map;
 pub(crate) mod protocol;
 

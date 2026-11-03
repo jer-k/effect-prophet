@@ -85,6 +85,22 @@ const search = (input: ModelSearchInput) =>
   searchModels(rows, input).pipe(Effect.provide(prophetFittingBackendLayer));
 
 describe("searchModels", () => {
+  it("rejects candidates that sample a posterior", async () => {
+    const error = await Effect.runPromise(
+      Effect.flip(
+        search({
+          candidates: [{ id: "posterior", options: { mcmc: { samples: 20, seed: 1 } } }],
+          plan,
+          objective,
+          failurePolicy: "record",
+          includeCrossValidation: true,
+        }),
+      ),
+    );
+
+    expect(error._tag).toBe("InputValidationError");
+  });
+
   it("owns country selection and coverage policy in candidate options", async () => {
     const countryHolidays = { country: "US", coverage: "allow-known-gaps" as const, priorScale: 7 };
 

@@ -94,13 +94,23 @@ export type RegressorCoefficient =
       readonly mode: "additive";
       readonly coefficient: number;
       readonly center: number;
+
+      /** For a model fitted with `mcmc`, the 80% range over its draws, like `coef_lower`. */
+      readonly coefficientInterval?: CoefficientInterval;
     }
   | {
       readonly name: string;
       readonly mode: "multiplicative";
       readonly coefficient: number;
       readonly center: number;
+      readonly coefficientInterval?: CoefficientInterval;
     };
+
+/** A range of a coefficient over posterior draws, in original input units. */
+export interface CoefficientInterval {
+  readonly lower: number;
+  readonly upper: number;
+}
 
 /** A structured failure to parse or construct regressor metadata. */
 export class InvalidRegressors extends Schema.TaggedError<InvalidRegressors>()(
@@ -338,18 +348,17 @@ export const parseRegressorDefinitionsAndModels = Effect.fn("Prophet.parseRegres
   parseDefinitionsAndModels,
 );
 
+/** Convert a coefficient fitted on the regressor's transformed values to original units. */
+export const originalUnitCoefficient = (regressor: FittedRegressor, coefficient: number): number =>
+  regressor.transform.mode === "standardized"
+    ? coefficient / regressor.transform.sampleStandardDeviation
+    : coefficient;
+
 /** Project a fitted transformed-feature coefficient into original regressor units. */
 export const projectRegressorCoefficient = (regressor: FittedRegressor): RegressorCoefficient =>
-  regressor.transform.mode === "standardized"
-    ? Object.freeze({
-        name: regressor.definition.name,
-        mode: regressor.definition.mode,
-        coefficient: regressor.coefficient / regressor.transform.sampleStandardDeviation,
-        center: regressor.transform.mean,
-      })
-    : Object.freeze({
-        name: regressor.definition.name,
-        mode: regressor.definition.mode,
-        coefficient: regressor.coefficient,
-        center: 0,
-      });
+  Object.freeze({
+    name: regressor.definition.name,
+    mode: regressor.definition.mode,
+    coefficient: originalUnitCoefficient(regressor, regressor.coefficient),
+    center: regressor.transform.mode === "standardized" ? regressor.transform.mean : 0,
+  });

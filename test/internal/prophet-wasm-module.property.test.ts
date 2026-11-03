@@ -31,6 +31,10 @@ const exportSignatures = [
   ["predict_logistic_map_with_features", "aaannnnnnnnaanaaaanaaaaa"],
   ["simulate_map_with_features", "annnnnnnnaanaaaanaaaaaaaannnn"],
   ["simulate_logistic_map_with_features", "aaannnnnnnnaanaaaanaaaaaaaannnn"],
+  ["fit_mixed_linear_mcmc", "aannannaaaanaaaaanaa"],
+  ["fit_mixed_flat_mcmc", "aannannaaaanaaaaanaa"],
+  ["simulate_mcmc_with_features", "annnnnnanaaaanaaaaaaannnn"],
+  ["posterior_component_ranges", "annnnnnanaaaanaaaan"],
 ] as const satisfies ReadonlyArray<readonly [keyof ProphetWasmModule, string]>;
 
 type WireArgument = Float64Array | number;

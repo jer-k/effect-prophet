@@ -29,12 +29,18 @@ import { predictionRowFromObservation } from "./prediction-row";
 import {
   checkExplicitChangepointBounds,
   decodeOptions,
+  rejectMcmcOptions,
   optionsValidationErrorFromSeasonality,
   type EncodedProphetOptions,
   type ProphetOptions,
 } from "./options";
 import { fit, predict, predictUncertainty } from "./prophet";
-import { alignIntervalRows, exceedsSimulationBudget, simulationIdentity } from "./uncertainty";
+import {
+  alignIntervalRows,
+  exceedsSimulationBudget,
+  expectedSimulation,
+  simulationIdentity,
+} from "./uncertainty";
 import type { CountryHolidayError } from "./country-holidays";
 import type { FittedProphet } from "./fitted-model";
 import type { SeasonalityLayout } from "./seasonality";
@@ -461,6 +467,8 @@ const prepareRollingOrigin = (
     const observations = yield* decodeObservations(observationsInput);
     const originalOptions = yield* decodeOptions(optionsInput);
 
+    yield* rejectMcmcOptions(originalOptions, "Cross-validation");
+
     yield* checkExplicitChangepointBounds(observations, originalOptions);
 
     const plan = yield* decodePlan(input).pipe(
@@ -760,7 +768,12 @@ const crossValidateOperation = Effect.fn("Prophet.crossValidate")(function* (
           output: "intervals",
         }).pipe(Effect.mapError((cause) => foldFailure(fold, "uncertainty", cause)));
 
-        const alignment = alignIntervalRows(intervals, uncertainty, pointRows);
+        const alignment = alignIntervalRows(
+          intervals,
+          uncertainty,
+          expectedSimulation(uncertainty.samples, undefined),
+          pointRows,
+        );
 
         if (alignment.kind === "frame-mismatch") {
           return yield* foldFailure(

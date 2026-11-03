@@ -2,6 +2,7 @@ import { Layer } from "effect";
 
 import { FitPlan, FittingBackend } from "./fitting-backend";
 import { fitLogisticMapWithWasm } from "./wasm-logistic-map-backend";
+import { fitMcmcWithWasm } from "./wasm-mcmc-backend";
 import {
   fitFlatStanMapWithWasm,
   fitMixedLinearMapWithWasm,
@@ -81,6 +82,12 @@ export const prophetFittingBackendLayer: Layer.Layer<FittingBackend> = Layer.suc
             regressors,
             warmStart,
           ),
+        Mcmc: ({ seasonalityMasks, additionalFeatures, _tag, ...request }) =>
+          fitMcmcWithWasm(input, {
+            ...request,
+            masks: seasonalityMasks,
+            features: additionalFeatures,
+          }),
         FlatStanMap: ({
           scaling,
           seasonalities,

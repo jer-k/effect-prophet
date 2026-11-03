@@ -17,6 +17,7 @@ import { FitPlan, FittingBackend } from "../src/internal/fitting-backend";
 import { defaultAutomaticMapOptions } from "../src/options";
 import { fixedPiecewiseParameters } from "./helpers/fixed-piecewise-model";
 import { makeTestFittingBackend } from "./internal/fitting-backend-test-layer";
+import { expectMapModel } from "./helpers/map-model";
 
 const observations = [
   { timestamp: "2024-01-01T00:00:00.000Z", value: 2 },
@@ -57,10 +58,12 @@ describe("linear MAP Prophet integration", () => {
     // More coefficients than rows: the MAP has no finite maximum, and pinned Stan's
     // endpoint density moves with single Fourier ULPs (Python ARM64 and AMD64 differ
     // by 0.31). Require convergence and interpolation rather than a density floor.
-    expect(model.fitSummary.method).toBe("flat-map-stan-v1");
-    expect(model.fitSummary.iterations).toBeLessThan(1_000);
-    expect(model.fitSummary.termination).not.toBe("iteration-limit");
-    expect(Number.isFinite(model.fitSummary.objective)).toBe(true);
+    const summary = expectMapModel(model).fitSummary;
+
+    expect(summary.method).toBe("flat-map-stan-v1");
+    expect(summary.iterations).toBeLessThan(1_000);
+    expect(summary.termination).not.toBe("iteration-limit");
+    expect(Number.isFinite(summary.objective)).toBe(true);
 
     const predictions = await Effect.runPromise(
       predict(

@@ -10,7 +10,8 @@ Python, where it differs on purpose, and the smaller behavior differences.
 
 ## Not available yet
 
-- Full Bayesian fitting (`mcmc_samples`)
+- [Full Bayesian fitting](../examples/bayesian) with logistic growth or regressors forecast by
+  their own models, and in cross-validation, model search and holdout checks
 
 ## Different on purpose
 
@@ -55,7 +56,20 @@ Python, where it differs on purpose, and the smaller behavior differences.
   [`predictWithIntervals`](../examples/uncertainty), or `predictUncertainty` for ranges alone.
   They need a seed, so results are repeatable.
 
+- Full Bayesian fitting needs a `seed`; Python picks a random one when you don't give one. See
+  [Full Bayesian fitting](../examples/bayesian).
+
 ## Small behavior differences
+
+- **Bayesian chains.** The sampler is a port of Stan's NUTS, but its chains can't match CmdStan's
+  draw for draw: tiny rounding differences grow along a chain. Posterior means and ranges agree
+  with Python's within the variation expected from that many draws.
+- **Size limits on Bayesian fitting.** Up to 16 chains, 100,000 warmup iterations per chain,
+  20,000 kept draws and 2,000,000 kept values (draws times parameters). Past these, `fit` fails
+  with a `FittingError` whose `reason` is `"sampling-limit"`. Python has no such limits.
+- **Regressor coefficient ranges.** `getRegressorCoefficients` always uses an 80% range, Python's
+  default `interval_width`. Python's `regressor_coefficients` uses the model's own
+  `interval_width`.
 
 - **Uncertainty simulation.** Ranges use Prophet's per-path simulation (`vectorized=False`), not
   Python's default shortcut. The shortcut only allows trend changes at the requested rows and

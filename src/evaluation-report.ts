@@ -21,7 +21,7 @@ import {
   validationMessageFromIssue,
 } from "./errors";
 import type { CountryHolidayError } from "./country-holidays";
-import type { FittedProphet } from "./fitted-model";
+import { isMcmcModel, type FittedMcmcProphet, type FittedProphet } from "./fitted-model";
 import type { FittingBackend } from "./internal/fitting-backend";
 import { maximumSearchCandidates } from "./internal/search-limits";
 import {
@@ -39,11 +39,13 @@ import { predictionRowFromObservation } from "./prediction-row";
 import {
   checkExplicitChangepointBounds,
   decodeOptions,
+  rejectMcmcOptions,
   type EncodedProphetOptions,
 } from "./options";
 import { fit, predict, predictUncertainty } from "./prophet";
 import {
   alignIntervalRows,
+  expectedSimulation,
   exceedsSimulationBudget,
   simulationIdentity,
   parseUncertaintyOptions,
@@ -665,6 +667,9 @@ export const evaluateHoldout = Effect.fn("Prophet.evaluateHoldout")(function* (
   }
 
   const options = yield* decodeOptions(selectedCandidate.options);
+
+  yield* rejectMcmcOptions(options, "Holdout evaluation");
+
   const ownedOptions = copyFrozen(selectedCandidate.options);
   yield* checkExplicitChangepointBounds(development, options);
 
@@ -764,7 +769,12 @@ export const evaluateHoldout = Effect.fn("Prophet.evaluateHoldout")(function* (
         Effect.mapError((cause) => failure("uncertainty", "operation-failed", cause)),
       );
 
-      const alignment = alignIntervalRows(intervals, uncertainty, points);
+      const alignment = alignIntervalRows(
+        intervals,
+        uncertainty,
+        expectedSimulation(uncertainty.samples, undefined),
+        points,
+      );
 
       if (alignment.kind === "frame-mismatch") {
         return yield* failure("result", "result-mismatch");
@@ -832,6 +842,10 @@ export const evaluateHoldout = Effect.fn("Prophet.evaluateHoldout")(function* (
         forecasts: values,
         metrics: baselineMetrics,
       });
+    }
+
+    if (isMcmcModel(model)) {
+      return yield* Effect.die(new Error("Holdout evaluation rejected posterior sampling"));
     }
 
     const summary = modelSummary(model);
@@ -924,7 +938,7 @@ export const evaluateHoldout = Effect.fn("Prophet.evaluateHoldout")(function* (
   return executed;
 });
 
-const modelSummary = (model: FittedProphet) => {
+const modelSummary = (model: Exclude<FittedProphet, FittedMcmcProphet>) => {
   const { method, termination, observationCount, iterations, objective, stationarityResidual } =
     model.fitSummary;
 

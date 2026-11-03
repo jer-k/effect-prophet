@@ -47,6 +47,7 @@ const FittingFailureReasonSchema = Schema.Literals([
   "non-finite-result",
   "non-convergence",
   "memory-limit",
+  "sampling-limit",
   "backend-failure",
 ]);
 
@@ -107,6 +108,7 @@ export type FittingFailureReason =
   | "non-finite-result"
   | "non-convergence"
   | "memory-limit"
+  | "sampling-limit"
   | "backend-failure";
 
 export type PredictionFailureReason =
