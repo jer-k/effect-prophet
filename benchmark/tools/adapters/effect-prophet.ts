@@ -12,6 +12,7 @@ import {
   encodeFittedModel,
   fit,
   getRegressorCoefficients,
+  isMcmcModel,
   maximumSampleCells,
   predict,
   predictUncertainty,
@@ -1135,12 +1136,15 @@ const correctnessProjection = async (
     return {
       ...withUncertainty,
       noiseScale: model.noiseScale,
-      fitQuality: [
-        { name: "objective", value: model.fitSummary.objective },
-        { name: "stationarity-residual", value: model.fitSummary.stationarityResidual },
-        { name: "normalized-noise", value: model.noiseScale / model.targetScaling.scale },
-        { name: "iterations", value: model.fitSummary.iterations },
-      ],
+      // A posterior reports a sampler, not an optimizer's progress.
+      fitQuality: isMcmcModel(model)
+        ? [{ name: "normalized-noise", value: model.noiseScale / model.targetScaling.scale }]
+        : [
+            { name: "objective", value: model.fitSummary.objective },
+            { name: "stationarity-residual", value: model.fitSummary.stationarityResidual },
+            { name: "normalized-noise", value: model.noiseScale / model.targetScaling.scale },
+            { name: "iterations", value: model.fitSummary.iterations },
+          ],
     };
   }
 
