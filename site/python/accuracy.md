@@ -1,3 +1,7 @@
+---
+description: "How closely Effect Prophet matches Python Prophet 1.4.0, how that's checked, and why results aren't always identical."
+---
+
 # How close are the results?
 
 Effect Prophet is checked against Python Prophet 1.4.0, feature by feature. Here's where each

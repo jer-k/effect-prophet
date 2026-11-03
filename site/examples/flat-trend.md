@@ -1,3 +1,7 @@
+---
+description: "Flat growth for data that moves around a steady level, with seasonality, events and regressors."
+---
+
 # Flat trends
 
 If your data moves around a steady level, with no long-term growth or decline, use

@@ -1,3 +1,7 @@
+---
+description: "The typed errors each operation can fail with, their reason values, and handling them with or without Effect."
+---
+
 # Handling errors
 
 Every operation can fail in a few specific, named ways. Each error has a `_tag`, so you can

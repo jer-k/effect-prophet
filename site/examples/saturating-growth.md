@@ -1,3 +1,7 @@
+---
+description: "Logistic growth with a capacity, and an optional floor, for values that level off."
+---
+
 # Growth with a ceiling
 
 Some things can't grow forever. A service in a town of 10,000 people can't have more than

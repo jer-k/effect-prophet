@@ -1,3 +1,7 @@
+---
+description: "Map Python Prophet's API to Effect Prophet: a side-by-side example and a table of equivalent options and methods."
+---
+
 # Coming from Python
 
 Effect Prophet fits the same model as Python Prophet, so the ideas carry over: changepoints,

@@ -1,3 +1,7 @@
+---
+description: "Find unusual values with detectAnomalies for new measurements and anomalies for a whole history."
+---
+
 # Finding anomalies
 
 Is today's number unusual? Fit a model on earlier data, then ask `detectAnomalies` how new

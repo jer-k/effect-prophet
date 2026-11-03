@@ -1,3 +1,7 @@
+---
+description: "Uncertainty ranges with predictWithIntervals, how they're simulated, and working with the raw samples."
+---
+
 # Uncertainty ranges
 
 A single number is never the whole story. `predictWithIntervals` gives each forecast a

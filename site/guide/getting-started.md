@@ -1,3 +1,7 @@
+---
+description: "Install effect-prophet, fit a model to your history and forecast future dates."
+---
+
 # Getting started
 
 ## Install

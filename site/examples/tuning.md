@@ -1,3 +1,7 @@
+---
+description: "Choose settings with comparePerformance and searchModels, compare against baselines and check on a final holdout."
+---
+
 # Choosing settings
 
 The defaults work well for a lot of data, but you can often do better by trying a few settings

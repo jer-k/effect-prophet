@@ -1,3 +1,7 @@
+---
+description: "The history and future row formats: timestamps, values, missing values, ordering, duplicates and how much history to use."
+---
+
 # Preparing your data
 
 ## The history

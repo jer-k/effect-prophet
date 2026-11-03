@@ -1,3 +1,7 @@
+---
+description: "The fields predict returns for each forecast, including the trend and the additive and multiplicative components."
+---
+
 # Reading a forecast
 
 `predict` returns one forecast for each row you asked about. Each forecast contains:

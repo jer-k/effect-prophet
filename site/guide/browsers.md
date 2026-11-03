@@ -1,3 +1,7 @@
+---
+description: "Use Effect Prophet in browsers with Vite, webpack, Rspack or esbuild, and how the WebAssembly engine loads."
+---
+
 # Browsers and bundlers
 
 Effect Prophet runs in browsers as well as Node.js, from the same package and the same import.
