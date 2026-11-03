@@ -44,6 +44,11 @@ they're close enough. Tiny rounding differences between computers can shift exac
 search stops, so forecasts often agree to many decimal places rather than all of them. Python
 Prophet itself gives slightly different answers on Intel and ARM computers for the same reason.
 
+On some histories, often ones with outliers, the default L-BFGS optimizer stops well before the
+best fit in both libraries, and at slightly different points, so their forecasts differ by more.
+Fitting with Newton brings both to the same answer.
+[Did the optimizer finish?](../examples/residuals#did-the-optimizer-finish) shows how to check.
+
 ## Known exceptions
 
 A few inputs are handled differently on purpose. For example, if every row has the same

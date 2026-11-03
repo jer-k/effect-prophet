@@ -44,14 +44,19 @@ from scratch: 346.20
   hundreds. After new rows arrive, the optimizer often needs fewer steps, but sometimes more:
   the target scale and time span change, so the old answer is only a nearby guess.
 - The result can differ slightly from a fresh fit, as it can in Python, because the optimizer
-  stops when it is close enough.
-- **Check logistic refits after many new rows.** From a warm start, the default L-BFGS optimizer
-  can settle on a far worse fit, and Python Prophet 1.4.0 does the same. On a 256-day and a
-  365-day logistic history, refits after 30 new rows ended with a noise scale 200 to 900 times a
-  fresh fit's in both libraries. After one or seven new rows, both refits were fine. Compare the
-  refit's `noiseScale` with the earlier model's, or refit with
-  `map: { warmStart, optimizer: { algorithm: "newton" } }`, which reached the best fit from every
-  start we tried.
+  stops when it is close enough, and [sometimes sooner](./residuals#did-the-optimizer-finish).
+- **Check logistic refits after many new rows.** `warmStartParameters` returns the earlier fit's
+  values in its own scaled units, as Python's `warm_start_params` does, but the new fit rescales
+  time to the longer history. After many new rows, the warm-started logistic trend no longer lines
+  up with the data, and the default L-BFGS optimizer can settle on a far worse fit. Python Prophet
+  1.4.0 does the same. On five logistic histories of 256 and 365 days, 9 of 10 refits after 30 or
+  60 new rows ended with a noise scale 60 to 920 times a fresh fit's, in both libraries, and
+  fitted values off by 2 to 5 standard deviations of the history. No refit after one or seven new
+  rows did this, and no linear refit after up to 60. Compare the refit's `noiseScale` with the
+  earlier model's, or [check the fit](./residuals#did-the-optimizer-finish).
+  Refitting with `map: { warmStart, optimizer: { algorithm: "newton" } }` usually recovers, but
+  not always: in 1 of the 9 cases in each library, Newton from the same warm start also stopped
+  short of the best fit, by thousands in Effect Prophet's case. When in doubt, fit from scratch.
 - A history whose values are all the same skips the optimizer, so the warm start is ignored.
 - `crossValidate` and `searchModels` use `map.warmStart` for every fold, as Python's
   `cross_validation` reuses the arguments the model was fitted with.
