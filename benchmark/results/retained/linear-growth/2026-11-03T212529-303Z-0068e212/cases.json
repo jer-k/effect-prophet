@@ -6232,5 +6232,329 @@
       "futureRows": 64,
       "horizonDays": 64
     }
+  },
+  {
+    "id": "mcmc-linear-mixed-components",
+    "dataset": "v1/linear-mixed-components.json",
+    "workload": {
+      "kind": "map",
+      "comparison": {
+        "kind": "equivalent-posterior",
+        "evidenceId": "posterior-nuts-v1"
+      },
+      "configuration": {
+        "growth": "linear",
+        "scaling": "absmax",
+        "seasonalityMode": "multiplicative",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "auto",
+          "count": 2,
+          "range": 0.8
+        },
+        "changepointPriorScale": 0.2,
+        "seasonalities": [
+          {
+            "name": "weekly-custom",
+            "periodDays": 7,
+            "fourierOrder": 2,
+            "priorScale": 10,
+            "conditionName": "active"
+          }
+        ],
+        "events": [
+          {
+            "name": "campaign",
+            "date": "2020-01-22",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          }
+        ],
+        "regressors": [
+          {
+            "name": "promotion",
+            "priorScale": 10,
+            "standardization": "never"
+          }
+        ]
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      },
+      "uncertainty": {
+        "seed": 19,
+        "samples": 1000,
+        "intervalWidth": 0.8,
+        "output": "intervals",
+        "algorithm": "scalar-continuous-time",
+        "evidence": "docs/validation/uncertainty.md#evidence-classes",
+        "samplerMemoryLimitBytes": 67108864
+      },
+      "mcmc": {
+        "samples": 300,
+        "seed": 19,
+        "pointWidthFraction": 0.15
+      }
+    },
+    "phases": [
+      "warm-fit",
+      "warm-predict",
+      "model-json-encode",
+      "model-json-decode",
+      "warm-uncertainty",
+      "fresh-process-restored-uncertainty"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 3,
+    "independentRuns": 2,
+    "timeoutSeconds": 900,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "component": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "additive": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "forecast": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "noiseScale": {
+        "absolute": 0,
+        "relative": 0.05
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "linear-mixed-components-v1:n=96:h=24:conditional-weekly+event+regressor",
+      "sha256": "48c87b33c9ffb95217c18f0dc10baf441141cf937b79d1081d16f29057cd6b1c",
+      "trainingRows": 96,
+      "predictionRows": 24,
+      "futureRows": 24,
+      "horizonDays": 24
+    }
+  },
+  {
+    "id": "mcmc-linear-default-changepoints",
+    "dataset": "v1/linear-medium.json",
+    "workload": {
+      "kind": "map",
+      "comparison": {
+        "kind": "equivalent-posterior",
+        "evidenceId": "posterior-nuts-v1"
+      },
+      "configuration": {
+        "growth": "linear",
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [
+          {
+            "name": "weekly-custom",
+            "periodDays": 7,
+            "fourierOrder": 3,
+            "priorScale": 10
+          }
+        ],
+        "events": [],
+        "regressors": []
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      },
+      "uncertainty": {
+        "seed": 19,
+        "samples": 1000,
+        "intervalWidth": 0.8,
+        "output": "intervals",
+        "algorithm": "scalar-continuous-time",
+        "evidence": "docs/validation/uncertainty.md#evidence-classes",
+        "samplerMemoryLimitBytes": 67108864
+      },
+      "mcmc": {
+        "samples": 300,
+        "seed": 19,
+        "pointWidthFraction": 0.15
+      }
+    },
+    "phases": [
+      "warm-fit",
+      "warm-predict",
+      "model-json-encode",
+      "model-json-decode",
+      "warm-uncertainty",
+      "fresh-process-restored-uncertainty"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 3,
+    "independentRuns": 2,
+    "timeoutSeconds": 900,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "component": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "additive": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "forecast": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "noiseScale": {
+        "absolute": 0,
+        "relative": 0.05
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "deterministic-piecewise-weekly-v2:n=256:h=64",
+      "sha256": "5f69f47c9189c3587fe9c4d72a1c885d2b16d5bd72fa693b49c46ca5ad6381fc",
+      "trainingRows": 256,
+      "predictionRows": 64,
+      "futureRows": 64,
+      "horizonDays": 64
+    }
+  },
+  {
+    "id": "mcmc-linear-regressor-model",
+    "dataset": "v1/map-regressors-medium.json",
+    "workload": {
+      "kind": "map",
+      "comparison": {
+        "kind": "equivalent-posterior",
+        "evidenceId": "posterior-nuts-v1"
+      },
+      "configuration": {
+        "growth": "linear",
+        "scaling": "absmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [],
+        "events": [],
+        "regressors": [
+          {
+            "name": "binary-auto",
+            "priorScale": 10,
+            "standardization": "auto"
+          },
+          {
+            "name": "numeric-auto",
+            "priorScale": 10,
+            "standardization": "auto",
+            "predictor": true
+          },
+          {
+            "name": "numeric-always",
+            "priorScale": 7,
+            "standardization": "always"
+          },
+          {
+            "name": "numeric-never",
+            "priorScale": 5,
+            "standardization": "never"
+          }
+        ]
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      },
+      "uncertainty": {
+        "seed": 19,
+        "samples": 1000,
+        "intervalWidth": 0.8,
+        "output": "intervals",
+        "algorithm": "scalar-continuous-time",
+        "evidence": "docs/validation/uncertainty.md#evidence-classes",
+        "samplerMemoryLimitBytes": 67108864
+      },
+      "mcmc": {
+        "samples": 300,
+        "seed": 19,
+        "pointWidthFraction": 0.15
+      }
+    },
+    "phases": [
+      "warm-fit",
+      "warm-predict",
+      "warm-uncertainty"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 3,
+    "independentRuns": 2,
+    "timeoutSeconds": 900,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "component": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "additive": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "forecast": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "noiseScale": {
+        "absolute": 0,
+        "relative": 0.05
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "map-regressors-v1:piecewise+binary-auto+numeric-auto+numeric-always+numeric-never+bounded-noise:n=256:h=64",
+      "sha256": "804afd5985e47268a8ddae3301fffcdaaf9a2afca3f3cdbdab8e3d028286f525",
+      "trainingRows": 256,
+      "predictionRows": 64,
+      "futureRows": 64,
+      "horizonDays": 64
+    }
   }
 ]

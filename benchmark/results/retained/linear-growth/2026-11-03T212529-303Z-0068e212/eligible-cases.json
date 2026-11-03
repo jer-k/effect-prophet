@@ -49,6 +49,9 @@
     "linear-regressor-model",
     "uncertainty-linear-regressor-model-intervals-1000",
     "evaluation-linear-regressor-model-point",
-    "evaluation-linear-regressor-model-intervals"
+    "evaluation-linear-regressor-model-intervals",
+    "mcmc-linear-mixed-components",
+    "mcmc-linear-default-changepoints",
+    "mcmc-linear-regressor-model"
   ]
 }

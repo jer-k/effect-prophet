@@ -105,17 +105,28 @@ export const makeRunFixture = async () => {
       ],
     };
 
+    const effectMeasurements = evidence.effect.measurements.filter(
+      (entry) => entry.caseId === selectedCase.id,
+    );
+
+    // Each phase's samples become its fastest retained sample, so a scaled run is slower or faster
+    // in every sample however noisy the retained baseline was.
+    const fastestSample = (phase: string) =>
+      Math.min(
+        ...effectMeasurements
+          .filter((entry) => entry.phase === phase)
+          .flatMap((entry) => entry.samplesNanoseconds),
+      );
+
     const effect = {
       ...evidence.effect,
       correctness: evidence.effect.correctness.filter((entry) => entry.caseId === selectedCase.id),
-      measurements: evidence.effect.measurements
-        .filter((entry) => entry.caseId === selectedCase.id)
-        .map((entry) => ({
-          ...entry,
-          samplesNanoseconds: entry.samplesNanoseconds.map((sample) =>
-            Math.round(sample * (options.effectSampleScale ?? 1)),
-          ),
-        })),
+      measurements: effectMeasurements.map((entry) => ({
+        ...entry,
+        samplesNanoseconds: entry.samplesNanoseconds.map(() =>
+          Math.round(fastestSample(entry.phase) * (options.effectSampleScale ?? 1)),
+        ),
+      })),
     };
 
     const python = {

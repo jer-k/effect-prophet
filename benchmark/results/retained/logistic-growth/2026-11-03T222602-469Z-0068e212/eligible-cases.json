@@ -56,6 +56,8 @@
     "logistic-reconcile-declining",
     "logistic-reconcile-saturated",
     "logistic-reconcile-constant",
-    "logistic-reconcile-out-of-bounds"
+    "logistic-reconcile-out-of-bounds",
+    "mcmc-logistic-explicit-floor-minmax",
+    "mcmc-logistic-rate-changes"
   ]
 }

@@ -17871,5 +17871,121 @@
       "futureRows": 180,
       "horizonDays": 180
     }
+  },
+  {
+    "id": "mcmc-flat-mixed-components",
+    "dataset": "v1/flat-mixed-components.json",
+    "workload": {
+      "kind": "map",
+      "comparison": {
+        "kind": "equivalent-posterior",
+        "evidenceId": "posterior-nuts-v1"
+      },
+      "configuration": {
+        "growth": "flat",
+        "scaling": "minmax",
+        "seasonalityMode": "additive",
+        "holidaysMode": "additive",
+        "changepoints": {
+          "mode": "auto",
+          "count": 25,
+          "range": 0.8
+        },
+        "changepointPriorScale": 0.05,
+        "seasonalities": [
+          {
+            "name": "weekly-custom",
+            "periodDays": 7,
+            "fourierOrder": 2,
+            "priorScale": 10,
+            "conditionName": "active",
+            "mode": "multiplicative"
+          }
+        ],
+        "events": [
+          {
+            "name": "campaign",
+            "date": "2020-01-22",
+            "lowerWindowDays": 0,
+            "upperWindowDays": 0,
+            "priorScale": 10
+          }
+        ],
+        "regressors": [
+          {
+            "name": "promotion",
+            "priorScale": 10,
+            "standardization": "never"
+          }
+        ]
+      },
+      "pythonOptimizer": {
+        "algorithm": "Auto",
+        "maxIterations": 10000,
+        "newtonFallback": true,
+        "sigFigs": 12
+      },
+      "uncertainty": {
+        "seed": 19,
+        "samples": 1000,
+        "intervalWidth": 0.8,
+        "output": "intervals",
+        "algorithm": "scalar-continuous-time",
+        "evidence": "docs/validation/uncertainty.md#evidence-classes",
+        "samplerMemoryLimitBytes": 67108864
+      },
+      "mcmc": {
+        "samples": 500,
+        "seed": 19,
+        "chains": 2,
+        "pointWidthFraction": 0.15
+      }
+    },
+    "phases": [
+      "warm-fit",
+      "warm-predict",
+      "model-json-encode",
+      "model-json-decode",
+      "warm-uncertainty",
+      "fresh-process-restored-uncertainty"
+    ],
+    "warmupIterations": 1,
+    "measuredIterations": 3,
+    "independentRuns": 2,
+    "timeoutSeconds": 900,
+    "correctnessTolerances": {
+      "trend": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "component": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "additive": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "forecast": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "noiseScale": {
+        "absolute": 0,
+        "relative": 0.05
+      },
+      "persistence": {
+        "absolute": 1e-8,
+        "relative": 0
+      }
+    },
+    "datasetIdentity": {
+      "recipe": "flat-mixed-components-v1:n=96:h=24:conditional-weekly+event+regressor",
+      "sha256": "4e1e4fd02c0e9a88f9f8369942d9ae9deaa9a3ebe0dcdffbb6d45e8a23c3263f",
+      "trainingRows": 96,
+      "predictionRows": 24,
+      "futureRows": 24,
+      "horizonDays": 24
+    }
   }
 ]

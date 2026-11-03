@@ -71,6 +71,7 @@
     "flat-regressor-model",
     "uncertainty-flat-regressor-model-intervals-1000",
     "evaluation-flat-regressor-model-point",
-    "evaluation-flat-regressor-model-intervals"
+    "evaluation-flat-regressor-model-intervals",
+    "mcmc-flat-mixed-components"
   ]
 }

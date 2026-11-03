@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "runId": "2026-11-02T043353-755Z-a3424eff",
-  "createdAt": "2026-11-02T04:33:58.685Z",
-  "gitRevision": "a3424eff3a47970f12ddc3764fae47fc2aeb41e3",
+  "runId": "2026-11-03T215626-728Z-0068e212",
+  "createdAt": "2026-11-03T21:56:31.791Z",
+  "gitRevision": "0068e212d593db1dc80d41477a9b2105398faec4",
   "gitDirty": false,
   "hostPlatform": "darwin",
   "hostRelease": "25.5.0",
@@ -81,7 +81,8 @@
     "flat-regressor-model",
     "uncertainty-flat-regressor-model-intervals-1000",
     "evaluation-flat-regressor-model-point",
-    "evaluation-flat-regressor-model-intervals"
+    "evaluation-flat-regressor-model-intervals",
+    "mcmc-flat-mixed-components"
   ],
   "commands": [
     "BENCHMARK_STAGE=correctness BENCHMARK_CONTAINER_PLATFORM=linux/arm64 docker compose -f benchmark/tools/runtime/compose.yaml run --rm effect-prophet-benchmark",
@@ -174,7 +175,7 @@
     },
     {
       "name": "benchmark/tools/effect-case.ts",
-      "value": "429e2b23b0f09a6c6d78407618ebfa043802311336af41a72c29aa70b9102d79"
+      "value": "24c55a27d04869df2a7f735126b2c5cb5c5f33f0b48b632b3f0b7147507c6edc"
     },
     {
       "name": "benchmark/tools/country-holidays.ts",
@@ -182,31 +183,31 @@
     },
     {
       "name": "benchmark/tools/result.ts",
-      "value": "3d0f5e0e0e5b8093fe98d2d30c73692ff48a12023cb6391524123ecd26821c80"
+      "value": "bf51af00a66e0488eff0ca4f5a9077483e2bf13ee4b9089eabe2e4948bc78725"
     },
     {
       "name": "benchmark/tools/adapters/effect-prophet.ts",
-      "value": "6142f3fee7b4d44b3f3c87a87839ddb759e33227aef21ffc34ed6cad2882bfc5"
+      "value": "9262e4bce479dc90c0060c6bc875d604aa86eaa98c67d499dc301c07e6785ccf"
     },
     {
       "name": "benchmark/tools/adapters/python-prophet.py",
-      "value": "5605568cb14ff2c26958fd8fa2d84d126700f4c556360ccd32602d0af228f4f0"
+      "value": "132ad342d4322316a03fd5dd35ed46a69a3f318982d9eb2209ae0e83d5badaef"
     },
     {
       "name": "benchmark/tools/catalog.ts",
-      "value": "5eed78aad8e8b9dc32c30cd74037ad5db95f6f67439524c9aa153a06e6e50049"
+      "value": "f517ef52457ab8276d40967b94ae355d2d6ad2676fecccf40045df5415c0166b"
     },
     {
       "name": "benchmark/tools/case.ts",
-      "value": "c19b93445dcb06132e365c94e63de202042e82da984eb10e1b2446518aefc96c"
+      "value": "8f9565991b5e5eb92d19879986e5abbb8901716d08888146700a5dfbdce0eda6"
     },
     {
       "name": "benchmark/tools/report.ts",
-      "value": "988dfe5f1b3232c7c4ec30708a707d8413718d9e299058cc9c80a73ef330d90b"
+      "value": "67857f54178115b44ac50bb8a70a6ca246c46d40065fcc485757034146f16fad"
     },
     {
       "name": "benchmark/tools/report-cli.ts",
-      "value": "7d44074f1d29bb2f62389d4957be4c53d17d6e09c8a5eeec37cbfbf50387a3a8"
+      "value": "8ea6e313b283899377347d894a65f5198254d16cc35866bb1194b10d2405651a"
     },
     {
       "name": "benchmark/tools/evaluation.ts",
@@ -217,12 +218,12 @@
       "value": "3081b3184d6204dbe3c3d0705dfe7e278ceb01a3d0615b6f10dea77d092bb870"
     },
     {
-      "name": "benchmark/results/runs/2026-11-02T043353-755Z-a3424eff/cases.json",
-      "value": "8038787c099e281df0614c0462f0f7ddfd8cee0ad32f2bc63e40adf0849f9483"
+      "name": "benchmark/results/runs/2026-11-03T215626-728Z-0068e212/cases.json",
+      "value": "3d1868ab463cc2e2901305e9556d7d9a5390d3a58d03ba37a90f70555671095a"
     },
     {
       "name": "benchmark/evidence/comparisons.json",
-      "value": "2195c89fb2d8c1f262cb2506b19aa20de613ebd63f6f3016eeb1f5aa2148632d"
+      "value": "0e6633ee27983228be9907fbbc7aef85b43ec59f70552345d88089e177030886"
     },
     {
       "name": "benchmark/tools/runtime/python/uv.lock",
@@ -250,7 +251,7 @@
     },
     {
       "name": "package-lock.json",
-      "value": "89dbd52060cdced6eb4bc7e06c95e18d59a437ef424b101a3644fdc536e1177b"
+      "value": "12f1d4f381ed0e84976ca4d32229116eff2562f54d999f47920240e6113b6c4f"
     },
     {
       "name": "benchmark/inputs/v5/country-basic-96.json",
@@ -348,11 +349,11 @@
   "containerImages": [
     {
       "name": "effect-prophet/benchmark-effect:local",
-      "value": "sha256:9f188929a72b1631b26ef01a65b6f50dda889b753e2e869a503d09daeb6f6f4a"
+      "value": "sha256:fa036ac57316cb13968ef42625383ab67e987b95f6fd18ec9737c52fd5c3c108"
     },
     {
       "name": "effect-prophet/benchmark-python:1.4.0",
-      "value": "sha256:e0c58934a5fdcefc8fde2f0c0c67c85982d6e9862c3d3165b724a767a8143ce7"
+      "value": "sha256:80fdd0ae0db1dc3113e9c8e353127a25670c8454d1c42f398d283166db5a2a5b"
     }
   ]
 }
