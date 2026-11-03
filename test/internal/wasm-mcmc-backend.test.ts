@@ -102,6 +102,8 @@ const loaderReturning =
   () => ({
     fit_mixed_linear_mcmc: () => frame,
     fit_mixed_flat_mcmc: () => frame,
+    fit_logistic_mcmc_with_features: () => frame,
+    simulate_logistic_mcmc_with_features: () => frame,
     simulate_mcmc_with_features: () => frame,
     posterior_component_ranges: () => frame,
   });

@@ -122,6 +122,13 @@ export const warmStartParameters = (model: FittedProphet): WarmStartParameters =
         delta: orPrivateZero(logistic.deltas),
         beta,
       }),
+      "logistic-piecewise-mcmc": (logistic) => ({
+        k: logistic.rate,
+        m: logistic.offset,
+        sigmaObs,
+        delta: orPrivateZero(logistic.deltas),
+        beta,
+      }),
     }),
   );
 

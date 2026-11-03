@@ -29,7 +29,8 @@ linear-piecewise-mcmc: 0 divergences, max R-hat 1.03
 | `warmup`  | `samples / 2` | Iterations each chain spends tuning itself before it keeps draws               |
 
 Python's `mcmc_samples=300` is `mcmc: { samples: 300, seed }`: 4 chains of 150 warmup and 150
-kept iterations, 600 draws in all. Python picks a random seed when you don't give one; here the
+kept iterations, 600 draws in all. Model kinds are `"flat-mcmc"`, `"linear-piecewise-mcmc"` and
+`"logistic-piecewise-mcmc"`; `isMcmcModel` tells them from MAP models. Python picks a random seed when you don't give one; here the
 seed is required, so a fit is repeatable.
 
 The sampler is a port of Stan 2.37.0's adaptive NUTS with CmdStan's default settings, run on
@@ -69,8 +70,9 @@ ranges with Python's instead.
 | `meanAcceptStat`, `stepSizes` | Acceptance near or above the 0.8 target, and each chain's tuned step size |
 | `warmupDivergences`           | Divergences while tuning, which CmdStan doesn't report; usually harmless  |
 
-A history whose values are all the same keeps Prophet's single fixed state, as Python does: its
-`termination` is `"constant-target-shortcut"`, it has one draw and no diagnostics.
+A flat or linear history whose values are all the same keeps Prophet's single fixed state, as
+Python does: its `termination` is `"constant-target-shortcut"`, it has one draw and no
+diagnostics. Logistic growth always samples.
 
 ## Things to know
 
@@ -82,6 +84,11 @@ A history whose values are all the same keeps Prophet's single fixed state, as P
 - **Limits.** Up to 16 chains, 100,000 warmup iterations per chain and 20,000 kept draws in all,
   and at most 2,000,000 kept values (draws times parameters), so models stay a reasonable size.
   Past these, `fit` fails with a `FittingError` whose `reason` is `"sampling-limit"`.
-- **Not yet supported:** logistic growth, regressors forecast by their own models, and
-  cross-validation, model search and holdout checks. These fail with an `InputValidationError`
-  rather than fitting MAP models silently.
+- **Every growth and feature.** Flat, linear and logistic growth all sample, with events,
+  country holidays, conditional seasonalities and regressors. Regressors
+  [forecast by their own models](./regressors#forecasting-a-regressor) keep MAP models, as in
+  Python, where `mcmc_samples` doesn't reach them; when a posterior runs more futures than the
+  regressor models drew, it reuses their draws in turn, as Python does.
+- **Evaluation.** `crossValidate`, `searchModels` and `evaluateHoldout` sample a posterior for
+  every fit. Each round's ranges run `ceil(samples / draws)` futures per draw, and holdout reports
+  record the posterior's draw count, divergences and largest R-hat instead of optimizer progress.

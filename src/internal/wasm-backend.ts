@@ -307,7 +307,8 @@ type WasmModelType =
   | "linear-piecewise-map"
   | "logistic-piecewise-map"
   | "flat-mcmc"
-  | "linear-piecewise-mcmc";
+  | "linear-piecewise-mcmc"
+  | "logistic-piecewise-mcmc";
 
 type SeasonalPredictionStatuses = {
   readonly success: number;

@@ -138,18 +138,13 @@ describe("fit with mcmc", () => {
     expect(warm.posterior.noiseScale).not.toEqual(model.posterior.noiseScale);
   });
 
-  it("rejects settings that don't apply to sampling or aren't supported yet", async () => {
+  it("rejects settings that don't apply to sampling", async () => {
     const failures = [
       { ...options, map: { optimizer: { algorithm: "newton" } } },
-      { ...options, growth: "logistic" },
       { ...options, mcmc: { samples: 1, seed: 1 } },
       { ...options, mcmc: { samples: 100, seed: 1, chains: 17 } },
       { ...options, mcmc: { samples: 20_000, seed: 1, chains: 4 } },
       { ...options, mcmc: { samples: 100, seed: -1 } },
-      {
-        ...options,
-        regressors: [{ name: "promotion", predictor: true }],
-      },
       {
         regressors: [{ name: "promotion", predictor: { mcmc: { samples: 20, seed: 1 } } }],
       },
@@ -185,6 +180,72 @@ describe("fit with mcmc", () => {
     if (error instanceof FittingError) {
       expect(error.reason).toBe("sampling-limit");
     }
+  });
+});
+
+describe("logistic and regressor-model posteriors", () => {
+  const capped = history.map(({ timestamp }, index) => ({
+    timestamp,
+    value: 60 / (1 + Math.exp(-(index - 25) / 6)) + (((index * 37) % 11) - 5) * 0.2,
+    capacity: 70,
+  }));
+
+  const cappedFuture = future.map(({ timestamp }) => ({ timestamp, capacity: 70 }));
+
+  it("samples a logistic posterior that stays under the capacity", async () => {
+    const model = requireMcmc(
+      await run(
+        fit(capped, {
+          growth: "logistic",
+          builtInSeasonalities: { daily: "off", weekly: "off", yearly: "off" },
+          mcmc: { samples: 120, seed: 5 },
+        }).pipe(Effect.provide(prophetFittingBackendLayer)),
+      ),
+    );
+
+    expect(model.model).toBe("logistic-piecewise-mcmc");
+
+    if (model.model !== "logistic-piecewise-mcmc") throw new Error("Expected logistic growth");
+
+    expect(model.rate).toBeCloseTo(mean(model.posterior.rate), 9);
+    expect(model.fitSummary.diagnostics?.maxRhat).toBeLessThan(1.2);
+
+    const result = await run(predictWithIntervals(model, cappedFuture, { seed: 1 }));
+
+    for (const row of result.rows) {
+      expect(row.trendInterval.upper).toBeLessThanOrEqual(70);
+      expect(row.value).toBeGreaterThan(50);
+    }
+
+    const encoded = await run(encodeFittedModel(model));
+    const decoded = await run(decodeFittedModel(JSON.parse(JSON.stringify(encoded))));
+
+    expect(await run(predictWithIntervals(decoded, cappedFuture, { seed: 1 }))).toEqual(result);
+    expect(warmStartParameters(model).k).toBe(model.rate);
+  });
+
+  it("forecasts regressors with their own MAP models and widens ranges with their draws", async () => {
+    const withModel = requireMcmc(
+      await fitModel({ ...options, regressors: [{ name: "promotion", predictor: true }] }),
+    );
+
+    expect(withModel.regressorModels?.[0]?.model.model).toBe("linear-piecewise-map");
+
+    const timestamps = future.map(({ timestamp }) => timestamp);
+
+    const result = await run(
+      predictWithIntervals(withModel, timestamps, { seed: 2, samples: 500 }),
+    );
+
+    const draws = withModel.posterior.noiseScale.length;
+
+    expect(result.sampleCount).toBe(Math.ceil(500 / draws) * draws);
+    expect(result.rows.every((row) => row.valueInterval.lower < row.valueInterval.upper)).toBe(
+      true,
+    );
+    expect(
+      await run(predictWithIntervals(withModel, timestamps, { seed: 2, samples: 500 })),
+    ).toEqual(result);
   });
 });
 

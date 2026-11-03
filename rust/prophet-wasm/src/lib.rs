@@ -3,6 +3,7 @@ mod compensated_sum;
 pub mod flat_map;
 pub mod fourier;
 pub mod logistic_map;
+pub mod logistic_mcmc;
 pub mod map_objective;
 pub mod map_uncertainty;
 pub mod mixed_map;

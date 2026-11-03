@@ -91,10 +91,13 @@ export interface LogisticPiecewiseMapFitPlan {
   readonly warmStart?: WarmStartParameters;
 }
 
-/** Request for posterior sampling of a linear or flat model with Stan's NUTS sampler. */
+/** Request for posterior sampling with Stan's NUTS sampler. */
 export interface McmcFitPlan {
   readonly _tag: "Mcmc";
-  readonly growth: "flat" | "linear";
+  readonly growth: "flat" | "linear" | "logistic";
+
+  /** Training capacities and floor policy, present exactly for logistic growth. */
+  readonly bounds?: LogisticTrainingBounds;
   readonly scaling: TargetScalingMode;
   readonly seasonalities: SeasonalityLayout;
   readonly changepoints: ChangepointSetting;

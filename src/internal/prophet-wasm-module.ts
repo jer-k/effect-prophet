@@ -214,6 +214,12 @@ export interface McmcWasmBindings {
   /** Sample one flat posterior and return a packed protocol frame. */
   readonly fit_mixed_flat_mcmc: (...args: ReadonlyArray<unknown>) => Float64Array;
 
+  /** Sample one floor-aware logistic posterior and return a packed protocol frame. */
+  readonly fit_logistic_mcmc_with_features: (...args: ReadonlyArray<unknown>) => Float64Array;
+
+  /** Simulate one logistic posterior batch and return tagged samples or intervals. */
+  readonly simulate_logistic_mcmc_with_features: (...args: ReadonlyArray<unknown>) => Float64Array;
+
   /** Simulate one linear/flat posterior batch and return tagged samples or intervals. */
   readonly simulate_mcmc_with_features: (...args: ReadonlyArray<unknown>) => Float64Array;
 
@@ -338,7 +344,9 @@ const requiredFunctionExports = [
   "simulate_logistic_map_with_features",
   "fit_mixed_linear_mcmc",
   "fit_mixed_flat_mcmc",
+  "fit_logistic_mcmc_with_features",
   "simulate_mcmc_with_features",
+  "simulate_logistic_mcmc_with_features",
   "posterior_component_ranges",
 ] as const;
 

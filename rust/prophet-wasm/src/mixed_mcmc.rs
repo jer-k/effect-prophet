@@ -138,10 +138,6 @@ pub fn fit_mixed_mcmc(
   settings: McmcSettings,
   warm_start: Option<&WarmStart>,
 ) -> Result<MixedMcmcModel, McmcError> {
-  if !settings.is_valid() {
-    return Err(McmcError::SamplingLimit);
-  }
-
   let prepared = prepare_mixed_fit(
     timestamps,
     values,
@@ -157,29 +153,24 @@ pub fn fit_mixed_mcmc(
 
   let feature_count = column_modes.len();
   let width = draw_width(trend_input, feature_count).ok_or(McmcError::SamplingLimit)?;
-  let total = settings.total_draws().ok_or(McmcError::SamplingLimit)?;
 
-  if total
-    .checked_mul(width)
-    .is_none_or(|cells| cells > MAX_POSTERIOR_CELLS)
-  {
-    return Err(McmcError::SamplingLimit);
-  }
+  check_posterior_size(settings, width)?;
 
   let prepared = match prepared {
     MixedFitInput::Prepared(prepared) => prepared,
     MixedFitInput::Constant(model) => return Ok(constant_draw(model)),
   };
 
-  let nuts = NutsSettings::cmdstan(settings.warmup, settings.draws);
   let layout = DrawLayout {
     trend: trend_input,
     feature_count,
     modes: column_modes,
     scaling: prepared.target_scaling,
   };
+  let restore =
+    |state: &[f64], sigma: usize, output: &mut Vec<f64>| layout.restore(state, sigma, output);
 
-  let chains = match trend_input {
+  let posterior = match trend_input {
     MixedTrendInput::Linear { changepoints } => {
       let points = normalized_changepoints(timestamps, changepoints);
       let objective = StanLinearObjective::new(
@@ -192,7 +183,7 @@ pub fn fit_mixed_mcmc(
       )
       .map_err(map_objective_error)?;
 
-      sample(&objective, settings, nuts, warm_start)?
+      sample_posterior(&objective, settings, warm_start, width, restore)?
     }
     MixedTrendInput::Flat { changepoints } => {
       let objective = StanFlatObjective::new(
@@ -205,29 +196,59 @@ pub fn fit_mixed_mcmc(
       )
       .map_err(map_objective_error)?;
 
-      sample(&objective, settings, nuts, warm_start)?
+      sample_posterior(&objective, settings, warm_start, width, restore)?
     }
   };
 
-  finish(
+  let mean = mean_model(
     timestamps,
     values.len(),
     seasonalities,
     &prepared,
     &layout,
-    &chains,
-    settings,
-    width,
-    nuts.max_depth,
-  )
+    &posterior.means,
+  )?;
+
+  Ok(MixedMcmcModel {
+    mean,
+    draw_count: posterior.draw_count,
+    draws: posterior.draws,
+    diagnostics: Some(posterior.diagnostics),
+  })
 }
 
-fn sample(
+/// Reject settings and draw widths past the limits before any work.
+pub(crate) fn check_posterior_size(settings: McmcSettings, width: usize) -> Result<(), McmcError> {
+  if !settings.is_valid()
+    || settings
+      .total_draws()
+      .and_then(|total| total.checked_mul(width))
+      .is_none_or(|cells| cells > MAX_POSTERIOR_CELLS)
+  {
+    return Err(McmcError::SamplingLimit);
+  }
+
+  Ok(())
+}
+
+/// Kept draws in observation units, pooled in Python's order, with their means and health.
+pub(crate) struct SampledPosterior {
+  pub(crate) draws: Vec<f64>,
+  pub(crate) draw_count: usize,
+  pub(crate) means: Vec<f64>,
+  pub(crate) diagnostics: McmcDiagnostics,
+}
+
+/// Run CmdStan's default sampler from Prophet's initialization or a warm start, restore each
+/// draw with `restore`, and pool the chains in Python's order.
+pub(crate) fn sample_posterior(
   objective: &impl StanMapObjective,
   settings: McmcSettings,
-  nuts: NutsSettings,
   warm_start: Option<&WarmStart>,
-) -> Result<Vec<SampledChain>, McmcError> {
+  width: usize,
+  restore: impl Fn(&[f64], usize, &mut Vec<f64>) -> Result<(), McmcError>,
+) -> Result<SampledPosterior, McmcError> {
+  let nuts = NutsSettings::cmdstan(settings.warmup, settings.draws);
   let (initial, _) = initial_state(objective, warm_start);
   let sigma_index = objective.sigma_index();
 
@@ -236,23 +257,71 @@ fn sample(
   })
   .map_err(McmcError::Sampler)?;
 
-  Ok(
-    chains
-      .into_iter()
-      .map(|chain| SampledChain {
-        chain,
-        parameter_count: initial.len(),
-        sigma_index,
-      })
-      .collect(),
-  )
+  // Each chain's restored draws, chain-major, for diagnostics.
+  let mut per_chain = Vec::with_capacity(chains.len());
+
+  for chain in &chains {
+    let mut restored = Vec::with_capacity(settings.draws * width);
+
+    for state in chain.draws.chunks_exact(initial.len()) {
+      restore(state, sigma_index, &mut restored)?;
+    }
+
+    if restored.len() != settings.draws * width {
+      return Err(McmcError::NonFiniteDraw);
+    }
+
+    per_chain.push(restored);
+  }
+
+  let draw_count = settings.chains * settings.draws;
+  let mut draws = Vec::with_capacity(draw_count * width);
+
+  for draw in 0..settings.draws {
+    for chain in &per_chain {
+      draws.extend_from_slice(&chain[draw * width..(draw + 1) * width]);
+    }
+  }
+
+  let diagnostics = diagnose(&chains, &per_chain, settings.draws, width, nuts.max_depth);
+  let means = column_means(&draws, width);
+
+  Ok(SampledPosterior {
+    draws,
+    draw_count,
+    means,
+    diagnostics,
+  })
 }
 
-/// One chain's unconstrained draws, with the coordinates needed to read them.
-struct SampledChain {
-  chain: NutsChain,
-  parameter_count: usize,
+/// Append a draw's noise and feature coefficients in observation units: additive coefficients
+/// carry the target scale and multiplicative ones are dimensionless.
+pub(crate) fn restore_features(
+  state: &[f64],
   sigma_index: usize,
+  modes: &[ComponentMode],
+  scale: f64,
+  output: &mut Vec<f64>,
+) -> Result<(), McmcError> {
+  let sigma = crate::stan::math::exp(state[sigma_index]) * scale;
+  let beta_start = sigma_index + 1;
+
+  if !sigma.is_finite() || sigma <= 0.0 {
+    return Err(McmcError::NonFiniteDraw);
+  }
+
+  output.push(sigma);
+  output.extend(
+    state[beta_start..beta_start + modes.len()]
+      .iter()
+      .zip(modes)
+      .map(|(value, mode)| match mode {
+        ComponentMode::Additive => value * scale,
+        ComponentMode::Multiplicative => *value,
+      }),
+  );
+
+  Ok(())
 }
 
 /// How unconstrained Stan coordinates map to saved observation-unit values.
@@ -273,8 +342,6 @@ impl DrawLayout<'_> {
     output: &mut Vec<f64>,
   ) -> Result<(), McmcError> {
     let scale = self.scaling.scale;
-    let beta_start = sigma_index + 1;
-    let sigma = crate::stan::math::exp(state[sigma_index]) * scale;
     let start = output.len();
 
     match self.trend {
@@ -296,18 +363,11 @@ impl DrawLayout<'_> {
       MixedTrendInput::Flat { .. } => output.push(state[1] * scale),
     }
 
-    output.push(sigma);
-    output.extend(
-      state[beta_start..beta_start + self.feature_count]
-        .iter()
-        .zip(self.modes)
-        .map(|(value, mode)| match mode {
-          ComponentMode::Additive => value * scale,
-          ComponentMode::Multiplicative => *value,
-        }),
-    );
+    restore_features(state, sigma_index, self.modes, scale, output)?;
 
-    if output[start..].iter().any(|value| !value.is_finite()) || sigma <= 0.0 {
+    if output[start..].iter().any(|value| !value.is_finite())
+      || output.len() - start != draw_width(self.trend, self.feature_count).unwrap_or(0)
+    {
       return Err(McmcError::NonFiniteDraw);
     }
 
@@ -315,60 +375,7 @@ impl DrawLayout<'_> {
   }
 }
 
-#[allow(clippy::too_many_arguments)]
-fn finish(
-  timestamps: &[f64],
-  observation_count: usize,
-  seasonalities: &[SeasonalitySpec],
-  prepared: &PreparedMixedFit,
-  layout: &DrawLayout<'_>,
-  chains: &[SampledChain],
-  settings: McmcSettings,
-  width: usize,
-  max_depth: usize,
-) -> Result<MixedMcmcModel, McmcError> {
-  // Each chain's restored draws, chain-major, for diagnostics.
-  let mut per_chain = Vec::with_capacity(chains.len());
-
-  for sampled in chains {
-    let mut restored = Vec::with_capacity(settings.draws * width);
-
-    for state in sampled.chain.draws.chunks_exact(sampled.parameter_count) {
-      layout.restore(state, sampled.sigma_index, &mut restored)?;
-    }
-
-    per_chain.push(restored);
-  }
-
-  let draw_count = settings.chains * settings.draws;
-  let mut draws = Vec::with_capacity(draw_count * width);
-
-  for draw in 0..settings.draws {
-    for chain in &per_chain {
-      draws.extend_from_slice(&chain[draw * width..(draw + 1) * width]);
-    }
-  }
-
-  let diagnostics = diagnose(chains, &per_chain, settings.draws, width, max_depth);
-  let mean = column_means(&draws, width);
-  let model = mean_model(
-    timestamps,
-    observation_count,
-    seasonalities,
-    prepared,
-    layout,
-    &mean,
-  )?;
-
-  Ok(MixedMcmcModel {
-    mean: model,
-    draw_count,
-    draws,
-    diagnostics: Some(diagnostics),
-  })
-}
-
-fn column_means(draws: &[f64], width: usize) -> Vec<f64> {
+pub(crate) fn column_means(draws: &[f64], width: usize) -> Vec<f64> {
   let count = draws.len() / width;
   let mut sums: Vec<crate::compensated_sum::CompensatedSum> =
     (0..width).map(|_| Default::default()).collect();
@@ -386,7 +393,7 @@ fn column_means(draws: &[f64], width: usize) -> Vec<f64> {
 }
 
 fn diagnose(
-  chains: &[SampledChain],
+  chains: &[NutsChain],
   per_chain: &[Vec<f64>],
   draws: usize,
   width: usize,
@@ -413,7 +420,7 @@ fn diagnose(
     min_ess_tail = min_ess_tail.min(diagnostics.ess_tail);
   }
 
-  let kept = chains.iter().map(|sampled| &sampled.chain);
+  let kept = chains.iter();
   let accept: Vec<f64> = kept
     .clone()
     .flat_map(|chain| chain.accept_stat.iter().copied())

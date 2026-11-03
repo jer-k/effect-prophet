@@ -1,6 +1,7 @@
 use super::*;
+use crate::logistic_map::LogisticParameters;
 use crate::map_uncertainty::{SimulationRows, SimulationTrend, simulate_intervals, simulate_map};
-use crate::target_scaling::ScalingMode;
+use crate::target_scaling::{LogisticScaling, ScalingMode};
 
 const SCALING: TargetScaling = TargetScaling {
   mode: ScalingMode::AbsMax,
@@ -23,8 +24,8 @@ fn linear_draws(values: &[f64]) -> PosteriorDraws<'_> {
       time_origin: 0.0,
       time_scale: 10.0,
       changepoints: &[5.0],
+      scaling: SCALING,
     },
-    scaling: SCALING,
     count: values.len() / 6,
     values,
     modes: &MODES,
@@ -125,8 +126,7 @@ fn each_draw_runs_its_own_block_of_paths() {
   // Levels are relative to the target offset of 10.
   let values = [1.0, 1e-6, 0.0, 0.0, 50.0, 1e-6, 0.0, 0.0];
   let draws = PosteriorDraws {
-    trend: PosteriorTrend::Flat,
-    scaling: SCALING,
+    trend: PosteriorTrend::Flat { scaling: SCALING },
     count: 2,
     values: &values,
     modes: &MODES,
@@ -177,9 +177,13 @@ fn component_ranges_follow_percentiles_over_draws() {
   for (additive, multiplicative) in [(1.0, 0.0), (2.0, 0.1), (4.0, 0.3)] {
     values.extend_from_slice(&[2.0, 4.0, -1.5, 0.3, additive, multiplicative]);
   }
-  let draws = linear_draws(&values);
   let intervals = posterior_component_intervals(
-    draws,
+    DrawCoefficients {
+      count: 3,
+      values: &values,
+      trend_width: 3,
+      modes: &MODES,
+    },
     &TIMESTAMPS[..1],
     &FEATURES[..2],
     ComponentColumns {
@@ -281,4 +285,82 @@ fn offsets_shift_every_sample_of_their_rows() {
   for sample in 0..8 {
     assert!((moved[24 + sample] - plain[24 + sample] - 5.0).abs() < 1e-12);
   }
+}
+
+#[test]
+fn a_single_logistic_draw_reproduces_the_map_simulation() {
+  let scaling = LogisticScaling::parse(0.0, 50.0, 0.0, 2.0).unwrap();
+  let capacities = [60.0, 60.0, 70.0, 70.0];
+  let parameters = LogisticParameters {
+    rate: 3.0,
+    offset: 0.4,
+    deltas: vec![-0.5],
+  };
+  // `[rate, offset, delta, noise, additive, multiplicative]`
+  let draw = [3.0, 0.4, -0.5, 0.3, 0.7, 0.1];
+  let additive: Vec<f64> = FEATURES
+    .as_chunks::<2>()
+    .0
+    .iter()
+    .map(|row| row[0] * 0.7)
+    .collect();
+  let multiplicative: Vec<f64> = FEATURES
+    .as_chunks::<2>()
+    .0
+    .iter()
+    .map(|row| row[1] * 0.1)
+    .collect();
+  let changepoints = [5.0];
+
+  let expected = simulate_map(
+    SimulationTrend::Logistic {
+      parameters: &parameters,
+      scaling,
+      capacities: &capacities,
+      floors: None,
+      time_origin: 0.0,
+      time_scale: 10.0,
+      changepoints: &changepoints,
+    },
+    0.3,
+    SimulationRows {
+      timestamps: &TIMESTAMPS,
+      additive: &additive,
+      multiplicative: &multiplicative,
+      offsets: None,
+    },
+    options(32),
+  )
+  .unwrap();
+
+  let PosteriorSimulation::Samples(actual) = simulate_posterior(
+    PosteriorDraws {
+      trend: PosteriorTrend::Logistic {
+        time_origin: 0.0,
+        time_scale: 10.0,
+        changepoints: &changepoints,
+        scaling,
+        capacities: &capacities,
+        floors: None,
+      },
+      count: 1,
+      values: &draw,
+      modes: &MODES,
+    },
+    rows(&FEATURES),
+    options(32),
+    true,
+  )
+  .unwrap() else {
+    panic!("expected samples");
+  };
+
+  assert_eq!(actual.trend, expected.trend);
+  assert_eq!(actual.value, expected.value);
+  assert!(
+    actual
+      .trend
+      .iter()
+      .all(|trend| *trend > 2.0 && *trend < 70.0)
+  );
 }

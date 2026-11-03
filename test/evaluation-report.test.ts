@@ -99,6 +99,47 @@ const run = (request: HoldoutEvaluationInput) =>
   evaluateHoldout(request).pipe(Effect.provide(prophetFittingBackendLayer));
 
 describe("evaluateHoldout", () => {
+  it("reports a posterior's summary and simulation, and roundtrips them", async () => {
+    const options = {
+      growth: "linear",
+      builtInSeasonalities: { daily: "off", weekly: "off", yearly: "off" },
+      mcmc: { samples: 40, seed: 6, chains: 2 },
+    } as const;
+
+    const search = await Effect.runPromise(
+      searchModels(observations, {
+        candidates: [{ id: "posterior", options }],
+        plan: {
+          horizonMs: 2 * day,
+          cutoffs: { mode: "explicit", timestamps: [timestamp(11), timestamp(14)] },
+        },
+        objective: { metric: "mae", aggregation: { kind: "overall" }, direction: "minimize" },
+        failurePolicy: "record",
+      }).pipe(Effect.provide(prophetFittingBackendLayer)),
+    );
+
+    const report = await Effect.runPromise(run(input(search)));
+
+    expect(report.model.kind).toBe("linear-piecewise-mcmc");
+    expect(report.model.fitSummary).toMatchObject({ method: "stan-nuts-v1", drawCount: 40 });
+
+    if (report.kind !== "intervals") throw new Error("Expected an interval report");
+
+    expect(report.simulation.algorithm).toBe("prophet-mcmc-scalar-xoshiro128ss-v1");
+
+    const encoded = await Effect.runPromise(encodeEvaluationReport(report));
+
+    expect(
+      await Effect.runPromise(decodeEvaluationReport(JSON.parse(JSON.stringify(encoded)))),
+    ).toEqual(report);
+
+    const tampered = { ...encoded, model: { ...encoded.model, kind: "linear-piecewise-map" } };
+
+    expect(
+      (await Effect.runPromise(Effect.flip(decodeEvaluationReport(tampered))))._tag,
+    ).toBeDefined();
+  });
+
   it("preserves country options through search, final fitting and portable reports", async () => {
     const options = {
       growth: "flat",

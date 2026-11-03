@@ -5,6 +5,7 @@
 //! `s / per_draw`. Paths come from one sample-major stream, as in the MAP simulation, so a
 //! single draw reproduces the MAP simulation exactly. Rows are produced one at a time.
 
+use crate::logistic_map::{LogisticParameters, LogisticPredictionTrend, stable_sigmoid};
 use crate::map_uncertainty::{
   MAX_CELLS, MAX_ROWS, PathProcess, PredictiveIntervals, PredictiveSamples, SampleOffsets,
   SimulationError, SimulationOptions, draw_sample_paths, future_shift, row_interval, zeroed,
@@ -13,39 +14,101 @@ use crate::mixed_map::ComponentMode;
 use crate::mixed_mcmc::MAX_DRAWS;
 use crate::piecewise_linear::PiecewiseTrend;
 use crate::quantile::sorted_quantile;
-use crate::target_scaling::TargetScaling;
+use crate::target_scaling::{LogisticScaling, TargetScaling};
 
 /// Most samples one row may hold: Python's per-draw rounding can pass the request by a draw less
 /// than the number of draws.
 pub const MAX_POSTERIOR_SAMPLES: usize = crate::map_uncertainty::MAX_SAMPLES + MAX_DRAWS;
 
-/// The trend family the draws describe.
+/// The trend family the draws describe, with the scaling it was fitted with.
 #[derive(Clone, Copy, Debug)]
 pub enum PosteriorTrend<'a> {
   Linear {
     time_origin: f64,
     time_scale: f64,
     changepoints: &'a [f64],
+    scaling: TargetScaling,
   },
-  Flat,
+  Flat {
+    scaling: TargetScaling,
+  },
+  /// Dimensionless rate, offset and rate changes, with each prediction row's capacity and the
+  /// training floor policy.
+  Logistic {
+    time_origin: f64,
+    time_scale: f64,
+    changepoints: &'a [f64],
+    scaling: LogisticScaling,
+    capacities: &'a [f64],
+    floors: Option<&'a [f64]>,
+  },
 }
 
-/// Draws laid out as `MixedMcmcModel::draws`, with the scaling and modes they were fitted with.
+/// Draws laid out as `MixedMcmcModel::draws` or `LogisticMcmcModel::draws`, with the modes they
+/// were fitted with.
 #[derive(Clone, Copy, Debug)]
 pub struct PosteriorDraws<'a> {
   pub trend: PosteriorTrend<'a>,
-  pub scaling: TargetScaling,
   pub count: usize,
   pub values: &'a [f64],
   pub modes: &'a [ComponentMode],
 }
 
-impl PosteriorDraws<'_> {
+/// Each draw's trend, checked once before any row.
+enum DrawTrends<'a> {
+  Linear(Vec<PiecewiseTrend>),
+  Flat,
+  Logistic(Vec<LogisticPredictionTrend<'a>>),
+}
+
+impl<'a> PosteriorDraws<'a> {
   fn trend_width(&self) -> usize {
     match self.trend {
-      PosteriorTrend::Linear { changepoints, .. } => 2 + changepoints.len(),
-      PosteriorTrend::Flat => 1,
+      PosteriorTrend::Linear { changepoints, .. }
+      | PosteriorTrend::Logistic { changepoints, .. } => 2 + changepoints.len(),
+      PosteriorTrend::Flat { .. } => 1,
     }
+  }
+
+  /// Training time origin and scale, for trends that change over time.
+  fn time_bounds(&self) -> Option<(f64, f64, usize)> {
+    match self.trend {
+      PosteriorTrend::Linear {
+        time_origin,
+        time_scale,
+        changepoints,
+        ..
+      }
+      | PosteriorTrend::Logistic {
+        time_origin,
+        time_scale,
+        changepoints,
+        ..
+      } => Some((time_origin, time_scale, changepoints.len())),
+      PosteriorTrend::Flat { .. } => None,
+    }
+  }
+
+  /// The Laplace scale of draw `index`'s future rate changes: Python's mean |delta| + 1e-8, in
+  /// the scaled units the trend uses.
+  fn delta_scale(&self, index: usize) -> f64 {
+    let (unit, count) = match self.trend {
+      PosteriorTrend::Linear {
+        scaling,
+        changepoints,
+        ..
+      } => (scaling.scale, changepoints.len()),
+      PosteriorTrend::Logistic { changepoints, .. } => (1.0, changepoints.len()),
+      PosteriorTrend::Flat { .. } => return 0.0,
+    };
+    let deltas = &self.draw(index)[2..2 + count];
+    let mean = if deltas.is_empty() {
+      0.0
+    } else {
+      deltas.iter().map(|delta| (delta / unit).abs()).sum::<f64>() / deltas.len() as f64
+    };
+
+    mean + 1e-8
   }
 
   fn width(&self) -> usize {
@@ -66,8 +129,6 @@ impl PosteriorDraws<'_> {
   }
 
   fn validate(&self) -> Result<(), SimulationError> {
-    let scaling = self.scaling;
-
     if self.count == 0
       || self.count > MAX_DRAWS
       || self.count.checked_mul(self.width()) != Some(self.values.len())
@@ -75,9 +136,14 @@ impl PosteriorDraws<'_> {
       return Err(SimulationError::InvalidShape);
     }
 
-    if !scaling.offset.is_finite()
-      || !scaling.scale.is_finite()
-      || scaling.scale <= 0.0
+    let finite_scaling = match self.trend {
+      PosteriorTrend::Linear { scaling, .. } | PosteriorTrend::Flat { scaling } => {
+        scaling.offset.is_finite() && scaling.scale.is_finite() && scaling.scale > 0.0
+      }
+      PosteriorTrend::Logistic { scaling, .. } => scaling.scale.is_finite() && scaling.scale > 0.0,
+    };
+
+    if !finite_scaling
       || self.values.iter().any(|value| !value.is_finite())
       || (0..self.count).any(|index| self.noise(index) <= 0.0)
     {
@@ -87,35 +153,88 @@ impl PosteriorDraws<'_> {
     Ok(())
   }
 
-  /// Each draw's linear trend, checked once.
-  fn linear_trends(&self) -> Result<Vec<PiecewiseTrend>, SimulationError> {
-    let PosteriorTrend::Linear {
-      time_origin,
-      time_scale,
-      changepoints,
-    } = self.trend
-    else {
-      return Ok(Vec::new());
+  /// Logistic parameters for every draw, which `trends` borrows.
+  fn logistic_parameters(&self) -> Vec<LogisticParameters> {
+    let PosteriorTrend::Logistic { changepoints, .. } = self.trend else {
+      return Vec::new();
     };
 
     (0..self.count)
       .map(|index| {
         let draw = self.draw(index);
-        let trend = PiecewiseTrend {
-          intercept: draw[0],
-          slope: draw[1],
-          time_origin,
-          time_scale,
-          changepoint_timestamps: changepoints.to_vec(),
-          deltas: draw[2..2 + changepoints.len()].to_vec(),
-        };
 
-        trend
-          .validate()
-          .map_err(|_| SimulationError::InvalidModel)?;
-        Ok(trend)
+        LogisticParameters {
+          rate: draw[0],
+          offset: draw[1],
+          deltas: draw[2..2 + changepoints.len()].to_vec(),
+        }
       })
       .collect()
+  }
+
+  /// Each draw's trend, checked once.
+  fn trends<'p>(
+    &self,
+    logistic: &'p [LogisticParameters],
+  ) -> Result<DrawTrends<'p>, SimulationError> {
+    match self.trend {
+      PosteriorTrend::Linear {
+        time_origin,
+        time_scale,
+        changepoints,
+        ..
+      } => (0..self.count)
+        .map(|index| {
+          let draw = self.draw(index);
+          let trend = PiecewiseTrend {
+            intercept: draw[0],
+            slope: draw[1],
+            time_origin,
+            time_scale,
+            changepoint_timestamps: changepoints.to_vec(),
+            deltas: draw[2..2 + changepoints.len()].to_vec(),
+          };
+
+          trend
+            .validate()
+            .map_err(|_| SimulationError::InvalidModel)?;
+          Ok(trend)
+        })
+        .collect::<Result<Vec<_>, _>>()
+        .map(DrawTrends::Linear),
+      PosteriorTrend::Flat { .. } => Ok(DrawTrends::Flat),
+      PosteriorTrend::Logistic {
+        time_origin,
+        time_scale,
+        changepoints,
+        ..
+      } => {
+        let training_end = time_origin + time_scale;
+
+        if !time_origin.is_finite()
+          || !time_scale.is_finite()
+          || time_scale <= 0.0
+          || !training_end.is_finite()
+          || changepoints.iter().enumerate().any(|(index, &point)| {
+            !point.is_finite()
+              || point < time_origin
+              || point > training_end
+              || (index > 0 && point < changepoints[index - 1])
+          })
+        {
+          return Err(SimulationError::InvalidModel);
+        }
+
+        Ok(DrawTrends::Logistic(
+          logistic
+            .iter()
+            .map(|parameters| {
+              LogisticPredictionTrend::new(parameters, time_origin, time_scale, changepoints)
+            })
+            .collect(),
+        ))
+      }
+    }
   }
 }
 
@@ -140,21 +259,40 @@ struct RowTerms {
   multiplicative: Vec<f64>,
 }
 
-/// Fill one row's terms for every draw.
+/// Fill one row's terms for every draw. Linear and flat trends are restored to observation
+/// units; logistic ones stay on the logit scale, which the capacity maps after any change.
 fn row_terms(
   draws: &PosteriorDraws<'_>,
-  trends: &[PiecewiseTrend],
+  trends: &DrawTrends<'_>,
   timestamp: f64,
   features: &[f64],
   row: usize,
   terms: &mut RowTerms,
 ) -> Result<(), SimulationError> {
+  let failed = |_| SimulationError::NonFiniteResult { row, sample: 0 };
+
   for index in 0..draws.count {
-    let relative = match trends.get(index) {
-      Some(trend) => trend
-        .evaluate(timestamp, row)
+    let trend = match (trends, draws.trend) {
+      (DrawTrends::Linear(trends), PosteriorTrend::Linear { scaling, .. }) => {
+        let relative = trends[index]
+          .evaluate(timestamp, row)
+          .map_err(|_| SimulationError::NonFiniteResult { row, sample: 0 })?;
+        scaling.restore_trend(relative).map_err(failed)?
+      }
+      (DrawTrends::Flat, PosteriorTrend::Flat { scaling }) => scaling
+        .restore_trend(draws.draw(index)[0])
+        .map_err(failed)?,
+      (
+        DrawTrends::Logistic(trends),
+        PosteriorTrend::Logistic {
+          time_origin,
+          time_scale,
+          ..
+        },
+      ) => trends[index]
+        .eta((timestamp - time_origin) / time_scale)
         .map_err(|_| SimulationError::NonFiniteResult { row, sample: 0 })?,
-      None => draws.draw(index)[0],
+      _ => return Err(SimulationError::InvalidModel),
     };
     let mut additive = 0.0;
     let mut multiplicative = 0.0;
@@ -170,10 +308,7 @@ fn row_terms(
       }
     }
 
-    terms.trend[index] = draws
-      .scaling
-      .restore_trend(relative)
-      .map_err(|_| SimulationError::NonFiniteResult { row, sample: 0 })?;
+    terms.trend[index] = trend;
     terms.additive[index] = additive;
     terms.multiplicative[index] = multiplicative;
   }
@@ -193,12 +328,29 @@ fn horizon(draws: &PosteriorDraws<'_>, rows: PosteriorRows<'_>) -> Result<f64, S
     return Err(SimulationError::InvalidShape);
   }
 
-  let PosteriorTrend::Linear {
-    time_origin,
-    time_scale,
-    changepoints,
+  if let PosteriorTrend::Logistic {
+    scaling,
+    capacities,
+    floors,
+    ..
   } = draws.trend
-  else {
+  {
+    if capacities.len() != count || floors.is_some_and(|floors| floors.len() != count) {
+      return Err(SimulationError::InvalidShape);
+    }
+
+    for (row, &capacity) in capacities.iter().enumerate() {
+      let floor = scaling
+        .row_floor(floors, row)
+        .map_err(|_| SimulationError::InvalidModel)?;
+
+      if !capacity.is_finite() || capacity <= floor {
+        return Err(SimulationError::InvalidShape);
+      }
+    }
+  }
+
+  let Some((time_origin, time_scale, changepoints)) = draws.time_bounds() else {
     return Ok(0.0);
   };
 
@@ -208,7 +360,7 @@ fn horizon(draws: &PosteriorDraws<'_>, rows: PosteriorRows<'_>) -> Result<f64, S
     .map(|timestamp| (timestamp - time_origin) / time_scale - 1.0)
     .fold(0.0, f64::max);
 
-  if horizon > 20.0 || changepoints.len() as f64 * horizon > 256.0 {
+  if horizon > 20.0 || changepoints as f64 * horizon > 256.0 {
     return Err(SimulationError::ResourceLimit);
   }
 
@@ -278,7 +430,8 @@ pub fn simulate_posterior(
   let total = checked_total(count, options.samples, draws.count, samples_output)?;
   let per_draw = total / draws.count;
   let horizon = horizon(&draws, rows)?;
-  let trends = draws.linear_trends()?;
+  let logistic = draws.logistic_parameters();
+  let trends = draws.trends(&logistic)?;
 
   if let Some(offsets) = rows.offsets {
     let cells = offsets
@@ -305,25 +458,19 @@ pub fn simulate_posterior(
     }
   }
 
-  // Each draw's Laplace scale for future changes, in scaled units, as Python's mean |delta|.
-  let delta_scales: Vec<f64> = match draws.trend {
-    PosteriorTrend::Linear { changepoints, .. } if horizon > 0.0 => (0..draws.count)
-      .map(|index| {
-        let deltas = &draws.draw(index)[2..2 + changepoints.len()];
-        let mean = if deltas.is_empty() {
-          0.0
-        } else {
-          deltas
-            .iter()
-            .map(|delta| (delta / draws.scaling.scale).abs())
-            .sum::<f64>()
-            / deltas.len() as f64
-        };
-
-        mean + 1e-8
-      })
-      .collect(),
-    _ => Vec::new(),
+  // Future rate changes only reach past the history, and only for trends that change.
+  let changepoints = draws.time_bounds().map_or(0, |(_, _, count)| count);
+  let rate = if horizon > 0.0 {
+    changepoints as f64
+  } else {
+    0.0
+  };
+  let delta_scales: Vec<f64> = if rate > 0.0 {
+    (0..draws.count)
+      .map(|index| draws.delta_scale(index))
+      .collect()
+  } else {
+    Vec::new()
   };
 
   if delta_scales
@@ -333,10 +480,6 @@ pub fn simulate_posterior(
     return Err(SimulationError::InvalidModel);
   }
 
-  let rate = match draws.trend {
-    PosteriorTrend::Linear { changepoints, .. } if horizon > 0.0 => changepoints.len() as f64,
-    _ => 0.0,
-  };
   let mut paths = draw_sample_paths(
     PathProcess {
       rows: count,
@@ -384,13 +527,16 @@ pub fn simulate_posterior(
       &mut terms,
     )?;
 
-    let time = match draws.trend {
-      PosteriorTrend::Linear {
-        time_origin,
-        time_scale,
-        ..
-      } => (timestamp - time_origin) / time_scale,
-      PosteriorTrend::Flat => 0.0,
+    let time = draws
+      .time_bounds()
+      .map_or(0.0, |(origin, scale, _)| (timestamp - origin) / scale);
+    let floor = match draws.trend {
+      PosteriorTrend::Logistic {
+        scaling, floors, ..
+      } => scaling
+        .row_floor(floors, row)
+        .map_err(|_| SimulationError::InvalidModel)?,
+      _ => 0.0,
     };
     let offsets = rows.offsets.and_then(|offsets| {
       let start = offsets.rows.binary_search(&row).ok()? * total;
@@ -405,7 +551,13 @@ pub fn simulate_posterior(
     for (sample, noise) in noise.iter_mut().enumerate() {
       let draw = sample / per_draw;
       let shift = future_shift(time, events.get(sample));
-      let trend = terms.trend[draw] + draws.scaling.scale * shift;
+      let trend = match draws.trend {
+        PosteriorTrend::Linear { scaling, .. } => terms.trend[draw] + scaling.scale * shift,
+        PosteriorTrend::Flat { .. } => terms.trend[draw],
+        PosteriorTrend::Logistic { capacities, .. } => {
+          floor + (capacities[row] - floor) * stable_sigmoid(terms.trend[draw] + shift)
+        }
+      };
       let (additive, multiplicative) = match offsets {
         Some((additive, multiplicative)) => (
           terms.additive[draw] + additive[sample],
@@ -441,6 +593,23 @@ pub fn simulate_posterior(
   Ok(output)
 }
 
+/// Draws read only for their feature coefficients: each row holds `trend_width` trend values, the
+/// noise, then one coefficient per mode.
+#[derive(Clone, Copy, Debug)]
+pub struct DrawCoefficients<'a> {
+  pub count: usize,
+  pub values: &'a [f64],
+  pub trend_width: usize,
+  pub modes: &'a [ComponentMode],
+}
+
+impl DrawCoefficients<'_> {
+  fn coefficients(&self, index: usize) -> &[f64] {
+    let width = self.trend_width + 1 + self.modes.len();
+    &self.values[index * width + self.trend_width + 1..(index + 1) * width]
+  }
+}
+
 /// Named components as ranges of combined feature columns.
 #[derive(Clone, Copy, Debug)]
 pub struct ComponentColumns<'a> {
@@ -455,7 +624,7 @@ pub struct ComponentColumns<'a> {
 /// Additive values are in observation units and multiplicative ones are factors, as in
 /// Python. Like `np.percentile`, ranges interpolate linearly between sorted draws.
 pub fn posterior_component_intervals(
-  draws: PosteriorDraws<'_>,
+  draws: DrawCoefficients<'_>,
   timestamps: &[f64],
   features: &[f64],
   components: ComponentColumns<'_>,
@@ -465,8 +634,19 @@ pub fn posterior_component_intervals(
     return Err(SimulationError::InvalidOptions);
   }
 
-  draws.validate()?;
   let columns = draws.modes.len();
+
+  if draws.count == 0
+    || draws.count > MAX_DRAWS
+    || draws
+      .trend_width
+      .checked_add(1 + columns)
+      .and_then(|width| width.checked_mul(draws.count))
+      != Some(draws.values.len())
+    || draws.values.iter().any(|value| !value.is_finite())
+  {
+    return Err(SimulationError::InvalidModel);
+  }
 
   if timestamps.len() > MAX_ROWS
     || timestamps.len().checked_mul(columns) != Some(features.len())

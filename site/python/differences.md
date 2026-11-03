@@ -10,8 +10,9 @@ Python, where it differs on purpose, and the smaller behavior differences.
 
 ## Not available yet
 
-- [Full Bayesian fitting](../examples/bayesian) with logistic growth or regressors forecast by
-  their own models, and in cross-validation, model search and holdout checks
+- Bayesian fitting of a regressor's own model: `predictor` options take no `mcmc`, where Python's
+  `regressor_predictor` can set `mcmc_samples`. The main model can still sample with
+  [`mcmc`](../examples/bayesian).
 
 ## Different on purpose
 
@@ -67,6 +68,9 @@ Python, where it differs on purpose, and the smaller behavior differences.
 - **Size limits on Bayesian fitting.** Up to 16 chains, 100,000 warmup iterations per chain,
   20,000 kept draws and 2,000,000 kept values (draws times parameters). Past these, `fit` fails
   with a `FittingError` whose `reason` is `"sampling-limit"`. Python has no such limits.
+- **Bayesian fits without features.** Python 1.4.0's `predict` fails for a model fitted with
+  `mcmc_samples` that has no seasonalities, holidays or regressors: the posterior's placeholder
+  coefficient comes back with the wrong shape. Here such a model forecasts normally.
 - **Regressor coefficient ranges.** `getRegressorCoefficients` always uses an 80% range, Python's
   default `interval_width`. Python's `regressor_coefficients` uses the model's own
   `interval_width`.

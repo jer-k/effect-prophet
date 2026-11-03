@@ -12,6 +12,7 @@ import {
   encodeFittedModel,
   fit,
   getRegressorCoefficients,
+  isLogisticModel,
   isMcmcModel,
   maximumSampleCells,
   predict,
@@ -575,7 +576,7 @@ const metadataProjection = (
     regressors: regressorMetadata(model),
   };
 
-  if (model.model === "logistic-piecewise-map") {
+  if (isLogisticModel(model)) {
     return {
       ...metadata,
       targetScaling: {

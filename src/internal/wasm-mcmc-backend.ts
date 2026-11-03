@@ -4,6 +4,7 @@ import { coefficientModeCodes } from "../component-mode";
 import type { FittingError, PredictionError } from "../errors";
 import type { EventCalendar } from "../event";
 import { parseFittedModel, isMcmcModel, type FittedMcmcProphet } from "../fitted-model";
+import type { LogisticPredictionBounds, LogisticTrainingBounds } from "../logistic";
 import type { McmcDiagnostics, McmcOptions } from "../mcmc";
 import type { ChangepointSetting } from "../options";
 import type { ResolvedRegressor } from "../regressor";
@@ -47,6 +48,12 @@ export type WasmMcmcLoader = WasmBindingsLoader<McmcWasmBindings>;
 
 const defaultLoader: WasmMcmcLoader = loadProphetWasmModule;
 
+const mcmcModelType = {
+  flat: "flat-mcmc",
+  linear: "linear-piecewise-mcmc",
+  logistic: "logistic-piecewise-mcmc",
+} as const;
+
 /** Values before the step sizes in a successful fit frame. */
 const fitHeader = 20;
 
@@ -56,7 +63,10 @@ const samplerFailureStatus = 13;
 
 /** Everything a posterior fit needs besides the training rows. */
 export interface McmcFitRequest {
-  readonly growth: "flat" | "linear";
+  readonly growth: "flat" | "linear" | "logistic";
+
+  /** Each training row's capacity and the floor policy; required for logistic growth. */
+  readonly bounds?: LogisticTrainingBounds;
   readonly scaling: TargetScalingMode;
   readonly seasonalities: SeasonalityLayout;
   readonly changepoints: ChangepointSetting;
@@ -72,7 +82,7 @@ export interface McmcFitRequest {
 const fitFailure = (
   packed: Float64Array,
   observationCount: number,
-  growth: "flat" | "linear",
+  growth: McmcFitRequest["growth"],
 ): Effect.Effect<never, FittingError> => {
   const status = readWasmStatus(packed);
 
@@ -113,7 +123,7 @@ const fitFailure = (
     }
   }
 
-  return mixedFittingFailure(packed, observationCount, growth);
+  return mixedFittingFailure(packed, observationCount, growth === "flat" ? "flat" : "linear");
 };
 
 const protocolFailure = (observationCount: number): Effect.Effect<never, FittingError> =>
@@ -158,7 +168,9 @@ const decodeFit = (
       return yield* fitFailure(packed, observationCount, request.growth);
     }
 
-    const header = Array.from(packed.subarray(0, fitHeader));
+    const logistic = request.growth === "logistic";
+    const headerLength = fitHeader + (logistic ? 2 : 0);
+    const header = Array.from(packed.subarray(0, headerLength));
     const [, scalingCode, offset, scale, changepointCount, drawCount, width] = header;
     const [timeOrigin, timeScale, observations, termination] = header.slice(7, 11);
     const chainCount = header[18];
@@ -179,12 +191,15 @@ const decodeFit = (
       scalingCode !== targetScalingModeCode(request.scaling) ||
       observations !== observationCount ||
       (termination !== 0 && termination !== 1) ||
-      width !== (growth === "linear" ? 3 + changepointCount : 2) + featureCount
+      width !== (growth === "flat" ? 2 : 3 + changepointCount) + featureCount ||
+      (logistic && termination !== 0) ||
+      (logistic && header[20] !== 0 && header[20] !== 1) ||
+      (header[20] === 1 && header[21] !== 0)
     ) {
       return yield* protocolFailure(observationCount);
     }
 
-    const stepStart = fitHeader;
+    const stepStart = headerLength;
     const changepointStart = stepStart + chainCount;
     const meanStart = changepointStart + changepointCount;
     const drawStart = meanStart + width;
@@ -195,7 +210,7 @@ const decodeFit = (
 
     const means = packed.subarray(meanStart, drawStart);
     const draws = packed.subarray(drawStart);
-    const trendWidth = growth === "linear" ? 2 + changepointCount : 1;
+    const trendWidth = growth === "flat" ? 1 : 2 + changepointCount;
     const noiseIndex = trendWidth;
     const coefficientStart = trendWidth + 1;
     const eventStart = coefficientStart + seasonalCount;
@@ -252,32 +267,63 @@ const decodeFit = (
       regressorCoefficients: drawRows(draws, drawCount, width, regressorStart, regressors.length),
     };
 
-    const parameters =
-      growth === "linear"
-        ? {
-            model: "linear-piecewise-mcmc",
-            ...shared,
-            intercept: means[0],
-            slope: means[1],
-            timeOrigin,
-            timeScale,
-            changepointTimestamps: Array.from(packed.subarray(changepointStart, meanStart)),
-            deltas: meanSlice(2, changepointCount),
-            fitSummary: { ...fitSummary, changepointPriorScale: request.changepointPriorScale },
-            posterior: {
-              intercept: drawColumn(draws, drawCount, width, 0),
-              slope: drawColumn(draws, drawCount, width, 1),
-              deltas: drawRows(draws, drawCount, width, 2, changepointCount),
-              ...featureDraws,
-            },
-          }
-        : {
-            model: "flat-mcmc",
-            ...shared,
-            level: means[0],
-            fitSummary,
-            posterior: { level: drawColumn(draws, drawCount, width, 0), ...featureDraws },
-          };
+    const changepointTimestamps = Array.from(packed.subarray(changepointStart, meanStart));
+    const linearSummary = { ...fitSummary, changepointPriorScale: request.changepointPriorScale };
+
+    const trendDraws = {
+      deltas: drawRows(draws, drawCount, width, 2, changepointCount),
+      ...featureDraws,
+    };
+
+    const parameters = Match.value(growth).pipe(
+      Match.when("linear", () => ({
+        model: "linear-piecewise-mcmc",
+        ...shared,
+        intercept: means[0],
+        slope: means[1],
+        timeOrigin,
+        timeScale,
+        changepointTimestamps,
+        deltas: meanSlice(2, changepointCount),
+        fitSummary: linearSummary,
+        posterior: {
+          intercept: drawColumn(draws, drawCount, width, 0),
+          slope: drawColumn(draws, drawCount, width, 1),
+          ...trendDraws,
+        },
+      })),
+      Match.when("logistic", () => ({
+        model: "logistic-piecewise-mcmc",
+        ...shared,
+        targetScaling: {
+          mode: request.scaling,
+          scale,
+          floorPolicy:
+            header[20] === 0
+              ? { kind: "implicit" as const, floor: header[21] ?? Number.NaN }
+              : { kind: "explicit" as const },
+        },
+        rate: means[0],
+        offset: means[1],
+        timeOrigin,
+        timeScale,
+        changepointTimestamps,
+        deltas: meanSlice(2, changepointCount),
+        fitSummary: linearSummary,
+        posterior: {
+          rate: drawColumn(draws, drawCount, width, 0),
+          offset: drawColumn(draws, drawCount, width, 1),
+          ...trendDraws,
+        },
+      })),
+      Match.orElse(() => ({
+        model: "flat-mcmc",
+        ...shared,
+        level: means[0],
+        fitSummary,
+        posterior: { level: drawColumn(draws, drawCount, width, 0), ...featureDraws },
+      })),
+    );
 
     const parsed = yield* parseFittedModel(parameters).pipe(
       Effect.mapError(() =>
@@ -351,11 +397,33 @@ export const fitMcmcWithWasm = (
     const fit =
       request.growth === "linear" ? module.fit_mixed_linear_mcmc : module.fit_mixed_flat_mcmc;
 
+    const { bounds } = request;
+
+    if (request.growth === "logistic" && bounds === undefined) {
+      return yield* failWasmFitting(observationCount, {
+        reason: "backend-failure",
+        message: "Logistic posterior sampling requires training capacities",
+      });
+    }
+
+    const trainingRows =
+      request.growth === "logistic" && bounds !== undefined
+        ? ([
+            module.fit_logistic_mcmc_with_features,
+            [
+              input.timestamps,
+              input.values,
+              bounds.capacities,
+              bounds.floorPolicy === "implicit" ? 0 : 1,
+              bounds.explicitFloors,
+            ],
+          ] as const)
+        : ([fit, [input.timestamps, input.values]] as const);
+
     const packed = yield* attemptWasmFitting(
       () =>
-        fit(
-          input.timestamps,
-          input.values,
+        trainingRows[0](
+          ...trainingRows[1],
           targetScalingModeCode(request.scaling),
           changepoints.mode,
           changepoints.timestamps,
@@ -390,7 +458,7 @@ export const fitMcmcWithWasm = (
       "effect-prophet.wasm.fit",
       wasmFitSpanOptions(
         {
-          type: request.growth === "linear" ? "linear-piecewise-mcmc" : "flat-mcmc",
+          type: mcmcModelType[request.growth],
           growth: request.growth,
         },
         observationCount,
@@ -414,6 +482,12 @@ const packDraws = (model: FittedMcmcProphet): Float64Array => {
         model.posterior.slope[draw] ?? Number.NaN,
         ...(model.posterior.deltas[draw] ?? []),
       );
+    } else if (model.model === "logistic-piecewise-mcmc") {
+      rows.push(
+        model.posterior.rate[draw] ?? Number.NaN,
+        model.posterior.offset[draw] ?? Number.NaN,
+        ...(model.posterior.deltas[draw] ?? []),
+      );
     } else {
       rows.push(model.posterior.level[draw] ?? Number.NaN);
     }
@@ -429,28 +503,16 @@ const packDraws = (model: FittedMcmcProphet): Float64Array => {
   return new Float64Array(rows);
 };
 
-/** The trend and draw arguments both posterior prediction calls share. */
-const posteriorArguments = (
+/** The feature arguments every posterior prediction call shares, after its trend arguments. */
+const featureArguments = (
   model: FittedMcmcProphet,
-  timestamps: ReadonlyArray<number>,
   masks: SeasonalityMaskMatrix,
   features: KnownAdditiveFeatures,
 ) => {
-  const linear = model.model === "linear-piecewise-mcmc";
   const seasonal = packSeasonalitiesForPrediction(model.seasonalities);
   const additional = packKnownAdditiveFeatures(masks, features);
 
   return [
-    new Float64Array(timestamps),
-    linear ? 0 : 1,
-    targetScalingModeCode(model.targetScaling.mode),
-    model.targetScaling.offset,
-    model.targetScaling.scale,
-    linear ? model.timeOrigin : 0,
-    linear ? model.timeScale : 0,
-    new Float64Array(linear ? model.changepointTimestamps : []),
-    model.posterior.noiseScale.length,
-    packDraws(model),
     seasonal.periods,
     seasonal.orders,
     additional.packedMasks,
@@ -461,6 +523,10 @@ const posteriorArguments = (
     coefficientModeCodes(model.seasonalities, features),
   ] as const;
 };
+
+/** Trend values in each draw before its noise: a level, or a rate, offset and changes. */
+const trendWidth = (model: FittedMcmcProphet): number =>
+  model.model === "flat-mcmc" ? 1 : 2 + model.changepointTimestamps.length;
 
 const noOffsets: SimulationOffsets = {
   rows: new Float64Array(),
@@ -477,6 +543,7 @@ export const simulateMcmcWithWasm = (
   options: UncertaintyOptions,
   loader: WasmMcmcLoader = defaultLoader,
   offsets: SimulationOffsets = noOffsets,
+  logisticBounds?: LogisticPredictionBounds,
 ): Effect.Effect<UncertaintyResult, PredictionError> => {
   const expected = expectedSimulation(options.samples, model.posterior.noiseScale.length);
   const firstTimestamp = timestamps[0] ?? 0;
@@ -488,18 +555,65 @@ export const simulateMcmcWithWasm = (
       "Failed to load the WASM posterior simulation backend",
     );
 
+    const draws = packDraws(model);
+    const drawCount = model.posterior.noiseScale.length;
+
+    const tail = [
+      ...featureArguments(model, masks, features),
+      offsets.rows,
+      offsets.additive,
+      offsets.multiplicative,
+      options.seed,
+      options.samples,
+      options.intervalWidth,
+      options.output === "intervals" ? 0 : 1,
+    ] as const;
+
+    if (model.model === "logistic-piecewise-mcmc" && logisticBounds === undefined) {
+      return yield* wasmPredictionError(firstTimestamp, {
+        reason: "invalid-model",
+        message: "Logistic simulation requires resolved prediction bounds",
+      });
+    }
+
     const packed = yield* attemptWasmPrediction(
-      () =>
-        module.simulate_mcmc_with_features(
-          ...posteriorArguments(model, timestamps, masks, features),
-          offsets.rows,
-          offsets.additive,
-          offsets.multiplicative,
-          options.seed,
-          options.samples,
-          options.intervalWidth,
-          options.output === "intervals" ? 0 : 1,
-        ),
+      () => {
+        if (model.model === "logistic-piecewise-mcmc" && logisticBounds !== undefined) {
+          const floorPolicy = model.targetScaling.floorPolicy;
+
+          return module.simulate_logistic_mcmc_with_features(
+            new Float64Array(timestamps),
+            logisticBounds.capacities,
+            logisticBounds.explicitFloors,
+            targetScalingModeCode(model.targetScaling.mode),
+            model.targetScaling.scale,
+            floorPolicy.kind === "implicit" ? 0 : 1,
+            floorPolicy.kind === "implicit" ? floorPolicy.floor : 0,
+            model.timeOrigin,
+            model.timeScale,
+            new Float64Array(model.changepointTimestamps),
+            drawCount,
+            draws,
+            ...tail,
+          );
+        }
+
+        const linear = model.model === "linear-piecewise-mcmc";
+
+        return module.simulate_mcmc_with_features(
+          new Float64Array(timestamps),
+          linear ? 0 : 1,
+          targetScalingModeCode(model.targetScaling.mode),
+          "offset" in model.targetScaling ? model.targetScaling.offset : 0,
+          model.targetScaling.scale,
+          linear ? model.timeOrigin : 0,
+          linear ? model.timeScale : 0,
+          new Float64Array(linear ? model.changepointTimestamps : []),
+          drawCount,
+          draws,
+          ...tail,
+        );
+      },
       firstTimestamp,
       { message: "Failed to execute the WASM posterior simulation backend" },
     );
@@ -549,7 +663,11 @@ export const posteriorComponentRangesWithWasm = (
     const packed = yield* attemptWasmPrediction(
       () =>
         module.posterior_component_ranges(
-          ...posteriorArguments(model, timestamps, masks, features),
+          new Float64Array(timestamps),
+          trendWidth(model),
+          model.posterior.noiseScale.length,
+          packDraws(model),
+          ...featureArguments(model, masks, features),
           intervalWidth,
         ),
       firstTimestamp,

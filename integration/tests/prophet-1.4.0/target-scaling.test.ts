@@ -98,7 +98,7 @@ describe("Prophet 1.4.0 target-scaling compatibility", () => {
         }).pipe(Effect.provide(prophetFittingBackendLayer)),
       );
 
-      if (model.model === "logistic-piecewise-map") {
+      if (!("offset" in model.targetScaling)) {
         throw new Error(`${referenceCase.id} unexpectedly selected a different model family`);
       }
 

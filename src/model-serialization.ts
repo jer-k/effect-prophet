@@ -1,4 +1,4 @@
-import { Effect, Schema } from "effect";
+import { Effect, Match, Schema } from "effect";
 
 import { ComponentModeSchema, type ComponentMode } from "./component-mode";
 import {
@@ -19,6 +19,7 @@ import {
   parseLogisticMapModel,
   parsePiecewiseMapModel,
   FlatPosteriorSchema,
+  LogisticPosteriorSchema,
   McmcFitSummarySchema,
   PiecewiseMcmcFitSummarySchema,
   PiecewisePosteriorSchema,
@@ -28,6 +29,7 @@ import {
   type FittedFlatMapProphet,
   type FittedFlatMcmcProphet,
   type FittedLogisticMapProphet,
+  type FittedLogisticMcmcProphet,
   type FittedMcmcProphet,
   type FittedPiecewiseMapProphet,
   type FittedPiecewiseMcmcProphet,
@@ -200,13 +202,28 @@ export interface EncodedPiecewiseMcmcModel extends Omit<
   readonly regressorModels?: ReadonlyArray<EncodedRegressorModel>;
 }
 
+/**
+ * Portable representation of a logistic posterior: the logistic MAP fields holding posterior
+ * means, with every draw in `posterior`.
+ */
+export interface EncodedLogisticMcmcModel extends Omit<
+  EncodedLogisticMapModel,
+  "modelKind" | "fitSummary" | "regressorModels"
+> {
+  readonly modelKind: "logistic-piecewise-mcmc";
+  readonly fitSummary: FittedLogisticMcmcProphet["fitSummary"];
+  readonly posterior: FittedLogisticMcmcProphet["posterior"];
+  readonly regressorModels?: ReadonlyArray<EncodedRegressorModel>;
+}
+
 /** Every currently supported JSON-compatible fitted-model payload. */
 export type EncodedFittedModel =
   | EncodedFlatMapModel
   | EncodedPiecewiseMapModel
   | EncodedLogisticMapModel
   | EncodedFlatMcmcModel
-  | EncodedPiecewiseMcmcModel;
+  | EncodedPiecewiseMcmcModel
+  | EncodedLogisticMcmcModel;
 
 /** Fitted models with complete portable prediction state. */
 export type SerializableFittedModel =
@@ -362,6 +379,13 @@ const EncodedPiecewiseMcmcModelSchema = Schema.Struct({
   posterior: PiecewisePosteriorSchema,
 });
 
+const EncodedLogisticMcmcModelSchema = Schema.Struct({
+  ...EncodedLogisticMapModelSchema.fields,
+  modelKind: Schema.Literal("logistic-piecewise-mcmc"),
+  fitSummary: PiecewiseMcmcFitSummarySchema,
+  posterior: LogisticPosteriorSchema,
+});
+
 const EncodedModelDiscriminantSchema = Schema.Struct({
   modelKind: Schema.Literals([
     "flat-map",
@@ -369,6 +393,7 @@ const EncodedModelDiscriminantSchema = Schema.Struct({
     "logistic-piecewise-map",
     "flat-mcmc",
     "linear-piecewise-mcmc",
+    "logistic-piecewise-mcmc",
   ]),
 });
 
@@ -405,6 +430,10 @@ const EncodedFittedModelSchema = Schema.Union([
     ...EncodedPiecewiseMcmcModelSchema.fields,
     regressorModels: EncodedRegressorModelsSchema,
   }),
+  Schema.Struct({
+    ...EncodedLogisticMcmcModelSchema.fields,
+    regressorModels: EncodedRegressorModelsSchema,
+  }),
 ]);
 
 const decodeEncodedModelDiscriminant = Schema.decodeUnknownEffect(EncodedModelDiscriminantSchema, {
@@ -416,7 +445,7 @@ const decodeEncodedFittedModel = Schema.decodeUnknownEffect(EncodedFittedModelSc
 });
 
 const portablePathFromModelPath = (
-  modelKind: EncodedFittedModel["modelKind"],
+  modelKind: EncodedFittedModel["modelKind"] | FittedMcmcProphet["model"],
   path: ReadonlyArray<PropertyKey>,
 ): ReadonlyArray<PropertyKey> => {
   const [field, ...rest] = path;
@@ -435,7 +464,7 @@ const portablePathFromModelPath = (
       return ["coefficients", "slope", ...rest];
 
     case "coefficients":
-      return modelKind === "logistic-piecewise-map"
+      return modelKind === "logistic-piecewise-map" || modelKind === "logistic-piecewise-mcmc"
         ? ["coefficients", ...rest]
         : ["coefficients", "seasonal", ...rest];
 
@@ -446,7 +475,7 @@ const portablePathFromModelPath = (
       return ["timeScaling", "scale", ...rest];
 
     case "seasonalities": {
-      if (modelKind === "logistic-piecewise-map") {
+      if (modelKind === "logistic-piecewise-map" || modelKind === "logistic-piecewise-mcmc") {
         return path;
       }
 
@@ -479,7 +508,7 @@ const portablePathFromModelPath = (
 };
 
 const portableIssueFromModelIssue = (
-  modelKind: EncodedFittedModel["modelKind"],
+  modelKind: EncodedFittedModel["modelKind"] | FittedMcmcProphet["model"],
   issue: ValidationIssue,
 ): ValidationIssue => {
   if (issue.path === undefined) {
@@ -494,7 +523,7 @@ const portableIssueFromModelIssue = (
 
 const serializationErrorFromInvalidModel = (
   operation: "encode" | "decode",
-  modelKind: EncodedFittedModel["modelKind"],
+  modelKind: EncodedFittedModel["modelKind"] | FittedMcmcProphet["model"],
   error: InvalidFittedModel,
 ): ModelSerializationError =>
   new ModelSerializationError({
@@ -701,8 +730,26 @@ const encodePiecewiseMcmcModel = (
   ...encodeRegressorModels(model.regressorModels),
 });
 
-const encodeLogisticMapModel = (model: FittedLogisticMapProphet): EncodedLogisticMapModel => ({
-  modelKind: "logistic-piecewise-map",
+type LogisticFields = Pick<
+  FittedLogisticMapProphet,
+  | "countryHolidays"
+  | "targetScaling"
+  | "rate"
+  | "offset"
+  | "deltas"
+  | "coefficients"
+  | "eventCoefficients"
+  | "regressors"
+  | "events"
+  | "timeOrigin"
+  | "timeScale"
+  | "changepointTimestamps"
+  | "seasonalities"
+  | "noiseScale"
+>;
+
+/** The logistic fields shared by MAP and posterior payloads, in their portable order. */
+const encodeLogisticFields = (model: LogisticFields) => ({
   ...encodedCountryHolidayFields(model.countryHolidays),
   targetScaling: {
     mode: model.targetScaling.mode,
@@ -726,7 +773,28 @@ const encodeLogisticMapModel = (model: FittedLogisticMapProphet): EncodedLogisti
   changepointTimestamps: Array.from(model.changepointTimestamps),
   seasonalities: model.seasonalities.components.map(encodeSeasonalityDefinition),
   noiseScale: model.noiseScale,
+});
+
+const encodeLogisticMapModel = (model: FittedLogisticMapProphet): EncodedLogisticMapModel => ({
+  modelKind: "logistic-piecewise-map",
+  ...encodeLogisticFields(model),
   fitSummary: { ...model.fitSummary },
+  ...encodeRegressorModels(model.regressorModels),
+});
+
+const encodeLogisticMcmcModel = (model: FittedLogisticMcmcProphet): EncodedLogisticMcmcModel => ({
+  modelKind: "logistic-piecewise-mcmc",
+  ...encodeLogisticFields(model),
+  fitSummary: {
+    ...encodeMcmcSummary(model.fitSummary),
+    changepointPriorScale: model.fitSummary.changepointPriorScale,
+  },
+  posterior: {
+    rate: Array.from(model.posterior.rate),
+    offset: Array.from(model.posterior.offset),
+    deltas: copyRows(model.posterior.deltas),
+    ...encodeFeatureDraws(model.posterior),
+  },
   ...encodeRegressorModels(model.regressorModels),
 });
 
@@ -952,12 +1020,15 @@ const decodePiecewiseMapModel = Effect.fnUntraced(function* (
 
 /** Decode a posterior payload; the fitted-model schema checks its draws. */
 const decodeMcmcModel = Effect.fnUntraced(function* (
-  encoded: EncodedFlatMcmcModel | EncodedPiecewiseMcmcModel,
+  encoded: EncodedFlatMcmcModel | EncodedPiecewiseMcmcModel | EncodedLogisticMcmcModel,
 ): Effect.fn.Return<FittedMcmcProphet, ModelSerializationError> {
-  const fields =
-    encoded.modelKind === "flat-mcmc"
-      ? yield* decodeFlatFields(encoded)
-      : yield* decodePiecewiseFields(encoded);
+  const fields = yield* Match.value(encoded).pipe(
+    Match.discriminatorsExhaustive("modelKind")({
+      "flat-mcmc": decodeFlatFields,
+      "linear-piecewise-mcmc": decodePiecewiseFields,
+      "logistic-piecewise-mcmc": decodeLogisticFields,
+    }),
+  );
 
   const parsed = yield* parseFittedModel({
     model: encoded.modelKind,
@@ -981,9 +1052,10 @@ const decodeMcmcModel = Effect.fnUntraced(function* (
   return parsed;
 });
 
-const decodeLogisticMapModel = Effect.fnUntraced(function* (
-  encoded: EncodedLogisticMapModel,
-): Effect.fn.Return<FittedLogisticMapProphet, ModelSerializationError> {
+/** Decode the fields every logistic payload shares, before its model kind and summary. */
+const decodeLogisticFields = Effect.fnUntraced(function* (
+  encoded: Omit<EncodedLogisticMapModel, "modelKind" | "fitSummary">,
+) {
   const definitions = yield* Seasonality.parseSeasonalityDefinitions(encoded.seasonalities).pipe(
     Effect.mapError(serializationErrorFromInvalidSeasonality),
   );
@@ -1003,8 +1075,7 @@ const decodeLogisticMapModel = Effect.fnUntraced(function* (
 
   const regressorModels = yield* decodeRegressorModels(encoded.regressorModels);
 
-  return yield* parseLogisticMapModel({
-    model: "logistic-piecewise-map",
+  return {
     ...decodedCountryHolidayFields(encoded.countryHolidays),
     targetScaling: encoded.targetScaling,
     rate: encoded.parameters.rate,
@@ -1019,8 +1090,19 @@ const decodeLogisticMapModel = Effect.fnUntraced(function* (
     eventCoefficients: encoded.coefficients.events,
     regressors,
     noiseScale: encoded.noiseScale,
-    fitSummary: encoded.fitSummary,
     ...regressorModels,
+  };
+});
+
+const decodeLogisticMapModel = Effect.fnUntraced(function* (
+  encoded: EncodedLogisticMapModel,
+): Effect.fn.Return<FittedLogisticMapProphet, ModelSerializationError> {
+  const fields = yield* decodeLogisticFields(encoded);
+
+  return yield* parseLogisticMapModel({
+    model: "logistic-piecewise-map",
+    ...fields,
+    fitSummary: encoded.fitSummary,
   }).pipe(
     Effect.mapError((error) =>
       serializationErrorFromInvalidModel("decode", "logistic-piecewise-map", error),
@@ -1066,6 +1148,10 @@ export const encodeFittedModel = Effect.fn("Prophet.encodeFittedModel")(function
 
     if (parsedModel.model === "linear-piecewise-mcmc") {
       return encodePiecewiseMcmcModel(parsedModel);
+    }
+
+    if (parsedModel.model === "logistic-piecewise-mcmc") {
+      return encodeLogisticMcmcModel(parsedModel);
     }
   }
 
@@ -1118,7 +1204,11 @@ export const decodeFittedModel = Effect.fn("Prophet.decodeFittedModel")(function
     return yield* decodePiecewiseMapModel(encoded);
   }
 
-  if (encoded.modelKind === "flat-mcmc" || encoded.modelKind === "linear-piecewise-mcmc") {
+  if (
+    encoded.modelKind === "flat-mcmc" ||
+    encoded.modelKind === "linear-piecewise-mcmc" ||
+    encoded.modelKind === "logistic-piecewise-mcmc"
+  ) {
     return yield* decodeMcmcModel(encoded);
   }
 

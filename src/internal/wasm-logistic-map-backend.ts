@@ -5,7 +5,7 @@ import { FittingError, PredictionError } from "../errors";
 import type { EventCalendar } from "../event";
 import {
   parseLogisticMapModel,
-  type FittedLogisticMapProphet,
+  type FittedLogisticProphet,
   type LogisticMapParameters,
 } from "../fitted-model";
 import type { LogisticPredictionBounds, LogisticTrainingBounds } from "../logistic";
@@ -397,7 +397,7 @@ const decodePredictions = (
 
 /** Predict floor-aware logistic rows through one coarse Rust/WASM call. */
 export const predictLogisticMapWithWasm = (
-  model: FittedLogisticMapProphet,
+  model: FittedLogisticProphet,
   timestamps: ReadonlyArray<number>,
   bounds: LogisticPredictionBounds,
   masks: SeasonalityMaskMatrix,

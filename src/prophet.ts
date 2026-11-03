@@ -21,10 +21,12 @@ import {
   type CountryHolidayModel,
 } from "./internal/country-holiday-model";
 import {
+  isLogisticModel,
   isMcmcModel,
   parseFittedModel,
   posteriorDrawCount,
   type FittedFlatMapProphet,
+  type FittedLogisticProphet,
   type FittedMcmcProphet,
   type FittedLogisticMapProphet,
   type FittedPiecewiseMapProphet,
@@ -192,9 +194,12 @@ const makeFitPlan = (
 ): FitPlan => {
   const warmStart = options.map.warmStart === undefined ? {} : { warmStart: options.map.warmStart };
 
-  if (options.mcmc !== undefined && options.growth !== "logistic") {
+  if (options.mcmc !== undefined) {
+    const bounds = logisticBounds === undefined ? {} : { bounds: logisticBounds };
+
     return FitPlan.Mcmc({
       growth: options.growth,
+      ...bounds,
       scaling: options.scaling ?? defaultTargetScalingMode,
       seasonalities: layout,
       changepoints: options.map.changepoints,
@@ -498,7 +503,7 @@ const fitRegressorModels = Effect.fnUntraced(function* (
     );
 
     // Regressor model options cannot select logistic growth or posterior sampling.
-    if (model.model === "logistic-piecewise-map" || isMcmcModel(model)) {
+    if (isLogisticModel(model) || isMcmcModel(model)) {
       return yield* new FittingError({
         reason: "backend-failure",
         observationCount: observations.length,
@@ -1059,7 +1064,10 @@ const predictPiecewiseMapForecasts = (
       });
 
 const predictMixedMapForecasts = (
-  model: FittedFlatMapProphet | FittedPiecewiseMapProphet | FittedMcmcProphet,
+  model:
+    | FittedFlatMapProphet
+    | FittedPiecewiseMapProphet
+    | Exclude<FittedMcmcProphet, FittedLogisticProphet>,
   timestamps: PredictionTimestamps,
   alignedRegressorValues: ReadonlyArray<ReadonlyArray<number>>,
   masks: SeasonalityMaskMatrix,
@@ -1083,7 +1091,7 @@ const predictMixedMapForecasts = (
   });
 
 const predictLogisticMapForecasts = (
-  model: FittedLogisticMapProphet,
+  model: FittedLogisticProphet,
   timestamps: PredictionTimestamps,
   bounds: Parameters<typeof predictLogisticMapWithWasm>[2],
   alignedRegressorValues: ReadonlyArray<ReadonlyArray<number>>,
@@ -1356,7 +1364,7 @@ const predictRows = Effect.fnUntraced(function* (
 
   let logisticBounds: LogisticPredictionBounds | undefined;
 
-  if (parsedModel.model === "logistic-piecewise-map") {
+  if (isLogisticModel(parsedModel)) {
     logisticBounds = yield* parseLogisticPredictionBounds(
       rows,
       parsedModel.targetScaling.floorPolicy,
@@ -1387,7 +1395,7 @@ const predictRows = Effect.fnUntraced(function* (
     alignedConditionValues,
   ).pipe(Effect.mapError((error) => conditionValidationError("prediction-rows", error)));
 
-  if (parsedModel.model === "logistic-piecewise-map") {
+  if (isLogisticModel(parsedModel)) {
     if (logisticBounds === undefined) {
       return yield* new PredictionError({
         reason: "invalid-model",
@@ -1508,6 +1516,10 @@ export const predictUncertainty = Effect.fn("Prophet.predictUncertainty")(functi
  * Python's predictive samples swap each regressor model's draws in for its point forecast, one
  * draw per sample. A regressor's effect is linear in its value, so each draw changes its row by
  * the coefficient times its distance from the point forecast. Earlier rows keep their values.
+ *
+ * A posterior runs more paths than requested, `ceil(samples / draws)` per draw. As in Python,
+ * each regressor model still draws the requested samples, and path `s` reuses draw
+ * `s % samples`, with the coefficient of the posterior draw that path belongs to.
  */
 const regressorModelOffsets = Effect.fnUntraced(function* (
   model: FittedProphet,
@@ -1523,13 +1535,17 @@ const regressorModelOffsets = Effect.fnUntraced(function* (
   }
 
   const { samples } = options;
-  const additive = new Float64Array(future.length * samples);
-  const multiplicative = new Float64Array(future.length * samples);
+  const drawCount = posteriorDrawCount(model);
+  const paths = expectedSimulation(samples, drawCount).sampleCount;
+  const perDraw = drawCount === undefined ? paths : paths / drawCount;
+  const additive = new Float64Array(future.length * paths);
+  const multiplicative = new Float64Array(future.length * paths);
   const futureRows = future.map((index) => ({ timestamp: rows[index]?.timestamp ?? 0 }));
 
   for (const [index, regressorModel] of (model.regressorModels ?? []).entries()) {
     const { name } = regressorModel;
-    const regressor = model.regressors.find((fitted) => fitted.definition.name === name);
+    const column = model.regressors.findIndex((fitted) => fitted.definition.name === name);
+    const regressor = model.regressors[column];
 
     const draws = yield* simulateRows(regressorModel.model, futureRows, {
       ...options,
@@ -1550,16 +1566,26 @@ const regressorModelOffsets = Effect.fnUntraced(function* (
     }
 
     const { coefficient } = projectRegressorCoefficient(regressor);
+
+    const pathCoefficient = (path: number): number =>
+      isMcmcModel(model)
+        ? originalUnitCoefficient(
+            regressor,
+            model.posterior.regressorCoefficients[Math.floor(path / perDraw)]?.[column] ??
+              Number.NaN,
+          )
+        : coefficient;
+
     const target = regressor.definition.mode === "additive" ? additive : multiplicative;
 
     for (const [position, rowIndex] of future.entries()) {
       const point = rows[rowIndex]?.regressors?.[name] ?? Number.NaN;
 
-      for (let sample = 0; sample < samples; sample += 1) {
-        const cell = position * samples + sample;
+      for (let path = 0; path < paths; path += 1) {
+        const cell = position * paths + path;
+        const draw = draws.value[position * samples + (path % samples)] ?? Number.NaN;
 
-        target[cell] =
-          (target[cell] ?? 0) + coefficient * ((draws.value[cell] ?? Number.NaN) - point);
+        target[cell] = (target[cell] ?? 0) + pathCoefficient(path) * (draw - point);
       }
     }
   }
@@ -1751,12 +1777,11 @@ const simulateRows = Effect.fnUntraced(function* (
     return emptyUncertaintyResult(options, parsedModel);
   }
 
-  const logisticBounds =
-    parsedModel.model === "logistic-piecewise-map"
-      ? yield* parseLogisticPredictionBounds(rows, parsedModel.targetScaling.floorPolicy)
-      : undefined;
+  const logisticBounds = isLogisticModel(parsedModel)
+    ? yield* parseLogisticPredictionBounds(rows, parsedModel.targetScaling.floorPolicy)
+    : undefined;
 
-  if (parsedModel.model !== "logistic-piecewise-map") {
+  if (!isLogisticModel(parsedModel)) {
     yield* rejectNonLogisticPredictionBounds(rows);
   }
 
@@ -1779,7 +1804,7 @@ const simulateRows = Effect.fnUntraced(function* (
   // Regressor model draws are held in full, so their rows are bounded like sample output.
   if (
     exceedsSimulationBudget(timestamps.length, expected.sampleCount, options.output) ||
-    exceedsSimulationBudget(future.length, options.samples, "samples") ||
+    exceedsSimulationBudget(future.length, expected.sampleCount, "samples") ||
     changepointCount > 10_000 ||
     horizon > 20 ||
     changepointCount * horizon > 256
@@ -1799,11 +1824,20 @@ const simulateRows = Effect.fnUntraced(function* (
     parsedModel.regressors,
   );
 
-  if (isMcmcModel(parsedModel)) {
-    return yield* simulateMcmcWithWasm(parsedModel, timestamps, masks, features, options);
-  }
-
   const offsets = yield* regressorModelOffsets(parsedModel, rows, future, options);
+
+  if (isMcmcModel(parsedModel)) {
+    return yield* simulateMcmcWithWasm(
+      parsedModel,
+      timestamps,
+      masks,
+      features,
+      options,
+      undefined,
+      offsets,
+      logisticBounds,
+    );
+  }
 
   return yield* simulateMapWithWasm(
     parsedModel,

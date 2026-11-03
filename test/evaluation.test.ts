@@ -40,24 +40,36 @@ const failure = (days: ReadonlyArray<number>, input: Parameters<typeof planRolli
   );
 
 describe("crossValidate with mcmc", () => {
-  it("rejects posterior sampling before fitting any fold", async () => {
-    const rows = [0, 1, 2, 3, 4, 5].map((day) => ({ timestamp: at(day), value: day }));
+  it("fits each fold's posterior and simulates its paths", async () => {
+    const rows = Array.from({ length: 24 }, (_, day) => ({
+      timestamp: at(day),
+      value: 10 + day * 0.5 + Math.sin(day),
+    }));
 
     const plan = {
-      horizonMs: dayMs,
-      cutoffs: { mode: "explicit", timestamps: [at(3)] },
+      horizonMs: 2 * dayMs,
+      cutoffs: { mode: "explicit", timestamps: [at(15), at(19)] },
     } as const;
 
-    const error = await Effect.runPromise(
-      Effect.flip(
-        crossValidate(rows, { mcmc: { samples: 20, seed: 1 } }, plan).pipe(
-          Effect.provide(prophetFittingBackendLayer),
-        ),
-      ),
+    const result = await Effect.runPromise(
+      crossValidate(
+        rows,
+        {
+          builtInSeasonalities: { daily: "off", weekly: "off", yearly: "off" },
+          mcmc: { samples: 40, seed: 2, chains: 2 },
+        },
+        plan,
+        { mode: "intervals", uncertainty: { seed: 5, samples: 50 } },
+      ).pipe(Effect.provide(prophetFittingBackendLayer)),
     );
 
-    expect(error._tag).toBe("InputValidationError");
-    expect(error.message).toContain("posterior sampling");
+    if (result.kind !== "intervals") throw new Error("Expected intervals");
+
+    expect(result.simulation).toBe("prophet-mcmc-scalar-xoshiro128ss-v1");
+    expect(result.rows).toHaveLength(4);
+    expect(
+      result.rows.every((row) => row.lower <= row.predicted && row.predicted <= row.upper),
+    ).toBe(true);
   });
 });
 

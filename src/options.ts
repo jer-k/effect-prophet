@@ -708,47 +708,15 @@ const parseRegressorModels = Effect.fnUntraced(function* (
 const mcmcConflict = (path: ReadonlyArray<PropertyKey>, message: string) =>
   new InputValidationError({ input: "options", issues: [{ path, message }], message });
 
-/**
- * Reject settings that don't apply to posterior sampling, rather than ignoring them, and
- * combinations not supported yet.
- */
+/** Reject an optimizer with `mcmc` rather than ignoring it: sampling never optimizes. */
 const checkMcmcCombination = (
-  growth: Growth,
   map: typeof MapOptionsSchema.Type | undefined,
-  regressorModelCount: number,
-): Effect.Effect<void, InputValidationError> => {
-  if (map?.optimizer !== undefined) {
-    return Effect.fail(
-      mcmcConflict(["map", "optimizer"], "An optimizer does not apply when sampling with mcmc"),
-    );
-  }
-
-  if (growth === "logistic") {
-    return Effect.fail(
-      mcmcConflict(["mcmc"], "Posterior sampling supports flat and linear growth"),
-    );
-  }
-
-  if (regressorModelCount > 0) {
-    return Effect.fail(
-      mcmcConflict(["mcmc"], "Posterior sampling does not support regressor models"),
-    );
-  }
-
-  return Effect.void;
-};
-
-/**
- * Reject `mcmc` in an operation that doesn't support posterior sampling yet, rather than
- * fitting MAP models silently.
- */
-export const rejectMcmcOptions = (
-  options: ProphetOptions,
-  operation: string,
 ): Effect.Effect<void, InputValidationError> =>
-  options.mcmc === undefined
+  map?.optimizer === undefined
     ? Effect.void
-    : Effect.fail(mcmcConflict(["mcmc"], `${operation} does not support posterior sampling yet`));
+    : Effect.fail(
+        mcmcConflict(["map", "optimizer"], "An optimizer does not apply when sampling with mcmc"),
+      );
 
 /** Decode optional, untrusted fitting options and apply the documented defaults. */
 export const decodeOptions = Effect.fn("Prophet.decodeOptions")(function* (
@@ -832,7 +800,7 @@ const decodeOptionsInput = Effect.fnUntraced(function* (
   const scaling = syntax.scaling === undefined ? {} : { scaling: syntax.scaling };
 
   if (syntax.mcmc !== undefined) {
-    yield* checkMcmcCombination(syntax.growth, syntax.map, regressorModelSyntax.length);
+    yield* checkMcmcCombination(syntax.map);
   }
 
   const mcmc = syntax.mcmc === undefined ? {} : { mcmc: resolveMcmcOptions(syntax.mcmc) };

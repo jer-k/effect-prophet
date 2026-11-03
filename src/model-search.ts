@@ -41,12 +41,7 @@ import {
 } from "./internal/cross-validation-options";
 import { defaultTargetScalingMode } from "./target-scaling";
 import { decodeObservations } from "./observation";
-import {
-  decodeOptions,
-  rejectMcmcOptions,
-  type EncodedProphetOptions,
-  type ProphetOptions,
-} from "./options";
+import { decodeOptions, type EncodedProphetOptions, type ProphetOptions } from "./options";
 import { exceedsSimulationBudget } from "./uncertainty";
 
 const ObjectiveSchema = Schema.Struct({
@@ -317,13 +312,7 @@ export const searchModels = Effect.fn("Prophet.searchModels")(function* (
         ),
       );
 
-    const originalOptions = yield* parseOptions(original.options);
-
-    yield* rejectMcmcOptions(originalOptions, "Model search").pipe(
-      Effect.mapError((error) =>
-        searchInputContext(error, ["candidates", index, "options"], "Invalid candidate options"),
-      ),
-    );
+    yield* parseOptions(original.options);
 
     const copy = ownedInput(original.options);
 

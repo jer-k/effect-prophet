@@ -34,6 +34,8 @@ const FlatMcmcModel = Schema.Literal("flat-mcmc");
 
 const PiecewiseMcmcModel = Schema.Literal("linear-piecewise-mcmc");
 
+const LogisticMcmcModel = Schema.Literal("logistic-piecewise-mcmc");
+
 const ModelDiscriminantSchema = Schema.Struct({
   model: Schema.Union([
     FlatMapModel,
@@ -41,6 +43,7 @@ const ModelDiscriminantSchema = Schema.Struct({
     LogisticMapModel,
     FlatMcmcModel,
     PiecewiseMcmcModel,
+    LogisticMcmcModel,
   ]),
 });
 
@@ -553,75 +556,78 @@ const LogisticMapParametersFieldsSchema = Schema.Struct({
 
 type LogisticMapParametersFields = typeof LogisticMapParametersFieldsSchema.Type;
 
-const consistentLogisticMapParameters = Schema.makeFilter<LogisticMapParametersFields>(
-  (parameters) => {
-    const issues: Array<{
-      readonly path: ReadonlyArray<PropertyKey>;
-      readonly issue: string;
-    }> = [];
+/** Checks every logistic model shares, whether fitted by optimization or sampling. */
+const logisticModelIssues = (
+  parameters: Omit<LogisticMapParametersFields, "model" | "fitSummary" | "countryHolidays"> & {
+    readonly fitSummary: { readonly valueScale: number };
+  },
+): Array<Issue> => {
+  const issues: Array<Issue> = [];
 
-    if (parameters.targetScaling.scale !== parameters.fitSummary.valueScale) {
-      issues.push({
-        path: ["targetScaling", "scale"],
-        issue: "Target scale must match the fitted objective value scale",
-      });
-    }
+  if (parameters.targetScaling.scale !== parameters.fitSummary.valueScale) {
+    issues.push({
+      path: ["targetScaling", "scale"],
+      issue: "Target scale must match the fitted objective value scale",
+    });
+  }
 
-    if (parameters.changepointTimestamps.length !== parameters.deltas.length) {
-      issues.push({
-        path: ["deltas"],
-        issue: "Changepoint timestamps and deltas must align",
-      });
-    }
+  if (parameters.changepointTimestamps.length !== parameters.deltas.length) {
+    issues.push({
+      path: ["deltas"],
+      issue: "Changepoint timestamps and deltas must align",
+    });
+  }
 
-    if (parameters.coefficients.length !== parameters.seasonalities.coefficientCount) {
-      issues.push({
-        path: ["coefficients"],
-        issue: `Expected exactly ${parameters.seasonalities.coefficientCount} seasonal coefficients`,
-      });
-    }
+  if (parameters.coefficients.length !== parameters.seasonalities.coefficientCount) {
+    issues.push({
+      path: ["coefficients"],
+      issue: `Expected exactly ${parameters.seasonalities.coefficientCount} seasonal coefficients`,
+    });
+  }
 
-    if (parameters.eventCoefficients.length !== parameters.events.layout.coefficientCount) {
-      issues.push({
-        path: ["eventCoefficients"],
-        issue: `Expected exactly ${parameters.events.layout.coefficientCount} event coefficients`,
-      });
-    }
+  if (parameters.eventCoefficients.length !== parameters.events.layout.coefficientCount) {
+    issues.push({
+      path: ["eventCoefficients"],
+      issue: `Expected exactly ${parameters.events.layout.coefficientCount} event coefficients`,
+    });
+  }
 
-    issues.push(...featureIdentityIssues(parameters));
+  issues.push(...featureIdentityIssues(parameters));
 
-    const end = parameters.timeOrigin + parameters.timeScale;
+  const end = parameters.timeOrigin + parameters.timeScale;
+
+  if (
+    !Number.isSafeInteger(parameters.timeOrigin) ||
+    !Number.isSafeInteger(parameters.timeScale) ||
+    !Number.isSafeInteger(end)
+  ) {
+    issues.push({
+      path: ["timeScale"],
+      issue: "Training time bounds must remain inside safe integer arithmetic",
+    });
+  }
+
+  for (const [index, changepoint] of parameters.changepointTimestamps.entries()) {
+    const previous = parameters.changepointTimestamps[index - 1];
 
     if (
-      !Number.isSafeInteger(parameters.timeOrigin) ||
-      !Number.isSafeInteger(parameters.timeScale) ||
-      !Number.isSafeInteger(end)
+      !Number.isSafeInteger(changepoint) ||
+      changepoint < parameters.timeOrigin ||
+      changepoint > end ||
+      (previous !== undefined && changepoint < previous)
     ) {
       issues.push({
-        path: ["timeScale"],
-        issue: "Training time bounds must remain inside safe integer arithmetic",
+        path: ["changepointTimestamps", index],
+        issue: "Changepoints must be safe, nondecreasing timestamps in training bounds",
       });
     }
+  }
 
-    for (const [index, changepoint] of parameters.changepointTimestamps.entries()) {
-      const previous = parameters.changepointTimestamps[index - 1];
+  return issues;
+};
 
-      if (
-        !Number.isSafeInteger(changepoint) ||
-        changepoint < parameters.timeOrigin ||
-        changepoint > end ||
-        (previous !== undefined && changepoint < previous)
-      ) {
-        issues.push({
-          path: ["changepointTimestamps", index],
-          issue: "Changepoints must be safe, nondecreasing timestamps in training bounds",
-        });
-      }
-    }
-
-    return issues;
-  },
-);
+const consistentLogisticMapParameters =
+  Schema.makeFilter<LogisticMapParametersFields>(logisticModelIssues);
 
 /** Posterior sampling summary: how the draws were made and the sampler's health. */
 export const McmcFitSummarySchema = Schema.Struct({
@@ -658,6 +664,17 @@ export const FlatPosteriorSchema = Schema.Struct({
 export const PiecewisePosteriorSchema = Schema.Struct({
   intercept: Schema.Array(Schema.Finite),
   slope: Schema.Array(Schema.Finite),
+  deltas: DrawRows,
+  noiseScale: Schema.Array(PositiveFinite),
+  coefficients: DrawRows,
+  eventCoefficients: DrawRows,
+  regressorCoefficients: DrawRows,
+});
+
+/** Every draw of a logistic posterior: dimensionless trend draws, observation-unit features. */
+export const LogisticPosteriorSchema = Schema.Struct({
+  rate: Schema.Array(Schema.Finite),
+  offset: Schema.Array(Schema.Finite),
   deltas: DrawRows,
   noiseScale: Schema.Array(PositiveFinite),
   coefficients: DrawRows,
@@ -783,6 +800,34 @@ const consistentPiecewiseMcmcParameters = Schema.makeFilter<
     ["noiseScale", parameters.posterior.noiseScale, undefined],
     ...posteriorFeatureColumns(parameters),
   ]),
+]);
+
+const LogisticMcmcParametersFieldsSchema = Schema.Struct({
+  ...LogisticMapParametersFieldsSchema.fields,
+  model: LogisticMcmcModel,
+  fitSummary: PiecewiseMcmcFitSummarySchema,
+  posterior: LogisticPosteriorSchema,
+});
+
+const consistentLogisticMcmcParameters = Schema.makeFilter<
+  typeof LogisticMcmcParametersFieldsSchema.Type
+>((parameters) => [
+  ...logisticModelIssues(parameters),
+  ...posteriorIssues(parameters.fitSummary, [
+    ["rate", parameters.posterior.rate, undefined],
+    ["offset", parameters.posterior.offset, undefined],
+    ["deltas", parameters.posterior.deltas, parameters.deltas.length],
+    ["noiseScale", parameters.posterior.noiseScale, undefined],
+    ...posteriorFeatureColumns(parameters),
+  ]),
+  ...(parameters.fitSummary.termination === "sampled"
+    ? []
+    : [
+        {
+          path: ["fitSummary", "termination"],
+          issue: "Logistic posteriors are always sampled",
+        },
+      ]),
 ]);
 
 // A regressor model has no regressors of its own, so the base schemas type it without recursion.
@@ -998,6 +1043,23 @@ const PiecewiseMcmcParametersSchema = Schema.Struct({
   ),
 );
 
+const LogisticMcmcParametersSchema = Schema.Struct({
+  ...LogisticMcmcParametersFieldsSchema.fields,
+  regressorModels: RegressorModelsSchema,
+}).check(
+  consistentLogisticMcmcParameters,
+  Schema.makeFilter((parameters) =>
+    regressorModelIssues(parameters, {
+      start: parameters.timeOrigin,
+      end: parameters.timeOrigin + parameters.timeScale,
+    }),
+  ),
+);
+
+const FittedLogisticMcmcProphetSchema = LogisticMcmcParametersSchema.pipe(
+  Schema.brand("effect-prophet/FittedLogisticMcmcProphet"),
+);
+
 const FittedFlatMcmcProphetSchema = FlatMcmcParametersSchema.pipe(
   Schema.brand("effect-prophet/FittedFlatMcmcProphet"),
 );
@@ -1012,6 +1074,7 @@ const FittedProphetSchema = Schema.Union([
   FittedLogisticMapProphetSchema,
   FittedFlatMcmcProphetSchema,
   FittedPiecewiseMcmcProphetSchema,
+  FittedLogisticMcmcProphetSchema,
 ]);
 
 type ParsedPiecewiseMapParameters = typeof PiecewiseMapParametersSchema.Type;
@@ -1044,13 +1107,17 @@ export type FlatMcmcParameters = typeof FlatMcmcParametersSchema.Type;
 /** Complete, untrusted fitted state for a linear posterior. */
 export type PiecewiseMcmcParameters = typeof PiecewiseMcmcParametersSchema.Type;
 
+/** Complete, untrusted fitted state for a logistic posterior. */
+export type LogisticMcmcParameters = typeof LogisticMcmcParametersSchema.Type;
+
 /** Untrusted fitted parameters returned by a fitting backend. */
 export type Parameters =
   | FlatMapParameters
   | PiecewiseMapParameters
   | LogisticMapParameters
   | FlatMcmcParameters
-  | PiecewiseMcmcParameters;
+  | PiecewiseMcmcParameters
+  | LogisticMcmcParameters;
 
 /** A trusted, deeply immutable reduced flat MAP model. */
 export type FittedFlatMapProphet = typeof FittedFlatMapProphetSchema.Type;
@@ -1067,15 +1134,30 @@ export type FittedFlatMcmcProphet = typeof FittedFlatMcmcProphetSchema.Type;
 /** A trusted, deeply immutable linear posterior. */
 export type FittedPiecewiseMcmcProphet = typeof FittedPiecewiseMcmcProphetSchema.Type;
 
+/** A trusted, deeply immutable logistic posterior. */
+export type FittedLogisticMcmcProphet = typeof FittedLogisticMcmcProphetSchema.Type;
+
 /** A model fitted by posterior sampling. */
-export type FittedMcmcProphet = FittedFlatMcmcProphet | FittedPiecewiseMcmcProphet;
+export type FittedMcmcProphet =
+  | FittedFlatMcmcProphet
+  | FittedPiecewiseMcmcProphet
+  | FittedLogisticMcmcProphet;
+
+/** A model with a capacity-bounded logistic trend, fitted either way. */
+export type FittedLogisticProphet = FittedLogisticMapProphet | FittedLogisticMcmcProphet;
+
+/** Whether a model's trend is logistic, so prediction rows need capacities. */
+export const isLogisticModel = (model: FittedProphet): model is FittedLogisticProphet =>
+  model.model === "logistic-piecewise-map" || model.model === "logistic-piecewise-mcmc";
 
 /** A model fitted by optimization, whose `fitSummary` reports the optimizer's progress. */
 export type FittedMapProphet = Exclude<FittedProphet, FittedMcmcProphet>;
 
 /** Whether a model was fitted by posterior sampling. */
 export const isMcmcModel = (model: FittedProphet): model is FittedMcmcProphet =>
-  model.model === "flat-mcmc" || model.model === "linear-piecewise-mcmc";
+  model.model === "flat-mcmc" ||
+  model.model === "linear-piecewise-mcmc" ||
+  model.model === "logistic-piecewise-mcmc";
 
 /** Number of posterior draws a model keeps, or `undefined` for a MAP model. */
 export const posteriorDrawCount = (model: FittedProphet): number | undefined =>

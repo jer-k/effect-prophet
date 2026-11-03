@@ -106,6 +106,8 @@ export interface ProphetWasmNodeBindings {
   readonly simulate_logistic_map_with_features: (...args: ReadonlyArray<unknown>) => Float64Array;
   readonly fit_mixed_linear_mcmc: (...args: ReadonlyArray<unknown>) => Float64Array;
   readonly fit_mixed_flat_mcmc: (...args: ReadonlyArray<unknown>) => Float64Array;
+  readonly fit_logistic_mcmc_with_features: (...args: ReadonlyArray<unknown>) => Float64Array;
+  readonly simulate_logistic_mcmc_with_features: (...args: ReadonlyArray<unknown>) => Float64Array;
   readonly simulate_mcmc_with_features: (...args: ReadonlyArray<unknown>) => Float64Array;
   readonly posterior_component_ranges: (...args: ReadonlyArray<unknown>) => Float64Array;
 }
@@ -127,6 +129,8 @@ const requiredFunctionExports = [
   "simulate_logistic_map_with_features",
   "fit_mixed_linear_mcmc",
   "fit_mixed_flat_mcmc",
+  "fit_logistic_mcmc_with_features",
+  "simulate_logistic_mcmc_with_features",
   "simulate_mcmc_with_features",
   "posterior_component_ranges",
   "predict_flat_map",

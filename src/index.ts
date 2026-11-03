@@ -172,6 +172,7 @@ export {
   type EncodedFlatMapModel,
   type EncodedFlatMcmcModel,
   type EncodedLogisticMapModel,
+  type EncodedLogisticMcmcModel,
   type EncodedPiecewiseMapModel,
   type EncodedPiecewiseMcmcModel,
   type EncodedRegressorModel,
@@ -220,10 +221,13 @@ export {
 } from "./linear-optimizer";
 
 export {
+  isLogisticModel,
   isMcmcModel,
   type FittedFlatMapProphet,
   type FittedFlatMcmcProphet,
   type FittedLogisticMapProphet,
+  type FittedLogisticMcmcProphet,
+  type FittedLogisticProphet,
   type FittedMapProphet,
   type FittedMcmcProphet,
   type FittedPiecewiseMapProphet,

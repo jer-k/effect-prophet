@@ -63,6 +63,26 @@ describe("anomalyPosition", () => {
 });
 
 describe("detectAnomalies", () => {
+  it("checks measurements against a posterior's ranges", async () => {
+    const model = await Effect.runPromise(
+      fit(history, {
+        builtInSeasonalities: { daily: "off", weekly: "off", yearly: "off" },
+        mcmc: { samples: 60, seed: 3, chains: 2 },
+      }).pipe(Effect.provide(prophetFittingBackendLayer)),
+    );
+
+    const report = await Effect.runPromise(
+      detectAnomalies(model, later, { seed: 4, samples: 100 }),
+    );
+
+    expect(report.simulation).toBe("prophet-mcmc-scalar-xoshiro128ss-v1");
+    expect(report.sampleCount).toBe(120);
+    expect(report.anomalies.map(({ timestamp, position }) => [timestamp, position])).toEqual([
+      [Date.parse(day(61)), "above"],
+      [Date.parse(day(62)), "below"],
+    ]);
+  });
+
   it("assesses later observations against an earlier baseline in chronological order", async () => {
     const model = await fitBaseline();
     const report = await Effect.runPromise(detectAnomalies(model, later, options));
