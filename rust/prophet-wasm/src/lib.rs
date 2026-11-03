@@ -8,6 +8,7 @@ pub mod map_uncertainty;
 pub mod mixed_map;
 pub mod piecewise_linear;
 pub mod piecewise_map;
+mod quantile;
 pub mod seasonality;
 mod simulation_rng;
 pub mod stan;

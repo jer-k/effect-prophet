@@ -2,6 +2,7 @@
 
 use crate::logistic_map::{LogisticParameters, LogisticPredictionTrend, stable_sigmoid};
 use crate::piecewise_linear::PiecewiseTrend;
+use crate::quantile::sorted_quantile;
 use crate::simulation_rng::{SamplerError, SimulationRng};
 use crate::target_scaling::{LogisticScaling, TargetScaling};
 
@@ -602,33 +603,6 @@ pub fn simulate_intervals(
   })
 }
 
-fn quantile(sorted: &[f64], probability: f64) -> f64 {
-  let position = (sorted.len() - 1) as f64 * probability;
-  let lower = position.floor() as usize;
-  let upper = position.ceil() as usize;
-  let fraction = position - lower as f64;
-  let start = sorted[lower];
-  let end = sorted[upper];
-
-  // Preserve plateaus exactly: multiplying equal values by complementary weights can
-  // round two quantiles in opposite directions on saturated logistic trends.
-  if start == end || fraction == 0.0 {
-    return start;
-  }
-  if fraction == 1.0 {
-    return end;
-  }
-
-  // The difference avoids cancellation for nearby values, but may overflow when
-  // the finite endpoints have opposite signs. In that case use bounded weights.
-  let difference = end - start;
-  if difference.is_finite() {
-    start + difference * fraction
-  } else {
-    start * (1.0 - fraction) + end * fraction
-  }
-}
-
 /// Sort one row's draws in place and return its equal-tailed `[lower, upper]` bounds.
 fn row_interval(draws: &mut [f64], width: f64, row: usize) -> Result<(f64, f64), SimulationError> {
   if draws.iter().any(|value| !value.is_finite()) {
@@ -636,8 +610,8 @@ fn row_interval(draws: &mut [f64], width: f64, row: usize) -> Result<(f64, f64),
   }
 
   draws.sort_unstable_by(f64::total_cmp);
-  let lower = quantile(draws, (1.0 - width) / 2.0);
-  let upper = quantile(draws, (1.0 + width) / 2.0);
+  let lower = sorted_quantile(draws, (1.0 - width) / 2.0);
+  let upper = sorted_quantile(draws, (1.0 + width) / 2.0);
 
   if !lower.is_finite() || !upper.is_finite() || lower > upper {
     return Err(SimulationError::NonFiniteResult { row, sample: 0 });

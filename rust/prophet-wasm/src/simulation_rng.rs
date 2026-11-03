@@ -1,7 +1,10 @@
-//! Versioned local integer RNG and transforms for MAP predictive simulation.
+//! Versioned local integer RNG and transforms for predictive simulation and posterior sampling.
 //! The exact transition, draw order and transforms are part of the simulation identity.
 
 const INV_U32_RANGE: f64 = 1.0 / 4_294_967_296.0;
+
+/// xoshiro128**'s jump polynomial, equivalent to 2^64 calls to `next_u32`.
+const JUMP: [u32; 4] = [0x8764_000b, 0xf542_d2d3, 0x6fa0_35c3, 0x77f2_db5b];
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum SamplerError {
@@ -42,6 +45,24 @@ impl SimulationRng {
     ];
 
     result
+  }
+
+  /// Advance by 2^64 outputs, giving a stream that cannot overlap the next 2^64 draws.
+  pub(crate) fn jump(&mut self) {
+    let mut jumped = [0_u32; 4];
+
+    for word in JUMP {
+      for bit in 0..32 {
+        if word & (1 << bit) != 0 {
+          for (target, source) in jumped.iter_mut().zip(self.state) {
+            *target ^= source;
+          }
+        }
+        self.next_u32();
+      }
+    }
+
+    self.state = jumped;
   }
 
   /// Advance past `draws` integer outputs, as if each had been consumed by a transform.
@@ -143,6 +164,49 @@ mod tests {
         980_451_116
       ]
     );
+  }
+
+  /// One transition as a 128×128 matrix over GF(2): column `bit` is the image of that state bit.
+  fn transition_columns() -> Vec<u128> {
+    (0..128)
+      .map(|bit| {
+        let basis = 1_u128 << bit;
+        let mut rng = SimulationRng {
+          state: std::array::from_fn(|word| (basis >> (32 * word)) as u32),
+        };
+        rng.next_u32();
+        pack(rng.state)
+      })
+      .collect()
+  }
+
+  fn pack(state: [u32; 4]) -> u128 {
+    state.iter().enumerate().fold(0, |packed, (word, value)| {
+      packed | u128::from(*value) << (32 * word)
+    })
+  }
+
+  fn apply(columns: &[u128], vector: u128) -> u128 {
+    (0..128)
+      .filter(|bit| vector >> bit & 1 == 1)
+      .fold(0, |image, bit| image ^ columns[bit])
+  }
+
+  #[test]
+  fn jump_matches_the_transition_raised_to_two_to_the_sixty_four() {
+    // Squaring the transition 64 times gives an independent derivation of the jump.
+    let mut power = transition_columns();
+    for _ in 0..64 {
+      power = power.iter().map(|column| apply(&power, *column)).collect();
+    }
+
+    for seed in [0, 1, 42, u32::MAX] {
+      let mut rng = SimulationRng::new(seed);
+      let expected = apply(&power, pack(rng.state));
+      rng.jump();
+
+      assert_eq!(pack(rng.state), expected);
+    }
   }
 
   #[test]

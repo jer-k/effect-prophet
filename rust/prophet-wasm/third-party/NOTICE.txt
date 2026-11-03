@@ -13,14 +13,21 @@ The TypeScript library and the Rust crate reimplement Prophet's model and
 forecasting procedures, including the MAP objective from prophet.stan, so that
 results match Python Prophet. MIT terms are reproduced in prophet-license.txt.
 
-Stan optimizers
----------------
+Stan optimizers and sampler
+---------------------------
 Stan 2.37.0, commit 1357c136bf22e3f0d25ed3529fea55fe76842eac.
 Copyright (c) 2011--2020, Stan Developers and their Assignees.
 The Rust port of the Newton optimizer retains the actual finite-difference
 stencil, joint spectral modification, backtracking and service stopping
 semantics. The L-BFGS update and strong Wolfe line search are ported from
-optimization/{bfgs,bfgs_linesearch,lbfgs_update}.hpp. BSD-3-Clause terms are
+optimization/{bfgs,bfgs_linesearch,lbfgs_update}.hpp. src/stan/nuts.rs ports
+the adaptive diagonal-metric No-U-Turn sampler from mcmc/hmc/{base_hmc,
+nuts/base_nuts,nuts/adapt_diag_e_nuts,hamiltonians/diag_e_metric,
+integrators/expl_leapfrog}.hpp, mcmc/{stepsize_adaptation,windowed_adaptation,
+var_adaptation}.hpp, services/util/run_adaptive_sampler.hpp and Stan Math's
+welford_var_estimator.hpp, drawing from this crate's own generator instead of
+Boost's. src/stan/mcmc_diagnostics.rs ports the split rank-normalized R-hat
+and effective sample size from analyze/mcmc. BSD-3-Clause terms are
 reproduced in stan-license.txt.
 
 Symmetric spectral decomposition
