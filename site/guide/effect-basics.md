@@ -1,3 +1,7 @@
+---
+description: "The Effect concepts you need to call Effect Prophet: running effects, providing the fitting backend and handling typed errors."
+---
+
 # Effect in five minutes
 
 Effect Prophet is built on [Effect](https://effect.website). Here is everything you need to know

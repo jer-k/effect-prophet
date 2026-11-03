@@ -1,3 +1,7 @@
+---
+description: "Add a built-in country holiday calendar with countryHolidays, and what its coverage does and doesn't guarantee."
+---
+
 # Country holiday calendars
 
 Country calendars can help a forecast account for recurring holidays. They are not a guarantee

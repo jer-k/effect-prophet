@@ -1,3 +1,7 @@
+---
+description: "Add regressors such as temperature or ad spend, and forecast a regressor with its own model."
+---
+
 # Extra factors (regressors)
 
 Sometimes you know something that helps explain your data: the temperature, how much you spent

@@ -1,3 +1,7 @@
+---
+description: "Linear trends and changepoints: automatic and explicit changepoints, and how to make the trend more or less flexible."
+---
+
 # Trends and changepoints
 
 The trend is the long-term direction of your data. Real trends rarely stay perfectly straight:

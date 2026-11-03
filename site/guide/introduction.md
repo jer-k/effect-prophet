@@ -1,3 +1,7 @@
+---
+description: "What Effect Prophet forecasts, how it relates to Meta's Prophet, and when to use it."
+---
+
 # What is Effect Prophet?
 
 Effect Prophet forecasts future values of a time series, such as daily sales, website visits or

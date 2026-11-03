@@ -1,3 +1,7 @@
+---
+description: "Save and load fitted models as JSON, and refit from a warm start with warmStartParameters when new rows arrive."
+---
+
 # Saving and loading models
 
 Fitting takes a moment; predicting from a fitted model is fast. Save a fitted model as JSON and

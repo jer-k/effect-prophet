@@ -1,3 +1,7 @@
+---
+description: "Where Effect Prophet differs from Python Prophet 1.4.0: missing features, intentional differences and limits."
+---
+
 # What's different
 
 Effect Prophet fits the same model as Python Prophet 1.4.0 (see

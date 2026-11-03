@@ -1,3 +1,7 @@
+---
+description: "Check a fitted model with residuals, and check whether the L-BFGS optimizer stopped before the best fit."
+---
+
 # Checking the fit
 
 How well does a model follow your data? `residuals` predicts each of your measurements with a

@@ -1,3 +1,7 @@
+---
+description: "Measure forecast accuracy with crossValidate and performanceMetrics, custom metrics and scaled errors."
+---
+
 # Testing forecast accuracy
 
 How good are your forecasts? The honest way to find out is to pretend it's the past: fit the model

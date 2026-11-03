@@ -1,3 +1,7 @@
+---
+description: "The spans and attributes Effect Prophet records for fits, forecasts and evaluations, and how to send them to a tracing backend."
+---
+
 # Tracing
 
 Every fit, forecast and evaluation is traced automatically. You don't add any code to the

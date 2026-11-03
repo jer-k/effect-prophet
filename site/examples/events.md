@@ -1,3 +1,7 @@
+---
+description: "Model holidays and one-off events with custom event calendars and country holidays."
+---
+
 # Holidays and events
 
 Some days don't follow the usual pattern: holidays, sales, launches, outages. List them as

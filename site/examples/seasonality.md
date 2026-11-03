@@ -1,3 +1,7 @@
+---
+description: "Built-in yearly, weekly and daily seasonalities, custom periods, multiplicative effects and conditional seasonalities."
+---
+
 # Seasonality
 
 Seasonality is any pattern that repeats on a schedule: busier weekends, a summer peak, a spike at
