@@ -250,6 +250,7 @@ export const BenchmarkMeasurementSchema = Schema.Struct({
   comparison: Schema.Literals([
     "equivalent-equation",
     "equivalent-objective",
+    "equivalent-posterior",
     "scalar-process-different-public-work",
     "different-public-work",
   ]),

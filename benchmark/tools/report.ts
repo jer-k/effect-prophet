@@ -12,7 +12,13 @@ import type {
   RunManifest,
 } from "./result.ts";
 import { metricParityFailure, scaledErrorFailure } from "./evaluation.ts";
-import { anomalyAgreement, intervalBoundRatio } from "./uncertainty.ts";
+import {
+  anomalyAgreement,
+  intervalBoundRatio,
+  narrowestValueWidth,
+  posteriorDrawCount,
+  posteriorPathCount,
+} from "./uncertainty.ts";
 
 // Evaluation phases whose cases gate Effect's metrics on Python's own CV rows.
 const metricParityPhases: ReadonlySet<BenchmarkPhase> = new Set([
@@ -50,6 +56,7 @@ export interface CaseCorrectnessSummary {
   readonly comparison:
     | "equivalent-equation"
     | "equivalent-objective"
+    | "equivalent-posterior"
     | "scalar-process-different-public-work"
     | "different-public-work";
   readonly maximumDifferences?: QuantityDifferences;
@@ -358,7 +365,9 @@ const stableMetadata = (projection: CorrectnessProjection) => ({
   floorPolicy: projection.targetScaling?.floorPolicy,
   // A flat trend never uses changepoints, though Python Prophet still computes its defaults.
   changepointTimestamps:
-    projection.modelKind === "flat-map" ? [] : projection.changepointTimestamps,
+    projection.modelKind === "flat-map" || projection.modelKind === "flat-mcmc"
+      ? []
+      : projection.changepointTimestamps,
   seasonalities: projection.seasonalities,
   events: projection.events,
   eventColumnCount: projection.eventColumnCount,
@@ -561,6 +570,36 @@ const quantityAllowance = (
   return tolerance.absolute + tolerance.relative * scale;
 };
 
+/** A sampled case's sampling controls, which turn on the posterior gates. */
+const mcmcControls = (benchmarkCase: BenchmarkCase) =>
+  benchmarkCase.workload.kind === "map" ? benchmarkCase.workload.mcmc : undefined;
+
+/**
+ * Extra point allowance for posterior means, whose Monte Carlo error shrinks with the posterior's
+ * spread: a declared fraction of the narrowest value interval in any run of either library. Noise
+ * scale keeps its declared tolerance.
+ */
+const posteriorPointAllowance = (
+  quantity: keyof QuantityDifferences,
+  benchmarkCase: BenchmarkCase,
+  effectProjections: ReadonlyArray<CorrectnessProjection>,
+  pythonProjections: ReadonlyArray<CorrectnessProjection>,
+): number => {
+  const mcmc = mcmcControls(benchmarkCase);
+
+  if (mcmc === undefined || quantity === "noiseScale") {
+    return 0;
+  }
+
+  const width = Math.min(
+    ...[...effectProjections, ...pythonProjections].map((projection) =>
+      narrowestValueWidth(projection.uncertainty?.intervals ?? []),
+    ),
+  );
+
+  return Number.isFinite(width) && width > 0 ? mcmc.pointWidthFraction * width : 0;
+};
+
 const quantityPasses = (
   difference: number,
   quantity: keyof QuantityDifferences,
@@ -568,7 +607,70 @@ const quantityPasses = (
   effectProjections: ReadonlyArray<CorrectnessProjection>,
   pythonProjections: ReadonlyArray<CorrectnessProjection>,
 ): boolean =>
-  difference <= quantityAllowance(quantity, benchmarkCase, effectProjections, pythonProjections);
+  difference <=
+  quantityAllowance(quantity, benchmarkCase, effectProjections, pythonProjections) +
+    posteriorPointAllowance(quantity, benchmarkCase, effectProjections, pythonProjections);
+
+/**
+ * Sampler diagnostics flagged for investigation when Effect's exceed Python's by more than these.
+ * Short chains leave R-hat well above 1 in both libraries, so only a gap between them points at
+ * the sampler.
+ */
+const samplerInvestigations = [
+  { name: "divergences", threshold: 0 },
+  { name: "max-rhat", threshold: 0.15 },
+] as const;
+
+const fitQualityValue = (projection: CorrectnessProjection | undefined, name: string) => {
+  const entries = projection?.fitQuality?.filter((entry) => entry.name === name) ?? [];
+
+  return entries.length === 1 ? entries[0]?.value : undefined;
+};
+
+/**
+ * Check both libraries kept the declared number of draws and reported sampler diagnostics. Returns
+ * the diagnostics past their thresholds, or undefined when evidence is missing or the draws differ.
+ */
+const comparePosteriors = (
+  draws: number,
+  effectProjections: ReadonlyArray<CorrectnessProjection>,
+  pythonProjections: ReadonlyArray<CorrectnessProjection>,
+): ReadonlyArray<FitInvestigation> | undefined => {
+  const investigations: Array<FitInvestigation> = [];
+
+  for (const [index, effectProjection] of effectProjections.entries()) {
+    const pythonProjection = pythonProjections[index];
+
+    if (
+      fitQualityValue(effectProjection, "posterior-draws") !== draws ||
+      fitQualityValue(pythonProjection, "posterior-draws") !== draws
+    ) {
+      return undefined;
+    }
+
+    for (const { name, threshold } of samplerInvestigations) {
+      const effectValue = fitQualityValue(effectProjection, name);
+      const pythonValue = fitQualityValue(pythonProjection, name);
+
+      if (effectValue === undefined || pythonValue === undefined) {
+        return undefined;
+      }
+
+      if (effectValue - pythonValue > threshold) {
+        investigations.push({
+          name,
+          run: effectProjection.run,
+          effectValue,
+          pythonValue,
+          difference: effectValue - pythonValue,
+          threshold,
+        });
+      }
+    }
+  }
+
+  return investigations;
+};
 
 /** Largest seeded interval-bound difference across aligned runs, or undefined when missing. */
 const maximumIntervalBoundRatio = (
@@ -736,8 +838,12 @@ const correctnessForCase = (
     (failure) => failure.caseId === benchmarkCase.id,
   );
 
+  const mcmc = mcmcControls(benchmarkCase);
+
   const comparison =
-    benchmarkCase.workload.kind === "map" && benchmarkCase.workload.uncertainty !== undefined
+    mcmc === undefined &&
+    benchmarkCase.workload.kind === "map" &&
+    benchmarkCase.workload.uncertainty !== undefined
       ? ("scalar-process-different-public-work" as const)
       : benchmarkCase.workload.comparison.kind;
 
@@ -930,6 +1036,22 @@ const correctnessForCase = (
   const optimizerQuality = benchmarkCase.optimizerQuality;
   const outputFirst = optimizerQuality !== undefined && "kind" in optimizerQuality;
   const investigations: Array<FitInvestigation> = [];
+  const draws = mcmc === undefined ? undefined : posteriorDrawCount(mcmc);
+
+  if (draws !== undefined) {
+    const sampler = comparePosteriors(draws, effectProjections, pythonProjections);
+
+    if (sampler === undefined) {
+      return {
+        caseId: benchmarkCase.id,
+        status: "failed",
+        comparison,
+        note: `Both libraries must keep ${draws} posterior draws and report sampler diagnostics.`,
+      };
+    }
+
+    investigations.push(...sampler);
+  }
 
   if (optimizerQuality !== undefined) {
     const gates =
@@ -1051,7 +1173,8 @@ const correctnessForCase = (
       (projection) =>
         projection.uncertainty === undefined ||
         projection.uncertainty.output !== controls.output ||
-        projection.uncertainty.samples !== controls.samples ||
+        projection.uncertainty.samples !==
+          (draws === undefined ? controls.samples : posteriorPathCount(controls.samples, draws)) ||
         projection.uncertainty.rows === 0 ||
         (benchmarkCase.datasetIdentity !== undefined &&
           projection.uncertainty.rows !== benchmarkCase.datasetIdentity.predictionRows) ||
@@ -1135,7 +1258,8 @@ const correctnessForCase = (
       ? undefined
       : maximumIntervalBoundRatio(
           benchmarkCase,
-          controls.samples,
+          // Futures from one draw share its parameters, so the draws bound the Monte Carlo error.
+          draws ?? controls.samples,
           effectProjections,
           pythonProjections,
         );
@@ -1217,11 +1341,13 @@ const correctnessForCase = (
       ? ` Stationarity is diagnostic-only; near-stationarity acceptance is deferred to ${optimizerQuality.stationarity.followUp}.`
       : "";
 
+  const investigated = [...new Set(investigations.map((item) => item.name))].join(", ");
+
   const investigationNotice =
     investigations.length > 0
-      ? ` ${outputFirst ? "Output-first: investigate" : "Investigate"} internal fit differences in ${[
-          ...new Set(investigations.map((item) => item.name)),
-        ].join(", ")}.`
+      ? draws === undefined
+        ? ` ${outputFirst ? "Output-first: investigate" : "Investigate"} internal fit differences in ${investigated}.`
+        : ` Investigate sampler diagnostics: ${investigated}.`
       : outputFirst
         ? " Output-first: internal fit evidence is reported, not gated."
         : "";
@@ -1233,9 +1359,11 @@ const correctnessForCase = (
     maximumDifferences: maximum,
     note: passed
       ? `${
-          controls === undefined
-            ? `Verified equivalent behavior for this configuration under evidence ${evidenceId}.`
-            : `Verified fitted point behavior under ${evidenceId}; every interval bound matched Python's scalar simulation within its Monte Carlo allowance. Public output work differs.`
+          draws !== undefined
+            ? `Verified ${draws}-draw posterior agreement under ${evidenceId}; posterior means and every interval bound matched Python's within their Monte Carlo allowances.`
+            : controls === undefined
+              ? `Verified equivalent behavior for this configuration under evidence ${evidenceId}.`
+              : `Verified fitted point behavior under ${evidenceId}; every interval bound matched Python's scalar simulation within its Monte Carlo allowance. Public output work differs.`
         }${anomalyNotice(anomalies)}${warmStartNotice(warmStarts?.comparison)}${stationarityNotice}${investigationNotice}`
       : `Cross-language quantities exceeded tolerance: ${failedChecks.join(", ")}.${investigationNotice}`,
   };
@@ -1251,7 +1379,7 @@ const correctnessForCase = (
     Object.assign(withIntervals, { warmStart: warmStarts.comparison });
   }
 
-  return outputFirst || investigations.length > 0
+  return outputFirst || draws !== undefined || investigations.length > 0
     ? { ...withIntervals, investigations }
     : withIntervals;
 };

@@ -91,6 +91,23 @@ export const intervalBoundRatio = (
   return ratio;
 };
 
+/**
+ * Draws a sampled fit keeps over every chain: Python's `mcmc_samples // 2` per chain, over 4
+ * chains unless declared. Derived here rather than read from Effect, so the gate checks it.
+ */
+export const posteriorDrawCount = (mcmc: {
+  readonly samples: number;
+  readonly chains?: number;
+}): number => (mcmc.chains ?? 4) * Math.floor(mcmc.samples / 2);
+
+/** Futures simulated from a posterior: `ceil(samples / draws)` for each draw, as in Python. */
+export const posteriorPathCount = (samples: number, draws: number): number =>
+  Math.max(1, Math.ceil(samples / draws)) * draws;
+
+/** Narrowest value interval over every row, which scales posterior point allowances. */
+export const narrowestValueWidth = (rows: ReadonlyArray<IntervalBounds>): number =>
+  rows.reduce((narrowest, row) => Math.min(narrowest, row.valueUpper - row.valueLower), Infinity);
+
 /** One library's flagged anomaly rows, as indexes into the interval rows. */
 export interface AnomalyEvidence {
   readonly rows: number;

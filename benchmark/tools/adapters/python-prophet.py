@@ -195,6 +195,8 @@ def configure_model(benchmark_case: dict[str, Any]) -> Prophet:
     common["changepoint_prior_scale"] = configuration["changepointPriorScale"]
     common["seasonality_prior_scale"] = configuration.get("seasonalityPriorScale", 10.0)
     common["holidays_prior_scale"] = holidays_prior_scale(benchmark_case)
+    if workload.get("mcmc") is not None:
+        common["mcmc_samples"] = workload["mcmc"]["samples"]
 
     if changepoints["mode"] == "explicit":
         common["changepoints"] = [
@@ -246,6 +248,17 @@ def fit_model(training: pd.DataFrame, benchmark_case: dict[str, Any],
     if workload.get("fitRequest") == "growth-only":
         # Output precision is not a solver tolerance; no algorithm/budget override.
         return model.fit(training, sig_figs=12, **warm_start)
+    mcmc = workload.get("mcmc")
+    if mcmc is not None:
+        # CmdStan's sampler: `mcmc_samples // 2` warmup and kept iterations on each chain. Prophet
+        # passes these arguments on to each regressor model's optimizer too, which only accepts
+        # the seed, so cases with regressor models declare no chains and keep progress bars.
+        sampling: dict[str, Any] = {"seed": mcmc["seed"]}
+        if "chains" in mcmc:
+            sampling["chains"] = mcmc["chains"]
+        if not any(regressor.get("predictor") for regressor in workload["configuration"]["regressors"]):
+            sampling["show_progress"] = False
+        return model.fit(training, **sampling, **warm_start)
     return model.fit(
         training,
         **({} if optimizer["algorithm"] == "Auto" else {"algorithm": optimizer["algorithm"]}),
@@ -589,6 +602,13 @@ def country_projection(model: Prophet, prediction: pd.DataFrame, benchmark_case:
     }
 
 
+def model_kind(growth: str, sampled: bool) -> str:
+    """The Effect model kind for a growth, fitted by optimizing or by sampling."""
+
+    kind = {"linear": "linear-piecewise", "flat": "flat", "logistic": "logistic-piecewise"}[growth]
+    return f"{kind}-{'mcmc' if sampled else 'map'}"
+
+
 def metadata_projection(model: Prophet, benchmark_case: dict[str, Any]) -> dict[str, Any]:
     """Project fitted configuration and resolved state."""
 
@@ -616,7 +636,7 @@ def metadata_projection(model: Prophet, benchmark_case: dict[str, Any]) -> dict[
     else:
         scaling["offset"] = float(model.y_min)
     return {
-        "modelKind": {"linear": "linear-piecewise-map", "flat": "flat-map", "logistic": "logistic-piecewise-map"}[growth],
+        "modelKind": model_kind(model.growth, model.mcmc_samples > 0),
         "targetScaling": scaling,
         "changepointTimestamps": [
             int(pd.Timestamp(value).value // 1_000_000) for value in model.changepoints
@@ -657,8 +677,7 @@ def assert_metadata(
         for item in configuration["seasonalities"]
     ]
     growth = configuration.get("growth", "linear")
-    expected_kind = {"linear": "linear-piecewise-map", "flat": "flat-map", "logistic": "logistic-piecewise-map"}[growth]
-    if metadata["modelKind"] != expected_kind:
+    if metadata["modelKind"] != model_kind(growth, workload.get("mcmc") is not None):
         raise ValueError("Prophet did not fit the expected model kind")
     if metadata["seasonalities"] != expected_seasonalities:
         raise ValueError("Prophet changed seasonality metadata")
@@ -780,6 +799,10 @@ def assert_uncertainty(model: Prophet, frame: pd.DataFrame, benchmark_case: dict
 
     controls = benchmark_case["workload"]["uncertainty"]
     count = controls["samples"]
+    if model.mcmc_samples > 0:
+        # sample_posterior_predictive simulates ceil(samples / draws) futures for each draw.
+        draws = len(model.params["k"])
+        count = max(1, math.ceil(count / draws)) * draws
     length = len(frame)
     draws = run_uncertainty(model, frame, benchmark_case, "samples")
     intervals = run_uncertainty(model, frame, benchmark_case, "intervals")
@@ -916,7 +939,9 @@ def correctness_projection(
         **({"warmStart": warm_start_evidence(benchmark_case, init)} if init is not None else {}),
     }
     sigma = model.params.get("sigma_obs")
-    if benchmark_case["workload"]["kind"] in ("linear-map", "map"):
+    if benchmark_case["workload"].get("mcmc") is not None:
+        result.update(posterior_evidence(model))
+    elif benchmark_case["workload"]["kind"] in ("linear-map", "map"):
         if sigma is None or model.y_scale is None:
             raise ValueError("Prophet MAP fit omitted its noise scale")
         result["noiseScale"] = float(np.asarray(sigma).reshape(-1)[0] * model.y_scale)
@@ -946,6 +971,30 @@ def correctness_projection(
                     {"name": "normalized-noise", "value": float(np.asarray(sigma).reshape(-1)[0])},
                 ])
     return result
+
+
+def posterior_evidence(model: Prophet) -> dict[str, Any]:
+    """Posterior-mean noise scale, draw count and CmdStan's sampler diagnostics."""
+
+    fit = model.stan_fit
+    if fit is None or model.y_scale is None:
+        raise ValueError("Prophet MCMC fit omitted its sampler output")
+    sigma = np.asarray(model.params["sigma_obs"], dtype=np.float64).reshape(-1)
+    # R-hat over the sampled parameters; Prophet's model also saves its trend and lp__.
+    summary = fit.summary()
+    sampled = [name for name in summary.index if name != "lp__" and not name.startswith("trend[")]
+    max_rhat = float(summary.loc[sampled, "R_hat"].max())
+    if not math.isfinite(max_rhat):
+        raise ValueError("CmdStan reported an undefined R-hat")
+    return {
+        "noiseScale": float(sigma.mean() * model.y_scale),
+        "fitQuality": [
+            {"name": "posterior-draws", "value": len(sigma)},
+            {"name": "divergences", "value": int(np.sum(fit.divergences))},
+            {"name": "normalized-noise", "value": float(sigma.mean())},
+            {"name": "max-rhat", "value": max_rhat},
+        ],
+    }
 
 
 def measure(
@@ -1067,6 +1116,7 @@ def measurement_for_phase(
            if phase == "warm-uncertainty" or benchmark_case.get("calendarSnapshot") is not None else {}),
         "comparison": ("scalar-process-different-public-work"
                        if benchmark_case["workload"].get("uncertainty") is not None
+                       and benchmark_case["workload"].get("mcmc") is None
                        else comparison["kind"]),
         "evidenceId": comparison["evidenceId"],
         "run": run,

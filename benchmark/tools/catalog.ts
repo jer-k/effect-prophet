@@ -2,6 +2,7 @@ import { fileURLToPath } from "node:url";
 
 import { Effect } from "effect";
 
+import { mcmcCases } from "../cases/bayesian/mcmc.ts";
 import { countryHolidayCases } from "../cases/holidays/country-calendars.ts";
 import { evaluationCases } from "../cases/diagnostics/evaluation.ts";
 import { flatGrowthCases } from "../cases/growth/flat/public-api.ts";
@@ -62,6 +63,7 @@ export const loadCaseCatalog = Effect.fn("benchmark.catalog.load")(function* () 
     ...flatDefaultOptimizerCases,
     ...logisticReconciliationCases,
     ...regressorModelCases,
+    ...mcmcCases,
   ]);
 });
 
@@ -96,6 +98,8 @@ export const suiteForCase = (item: BenchmarkCase): BenchmarkSuiteId =>
 /** Classify a case by its primary Prophet capability without duplicating declarations. */
 export const capabilityForCase = (item: BenchmarkCase): string => {
   if (item.workload.kind === "evaluation") return "diagnostics";
+
+  if (item.workload.kind === "map" && item.workload.mcmc !== undefined) return "bayesian";
 
   if (item.workload.kind === "map" && item.workload.anomalies !== undefined) return "anomalies";
 

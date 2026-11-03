@@ -15,6 +15,7 @@ const EvidenceFileSchema = Schema.Struct({
       classification: Schema.Literals([
         "equivalent-equation",
         "equivalent-objective",
+        "equivalent-posterior",
         "different-public-work",
       ]),
       statement: Schema.String,

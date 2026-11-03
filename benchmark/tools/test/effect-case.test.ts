@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { Effect } from "effect";
 import { describe, expect, it } from "vitest";
 
+import { mcmcCases } from "../../cases/bayesian/mcmc.ts";
 import { parseBenchmarkCases } from "../case.ts";
 import { effectOptionsForCase } from "../effect-case.ts";
 
@@ -75,5 +76,16 @@ describe("Effect benchmark case mapping", () => {
       "always",
       "never",
     ]);
+  });
+
+  it("passes Python's sampling settings without the gate's point allowance", () => {
+    const [linear, , flat] = mcmcCases;
+
+    if (linear === undefined || flat === undefined) {
+      throw new Error("Expected declared posterior cases");
+    }
+
+    expect(effectOptionsForCase(linear)?.mcmc).toEqual({ samples: 300, seed: 19 });
+    expect(effectOptionsForCase(flat)?.mcmc).toEqual({ samples: 500, seed: 19, chains: 2 });
   });
 });

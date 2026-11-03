@@ -32,13 +32,14 @@ const ScenariosSchema = Schema.Struct({
 });
 
 describe("linear-growth benchmark scenario catalog", () => {
-  it("fits every linear case with both libraries' default optimizers and the output-first policy", async () => {
+  it("fits every optimized linear case with both libraries' default optimizers and the output-first policy", async () => {
     const catalog = await Effect.runPromise(loadCaseCatalog());
 
     const fitted = catalog.filter(
       (benchmarkCase) =>
         benchmarkCase.workload.kind === "linear-map" ||
         (benchmarkCase.workload.kind === "map" &&
+          benchmarkCase.workload.mcmc === undefined &&
           benchmarkCase.workload.configuration.growth === "linear"),
     );
 

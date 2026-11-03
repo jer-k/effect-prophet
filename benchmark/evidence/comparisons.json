@@ -341,6 +341,22 @@
         "reported objective, normalized noise and stationarity",
         "actual algorithm and termination"
       ]
+    },
+    {
+      "id": "posterior-nuts-v1",
+      "classification": "equivalent-posterior",
+      "statement": "Full Bayesian fits: Effect's mcmc option and Python's mcmc_samples with fit(seed=...) both run Stan 2.37.0's adaptive NUTS on Prophet's model with CmdStan's default settings, the same chains and Python's half-warmup, half-sampling split. Chains cannot match draw for draw, so posterior-mean forecasts, components and regressor coefficients may differ by a declared fraction of the narrowest 80% value interval, and every trend and value interval bound by the established Monte Carlo allowance at the posterior's draw count instead of its simulated path count. Both libraries must keep the same number of draws and simulate ceil(samples / draws) futures per draw. Divergences and the largest R-hat are reported; Effect's excess over Python is flagged, not gated.",
+      "checks": [
+        "posterior draw count",
+        "posterior-mean forecast",
+        "components",
+        "regressor coefficients",
+        "noise scale",
+        "trend and value interval bounds",
+        "simulated path count",
+        "public JSON and fresh-process persistence",
+        "seeded uncertainty replay"
+      ]
     }
   ]
 }

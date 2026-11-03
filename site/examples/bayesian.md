@@ -35,8 +35,8 @@ seed is required, so a fit is repeatable.
 
 The sampler is a port of Stan 2.37.0's adaptive NUTS with CmdStan's default settings, run on
 Prophet's own model. Its chains can't match CmdStan's draw for draw, since tiny rounding
-differences grow along a chain, so the [benchmarks](/benchmarks/) compare the posterior and the
-ranges with Python's instead.
+differences grow along a chain, so the [benchmarks](/benchmarks/bayesian) compare the posterior
+means and ranges with Python's instead, within the variation expected from that many draws.
 
 ## What changes
 

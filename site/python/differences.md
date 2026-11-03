@@ -71,6 +71,12 @@ Python, where it differs on purpose, and the smaller behavior differences.
 - **Bayesian fits without features.** Python 1.4.0's `predict` fails for a model fitted with
   `mcmc_samples` that has no seasonalities, holidays or regressors: the posterior's placeholder
   coefficient comes back with the wrong shape. Here such a model forecasts normally.
+- **Bayesian fits with one changepoint.** Python 1.4.0's per-path simulation
+  (`vectorized=False`) fails for a model fitted with `mcmc_samples` and exactly one changepoint:
+  CmdStan returns its changes as a flat array. Here such a model simulates normally.
+- **Bayesian fits with regressor models.** Python passes `fit`'s arguments on to each
+  `regressor_predictor` model's optimizer, so `fit(df, chains=2)` fails there; only `seed` gets
+  through. Here `chains` and `warmup` only ever apply to the main model.
 - **Regressor coefficient ranges.** `getRegressorCoefficients` always uses an 80% range, Python's
   default `interval_width`. Python's `regressor_coefficients` uses the model's own
   `interval_width`.
