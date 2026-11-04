@@ -37,10 +37,11 @@ All notable changes to this project are documented here. The format follows
 ### Verification against Python Prophet
 
 - **Full Bayesian fitting benchmarks** on flat, linear and logistic growth, including a regressor
-  forecast by its own model, optimized or sampled, against Python Prophet's `mcmc_samples`. The two samplers' chains
-  can't match draw for draw, so forecasts must agree within 0.15 of the narrowest 80% range and
-  every range bound within the variation expected from the posterior's draws. Both libraries must
-  keep the same number of draws, and divergences and R-hat are reported.
+  forecast by its own model, optimized or sampled, against Python Prophet's `mcmc_samples`. The
+  two samplers' chains can't match draw for draw, so forecasts must agree within 0.15 of the
+  narrowest 80% range and every range bound within the variation expected from the posterior's
+  draws. Both libraries must keep the same number of draws, and divergences and R-hat are
+  reported.
 
 ## [0.6.0] - 2026-11-02
 
