@@ -60,6 +60,7 @@ New to [Effect](https://effect.website)? The docs have a
   by their own models
 - Fitting and forecasting in one call, with the future dates listed for you
 - Uncertainty ranges, on their own or alongside each forecast
+- Full Bayesian fitting, like Python's `mcmc_samples`, with ranges for every component
 - Finding anomalies, in new measurements or across a history
 - Residuals, to check how well a model fits
 - Saving and loading fitted models, and warm-starting a refit from an earlier one

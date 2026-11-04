@@ -4,32 +4,51 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows
 [Semantic Versioning](https://semver.org/). Before 1.0, minor versions may include breaking changes.
 
-## [Unreleased]
+## [0.7.0] - 2026-11-04
+
+Full Bayesian fitting, like Python's `mcmc_samples`, for the main model and for regressors
+forecast by their own models. Code that only fits MAP models works as before at runtime, but code
+that reads optimizer fields from a `FittedProphet` must now narrow it first.
 
 ### Added
 
 - **Full Bayesian fitting.** `fit(rows, { mcmc: { samples, seed } })` samples the posterior with
   a port of Stan 2.37.0's adaptive NUTS sampler, like Python's `mcmc_samples`, for flat, linear
-  and logistic growth, with regressors forecast by their own models, and in
-  `crossValidate`, `searchModels`, `evaluateHoldout`, `forecast` and anomaly detection. `chains` and `warmup` default to Python's 4 and `samples / 2`. Forecasts use the
-  posterior means; `predictWithIntervals` runs `ceil(samples / draws)` futures per draw and adds
-  each component's range over the draws; `getRegressorCoefficients` adds each coefficient's 80%
-  range; saved models keep every draw; and `fitSummary.diagnostics` reports divergences, tree-depth
-  hits, R-hat, effective sample sizes and step sizes. New models are `"flat-mcmc"`,
-  `"linear-piecewise-mcmc"` and `"logistic-piecewise-mcmc"`, and a new `FittingError` reason, `"sampling-limit"`, bounds the
-  chains, draws and kept values. See
-  [Full Bayesian fitting](https://jer-k.github.io/effect-prophet/examples/bayesian).
+  and logistic growth. It works with regressors forecast by their own models, and in
+  `crossValidate`, `searchModels`, `evaluateHoldout`, `forecast` and anomaly detection. `chains`
+  and `warmup` default to Python's 4 and `samples / 2`.
+  - Forecasts use the posterior means. `predictWithIntervals` runs `ceil(samples / draws)`
+    futures per draw and adds each component's range over the draws, and
+    `getRegressorCoefficients` adds each coefficient's 80% range.
+  - Saved models keep every draw, and `fitSummary.diagnostics` reports divergences, tree-depth
+    hits, R-hat, effective sample sizes and step sizes.
+  - New models are `"flat-mcmc"`, `"linear-piecewise-mcmc"` and `"logistic-piecewise-mcmc"`. A new
+    `FittingError` reason, `"sampling-limit"`, bounds the chains, draws and kept values.
+
+  See [Full Bayesian fitting](https://jer-k.github.io/effect-prophet/examples/bayesian).
+
 - **Sampled regressor models.** A regressor's `predictor` options take `mcmc`, like
   `mcmc_samples` in Python's `regressor_predictor`, so the model that forecasts a regressor can
   sample its posterior too, with its own seed, whether or not the main model samples. Its draws
   widen the main model's ranges, and saved models keep them. See
   [Forecasting a regressor](https://jer-k.github.io/effect-prophet/examples/regressors#forecasting-a-regressor).
+- A new `effect-prophet.wasm.componentRanges` span, and `mcmc.*` attributes on the engine's fit
+  and simulation spans. See the [tracing guide](https://jer-k.github.io/effect-prophet/guide/tracing).
+- **Docs for agents and tools.** The docs site publishes a Markdown copy of every page,
+  [`llms.txt`](https://jer-k.github.io/effect-prophet/llms.txt), `llms-full.txt` and a sitemap.
+- **Did the optimizer finish?** [Checking the fit](https://jer-k.github.io/effect-prophet/examples/residuals)
+  shows how to tell when L-BFGS stopped well short of the optimum, which both libraries can do on
+  some histories. The warm-start caveat in
+  [Saving and loading models](https://jer-k.github.io/effect-prophet/examples/saving-models) now
+  explains why logistic refits can break after many new rows.
 
 ### Changed
 
 - `FittedProphet` now includes posterior models, whose `fitSummary` describes the sampler rather
-  than an optimizer, and so does `RegressorModel["model"]`, for sampled regressor models. Code that reads optimizer fields such as `fitSummary.objective` from any
-  fitted model must first check `isMcmcModel(model)`, or use the new `FittedMapProphet` type.
+  than an optimizer, and so does `RegressorModel["model"]`, for sampled regressor models. Code
+  that reads optimizer fields such as `fitSummary.objective` from any fitted model must first
+  check `isMcmcModel(model)`, or use the new `FittedMapProphet` type. `isLogisticModel` and
+  `FittedLogisticProphet` cover logistic models fitted either way.
 - `simulation` on uncertainty, cross-validation and anomaly results is now `SimulationIdentity`,
   which adds `posteriorSimulationIdentity` for posterior models. Holdout reports accept it as
   `simulation.algorithm`, and their `model` can be a posterior summary.
@@ -41,7 +60,8 @@ All notable changes to this project are documented here. The format follows
   two samplers' chains can't match draw for draw, so forecasts must agree within 0.15 of the
   narrowest 80% range and every range bound within the variation expected from the posterior's
   draws. Both libraries must keep the same number of draws, and divergences and R-hat are
-  reported.
+  reported. Linear and flat fits take about as long as Python's, and ranges from a posterior are
+  9–80 times faster, but logistic fits take 3–4 times as long as Python's native CmdStan.
 
 ## [0.6.0] - 2026-11-02
 
@@ -456,6 +476,7 @@ These Python Prophet features are not implemented in this release:
 - Inputs that cannot define a trend, such as every row sharing one timestamp, return an error where
   Python returns `NaN` forecasts.
 
+[0.7.0]: https://github.com/jer-k/effect-prophet/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/jer-k/effect-prophet/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/jer-k/effect-prophet/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/jer-k/effect-prophet/compare/v0.4.0...v0.5.0
