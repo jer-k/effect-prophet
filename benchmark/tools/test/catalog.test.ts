@@ -30,8 +30,8 @@ describe("capability catalog", () => {
       loadRunEvidence(await baselineDirectory("flat-growth")),
     );
 
-    expect(catalog).toHaveLength(184);
-    expect(new Set(catalog.map((item) => item.id)).size).toBe(184);
+    expect(catalog).toHaveLength(185);
+    expect(new Set(catalog.map((item) => item.id)).size).toBe(185);
 
     for (const original of recorded.cases) {
       const { datasetIdentity: _identity, ...declaration } = original;

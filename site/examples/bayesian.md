@@ -86,9 +86,9 @@ diagnostics. Logistic growth always samples.
   Past these, `fit` fails with a `FittingError` whose `reason` is `"sampling-limit"`.
 - **Every growth and feature.** Flat, linear and logistic growth all sample, with events,
   country holidays, conditional seasonalities and regressors. Regressors
-  [forecast by their own models](./regressors#forecasting-a-regressor) keep MAP models, as in
-  Python, where `mcmc_samples` doesn't reach them; when a posterior runs more futures than the
-  regressor models drew, it reuses their draws in turn, as Python does.
+  [forecast by their own models](./regressors#forecasting-a-regressor) optimize unless their own
+  options set `mcmc`, as in Python, where `mcmc_samples` doesn't reach them; when a posterior runs
+  more futures than the regressor models drew, it reuses their draws in turn, as Python does.
 - **Evaluation.** `crossValidate`, `searchModels` and `evaluateHoldout` sample a posterior for
   every fit. Each round's ranges run `ceil(samples / draws)` futures per draw, and holdout reports
   record the posterior's draw count, divergences and largest R-hat instead of optimizer progress.

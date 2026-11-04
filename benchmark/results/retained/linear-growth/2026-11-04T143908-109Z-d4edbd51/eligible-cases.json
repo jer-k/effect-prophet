@@ -52,6 +52,7 @@
     "evaluation-linear-regressor-model-intervals",
     "mcmc-linear-mixed-components",
     "mcmc-linear-default-changepoints",
-    "mcmc-linear-regressor-model"
+    "mcmc-linear-regressor-model",
+    "mcmc-linear-sampled-regressor-model"
   ]
 }

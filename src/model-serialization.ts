@@ -35,6 +35,7 @@ import {
   type FittedPiecewiseMcmcProphet,
   type FlatMapParameters,
   type InvalidFittedModel,
+  type RegressorFit,
   type RegressorModel,
   type LogisticMapParameters,
   type PiecewiseMapParameters,
@@ -70,7 +71,11 @@ export interface EncodedRegressorModel {
   /** Training timestamps in epoch milliseconds and the regressor's value at each. */
   readonly timestamps: ReadonlyArray<number>;
   readonly values: ReadonlyArray<number>;
-  readonly model: EncodedFlatMapModel | EncodedPiecewiseMapModel;
+  readonly model:
+    | EncodedFlatMapModel
+    | EncodedPiecewiseMapModel
+    | EncodedFlatMcmcModel
+    | EncodedPiecewiseMcmcModel;
 }
 
 /** Portable representation of a reduced flat MAP model. */
@@ -404,7 +409,12 @@ const EncodedRegressorModelsSchema = Schema.optionalKey(
       name: Schema.String,
       timestamps: Schema.Array(Schema.Finite),
       values: Schema.Array(Schema.Finite),
-      model: Schema.Union([EncodedFlatMapModelSchema, EncodedPiecewiseMapModelSchema]),
+      model: Schema.Union([
+        EncodedFlatMapModelSchema,
+        EncodedPiecewiseMapModelSchema,
+        EncodedFlatMcmcModelSchema,
+        EncodedPiecewiseMcmcModelSchema,
+      ]),
     }),
   ),
 );
@@ -596,10 +606,7 @@ const encodeRegressorModels = (
           name: regressorModel.name,
           timestamps: Array.from(regressorModel.timestamps),
           values: Array.from(regressorModel.values),
-          model:
-            regressorModel.model.model === "flat-map"
-              ? encodeFlatMapModel(regressorModel.model)
-              : encodePiecewiseMapModel(regressorModel.model),
+          model: encodeRegressorFit(regressorModel.model),
         })),
       };
 
@@ -729,6 +736,17 @@ const encodePiecewiseMcmcModel = (
   },
   ...encodeRegressorModels(model.regressorModels),
 });
+
+/** Encode a regressor's own model, optimized or sampled; it has no regressor models itself. */
+const encodeRegressorFit = (model: RegressorFit): EncodedRegressorModel["model"] =>
+  Match.value(model).pipe(
+    Match.discriminatorsExhaustive("model")({
+      "flat-map": encodeFlatMapModel,
+      "linear-piecewise-map": encodePiecewiseMapModel,
+      "flat-mcmc": encodeFlatMcmcModel,
+      "linear-piecewise-mcmc": encodePiecewiseMcmcModel,
+    }),
+  );
 
 type LogisticFields = Pick<
   FittedLogisticMapProphet,
@@ -865,7 +883,7 @@ const decodeRegressorModels = Effect.fnUntraced(function* (
   {
     readonly regressorModels?: ReadonlyArray<
       Omit<EncodedRegressorModel, "model"> & {
-        readonly model: FittedFlatMapProphet | FittedPiecewiseMapProphet;
+        readonly model: FittedFlatMapProphet | FittedPiecewiseMapProphet | FittedMcmcProphet;
       }
     >;
   },
@@ -882,10 +900,15 @@ const decodeRegressorModels = Effect.fnUntraced(function* (
       serializationErrorInRegressorModel(index, error),
     );
 
-    const model =
-      regressorModel.model.modelKind === "flat-map"
-        ? yield* decodeFlatMapModel(regressorModel.model).pipe(inRegressorModel)
-        : yield* decodePiecewiseMapModel(regressorModel.model).pipe(inRegressorModel);
+    const model = yield* Match.value(regressorModel.model).pipe(
+      Match.discriminatorsExhaustive("modelKind")({
+        "flat-map": decodeFlatMapModel,
+        "linear-piecewise-map": decodePiecewiseMapModel,
+        "flat-mcmc": decodeMcmcModel,
+        "linear-piecewise-mcmc": decodeMcmcModel,
+      }),
+      inRegressorModel,
+    );
 
     regressorModels.push({ ...regressorModel, model });
   }

@@ -245,6 +245,35 @@ describe("benchmark case parsing", () => {
     }
   });
 
+  it("only samples a regressor model in a case whose own seed it can take", async () => {
+    const sampled = mcmcCases.find(({ id }) => id === "mcmc-linear-sampled-regressor-model");
+
+    if (sampled === undefined || sampled.workload.kind !== "map") {
+      throw new Error("Expected the sampled regressor model case");
+    }
+
+    expect(await Effect.runPromise(parseBenchmarkCases([sampled]))).toHaveLength(1);
+
+    const { mcmc: _mcmc, uncertainty: _uncertainty, ...unsampled } = sampled.workload;
+
+    const failure = await Effect.runPromise(
+      Effect.flip(
+        parseBenchmarkCases([
+          {
+            ...sampled,
+            phases: ["warm-fit"],
+            workload: {
+              ...unsampled,
+              comparison: { kind: "equivalent-objective", evidenceId: "x" },
+            },
+          },
+        ]),
+      ),
+    );
+
+    expect(failure.message).toMatch(/must sample to give its regressor model a seed/u);
+  });
+
   it("contains every feature workload and no different-objective branch", async () => {
     const cases = await Effect.runPromise(loadCoreCases());
     const ids = new Set(cases.map((benchmarkCase) => benchmarkCase.id));

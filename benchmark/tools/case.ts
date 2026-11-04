@@ -170,8 +170,20 @@ const BenchmarkRegressorSchema = Schema.Struct({
   standardization: Schema.Literals(["auto", "always", "never"]),
   mode: Schema.optionalKey(Schema.Literals(["additive", "multiplicative"])),
   // Forecast with its own default model: Effect's `predictor: true`, Python's
-  // `regressor_predictor=True`.
-  predictor: Schema.optionalKey(Schema.Literal(true)),
+  // `regressor_predictor=True`. `mcmcSamples` samples that model instead, like Python's
+  // `regressor_predictor={"mcmc_samples": ...}`, with the case's seed and chains, which Python
+  // passes on from `fit`.
+  predictor: Schema.optionalKey(
+    Schema.Union([
+      Schema.Literal(true),
+      Schema.Struct({
+        mcmcSamples: Schema.Int.check(
+          Schema.isGreaterThanOrEqualTo(2),
+          Schema.isLessThanOrEqualTo(2 * maximumMcmcDraws + 1),
+        ),
+      }),
+    ]),
+  ),
 });
 
 const BenchmarkChangepointsSchema = Schema.Union([
@@ -590,6 +602,23 @@ const validateCaseRelationships = (
 
     const mcmc = benchmarkCase.workload.kind === "map" ? benchmarkCase.workload.mcmc : undefined;
 
+    // A sampled regressor model takes the case's seed, which Python passes on from `fit`; without
+    // one, Python would draw a random seed.
+    if (
+      mcmc === undefined &&
+      benchmarkCase.workload.kind !== "fixed-linear-prediction" &&
+      benchmarkCase.workload.configuration.regressors.some(
+        ({ predictor }) => predictor !== undefined && predictor !== true,
+      )
+    ) {
+      return Effect.fail(
+        new BenchmarkInputError({
+          input: "cases",
+          message: `Case ${benchmarkCase.id} must sample to give its regressor model a seed`,
+        }),
+      );
+    }
+
     // Posteriors are judged through their intervals, so a sampled case always simulates them.
     // Python's `predict` fails on a posterior without seasonalities, events or regressors.
     if (
@@ -609,6 +638,12 @@ const validateCaseRelationships = (
               benchmarkCase.workload.configuration.regressors.some(
                 (regressor) => regressor.predictor === true,
               )) ||
+            benchmarkCase.workload.configuration.regressors.some(
+              ({ predictor }) =>
+                predictor !== undefined &&
+                predictor !== true &&
+                (mcmc.chains ?? 4) * Math.floor(predictor.mcmcSamples / 2) > maximumMcmcDraws,
+            ) ||
             benchmarkCase.workload.configuration.seasonalities.length +
               benchmarkCase.workload.configuration.events.length +
               benchmarkCase.workload.configuration.regressors.length ===
@@ -682,7 +717,9 @@ const validateCaseRelationships = (
         return (
           sequential !== undefined &&
           (!phases.includes(sequential) ||
-            workload.configuration.regressors.some((regressor) => regressor.predictor === true))
+            workload.configuration.regressors.some(
+              (regressor) => regressor.predictor !== undefined,
+            ))
         );
       });
 

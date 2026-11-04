@@ -10,7 +10,7 @@ All notable changes to this project are documented here. The format follows
 
 - **Full Bayesian fitting.** `fit(rows, { mcmc: { samples, seed } })` samples the posterior with
   a port of Stan 2.37.0's adaptive NUTS sampler, like Python's `mcmc_samples`, for flat, linear
-  and logistic growth, with regressors forecast by their own MAP models, and in
+  and logistic growth, with regressors forecast by their own models, and in
   `crossValidate`, `searchModels`, `evaluateHoldout`, `forecast` and anomaly detection. `chains` and `warmup` default to Python's 4 and `samples / 2`. Forecasts use the
   posterior means; `predictWithIntervals` runs `ceil(samples / draws)` futures per draw and adds
   each component's range over the draws; `getRegressorCoefficients` adds each coefficient's 80%
@@ -19,11 +19,16 @@ All notable changes to this project are documented here. The format follows
   `"linear-piecewise-mcmc"` and `"logistic-piecewise-mcmc"`, and a new `FittingError` reason, `"sampling-limit"`, bounds the
   chains, draws and kept values. See
   [Full Bayesian fitting](https://jer-k.github.io/effect-prophet/examples/bayesian).
+- **Sampled regressor models.** A regressor's `predictor` options take `mcmc`, like
+  `mcmc_samples` in Python's `regressor_predictor`, so the model that forecasts a regressor can
+  sample its posterior too, with its own seed, whether or not the main model samples. Its draws
+  widen the main model's ranges, and saved models keep them. See
+  [Forecasting a regressor](https://jer-k.github.io/effect-prophet/examples/regressors#forecasting-a-regressor).
 
 ### Changed
 
 - `FittedProphet` now includes posterior models, whose `fitSummary` describes the sampler rather
-  than an optimizer. Code that reads optimizer fields such as `fitSummary.objective` from any
+  than an optimizer, and so does `RegressorModel["model"]`, for sampled regressor models. Code that reads optimizer fields such as `fitSummary.objective` from any
   fitted model must first check `isMcmcModel(model)`, or use the new `FittedMapProphet` type.
 - `simulation` on uncertainty, cross-validation and anomaly results is now `SimulationIdentity`,
   which adds `posteriorSimulationIdentity` for posterior models. Holdout reports accept it as
@@ -32,10 +37,11 @@ All notable changes to this project are documented here. The format follows
 ### Verification against Python Prophet
 
 - **Full Bayesian fitting benchmarks** on flat, linear and logistic growth, including a regressor
-  forecast by its own model, against Python Prophet's `mcmc_samples`. The two samplers' chains
-  can't match draw for draw, so forecasts must agree within 0.15 of the narrowest 80% range and
-  every range bound within the variation expected from the posterior's draws. Both libraries must
-  keep the same number of draws, and divergences and R-hat are reported.
+  forecast by its own model, optimized or sampled, against Python Prophet's `mcmc_samples`. The
+  two samplers' chains can't match draw for draw, so forecasts must agree within 0.15 of the
+  narrowest 80% range and every range bound within the variation expected from the posterior's
+  draws. Both libraries must keep the same number of draws, and divergences and R-hat are
+  reported.
 
 ## [0.6.0] - 2026-11-02
 

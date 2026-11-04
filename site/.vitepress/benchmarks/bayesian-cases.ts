@@ -29,6 +29,10 @@ export const bayesianDescriptions = {
       "A regressor forecast by its own model",
       "256 daily rows and four regressors, one forecast by its own default model. That model is fit by optimizing in both libraries, as `mcmc_samples` doesn't reach it in Python, and each of the 1,200 futures takes the next of its 1,000 draws in turn. Python doesn't save regressor models, so there are no save and load timings.",
     ),
+    "mcmc-linear-sampled-regressor-model": description(
+      "A regressor forecast by its own sampled model",
+      "The same rows and regressors, with the regressor's own model sampled too: `predictor: { mcmc }` against `regressor_predictor={\"mcmc_samples\": 300}`, with the main model's seed and 4 chains, which Python passes on from `fit`. Its 600 draws give 1,200 simulated values, one for each of the main model's 1,200 futures.",
+    ),
   } satisfies Record<string, CaseDescription>,
   flat: {
     "mcmc-flat-mixed-components": description(
