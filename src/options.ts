@@ -666,7 +666,9 @@ export const prefixOptionsIssues = (
  *
  * Python passes its fit arguments on to each regressor model, so a requested optimizer and warm
  * start apply to them too. A warm start's `delta` and `beta` then fall back to their defaults
- * unless their lengths happen to match the regressor model's, as in Python.
+ * unless their lengths happen to match the regressor model's, as in Python. A sampling regressor
+ * model takes only the warm start, where its chains begin: Python would hand the optimizer's
+ * `algorithm` to the sampler, which rejects it.
  */
 const parseRegressorModels = Effect.fnUntraced(function* (
   models: ReadonlyArray<RegressorModelSyntax>,
@@ -686,10 +688,12 @@ const parseRegressorModels = Effect.fnUntraced(function* (
   const requests: Array<RegressorModelRequest> = [];
 
   for (const { index, name, options } of models) {
+    const fitSettings = options.mcmc === undefined ? { ...optimizer, ...warmStart } : warmStart;
+
     const inherited =
       options.map === undefined && !inheritsFitSettings
         ? options
-        : { ...options, map: { ...options.map, ...optimizer, ...warmStart } };
+        : { ...options, map: { ...options.map, ...fitSettings } };
 
     const parsed = yield* decodeOptionsInput(inherited).pipe(
       Effect.mapError((error) =>

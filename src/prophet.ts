@@ -502,13 +502,13 @@ const fitRegressorModels = Effect.fnUntraced(function* (
       Effect.withSpan("Prophet.fitRegressorModel"),
     );
 
-    // Regressor model options cannot select logistic growth or posterior sampling.
-    if (isLogisticModel(model) || isMcmcModel(model)) {
+    // Regressor model options cannot select logistic growth.
+    if (isLogisticModel(model)) {
       return yield* new FittingError({
         reason: "backend-failure",
         observationCount: observations.length,
         regressor: request.name,
-        message: `The model for regressor '${request.name}' must be a flat or linear MAP model`,
+        message: `The model for regressor '${request.name}' must be a flat or linear model`,
       });
     }
 
@@ -1518,8 +1518,9 @@ export const predictUncertainty = Effect.fn("Prophet.predictUncertainty")(functi
  * the coefficient times its distance from the point forecast. Earlier rows keep their values.
  *
  * A posterior runs more paths than requested, `ceil(samples / draws)` per draw. As in Python,
- * each regressor model still draws the requested samples, and path `s` reuses draw
- * `s % samples`, with the coefficient of the posterior draw that path belongs to.
+ * each regressor model draws what it would for the requested samples, which is more when it is a
+ * posterior too, and path `s` reuses its draw `s % count`, with the coefficient of the main
+ * posterior draw that path belongs to.
  */
 const regressorModelOffsets = Effect.fnUntraced(function* (
   model: FittedProphet,
@@ -1566,6 +1567,7 @@ const regressorModelOffsets = Effect.fnUntraced(function* (
     }
 
     const { coefficient } = projectRegressorCoefficient(regressor);
+    const drawn = draws.sampleCount;
 
     const pathCoefficient = (path: number): number =>
       isMcmcModel(model)
@@ -1583,7 +1585,7 @@ const regressorModelOffsets = Effect.fnUntraced(function* (
 
       for (let path = 0; path < paths; path += 1) {
         const cell = position * paths + path;
-        const draw = draws.value[position * samples + (path % samples)] ?? Number.NaN;
+        const draw = draws.value[position * drawn + (path % drawn)] ?? Number.NaN;
 
         target[cell] = (target[cell] ?? 0) + pathCoefficient(path) * (draw - point);
       }

@@ -1,18 +1,12 @@
 ---
-description: "Where Effect Prophet differs from Python Prophet 1.4.0: missing features, intentional differences and limits."
+description: "Where Effect Prophet differs from Python Prophet 1.4.0: intentional differences, smaller behavior differences and limits."
 ---
 
 # What's different
 
 Effect Prophet fits the same model as Python Prophet 1.4.0 (see
-[How close are the results?](./accuracy)). This page lists where the library does less than
-Python, where it differs on purpose, and the smaller behavior differences.
-
-## Not available yet
-
-- Bayesian fitting of a regressor's own model: `predictor` options take no `mcmc`, where Python's
-  `regressor_predictor` can set `mcmc_samples`. The main model can still sample with
-  [`mcmc`](../examples/bayesian).
+[How close are the results?](./accuracy)). This page lists where it differs on purpose, and the
+smaller behavior differences, including limits Python doesn't have.
 
 ## Different on purpose
 
@@ -75,8 +69,11 @@ Python, where it differs on purpose, and the smaller behavior differences.
   (`vectorized=False`) fails for a model fitted with `mcmc_samples` and exactly one changepoint:
   CmdStan returns its changes as a flat array. Here such a model simulates normally.
 - **Bayesian fits with regressor models.** Python passes `fit`'s arguments on to each
-  `regressor_predictor` model's optimizer, so `fit(df, chains=2)` fails there; only `seed` gets
-  through. Here `chains` and `warmup` only ever apply to the main model.
+  `regressor_predictor` model. An optimizing one fails on sampling arguments, so
+  `fit(df, chains=2)` fails there, and a sampling one fails on optimizer arguments such as
+  `algorithm`. Here a regressor model's sampling settings are its own `mcmc`, so the main model's
+  `chains` and `warmup` never reach it, and the main model's `map.optimizer` only reaches an
+  optimizing one.
 - **Regressor coefficient ranges.** `getRegressorCoefficients` always uses an 80% range, Python's
   default `interval_width`. Python's `regressor_coefficients` uses the model's own
   `interval_width`.
@@ -89,12 +86,14 @@ Python, where it differs on purpose, and the smaller behavior differences.
 - **Size limits on uncertainty.** One call takes up to 10,000 rows and 2,048 samples. Python has
   no such limits. With [regressors forecast by their own models](../examples/regressors#forecasting-a-regressor),
   the rows after the history × samples can be at most 1,000,000, because those models' draws are
-  kept for every sample.
+  kept for every sample. A sampled model counts its `ceil(samples / draws) × draws` futures.
 - **Draws from regressor models.** Python draws as many samples from each regressor model as its
   `uncertainty_samples`, 1,000 unless its options set another, and reuses them in turn when the
   main model draws more, all from numpy's one global generator. Each regressor model here draws
   as many samples as the call asks for, from its own seed derived from the call's, so the main
-  model's draws are the same as without regressor models. Ranges agree in width: in the fixture,
+  model's draws are the same as without regressor models. A sampled regressor model runs
+  `ceil(n / draws)` futures per posterior draw in both, for Python's `uncertainty_samples` or the
+  call's count. Ranges agree in width: in the fixture,
   the average future range was 0.465 here over eight seeds and 0.461 in Python. See [Uncertainty ranges](../examples/uncertainty) for details. Because
   `anomalies` simulates its whole history, it takes histories of up to 10,000 rows; see
   [Finding anomalies](../examples/anomalies#looking-back-over-a-history) for longer ones.

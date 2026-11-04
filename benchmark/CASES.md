@@ -22,6 +22,7 @@ Serialization is exercised by lifecycle phases rather than copied into separate 
 | `mcmc-logistic-explicit-floor-minmax` | [v1/logistic-explicit-floor.json](inputs/v1/logistic-explicit-floor.json) | equivalent-posterior | 6 |
 | `mcmc-logistic-rate-changes` | [v3/logistic-rate-changes.json](inputs/v3/logistic-rate-changes.json) | equivalent-posterior | 6 |
 | `mcmc-linear-regressor-model` | [v1/map-regressors-medium.json](inputs/v1/map-regressors-medium.json) | equivalent-posterior | 3 |
+| `mcmc-linear-sampled-regressor-model` | [v1/map-regressors-medium.json](inputs/v1/map-regressors-medium.json) | equivalent-posterior | 3 |
 
 ## diagnostics
 

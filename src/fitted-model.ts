@@ -839,9 +839,21 @@ const RegressorPiecewiseMapModelSchema = BasePiecewiseMapParametersSchema.pipe(
   Schema.brand("effect-prophet/FittedPiecewiseMapProphet"),
 );
 
+const RegressorFlatMcmcModelSchema = FlatMcmcParametersFieldsSchema.check(
+  consistentFlatMcmcParameters,
+).pipe(Schema.brand("effect-prophet/FittedFlatMcmcProphet"));
+
+const RegressorPiecewiseMcmcModelSchema = PiecewiseMcmcParametersFieldsSchema.check(
+  consistentPiecewiseMcmcParameters,
+).pipe(Schema.brand("effect-prophet/FittedPiecewiseMcmcProphet"));
+
 type RegressorFlatMapModelType = typeof RegressorFlatMapModelSchema.Type;
 
 type RegressorPiecewiseMapModelType = typeof RegressorPiecewiseMapModelSchema.Type;
+
+type RegressorFlatMcmcModelType = typeof RegressorFlatMcmcModelSchema.Type;
+
+type RegressorPiecewiseMcmcModelType = typeof RegressorPiecewiseMcmcModelSchema.Type;
 
 // Interfaces keep declarations naming these types instead of repeating them in every model type.
 
@@ -851,10 +863,25 @@ export interface RegressorFlatMapModel extends RegressorFlatMapModelType {}
 /** The linear model fitted to one regressor, which has no regressors of its own. */
 export interface RegressorPiecewiseMapModel extends RegressorPiecewiseMapModelType {}
 
-const RegressorModelFitSchema: Schema.Codec<
-  RegressorFlatMapModel | RegressorPiecewiseMapModel,
-  unknown
-> = Schema.Union([RegressorFlatMapModelSchema, RegressorPiecewiseMapModelSchema]);
+/** The flat posterior fitted to one regressor, which has no regressors of its own. */
+export interface RegressorFlatMcmcModel extends RegressorFlatMcmcModelType {}
+
+/** The linear posterior fitted to one regressor, which has no regressors of its own. */
+export interface RegressorPiecewiseMcmcModel extends RegressorPiecewiseMcmcModelType {}
+
+/** Any model fitted to one regressor: flat or linear, optimized or sampled. */
+export type RegressorFit =
+  | RegressorFlatMapModel
+  | RegressorPiecewiseMapModel
+  | RegressorFlatMcmcModel
+  | RegressorPiecewiseMcmcModel;
+
+const RegressorModelFitSchema: Schema.Codec<RegressorFit, unknown> = Schema.Union([
+  RegressorFlatMapModelSchema,
+  RegressorPiecewiseMapModelSchema,
+  RegressorFlatMcmcModelSchema,
+  RegressorPiecewiseMcmcModelSchema,
+]);
 
 const RegressorModelFieldsSchema = Schema.Struct({
   name: FeatureNameSchema,

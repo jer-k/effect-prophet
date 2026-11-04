@@ -229,12 +229,22 @@ def configure_model(benchmark_case: dict[str, Any]) -> Prophet:
             prior_scale=regressor.get("priorScale"),
             standardize=standardization[regressor["standardization"]],
             mode=regressor.get("mode", configuration.get("seasonalityMode", "additive")),
-            regressor_predictor=True if regressor.get("predictor") else None,
+            regressor_predictor=regressor_predictor(regressor.get("predictor")),
         )
     model.stan_backend.set_options(
         newton_fallback=workload["pythonOptimizer"]["newtonFallback"]
     )
     return model
+
+
+def regressor_predictor(predictor: Any) -> bool | dict[str, Any] | None:
+    """``regressor_predictor`` for a declared predictor: the defaults, or a sampled model."""
+
+    if predictor is None:
+        return None
+    if predictor is True:
+        return True
+    return {"mcmc_samples": predictor["mcmcSamples"]}
 
 
 def fit_model(training: pd.DataFrame, benchmark_case: dict[str, Any],
@@ -251,12 +261,16 @@ def fit_model(training: pd.DataFrame, benchmark_case: dict[str, Any],
     mcmc = workload.get("mcmc")
     if mcmc is not None:
         # CmdStan's sampler: `mcmc_samples // 2` warmup and kept iterations on each chain. Prophet
-        # passes these arguments on to each regressor model's optimizer too, which only accepts
-        # the seed, so cases with regressor models declare no chains and keep progress bars.
+        # passes these arguments on to each regressor model's fit too. A sampling regressor model
+        # takes them all, but an optimizing one accepts only the seed, so cases with one declare
+        # no chains and keep progress bars.
         sampling: dict[str, Any] = {"seed": mcmc["seed"]}
         if "chains" in mcmc:
             sampling["chains"] = mcmc["chains"]
-        if not any(regressor.get("predictor") for regressor in workload["configuration"]["regressors"]):
+        if not any(
+            regressor.get("predictor") is True
+            for regressor in workload["configuration"]["regressors"]
+        ):
             sampling["show_progress"] = False
         return model.fit(training, **sampling, **warm_start)
     return model.fit(

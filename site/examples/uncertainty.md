@@ -75,6 +75,6 @@ go over 150?". `predictWithIntervals` rejects `output: "samples"` with an `Input
   2,048, but `output: "samples"` returns every simulated value, so rows × samples can be at most
   1,000,000. A model with [regressors forecast by their own models](./regressors#forecasting-a-regressor)
   keeps those models' draws for the rows after the history, so those rows × samples can be at most
-  1,000,000 too. Very long forecasts are also capped: with the default 25 changepoints, ranges reach
+  1,000,000 too, counting a [sampled](./bayesian) model's `ceil(samples / draws) × draws` futures. Very long forecasts are also capped: with the default 25 changepoints, ranges reach
   about 10 times the length of the history ahead. Past any limit, `predictWithIntervals` and
   `predictUncertainty` fail with a `PredictionError` whose reason is `simulation-limit`.

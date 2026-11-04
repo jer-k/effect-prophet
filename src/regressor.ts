@@ -10,6 +10,7 @@ import {
 import { FeatureNameSchema, type FeatureName } from "./feature-name";
 import { defaultEventPriorScale } from "./event";
 import { PositiveFinite } from "./internal/numeric-schemas";
+import type { EncodedMcmcOptions } from "./mcmc";
 import type { EncodedBuiltInSeasonalities, EncodedChangepointSetting } from "./options";
 import type { TargetScalingMode } from "./target-scaling";
 
@@ -22,9 +23,9 @@ export type EncodedRegressorStandardization = "auto" | "always" | "never";
  *
  * Only constructor settings are accepted. Custom seasonalities, regressors and country holidays
  * are added after construction in Python, so a regressor model cannot have them, and logistic
- * growth would need a capacity no future row supplies. The main model's `map.optimizer` and
- * `map.warmStart`, when set, apply to the regressor model too, as Python passes its fit arguments
- * on.
+ * growth would need a capacity no future row supplies. The main model's `map.warmStart`, when
+ * set, applies to the regressor model too, as Python passes its fit arguments on, and so does its
+ * `map.optimizer` unless the regressor model samples.
  */
 export interface EncodedRegressorModelOptions {
   readonly growth?: "linear" | "flat";
@@ -39,6 +40,12 @@ export interface EncodedRegressorModelOptions {
     readonly changepoints?: EncodedChangepointSetting;
     readonly changepointPriorScale?: number;
   };
+
+  /**
+   * Sample this model's posterior, like `mcmc_samples` in Python's `regressor_predictor`, with
+   * its own seed. The main model's `mcmc` doesn't apply to it, as in Python.
+   */
+  readonly mcmc?: EncodedMcmcOptions;
 }
 
 /** One additive regressor definition accepted by public fit options. */
@@ -241,6 +248,7 @@ const RegressorModelOptionsSyntaxSchema = Schema.Struct({
       changepointPriorScale: Schema.optionalKey(Schema.Unknown),
     }),
   ),
+  mcmc: Schema.optionalKey(Schema.Unknown),
 });
 
 const EncodedRegressorDefinitionSchema = Schema.Struct({

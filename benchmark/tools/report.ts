@@ -103,7 +103,9 @@ type FitQualityPolicy = "equality-gate" | "diagnostic-only" | "output-first";
 /** Whether any regressor is forecast by its own model, which Python cannot persist. */
 const forecastsRegressors = (benchmarkCase: BenchmarkCase): boolean =>
   benchmarkCase.workload.kind !== "fixed-linear-prediction" &&
-  benchmarkCase.workload.configuration.regressors.some((regressor) => regressor.predictor === true);
+  benchmarkCase.workload.configuration.regressors.some(
+    (regressor) => regressor.predictor !== undefined,
+  );
 
 const fitQualityPolicy = (
   quality: NonNullable<BenchmarkCase["optimizerQuality"]>,

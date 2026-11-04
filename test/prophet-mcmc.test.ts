@@ -145,9 +145,6 @@ describe("fit with mcmc", () => {
       { ...options, mcmc: { samples: 100, seed: 1, chains: 17 } },
       { ...options, mcmc: { samples: 20_000, seed: 1, chains: 4 } },
       { ...options, mcmc: { samples: 100, seed: -1 } },
-      {
-        regressors: [{ name: "promotion", predictor: { mcmc: { samples: 20, seed: 1 } } }],
-      },
     ];
 
     for (const input of failures) {
@@ -246,6 +243,122 @@ describe("logistic and regressor-model posteriors", () => {
     expect(
       await run(predictWithIntervals(withModel, timestamps, { seed: 2, samples: 500 })),
     ).toEqual(result);
+  });
+
+  const sampledRegressor = {
+    ...options,
+    regressors: [{ name: "promotion", predictor: { mcmc: { samples: 60, seed: 3, chains: 2 } } }],
+  } as const satisfies EncodedProphetOptions;
+
+  it("samples a regressor model's posterior with its own seed and settings", async () => {
+    const model = requireMcmc(await fitModel(sampledRegressor));
+    const regressorModel = model.regressorModels?.[0]?.model;
+
+    if (regressorModel === undefined || !isMcmcModel(regressorModel)) {
+      throw new Error("Expected a sampled regressor model");
+    }
+
+    expect(regressorModel.model).toBe("linear-piecewise-mcmc");
+    expect(regressorModel.fitSummary.sampler).toMatchObject({ chains: 2, drawsPerChain: 30 });
+    expect(regressorModel.posterior.noiseScale).toHaveLength(60);
+
+    const timestamps = future.map(({ timestamp }) => timestamp);
+    const promotions = await run(predict(regressorModel, timestamps));
+
+    // Future rows take the regressor model's posterior-mean forecast, as if supplied by hand to
+    // the same main posterior.
+    const byHand = await fitModel();
+
+    expect(await run(predict(model, timestamps))).toEqual(
+      await run(
+        predict(
+          byHand,
+          timestamps.map((timestamp, index) => ({
+            timestamp,
+            regressors: { promotion: promotions[index]?.value ?? Number.NaN },
+          })),
+        ),
+      ),
+    );
+
+    const result = await run(predictWithIntervals(model, timestamps, { seed: 2, samples: 500 }));
+    const encoded = await run(encodeFittedModel(model));
+    const decoded = await run(decodeFittedModel(JSON.parse(JSON.stringify(encoded))));
+
+    expect(await run(predictWithIntervals(decoded, timestamps, { seed: 2, samples: 500 }))).toEqual(
+      result,
+    );
+  });
+
+  it("cycles a sampled regressor model's draws when it has more than the call requests", async () => {
+    const model = await fitModel({
+      builtInSeasonalities: options.builtInSeasonalities,
+      regressors: [{ name: "promotion", predictor: { mcmc: { samples: 120, seed: 3 } } }],
+    });
+
+    expect(isMcmcModel(model)).toBe(false);
+
+    const timestamps = future.map(({ timestamp }) => timestamp);
+
+    // The regressor model keeps 240 draws, so it returns 240 paths for these 16.
+    const result = await run(predictWithIntervals(model, timestamps, { seed: 4, samples: 16 }));
+
+    expect(result.sampleCount).toBe(16);
+    expect(result.rows.every((row) => row.valueInterval.lower < row.valueInterval.upper)).toBe(
+      true,
+    );
+  });
+
+  it("bounds a sampled regressor model's draws by the paths it returns", async () => {
+    const model = await fitModel({
+      builtInSeasonalities: options.builtInSeasonalities,
+      regressors: [
+        { name: "promotion", predictor: { mcmc: { samples: 2_000, seed: 3, warmup: 50 } } },
+      ],
+    });
+
+    // 300 rows of 16 requested paths fit the budget, but the regressor model's 4,000 draws don't.
+    const rows = Array.from({ length: 300 }, (_, index) => ({
+      timestamp: new Date(Date.UTC(2025, 0, 1) + 60 * day + index * 3_600_000).toISOString(),
+    }));
+
+    const error = await run(Effect.flip(predictUncertainty(model, rows, { seed: 1, samples: 16 })));
+
+    expect(error).toMatchObject({ reason: "simulation-limit", regressor: "promotion" });
+  });
+
+  it("keeps the main model's optimizer away from a sampling regressor model", async () => {
+    const model = await fitModel({
+      builtInSeasonalities: options.builtInSeasonalities,
+      map: { optimizer: { algorithm: "newton" } },
+      regressors: [{ name: "promotion", predictor: { mcmc: { samples: 40, seed: 3 } } }],
+    });
+
+    expect(model.model).toBe("linear-piecewise-map");
+    expect(model.regressorModels?.[0]?.model.model).toBe("linear-piecewise-mcmc");
+  });
+
+  it("reports invalid regressor model sampling settings under its predictor", async () => {
+    const error = await run(
+      Effect.flip(
+        fit(history, {
+          ...options,
+          regressors: [{ name: "promotion", predictor: { mcmc: { samples: 40, seed: -1 } } }],
+        }).pipe(Effect.provide(prophetFittingBackendLayer)),
+      ),
+    );
+
+    expect(error).toBeInstanceOf(InputValidationError);
+
+    if (error instanceof InputValidationError) {
+      expect(error.issues.map((issue) => issue.path)).toContainEqual([
+        "regressors",
+        0,
+        "predictor",
+        "mcmc",
+        "seed",
+      ]);
+    }
   });
 });
 
@@ -440,6 +553,69 @@ describe("posterior tracing", () => {
       expect(Exit.isSuccess(status.exit)).toBe(true);
       expect(status.startTime).toBeGreaterThanOrEqual(parentStatus.startTime);
       expect(status.endTime).toBeLessThanOrEqual(parentStatus.endTime);
+    }
+  });
+
+  it("traces a sampled regressor model's fit and draws under its own regressor model spans", async () => {
+    const { spans, tracer } = collectTestSpans();
+
+    await run(
+      Effect.gen(function* () {
+        const model = yield* fit(history, {
+          builtInSeasonalities: options.builtInSeasonalities,
+          regressors: [{ name: "promotion", predictor: { mcmc: { samples: 120, seed: 3 } } }],
+        });
+
+        yield* predictUncertainty(model, future, { seed: 1, samples: 16 });
+      }).pipe(
+        Effect.provide(prophetFittingBackendLayer),
+        Effect.withSpan("forecast.job"),
+        Effect.withTracer(tracer),
+      ),
+    );
+
+    const named = (name: string) => spans.filter((span) => span.name === name);
+
+    const childOf = (span: (typeof spans)[number]) =>
+      span.parent.pipe(Option.getOrUndefined)?.spanId;
+
+    const [root] = named("forecast.job");
+    const [regressorFit] = named("Prophet.fitRegressorModel");
+    const [regressorSimulation] = named("Prophet.simulateRegressorModel");
+
+    if (root === undefined || regressorFit === undefined || regressorSimulation === undefined) {
+      throw new Error("Expected regressor model spans");
+    }
+
+    const [sampledFit, mainFit] = named("effect-prophet.wasm.fit");
+    const [draws, mainSimulation] = named("effect-prophet.wasm.simulate");
+
+    if (
+      sampledFit === undefined ||
+      mainFit === undefined ||
+      draws === undefined ||
+      mainSimulation === undefined
+    ) {
+      throw new Error("Expected engine spans for both models");
+    }
+
+    expect(childOf(sampledFit)).toBe(regressorFit.spanId);
+    expect(childOf(draws)).toBe(regressorSimulation.spanId);
+    expect(Object.fromEntries(sampledFit.attributes)).toMatchObject({
+      "effect_prophet.model.type": "linear-piecewise-mcmc",
+      "effect_prophet.mcmc.draw.count": 240,
+    });
+    expect(Object.fromEntries(mainFit.attributes)["effect_prophet.model.type"]).toBe(
+      "linear-piecewise-map",
+    );
+
+    // The regressor model simulates a path for each of its 240 draws, for 16 requested.
+    expect(Object.fromEntries(draws.attributes)["effect_prophet.sample.count"]).toBe(240);
+    expect(Object.fromEntries(mainSimulation.attributes)["effect_prophet.sample.count"]).toBe(16);
+
+    for (const span of [regressorFit, sampledFit, regressorSimulation, draws]) {
+      expect(span.traceId).toBe(root.traceId);
+      expect(Exit.isSuccess(requireEndedSpan(span).exit)).toBe(true);
     }
   });
 

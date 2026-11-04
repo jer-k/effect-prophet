@@ -108,6 +108,19 @@ const logisticFloor = withTwoChangepoints(
 
 const regressorModel = sourceConfiguration(regressorModelCases, "linear-regressor-model");
 
+/** The same regressor, its own model sampled like `regressor_predictor={"mcmc_samples": 300}`. */
+const sampledRegressorModel = {
+  ...regressorModel,
+  configuration: {
+    ...regressorModel.configuration,
+    regressors: regressorModel.configuration.regressors.map((regressor) =>
+      regressor.predictor === undefined
+        ? regressor
+        : { ...regressor, predictor: { mcmcSamples: 300 } },
+    ),
+  },
+};
+
 /** Full Bayesian fits of every growth, compared with Python's `mcmc_samples`. */
 export const mcmcCases: ReadonlyArray<BenchmarkCase> = [
   // Conditional multiplicative weekly seasonality, an event, a binary regressor and two
@@ -159,6 +172,15 @@ export const mcmcCases: ReadonlyArray<BenchmarkCase> = [
     "mcmc-linear-regressor-model",
     regressorModel.dataset,
     regressorModel.configuration,
+    { samples: 300 },
+    ["warm-fit", "warm-predict", "warm-uncertainty"],
+  ),
+  // The same regressor model sampled too, with the main model's seed and 4 chains, which Python
+  // passes on from `fit`. Its 600 draws give 1,200 futures, one for each of the main model's.
+  sampledCase(
+    "mcmc-linear-sampled-regressor-model",
+    sampledRegressorModel.dataset,
+    sampledRegressorModel.configuration,
     { samples: 300 },
     ["warm-fit", "warm-predict", "warm-uncertainty"],
   ),

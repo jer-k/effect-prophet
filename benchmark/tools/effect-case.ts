@@ -47,7 +47,28 @@ export const effectOptionsForCase = (
       yearly: "off" as const,
     },
     events: configuration.events,
-    regressors: configuration.regressors,
+    regressors: configuration.regressors.map(({ predictor, ...regressor }) => {
+      if (predictor === undefined) return regressor;
+
+      if (predictor === true) return { ...regressor, predictor };
+
+      // Python passes `fit`'s seed and chains on to a sampling regressor model.
+      const sampled = workload.kind === "map" ? workload.mcmc : undefined;
+
+      if (sampled === undefined) {
+        throw new Error("A sampled regressor model needs the case's own sampling seed");
+      }
+
+      const { seed, chains } = sampled;
+      const samples = predictor.mcmcSamples;
+
+      return {
+        ...regressor,
+        predictor: {
+          mcmc: chains === undefined ? { samples, seed } : { samples, seed, chains },
+        },
+      };
+    }),
   };
 
   if (workload.kind === "map" || workload.kind === "evaluation") {

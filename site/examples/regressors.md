@@ -50,13 +50,18 @@ actual   401.3, 410.0, 389.4, 355.6, 335.0
 `Prophet` constructor arguments:
 
 - The options are `growth` (`"linear"` or `"flat"`), `seasonalityMode`, `holidaysMode`,
-  `seasonalityPriorScale`, `holidaysPriorScale`, `builtInSeasonalities`, `events`, `scaling`, and
-  `map.changepoints` and `map.changepointPriorScale`. Custom seasonalities, regressors and country
-  holidays aren't available, and logistic growth isn't either, because it needs a capacity no
-  future row has.
-- The regressor model doesn't inherit the main model's settings, except `map.optimizer` and
-  `map.warmStart` when you set them, as Python passes its fit arguments on. A warm start's `delta`
-  and `beta` are used only if their lengths match the regressor model's.
+  `seasonalityPriorScale`, `holidaysPriorScale`, `builtInSeasonalities`, `events`, `scaling`,
+  `map.changepoints` and `map.changepointPriorScale`, and `mcmc`. Custom seasonalities, regressors
+  and country holidays aren't available, and logistic growth isn't either, because it needs a
+  capacity no future row has.
+- `mcmc` samples the regressor model's posterior, like `mcmc_samples` in Python's options, with
+  the same settings as the main model's [`mcmc`](./bayesian): `{ mcmc: { samples: 300, seed: 7 } }`.
+  It needs its own seed, and the main model's `mcmc` never applies to it, so a regressor model
+  optimizes unless its own options sample.
+- The regressor model doesn't inherit the main model's settings, except `map.warmStart`, and
+  `map.optimizer` when the regressor model optimizes, when you set them, as Python passes its fit
+  arguments on. A warm start's `delta` and `beta` are used only if their lengths match the
+  regressor model's.
 - In rows after the history, the forecast replaces any value you pass for that regressor. In
   earlier rows, a value you pass is used, and a missing one is the history's value at the same
   timestamp. If that timestamp isn't in the history, or the history repeats timestamps, `predict`
@@ -69,7 +74,9 @@ actual   401.3, 410.0, 389.4, 355.6, 335.0
 - **Ranges include the regressor's uncertainty.** As in Python, `predictWithIntervals` and
   `predictUncertainty` give each simulated future one of the regressor model's own simulated
   values, so ranges after the history are wider than with the point forecast alone. Ranges for
-  rows inside the history use the values those rows have.
+  rows inside the history use the values those rows have. A sampled regressor model simulates
+  `ceil(samples / draws)` values per posterior draw, like a sampled main model, and the futures
+  take them in turn.
 
 ## Things to know
 

@@ -88,4 +88,29 @@ describe("Effect benchmark case mapping", () => {
     expect(effectOptionsForCase(linear)?.mcmc).toEqual({ samples: 300, seed: 19 });
     expect(effectOptionsForCase(flat)?.mcmc).toEqual({ samples: 500, seed: 19, chains: 2 });
   });
+
+  it("gives a sampled regressor model the case's seed and chains, as Python's fit passes them on", () => {
+    const sampled = mcmcCases.find(({ id }) => id === "mcmc-linear-sampled-regressor-model");
+
+    if (
+      sampled === undefined ||
+      sampled.workload.kind !== "map" ||
+      sampled.workload.mcmc === undefined
+    ) {
+      throw new Error("Expected the sampled regressor model case");
+    }
+
+    expect(effectOptionsForCase(sampled)?.regressors?.[1]?.predictor).toEqual({
+      mcmc: { samples: 300, seed: 19 },
+    });
+
+    const twoChains = {
+      ...sampled,
+      workload: { ...sampled.workload, mcmc: { ...sampled.workload.mcmc, chains: 2 } },
+    };
+
+    expect(effectOptionsForCase(twoChains)?.regressors?.[1]?.predictor).toEqual({
+      mcmc: { samples: 300, seed: 19, chains: 2 },
+    });
+  });
 });
