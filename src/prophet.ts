@@ -1793,20 +1793,23 @@ const simulateRows = Effect.fnUntraced(function* (
   );
 
   const trend = "timeOrigin" in parsedModel ? parsedModel : undefined;
-
-  const horizon =
-    trend === undefined
-      ? 0
-      : Math.max(0, (Math.max(...timestamps) - trend.timeOrigin) / trend.timeScale - 1);
-
   const future = regressorModelFutureRows(parsedModel, rows);
   const expected = expectedSimulation(options.samples, posteriorDrawCount(parsedModel));
   const changepointCount = trend?.deltas.length ?? 0;
 
   // Regressor model draws are held in full, so their rows are bounded like sample output.
-  if (
+  const exceedsRowBudget =
     exceedsSimulationBudget(timestamps.length, expected.sampleCount, options.output) ||
-    exceedsSimulationBudget(future.length, expected.sampleCount, "samples") ||
+    exceedsSimulationBudget(future.length, expected.sampleCount, "samples");
+
+  // The variadic maximum is only safe once the row budget bounds its argument count.
+  const horizon =
+    exceedsRowBudget || trend === undefined
+      ? 0
+      : Math.max(0, (Math.max(...timestamps) - trend.timeOrigin) / trend.timeScale - 1);
+
+  if (
+    exceedsRowBudget ||
     changepointCount > 10_000 ||
     horizon > 20 ||
     changepointCount * horizon > 256
