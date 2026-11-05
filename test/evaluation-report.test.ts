@@ -283,6 +283,41 @@ describe("evaluateHoldout", () => {
     expect(Object.isFrozen(decoded.baselines[0]?.forecasts)).toBe(true);
   });
 
+  it("decodes an owned frozen report without freezing the caller's selected options", async () => {
+    const search = await find();
+
+    const encoded = await Effect.runPromise(
+      run(input(search)).pipe(Effect.flatMap(encodeEvaluationReport)),
+    );
+
+    const payload = structuredClone(encoded);
+
+    const decoded = await Effect.runPromise(decodeEvaluationReport(payload));
+
+    const callerMap = payload.selected.options.map;
+    const decodedMap = decoded.selected.options.map;
+
+    if (callerMap === undefined || decodedMap === undefined) {
+      throw new Error("Expected selected MAP options");
+    }
+
+    expect(Object.isFrozen(payload.selected.options)).toBe(false);
+    expect(Object.isFrozen(callerMap)).toBe(false);
+    expect(Object.isFrozen(callerMap.changepoints)).toBe(false);
+
+    expect(decoded.selected.options).not.toBe(payload.selected.options);
+    expect(decodedMap).not.toBe(callerMap);
+    expect(Object.isFrozen(decoded.selected.options)).toBe(true);
+    expect(Object.isFrozen(decodedMap)).toBe(true);
+    expect(Object.isFrozen(decodedMap.changepoints)).toBe(true);
+
+    expect(Reflect.set(callerMap, "changepointPriorScale", 0.1)).toBe(true);
+    expect(decodedMap.changepointPriorScale).toBe(
+      encoded.selected.options.map?.changepointPriorScale,
+    );
+    expect(decoded).toEqual(encoded);
+  });
+
   it("scores a point-only holdout without simulation or baselines", async () => {
     const search = await find();
     const { uncertainty: _simulation, ...request } = input(search);
