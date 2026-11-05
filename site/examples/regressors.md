@@ -84,18 +84,36 @@ actual   401.3, 410.0, 389.4, 355.6, 335.0
   regressor has its own model. If you don't know a future value, use your own forecast, such as a
   weather forecast, or [forecast it with its own model](#forecasting-a-regressor).
 - **Regressors are numbers.** Use `1` and `0` for yes/no factors.
-- **`getRegressorCoefficients(model)`** shows what the model learned: how much the forecast
-  changes per one unit of each regressor, in your data's units.
+- **`getRegressorCoefficients(model)`** shows what the model learned for each regressor: its
+  `mode`, `coefficient` and `center`. How to read the coefficient depends on the mode. See
+  [Reading coefficients](#reading-coefficients).
 - **Options for each regressor:**
 
-| Option            | Default              | Meaning                                                                                     |
-| ----------------- | -------------------- | ------------------------------------------------------------------------------------------- |
-| `priorScale`      | `holidaysPriorScale` | Lower values keep the effect small unless the data clearly supports it                      |
-| `mode`            | `"additive"`         | `"multiplicative"` makes the effect a percentage of the trend                               |
-| `standardization` | `"auto"`             | Rescales the values internally for a stable fit. `"auto"` leaves yes/no (0/1) values alone. |
-| `predictor`       | none                 | `true` or options to [forecast the regressor with its own model](#forecasting-a-regressor)  |
+| Option            | Default              | Meaning                                                                                                    |
+| ----------------- | -------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `priorScale`      | `holidaysPriorScale` | Lower values keep the effect small unless the data clearly supports it                                     |
+| `mode`            | `seasonalityMode`    | `"multiplicative"` makes the effect a percentage of the trend. `seasonalityMode` defaults to `"additive"`. |
+| `standardization` | `"auto"`             | Rescales the values internally for a stable fit. `"auto"` leaves yes/no (0/1) values alone.                |
+| `predictor`       | none                 | `true` or options to [forecast the regressor with its own model](#forecasting-a-regressor)                 |
 
 As in Python Prophet, a regressor without its own `priorScale` uses the model's
 `holidaysPriorScale` (default `10`), not `seasonalityPriorScale`. Changing `holidaysPriorScale`
 therefore changes those regressors too. To tune holidays alone, give each regressor its own
 `priorScale`.
+
+## Reading coefficients
+
+For a regressor with coefficient `c`, center `center`, and a row whose regressor value is `x`, in
+the regressor's own units:
+
+- **Additive:** the regressor adds `c × (x − center)` to the forecast, in your data's units. One
+  more unit of the regressor changes the forecast by `c`.
+- **Multiplicative:** `c × (x − center)` is a fraction of the trend, the `factor` in the
+  forecast's regressor entry. The `contribution`, in your data's units, is
+  `trend × c × (x − center)`. One more unit of the regressor changes the forecast by `trend × c`,
+  so the same coefficient has a larger effect where the trend is higher.
+
+For example, a multiplicative `promotion` regressor with coefficient `0.2` on a trend of `100`
+adds `20` to the forecast on promotion days, not `0.2`. See
+[Additive and multiplicative pieces](../guide/reading-forecasts#additive-and-multiplicative-pieces)
+for how `factor` and `contribution` appear in forecasts.

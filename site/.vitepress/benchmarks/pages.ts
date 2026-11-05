@@ -20,12 +20,14 @@ const milliseconds = (ms: number) =>
 const optionalMilliseconds = (ms: number | undefined) =>
   ms === undefined ? "—" : milliseconds(ms);
 
-const ratio = ({ effectMs, pythonMs }: PhaseTiming) =>
+const ratio = ({ effectMs, pythonMs, differentWork }: PhaseTiming) =>
   effectMs === undefined
     ? "—"
-    : effectMs <= pythonMs
-      ? `${(pythonMs / effectMs).toPrecision(2)}× faster`
-      : `${(effectMs / pythonMs).toPrecision(2)}× slower`;
+    : differentWork !== undefined
+      ? "Not compared: different work"
+      : effectMs <= pythonMs
+        ? `${(pythonMs / effectMs).toPrecision(2)}× faster`
+        : `${(effectMs / pythonMs).toPrecision(2)}× slower`;
 
 const difference = (value: number) =>
   value === 0 ? "0" : value < 1e-4 ? value.toExponential(1) : value.toPrecision(2);
@@ -78,7 +80,9 @@ const caseRow = (suite: BenchmarkSuite, item: CaseResult) =>
       : item.maximumDifference !== undefined
         ? difference(item.maximumDifference)
         : "—",
-    item.headline?.label ?? "—",
+    item.headline === undefined
+      ? "—"
+      : `${item.headline.label}${item.headline.differentWork === undefined ? "" : " (different work)"}`,
     optionalMilliseconds(item.headline?.effectMs),
     optionalMilliseconds(item.headline?.pythonMs),
   ].join(" | ");
@@ -124,6 +128,11 @@ const legend = (cases: ReadonlyArray<CaseResult>) => [
   "- **Effect output** and **Python output** are each library's final forecast value. Open a case to see every row side by side.",
   "- **Largest difference** is the biggest gap between the two forecasts, as a share of the input data's range.",
   "- **Effect time** and **Python time** are the median time for the **timed step**, usually fitting and predicting. Open a case for every step, including first-run and save/load times.",
+  ...(cases.some((item) => item.headline?.differentWork !== undefined)
+    ? [
+        "- A timed step marked **different work** calls public operations that produce different outputs in the two libraries, so its times aren't a speed comparison. The case page explains the difference.",
+      ]
+    : []),
   ...(tally(cases).flagged === 0
     ? []
     : [
@@ -281,6 +290,29 @@ const valuesTable = (item: CaseResult) => {
   ].join("\n");
 };
 
+/** Explains each step whose two timed calls produce different outputs. */
+const differentWorkNotes = (item: CaseResult) => {
+  const reasons = new Map<string, Array<string>>();
+
+  for (const timing of item.timings) {
+    if (timing.differentWork !== undefined && timing.effectMs !== undefined) {
+      reasons.set(timing.differentWork, [
+        ...(reasons.get(timing.differentWork) ?? []),
+        timing.label,
+      ]);
+    }
+  }
+
+  return reasons.size === 0
+    ? []
+    : [
+        "",
+        "Some steps aren't compared, because the two libraries' public calls produce different outputs. Their times show what each call costs, not which library is faster.",
+        "",
+        ...[...reasons].map(([reason, labels]) => `- **${labels.join(", ")}:** ${reason}`),
+      ];
+};
+
 const timingTable = (item: CaseResult) =>
   item.timings.length === 0
     ? "This case isn't timed, because only matching cases are."
@@ -299,6 +331,7 @@ const timingTable = (item: CaseResult) =>
           (timing) =>
             `| ${timing.label} | ${optionalMilliseconds(timing.effectMs)} | ${milliseconds(timing.pythonMs)} | ${ratio(timing)} |`,
         ),
+        ...differentWorkNotes(item),
       ].join("\n");
 
 /** One case's page: inputs, outputs from both libraries side by side, and timings. */

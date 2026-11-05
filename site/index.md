@@ -24,7 +24,7 @@ features:
   - title: Explainable forecasts
     details: Every forecast is split into its trend, seasonal patterns, holidays and extra factors, so you can see why it says what it says.
   - title: Tracing built in
-    details: Every fit and forecast is traced out of the box. Send spans to Jaeger or any OpenTelemetry backend and see what each step did and how long it took. Spans carry counts and labels, never your data.
+    details: Every fit and forecast is traced out of the box. Send spans to Jaeger or any OpenTelemetry backend and see what each step did and how long it took. The attributes it sets carry counts and labels, never your data.
     link: /guide/tracing
     linkText: Learn about tracing
   - title: Built on Effect

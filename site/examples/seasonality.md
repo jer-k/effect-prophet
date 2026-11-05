@@ -60,8 +60,9 @@ grows, use `seasonalityMode: "multiplicative"` so the pattern acts as a percenta
 weekly 19.5% 66.7
 ```
 
-You can also set `mode` on a single pattern, event or regressor to mix the two kinds in one
-model.
+To mix the two kinds in one model, set `mode` on a single custom seasonality or regressor.
+Events don't take their own `mode`: `holidaysMode` sets one mode for every event and defaults to
+`seasonalityMode`. See [Holidays and events](/examples/events#things-to-know).
 
 ## Patterns that switch on and off
 

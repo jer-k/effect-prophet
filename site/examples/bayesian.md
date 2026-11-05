@@ -82,10 +82,15 @@ diagnostics. Logistic growth always samples.
 - **Sampling is slower than MAP fitting**: hundreds of gradient evaluations per draw instead of a
   few dozen in all. The 90-day example above takes about a second. Linear and flat fits take
   about as long as Python's, but logistic fits take 3–4 times as long as Python's native CmdStan.
-  Ranges from a posterior are much faster here. See the [benchmarks](/benchmarks/bayesian).
+  See the [benchmarks](/benchmarks/bayesian), which also time ranges from a posterior. Python's
+  calls there also compute point forecasts and components, so those times aren't compared.
 - **Limits.** Up to 16 chains, 100,000 warmup iterations per chain and 20,000 kept draws in all,
   and at most 2,000,000 kept values (draws times parameters), so models stay a reasonable size.
-  Past these, `fit` fails with a `FittingError` whose `reason` is `"sampling-limit"`.
+  The first three are checked against your `mcmc` options before sampling: past them, `fit` fails
+  with an `InputValidationError` whose `input` is `"options"`, with an issue at `mcmc.chains`,
+  `mcmc.warmup` or `mcmc.samples`. Kept values depend on how many parameters the model has, so
+  only fitting can check them: past that, `fit` fails with a `FittingError` whose `reason` is
+  `"sampling-limit"`.
 - **Every growth and feature.** Flat, linear and logistic growth all sample, with events,
   country holidays, conditional seasonalities and regressors. Regressors
   [forecast by their own models](./regressors#forecasting-a-regressor) optimize unless their own

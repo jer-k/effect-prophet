@@ -34,7 +34,8 @@ December 13.
 - **`priorScale`** limits how large an event's effect can be. Lower it if an event has only a few
   past occurrences. It defaults to the model's `holidaysPriorScale`, which defaults to `10`.
 - Set `holidaysMode: "multiplicative"` if event effects should be percentages instead of fixed
-  amounts.
+  amounts. It applies to every event, and defaults to `seasonalityMode`. Individual events don't
+  accept their own `mode`.
 
 ## Country holidays
 
