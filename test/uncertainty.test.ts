@@ -9,12 +9,15 @@ import {
   encodeFittedModel,
   fit,
   predictUncertainty,
+  predictWithIntervals,
   prophetFittingBackendLayer,
   simulationIdentity,
+  type EncodedProphetOptions,
   type UncertaintyInterval,
   type UncertaintyResult,
 } from "../src/index";
 import { alignIntervalRows, parseIntervalOptions } from "../src/uncertainty";
+import { collectTestSpans } from "./internal/tracing-test-helpers";
 
 const history = [
   { timestamp: "2025-01-01T00:00:00.000Z", value: 1 },
@@ -1030,6 +1033,74 @@ describe("predictUncertainty", () => {
 
     expect(rowBudget).toMatchObject({ reason: "simulation-limit" });
   });
+
+  it.each(
+    (["linear", "logistic", "flat"] as const).flatMap((growth) =>
+      (["map", "mcmc"] as const).map((method) => ({ growth, method })),
+    ),
+  )(
+    "rejects $growth $method batches too large for a variadic maximum before the WASM boundary",
+    async ({ growth, method }) => {
+      const builtInSeasonalities = { daily: "off", weekly: "off", yearly: "off" } as const;
+      const map = { changepoints: { mode: "explicit", timestamps: [] } } as const;
+
+      const growthOptions = {
+        linear: { growth: "linear", builtInSeasonalities, map },
+        logistic: { growth: "logistic", builtInSeasonalities, map },
+        flat: { growth: "flat", builtInSeasonalities },
+      } as const satisfies Record<typeof growth, EncodedProphetOptions>;
+
+      const options =
+        method === "mcmc"
+          ? { ...growthOptions[growth], mcmc: { samples: 20, seed: 1 } }
+          : growthOptions[growth];
+
+      const bounded = growth === "logistic";
+
+      const model = await Effect.runPromise(
+        fit(
+          history.map((row) => (bounded ? { ...row, capacity: 10 } : row)),
+          options,
+        ).pipe(Effect.provide(prophetFittingBackendLayer)),
+      );
+
+      // Minute-spaced rows stay within the horizon bound but exceed engine argument limits.
+      const start = Date.UTC(2025, 0, 1);
+
+      const rows = Array.from({ length: 150_000 }, (_, index) => {
+        const timestamp = new Date(start + index * 60_000).toISOString();
+
+        return bounded ? { timestamp, capacity: 10 } : { timestamp };
+      });
+
+      const request = { seed: 1, samples: 1 };
+
+      const expectTypedLimit = async (
+        operation: Effect.Effect<unknown, unknown>,
+        expectedSpans: ReadonlyArray<string>,
+      ) => {
+        const { spans, tracer } = collectTestSpans();
+
+        // A defect rejects here instead of flipping into the typed error channel.
+        const error = await Effect.runPromise(
+          Effect.flip(operation).pipe(Effect.withTracer(tracer)),
+        );
+
+        expect(error).toBeInstanceOf(PredictionError);
+        expect(error).toMatchObject({ reason: "simulation-limit" });
+        expect(spans.map((span) => span.name)).toEqual(expectedSpans);
+      };
+
+      await expectTypedLimit(predictUncertainty(model, rows, request), [
+        "Prophet.predictUncertainty",
+      ]);
+
+      await expectTypedLimit(predictWithIntervals(model, rows, request), [
+        "Prophet.predictWithIntervals",
+        "Prophet.predictUncertainty",
+      ]);
+    },
+  );
 
   it("keeps option, model, alignment and budget failure precedence", async () => {
     const model = await linearModel();
