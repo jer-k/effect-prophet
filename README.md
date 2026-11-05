@@ -98,8 +98,10 @@ const forecast = await Effect.runPromise(
 ```
 
 Each fit records what the forecasting engine did (rows, changepoints, parameters, solver steps),
-so a slow fit explains itself. Spans contain only counts and labels, never your data. See
-[Tracing](https://jer-k.github.io/effect-prophet/guide/tracing) for what's recorded.
+so a slow fit explains itself. The attributes Effect Prophet sets contain only counts and labels,
+never your data. A failed span still carries its error, and exporters such as `OtlpTracer` send
+error messages and stack traces, which can name your fields. See
+[Tracing](https://jer-k.github.io/effect-prophet/guide/tracing#what-is-recorded) for what's recorded.
 
 ## Coming from Python Prophet?
 

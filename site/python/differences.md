@@ -28,8 +28,10 @@ smaller behavior differences, including limits Python doesn't have.
   selected snapshot and never silently adopt installed updates. See
   [Country holiday calendars](/guide/holiday-calendars).
 - Cross-validation and model search run one fold after another, with no counterpart to
-  `cross_validation`'s `parallel` argument. One at a time, they're still faster than Python's
-  parallel modes in our [benchmarks](/benchmarks/linear/evaluation-linear-long-history-parallel).
+  `cross_validation`'s `parallel` argument. The
+  [benchmarks](/benchmarks/linear/evaluation-linear-long-history-parallel) time Python's parallel
+  modes next to Effect Prophet's sequential runs. The two return different outputs, so the times
+  show each library's cost rather than a speed ranking.
 - Custom metrics are definitions you pass to each call, not entries in a global registry, and
   can't replace a built-in metric. Each scores one forecast at a time and combines a group with
   a mean, median, quantile or ratio of means, using Prophet's windows. Python's
@@ -60,8 +62,10 @@ smaller behavior differences, including limits Python doesn't have.
   draw for draw: tiny rounding differences grow along a chain. Posterior means and ranges agree
   with Python's within the variation expected from that many draws.
 - **Size limits on Bayesian fitting.** Up to 16 chains, 100,000 warmup iterations per chain,
-  20,000 kept draws and 2,000,000 kept values (draws times parameters). Past these, `fit` fails
-  with a `FittingError` whose `reason` is `"sampling-limit"`. Python has no such limits.
+  20,000 kept draws and 2,000,000 kept values (draws times parameters). Python has no such limits.
+  `mcmc` options past the first three fail with an `InputValidationError` whose `input` is
+  `"options"`. A model whose kept values pass the last fails with a `FittingError` whose `reason`
+  is `"sampling-limit"`. See [Bayesian fitting](/examples/bayesian#things-to-know).
 - **Bayesian fits without features.** Python 1.4.0's `predict` fails for a model fitted with
   `mcmc_samples` that has no seasonalities, holidays or regressors: the posterior's placeholder
   coefficient comes back with the wrong shape. Here such a model forecasts normally.

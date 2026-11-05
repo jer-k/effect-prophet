@@ -71,17 +71,30 @@ The first engine call in a process also loads the engine. In a browser, that inc
 the binary. `wasm.cold_start` marks that call so the one-time cost isn't mistaken for a slow fit.
 Calls that start while it's loading wait for the same load and aren't marked.
 
-## What is never recorded
+## What is recorded
 
-Spans contain only counts and fixed labels, such as `growth: "linear"` or
-`optimizer.algorithm: "newton"`. They never contain:
+The attributes Effect Prophet sets on its spans are only counts and fixed labels, such as
+`growth: "linear"` or `optimizer.algorithm: "newton"`. They never contain:
 
 - your values, timestamps or forecasts
 - regressor, event or seasonality names
 - fitted coefficients or other model internals
 - error messages, stack traces or seeds
 
-That makes traces safe to send to a shared backend, even when your data is sensitive.
+Failed spans are different. When an operation fails, its span ends with the error, as every
+Effect span does, and your tracer decides what to do with it. The OTLP exporter above sends the
+error's message and stack trace with the span, and error messages can name your data. For
+example, a non-finite regressor value fails with a message that includes the regressor's name:
+
+```txt
+Expected a finite number
+  at [0]["regressors"]["private_customer_health_index"]
+```
+
+If your field names or other inputs are sensitive, decide what your exporter may send before
+pointing it at a shared backend: filter or redact exception events and status messages in your
+tracer or in a collector processor. Effect Prophet leaves that policy to your application, and
+doesn't change or hide its errors.
 
 ## Span reference
 
@@ -273,4 +286,6 @@ before any `Prophet.decodeOptions` span.
 
 `objective` is the built-in metric name, such as `mae`, or `custom` for a
 [custom metric](../examples/cross-validation#your-own-metrics). A custom metric's own name is
-never recorded, because you choose it.
+never set as an attribute, because you choose it. An error your `score` function fails with can
+still reach your exporter through the failed span, as described in
+[What is recorded](#what-is-recorded).

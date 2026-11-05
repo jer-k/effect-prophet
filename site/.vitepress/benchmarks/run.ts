@@ -55,6 +55,53 @@ const flagLabels = new Map([
   ["stationarity-residual", "Stationarity residual (lower is closer to the best fit)"],
 ]);
 
+const uncertaintyPhases = new Set([
+  "warm-uncertainty",
+  "cold-first-uncertainty",
+  "fresh-process-restored-uncertainty",
+]);
+
+const predictPhases = new Set([
+  "warm-predict",
+  "warm-fit-predict",
+  "warm-fit-predict-with-conversion",
+  "cold-first-forecast",
+  "fresh-process-restored-predict",
+]);
+
+/** Why the two libraries' timed calls do different work, as benchmark/tools/MEASUREMENTS.md says. */
+const differentWorkReasons = {
+  intervals:
+    "Python's `predict(vectorized=False)` also builds the point forecast and every component, while Effect Prophet's `predictUncertainty` returns only the ranges.",
+  samples:
+    "Python's `predictive_samples(vectorized=False)` and Effect Prophet's `predictUncertainty` are different public calls: Python's timing includes resetting NumPy's random generator and returns NumPy matrices, and the two don't draw the same random numbers.",
+  posterior:
+    "Python's `predict` on a posterior also computes every component's range over the draws, while Effect Prophet's `predict` returns point forecasts and leaves ranges to `predictWithIntervals`.",
+  evaluation:
+    "Python Prophet's cross-validation returns different outputs, and baselines, search and holdout reports have no Python API, so the benchmark times equivalent application code. The two libraries also compute ranges and some metrics differently.",
+} as const;
+
+/** Why this phase's timings aren't a like-for-like comparison, if they aren't. */
+const differentWork = (
+  phase: string,
+  declaration: any,
+  comparison: string | undefined,
+): string | undefined => {
+  if (comparison === "different-public-work") {
+    return differentWorkReasons.evaluation;
+  }
+
+  if (uncertaintyPhases.has(phase)) {
+    return declaration.workload.uncertainty?.output === "samples"
+      ? differentWorkReasons.samples
+      : differentWorkReasons.intervals;
+  }
+
+  return declaration.workload.mcmc !== undefined && predictPhases.has(phase)
+    ? differentWorkReasons.posterior
+    : undefined;
+};
+
 /** The single timing shown in the overview table, by preference. */
 const headlinePhases = [
   "warm-anomalies",
@@ -81,6 +128,8 @@ export interface PhaseTiming {
   // Missing for Python's parallel cross-validation modes, which Effect has no counterpart for.
   readonly effectMs: number | undefined;
   readonly pythonMs: number;
+  // Set when the two libraries' timed calls produce different outputs, so the times aren't ranked.
+  readonly differentWork: string | undefined;
 }
 
 export interface FitFlag {
@@ -234,6 +283,7 @@ export const loadBenchmark = (suite: BenchmarkSuite): Benchmark => {
               label,
               effectMs: effectNs === undefined ? undefined : effectNs / 1e6,
               pythonMs: pythonNs / 1e6,
+              differentWork: differentWork(phase, declaration, correctness?.comparison),
             },
           ];
     });
