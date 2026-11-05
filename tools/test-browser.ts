@@ -281,7 +281,14 @@ try {
 
   const browsers = [
     { name: "Chromium", browser: await chromium.launch() },
-    { name: "Firefox", browser: await firefox.launch() },
+    {
+      name: "Firefox",
+      // Repeated visits to the local server without user activation can get it classified as a
+      // bounce tracker, which logs a console warning on a timer and fails the run at random.
+      browser: await firefox.launch({
+        firefoxUserPrefs: { "privacy.bounceTrackingProtection.mode": 0 },
+      }),
+    },
     { name: "WebKit", browser: await webkit.launch() },
   ];
 
