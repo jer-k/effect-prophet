@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "runId": "2026-11-04T143908-109Z-d4edbd51",
-  "createdAt": "2026-11-04T14:39:12.422Z",
-  "gitRevision": "d4edbd51740a32f8a1d8e245aa70e2ba8d313fc7",
+  "runId": "2026-11-05T051506-488Z-b7a56669",
+  "createdAt": "2026-11-05T05:15:48.204Z",
+  "gitRevision": "b7a56669f96d6fd0b7aa03fb7b574f05954fc1e2",
   "gitDirty": false,
   "hostPlatform": "darwin",
   "hostRelease": "25.5.0",
@@ -201,7 +201,7 @@
       "value": "3081b3184d6204dbe3c3d0705dfe7e278ceb01a3d0615b6f10dea77d092bb870"
     },
     {
-      "name": "benchmark/results/runs/2026-11-04T143908-109Z-d4edbd51/cases.json",
+      "name": "benchmark/results/runs/2026-11-05T051506-488Z-b7a56669/cases.json",
       "value": "15f71a7263ef4c102e4e6782d2d07a366ef8b92df942294cf07edec35097b033"
     },
     {
@@ -230,7 +230,7 @@
     },
     {
       "name": "package-lock.json",
-      "value": "12f1d4f381ed0e84976ca4d32229116eff2562f54d999f47920240e6113b6c4f"
+      "value": "1242f481623aab67bd53bfe10be9d9542e1bb938d949c883e7cef1e025bc8a94"
     },
     {
       "name": "benchmark/inputs/v1/linear-medium.json",
@@ -320,7 +320,7 @@
   "containerImages": [
     {
       "name": "effect-prophet/benchmark-effect:local",
-      "value": "sha256:3a0b8982c7c2549c4371e76ccbb4746eb0a08b745b6e2e5df640f6feaa76418a"
+      "value": "sha256:0e313d139af28eec792becb0667d6d641ac9cb7b774b85fd85208c8717f17259"
     },
     {
       "name": "effect-prophet/benchmark-python:1.4.0",

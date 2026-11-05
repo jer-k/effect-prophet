@@ -4,7 +4,7 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows
 [Semantic Versioning](https://semver.org/). Before 1.0, minor versions may include breaking changes.
 
-## [0.7.0] - 2026-11-04
+## [0.7.0] - 2026-11-05
 
 Full Bayesian fitting, like Python's `mcmc_samples`, for the main model and for regressors
 forecast by their own models. Code that only fits MAP models works as before at runtime, but code
@@ -61,7 +61,7 @@ that reads optimizer fields from a `FittedProphet` must now narrow it first.
   narrowest 80% range and every range bound within the variation expected from the posterior's
   draws. Both libraries must keep the same number of draws, and divergences and R-hat are
   reported. Linear and flat fits take about as long as Python's, and ranges from a posterior are
-  9–80 times faster, but logistic fits take 3–4 times as long as Python's native CmdStan.
+  9–83 times faster, but logistic fits take 3–4 times as long as Python's native CmdStan.
 
 ## [0.6.0] - 2026-11-02
 
