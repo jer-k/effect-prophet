@@ -591,8 +591,8 @@ export const decodeEvaluationReport = Effect.fn("Prophet.decodeEvaluationReport"
 
   yield* reportConsistency(parsed, "decode");
 
-  // SAFETY: The strict report schema checked all fields; decodeOptions verified the unknown selected options are a closed valid EncodedProphetOptions object.
-  return freezeOwned(parsed) as HoldoutEvaluationReport;
+  // SAFETY: The strict report schema checked all fields; decodeOptions verified the unknown selected options are a closed valid EncodedProphetOptions object. Decoding keeps those options as the caller's reference, so the report is copied before freezing.
+  return copyFrozen(parsed) as HoldoutEvaluationReport;
 });
 
 /** Verify and return a JSON-compatible owned report without I/O. */
