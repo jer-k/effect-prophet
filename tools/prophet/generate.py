@@ -450,6 +450,9 @@ CHANGEPOINT_RESOLUTION_CASES = (
         "ties-to-even-six-rows", tuple(index * DAY_MILLISECONDS for index in range(6)), 2, 1.0
     ),
     ChangepointResolutionCaseSpec(
+        "step-first-midpoint", tuple(index * DAY_MILLISECONDS for index in range(30)), 14, 1.0
+    ),
+    ChangepointResolutionCaseSpec(
         "irregular-row-index-spacing",
         (
             0,

@@ -157,8 +157,17 @@ pub fn resolve_automatic_changepoints(
   let mut selected = Vec::with_capacity(selected_count);
   let last_eligible_index = eligible_count - 1;
 
+  // Mirror `np.linspace(0, last, count + 1)`: NumPy computes the step first and multiplies
+  // it by each grid index, then pins the final sample to `last` exactly. Multiplying before
+  // dividing lands on different sides of `.5` ties, which `round` resolves to different rows.
+  let step = last_eligible_index as f64 / selected_count as f64;
+
   for grid_index in 1..=selected_count {
-    let position = grid_index as f64 * last_eligible_index as f64 / selected_count as f64;
+    let position = if grid_index == selected_count {
+      last_eligible_index as f64
+    } else {
+      grid_index as f64 * step
+    };
     let index = position.round_ties_even() as usize;
     let timestamp = timestamps
       .get(index)
@@ -871,6 +880,20 @@ mod tests {
       )
       .unwrap(),
       vec![1.0, 2.0, 3.0]
+    );
+  }
+
+  #[test]
+  fn resolves_numpy_step_first_candidates_at_rounding_ties() {
+    let timestamps: Vec<f64> = (0..30).map(f64::from).collect();
+
+    // np.linspace(0, 29, 15)[7] is 14.500000000000002, which rounds to 15; 7 * 29 / 14
+    // is exactly 14.5, which rounds to 14.
+    assert_eq!(
+      resolve_automatic_changepoints(&timestamps, 14, 1.0).unwrap(),
+      vec![
+        2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 15.0, 17.0, 19.0, 21.0, 23.0, 25.0, 27.0, 29.0
+      ]
     );
   }
 
