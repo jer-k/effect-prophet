@@ -1,11 +1,17 @@
 import { Cause, Effect, Exit, Option, Predicate, Tracer } from "effect";
 import { describe, expect, it } from "vitest";
 
-import { FittingError, InputValidationError, PredictionError } from "../src/errors";
+import {
+  FittingError,
+  ObservationError,
+  PredictionError,
+  PredictionInputError,
+} from "../src/errors";
 import { parseLogisticMapModel } from "../src/fitted-model";
 import { decodeFittedModel, encodeFittedModel } from "../src/model-serialization";
 import { prophetFittingBackendLayer } from "../src/internal/prophet-fitting-backend";
 import { fit, predict, predictUncertainty } from "../src/prophet";
+import { expectFailureOf } from "./helpers/expect-failure";
 import { requireEndedSpan } from "./internal/tracing-test-helpers";
 
 const observations = [
@@ -340,7 +346,12 @@ describe("logistic MAP forecasting", () => {
       ),
     );
 
-    expect(invalid).toBeInstanceOf(InputValidationError);
+    expect(invalid).toBeInstanceOf(PredictionInputError);
+    expect(invalid).toMatchObject({
+      reason: "capacity-not-above-floor",
+      rowIndex: 0,
+      field: "capacity",
+    });
     expect(spans.filter((span) => span.name.startsWith("effect-prophet.wasm."))).toHaveLength(
       count,
     );
@@ -451,18 +462,22 @@ describe("logistic MAP forecasting", () => {
       ),
     );
 
-    expect(failure).toBeInstanceOf(InputValidationError);
+    expect(failure).toBeInstanceOf(ObservationError);
     expect(spans.some((span) => span.name.startsWith("effect-prophet.wasm."))).toBe(false);
   });
 
   it("rejects missing and extraneous bounds at public row boundaries", async () => {
     const missingCapacity = observations.map(({ capacity: _capacity, ...row }) => row);
 
-    const fitError = await Effect.runPromise(
-      Effect.flip(fit(missingCapacity, options).pipe(Effect.provide(prophetFittingBackendLayer))),
+    const fitError = expectFailureOf(
+      ObservationError,
+      await Effect.runPromise(
+        Effect.flip(fit(missingCapacity, options).pipe(Effect.provide(prophetFittingBackendLayer))),
+      ),
     );
 
-    expect(fitError).toBeInstanceOf(InputValidationError);
+    expect(fitError).toMatchObject({ reason: "missing-capacity", rowIndex: 0, field: "capacity" });
+    expect(fitError.issues).toHaveLength(missingCapacity.length);
 
     const nonlogisticError = await Effect.runPromise(
       Effect.flip(
@@ -470,6 +485,7 @@ describe("logistic MAP forecasting", () => {
       ),
     );
 
-    expect(nonlogisticError).toBeInstanceOf(InputValidationError);
+    expect(nonlogisticError).toBeInstanceOf(ObservationError);
+    expect(nonlogisticError).toMatchObject({ reason: "bound-on-non-logistic", rowIndex: 0 });
   });
 });

@@ -78,6 +78,8 @@ export interface EventCalendar {
 export class InvalidEventCalendar extends Schema.TaggedError<InvalidEventCalendar>()(
   "InvalidEventCalendar",
   {
+    /** A schema rejection, an invalid date, window or prior, or too many expanded columns. */
+    reason: Schema.Literals(["invalid-shape", "invalid-value", "limit-exceeded"]),
     issues: Schema.Array(ValidationIssueSchema),
     message: Schema.String,
   },
@@ -141,12 +143,17 @@ const decodeEventCalendarSyntax = Schema.decodeUnknownEffect(EncodedEventCalenda
 
 const invalidFromIssue = (issue: SchemaIssue.Issue): InvalidEventCalendar =>
   new InvalidEventCalendar({
+    reason: "invalid-shape",
     issues: validationIssuesFromIssue(issue),
     message: validationMessageFromIssue(issue),
   });
 
-const invalid = (path: ReadonlyArray<PropertyKey>, message: string): InvalidEventCalendar =>
-  new InvalidEventCalendar({ issues: [{ path, message }], message });
+const invalid = (
+  reason: "invalid-value" | "limit-exceeded",
+  path: ReadonlyArray<PropertyKey>,
+  message: string,
+): InvalidEventCalendar =>
+  new InvalidEventCalendar({ reason, issues: [{ path, message }], message });
 
 const invalidFromFeatureName = (
   index: number,
@@ -159,6 +166,7 @@ const invalidFromFeatureName = (
   },
 ): InvalidEventCalendar =>
   new InvalidEventCalendar({
+    reason: "invalid-shape",
     issues: error.issues.map((issue) => ({
       path: [index, "name", ...(issue.path ?? [])],
       message: issue.message,
@@ -167,7 +175,7 @@ const invalidFromFeatureName = (
   });
 
 const invalidFromLayout = (error: InvalidAdditionalFeatures): InvalidEventCalendar =>
-  invalid(error.path, error.message);
+  invalid("invalid-value", error.path, error.message);
 
 /** Parse a zero-padded Gregorian event date into an integer UTC day without normalization. */
 export const parseEpochDay = (date: string): EpochDay | undefined => {
@@ -389,6 +397,7 @@ const collectOccurrence = (
 
   if (previousPrior !== undefined && previousPrior !== occurrence.priorScale) {
     return invalid(
+      "invalid-value",
       [index, "priorScale"],
       `Event '${occurrence.name}' must use one consistent prior scale`,
     );
@@ -430,7 +439,11 @@ const addOccurrence = (
     );
 
     if (builder.columnsByKey.size > maximumExpandedColumns) {
-      return invalid([], `An event calendar cannot exceed ${maximumExpandedColumns} columns`);
+      return invalid(
+        "limit-exceeded",
+        [],
+        `An event calendar cannot exceed ${maximumExpandedColumns} columns`,
+      );
     }
   }
 
@@ -558,6 +571,7 @@ export const parseEventCalendar = Effect.fn("Prophet.parseEventCalendar")(functi
 
     if (epochDay === undefined) {
       return yield* invalid(
+        "invalid-value",
         [index, "date"],
         "Event dates must be valid zero-padded Gregorian YYYY-MM-DD values",
       );
@@ -565,6 +579,7 @@ export const parseEventCalendar = Effect.fn("Prophet.parseEventCalendar")(functi
 
     if (occurrence.lowerWindowDays > 0) {
       return yield* invalid(
+        "invalid-value",
         [index, "lowerWindowDays"],
         "Lower event windows must be less than or equal to zero",
       );
@@ -572,6 +587,7 @@ export const parseEventCalendar = Effect.fn("Prophet.parseEventCalendar")(functi
 
     if (occurrence.upperWindowDays < 0) {
       return yield* invalid(
+        "invalid-value",
         [index, "upperWindowDays"],
         "Upper event windows must be greater than or equal to zero",
       );
@@ -581,6 +597,7 @@ export const parseEventCalendar = Effect.fn("Prophet.parseEventCalendar")(functi
 
     if (!Number.isSafeInteger(width) || width > maximumExpandedColumns) {
       return yield* invalid(
+        "limit-exceeded",
         [index],
         `One event occurrence cannot expand beyond ${maximumExpandedColumns} columns`,
       );

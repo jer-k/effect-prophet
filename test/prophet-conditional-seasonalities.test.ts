@@ -3,7 +3,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   FittingError,
-  InputValidationError,
+  ObservationError,
+  PredictionInputError,
   decodeFittedModel,
   encodeFittedModel,
   fit,
@@ -308,7 +309,8 @@ describe("conditional seasonality public lifecycle", () => {
       ),
     );
 
-    expect(nonBooleanError).toBeInstanceOf(InputValidationError);
+    expect(nonBooleanError).toBeInstanceOf(ObservationError);
+    expect(nonBooleanError).toMatchObject({ reason: "invalid-shape", field: "conditions" });
 
     const model = await Effect.runPromise(
       fit(history, conditionalOptions).pipe(Effect.provide(prophetFittingBackendLayer)),
@@ -324,11 +326,8 @@ describe("conditional seasonality public lifecycle", () => {
     ]) {
       const error = await Effect.runPromise(Effect.flip(predict(model, [row])));
 
-      expect(error).toBeInstanceOf(InputValidationError);
-
-      if (error instanceof InputValidationError) {
-        expect(error.input).toBe("prediction-rows");
-      }
+      expect(error).toBeInstanceOf(PredictionInputError);
+      expect(error).toMatchObject({ rowIndex: 0, field: "conditions" });
     }
   });
 
@@ -370,7 +369,7 @@ describe("conditional seasonality public lifecycle", () => {
       ),
     );
 
-    expect(malformedFlatError).toBeInstanceOf(InputValidationError);
+    expect(malformedFlatError).toBeInstanceOf(ObservationError);
   });
 
   it("rejects condition values when no condition is fitted", async () => {
@@ -396,7 +395,8 @@ describe("conditional seasonality public lifecycle", () => {
       ),
     );
 
-    expect(error).toBeInstanceOf(InputValidationError);
+    expect(error).toBeInstanceOf(PredictionInputError);
+    expect(error).toMatchObject({ reason: "unexpected-condition", name: "typo" });
   });
 
   it("fits additive conditional seasonalities with flat growth", async () => {
@@ -447,7 +447,8 @@ describe("conditional seasonality public lifecycle", () => {
       ),
     );
 
-    expect(error).toBeInstanceOf(InputValidationError);
+    expect(error).toBeInstanceOf(ObservationError);
+    expect(error).toMatchObject({ reason: "missing-condition", rowIndex: 0, name: "onSeason" });
   });
 
   it("records safe conditional featureful boundaries and skips prediction WASM on alignment failure", async () => {

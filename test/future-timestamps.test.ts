@@ -2,7 +2,7 @@ import { Effect, Exit, Option } from "effect";
 import { describe, expect, it } from "vitest";
 
 import {
-  InputValidationError,
+  FutureTimestampsError,
   fit,
   makeFutureTimestamps,
   maximumFuturePeriods,
@@ -175,8 +175,8 @@ describe("makeFutureTimestamps", () => {
     // @ts-expect-error -- Malformed input exercises the untyped runtime boundary.
     const error = await fail(anchor, options);
 
-    expect(error).toBeInstanceOf(InputValidationError);
-    expect(error.input).toBe("future-timestamps");
+    expect(error).toBeInstanceOf(FutureTimestampsError);
+    expect(error.reason).toBe("invalid-shape");
     expect(
       error.issues.some((issue) => JSON.stringify(issue.path ?? []) === JSON.stringify(path)),
     ).toBe(true);
@@ -190,7 +190,7 @@ describe("makeFutureTimestamps", () => {
   ] as const)("rejects %s timestamps past the supported range", async (frequency, anchor) => {
     const error = await fail(anchor, { periods: 2, frequency });
 
-    expect(error).toBeInstanceOf(InputValidationError);
+    expect(error).toMatchObject({ reason: "timestamp-overflow", path: ["periods"] });
     expect(error.issues).toEqual([
       {
         path: ["periods"],

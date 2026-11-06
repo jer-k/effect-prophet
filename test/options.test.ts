@@ -8,20 +8,13 @@ import {
   decodeOptions,
   defaultAutomaticMapOptions,
   defaultProphetOptions,
+  OptionsError,
   type EncodedProphetOptions,
 } from "../src/index";
-import { expectInputValidationError } from "./helpers/input-validation-error";
+import { expectFailureOf } from "./helpers/expect-failure";
 
-const expectOptionsFailure = async (input: Parameters<typeof decodeOptions>[0]) => {
-  const error = expectInputValidationError(
-    await Effect.runPromise(Effect.flip(decodeOptions(input))),
-  );
-
-  expect(error._tag).toBe("InputValidationError");
-  expect(error.input).toBe("options");
-
-  return error;
-};
+const expectOptionsFailure = async (input: Parameters<typeof decodeOptions>[0]) =>
+  expectFailureOf(OptionsError, await Effect.runPromise(Effect.flip(decodeOptions(input))));
 
 describe("decodeOptions", () => {
   it.each([
@@ -308,6 +301,7 @@ describe("decodeOptions", () => {
     ]) {
       const error = await expectOptionsFailure(invalid);
 
+      expect(error.reason).toBe("name-collision");
       expect(error.issues.some((issue) => issue.message.includes("collides"))).toBe(true);
     }
   });
@@ -343,6 +337,7 @@ describe("decodeOptions", () => {
       regressors: [{ name: "price" }],
     });
 
+    expect(error).toMatchObject({ reason: "name-collision", path: ["regressors", 0, "name"] });
     expect(error.issues).toContainEqual({
       path: ["regressors", 0, "name"],
       message: "Feature name 'price' collides with a seasonality",
@@ -576,6 +571,7 @@ describe("decodeOptions", () => {
 
     const error = await expectOptionsFailure({ events });
 
+    expect(error).toMatchObject({ reason: "invalid-value", path: ["events", 1, "priorScale"] });
     expect(error.issues).toEqual([
       {
         path: ["events", 1, "priorScale"],
@@ -649,6 +645,7 @@ describe("decodeOptions", () => {
   it("rejects unknown options rather than silently dropping them", async () => {
     const error = await expectOptionsFailure({ seasonality: true });
 
+    expect(error).toMatchObject({ reason: "invalid-shape", path: ["seasonality"] });
     expect(error.issues).toContainEqual({
       message: "Expected no excess property",
       path: ["seasonality"],
@@ -708,5 +705,6 @@ describe("decodeOptions", () => {
     });
 
     expect(error.issues[0]?.path).toEqual(["regressors", 1, "predictor", "seasonalityPriorScale"]);
+    expect(error.path).toEqual(["regressors", 1, "predictor", "seasonalityPriorScale"]);
   });
 });

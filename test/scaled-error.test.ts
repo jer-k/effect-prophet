@@ -5,7 +5,8 @@ import { collectTestSpans, requireEndedSpan } from "./internal/tracing-test-help
 
 import {
   EvaluationMetricError,
-  InputValidationError,
+  EvaluationPlanError,
+  MetricOptionsError,
   MetricScaleError,
   comparePerformance,
   crossValidateBaseline,
@@ -191,16 +192,14 @@ describe("scaledErrorMetric", () => {
       // SAFETY: deliberately invalid JavaScript input.
       const failure = await failureOf(scaledErrorMetric(observations, summary, options as never));
 
-      expect(failure).toBeInstanceOf(InputValidationError);
-      expect(failure).toMatchObject({ input: "evaluation-metrics" });
+      expect(failure).toBeInstanceOf(MetricOptionsError);
     }
 
     const shorter = history([0, 1, 2, 3], [2, 5, 4, 8]);
 
     const mismatched = await failureOf(scaledErrorMetric(shorter, summary));
 
-    expect(mismatched).toBeInstanceOf(InputValidationError);
-    expect(mismatched).toMatchObject({ input: "evaluation-plan" });
+    expect(mismatched).toBeInstanceOf(EvaluationPlanError);
   });
 
   it("fails rows from another plan as unscorable rather than inventing a scale", async () => {

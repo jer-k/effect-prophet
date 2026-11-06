@@ -1,6 +1,6 @@
 import { Effect, Predicate, Schema } from "effect";
 
-import { InputValidationError, inputValidationErrorFromIssue } from "./errors";
+import { FutureTimestampsError, schemaPathErrorFields, singleIssueFields } from "./errors";
 import { daysInUtcMonth, utcDayOfMonth, utcMonth, utcMonthDay } from "./internal/calendar-month";
 import { millisecondsPerDay, millisecondsPerHour, utcTimeOfDay } from "./internal/time";
 import { TimestampSchema, encodeTimestamp, isValidTimestamp } from "./internal/timestamp";
@@ -117,13 +117,13 @@ const scheduleAfter = (
 export const makeFutureTimestamps = Effect.fn("Prophet.makeFutureTimestamps")(function* (
   anchorInput: string | ReadonlyArray<EncodedObservation>,
   optionsInput: FutureTimestampOptions,
-): Effect.fn.Return<ReadonlyArray<string>, InputValidationError> {
+): Effect.fn.Return<ReadonlyArray<string>, FutureTimestampsError> {
   const options = yield* decodeFutureTimestampOptions(optionsInput).pipe(
-    Effect.mapError((error) => inputValidationErrorFromIssue("future-timestamps", error.issue)),
+    Effect.mapError((error) => new FutureTimestampsError(schemaPathErrorFields(error.issue))),
   );
 
   const decodedAnchor = yield* decodeAnchor(anchorInput).pipe(
-    Effect.mapError((error) => inputValidationErrorFromIssue("future-timestamps", error.issue)),
+    Effect.mapError((error) => new FutureTimestampsError(schemaPathErrorFields(error.issue))),
   );
 
   const { anchor, history } = resolveAnchor(decodedAnchor);
@@ -133,16 +133,13 @@ export const makeFutureTimestamps = Effect.fn("Prophet.makeFutureTimestamps")(fu
 
   // Periods only move forward, so a representable last timestamp bounds every earlier one.
   if (options.periods > 0 && !isValidTimestamp(timestampAt(options.periods))) {
-    return yield* new InputValidationError({
-      input: "future-timestamps",
-      issues: [
-        {
-          path: ["periods"],
-          message: "Future timestamps must stay inside the supported timestamp range",
-        },
-      ],
-      message: "Future timestamps must stay inside the supported timestamp range",
-    });
+    return yield* new FutureTimestampsError(
+      singleIssueFields(
+        "timestamp-overflow",
+        ["periods"],
+        "Future timestamps must stay inside the supported timestamp range",
+      ),
+    );
   }
 
   yield* Effect.annotateCurrentSpan({

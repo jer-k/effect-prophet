@@ -1,6 +1,13 @@
 import { Effect, Schema } from "effect";
 
-import { InputValidationError, type ValidationIssue } from "./errors";
+import {
+  firstReasonIssues,
+  ObservationError,
+  PredictionInputError,
+  rowErrorFields,
+  type ReasonedIssue,
+  type ValidationIssue,
+} from "./errors";
 import { PositiveFinite } from "./internal/numeric-schemas";
 import type { Observation } from "./observation";
 import type { PredictionRow } from "./prediction-row";
@@ -41,18 +48,20 @@ export interface LogisticPredictionBounds {
   readonly explicitFloors: Float64Array;
 }
 
-const validationFailure = (
-  input: "observations" | "prediction-rows",
-  issues: ReadonlyArray<ValidationIssue>,
-  message: string,
-): InputValidationError => new InputValidationError({ input, issues, message });
+type TrainingBoundsReason = "missing-capacity" | "inconsistent-floor" | "capacity-not-above-floor";
+
+type PredictionBoundsReason =
+  | "missing-capacity"
+  | "missing-floor"
+  | "unexpected-floor"
+  | "capacity-not-above-floor";
 
 /** Parse complete logistic training bounds and enforce one floor policy for all rows. */
 export const parseLogisticTrainingBounds = (
   observations: ReadonlyArray<Observation>,
   scaling: TargetScalingMode,
-): Effect.Effect<LogisticTrainingBounds, InputValidationError> => {
-  const issues: Array<ValidationIssue> = [];
+): Effect.Effect<LogisticTrainingBounds, ObservationError> => {
+  const issues: Array<ReasonedIssue<TrainingBoundsReason>> = [];
   const capacities = new Float64Array(observations.length);
   const floorsPresent = observations.map((observation) => observation.floor !== undefined);
   const hasFloor = floorsPresent.some(Boolean);
@@ -61,6 +70,7 @@ export const parseLogisticTrainingBounds = (
     for (const [index, present] of floorsPresent.entries()) {
       if (!present) {
         issues.push({
+          reason: "inconsistent-floor",
           path: [index, "floor"],
           message: "Every logistic training row must supply floor when any row does",
         });
@@ -82,7 +92,11 @@ export const parseLogisticTrainingBounds = (
     const capacity = observation.capacity;
 
     if (capacity === undefined) {
-      issues.push({ path: [index, "capacity"], message: "Logistic growth requires capacity" });
+      issues.push({
+        reason: "missing-capacity",
+        path: [index, "capacity"],
+        message: "Logistic growth requires capacity",
+      });
       continue;
     }
 
@@ -98,21 +112,29 @@ export const parseLogisticTrainingBounds = (
     }
 
     if (capacity <= floor) {
-      issues.push({ path: [index, "capacity"], message: "Capacity must be greater than floor" });
+      issues.push({
+        reason: "capacity-not-above-floor",
+        path: [index, "capacity"],
+        message: "Capacity must be greater than floor",
+      });
     }
   }
 
-  return issues.length === 0
+  const failure = firstReasonIssues(issues);
+
+  return failure === undefined
     ? Effect.succeed({
         capacities,
         explicitFloors,
         floorPolicy: hasFloor ? "explicit" : "implicit",
       })
     : Effect.fail(
-        validationFailure(
-          "observations",
-          issues,
-          "Logistic rows require complete capacities and a consistent valid floor policy",
+        new ObservationError(
+          rowErrorFields(
+            failure.reason,
+            failure.issues,
+            "Logistic rows require complete capacities and a consistent valid floor policy",
+          ),
         ),
       );
 };
@@ -120,7 +142,7 @@ export const parseLogisticTrainingBounds = (
 /** Reject logistic-only row bounds for a nonlogistic fit. */
 export const rejectNonLogisticTrainingBounds = (
   observations: ReadonlyArray<Observation>,
-): Effect.Effect<void, InputValidationError> => {
+): Effect.Effect<void, ObservationError> => {
   const issues: Array<ValidationIssue> = [];
 
   for (const [index, observation] of observations.entries()) {
@@ -139,10 +161,12 @@ export const rejectNonLogisticTrainingBounds = (
   return issues.length === 0
     ? Effect.void
     : Effect.fail(
-        validationFailure(
-          "observations",
-          issues,
-          "Nonlogistic rows cannot contain capacity or floor",
+        new ObservationError(
+          rowErrorFields(
+            "bound-on-non-logistic",
+            issues,
+            "Nonlogistic rows cannot contain capacity or floor",
+          ),
         ),
       );
 };
@@ -151,8 +175,8 @@ export const rejectNonLogisticTrainingBounds = (
 export const parseLogisticPredictionBounds = (
   rows: ReadonlyArray<PredictionRow>,
   floorPolicy: LogisticFloorPolicy,
-): Effect.Effect<LogisticPredictionBounds, InputValidationError> => {
-  const issues: Array<ValidationIssue> = [];
+): Effect.Effect<LogisticPredictionBounds, PredictionInputError> => {
+  const issues: Array<ReasonedIssue<PredictionBoundsReason>> = [];
   const capacities = new Float64Array(rows.length);
 
   const explicitFloors =
@@ -162,7 +186,11 @@ export const parseLogisticPredictionBounds = (
     const capacity = row.capacity;
 
     if (capacity === undefined) {
-      issues.push({ path: [index, "capacity"], message: "Logistic prediction requires capacity" });
+      issues.push({
+        reason: "missing-capacity",
+        path: [index, "capacity"],
+        message: "Logistic prediction requires capacity",
+      });
       continue;
     }
 
@@ -170,18 +198,27 @@ export const parseLogisticPredictionBounds = (
 
     if (floorPolicy.kind === "explicit") {
       if (row.floor === undefined) {
-        issues.push({ path: [index, "floor"], message: "This logistic model requires floor" });
+        issues.push({
+          reason: "missing-floor",
+          path: [index, "floor"],
+          message: "This logistic model requires floor",
+        });
         continue;
       }
 
       explicitFloors[index] = row.floor;
 
       if (capacity <= row.floor) {
-        issues.push({ path: [index, "capacity"], message: "Capacity must be greater than floor" });
+        issues.push({
+          reason: "capacity-not-above-floor",
+          path: [index, "capacity"],
+          message: "Capacity must be greater than floor",
+        });
       }
     } else {
       if (row.floor !== undefined) {
         issues.push({
+          reason: "unexpected-floor",
           path: [index, "floor"],
           message: "This logistic model uses its persisted implicit floor",
         });
@@ -189,6 +226,7 @@ export const parseLogisticPredictionBounds = (
 
       if (capacity <= floorPolicy.floor) {
         issues.push({
+          reason: "capacity-not-above-floor",
           path: [index, "capacity"],
           message: "Capacity must be greater than the fitted implicit floor",
         });
@@ -196,17 +234,21 @@ export const parseLogisticPredictionBounds = (
     }
   }
 
-  return issues.length === 0
+  const failure = firstReasonIssues(issues);
+
+  return failure === undefined
     ? Effect.succeed({ capacities, explicitFloors })
     : Effect.fail(
-        validationFailure("prediction-rows", issues, "Logistic prediction bounds are invalid"),
+        new PredictionInputError(
+          rowErrorFields(failure.reason, failure.issues, "Logistic prediction bounds are invalid"),
+        ),
       );
 };
 
 /** Reject logistic-only row bounds when predicting a nonlogistic model. */
 export const rejectNonLogisticPredictionBounds = (
   rows: ReadonlyArray<PredictionRow>,
-): Effect.Effect<void, InputValidationError> => {
+): Effect.Effect<void, PredictionInputError> => {
   const issues: Array<ValidationIssue> = [];
 
   for (const [index, row] of rows.entries()) {
@@ -225,10 +267,12 @@ export const rejectNonLogisticPredictionBounds = (
   return issues.length === 0
     ? Effect.void
     : Effect.fail(
-        validationFailure(
-          "prediction-rows",
-          issues,
-          "Nonlogistic predictions cannot contain capacity or floor",
+        new PredictionInputError(
+          rowErrorFields(
+            "bound-on-non-logistic",
+            issues,
+            "Nonlogistic predictions cannot contain capacity or floor",
+          ),
         ),
       );
 };

@@ -2,8 +2,9 @@ import { Effect, Exit, Option } from "effect";
 import { describe, expect, it } from "vitest";
 
 import {
-  InputValidationError,
   PredictionError,
+  PredictionInputError,
+  UncertaintyOptionsError,
   fit,
   predict,
   predictUncertainty,
@@ -201,8 +202,8 @@ describe("predictWithIntervals", () => {
       Effect.flip(predictWithIntervals(model, ["bad"], { seed: -1 })),
     );
 
-    expect(rowError).toBeInstanceOf(InputValidationError);
-    expect(rowError).toMatchObject({ input: "prediction-timestamps" });
+    expect(rowError).toBeInstanceOf(PredictionInputError);
+    expect(rowError).toMatchObject({ reason: "invalid-shape", rowIndex: 0 });
 
     for (const options of [
       JSON.parse("{}"),
@@ -215,8 +216,8 @@ describe("predictWithIntervals", () => {
         Effect.flip(predictWithIntervals(model, future, options)),
       );
 
-      expect(error).toBeInstanceOf(InputValidationError);
-      expect(error).toMatchObject({ input: "uncertainty-options" });
+      expect(error).toBeInstanceOf(UncertaintyOptionsError);
+      expect(error).toMatchObject({ reason: "invalid-shape" });
     }
 
     // Callers outside TypeScript can still ask for samples; that is rejected, not ignored.
@@ -224,9 +225,9 @@ describe("predictWithIntervals", () => {
       Effect.flip(predictWithIntervals(model, future, JSON.parse('{"seed":1,"output":"samples"}'))),
     );
 
-    expect(samples).toBeInstanceOf(InputValidationError);
+    expect(samples).toBeInstanceOf(UncertaintyOptionsError);
     expect(samples).toMatchObject({
-      input: "uncertainty-options",
+      reason: "unsupported-output",
       issues: [{ path: ["output"] }],
     });
 
@@ -250,7 +251,8 @@ describe("predictWithIntervals", () => {
       ),
     );
 
-    expect(capacity).toBeInstanceOf(InputValidationError);
+    expect(capacity).toBeInstanceOf(PredictionInputError);
+    expect(capacity).toMatchObject({ reason: "bound-on-non-logistic" });
 
     const [, , regressor, logistic] = await families();
 
@@ -262,7 +264,8 @@ describe("predictWithIntervals", () => {
       ),
     );
 
-    expect(missingRegressor).toBeInstanceOf(InputValidationError);
+    expect(missingRegressor).toBeInstanceOf(PredictionInputError);
+    expect(missingRegressor).toMatchObject({ reason: "missing-regressor" });
 
     const missingCapacity = await Effect.runPromise(
       Effect.flip(
@@ -270,7 +273,8 @@ describe("predictWithIntervals", () => {
       ),
     );
 
-    expect(missingCapacity).toBeInstanceOf(InputValidationError);
+    expect(missingCapacity).toBeInstanceOf(PredictionInputError);
+    expect(missingCapacity).toMatchObject({ reason: "missing-capacity", rowIndex: 0 });
   });
 
   it("fails on simulation budgets before computing point forecasts", async () => {

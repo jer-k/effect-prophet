@@ -1,6 +1,12 @@
 import { Effect, Schema } from "effect";
 
-import { InputValidationError, MetricScaleError, inputValidationErrorFromIssue } from "./errors";
+import {
+  MetricOptionsError,
+  MetricScaleError,
+  schemaPathErrorFields,
+  type EvaluationPlanError,
+  type ObservationError,
+} from "./errors";
 import {
   PositiveDurationMsSchema,
   resolveBaselinePlan,
@@ -53,11 +59,14 @@ export const scaledErrorMetric = Effect.fn("Prophet.scaledErrorMetric")(function
   history: Parameters<typeof decodeObservations>[0],
   summary: RollingOriginPlanSummary,
   input?: ScaledErrorOptions<Name>,
-): Effect.fn.Return<CustomMetric<Name>, InputValidationError | MetricScaleError> {
+): Effect.fn.Return<
+  CustomMetric<Name>,
+  ObservationError | MetricOptionsError | EvaluationPlanError | MetricScaleError
+> {
   const observations = yield* decodeObservations(history);
 
   const options = yield* decodeScaledErrorOptions(input ?? {}).pipe(
-    Effect.mapError((error) => inputValidationErrorFromIssue("evaluation-metrics", error.issue)),
+    Effect.mapError((error) => new MetricOptionsError(schemaPathErrorFields(error.issue))),
   );
 
   const plan = yield* resolveBaselinePlan(observations, summary);

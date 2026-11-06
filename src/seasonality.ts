@@ -225,6 +225,8 @@ export type SeasonalityLayout = typeof SeasonalityLayoutSchema.Type;
 export class InvalidSeasonality extends Schema.TaggedError<InvalidSeasonality>()(
   "InvalidSeasonality",
   {
+    /** A schema rejection, or a layout whose coefficient count exceeds safe arithmetic. */
+    reason: Schema.Literals(["invalid-shape", "limit-exceeded"]),
     issues: Schema.Array(ValidationIssueSchema),
     message: Schema.String,
   },
@@ -232,6 +234,7 @@ export class InvalidSeasonality extends Schema.TaggedError<InvalidSeasonality>()
 
 const invalidSeasonalityFromIssue = (issue: SchemaIssue.Issue): InvalidSeasonality =>
   new InvalidSeasonality({
+    reason: "invalid-shape",
     issues: validationIssuesFromIssue(issue),
     message: validationMessageFromIssue(issue),
   });
@@ -378,6 +381,7 @@ export const makeSeasonalityLayout = (
     if (coefficientCount > Number.MAX_SAFE_INTEGER - componentCoefficientCount) {
       return Effect.fail(
         new InvalidSeasonality({
+          reason: "limit-exceeded",
           issues: [
             {
               path: [index, "fourierOrder"],

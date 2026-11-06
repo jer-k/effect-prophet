@@ -6,7 +6,8 @@ import {
   crossValidateBaseline,
   EvaluationError,
   EvaluationMetricError,
-  InputValidationError,
+  EvaluationPlanError,
+  MetricOptionsError,
   performanceMetrics,
   planRollingOrigin,
   type EncodedObservation,
@@ -235,8 +236,8 @@ describe("forecast baselines", () => {
       ),
     );
 
-    expect(invalid).toBeInstanceOf(InputValidationError);
-    expect(invalid).toMatchObject({ input: "evaluation-baseline" });
+    expect(invalid).toBeInstanceOf(MetricOptionsError);
+    expect(invalid).toMatchObject({ reason: "invalid-shape" });
 
     const original = await plan();
 
@@ -249,8 +250,8 @@ describe("forecast baselines", () => {
       crossValidateBaseline(observations, forged, { kind: "last-observation" }).pipe(Effect.flip),
     );
 
-    expect(rejected).toBeInstanceOf(InputValidationError);
-    expect(rejected).toMatchObject({ input: "evaluation-plan" });
+    expect(rejected).toBeInstanceOf(EvaluationPlanError);
+    expect(rejected).toMatchObject({ reason: "summary-mismatch" });
   });
 
   it("reuses point metric modes and rejects mismatched plan, rows and coverage", async () => {

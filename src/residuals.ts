@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 
 import type { CountryHolidayError } from "./country-holidays";
-import { PredictionError, type InputValidationError } from "./errors";
+import { PredictionError, type ObservationError, type PredictionInputError } from "./errors";
 import type { FittedProphet } from "./fitted-model";
 import { residualOf } from "./internal/residual";
 import { decodeObservations } from "./observation";
@@ -45,7 +45,7 @@ export const residuals = Effect.fn("Prophet.residuals")(function* (
   observationsInput: Parameters<typeof decodeObservations>[0],
 ): Effect.fn.Return<
   ReadonlyArray<ResidualRow>,
-  InputValidationError | PredictionError | CountryHolidayError
+  ObservationError | PredictionInputError | PredictionError | CountryHolidayError
 > {
   const observations = yield* decodeObservations(observationsInput);
   const forecasts = yield* predict(model, observations.map(predictionRowFromObservation));

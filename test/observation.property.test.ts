@@ -2,7 +2,7 @@ import { Effect, Exit } from "effect";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 
-import { InputValidationError } from "../src/index";
+import { ObservationError } from "../src/index";
 import { decodeObservations } from "../src/observation";
 import {
   canonicalTimestamp,
@@ -16,14 +16,14 @@ import {
 } from "./helpers/property";
 
 describe("observation decoding properties", () => {
-  it("returns observations or an InputValidationError for arbitrary input, never a defect", () => {
+  it("returns observations or an ObservationError for arbitrary input, never a defect", () => {
     fc.assert(
       fc.property(
         fc.oneof(fc.array(hostileObservation, { maxLength: 12 }), fc.anything()),
         (input) => {
           const exit = Effect.runSyncExit(decodeObservations(input));
 
-          expect(isTypedExit(exit, [InputValidationError])).toBe(true);
+          expect(isTypedExit(exit, [ObservationError])).toBe(true);
         },
       ),
       propertyParameters(300),
@@ -67,7 +67,7 @@ describe("observation decoding properties", () => {
         const exit = Effect.runSyncExit(decodeObservations(insertAt(valid, corrupt, position)));
 
         expect(Exit.isFailure(exit)).toBe(true);
-        expect(isTypedExit(exit, [InputValidationError])).toBe(true);
+        expect(isTypedExit(exit, [ObservationError])).toBe(true);
       }),
       propertyParameters(200),
     );

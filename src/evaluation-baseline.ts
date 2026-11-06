@@ -3,8 +3,11 @@ import { Effect, Schema } from "effect";
 import {
   EvaluationError,
   EvaluationMetricError,
-  InputValidationError,
-  inputValidationErrorFromIssue,
+  MetricOptionsError,
+  schemaPathErrorFields,
+  singleIssueFields,
+  type EvaluationPlanError,
+  type ObservationError,
 } from "./errors";
 import {
   PositiveDurationMsSchema,
@@ -173,10 +176,10 @@ export const forecastHoldoutBaseline = (
   development: ReadonlyArray<Observation>,
   holdout: ReadonlyArray<Observation>,
   definition: BaselineDefinition,
-): Effect.Effect<ReadonlyArray<number>, InputValidationError | BaselineForecastError> =>
+): Effect.Effect<ReadonlyArray<number>, MetricOptionsError | BaselineForecastError> =>
   Effect.gen(function* () {
     const baseline = yield* decodeBaseline(definition).pipe(
-      Effect.mapError((error) => inputValidationErrorFromIssue("evaluation-baseline", error.issue)),
+      Effect.mapError((error) => new MetricOptionsError(schemaPathErrorFields(error.issue))),
     );
 
     return yield* baselineValues(development, holdout, baseline);
@@ -187,11 +190,14 @@ export const crossValidateBaseline = Effect.fn("Prophet.crossValidateBaseline")(
   history: Parameters<typeof decodeObservations>[0],
   summary: RollingOriginPlanSummary,
   definition: BaselineDefinition,
-): Effect.fn.Return<BaselineCrossValidationResult, InputValidationError | EvaluationError> {
+): Effect.fn.Return<
+  BaselineCrossValidationResult,
+  ObservationError | MetricOptionsError | EvaluationPlanError | EvaluationError
+> {
   const observations = yield* decodeObservations(history);
 
   const baseline = yield* decodeBaseline(definition).pipe(
-    Effect.mapError((error) => inputValidationErrorFromIssue("evaluation-baseline", error.issue)),
+    Effect.mapError((error) => new MetricOptionsError(schemaPathErrorFields(error.issue))),
   );
 
   const plan = yield* resolveBaselinePlan(observations, summary);
@@ -261,17 +267,15 @@ export const comparePerformance = Effect.fn("Prophet.comparePerformance")(functi
   model: CrossValidationResult,
   baselines: ReadonlyArray<BaselineCrossValidationResult>,
   options: MetricOptions<Horizon, Name>,
-): Effect.fn.Return<ComparisonReport<Horizon, Name>, InputValidationError | EvaluationMetricError> {
+): Effect.fn.Return<ComparisonReport<Horizon, Name>, MetricOptionsError | EvaluationMetricError> {
   // Parse metric options through the existing metrics operation before alignment diagnostics.
   const modelMetrics = yield* performanceMetrics(model, options);
   const first = options.metrics[0] === undefined ? undefined : metricName(options.metrics[0]);
 
   if (first === undefined) {
-    return yield* new InputValidationError({
-      input: "evaluation-metrics",
-      issues: [{ path: ["metrics"], message: "At least one metric is required" }],
-      message: "At least one metric is required",
-    });
+    return yield* new MetricOptionsError(
+      singleIssueFields("invalid-shape", ["metrics"], "At least one metric is required"),
+    );
   }
 
   const compared: Array<ComparisonReport<Horizon, Name>["baselines"][number]> = [];

@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 
-import { Cause, Effect, Exit, Predicate, Schema } from "effect";
-import { fit, prophetFittingBackendLayer } from "effect-prophet";
+import { Cause, Effect, Exit, Schema } from "effect";
+import { fit, isInputError, prophetFittingBackendLayer } from "effect-prophet";
 import { describe, expect, it } from "vitest";
 
 import { DifferentialCaseSchema } from "../differential.ts";
@@ -105,8 +105,7 @@ describe("differential case generation", () => {
 
       if (Exit.isFailure(exit)) {
         const rejected = exit.cause.reasons.some(
-          (reason) =>
-            Cause.isFailReason(reason) && Predicate.isTagged(reason.error, "InputValidationError"),
+          (reason) => Cause.isFailReason(reason) && isInputError(reason.error),
         );
 
         expect(rejected, `${item.id} was rejected as invalid input`).toBe(false);

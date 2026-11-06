@@ -6,11 +6,22 @@ import {
   EvaluationMetricError,
   EvaluationSearchError,
   FittingError,
-  InputValidationError,
+  isInputError,
+  OptionsError,
+  pathErrorFields,
+  portableInputFailure,
   PredictionError,
-  inputValidationErrorFromIssue,
-  nestedInputValidationError,
+  prefixIssues,
+  schemaPathErrorFields,
+  SearchOptionsError,
+  singleIssueFields,
+  UncertaintyOptionsError,
   type CandidateId,
+  type EvaluationPlanError,
+  type InputError,
+  type ObservationError,
+  type SearchOptionsCause,
+  type SearchOptionsFailureReason,
   type PortableCandidateOutcome,
   type PortableEvaluationFailure,
 } from "./errors";
@@ -140,17 +151,39 @@ export interface ModelSearchResult {
   };
 }
 
-const invalidSearch = (path: ReadonlyArray<PropertyKey>, message: string): InputValidationError =>
-  new InputValidationError({ input: "evaluation-search", issues: [{ path, message }], message });
-
-const searchInputContext = (
-  error: InputValidationError,
+const invalidSearch = (
+  reason: SearchOptionsFailureReason,
   path: ReadonlyArray<PropertyKey>,
   message: string,
-): InputValidationError => nestedInputValidationError("evaluation-search", error, path, message);
+): SearchOptionsError => new SearchOptionsError(singleIssueFields(reason, path, message));
+
+/** Re-home a candidate options or controls failure under its location in the search input. */
+const nestedSearchError = (
+  reason: "invalid-candidate-options" | "invalid-mode",
+  error: SearchOptionsCause,
+  prefix: ReadonlyArray<PropertyKey>,
+  message: string,
+  candidateIndex?: number,
+): SearchOptionsError => {
+  const fields = pathErrorFields(reason, prefixIssues(error.issues, prefix), message);
+
+  return new SearchOptionsError(
+    candidateIndex === undefined ? fields : { ...fields, candidateIndex },
+    { cause: error },
+  );
+};
+
+const invalidCandidateOptions = (error: OptionsError, candidateIndex: number) =>
+  nestedSearchError(
+    "invalid-candidate-options",
+    error,
+    ["candidates", candidateIndex, "options"],
+    "Invalid candidate options",
+    candidateIndex,
+  );
 
 const portableFailure = (
-  error: InputValidationError | EvaluationError | EvaluationMetricError | CountryHolidayError,
+  error: InputError | EvaluationError | EvaluationMetricError | CountryHolidayError,
 ): PortableEvaluationFailure => {
   if (error instanceof EvaluationError) {
     const cause = error.cause;
@@ -159,7 +192,8 @@ const portableFailure = (
     const causeReason =
       cause instanceof FittingError ||
       cause instanceof PredictionError ||
-      cause instanceof CountryHolidayError
+      cause instanceof CountryHolidayError ||
+      isInputError(cause)
         ? cause.reason
         : undefined;
 
@@ -194,7 +228,7 @@ const portableFailure = (
     return Object.freeze({ tag: "CountryHolidayError", reason: error.reason });
   }
 
-  return Object.freeze({ tag: "InputValidationError", input: error.input });
+  return portableInputFailure(error);
 };
 
 /** A candidate's country calendar is unusable; the candidate is named, the calendar error kept. */
@@ -222,7 +256,7 @@ const checkWork = (
   plan: RollingOriginPlanSummary,
   candidates: number,
   samples: number,
-): Effect.Effect<void, InputValidationError> => {
+): Effect.Effect<void, SearchOptionsError> => {
   let training = 0;
   let assessment = 0;
 
@@ -230,6 +264,7 @@ const checkWork = (
     if (samples > 0 && exceedsSimulationBudget(fold.assessmentCount, samples, "intervals")) {
       return Effect.fail(
         invalidSearch(
+          "limit-exceeded",
           ["mode", "uncertainty", "samples"],
           "Interval fold exceeds the simulation limit",
         ),
@@ -240,7 +275,9 @@ const checkWork = (
     const nextAssessment = checkedAdd(assessment, fold.assessmentCount);
 
     if (nextTraining === undefined || nextAssessment === undefined) {
-      return Effect.fail(invalidSearch(["candidates"], "Candidate work exceeds the integer range"));
+      return Effect.fail(
+        invalidSearch("limit-exceeded", ["candidates"], "Candidate work exceeds the integer range"),
+      );
     }
 
     training = nextTraining;
@@ -264,7 +301,9 @@ const checkWork = (
     sampleCells === undefined ||
     sampleCells > 8_000_000
   ) {
-    return Effect.fail(invalidSearch(["candidates"], "Candidate work exceeds the search limit"));
+    return Effect.fail(
+      invalidSearch("limit-exceeded", ["candidates"], "Candidate work exceeds the search limit"),
+    );
   }
 
   return Effect.void;
@@ -276,14 +315,14 @@ export const searchModels = Effect.fn("Prophet.searchModels")(function* (
   input: ModelSearchInput,
 ): Effect.fn.Return<
   ModelSearchResult,
-  InputValidationError | EvaluationSearchError,
+  ObservationError | EvaluationPlanError | SearchOptionsError | EvaluationSearchError,
   FittingBackend
 > {
   yield* decodeObservations(observationsInput);
   const observationsCopy = ownedInput(observationsInput);
 
   const parsed = yield* decodeSearch(input).pipe(
-    Effect.mapError((error) => inputValidationErrorFromIssue("evaluation-search", error.issue)),
+    Effect.mapError((error) => new SearchOptionsError(schemaPathErrorFields(error.issue))),
   );
 
   const validatedCandidates: Array<{
@@ -304,11 +343,7 @@ export const searchModels = Effect.fn("Prophet.searchModels")(function* (
         Effect.mapError((error) =>
           error instanceof CountryHolidayError
             ? invalidCandidateCalendar(error, index, candidate.id)
-            : searchInputContext(
-                error,
-                ["candidates", index, "options"],
-                "Invalid candidate options",
-              ),
+            : invalidCandidateOptions(error, index),
         ),
       );
 
@@ -323,9 +358,10 @@ export const searchModels = Effect.fn("Prophet.searchModels")(function* (
 
   const controls = yield* parseCrossValidationInput(input.mode).pipe(
     Effect.mapError((error) =>
-      searchInputContext(
+      nestedSearchError(
+        "invalid-mode",
         error,
-        error.input === "uncertainty-options" ? ["mode", "uncertainty"] : ["mode"],
+        error instanceof UncertaintyOptionsError ? ["mode", "uncertainty"] : ["mode"],
         "Invalid search cross-validation controls",
       ),
     ),
@@ -362,6 +398,7 @@ export const searchModels = Effect.fn("Prophet.searchModels")(function* (
     Effect.catchTag("CountryHolidayError", (error) =>
       Effect.fail(invalidCandidateCalendar(error, 0, firstCandidate.id)),
     ),
+    Effect.catchTag("OptionsError", (error) => Effect.fail(invalidCandidateOptions(error, 0))),
   );
   const planInput = ownedInput(input.plan);
   let sharedPlan: RollingOriginPlanSummary | undefined;
@@ -373,10 +410,14 @@ export const searchModels = Effect.fn("Prophet.searchModels")(function* (
       Effect.catchTag("CountryHolidayError", (error) =>
         Effect.fail(invalidCandidateCalendar(error, index, candidate.id)),
       ),
+      Effect.catchTag("OptionsError", (error) =>
+        Effect.fail(invalidCandidateOptions(error, index)),
+      ),
     );
 
     if (sharedPlan !== undefined && !planMatches(sharedPlan, planned)) {
       return yield* invalidSearch(
+        "cutoff-mismatch",
         ["candidates", index, "options"],
         "Candidates produce different cutoffs; supply a common explicit or generated initial window",
       );

@@ -1,6 +1,6 @@
 import { Effect, Schema } from "effect";
 
-import { InputValidationError, inputValidationErrorFromIssue } from "./errors";
+import { schemaPathErrorFields, singleIssueFields, UncertaintyOptionsError } from "./errors";
 import { fnv1aSeed } from "./internal/seed-hash";
 
 /** Versioned scalar-path algorithm identity returned with every MAP result. */
@@ -142,7 +142,7 @@ export const defaultIntervalWidth = 0.8;
 export const parseUncertaintyOptions = (
   input: Parameters<typeof decodeOptions>[0],
   omittedIntervalWidth: number = defaultIntervalWidth,
-): Effect.Effect<UncertaintyOptions, InputValidationError> =>
+): Effect.Effect<UncertaintyOptions, UncertaintyOptionsError> =>
   decodeOptions(input).pipe(
     Effect.map((parsed) => ({
       seed: parsed.seed,
@@ -150,7 +150,7 @@ export const parseUncertaintyOptions = (
       intervalWidth: parsed.intervalWidth ?? omittedIntervalWidth,
       output: parsed.output ?? "intervals",
     })),
-    Effect.mapError((error) => inputValidationErrorFromIssue("uncertainty-options", error.issue)),
+    Effect.mapError((error) => new UncertaintyOptionsError(schemaPathErrorFields(error.issue))),
   );
 
 /** Parse simulation controls for an operation that only returns intervals. */
@@ -158,17 +158,15 @@ export const parseIntervalOptions = (
   input: Parameters<typeof decodeOptions>[0],
   message: string,
   omittedIntervalWidth: number = defaultIntervalWidth,
-): Effect.Effect<UncertaintyOptions & { readonly output: "intervals" }, InputValidationError> =>
+): Effect.Effect<UncertaintyOptions & { readonly output: "intervals" }, UncertaintyOptionsError> =>
   parseUncertaintyOptions(input, omittedIntervalWidth).pipe(
     Effect.flatMap((options) =>
       options.output === "intervals"
         ? Effect.succeed({ ...options, output: options.output })
         : Effect.fail(
-            new InputValidationError({
-              input: "uncertainty-options",
-              issues: [{ path: ["output"], message }],
-              message,
-            }),
+            new UncertaintyOptionsError(
+              singleIssueFields("unsupported-output", ["output"], message),
+            ),
           ),
     ),
   );

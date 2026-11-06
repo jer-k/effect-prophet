@@ -12,8 +12,9 @@ const message = await Effect.runPromise(
     Effect.as("fitted"),
     // Every failure has a `_tag`, so you can handle each kind separately.
     Effect.catchTags({
-      InputValidationError: (error) =>
-        Effect.succeed(`Bad input (${error.input}): ${error.message}`),
+      ObservationError: (error) =>
+        Effect.succeed(`Bad row ${error.rowIndex} (${error.reason}, ${error.field})`),
+      OptionsError: (error) => Effect.succeed(`Bad option (${error.reason}): ${error.message}`),
       FittingError: (error) => Effect.succeed(`Could not fit (${error.reason}): ${error.message}`),
     }),
     Effect.provide(prophetFittingBackendLayer),

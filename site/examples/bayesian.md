@@ -87,10 +87,9 @@ diagnostics. Logistic growth always samples.
 - **Limits.** Up to 16 chains, 100,000 warmup iterations per chain and 20,000 kept draws in all,
   and at most 2,000,000 kept values (draws times parameters), so models stay a reasonable size.
   The first three are checked against your `mcmc` options before sampling: past them, `fit` fails
-  with an `InputValidationError` whose `input` is `"options"`, with an issue at `mcmc.chains`,
-  `mcmc.warmup` or `mcmc.samples`. Kept values depend on how many parameters the model has, so
-  only fitting can check them: past that, `fit` fails with a `FittingError` whose `reason` is
-  `"sampling-limit"`.
+  with an `OptionsError` whose `path` points at `mcmc.chains`, `mcmc.warmup` or `mcmc.samples`.
+  Kept values depend on how many parameters the model has, so only fitting can check them: past
+  that, `fit` fails with a `FittingError` whose `reason` is `"sampling-limit"`.
 - **Every growth and feature.** Flat, linear and logistic growth all sample, with events,
   country holidays, conditional seasonalities and regressors. Regressors
   [forecast by their own models](./regressors#forecasting-a-regressor) optimize unless their own

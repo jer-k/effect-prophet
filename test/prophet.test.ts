@@ -3,9 +3,11 @@ import { describe, expect, expectTypeOf, it } from "vitest";
 
 import {
   FittingError,
-  InputValidationError,
+  ObservationError,
+  OptionsError,
   type CountryHolidayError,
   PredictionError,
+  PredictionInputError,
   fit,
   predict,
   prophetFittingBackendLayer,
@@ -34,7 +36,7 @@ describe("linear MAP Prophet integration", () => {
     expectTypeOf(fit(observations)).toEqualTypeOf<
       Effect.Effect<
         FittedProphet,
-        InputValidationError | FittingError | CountryHolidayError,
+        ObservationError | OptionsError | FittingError | CountryHolidayError,
         FittingBackend
       >
     >();
@@ -137,11 +139,8 @@ describe("linear MAP Prophet integration", () => {
       ),
     );
 
-    expect(error).toBeInstanceOf(InputValidationError);
-
-    if (error instanceof InputValidationError) {
-      expect(error.input).toBe("observations");
-    }
+    expect(error).toBeInstanceOf(ObservationError);
+    expect(error).toMatchObject({ reason: "invalid-shape", rowIndex: 1, field: "value" });
 
     expect(spans.some((span) => span.name === "effect-prophet.wasm.fit")).toBe(false);
 
@@ -288,9 +287,10 @@ describe("linear MAP Prophet integration", () => {
       ),
     );
 
-    expect(error).toBeInstanceOf(InputValidationError);
+    expect(error).toBeInstanceOf(OptionsError);
 
-    if (error instanceof InputValidationError) {
+    if (error instanceof OptionsError) {
+      expect(error.reason).toBe("changepoint-out-of-range");
       expect(error.issues).toContainEqual({
         path: ["map", "changepoints", "timestamps", 0],
         message: "Explicit changepoints must be inside the inclusive training range",
@@ -355,11 +355,7 @@ describe("linear MAP Prophet integration", () => {
 
     const error = await Effect.runPromise(Effect.flip(program));
 
-    expect(error).toBeInstanceOf(InputValidationError);
-
-    if (error instanceof InputValidationError) {
-      expect(error.input).toBe("observations");
-    }
+    expect(error).toBeInstanceOf(ObservationError);
 
     expect(testBackend.invocations).toHaveLength(0);
   });
@@ -382,11 +378,8 @@ describe("linear MAP Prophet integration", () => {
 
     const error = await Effect.runPromise(Effect.flip(program));
 
-    expect(error).toBeInstanceOf(InputValidationError);
-
-    if (error instanceof InputValidationError) {
-      expect(error.input).toBe("options");
-    }
+    expect(error).toBeInstanceOf(OptionsError);
+    expect(error).toMatchObject({ reason: "invalid-shape", path: ["growth"] });
 
     expect(testBackend.invocations).toHaveLength(0);
   });
@@ -466,11 +459,8 @@ describe("linear MAP Prophet integration", () => {
 
     const error = await Effect.runPromise(Effect.flip(predict(model, ["not-a-timestamp"])));
 
-    expect(error).toBeInstanceOf(InputValidationError);
-
-    if (error instanceof InputValidationError) {
-      expect(error.input).toBe("prediction-timestamps");
-    }
+    expect(error).toBeInstanceOf(PredictionInputError);
+    expect(error).toMatchObject({ reason: "invalid-shape", rowIndex: 0 });
   });
 
   it("rejects an invalid fitted model through the prediction error channel", async () => {

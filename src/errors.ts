@@ -1,4 +1,4 @@
-import { Predicate, Schema, SchemaIssue } from "effect";
+import { Match, Predicate, Schema, SchemaIssue } from "effect";
 
 import type { CountryHolidayError } from "./country-holidays";
 import type { BaselineForecastError } from "./evaluation-baseline";
@@ -10,21 +10,6 @@ export const ValidationIssueSchema = Schema.Struct({
   message: Schema.String,
   path: Schema.optionalKey(Schema.Array(Schema.PropertyKey)),
 });
-
-const ValidationInputSchema = Schema.Literals([
-  "observations",
-  "options",
-  "prediction-timestamps",
-  "prediction-rows",
-  "future-timestamps",
-  "uncertainty-options",
-  "evaluation-plan",
-  "evaluation-metrics",
-  "evaluation-baseline",
-  "evaluation-search",
-  "evaluation-holdout",
-  "parameter-grid",
-]);
 
 /** Why a country calendar could not be selected, resolved or combined with a model's features. */
 export const CountryHolidayFailureReasonSchema = Schema.Literals([
@@ -85,20 +70,6 @@ const ModelSerializationOperationSchema = Schema.Literals(["encode", "decode"]);
 
 const WasmFailurePhaseSchema = Schema.Literals(["load", "execute", "protocol"]);
 
-export type ValidationInput =
-  | "observations"
-  | "options"
-  | "prediction-timestamps"
-  | "prediction-rows"
-  | "future-timestamps"
-  | "uncertainty-options"
-  | "evaluation-plan"
-  | "evaluation-metrics"
-  | "evaluation-baseline"
-  | "evaluation-search"
-  | "evaluation-holdout"
-  | "parameter-grid";
-
 export type CountryHolidayFailureReason = typeof CountryHolidayFailureReasonSchema.Type;
 
 export type FittingFailureReason =
@@ -129,16 +100,6 @@ export interface ValidationIssue {
   readonly path?: ReadonlyArray<PropertyKey>;
 }
 
-/** An expected failure while validating input at a public API boundary. */
-export class InputValidationError extends Schema.TaggedError<InputValidationError>()(
-  "InputValidationError",
-  {
-    input: ValidationInputSchema,
-    issues: Schema.Array(ValidationIssueSchema),
-    message: Schema.String,
-  },
-) {}
-
 interface RuntimeCauseOptions {
   readonly cause?: unknown;
 }
@@ -155,6 +116,366 @@ const defineRuntimeCause = (target: Error, options: RuntimeCauseOptions | undefi
     enumerable: false,
   });
 };
+
+const rowFields = ["timestamp", "value", "capacity", "floor", "regressors", "conditions"] as const;
+
+/** The row field an observation or prediction-row failure is about. */
+export const RowFieldSchema = Schema.Literals(rowFields);
+
+/** The row field an observation or prediction-row failure is about. */
+export type RowField = typeof RowFieldSchema.Type;
+
+/** Why an observation history was rejected. */
+export const ObservationFailureReasonSchema = Schema.Literals([
+  "empty",
+  "invalid-shape",
+  "missing-capacity",
+  "inconsistent-floor",
+  "capacity-not-above-floor",
+  "bound-on-non-logistic",
+  "missing-regressor",
+  "unexpected-regressor",
+  "unrepresentable-regressor",
+  "missing-condition",
+  "unexpected-condition",
+]);
+
+/** Why an observation history was rejected. */
+export type ObservationFailureReason = typeof ObservationFailureReasonSchema.Type;
+
+/** Why prediction timestamps or rows were rejected. */
+export const PredictionInputFailureReasonSchema = Schema.Literals([
+  "invalid-shape",
+  "missing-capacity",
+  "missing-floor",
+  "unexpected-floor",
+  "capacity-not-above-floor",
+  "bound-on-non-logistic",
+  "missing-regressor",
+  "unexpected-regressor",
+  "unrepresentable-regressor",
+  "missing-condition",
+  "unexpected-condition",
+]);
+
+/** Why prediction timestamps or rows were rejected. */
+export type PredictionInputFailureReason = typeof PredictionInputFailureReasonSchema.Type;
+
+/** Why model options were rejected. */
+export const OptionsFailureReasonSchema = Schema.Literals([
+  "invalid-shape",
+  "invalid-value",
+  "name-collision",
+  "changepoint-out-of-range",
+  "conflicting-options",
+  "limit-exceeded",
+]);
+
+/** Why model options were rejected. */
+export type OptionsFailureReason = typeof OptionsFailureReasonSchema.Type;
+
+/** Why a future-timestamp request was rejected. */
+export const FutureTimestampsFailureReasonSchema = Schema.Literals([
+  "invalid-shape",
+  "timestamp-overflow",
+]);
+
+/** Why a future-timestamp request was rejected. */
+export type FutureTimestampsFailureReason = typeof FutureTimestampsFailureReasonSchema.Type;
+
+/** Why uncertainty simulation options were rejected. */
+export const UncertaintyOptionsFailureReasonSchema = Schema.Literals([
+  "invalid-shape",
+  "unsupported-output",
+]);
+
+/** Why uncertainty simulation options were rejected. */
+export type UncertaintyOptionsFailureReason = typeof UncertaintyOptionsFailureReasonSchema.Type;
+
+/** Why a rolling-origin evaluation plan was rejected. */
+export const EvaluationPlanFailureReasonSchema = Schema.Literals([
+  "invalid-shape",
+  "horizon-exceeds-history",
+  "insufficient-data-after-initial",
+  "cutoff-out-of-range",
+  "empty-assessment",
+  "summary-mismatch",
+  "limit-exceeded",
+  "timestamp-overflow",
+]);
+
+/** Why a rolling-origin evaluation plan was rejected. */
+export type EvaluationPlanFailureReason = typeof EvaluationPlanFailureReasonSchema.Type;
+
+/** Why metric, baseline or scaled-error options were rejected. */
+export const MetricOptionsFailureReasonSchema = Schema.Literals([
+  "invalid-shape",
+  "row-count-out-of-range",
+  "window-exceeds-rows",
+]);
+
+/** Why metric, baseline or scaled-error options were rejected. */
+export type MetricOptionsFailureReason = typeof MetricOptionsFailureReasonSchema.Type;
+
+/** Why a model search or parameter grid was rejected. */
+export const SearchOptionsFailureReasonSchema = Schema.Literals([
+  "invalid-shape",
+  "invalid-candidate-options",
+  "invalid-base-options",
+  "invalid-mode",
+  "cutoff-mismatch",
+  "duplicate-choice",
+  "limit-exceeded",
+]);
+
+/** Why a model search or parameter grid was rejected. */
+export type SearchOptionsFailureReason = typeof SearchOptionsFailureReasonSchema.Type;
+
+/** Why a holdout evaluation request was rejected. */
+export const HoldoutInputFailureReasonSchema = Schema.Literals([
+  "empty",
+  "invalid-shape",
+  "partition-not-later",
+  "limit-exceeded",
+  "unsupported-objective",
+  "receipt-mismatch",
+  "objective-dropped",
+  "baselines-need-point-metric",
+  "duplicate-baseline",
+  "unsupported-uncertainty",
+  "coverage-needs-intervals",
+]);
+
+/** Why a holdout evaluation request was rejected. */
+export type HoldoutInputFailureReason = typeof HoldoutInputFailureReasonSchema.Type;
+
+/** The holdout evaluation partition a failure is about. */
+export type HoldoutPartition = "development" | "holdout";
+
+const issueFields = {
+  /** Every problem with the same `reason`, with paths relative to the rejected input. */
+  issues: Schema.Array(ValidationIssueSchema),
+  message: Schema.String,
+};
+
+const rowContextFields = {
+  /** The first rejected row, in input order. */
+  rowIndex: Schema.optionalKey(Schema.Natural),
+  field: Schema.optionalKey(RowFieldSchema),
+
+  /** The regressor or condition name, when `field` is `regressors` or `conditions`. */
+  name: Schema.optionalKey(Schema.String),
+};
+
+/** The first rejected location, relative to the rejected input. */
+const pathField = { path: Schema.optionalKey(Schema.Array(Schema.PropertyKey)) };
+
+/**
+ * An observation history was rejected by `fit`, cross-validation, baselines or another operation
+ * that takes observations.
+ */
+export class ObservationError extends Schema.TaggedError<ObservationError>()("ObservationError", {
+  reason: ObservationFailureReasonSchema,
+  ...rowContextFields,
+  ...issueFields,
+}) {}
+
+/** Prediction timestamps or rows were rejected by a prediction operation. */
+export class PredictionInputError extends Schema.TaggedError<PredictionInputError>()(
+  "PredictionInputError",
+  {
+    reason: PredictionInputFailureReasonSchema,
+    ...rowContextFields,
+    ...issueFields,
+  },
+) {}
+
+/** Model options were rejected, either on their own or against the observations they fit. */
+export class OptionsError extends Schema.TaggedError<OptionsError>()("OptionsError", {
+  reason: OptionsFailureReasonSchema,
+  ...pathField,
+  ...issueFields,
+}) {}
+
+/** A `makeFutureTimestamps` anchor or its options were rejected. */
+export class FutureTimestampsError extends Schema.TaggedError<FutureTimestampsError>()(
+  "FutureTimestampsError",
+  {
+    reason: FutureTimestampsFailureReasonSchema,
+    ...pathField,
+    ...issueFields,
+  },
+) {}
+
+/** Uncertainty simulation options were rejected. */
+export class UncertaintyOptionsError extends Schema.TaggedError<UncertaintyOptionsError>()(
+  "UncertaintyOptionsError",
+  {
+    reason: UncertaintyOptionsFailureReasonSchema,
+    ...pathField,
+    ...issueFields,
+  },
+) {}
+
+/** A rolling-origin plan, plan summary or cross-validation control was rejected. */
+export class EvaluationPlanError extends Schema.TaggedError<EvaluationPlanError>()(
+  "EvaluationPlanError",
+  {
+    reason: EvaluationPlanFailureReasonSchema,
+    ...pathField,
+    ...issueFields,
+  },
+) {}
+
+/** Metric, baseline or scaled-error options, or the forecast rows they score, were rejected. */
+export class MetricOptionsError extends Schema.TaggedError<MetricOptionsError>()(
+  "MetricOptionsError",
+  {
+    reason: MetricOptionsFailureReasonSchema,
+    ...pathField,
+    ...issueFields,
+  },
+) {}
+
+/** A failure inside a search candidate's options or the search's cross-validation controls. */
+export type SearchOptionsCause = OptionsError | EvaluationPlanError | UncertaintyOptionsError;
+
+/** A model search or parameter grid was rejected before any candidate was evaluated. */
+export class SearchOptionsError extends Schema.TaggedError<SearchOptionsError>()(
+  "SearchOptionsError",
+  {
+    reason: SearchOptionsFailureReasonSchema,
+    candidateIndex: Schema.optionalKey(
+      Schema.Int.check(
+        Schema.isGreaterThanOrEqualTo(0),
+        Schema.isLessThan(maximumSearchCandidates),
+      ),
+    ),
+    ...pathField,
+    ...issueFields,
+  },
+) {
+  /** The candidate options or controls failure, retained in memory but never encoded. */
+  declare readonly cause?: SearchOptionsCause;
+
+  /** Construct a search failure with its optional nested input failure. */
+  // @effect-diagnostics-next-line overriddenSchemaConstructor:off -- Optional runtime cause only; decoding is covered in test/errors.test.ts.
+  constructor(
+    fields: {
+      readonly reason: SearchOptionsFailureReason;
+      readonly candidateIndex?: number;
+      readonly path?: ReadonlyArray<PropertyKey>;
+      readonly issues: ReadonlyArray<ValidationIssue>;
+      readonly message: string;
+    },
+    options?: { readonly cause?: SearchOptionsCause },
+  ) {
+    super(fields);
+    defineRuntimeCause(this, options);
+  }
+}
+
+/** A holdout evaluation's partitions, search receipt or assessment options were rejected. */
+export class HoldoutInputError extends Schema.TaggedError<HoldoutInputError>()(
+  "HoldoutInputError",
+  {
+    reason: HoldoutInputFailureReasonSchema,
+    partition: Schema.optionalKey(Schema.Literals(["development", "holdout"])),
+
+    /** The first rejected row of `partition`. */
+    rowIndex: Schema.optionalKey(Schema.Natural),
+    ...pathField,
+    ...issueFields,
+  },
+) {}
+
+/** Every typed failure for rejected caller input. */
+export type InputError =
+  | ObservationError
+  | PredictionInputError
+  | OptionsError
+  | FutureTimestampsError
+  | UncertaintyOptionsError
+  | EvaluationPlanError
+  | MetricOptionsError
+  | SearchOptionsError
+  | HoldoutInputError;
+
+const inputErrorClasses = [
+  ObservationError,
+  PredictionInputError,
+  OptionsError,
+  FutureTimestampsError,
+  UncertaintyOptionsError,
+  EvaluationPlanError,
+  MetricOptionsError,
+  SearchOptionsError,
+  HoldoutInputError,
+] as const;
+
+/** Whether a value is any of the typed failures for rejected caller input. */
+export const isInputError = (value: unknown): value is InputError =>
+  inputErrorClasses.some((errorClass) => value instanceof errorClass);
+
+const inputErrorTags = [
+  "ObservationError",
+  "PredictionInputError",
+  "OptionsError",
+  "FutureTimestampsError",
+  "UncertaintyOptionsError",
+  "EvaluationPlanError",
+  "MetricOptionsError",
+  "SearchOptionsError",
+  "HoldoutInputError",
+] as const satisfies ReadonlyArray<InputError["_tag"]>;
+
+const inputErrorReasonSchemas = [
+  ObservationFailureReasonSchema,
+  PredictionInputFailureReasonSchema,
+  OptionsFailureReasonSchema,
+  FutureTimestampsFailureReasonSchema,
+  UncertaintyOptionsFailureReasonSchema,
+  EvaluationPlanFailureReasonSchema,
+  MetricOptionsFailureReasonSchema,
+  SearchOptionsFailureReasonSchema,
+  HoldoutInputFailureReasonSchema,
+] as const;
+
+const portableInputFailureSchemas = [
+  Schema.Struct({
+    tag: Schema.Literal("ObservationError"),
+    reason: ObservationFailureReasonSchema,
+  }),
+  Schema.Struct({
+    tag: Schema.Literal("PredictionInputError"),
+    reason: PredictionInputFailureReasonSchema,
+  }),
+  Schema.Struct({ tag: Schema.Literal("OptionsError"), reason: OptionsFailureReasonSchema }),
+  Schema.Struct({
+    tag: Schema.Literal("FutureTimestampsError"),
+    reason: FutureTimestampsFailureReasonSchema,
+  }),
+  Schema.Struct({
+    tag: Schema.Literal("UncertaintyOptionsError"),
+    reason: UncertaintyOptionsFailureReasonSchema,
+  }),
+  Schema.Struct({
+    tag: Schema.Literal("EvaluationPlanError"),
+    reason: EvaluationPlanFailureReasonSchema,
+  }),
+  Schema.Struct({
+    tag: Schema.Literal("MetricOptionsError"),
+    reason: MetricOptionsFailureReasonSchema,
+  }),
+  Schema.Struct({
+    tag: Schema.Literal("SearchOptionsError"),
+    reason: SearchOptionsFailureReasonSchema,
+  }),
+  Schema.Struct({
+    tag: Schema.Literal("HoldoutInputError"),
+    reason: HoldoutInputFailureReasonSchema,
+  }),
+] as const;
 
 /** An expected failure while fitting a model. */
 export class FittingError extends Schema.TaggedError<FittingError>()("FittingError", {
@@ -245,11 +566,7 @@ export class EvaluationError extends Schema.TaggedError<EvaluationError>()("Eval
   message: Schema.String,
 }) {
   /** The original typed failure, never encoded or enumerated. */
-  declare readonly cause?:
-    | InputValidationError
-    | FittingError
-    | PredictionError
-    | CountryHolidayError;
+  declare readonly cause?: InputError | FittingError | PredictionError | CountryHolidayError;
 
   /** Construct fold context without flattening the underlying expected failure. */
   // @effect-diagnostics-next-line overriddenSchemaConstructor:off -- Optional runtime cause only; decoding is covered in test/errors.test.ts.
@@ -270,7 +587,7 @@ export class EvaluationError extends Schema.TaggedError<EvaluationError>()("Eval
       readonly message: string;
     },
     options?: {
-      readonly cause?: InputValidationError | FittingError | PredictionError | CountryHolidayError;
+      readonly cause?: InputError | FittingError | PredictionError | CountryHolidayError;
     },
   ) {
     super(fields);
@@ -295,7 +612,7 @@ export class HoldoutEvaluationError extends Schema.TaggedError<HoldoutEvaluation
 ) {
   /** Original expected failure, excluded from the report. */
   declare readonly cause?:
-    | InputValidationError
+    | InputError
     | FittingError
     | PredictionError
     | CountryHolidayError
@@ -319,7 +636,7 @@ export class HoldoutEvaluationError extends Schema.TaggedError<HoldoutEvaluation
     },
     options?: {
       readonly cause?:
-        | InputValidationError
+        | InputError
         | FittingError
         | PredictionError
         | CountryHolidayError
@@ -394,7 +711,7 @@ export const PortableEvaluationFailureSchema = Schema.Union([
     rowIndex: Schema.optionalKey(Schema.Natural.check(Schema.isLessThan(1_000_000))),
     causeTag: Schema.optionalKey(
       Schema.Literals([
-        "InputValidationError",
+        ...inputErrorTags,
         "FittingError",
         "PredictionError",
         "CountryHolidayError",
@@ -402,6 +719,7 @@ export const PortableEvaluationFailureSchema = Schema.Union([
     ),
     causeReason: Schema.optionalKey(
       Schema.Union([
+        ...inputErrorReasonSchemas,
         FittingFailureReasonSchema,
         PredictionFailureReasonSchema,
         CountryHolidayFailureReasonSchema,
@@ -416,7 +734,7 @@ export const PortableEvaluationFailureSchema = Schema.Union([
     reason: MetricFailureReasonSchema,
     stage: MetricFailureStageSchema,
   }),
-  Schema.Struct({ tag: Schema.Literal("InputValidationError"), input: ValidationInputSchema }),
+  ...portableInputFailureSchemas,
   Schema.Struct({
     tag: Schema.Literal("CountryHolidayError"),
     reason: CountryHolidayFailureReasonSchema,
@@ -425,6 +743,24 @@ export const PortableEvaluationFailureSchema = Schema.Union([
 
 /** Bounded expected-failure fields safe for caller-controlled result serialization. */
 export type PortableEvaluationFailure = typeof PortableEvaluationFailureSchema.Type;
+
+/** Project an input failure onto its bounded portable tag and reason. */
+export const portableInputFailure = (error: InputError): PortableEvaluationFailure =>
+  Object.freeze(
+    Match.value(error).pipe(
+      Match.tagsExhaustive({
+        ObservationError: ({ _tag, reason }) => ({ tag: _tag, reason }),
+        PredictionInputError: ({ _tag, reason }) => ({ tag: _tag, reason }),
+        OptionsError: ({ _tag, reason }) => ({ tag: _tag, reason }),
+        FutureTimestampsError: ({ _tag, reason }) => ({ tag: _tag, reason }),
+        UncertaintyOptionsError: ({ _tag, reason }) => ({ tag: _tag, reason }),
+        EvaluationPlanError: ({ _tag, reason }) => ({ tag: _tag, reason }),
+        MetricOptionsError: ({ _tag, reason }) => ({ tag: _tag, reason }),
+        SearchOptionsError: ({ _tag, reason }) => ({ tag: _tag, reason }),
+        HoldoutInputError: ({ _tag, reason }) => ({ tag: _tag, reason }),
+      }),
+    ),
+  );
 
 const PortableCandidateOutcomeSchema = Schema.Struct({
   id: CandidateIdSchema,
@@ -456,7 +792,7 @@ export class EvaluationSearchError extends Schema.TaggedError<EvaluationSearchEr
 ) {
   /** Original expected candidate failure, omitted from portable encoding. */
   declare readonly cause?:
-    | InputValidationError
+    | InputError
     | EvaluationError
     | EvaluationMetricError
     | CountryHolidayError;
@@ -472,11 +808,7 @@ export class EvaluationSearchError extends Schema.TaggedError<EvaluationSearchEr
       readonly message: string;
     },
     options?: {
-      readonly cause?:
-        | InputValidationError
-        | EvaluationError
-        | EvaluationMetricError
-        | CountryHolidayError;
+      readonly cause?: InputError | EvaluationError | EvaluationMetricError | CountryHolidayError;
     },
   ) {
     super(fields);
@@ -534,32 +866,134 @@ export const validationIssuesFromIssue = (
 export const validationMessageFromIssue = (issue: SchemaIssue.Issue): string =>
   formatValidationMessage(issue);
 
-/** Preserve structured Schema issues while translating them to the public error channel. */
-export const inputValidationErrorFromIssue = (
-  input: ValidationInput,
-  issue: SchemaIssue.Issue,
-): InputValidationError =>
-  new InputValidationError({
-    input,
-    issues: validationIssuesFromIssue(issue),
-    message: validationMessageFromIssue(issue),
-  });
+/** Structured issues and the formatted message of one Schema decoding failure. */
+export const schemaIssueFields = (issue: SchemaIssue.Issue) => ({
+  issues: validationIssuesFromIssue(issue),
+  message: validationMessageFromIssue(issue),
+});
 
-/** Re-home a nested validation failure under a path within an enclosing public input. */
-export const nestedInputValidationError = (
-  input: ValidationInput,
-  error: InputValidationError,
+/** Move every issue under a path within an enclosing input. */
+export const prefixIssues = (
+  issues: ReadonlyArray<ValidationIssue>,
+  prefix: ReadonlyArray<PropertyKey>,
+): ReadonlyArray<ValidationIssue> =>
+  issues.map((issue) => ({ message: issue.message, path: [...prefix, ...(issue.path ?? [])] }));
+
+/** The location fields of an observation or prediction-row failure. */
+export interface RowContext {
+  readonly rowIndex?: number;
+  readonly field?: RowField;
+  readonly name?: string;
+}
+
+const isRowField = (segment: PropertyKey | undefined): segment is RowField =>
+  rowFields.some((field) => field === segment);
+
+/** Read a row location from a row-relative path such as `[3, "regressors", "price"]`. */
+export const rowContext = (path: ReadonlyArray<PropertyKey> | undefined): RowContext => {
+  const segments = path ?? [];
+  const [first] = segments;
+  const context: { -readonly [Key in keyof RowContext]: RowContext[Key] } = {};
+
+  if (Predicate.isNumber(first) && Number.isSafeInteger(first) && first >= 0) {
+    context.rowIndex = first;
+  } else if (Predicate.isNumber(first)) {
+    return context;
+  }
+
+  const [field, name] = context.rowIndex === undefined ? segments : segments.slice(1);
+
+  if (!isRowField(field)) {
+    return context;
+  }
+
+  context.field = field;
+
+  if ((field === "regressors" || field === "conditions") && Predicate.isString(name)) {
+    context.name = name;
+  }
+
+  return context;
+};
+
+/** Fields of a row failure, located by its first issue. */
+export const rowErrorFields = <Reason extends string>(
+  reason: Reason,
+  issues: ReadonlyArray<ValidationIssue>,
+  message: string,
+) => ({ reason, ...rowContext(issues[0]?.path), issues, message });
+
+/** Fields of an options-like failure, located by its first issue. */
+export const pathErrorFields = <Reason extends string>(
+  reason: Reason,
+  issues: ReadonlyArray<ValidationIssue>,
+  message: string,
+): {
+  readonly reason: Reason;
+  readonly path?: ReadonlyArray<PropertyKey>;
+  readonly issues: ReadonlyArray<ValidationIssue>;
+  readonly message: string;
+} => {
+  const path = issues[0]?.path;
+
+  return path === undefined || path.length === 0
+    ? { reason, issues, message }
+    : { reason, path, issues, message };
+};
+
+/** Fields of a row failure for a Schema rejection, located by its first issue. */
+export const schemaRowErrorFields = (issue: SchemaIssue.Issue) => {
+  const { issues, message } = schemaIssueFields(issue);
+
+  return rowErrorFields("invalid-shape", issues, message);
+};
+
+/** Fields of an options-like failure for a Schema rejection, located by its first issue. */
+export const schemaPathErrorFields = (issue: SchemaIssue.Issue) => {
+  const { issues, message } = schemaIssueFields(issue);
+
+  return pathErrorFields("invalid-shape", issues, message);
+};
+
+/** Fields of an options-like failure with one issue, whose message is also the error's. */
+export const singleIssueFields = <Reason extends string>(
+  reason: Reason,
   path: ReadonlyArray<PropertyKey>,
   message: string,
-): InputValidationError =>
-  new InputValidationError({
-    input,
-    issues: error.issues.map((issue) => ({
-      path: [...path, ...(issue.path ?? [])],
-      message: issue.message,
-    })),
-    message,
-  });
+) => pathErrorFields(reason, [{ path, message }], message);
+
+/** A validation issue labelled with the failure reason it belongs to. */
+export interface ReasonedIssue<Reason extends string> extends ValidationIssue {
+  readonly reason: Reason;
+}
+
+/**
+ * Keep the first issue's reason and every issue that shares it, so one failure has one reason.
+ *
+ * @returns `undefined` when there are no issues.
+ */
+export const firstReasonIssues = <Reason extends string>(
+  issues: ReadonlyArray<ReasonedIssue<Reason>>,
+): { readonly reason: Reason; readonly issues: ReadonlyArray<ValidationIssue> } | undefined => {
+  const reason = issues[0]?.reason;
+
+  if (reason === undefined) {
+    return undefined;
+  }
+
+  return {
+    reason,
+    issues: issues.flatMap((issue) =>
+      issue.reason === reason
+        ? [
+            issue.path === undefined
+              ? { message: issue.message }
+              : { path: issue.path, message: issue.message },
+          ]
+        : [],
+    ),
+  };
+};
 
 /** Preserve structured Schema issues for a portable model operation. */
 export const modelSerializationErrorFromIssue = (

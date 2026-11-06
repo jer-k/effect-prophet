@@ -1,7 +1,6 @@
 import { Effect } from "effect";
 import { describe, expect, it } from "vitest";
 
-import { InputValidationError } from "../../src/errors";
 import {
   crossValidationFitOptions,
   parseCrossValidationInput,
@@ -71,14 +70,17 @@ describe("cross-validation controls", () => {
   });
 
   it.each([
-    ['{"scaling":"auto"}', "evaluation-plan"],
-    ['{"mode":"point","uncertainty":{"seed":1}}', "evaluation-plan"],
-    ['{"mode":"intervals","uncertainty":{}}', "uncertainty-options"],
-    ['{"mode":"intervals","uncertainty":{"seed":1,"output":"samples"}}', "uncertainty-options"],
-  ])("rejects malformed controls %s with a typed %s error", async (json, input) => {
+    ['{"scaling":"auto"}', "EvaluationPlanError", "invalid-shape"],
+    ['{"mode":"point","uncertainty":{"seed":1}}', "EvaluationPlanError", "invalid-shape"],
+    ['{"mode":"intervals","uncertainty":{}}', "UncertaintyOptionsError", "invalid-shape"],
+    [
+      '{"mode":"intervals","uncertainty":{"seed":1,"output":"samples"}}',
+      "UncertaintyOptionsError",
+      "unsupported-output",
+    ],
+  ])("rejects malformed controls %s with a typed %s error", async (json, tag, reason) => {
     const error = await Effect.runPromise(Effect.flip(parseCrossValidationInput(JSON.parse(json))));
 
-    expect(error).toBeInstanceOf(InputValidationError);
-    expect(error.input).toBe(input);
+    expect(error).toMatchObject({ _tag: tag, reason });
   });
 });

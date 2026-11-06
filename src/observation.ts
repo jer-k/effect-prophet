@@ -1,6 +1,6 @@
 import { Effect, Schema } from "effect";
 
-import { InputValidationError, inputValidationErrorFromIssue } from "./errors";
+import { ObservationError, schemaRowErrorFields } from "./errors";
 import { TimestampSchema } from "./internal/timestamp";
 
 /** Input representation accepted at the public decoding boundary. */
@@ -53,12 +53,22 @@ const decodeObservationsSchema = Schema.decodeUnknownEffect(ObservationsSchema, 
   onExcessProperty: "error",
 });
 
+const emptyHistoryMessage = "Expected at least one observation";
+
 /** Decode every complete row, then stably sort an owned history without dropping ties. */
 export const decodeObservations = Effect.fn("Prophet.decodeObservations")(function* (
   input: Parameters<typeof decodeObservationsSchema>[0],
-): Effect.fn.Return<Observations, InputValidationError> {
+): Effect.fn.Return<Observations, ObservationError> {
+  if (Array.isArray(input) && input.length === 0) {
+    return yield* new ObservationError({
+      reason: "empty",
+      issues: [{ message: emptyHistoryMessage }],
+      message: emptyHistoryMessage,
+    });
+  }
+
   const observations = yield* decodeObservationsSchema(input).pipe(
-    Effect.mapError((error) => inputValidationErrorFromIssue("observations", error.issue)),
+    Effect.mapError((error) => new ObservationError(schemaRowErrorFields(error.issue))),
   );
 
   const [first, ...rest] = observations;

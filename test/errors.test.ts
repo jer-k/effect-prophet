@@ -4,14 +4,26 @@ import { describe, expect, it } from "vitest";
 import {
   EvaluationError,
   EvaluationMetricError,
+  EvaluationPlanError,
   EvaluationSearchError,
   EvaluationReportError,
   HoldoutEvaluationError,
   FittingError,
-  InputValidationError,
+  isInputError,
+  MetricOptionsError,
+  ObservationError,
+  OptionsError,
   PredictionError,
+  SearchOptionsError,
 } from "../src/index";
-import { CandidateIdSchema } from "../src/errors";
+import {
+  CandidateIdSchema,
+  firstReasonIssues,
+  pathErrorFields,
+  portableInputFailure,
+  PortableEvaluationFailureSchema,
+  rowContext,
+} from "../src/errors";
 
 describe("typed domain errors", () => {
   it("keeps holdout causes in memory and separates portable report failures", () => {
@@ -61,22 +73,152 @@ describe("typed domain errors", () => {
     expect(() => Schema.decodeSync(FittingError)({ ...encoded, observationCount: -1 })).toThrow();
   });
 
-  it("encodes structured evaluation-plan validation issues", () => {
-    const error = new InputValidationError({
-      input: "evaluation-plan",
+  it("encodes structured evaluation-plan failures with their reason and path", () => {
+    const error = new EvaluationPlanError(
+      pathErrorFields(
+        "empty-assessment",
+        [{ path: ["cutoffs", "timestamps", 0], message: "Cutoff has no assessment rows" }],
+        "Cutoff has no assessment rows",
+      ),
+    );
+
+    const encoded = Schema.encodeSync(EvaluationPlanError)(error);
+
+    expect(encoded).toStrictEqual({
+      ...encoded,
+      reason: "empty-assessment",
+      path: ["cutoffs", "timestamps", 0],
       issues: [{ path: ["cutoffs", "timestamps", 0], message: "Cutoff has no assessment rows" }],
       message: "Cutoff has no assessment rows",
     });
+    expect(Schema.decodeUnknownSync(EvaluationPlanError)(encoded)).toBeInstanceOf(
+      EvaluationPlanError,
+    );
+    expect(() =>
+      Schema.decodeUnknownSync(EvaluationPlanError)({ ...encoded, reason: "unknown" }),
+    ).toThrow();
+  });
 
-    expect(Schema.encodeSync(InputValidationError)(error)).toMatchObject({
-      input: "evaluation-plan",
-      issues: [{ path: ["cutoffs", "timestamps", 0] }],
+  it("omits the path of a failure about the whole input", () => {
+    expect(pathErrorFields("invalid-shape", [{ message: "Expected an object" }], "Bad")).toEqual({
+      reason: "invalid-shape",
+      issues: [{ message: "Expected an object" }],
+      message: "Bad",
+    });
+    expect(
+      pathErrorFields("invalid-shape", [{ path: [], message: "Bad" }], "Bad"),
+    ).not.toHaveProperty("path");
+  });
+
+  it("locates row failures by row index, field and feature name", () => {
+    expect(rowContext([3, "regressors", "price"])).toEqual({
+      rowIndex: 3,
+      field: "regressors",
+      name: "price",
+    });
+    expect(rowContext([0, "capacity"])).toEqual({ rowIndex: 0, field: "capacity" });
+    expect(rowContext([1, "capacity", "nested"])).toEqual({ rowIndex: 1, field: "capacity" });
+    expect(rowContext(["regressors", "price"])).toEqual({ field: "regressors", name: "price" });
+    expect(rowContext([2, "typo"])).toEqual({ rowIndex: 2 });
+    expect(rowContext([-1, "value"])).toEqual({});
+    expect(rowContext(undefined)).toEqual({});
+  });
+
+  it("keeps one reason per failure and every issue that shares it", () => {
+    expect(firstReasonIssues([])).toBeUndefined();
+    expect(
+      firstReasonIssues([
+        { reason: "missing-capacity", path: [1, "capacity"], message: "Missing" },
+        { reason: "capacity-not-above-floor", path: [2, "capacity"], message: "Too low" },
+        { reason: "missing-capacity", path: [4, "capacity"], message: "Missing" },
+        { reason: "missing-capacity", message: "Missing" },
+      ]),
+    ).toEqual({
+      reason: "missing-capacity",
+      issues: [
+        { path: [1, "capacity"], message: "Missing" },
+        { path: [4, "capacity"], message: "Missing" },
+        { message: "Missing" },
+      ],
     });
   });
 
+  it("recognizes every input failure and nothing else", () => {
+    const observation = new ObservationError({
+      reason: "empty",
+      issues: [{ message: "Expected at least one observation" }],
+      message: "Expected at least one observation",
+    });
+
+    expect(isInputError(observation)).toBe(true);
+    expect(
+      isInputError(new OptionsError({ reason: "invalid-shape", issues: [], message: "Bad" })),
+    ).toBe(true);
+    expect(
+      isInputError(
+        new FittingError({ reason: "backend-failure", observationCount: 0, message: "Failed" }),
+      ),
+    ).toBe(false);
+    expect(isInputError({ ...observation })).toBe(false);
+    expect(isInputError(undefined)).toBe(false);
+  });
+
+  it("projects input failures onto a bounded portable tag and reason", () => {
+    const failure = portableInputFailure(
+      new ObservationError({
+        reason: "missing-regressor",
+        rowIndex: 2,
+        field: "regressors",
+        name: "private-name",
+        issues: [{ path: [2, "regressors", "private-name"], message: "Missing" }],
+        message: "Missing",
+      }),
+    );
+
+    expect(failure).toStrictEqual({ tag: "ObservationError", reason: "missing-regressor" });
+    expect(Schema.decodeUnknownSync(PortableEvaluationFailureSchema)(failure)).toEqual(failure);
+    expect(() =>
+      Schema.decodeUnknownSync(PortableEvaluationFailureSchema)({
+        tag: "ObservationError",
+        reason: "unexpected-floor",
+      }),
+    ).toThrow();
+  });
+
+  it("keeps a search input failure's nested cause in memory only", () => {
+    const cause = new OptionsError({
+      reason: "invalid-shape",
+      path: ["growth"],
+      issues: [{ path: ["growth"], message: "Expected flat, linear or logistic" }],
+      message: "Expected flat, linear or logistic",
+    });
+
+    const error = new SearchOptionsError(
+      {
+        reason: "invalid-candidate-options",
+        candidateIndex: 1,
+        path: ["candidates", 1, "options", "growth"],
+        issues: [
+          {
+            path: ["candidates", 1, "options", "growth"],
+            message: "Expected flat, linear or logistic",
+          },
+        ],
+        message: "Invalid candidate options",
+      },
+      { cause },
+    );
+
+    expect(error.cause).toBe(cause);
+    expect(Object.keys(error)).not.toContain("cause");
+    expect(Schema.encodeSync(SearchOptionsError)(error)).not.toHaveProperty("cause");
+    expect(JSON.parse(JSON.stringify(error))).not.toHaveProperty("cause");
+  });
+
   it("encodes baseline input and fold failure context", () => {
-    const input = new InputValidationError({
-      input: "evaluation-baseline",
+    const input = new MetricOptionsError({
+      reason: "invalid-shape",
+      path: ["lagMs"],
       issues: [{ path: ["lagMs"], message: "Expected a positive duration" }],
       message: "Expected a positive duration",
     });
@@ -90,8 +232,9 @@ describe("typed domain errors", () => {
       message: "Exact lag unavailable",
     });
 
-    expect(Schema.encodeSync(InputValidationError)(input)).toMatchObject({
-      input: "evaluation-baseline",
+    expect(Schema.encodeSync(MetricOptionsError)(input)).toMatchObject({
+      reason: "invalid-shape",
+      path: ["lagMs"],
     });
     expect(Schema.encodeSync(EvaluationError)(failure)).toMatchObject({
       stage: "baseline",

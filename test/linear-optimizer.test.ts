@@ -1,7 +1,7 @@
 import { Effect, Exit, Option, Predicate, Tracer } from "effect";
 import { describe, expect, it } from "vitest";
 
-import { InputValidationError } from "../src/errors";
+import { OptionsError } from "../src/errors";
 import { decodeLinearOptimizer, defaultLinearOptimizer } from "../src/linear-optimizer";
 
 describe("linear optimizer controls", () => {
@@ -110,7 +110,7 @@ describe("linear optimizer controls", () => {
   ])("rejects obsolete, inapplicable, and unrepresentable settings: %j", async (input) => {
     const failure = await Effect.runPromise(Effect.flip(decodeLinearOptimizer(input)));
 
-    expect(failure).toBeInstanceOf(InputValidationError);
-    expect(failure.input).toBe("options");
+    expect(failure).toBeInstanceOf(OptionsError);
+    expect(failure.reason).toBe("invalid-shape");
   });
 });

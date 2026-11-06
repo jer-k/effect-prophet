@@ -7,9 +7,16 @@ import {
 } from "./condition";
 import {
   FittingError,
-  InputValidationError,
+  ObservationError,
+  OptionsError,
   PredictionError,
-  type ValidationInput,
+  PredictionInputError,
+  UncertaintyOptionsError,
+  firstReasonIssues,
+  rowErrorFields,
+  type ObservationFailureReason,
+  type PredictionInputFailureReason,
+  type ReasonedIssue,
   type ValidationIssue,
 } from "./errors";
 import { eventCalendarsMatch, type EventCalendar } from "./event";
@@ -309,33 +316,44 @@ type RegressorValueRow = {
   readonly regressors?: Readonly<Record<string, number>>;
 };
 
-const alignRegressorValues = (
+/** A failure reason shared by observation histories and prediction rows. */
+type RowReason = ObservationFailureReason & PredictionInputFailureReason;
+
+/** Construct the typed row failure of one input: observations or prediction rows. */
+type RowErrorMaker<RowError> = (
+  reason: RowReason,
+  issues: ReadonlyArray<ValidationIssue>,
+  message: string,
+) => RowError;
+
+const observationError: RowErrorMaker<ObservationError> = (reason, issues, message) =>
+  new ObservationError(rowErrorFields(reason, issues, message));
+
+const predictionInputError: RowErrorMaker<PredictionInputError> = (reason, issues, message) =>
+  new PredictionInputError(rowErrorFields(reason, issues, message));
+
+const alignRegressorValues = <RowError>(
   rows: ReadonlyArray<RegressorValueRow>,
   definitions: ReadonlyArray<RegressorDefinition>,
-  input: Extract<ValidationInput, "observations" | "prediction-rows">,
-): Effect.Effect<ReadonlyArray<ReadonlyArray<number>>, InputValidationError> => {
+  makeError: RowErrorMaker<RowError>,
+): Effect.Effect<ReadonlyArray<ReadonlyArray<number>>, RowError> => {
   const expectedNames = new Set<string>(definitions.map((definition) => definition.name));
   const aligned: Array<ReadonlyArray<number>> = [];
-  const issues: Array<ValidationIssue> = [];
+  const issues: Array<ReasonedIssue<"missing-regressor" | "unexpected-regressor">> = [];
 
   for (const [rowIndex, row] of rows.entries()) {
     const provided = row.regressors;
     const values: Array<number> = [];
 
     for (const definition of definitions) {
-      if (provided === undefined || !Object.hasOwn(provided, definition.name)) {
-        issues.push({
-          path: [rowIndex, "regressors", definition.name],
-          message: `Missing required regressor '${definition.name}'`,
-        });
-
-        continue;
-      }
-
-      const value = provided[definition.name];
+      const value =
+        provided === undefined || !Object.hasOwn(provided, definition.name)
+          ? undefined
+          : provided[definition.name];
 
       if (value === undefined) {
         issues.push({
+          reason: "missing-regressor",
           path: [rowIndex, "regressors", definition.name],
           message: `Missing required regressor '${definition.name}'`,
         });
@@ -348,6 +366,7 @@ const alignRegressorValues = (
       for (const name of Object.keys(provided)) {
         if (!expectedNames.has(name)) {
           issues.push({
+            reason: "unexpected-regressor",
             path: [rowIndex, "regressors", name],
             message: `Unexpected regressor '${name}'`,
           });
@@ -358,34 +377,37 @@ const alignRegressorValues = (
     aligned.push(Object.freeze(values));
   }
 
-  if (issues.length > 0) {
+  const failure = firstReasonIssues(issues);
+
+  if (failure !== undefined) {
     return Effect.fail(
-      new InputValidationError({
-        input,
-        issues,
-        message: "Regressor values must exactly match the fitted regressor definitions",
-      }),
+      makeError(
+        failure.reason,
+        failure.issues,
+        "Regressor values must exactly match the fitted regressor definitions",
+      ),
     );
   }
 
   return Effect.succeed(Object.freeze(aligned));
 };
 
-const conditionValidationError = (
-  input: Extract<ValidationInput, "observations" | "prediction-rows">,
+/** Translate condition alignment failures; broken aligned-value invariants are shape failures. */
+const conditionValidationError = <RowError>(
+  makeError: RowErrorMaker<RowError>,
   error: InvalidConditionValues,
-): InputValidationError =>
-  new InputValidationError({
-    input,
-    issues: error.issues,
-    message: error.message,
-  });
+): RowError =>
+  makeError(
+    error.reason === "invalid-values" ? "invalid-shape" : error.reason,
+    error.issues,
+    error.message,
+  );
 
-const regressorFeatureValidationError = (
-  input: Extract<ValidationInput, "observations" | "prediction-rows">,
+const regressorFeatureValidationError = <RowError>(
+  makeError: RowErrorMaker<RowError>,
   definitions: ReadonlyArray<RegressorDefinition>,
   error: RegressorFeatureError,
-): InputValidationError => {
+): RowError => {
   const [first, second] = error.path;
   let path: ReadonlyArray<PropertyKey>;
 
@@ -397,11 +419,7 @@ const regressorFeatureValidationError = (
     path = ["regressors", first ?? ""];
   }
 
-  return new InputValidationError({
-    input,
-    issues: [{ path, message: error.message }],
-    message: error.message,
-  });
+  return makeError("unrepresentable-regressor", [{ path, message: error.message }], error.message);
 };
 
 /**
@@ -416,7 +434,7 @@ export const fit = Effect.fn("Prophet.fit")(function* (
   optionsInput?: EncodedProphetOptions,
 ): Effect.fn.Return<
   FittedProphet,
-  InputValidationError | FittingError | CountryHolidayError,
+  ObservationError | OptionsError | FittingError | CountryHolidayError,
   FittingBackend
 > {
   const observations = yield* decodeObservations(observationsInput);
@@ -429,14 +447,12 @@ type Mutable<Fields> = { -readonly [Key in keyof Fields]: Fields[Key] };
 
 /** Name the regressor whose model failed, and move option issues under its `predictor`. */
 const regressorModelFitError = (
-  error: InputValidationError | FittingError | CountryHolidayError,
+  error: ObservationError | OptionsError | FittingError | CountryHolidayError,
   name: string,
   column: number,
-): InputValidationError | FittingError | CountryHolidayError => {
-  if (Predicate.isTagged("InputValidationError")(error)) {
-    return error.input === "options"
-      ? prefixOptionsIssues(error, ["regressors", column, "predictor"])
-      : error;
+): ObservationError | OptionsError | FittingError | CountryHolidayError => {
+  if (error instanceof OptionsError) {
+    return prefixOptionsIssues(error, ["regressors", column, "predictor"]);
   }
 
   if (!Predicate.isTagged("FittingError")(error)) {
@@ -477,7 +493,7 @@ const fitRegressorModels = Effect.fnUntraced(function* (
   alignedValues: ReadonlyArray<ReadonlyArray<number>>,
 ): Effect.fn.Return<
   ReadonlyArray<RegressorModel>,
-  InputValidationError | FittingError | CountryHolidayError,
+  ObservationError | OptionsError | FittingError | CountryHolidayError,
   FittingBackend
 > {
   const timestamps = observations.map((observation) => observation.timestamp);
@@ -523,7 +539,7 @@ const fitObservations = Effect.fnUntraced(function* (
   decodedOptions: ProphetOptions,
 ): Effect.fn.Return<
   FittedProphet,
-  InputValidationError | FittingError | CountryHolidayError,
+  ObservationError | OptionsError | FittingError | CountryHolidayError,
   FittingBackend
 > {
   let options = decodedOptions;
@@ -559,16 +575,16 @@ const fitObservations = Effect.fnUntraced(function* (
     observations,
     conditionNames,
     "observations",
-  ).pipe(Effect.mapError((error) => conditionValidationError("observations", error)));
+  ).pipe(Effect.mapError((error) => conditionValidationError(observationError, error)));
 
   const masks = yield* createSeasonalityMasks(resolved.layout, alignedConditionValues).pipe(
-    Effect.mapError((error) => conditionValidationError("observations", error)),
+    Effect.mapError((error) => conditionValidationError(observationError, error)),
   );
 
   const alignedRegressorValues = yield* alignRegressorValues(
     observations,
     options.regressors,
-    "observations",
+    observationError,
   );
 
   const regressorFeatures = yield* resolveRegressorFeatures(
@@ -576,7 +592,7 @@ const fitObservations = Effect.fnUntraced(function* (
     alignedRegressorValues,
   ).pipe(
     Effect.mapError((error) =>
-      regressorFeatureValidationError("observations", options.regressors, error),
+      regressorFeatureValidationError(observationError, options.regressors, error),
     ),
   );
 
@@ -977,7 +993,7 @@ const makePredictionFeatures = Effect.fnUntraced(function* (
   regressors: ReadonlyArray<FittedRegressor>,
 ): Effect.fn.Return<
   { readonly masks: SeasonalityMaskMatrix; readonly features: KnownAdditiveFeatures },
-  PredictionError | InputValidationError
+  PredictionError | PredictionInputError
 > {
   const firstTimestamp = timestamps[0] ?? 0;
 
@@ -1000,7 +1016,7 @@ const makePredictionFeatures = Effect.fnUntraced(function* (
   const regressorFeatures = yield* createRegressorFeatures(regressors, alignedRegressorValues).pipe(
     Effect.mapError((error) =>
       regressorFeatureValidationError(
-        "prediction-rows",
+        predictionInputError,
         regressors.map((regressor) => regressor.definition),
         error,
       ),
@@ -1035,7 +1051,7 @@ const predictPiecewiseMapForecasts = (
   alignedRegressorValues: ReadonlyArray<ReadonlyArray<number>>,
   masks: SeasonalityMaskMatrix,
   events: EventCalendar,
-): Effect.Effect<Forecasts, PredictionError | InputValidationError> =>
+): Effect.Effect<Forecasts, PredictionError | PredictionInputError> =>
   model.events.layout.coefficientCount === 0 &&
   model.regressors.length === 0 &&
   conditionNamesFromLayout(model.seasonalities).length === 0
@@ -1072,7 +1088,7 @@ const predictMixedMapForecasts = (
   alignedRegressorValues: ReadonlyArray<ReadonlyArray<number>>,
   masks: SeasonalityMaskMatrix,
   events: EventCalendar,
-): Effect.Effect<Forecasts, PredictionError | InputValidationError> =>
+): Effect.Effect<Forecasts, PredictionError | PredictionInputError> =>
   Effect.gen(function* () {
     const { features } = yield* makePredictionFeatures(
       timestamps,
@@ -1097,7 +1113,7 @@ const predictLogisticMapForecasts = (
   alignedRegressorValues: ReadonlyArray<ReadonlyArray<number>>,
   masks: SeasonalityMaskMatrix,
   events: EventCalendar,
-): Effect.Effect<Forecasts, PredictionError | InputValidationError> =>
+): Effect.Effect<Forecasts, PredictionError | PredictionInputError> =>
   Effect.gen(function* () {
     const { features } = yield* makePredictionFeatures(
       timestamps,
@@ -1122,7 +1138,7 @@ const predictFittedSeasonalModel = (
   alignedRegressorValues: ReadonlyArray<ReadonlyArray<number>>,
   masks: SeasonalityMaskMatrix,
   events: EventCalendar,
-): Effect.Effect<Forecasts, PredictionError | InputValidationError> =>
+): Effect.Effect<Forecasts, PredictionError | PredictionInputError> =>
   usesMixedPrediction(model)
     ? predictMixedMapForecasts(model, timestamps, alignedRegressorValues, masks, events)
     : Match.value(model).pipe(
@@ -1190,7 +1206,7 @@ export const getRegressorCoefficients = (
 export const predict = Effect.fn("Prophet.predict")(function* (
   model: FittedProphet,
   rowsInput: Parameters<typeof decodePredictionRows>[0],
-): Effect.fn.Return<Forecasts, InputValidationError | PredictionError | CountryHolidayError> {
+): Effect.fn.Return<Forecasts, PredictionInputError | PredictionError | CountryHolidayError> {
   const rows = yield* decodePredictionRows(rowsInput);
   const firstRow = rows[0];
 
@@ -1216,9 +1232,9 @@ export const predict = Effect.fn("Prophet.predict")(function* (
 
 /** Name the regressor whose model failed to forecast. */
 const regressorModelPredictionError = (
-  error: InputValidationError | PredictionError | CountryHolidayError,
+  error: PredictionInputError | PredictionError | CountryHolidayError,
   name: string,
-): InputValidationError | PredictionError | CountryHolidayError => {
+): PredictionInputError | PredictionError | CountryHolidayError => {
   if (!Predicate.isTagged("PredictionError")(error)) {
     return error;
   }
@@ -1240,11 +1256,11 @@ const regressorModelPredictionError = (
 };
 
 const unfilledRegressor = (rowIndex: number, name: string, message: string) =>
-  new InputValidationError({
-    input: "prediction-rows",
-    issues: [{ path: [rowIndex, "regressors", name], message }],
+  predictionInputError(
+    "missing-regressor",
+    [{ path: [rowIndex, "regressors", name], message }],
     message,
-  });
+  );
 
 /**
  * Fill each forecast regressor's values in prediction rows, as Python's `predict` does.
@@ -1256,7 +1272,7 @@ const unfilledRegressor = (rowIndex: number, name: string, message: string) =>
 const fillRegressorModelValues = Effect.fnUntraced(function* (
   model: FittedProphet,
   rows: PredictionRows,
-): Effect.fn.Return<PredictionRows, InputValidationError | PredictionError | CountryHolidayError> {
+): Effect.fn.Return<PredictionRows, PredictionInputError | PredictionError | CountryHolidayError> {
   const regressorModels = model.regressorModels ?? [];
 
   if (regressorModels.length === 0) {
@@ -1353,7 +1369,7 @@ const trainingValuesByTimestamp = (
 const predictRows = Effect.fnUntraced(function* (
   parsedModel: FittedProphet,
   rows: PredictionRows,
-): Effect.fn.Return<Forecasts, InputValidationError | PredictionError | CountryHolidayError> {
+): Effect.fn.Return<Forecasts, PredictionInputError | PredictionError | CountryHolidayError> {
   const firstRow = rows[0];
 
   if (firstRow === undefined) {
@@ -1377,14 +1393,14 @@ const predictRows = Effect.fnUntraced(function* (
     rows,
     conditionNames,
     "prediction-rows",
-  ).pipe(Effect.mapError((error) => conditionValidationError("prediction-rows", error)));
+  ).pipe(Effect.mapError((error) => conditionValidationError(predictionInputError, error)));
 
   const regressors = parsedModel.regressors;
 
   const alignedRegressorValues = yield* alignRegressorValues(
     rows,
     regressors.map((regressor) => regressor.definition),
-    "prediction-rows",
+    predictionInputError,
   );
 
   const timestamps = rows.map((row) => row.timestamp);
@@ -1393,7 +1409,7 @@ const predictRows = Effect.fnUntraced(function* (
   const masks = yield* createSeasonalityMasks(
     parsedModel.seasonalities,
     alignedConditionValues,
-  ).pipe(Effect.mapError((error) => conditionValidationError("prediction-rows", error)));
+  ).pipe(Effect.mapError((error) => conditionValidationError(predictionInputError, error)));
 
   if (isLogisticModel(parsedModel)) {
     if (logisticBounds === undefined) {
@@ -1484,7 +1500,7 @@ export const predictUncertainty = Effect.fn("Prophet.predictUncertainty")(functi
   optionsInput: EncodedUncertaintyOptions,
 ): Effect.fn.Return<
   UncertaintyResult,
-  InputValidationError | PredictionError | CountryHolidayError
+  PredictionInputError | UncertaintyOptionsError | PredictionError | CountryHolidayError
 > {
   const rows = yield* decodePredictionRows(rowsInput);
   const options = yield* parseUncertaintyOptions(optionsInput);
@@ -1529,7 +1545,7 @@ const regressorModelOffsets = Effect.fnUntraced(function* (
   options: UncertaintyOptions,
 ): Effect.fn.Return<
   SimulationOffsets | undefined,
-  InputValidationError | PredictionError | CountryHolidayError
+  PredictionInputError | PredictionError | CountryHolidayError
 > {
   if (future.length === 0) {
     return undefined;
@@ -1616,25 +1632,25 @@ const alignPredictionRows = Effect.fnUntraced(function* (
     readonly events: EventCalendar;
     readonly masks: SeasonalityMaskMatrix;
   },
-  InputValidationError | CountryHolidayError
+  PredictionInputError | CountryHolidayError
 > {
   const names = conditionNamesFromLayout(parsedModel.seasonalities);
 
   const alignedConditions = yield* alignConditionValues(rows, names, "prediction-rows").pipe(
-    Effect.mapError((error) => conditionValidationError("prediction-rows", error)),
+    Effect.mapError((error) => conditionValidationError(predictionInputError, error)),
   );
 
   const alignedRegressors = yield* alignRegressorValues(
     rows,
     parsedModel.regressors.map((regressor) => regressor.definition),
-    "prediction-rows",
+    predictionInputError,
   );
 
   const timestamps = rows.map((row) => row.timestamp);
   const events = yield* predictionEvents(parsedModel, timestamps);
 
   const masks = yield* createSeasonalityMasks(parsedModel.seasonalities, alignedConditions).pipe(
-    Effect.mapError((error) => conditionValidationError("prediction-rows", error)),
+    Effect.mapError((error) => conditionValidationError(predictionInputError, error)),
   );
 
   return { timestamps, alignedRegressors, events, masks };
@@ -1668,7 +1684,7 @@ const posteriorComponentIntervals = Effect.fnUntraced(function* (
   intervalWidth: number,
 ): Effect.fn.Return<
   ReadonlyArray<ForecastComponentIntervals> | undefined,
-  InputValidationError | PredictionError | CountryHolidayError
+  PredictionInputError | PredictionError | CountryHolidayError
 > {
   if (!isMcmcModel(parsedModel) || rows.length === 0) {
     return undefined;
@@ -1739,7 +1755,7 @@ export const predictComponentIntervals = Effect.fnUntraced(function* (
   intervalWidth: number,
 ): Effect.fn.Return<
   ReadonlyArray<ForecastComponentIntervals> | undefined,
-  InputValidationError | PredictionError | CountryHolidayError
+  PredictionInputError | PredictionError | CountryHolidayError
 > {
   const rows = yield* decodePredictionRows(rowsInput);
   const firstRow = rows[0];
@@ -1771,7 +1787,7 @@ const simulateRows = Effect.fnUntraced(function* (
   options: UncertaintyOptions,
 ): Effect.fn.Return<
   UncertaintyResult,
-  InputValidationError | PredictionError | CountryHolidayError
+  PredictionInputError | PredictionError | CountryHolidayError
 > {
   const firstRow = rows[0];
 

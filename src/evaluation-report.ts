@@ -1,4 +1,4 @@
-import { Effect, Option, Schema } from "effect";
+import { Effect, Option, Schema, type SchemaIssue } from "effect";
 
 import {
   BaselineForecastError,
@@ -13,11 +13,18 @@ import {
   EvaluationMetricError,
   EvaluationReportError,
   HoldoutEvaluationError,
-  InputValidationError,
+  HoldoutInputError,
+  pathErrorFields,
   PortableEvaluationFailureSchema,
-  inputValidationErrorFromIssue,
-  nestedInputValidationError,
+  prefixIssues,
+  schemaIssueFields,
+  singleIssueFields,
   validationIssuesFromIssue,
+  type HoldoutInputFailureReason,
+  type HoldoutPartition,
+  type MetricOptionsError,
+  type OptionsError,
+  type UncertaintyOptionsError,
   validationMessageFromIssue,
 } from "./errors";
 import type { CountryHolidayError } from "./country-holidays";
@@ -292,26 +299,46 @@ export type HoldoutEvaluationReport = typeof ReportSchema.Type & {
   readonly selected: { readonly options: EncodedProphetOptions };
 };
 
-const invalid = (path: ReadonlyArray<PropertyKey>, message: string): InputValidationError =>
-  new InputValidationError({
-    input: "evaluation-holdout",
-    issues: [{ path, message }],
-    message,
-  });
+const invalid = (
+  reason: HoldoutInputFailureReason,
+  path: ReadonlyArray<PropertyKey>,
+  message: string,
+): HoldoutInputError => new HoldoutInputError(singleIssueFields(reason, path, message));
 
-const decodePartition = (
-  rows: ReadonlyArray<EncodedObservation>,
-  partition: "development" | "holdout",
-) =>
+const invalidPartition = (
+  partition: HoldoutPartition,
+  reason: HoldoutInputFailureReason,
+  message: string,
+): HoldoutInputError =>
+  new HoldoutInputError({ ...singleIssueFields(reason, [partition], message), partition });
+
+/** Report a Schema rejection of one holdout input field under that field's path. */
+const invalidField =
+  (prefix: ReadonlyArray<PropertyKey>) =>
+  (error: { readonly issue: SchemaIssue.Issue }): HoldoutInputError => {
+    const { issues, message } = schemaIssueFields(error.issue);
+
+    return new HoldoutInputError(
+      pathErrorFields("invalid-shape", prefixIssues(issues, prefix), message),
+    );
+  };
+
+const decodePartition = (rows: ReadonlyArray<EncodedObservation>, partition: HoldoutPartition) =>
   decodeObservations(rows).pipe(
-    Effect.mapError((error) =>
-      nestedInputValidationError(
-        "evaluation-holdout",
-        error,
-        [partition],
-        `Invalid ${partition} partition: ${error.message}`,
-      ),
-    ),
+    Effect.mapError((error) => {
+      const fields = {
+        ...pathErrorFields(
+          error.reason === "empty" ? "empty" : "invalid-shape",
+          prefixIssues(error.issues, [partition]),
+          `Invalid ${partition} partition: ${error.message}`,
+        ),
+        partition,
+      };
+
+      return new HoldoutInputError(
+        error.rowIndex === undefined ? fields : { ...fields, rowIndex: error.rowIndex },
+      );
+    }),
   );
 
 const reportError = (
@@ -622,7 +649,13 @@ export const evaluateHoldout = Effect.fn("Prophet.evaluateHoldout")(function* (
   input: HoldoutEvaluationInput,
 ): Effect.fn.Return<
   HoldoutEvaluationReport,
-  InputValidationError | EvaluationMetricError | HoldoutEvaluationError | CountryHolidayError,
+  | HoldoutInputError
+  | OptionsError
+  | UncertaintyOptionsError
+  | MetricOptionsError
+  | EvaluationMetricError
+  | HoldoutEvaluationError
+  | CountryHolidayError,
   FittingBackend
 > {
   const development = yield* decodePartition(input.development, "development");
@@ -638,16 +671,24 @@ export const evaluateHoldout = Effect.fn("Prophet.evaluateHoldout")(function* (
   const lastHoldout = finalHoldout.timestamp;
   const horizon = checkedAdd(lastHoldout, -last);
 
-  if (
-    development.length > maximumRows ||
-    holdout.length > maximumRows ||
-    holdout[0].timestamp <= last ||
-    horizon === undefined ||
-    horizon <= 0
-  ) {
-    return yield* invalid(
-      ["holdout"],
-      "Expected bounded, strictly later development and holdout partitions",
+  for (const [partition, rows] of [
+    ["development", development],
+    ["holdout", holdout],
+  ] as const) {
+    if (rows.length > maximumRows) {
+      return yield* invalidPartition(
+        partition,
+        "limit-exceeded",
+        `Expected at most ${maximumRows} ${partition} rows`,
+      );
+    }
+  }
+
+  if (holdout[0].timestamp <= last || horizon === undefined || horizon <= 0) {
+    return yield* invalidPartition(
+      "holdout",
+      "partition-not-later",
+      "Expected every holdout row to be strictly later than the development partition",
     );
   }
 
@@ -658,6 +699,7 @@ export const evaluateHoldout = Effect.fn("Prophet.evaluateHoldout")(function* (
   // A custom metric is a function, which a report can neither encode nor score again on decode.
   if (objective !== undefined && !isPointMetricName(objective)) {
     return yield* invalid(
+      "unsupported-objective",
       ["search", "objective", "metric"],
       "Holdout evaluation supports only built-in search objectives",
     );
@@ -688,6 +730,7 @@ export const evaluateHoldout = Effect.fn("Prophet.evaluateHoldout")(function* (
     )
   ) {
     return yield* invalid(
+      "receipt-mismatch",
       ["selectedCandidate"],
       "Selected receipt does not match development search",
     );
@@ -698,33 +741,43 @@ export const evaluateHoldout = Effect.fn("Prophet.evaluateHoldout")(function* (
   yield* checkExplicitChangepointBounds(development, options);
 
   const metricPolicy = yield* decodeMetricPolicy(input.metrics).pipe(
-    Effect.mapError((error) => inputValidationErrorFromIssue("evaluation-holdout", error.issue)),
+    Effect.mapError(invalidField(["metrics"])),
   );
 
   if (!metricPolicy.metrics.includes(search.objective.metric)) {
-    return yield* invalid(["metrics"], "Holdout metrics must retain the search objective");
+    return yield* invalid(
+      "objective-dropped",
+      ["metrics"],
+      "Holdout metrics must retain the search objective",
+    );
   }
 
   const provenance = yield* decodeProvenance(input.provenance).pipe(
-    Effect.mapError((error) => inputValidationErrorFromIssue("evaluation-holdout", error.issue)),
+    Effect.mapError(invalidField(["provenance"])),
   );
 
   const definitions = input.baselines ?? [];
 
   if (definitions.length > 16)
-    return yield* invalid(["baselines"], "At most 16 baselines are supported");
+    return yield* invalid("limit-exceeded", ["baselines"], "At most 16 baselines are supported");
 
   if (definitions.length > 0 && metricPolicy.metrics.every((metric) => metric === "coverage")) {
-    return yield* invalid(["metrics"], "Baselines require a point-error metric");
+    return yield* invalid(
+      "baselines-need-point-metric",
+      ["metrics"],
+      "Baselines require a point-error metric",
+    );
   }
 
   for (const [index, baseline] of definitions.entries()) {
-    yield* decodeBaseline(baseline).pipe(
-      Effect.mapError((error) => inputValidationErrorFromIssue("evaluation-holdout", error.issue)),
-    );
+    yield* decodeBaseline(baseline).pipe(Effect.mapError(invalidField(["baselines", index])));
 
     if (definitions.slice(0, index).some((previous) => same(previous, baseline))) {
-      return yield* invalid(["baselines", index], "Baseline definitions must be unique");
+      return yield* invalid(
+        "duplicate-baseline",
+        ["baselines", index],
+        "Baseline definitions must be unique",
+      );
     }
   }
 
@@ -736,11 +789,19 @@ export const evaluateHoldout = Effect.fn("Prophet.evaluateHoldout")(function* (
     (uncertainty !== undefined &&
       exceedsSimulationBudget(holdout.length, uncertainty.samples, "intervals"))
   ) {
-    return yield* invalid(["uncertainty"], "Holdout requires bounded interval-only simulation");
+    return yield* invalid(
+      "unsupported-uncertainty",
+      ["uncertainty"],
+      "Holdout requires bounded interval-only simulation",
+    );
   }
 
   if (uncertainty === undefined && metricPolicy.metrics.includes("coverage")) {
-    return yield* invalid(["metrics"], "Coverage requires interval simulation");
+    return yield* invalid(
+      "coverage-needs-intervals",
+      ["metrics"],
+      "Coverage requires interval simulation",
+    );
   }
 
   const executed = yield* Effect.gen(function* () {
@@ -848,7 +909,11 @@ export const evaluateHoldout = Effect.fn("Prophet.evaluateHoldout")(function* (
       const first = pointMetrics[0];
 
       if (first === undefined) {
-        return yield* invalid(["metrics"], "Baselines require at least one point-error metric");
+        return yield* invalid(
+          "baselines-need-point-metric",
+          ["metrics"],
+          "Baselines require at least one point-error metric",
+        );
       }
 
       const baselinePolicy: MetricOptions = {

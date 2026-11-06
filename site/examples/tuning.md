@@ -87,16 +87,21 @@ order you write the axes in. Each ID is `grid` followed by the position of its v
 setting you gave: `grid-2-1` above is the third `changepointPriorScale` and the second
 `seasonalityMode`. With no axes, the one candidate is the base, with the ID `grid`.
 
-`makeParameterGrid` checks the whole grid before you start a search, and fails with an
-`InputValidationError` whose `input` is `"parameter-grid"` when:
+`makeParameterGrid` checks the whole grid before you start a search, and fails with a
+`SearchOptionsError` when:
 
-- the grid has more than 32 combinations (checked before any value is read),
-- a setting has no values, or the same value twice, or isn't in the table,
-- the base options are invalid (the issue's path starts with `base`),
-- a combination is invalid. When the problem is in one value, the issue's path points at it,
-  such as `["axes", "changepointPriorScale", 1]`. When it comes from how values combine, such as a
+- the grid has more than 32 combinations (`reason` is `limit-exceeded`, checked before any
+  value is read),
+- a setting has the same value twice (`duplicate-choice`), or has no values or isn't in the
+  table (`invalid-shape`),
+- the base options are invalid (`invalid-base-options`; the path starts with `base`),
+- a combination is invalid (`invalid-candidate-options`, with the combination's position in
+  `candidateIndex`). When the problem is in one value, the path points at it, such as
+  `["axes", "changepointPriorScale", 1]`. When it comes from how values combine, such as a
   seasonality named like a base regressor, the path points at the candidate:
   `["candidates", 3, "options", ...]`.
+
+For invalid base or combination options, `cause` holds the original `OptionsError`.
 
 It fits nothing and needs no fitting backend.
 

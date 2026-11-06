@@ -3,8 +3,13 @@ import { describe, expect, it } from "vitest";
 
 import {
   EvaluationError,
+  EvaluationPlanError,
   FittingError,
-  InputValidationError,
+  isInputError,
+  ObservationError,
+  OptionsError,
+  PredictionInputError,
+  UncertaintyOptionsError,
   crossValidate,
   fit,
   planRollingOrigin,
@@ -18,7 +23,7 @@ import { makeWasmPiecewiseMapAdapter } from "../src/internal/wasm-piecewise-map-
 import { fixedPiecewiseParameters } from "./helpers/fixed-piecewise-model";
 import { makeTestFittingBackend } from "./internal/fitting-backend-test-layer";
 import { builtInSeasonalitiesOff } from "./helpers/built-in-seasonalities";
-import { expectInputValidationError } from "./helpers/input-validation-error";
+import { expectFailureOf } from "./helpers/expect-failure";
 
 const featurelessOptions = { builtInSeasonalities: builtInSeasonalitiesOff };
 
@@ -35,8 +40,8 @@ const run = (days: ReadonlyArray<number>, input: Parameters<typeof planRollingOr
   Effect.runPromise(planRollingOrigin(history(days), featurelessOptions, input));
 
 const failure = (days: ReadonlyArray<number>, input: Parameters<typeof planRollingOrigin>[2]) =>
-  Effect.runPromise(Effect.flip(planRollingOrigin(history(days), {}, input))).then(
-    expectInputValidationError,
+  Effect.runPromise(Effect.flip(planRollingOrigin(history(days), {}, input))).then((error) =>
+    expectFailureOf(EvaluationPlanError, error),
   );
 
 describe("crossValidate with mcmc", () => {
@@ -261,8 +266,7 @@ describe("planRollingOrigin", () => {
     for (const input of cases) {
       const error = await failure([0, 3, 5, 7], JSON.parse(JSON.stringify(input)));
 
-      expect(error).toBeInstanceOf(InputValidationError);
-      expect(error.input).toBe("evaluation-plan");
+      expect(error).toBeInstanceOf(EvaluationPlanError);
       expect(error.issues[0]?.path).toBeDefined();
     }
   });
@@ -278,7 +282,7 @@ describe("planRollingOrigin", () => {
       },
     );
 
-    expect(folds.input).toBe("evaluation-plan");
+    expect(folds.reason).toBe("limit-exceeded");
     expect(folds.issues[0]?.path).toContain("cutoffs");
 
     const observations = Array.from({ length: 10_001 }, (_, index) => ({
@@ -286,7 +290,8 @@ describe("planRollingOrigin", () => {
       value: index,
     }));
 
-    const historyError = expectInputValidationError(
+    const historyError = expectFailureOf(
+      EvaluationPlanError,
       await Effect.runPromise(
         Effect.flip(
           planRollingOrigin(
@@ -304,13 +309,14 @@ describe("planRollingOrigin", () => {
       ),
     );
 
-    expect(historyError.input).toBe("evaluation-plan");
+    expect(historyError).toMatchObject({ reason: "limit-exceeded", path: ["history"] });
 
     const cutoffs = Array.from({ length: 128 }, (_, index) =>
       new Date(epoch + index + 1).toISOString(),
     );
 
-    const assessmentError = expectInputValidationError(
+    const assessmentError = expectFailureOf(
+      EvaluationPlanError,
       await Effect.runPromise(
         Effect.flip(
           planRollingOrigin(
@@ -325,7 +331,7 @@ describe("planRollingOrigin", () => {
       ),
     );
 
-    expect(assessmentError.input).toBe("evaluation-plan");
+    expect(assessmentError.reason).toBe("limit-exceeded");
     expect(assessmentError.issues[0]?.path).toContain("cutoffs");
 
     const nearLimit = [
@@ -333,7 +339,8 @@ describe("planRollingOrigin", () => {
       { timestamp: "+275760-09-12T00:00:00.000Z", value: 2 },
     ];
 
-    const overflow = expectInputValidationError(
+    const overflow = expectFailureOf(
+      EvaluationPlanError,
       await Effect.runPromise(
         Effect.flip(
           planRollingOrigin(
@@ -348,7 +355,7 @@ describe("planRollingOrigin", () => {
       ),
     );
 
-    expect(overflow.input).toBe("evaluation-plan");
+    expect(overflow.reason).toBe("timestamp-overflow");
   });
 
   it("partitions ordered irregular histories deterministically for every legal cutoff", async () => {
@@ -462,7 +469,8 @@ describe("planRollingOrigin", () => {
   });
 
   it("preserves history/options precedence and ignores target and feature values while planning", async () => {
-    const badRows = expectInputValidationError(
+    const badRows = expectFailureOf(
+      ObservationError,
       await Effect.runPromise(
         Effect.flip(
           planRollingOrigin(JSON.parse("[]"), JSON.parse('{"growth":"bad"}'), JSON.parse("{}")),
@@ -470,7 +478,8 @@ describe("planRollingOrigin", () => {
       ),
     );
 
-    const badOptions = expectInputValidationError(
+    const badOptions = expectFailureOf(
+      OptionsError,
       await Effect.runPromise(
         Effect.flip(
           planRollingOrigin(history([0, 2, 3]), JSON.parse('{"growth":"bad"}'), JSON.parse("{}")),
@@ -478,10 +487,11 @@ describe("planRollingOrigin", () => {
       ),
     );
 
-    expect(badRows.input).toBe("observations");
-    expect(badOptions.input).toBe("options");
+    expect(badRows.reason).toBe("empty");
+    expect(badOptions.reason).toBe("invalid-shape");
 
-    const outsidePoint = expectInputValidationError(
+    const outsidePoint = expectFailureOf(
+      OptionsError,
       await Effect.runPromise(
         Effect.flip(
           planRollingOrigin(
@@ -493,7 +503,7 @@ describe("planRollingOrigin", () => {
       ),
     );
 
-    expect(outsidePoint.input).toBe("options");
+    expect(outsidePoint.reason).toBe("changepoint-out-of-range");
     expect(outsidePoint.issues[0]?.path).toEqual(["map", "changepoints", "timestamps", 0]);
 
     const input = {
@@ -986,7 +996,7 @@ describe("crossValidate", () => {
         ),
       );
 
-      expect(error).toBeInstanceOf(InputValidationError);
+      expect(isInputError(error)).toBe(true);
     }
 
     expect(spans.some((span) => span.name === "effect-prophet.evaluation.fold")).toBe(false);
@@ -1079,7 +1089,7 @@ describe("crossValidate", () => {
         ),
       );
 
-      if (!(error instanceof InputValidationError)) {
+      if (!isInputError(error)) {
         throw new Error("Expected whole-plan validation before fitting");
       }
 
@@ -1087,26 +1097,26 @@ describe("crossValidate", () => {
     };
 
     expect(
-      (await runError(JSON.parse("[]"), JSON.parse('{"growth":"bad"}'), JSON.parse("{}"))).input,
-    ).toBe("observations");
+      (await runError(JSON.parse("[]"), JSON.parse('{"growth":"bad"}'), JSON.parse("{}")))._tag,
+    ).toBe("ObservationError");
     expect(
-      (await runError(history([0, 1, 2]), JSON.parse('{"growth":"bad"}'), JSON.parse("{}"))).input,
-    ).toBe("options");
-    expect((await runError(history([0, 1, 2]), {}, JSON.parse('{"horizonMs":0}'))).input).toBe(
-      "evaluation-plan",
+      (await runError(history([0, 1, 2]), JSON.parse('{"growth":"bad"}'), JSON.parse("{}")))._tag,
+    ).toBe("OptionsError");
+    expect((await runError(history([0, 1, 2]), {}, JSON.parse('{"horizonMs":0}')))._tag).toBe(
+      "EvaluationPlanError",
     );
-    expect(
-      (
-        await runError(
-          history([0, 1, 2]),
-          {},
-          {
-            horizonMs: dayMs,
-            cutoffs: { mode: "explicit", timestamps: [at(0)] },
-          },
-        )
-      ).input,
-    ).toBe("evaluation-plan");
+
+    const outsideCutoff = await runError(
+      history([0, 1, 2]),
+      {},
+      {
+        horizonMs: dayMs,
+        cutoffs: { mode: "explicit", timestamps: [at(0)] },
+      },
+    );
+
+    expect(outsideCutoff).toBeInstanceOf(EvaluationPlanError);
+    expect(outsideCutoff).toMatchObject({ reason: "cutoff-out-of-range" });
     expect(backend.invocations).toHaveLength(0);
     expect(
       spans.some(
@@ -1195,7 +1205,8 @@ describe("crossValidate", () => {
     );
 
     // A cutoff must be later than first history, so a between-observation cutoff selects one row.
-    expect(oneRow).toBeInstanceOf(InputValidationError);
+    expect(oneRow).toBeInstanceOf(EvaluationPlanError);
+    expect(oneRow).toMatchObject({ reason: "cutoff-out-of-range" });
 
     const early = await Effect.runPromise(
       Effect.flip(
@@ -1251,13 +1262,8 @@ describe("crossValidate", () => {
       stage: "predict",
       reason: "prediction-failed",
     });
-    expect(missing.cause).toBeInstanceOf(InputValidationError);
-
-    if (!(missing.cause instanceof InputValidationError)) {
-      throw new Error("Expected retained prediction validation error");
-    }
-
-    expect(missing.cause.input).toBe("prediction-rows");
+    expect(missing.cause).toBeInstanceOf(PredictionInputError);
+    expect(missing.cause).toMatchObject({ reason: "missing-regressor" });
     expect(spans.some((span) => span.name === "effect-prophet.wasm.predict")).toBe(false);
   });
 
@@ -1312,7 +1318,7 @@ describe("crossValidate", () => {
       stage: "predict",
       reason: "prediction-failed",
     });
-    expect(error.cause).toMatchObject({ input: "prediction-rows" });
+    expect(error.cause).toBeInstanceOf(PredictionInputError);
   });
 
   it("preserves future regressors and conditions with static events and train-only feature resolution", async () => {
@@ -1860,10 +1866,10 @@ describe("crossValidate intervals", () => {
       mode,
     );
 
-    expect(badPlan).toMatchObject({ input: "evaluation-plan" });
-    expect(badUncertainty).toMatchObject({ input: "uncertainty-options" });
-    expect(badOutput).toMatchObject({ input: "uncertainty-options" });
-    expect(badCutoff).toMatchObject({ input: "evaluation-plan" });
+    expect(badPlan).toBeInstanceOf(EvaluationPlanError);
+    expect(badUncertainty).toBeInstanceOf(UncertaintyOptionsError);
+    expect(badOutput).toBeInstanceOf(UncertaintyOptionsError);
+    expect(badCutoff).toBeInstanceOf(EvaluationPlanError);
     expect(backend.invocations).toHaveLength(0);
     expect(
       spans.some(
@@ -1905,11 +1911,11 @@ describe("crossValidate intervals", () => {
       ),
     );
 
-    if (!(budget instanceof InputValidationError)) {
+    if (!(budget instanceof EvaluationPlanError)) {
       throw new Error("Expected preflight work limit");
     }
 
-    expect(budget).toMatchObject({ input: "evaluation-plan" });
+    expect(budget.reason).toBe("limit-exceeded");
     expect(budget.issues[0]?.path).toEqual(["uncertainty", "samples"]);
 
     const perFoldHistory = Array.from({ length: 2_003 }, (_, index) => ({
@@ -1987,7 +1993,7 @@ describe("crossValidate intervals", () => {
       stage: "predict",
       reason: "prediction-failed",
     });
-    expect(pointError.cause).toMatchObject({ input: "prediction-rows" });
+    expect(pointError.cause).toBeInstanceOf(PredictionInputError);
   });
 
   it("returns a typed simulation-limit after a successful point forecast", async () => {

@@ -7,7 +7,8 @@ import {
   EvaluationReportError,
   evaluateHoldout,
   fit,
-  InputValidationError,
+  HoldoutInputError,
+  PredictionInputError,
   predict,
   prophetFittingBackendLayer,
   searchModels,
@@ -429,9 +430,10 @@ describe("evaluateHoldout", () => {
       Effect.flip(run(input(search)).pipe(Effect.withTracer(tracer))),
     );
 
-    expect(failure).toBeInstanceOf(InputValidationError);
+    expect(failure).toBeInstanceOf(HoldoutInputError);
     expect(failure).toMatchObject({
-      input: "evaluation-holdout",
+      reason: "unsupported-objective",
+      path: ["search", "objective", "metric"],
       issues: [{ path: ["search", "objective", "metric"] }],
     });
     expect(spans.some((span) => span.name === "effect-prophet.evaluation.holdout")).toBe(false);
@@ -459,10 +461,11 @@ describe("evaluateHoldout", () => {
         Effect.flip(run({ ...input(search), ...partitions })),
       );
 
-      expect(failure).toBeInstanceOf(InputValidationError);
+      expect(failure).toBeInstanceOf(HoldoutInputError);
 
-      if (failure instanceof InputValidationError) {
-        expect(failure.input).toBe("evaluation-holdout");
+      if (failure instanceof HoldoutInputError) {
+        expect(failure).toMatchObject({ reason: "empty", partition, path: [partition] });
+        expect(failure.rowIndex).toBeUndefined();
         expect(failure.message).toMatch(new RegExp(`^Invalid ${partition} partition: `));
         expect(failure.issues.length).toBeGreaterThan(0);
         expect(failure.issues.every((issue) => issue.path?.[0] === partition)).toBe(true);
@@ -482,10 +485,15 @@ describe("evaluateHoldout", () => {
       ),
     );
 
-    expect(failure).toBeInstanceOf(InputValidationError);
+    expect(failure).toBeInstanceOf(HoldoutInputError);
 
-    if (failure instanceof InputValidationError) {
-      expect(failure.input).toBe("evaluation-holdout");
+    if (failure instanceof HoldoutInputError) {
+      expect(failure).toMatchObject({
+        reason: "invalid-shape",
+        partition: "holdout",
+        rowIndex: 1,
+        path: ["holdout", 1, "value"],
+      });
       expect(failure.issues.map((issue) => issue.path)).toEqual([["holdout", 1, "value"]]);
     }
   });
@@ -602,7 +610,7 @@ describe("evaluateHoldout", () => {
       step: "predict",
       reason: "operation-failed",
     });
-    expect(failure.cause).toMatchObject({ input: "prediction-rows" });
+    expect(failure.cause).toBeInstanceOf(PredictionInputError);
     expect(spans.some((span) => span.name === "effect-prophet.wasm.fit")).toBe(true);
     expect(spans.some((span) => span.name === "effect-prophet.wasm.predict")).toBe(false);
   });

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   FittingError,
-  InputValidationError,
+  OptionsError,
   decodeFittedModel,
   encodeFittedModel,
   fit,
@@ -147,6 +147,8 @@ describe("fit with mcmc", () => {
       { ...options, mcmc: { samples: 100, seed: -1 } },
     ];
 
+    const reasons: Array<string> = [];
+
     for (const input of failures) {
       const error = await run(
         Effect.flip(
@@ -157,8 +159,20 @@ describe("fit with mcmc", () => {
         ),
       );
 
-      expect(error).toBeInstanceOf(InputValidationError);
+      expect(error).toBeInstanceOf(OptionsError);
+
+      if (error instanceof OptionsError) {
+        reasons.push(error.reason);
+      }
     }
+
+    expect(reasons).toEqual([
+      "conflicting-options",
+      "invalid-shape",
+      "invalid-shape",
+      "invalid-shape",
+      "invalid-shape",
+    ]);
   });
 
   it("fails with a sampling limit when the draws would be too large to keep", async () => {
@@ -348,9 +362,9 @@ describe("logistic and regressor-model posteriors", () => {
       ),
     );
 
-    expect(error).toBeInstanceOf(InputValidationError);
+    expect(error).toBeInstanceOf(OptionsError);
 
-    if (error instanceof InputValidationError) {
+    if (error instanceof OptionsError) {
       expect(error.issues.map((issue) => issue.path)).toContainEqual([
         "regressors",
         0,

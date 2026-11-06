@@ -2,8 +2,9 @@ import { Effect, Exit, Option } from "effect";
 import { describe, expect, it } from "vitest";
 
 import {
-  InputValidationError,
+  ObservationError,
   PredictionError,
+  PredictionInputError,
   fit,
   predict,
   prophetFittingBackendLayer,
@@ -209,8 +210,7 @@ describe("residuals", () => {
         Effect.flip(residuals(model, JSON.parse(JSON.stringify(input)))),
       );
 
-      expect(error).toBeInstanceOf(InputValidationError);
-      expect(error).toMatchObject({ input: "observations" });
+      expect(error).toBeInstanceOf(ObservationError);
     }
 
     const invalidModel = await Effect.runPromise(
@@ -224,7 +224,8 @@ describe("residuals", () => {
       Effect.flip(residuals(model, [{ timestamp: day(40), value: 1, capacity: 5 }])),
     );
 
-    expect(capacity).toBeInstanceOf(InputValidationError);
+    expect(capacity).toBeInstanceOf(PredictionInputError);
+    expect(capacity).toMatchObject({ reason: "bound-on-non-logistic" });
 
     const regressorModel = await fitModel(
       history.map((row, offset) => ({ ...row, regressors: { promotion: offset % 2 } })),
@@ -235,7 +236,8 @@ describe("residuals", () => {
       Effect.flip(residuals(regressorModel, [{ timestamp: day(40), value: 1 }])),
     );
 
-    expect(missingRegressor).toBeInstanceOf(InputValidationError);
+    expect(missingRegressor).toBeInstanceOf(PredictionInputError);
+    expect(missingRegressor).toMatchObject({ reason: "missing-regressor", name: "promotion" });
   });
 
   it("rejects a residual that overflows from finite values", async () => {

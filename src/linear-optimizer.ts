@@ -1,6 +1,6 @@
 import { Effect, Schema } from "effect";
 
-import { inputValidationErrorFromIssue, type InputValidationError } from "./errors";
+import { OptionsError, schemaPathErrorFields } from "./errors";
 import { PositiveFinite } from "./internal/numeric-schemas";
 
 /** Effective Stan L-BFGS settings; relative criteria are scaled by machine epsilon. */
@@ -122,9 +122,9 @@ const decode = Schema.decodeUnknownEffect(LinearOptimizerSchema, {
 /** Parse linear settings, rejecting obsolete or algorithm-inapplicable controls. */
 export const decodeLinearOptimizer = Effect.fn("Prophet.decodeLinearOptimizer")(function* (
   input: Parameters<typeof decode>[0],
-): Effect.fn.Return<LinearOptimizer, InputValidationError> {
+): Effect.fn.Return<LinearOptimizer, OptionsError> {
   const parsed = yield* decode(input).pipe(
-    Effect.mapError((error) => inputValidationErrorFromIssue("options", error.issue)),
+    Effect.mapError((error) => new OptionsError(schemaPathErrorFields(error.issue))),
   );
 
   return parsed.algorithm === "newton"

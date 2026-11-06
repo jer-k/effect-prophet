@@ -3,7 +3,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 
 import {
   EvaluationMetricError,
-  InputValidationError,
+  MetricOptionsError,
   performanceMetrics,
   planRollingOrigin,
   simulationIdentity,
@@ -310,7 +310,7 @@ describe("performanceMetrics", () => {
       ),
     );
 
-    expect(removed).toBeInstanceOf(InputValidationError);
+    expect(removed).toBeInstanceOf(MetricOptionsError);
   });
 
   it("keeps nonnegative finite scores, aggregation identities and permutation-invariant buckets", async () => {
@@ -497,7 +497,7 @@ describe("performanceMetrics", () => {
         Effect.flip(performanceMetrics(point([[0, day, 1, 2]]), JSON.parse(JSON.stringify(input)))),
       );
 
-      expect(invalid).toBeInstanceOf(InputValidationError);
+      expect(invalid).toBeInstanceOf(MetricOptionsError);
     }
 
     expect(square).toBeInstanceOf(EvaluationMetricError);
@@ -633,7 +633,7 @@ describe("performanceMetrics with calendar-month horizons", () => {
       ),
     );
 
-    expect(invalid).toBeInstanceOf(InputValidationError);
+    expect(invalid).toBeInstanceOf(MetricOptionsError);
   });
 });
 
@@ -933,7 +933,7 @@ describe("performanceMetrics with custom metrics", () => {
 
       const invalid = await Effect.runPromise(Effect.flip(performanceMetrics(source, options)));
 
-      expect(invalid, JSON.stringify(metrics)).toBeInstanceOf(InputValidationError);
+      expect(invalid, JSON.stringify(metrics)).toBeInstanceOf(MetricOptionsError);
     }
 
     expect(scored).toBe(0);

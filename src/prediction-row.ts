@@ -1,6 +1,6 @@
 import { Effect, Predicate, Schema } from "effect";
 
-import { InputValidationError, PredictionError, inputValidationErrorFromIssue } from "./errors";
+import { PredictionError, PredictionInputError, schemaRowErrorFields } from "./errors";
 import { encodeTimestamp, TimestampSchema } from "./internal/timestamp";
 import type { Observation } from "./observation";
 
@@ -52,18 +52,12 @@ const decodePredictionRowsSchema = Schema.decodeUnknownEffect(PredictionRowsSche
   onExcessProperty: "error",
 });
 
-/** Structurally parse prediction rows while preserving legacy diagnostic labels. */
+/** Structurally parse prediction timestamps or rows. */
 export const decodePredictionRows = Effect.fnUntraced(function* (
   input: Parameters<typeof decodePredictionRowsSchema>[0],
-): Effect.fn.Return<PredictionRows, InputValidationError> {
-  const diagnosticInput =
-    Array.isArray(input) &&
-    input.some((value) => Predicate.isObjectKeyword(value) && !Array.isArray(value))
-      ? ("prediction-rows" as const)
-      : ("prediction-timestamps" as const);
-
+): Effect.fn.Return<PredictionRows, PredictionInputError> {
   const decoded = yield* decodePredictionRowsSchema(input).pipe(
-    Effect.mapError((error) => inputValidationErrorFromIssue(diagnosticInput, error.issue)),
+    Effect.mapError((error) => new PredictionInputError(schemaRowErrorFields(error.issue))),
   );
 
   return Object.freeze(

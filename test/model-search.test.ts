@@ -10,7 +10,8 @@ import {
   CountryHolidayError,
   EvaluationError,
   EvaluationSearchError,
-  InputValidationError,
+  isInputError,
+  SearchOptionsError,
   crossValidate,
   performanceMetrics,
   prophetFittingBackendLayer,
@@ -295,7 +296,10 @@ describe("searchModels", () => {
       ),
     );
 
-    expect(error).toMatchObject({ input: "evaluation-search" });
+    expect(error).toBeInstanceOf(SearchOptionsError);
+
+    expect(error).toMatchObject({ reason: "invalid-mode" });
+    expect(error instanceof SearchOptionsError && error.cause?._tag).toBe("EvaluationPlanError");
     expect(spans.some((span) => span.name === "effect-prophet.evaluation.candidate")).toBe(false);
     expect(spans.some((span) => span.name === "effect-prophet.evaluation.fold")).toBe(false);
     expect(spans.some((span) => span.name.startsWith("effect-prophet.wasm."))).toBe(false);
@@ -365,7 +369,10 @@ describe("searchModels", () => {
     expect(result._tag).toBe("Failure");
 
     if (Predicate.isTagged("Failure")(result)) {
-      expect(result.failure).toMatchObject({ input: "evaluation-search" });
+      expect(result.failure).toBeInstanceOf(SearchOptionsError);
+      expect(result.failure).toMatchObject({
+        reason: "cutoff-mismatch",
+      });
     }
   });
 
@@ -422,8 +429,7 @@ describe("searchModels", () => {
 
       expect(result._tag).toBe("Failure");
 
-      if (Predicate.isTagged("Failure")(result))
-        expect(result.failure).toBeInstanceOf(InputValidationError);
+      if (Predicate.isTagged("Failure")(result)) expect(isInputError(result.failure)).toBe(true);
     }
 
     expect(spans.some((span) => span.name === "effect-prophet.evaluation.candidate")).toBe(false);
@@ -470,7 +476,7 @@ describe("searchModels", () => {
     expect(result._tag).toBe("Failure");
 
     if (Predicate.isTagged("Failure")(result)) {
-      expect(result.failure).toMatchObject({ input: "evaluation-search" });
+      expect(result.failure).toBeInstanceOf(SearchOptionsError);
     }
 
     expect(spans.some((span) => span.name === "effect-prophet.evaluation.candidate")).toBe(false);
@@ -623,7 +629,7 @@ describe("searchModels", () => {
     expect(failure._tag).toBe("Failure");
 
     if (Predicate.isTagged("Failure")(failure)) {
-      expect(failure.failure).toMatchObject({ input: "evaluation-search" });
+      expect(failure.failure).toBeInstanceOf(SearchOptionsError);
     }
   });
 
