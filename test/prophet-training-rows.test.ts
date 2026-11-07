@@ -9,6 +9,7 @@ import {
   predictUncertainty,
   prophetFittingBackendLayer,
   FittingError,
+  OptionsError,
   type EncodedProphetOptions,
 } from "../src/index";
 
@@ -240,7 +241,9 @@ describe("Prophet training-row policy through generated WASM", () => {
       ),
     );
 
-    expect(invalid._tag).toBe("InputValidationError");
+    expect(invalid).toBeInstanceOf(OptionsError);
+
+    expect(invalid).toMatchObject({ reason: "invalid-shape" });
     expect(spans.some((span) => span.name === "effect-prophet.wasm.fit")).toBe(false);
     spans.length = 0;
 

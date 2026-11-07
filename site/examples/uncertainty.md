@@ -60,7 +60,8 @@ simulated futures.
 ## Working with the raw samples
 
 Use `predictUncertainty` with `output: "samples"` to answer questions like "what's the chance we
-go over 150?". `predictWithIntervals` rejects `output: "samples"` with an `InputValidationError`.
+go over 150?". `predictWithIntervals` rejects `output: "samples"` with an
+`UncertaintyOptionsError` whose `reason` is `unsupported-output`.
 
 <<< @/snippets/samples.ts
 

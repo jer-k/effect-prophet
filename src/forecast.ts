@@ -1,7 +1,13 @@
 import { Effect } from "effect";
 
 import type { CountryHolidayError } from "./country-holidays";
-import type { FittingError, InputValidationError, PredictionError } from "./errors";
+import type {
+  FittingError,
+  ObservationError,
+  OptionsError,
+  PredictionError,
+  PredictionInputError,
+} from "./errors";
 import type { FittingBackend } from "./internal/fitting-backend";
 import { decodeObservations } from "./observation";
 import type { EncodedProphetOptions } from "./options";
@@ -30,7 +36,12 @@ export const forecast = Effect.fn("Prophet.forecast")(function* (
   optionsInput?: EncodedProphetOptions,
 ): Effect.fn.Return<
   Forecasts,
-  InputValidationError | FittingError | PredictionError | CountryHolidayError,
+  | ObservationError
+  | OptionsError
+  | PredictionInputError
+  | FittingError
+  | PredictionError
+  | CountryHolidayError,
   FittingBackend
 > {
   const observations = yield* decodeObservations(historyInput);

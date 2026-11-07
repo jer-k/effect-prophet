@@ -3,8 +3,9 @@ import { describe, expect, it } from "vitest";
 
 import {
   FittingError,
-  InputValidationError,
   PredictionError,
+  PredictionInputError,
+  UncertaintyOptionsError,
   decodeFittedModel,
   encodeFittedModel,
   fit,
@@ -59,7 +60,7 @@ describe("predictUncertainty", () => {
       Effect.flip(predictUncertainty(model, [], JSON.parse("{}"))),
     );
 
-    expect(missingSeed).toBeInstanceOf(InputValidationError);
+    expect(missingSeed).toBeInstanceOf(UncertaintyOptionsError);
 
     for (const options of [
       { seed: -1 },
@@ -70,11 +71,8 @@ describe("predictUncertainty", () => {
     ]) {
       const error = await Effect.runPromise(Effect.flip(predictUncertainty(model, [], options)));
 
-      expect(error).toBeInstanceOf(InputValidationError);
-
-      if (error instanceof InputValidationError) {
-        expect(error.input).toBe("uncertainty-options");
-      }
+      expect(error).toBeInstanceOf(UncertaintyOptionsError);
+      expect(error).toMatchObject({ reason: "invalid-shape" });
     }
   });
 
@@ -331,7 +329,7 @@ describe("predictUncertainty", () => {
       ),
     );
 
-    expect(missing).toBeInstanceOf(InputValidationError);
+    expect(missing).toBeInstanceOf(PredictionInputError);
 
     const incompleteOversizedRows = Array.from({ length: 500 }, () => ({
       timestamp: "2025-01-22T00:00:00.000Z",
@@ -346,7 +344,7 @@ describe("predictUncertainty", () => {
       ),
     );
 
-    expect(alignment).toBeInstanceOf(InputValidationError);
+    expect(alignment).toBeInstanceOf(PredictionInputError);
   });
 
   it("simulates logistic paths with row-specific capacities and saved-model replay", async () => {
@@ -446,7 +444,8 @@ describe("predictUncertainty", () => {
       ).pipe(Effect.withTracer(tracer)),
     );
 
-    expect(missing).toBeInstanceOf(InputValidationError);
+    expect(missing).toBeInstanceOf(PredictionInputError);
+    expect(missing).toMatchObject({ reason: "missing-capacity" });
     expect(spans.some((span) => span.name === "effect-prophet.wasm.simulate")).toBe(false);
   });
 
@@ -501,7 +500,8 @@ describe("predictUncertainty", () => {
       ),
     );
 
-    expect(missingFloor).toBeInstanceOf(InputValidationError);
+    expect(missingFloor).toBeInstanceOf(PredictionInputError);
+    expect(missingFloor).toMatchObject({ reason: "missing-floor", rowIndex: 0, field: "floor" });
   });
 
   it("replays minmax logistic mixed features and complete changing-bound rows", async () => {
@@ -585,9 +585,9 @@ describe("predictUncertainty", () => {
       ),
     );
 
-    expect(incomplete).toBeInstanceOf(InputValidationError);
+    expect(incomplete).toBeInstanceOf(PredictionInputError);
 
-    if (incomplete instanceof InputValidationError) {
+    if (incomplete instanceof PredictionInputError) {
       expect(incomplete.issues[0]?.path).toContain("promotion");
     }
   });
@@ -983,11 +983,7 @@ describe("predictUncertainty", () => {
       Effect.flip(predictUncertainty(model, ["bad"], { seed: -1 })),
     );
 
-    expect(rowError).toBeInstanceOf(InputValidationError);
-
-    if (rowError instanceof InputValidationError) {
-      expect(rowError.input).toBe("prediction-timestamps");
-    }
+    expect(rowError).toBeInstanceOf(PredictionInputError);
 
     const featureless = await Effect.runPromise(
       fit(history).pipe(Effect.provide(prophetFittingBackendLayer)),
@@ -1118,7 +1114,7 @@ describe("predictUncertainty", () => {
       Effect.flip(predictUncertainty(invalidModel, future, { seed: -1 })),
     );
 
-    expect(badOptions).toBeInstanceOf(InputValidationError);
+    expect(badOptions).toBeInstanceOf(UncertaintyOptionsError);
 
     const invalid = await Effect.runPromise(
       Effect.flip(
@@ -1166,7 +1162,7 @@ describe("predictUncertainty", () => {
       ),
     );
 
-    expect(invalidBounds).toBeInstanceOf(InputValidationError);
+    expect(invalidBounds).toBeInstanceOf(PredictionInputError);
   });
 
   it("ends one safe public/child trace through real generated WASM", async () => {
@@ -1349,8 +1345,9 @@ describe("interval-only helpers", () => {
     );
 
     expect(samples).toEqual(
-      new InputValidationError({
-        input: "uncertainty-options",
+      new UncertaintyOptionsError({
+        reason: "unsupported-output",
+        path: ["output"],
         issues: [{ path: ["output"], message: "Needs intervals" }],
         message: "Needs intervals",
       }),
@@ -1360,7 +1357,7 @@ describe("interval-only helpers", () => {
       Effect.flip(parseIntervalOptions({ seed: -1, output: "samples" }, "Needs intervals")),
     );
 
-    expect(malformed).toMatchObject({ input: "uncertainty-options" });
+    expect(malformed).toMatchObject({ reason: "invalid-shape" });
     expect(malformed.issues.some((issue) => issue.path?.[0] === "seed")).toBe(true);
   });
 });

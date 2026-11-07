@@ -2,7 +2,7 @@ import { appendFile, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import { Cause, Effect, Exit, Predicate, Schema, type Types } from "effect";
-import { fit, predict, prophetFittingBackendLayer } from "effect-prophet";
+import { fit, isInputError, predict, prophetFittingBackendLayer } from "effect-prophet";
 
 import {
   DifferentialCaseSchema,
@@ -29,13 +29,19 @@ const failure = (cause: Cause.Cause<unknown>) => {
   const error = reason.error;
   const message = error instanceof Error ? error.message : String(error);
 
-  const projected: Types.Mutable<Pick<DifferentialFailure, "error" | "reason" | "message">> = {
+  const projected: Types.Mutable<
+    Pick<DifferentialFailure, "error" | "reason" | "rejected" | "message">
+  > = {
     error: Predicate.hasProperty(error, "_tag") ? String(error._tag) : "UnknownError",
     message: message.slice(0, maximumMessageLength),
   };
 
   if (Predicate.hasProperty(error, "reason")) {
     projected.reason = String(error.reason);
+  }
+
+  if (isInputError(error)) {
+    projected.rejected = true;
   }
 
   return projected;

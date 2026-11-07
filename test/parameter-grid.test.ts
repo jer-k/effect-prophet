@@ -2,7 +2,8 @@ import { Effect, Exit, Option } from "effect";
 import { describe, expect, it } from "vitest";
 
 import {
-  InputValidationError,
+  OptionsError,
+  SearchOptionsError,
   decodeOptions,
   makeParameterGrid,
   maximumSearchCandidates,
@@ -233,8 +234,7 @@ describe("makeParameterGrid", () => {
     for (const [json, path] of cases) {
       const error = await failure(JSON.parse(json));
 
-      expect(error).toBeInstanceOf(InputValidationError);
-      expect(error).toMatchObject({ input: "parameter-grid" });
+      expect(error).toBeInstanceOf(SearchOptionsError);
       expect(error.issues?.[0]?.path).toEqual(path);
     }
   });
@@ -274,9 +274,9 @@ describe("makeParameterGrid", () => {
     ] satisfies ReadonlyArray<ParameterGridInput>) {
       const error = await failure(input);
 
-      expect(error).toBeInstanceOf(InputValidationError);
+      expect(error).toBeInstanceOf(SearchOptionsError);
       expect(error).toMatchObject({
-        input: "parameter-grid",
+        reason: "limit-exceeded",
         issues: [{ path: ["axes"], message: "Parameter grid exceeds 32 candidates" }],
       });
     }
@@ -287,7 +287,9 @@ describe("makeParameterGrid", () => {
       axes: { seasonalityMode: ["additive"], changepointPriorScale: [0.1, -1] },
     });
 
-    expect(value).toBeInstanceOf(InputValidationError);
+    expect(value).toBeInstanceOf(SearchOptionsError);
+    expect(value).toMatchObject({ reason: "invalid-candidate-options", candidateIndex: 1 });
+    expect(value.cause).toBeInstanceOf(OptionsError);
     expect(value.message).toBe("Parameter grid candidate grid-1-0 has invalid options");
     expect(value.issues).toEqual([
       { path: ["axes", "changepointPriorScale", 1], message: "Expected a value greater than 0" },
@@ -335,7 +337,9 @@ describe("makeParameterGrid", () => {
       axes: { seasonalityMode: ["additive"] },
     });
 
-    expect(base).toMatchObject({ input: "parameter-grid", message: "Invalid base options" });
+    expect(base).toBeInstanceOf(SearchOptionsError);
+
+    expect(base).toMatchObject({ message: "Invalid base options" });
     expect(base.issues?.[0]?.path).toEqual(["base", "map", "changepointPriorScale"]);
 
     // A seasonality name only clashes with the base's regressor once they are combined.
@@ -344,8 +348,9 @@ describe("makeParameterGrid", () => {
       axes: { scaling: ["absmax"], seasonalities: [[], [monthly]] },
     });
 
+    expect(combined).toBeInstanceOf(SearchOptionsError);
+
     expect(combined).toMatchObject({
-      input: "parameter-grid",
       message: "Parameter grid candidate grid-1-0 has invalid options",
     });
 

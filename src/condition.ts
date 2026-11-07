@@ -1,6 +1,11 @@
 import { Effect, Schema } from "effect";
 
-import { ValidationIssueSchema, type ValidationInput, type ValidationIssue } from "./errors";
+import {
+  firstReasonIssues,
+  ValidationIssueSchema,
+  type ReasonedIssue,
+  type ValidationIssue,
+} from "./errors";
 import type { FeatureName } from "./feature-name";
 import { checkedElementCount } from "./internal/safe-arithmetic";
 import type { SeasonalityDefinition, SeasonalityLayout } from "./seasonality";
@@ -21,6 +26,8 @@ export interface ConditionValues {
 export class InvalidConditionValues extends Schema.TaggedError<InvalidConditionValues>()(
   "InvalidConditionValues",
   {
+    /** Rows that omit or add a condition, or aligned values that break their own invariants. */
+    reason: Schema.Literals(["missing-condition", "unexpected-condition", "invalid-values"]),
     issues: Schema.Array(ValidationIssueSchema),
     message: Schema.String,
   },
@@ -30,7 +37,8 @@ export class InvalidConditionValues extends Schema.TaggedError<InvalidConditionV
 export const invalidConditionValues = (
   issues: ReadonlyArray<ValidationIssue>,
   message: string,
-): InvalidConditionValues => new InvalidConditionValues({ issues, message });
+  reason: InvalidConditionValues["reason"] = "invalid-values",
+): InvalidConditionValues => new InvalidConditionValues({ reason, issues, message });
 
 /** Return distinct configured condition names in first-seasonality order. */
 export const conditionNamesFromDefinitions = (
@@ -134,7 +142,7 @@ export const makeConditionValues = (
 export const alignConditionValues = (
   rows: ReadonlyArray<ConditionRow>,
   names: ReadonlyArray<FeatureName>,
-  input: Extract<ValidationInput, "observations" | "prediction-rows">,
+  input: "observations" | "prediction-rows",
 ): Effect.Effect<ConditionValues, InvalidConditionValues> => {
   const expectedNames = new Set<string>(names);
   const elementCount = checkedElementCount(rows.length, names.length);
@@ -146,7 +154,7 @@ export const alignConditionValues = (
   }
 
   const values = new Uint8Array(elementCount);
-  const issues: Array<ValidationIssue> = [];
+  const issues: Array<ReasonedIssue<"missing-condition" | "unexpected-condition">> = [];
 
   for (const [rowIndex, row] of rows.entries()) {
     const provided = row.conditions;
@@ -154,6 +162,7 @@ export const alignConditionValues = (
     for (const [conditionIndex, name] of names.entries()) {
       if (provided === undefined || !Object.hasOwn(provided, name)) {
         issues.push({
+          reason: "missing-condition",
           path: [rowIndex, "conditions", name],
           message: `Missing required condition '${name}'`,
         });
@@ -165,6 +174,7 @@ export const alignConditionValues = (
 
       if (value === undefined) {
         issues.push({
+          reason: "missing-condition",
           path: [rowIndex, "conditions", name],
           message: `Missing required condition '${name}'`,
         });
@@ -177,6 +187,7 @@ export const alignConditionValues = (
       for (const name of Object.keys(provided)) {
         if (!expectedNames.has(name)) {
           issues.push({
+            reason: "unexpected-condition",
             path: [rowIndex, "conditions", name],
             message: `Unexpected condition '${name}'`,
           });
@@ -185,11 +196,14 @@ export const alignConditionValues = (
     }
   }
 
-  if (issues.length > 0) {
+  const failure = firstReasonIssues(issues);
+
+  if (failure !== undefined) {
     return Effect.fail(
       invalidConditionValues(
-        issues,
+        failure.issues,
         `Condition values must exactly match the fitted condition names for ${input}`,
+        failure.reason,
       ),
     );
   }

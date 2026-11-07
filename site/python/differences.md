@@ -63,9 +63,9 @@ smaller behavior differences, including limits Python doesn't have.
   with Python's within the variation expected from that many draws.
 - **Size limits on Bayesian fitting.** Up to 16 chains, 100,000 warmup iterations per chain,
   20,000 kept draws and 2,000,000 kept values (draws times parameters). Python has no such limits.
-  `mcmc` options past the first three fail with an `InputValidationError` whose `input` is
-  `"options"`. A model whose kept values pass the last fails with a `FittingError` whose `reason`
-  is `"sampling-limit"`. See [Bayesian fitting](/examples/bayesian#things-to-know).
+  `mcmc` options past the first three fail with an `OptionsError`. A model whose kept values pass
+  the last fails with a `FittingError` whose `reason` is `"sampling-limit"`. See
+  [Bayesian fitting](/examples/bayesian#things-to-know).
 - **Bayesian fits without features.** Python 1.4.0's `predict` fails for a model fitted with
   `mcmc_samples` that has no seasonalities, holidays or regressors: the posterior's placeholder
   coefficient comes back with the wrong shape. Here such a model forecasts normally.
@@ -131,7 +131,7 @@ smaller behavior differences, including limits Python doesn't have.
   last digit of a total. Otherwise scores match Python's exactly.
 - **Warm starts are checked.** Python quietly replaces a `k`, `m` or `sigma_obs` it can't read
   as a number with its default. `fit` rejects a warm start with a non-finite number, or a
-  `sigmaObs` that isn't positive, with an `InputValidationError`. Mismatched `delta` and `beta`
+  `sigmaObs` that isn't positive, with an `OptionsError`. Mismatched `delta` and `beta`
   lengths fall back to the defaults, as in Python.
 - **Warm starts from flat models.** Flat models don't keep Stan's rate and changepoint
   adjustments, which don't affect a flat trend, so `warmStartParameters` returns `k: 0` and an

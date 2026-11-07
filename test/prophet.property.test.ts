@@ -5,7 +5,9 @@ import { describe, expect, it } from "vitest";
 import {
   CountryHolidayError,
   FittingError,
-  InputValidationError,
+  ObservationError,
+  OptionsError,
+  PredictionInputError,
   PredictionError,
   fit,
   predict,
@@ -26,9 +28,9 @@ import {
 } from "./helpers/property";
 import { collectTestSpans, requireEndedSpan } from "./internal/tracing-test-helpers";
 
-const fitErrors = [InputValidationError, FittingError, CountryHolidayError];
+const fitErrors = [ObservationError, OptionsError, FittingError, CountryHolidayError];
 
-const predictErrors = [InputValidationError, PredictionError, CountryHolidayError];
+const predictErrors = [PredictionInputError, PredictionError, CountryHolidayError];
 
 const fitOptions = fc.constantFrom<EncodedProphetOptions | undefined>(
   undefined,
@@ -119,7 +121,7 @@ describe("Prophet fit and predict properties", { timeout: 30_000 }, () => {
           );
 
           expect(Exit.isFailure(exit)).toBe(true);
-          expect(isTypedExit(exit, [InputValidationError])).toBe(true);
+          expect(isTypedExit(exit, [ObservationError])).toBe(true);
           expect(wasmSpanNames(spans.map((span) => span.name))).toEqual([]);
 
           const publicSpans = spans.filter((span) => span.name === "Prophet.fit");
@@ -195,7 +197,7 @@ describe("Prophet fit and predict properties", { timeout: 30_000 }, () => {
           );
 
           expect(Exit.isFailure(exit)).toBe(true);
-          expect(isTypedExit(exit, [InputValidationError])).toBe(true);
+          expect(isTypedExit(exit, [PredictionInputError])).toBe(true);
           expect(wasmSpanNames(spans.map((span) => span.name))).toEqual([]);
         },
       ),

@@ -2,8 +2,9 @@ import { Effect, Predicate, Schema } from "effect";
 
 import {
   EvaluationMetricError,
-  InputValidationError,
-  inputValidationErrorFromIssue,
+  MetricOptionsError,
+  schemaPathErrorFields,
+  singleIssueFields,
 } from "./errors";
 import type { BaselineCrossValidationResult } from "./evaluation-baseline";
 import type {
@@ -615,10 +616,10 @@ const bucketed = (report: {
 const computeMetrics = (
   result: MetricInput,
   input: MetricOptions<MetricHorizonUnit, string>,
-): Effect.Effect<AnyMetricReport, InputValidationError | EvaluationMetricError> =>
+): Effect.Effect<AnyMetricReport, MetricOptionsError | EvaluationMetricError> =>
   Effect.gen(function* () {
     const options = yield* decodeOptions(input).pipe(
-      Effect.mapError((error) => inputValidationErrorFromIssue("evaluation-metrics", error.issue)),
+      Effect.mapError((error) => new MetricOptionsError(schemaPathErrorFields(error.issue))),
     );
 
     const rows = result.rows;
@@ -632,11 +633,13 @@ const computeMetrics = (
     const custom = columns.length > options.metrics.filter(Predicate.isString).length;
 
     if (rows.length === 0 || rows.length > 1_000_000) {
-      return yield* new InputValidationError({
-        input: "evaluation-metrics",
-        issues: [{ path: ["rows"], message: "Expected 1 to 1,000,000 forecast instances" }],
-        message: "Expected 1 to 1,000,000 forecast instances",
-      });
+      return yield* new MetricOptionsError(
+        singleIssueFields(
+          "row-count-out-of-range",
+          ["rows"],
+          "Expected 1 to 1,000,000 forecast instances",
+        ),
+      );
     }
 
     if (result.kind !== "intervals" && options.metrics.some((metric) => metric === "coverage")) {
@@ -743,13 +746,13 @@ const computeMetrics = (
             : Math.max(1, Math.floor(aggregation.window.value * rows.length));
 
     if (windowRows > rows.length) {
-      return yield* new InputValidationError({
-        input: "evaluation-metrics",
-        issues: [
-          { path: ["aggregation", "window"], message: "Window exceeds forecast instance count" },
-        ],
-        message: "Window exceeds forecast instance count",
-      });
+      return yield* new MetricOptionsError(
+        singleIssueFields(
+          "window-exceeds-rows",
+          ["aggregation", "window"],
+          "Window exceeds forecast instance count",
+        ),
+      );
     }
 
     const bucket = (group: number) => (aggregation.kind === "overall" ? 0 : group);
@@ -841,10 +844,7 @@ type MetricEffect<
   Source extends MetricSource,
   Horizon extends MetricHorizonUnit,
   Name extends string,
-> = Effect.Effect<
-  MetricReport<Source, Horizon, Name>,
-  InputValidationError | EvaluationMetricError
->;
+> = Effect.Effect<MetricReport<Source, Horizon, Name>, MetricOptionsError | EvaluationMetricError>;
 
 /**
  * Compute Prophet's point-error and interval-coverage metrics, and any custom metrics, over

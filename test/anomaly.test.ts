@@ -3,8 +3,11 @@ import { describe, expect, it } from "vitest";
 
 import {
   FittingError,
-  InputValidationError,
+  ObservationError,
+  OptionsError,
   PredictionError,
+  PredictionInputError,
+  UncertaintyOptionsError,
   anomalies,
   defaultAnomalyIntervalWidth,
   detectAnomalies,
@@ -329,8 +332,7 @@ describe("detectAnomalies", () => {
         Effect.flip(detectAnomalies(model, JSON.parse(JSON.stringify(input)), { seed: -1 })),
       );
 
-      expect(error).toBeInstanceOf(InputValidationError);
-      expect(error).toMatchObject({ input: "observations" });
+      expect(error).toBeInstanceOf(ObservationError);
     }
 
     for (const request of [{ seed: -1 }, { seed: 1, intervalWidth: 1 }, { seed: 1, typo: 1 }]) {
@@ -338,16 +340,20 @@ describe("detectAnomalies", () => {
         Effect.flip(detectAnomalies(model, later, JSON.parse(JSON.stringify(request)))),
       );
 
-      expect(error).toBeInstanceOf(InputValidationError);
-      expect(error).toMatchObject({ input: "uncertainty-options" });
+      expect(error).toBeInstanceOf(UncertaintyOptionsError);
+      expect(error).toMatchObject({ reason: "invalid-shape" });
     }
 
     const samples = await Effect.runPromise(
       Effect.flip(detectAnomalies(model, later, JSON.parse('{"seed":1,"output":"samples"}'))),
     );
 
-    expect(samples).toBeInstanceOf(InputValidationError);
-    expect(samples).toMatchObject({ issues: [{ path: ["output"] }] });
+    expect(samples).toBeInstanceOf(UncertaintyOptionsError);
+    expect(samples).toMatchObject({
+      reason: "unsupported-output",
+      path: ["output"],
+      issues: [{ path: ["output"] }],
+    });
 
     const invalidModel = await Effect.runPromise(
       Effect.flip(detectAnomalies({ ...model, noiseScale: -1 }, later, options)),
@@ -360,7 +366,8 @@ describe("detectAnomalies", () => {
       Effect.flip(detectAnomalies(model, [{ timestamp: day(60), value: 1, capacity: 5 }], options)),
     );
 
-    expect(capacity).toBeInstanceOf(InputValidationError);
+    expect(capacity).toBeInstanceOf(PredictionInputError);
+    expect(capacity).toMatchObject({ reason: "bound-on-non-logistic", field: "capacity" });
 
     const row = { timestamp: day(60), value: 1 };
     const tooMany: EncodedObservations = [row, ...Array.from({ length: 10_000 }, () => row)];
@@ -609,8 +616,7 @@ describe("anomalies", () => {
     for (const input of [[], [{ timestamp: "bad", value: 1 }], [{ timestamp: day(0) }]]) {
       const error = await fail(JSON.parse(JSON.stringify(input)), JSON.parse('{"seed":-1}'));
 
-      expect(error).toBeInstanceOf(InputValidationError);
-      expect(error).toMatchObject({ input: "observations" });
+      expect(error).toBeInstanceOf(ObservationError);
     }
 
     for (const request of [{ seed: -1 }, { seed: 1, intervalWidth: 1 }, { seed: 1, typo: 1 }]) {
@@ -618,21 +624,24 @@ describe("anomalies", () => {
         growth: JSON.parse('"sideways"'),
       });
 
-      expect(error).toBeInstanceOf(InputValidationError);
-      expect(error).toMatchObject({ input: "uncertainty-options" });
+      expect(error).toBeInstanceOf(UncertaintyOptionsError);
+      expect(error).toMatchObject({ reason: "invalid-shape" });
     }
 
     const samples = await fail(disturbed, JSON.parse('{"seed":1,"output":"samples"}'));
 
-    expect(samples).toBeInstanceOf(InputValidationError);
-    expect(samples).toMatchObject({ issues: [{ path: ["output"] }] });
+    expect(samples).toBeInstanceOf(UncertaintyOptionsError);
+    expect(samples).toMatchObject({
+      reason: "unsupported-output",
+      path: ["output"],
+      issues: [{ path: ["output"] }],
+    });
 
     const modelOptions = await fail(disturbed, options, {
       growth: JSON.parse('"sideways"'),
     });
 
-    expect(modelOptions).toBeInstanceOf(InputValidationError);
-    expect(modelOptions).toMatchObject({ input: "options" });
+    expect(modelOptions).toBeInstanceOf(OptionsError);
 
     const single = await fail([{ timestamp: day(0), value: 1 }], options);
 
@@ -641,7 +650,8 @@ describe("anomalies", () => {
 
     const uncapped = await fail(disturbed, options, { growth: "logistic" });
 
-    expect(uncapped).toBeInstanceOf(InputValidationError);
+    expect(uncapped).toBeInstanceOf(ObservationError);
+    expect(uncapped).toMatchObject({ reason: "missing-capacity" });
 
     const capped = await runAnomalies(
       disturbed.map((row) => ({ ...row, capacity: 200 })),

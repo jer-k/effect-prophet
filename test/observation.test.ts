@@ -1,14 +1,15 @@
 import { Effect } from "effect";
 import { describe, expect, it } from "vitest";
 
-import { InputValidationError, decodeObservations } from "../src/index";
+import { ObservationError, decodeObservations } from "../src/index";
 
 const expectValidationFailure = async <Input>(input: Input, message: string) => {
   const error = await Effect.runPromise(Effect.flip(decodeObservations(input)));
 
-  expect(error).toBeInstanceOf(InputValidationError);
-  expect(error.input).toBe("observations");
+  expect(error).toBeInstanceOf(ObservationError);
   expect(error.message).toContain(message);
+
+  return error;
 };
 
 describe("decodeObservations", () => {
@@ -27,10 +28,12 @@ describe("decodeObservations", () => {
   });
 
   it("rejects malformed timestamps", async () => {
-    await expectValidationFailure(
+    const error = await expectValidationFailure(
       [{ timestamp: "not-a-timestamp", value: 1 }],
       "valid canonical UTC timestamp",
     );
+
+    expect(error).toMatchObject({ reason: "invalid-shape", rowIndex: 0, field: "timestamp" });
   });
 
   it("rejects nonexistent calendar dates", async () => {
@@ -114,8 +117,7 @@ describe("decodeObservations", () => {
     ]) {
       const error = await Effect.runPromise(Effect.flip(decodeObservations([row])));
 
-      expect(error).toBeInstanceOf(InputValidationError);
-      expect(error.input).toBe("observations");
+      expect(error).toMatchObject({ reason: "invalid-shape", rowIndex: 0, field: "value" });
       expect(error.issues.some((issue) => issue.path?.includes("value"))).toBe(true);
     }
   });
@@ -150,7 +152,10 @@ describe("decodeObservations", () => {
   );
 
   it("rejects an empty collection", async () => {
-    await expectValidationFailure([], "Missing key");
+    const error = await expectValidationFailure([], "Expected at least one observation");
+
+    expect(error.reason).toBe("empty");
+    expect(error.rowIndex).toBeUndefined();
   });
 
   it("stably sorts complete decoded rows without mutating caller data or dropping ties", async () => {

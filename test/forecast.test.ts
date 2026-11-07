@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   CountryHolidayError,
   FittingError,
+  PredictionInputError,
   fit,
   forecast,
   predict,
@@ -11,7 +12,7 @@ import {
   type EncodedProphetOptions,
 } from "../src/index";
 import type { FittingBackend } from "../src/internal/fitting-backend";
-import { expectInputValidationError } from "./helpers/input-validation-error";
+import { expectFailureOf } from "./helpers/expect-failure";
 import { collectTestSpans, requireEndedSpan } from "./internal/tracing-test-helpers";
 
 const day = (offset: number) => new Date(Date.UTC(2025, 0, 1 + offset)).toISOString();
@@ -179,10 +180,9 @@ describe("forecast", () => {
     ];
 
     for (const args of missing) {
-      const error = expectInputValidationError(await fail(...args));
+      const error = expectFailureOf(PredictionInputError, await fail(...args));
 
       expect(error).toEqual(await failManually(...args));
-      expect(error.input).toBe("prediction-rows");
     }
   });
 
@@ -192,16 +192,16 @@ describe("forecast", () => {
     const badOptions = { growth: JSON.parse('"sideways"') };
 
     const requests: Array<[Parameters<typeof forecast>, string]> = [
-      [[badHistory, badRows, badOptions], "observations"],
-      [[history, badRows, badOptions], "prediction-timestamps"],
-      [[history, [{ timestamp: day(60), typo: 1 }], badOptions], "prediction-rows"],
-      [[history, future, badOptions], "options"],
+      [[badHistory, badRows, badOptions], "ObservationError"],
+      [[history, badRows, badOptions], "PredictionInputError"],
+      [[history, [{ timestamp: day(60), typo: 1 }], badOptions], "PredictionInputError"],
+      [[history, future, badOptions], "OptionsError"],
     ];
 
-    for (const [args, input] of requests) {
-      const error = expectInputValidationError(await fail(...args));
+    for (const [args, tag] of requests) {
+      const error = await fail(...args);
 
-      expect(error.input).toBe(input);
+      expect(error._tag).toBe(tag);
     }
 
     const single = await fail([{ timestamp: day(0), value: 1 }], future);
@@ -328,7 +328,7 @@ describe("forecast", () => {
 
     const predictFailure = await traced(covariateHistory, future, covariateOptions);
 
-    expectInputValidationError(predictFailure);
+    expectFailureOf(PredictionInputError, predictFailure);
     expect(failureOf("Prophet.forecast")).toBe(predictFailure);
     expect(failureOf("Prophet.predict")).toBe(predictFailure);
     expect(Exit.isSuccess(status("Prophet.fit").exit)).toBe(true);

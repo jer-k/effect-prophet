@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 import { describe, expect, it } from "vitest";
 
-import { InputValidationError, PredictionError } from "../src/errors";
+import { PredictionError, PredictionInputError } from "../src/errors";
 import {
   decodePredictionRows,
   pairForecastsWithObservations,
@@ -34,14 +34,14 @@ describe("decodePredictionRows", () => {
     expect(Object.isFrozen(rows[1]?.conditions)).toBe(true);
   });
 
-  it("retains legacy diagnostics for object-free invalid inputs", async () => {
+  it("locates an invalid timestamp-only row", async () => {
     const error = await Effect.runPromise(Effect.flip(decodePredictionRows(["invalid"])));
 
-    expect(error).toBeInstanceOf(InputValidationError);
-    expect(error.input).toBe("prediction-timestamps");
+    expect(error).toBeInstanceOf(PredictionInputError);
+    expect(error).toMatchObject({ reason: "invalid-shape", rowIndex: 0 });
   });
 
-  it("uses row diagnostics for mixed batches and rejects unknown fields", async () => {
+  it("rejects invalid values and unknown fields in mixed batches", async () => {
     for (const input of [
       ["invalid", { timestamp: "also-invalid" }],
       [{ timestamp: "2025-01-01T00:00:00.000Z", typo: true }],
@@ -50,8 +50,8 @@ describe("decodePredictionRows", () => {
     ]) {
       const error = await Effect.runPromise(Effect.flip(decodePredictionRows(input)));
 
-      expect(error).toBeInstanceOf(InputValidationError);
-      expect(error.input).toBe("prediction-rows");
+      expect(error).toBeInstanceOf(PredictionInputError);
+      expect(error.reason).toBe("invalid-shape");
     }
   });
 });

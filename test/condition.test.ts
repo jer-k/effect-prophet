@@ -81,14 +81,30 @@ describe("condition values", () => {
       Effect.flip(alignConditionValues([{ conditions: { typo: true } }], names, "prediction-rows")),
     );
 
+    // One failure has one reason: the first problem found, with every issue that shares it.
     expect(error).toBeInstanceOf(InvalidConditionValues);
+    expect(error.reason).toBe("missing-condition");
     expect(error.issues).toEqual([
       {
         path: [0, "conditions", "onSeason"],
         message: "Missing required condition 'onSeason'",
       },
+    ]);
+
+    const extra = await Effect.runPromise(
+      Effect.flip(
+        alignConditionValues(
+          [{ conditions: { onSeason: true } }, { conditions: { onSeason: false, typo: true } }],
+          names,
+          "prediction-rows",
+        ),
+      ),
+    );
+
+    expect(extra.reason).toBe("unexpected-condition");
+    expect(extra.issues).toEqual([
       {
-        path: [0, "conditions", "typo"],
+        path: [1, "conditions", "typo"],
         message: "Unexpected condition 'typo'",
       },
     ]);

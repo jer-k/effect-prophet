@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { Cause, Effect, Exit, Option, Schema, Tracer } from "effect";
 import { describe, expect, it } from "vitest";
 
-import { FittingError, InputValidationError, ModelSerializationError } from "../src/errors";
+import { FittingError, ModelSerializationError, OptionsError } from "../src/errors";
 import { fit, predict, predictUncertainty } from "../src/prophet";
 import { crossValidate } from "../src/evaluation";
 import { decodeFittedModel, encodeFittedModel } from "../src/model-serialization";
@@ -12,7 +12,7 @@ import { type EncodedLinearOptimizer } from "../src/linear-optimizer";
 import { decodeOptions } from "../src/options";
 import { builtInSeasonalitiesOff } from "./helpers/built-in-seasonalities";
 import { requireEndedSpan } from "./internal/tracing-test-helpers";
-import { expectInputValidationError } from "./helpers/input-validation-error";
+import { expectFailureOf } from "./helpers/expect-failure";
 
 const day = 86_400_000;
 
@@ -211,11 +211,12 @@ describe("public logistic Stan optimizer lifecycle", () => {
   it.each([{ algorithm: "proximal" }, { relativeTolerance: 1e-7 }, { absoluteTolerance: 1e-9 }])(
     "rejects removed proximal controls through public option parsing: %j",
     async (optimizer) => {
-      const failure = expectInputValidationError(
+      const failure = expectFailureOf(
+        OptionsError,
         await Effect.runPromise(Effect.flip(decodeOptions({ ...options, map: { optimizer } }))),
       );
 
-      expect(failure.input).toBe("options");
+      expect(failure.reason).toBe("invalid-shape");
     },
   );
 
@@ -518,7 +519,7 @@ describe("public logistic Stan optimizer lifecycle", () => {
       ),
     );
 
-    expect(invalid).toBeInstanceOf(InputValidationError);
+    expect(invalid).toBeInstanceOf(OptionsError);
     expect(spans.some((span) => span.name === "effect-prophet.wasm.fit")).toBe(false);
   });
 });

@@ -1,4 +1,4 @@
-import { Effect, Predicate, Schema } from "effect";
+import { Effect, Schema } from "effect";
 
 import { ComponentModeSchema, type ComponentMode } from "./component-mode";
 import {
@@ -7,7 +7,13 @@ import {
   type CountryHolidays,
   type EncodedCountryHolidays,
 } from "./country-holidays";
-import { InputValidationError, inputValidationErrorFromIssue } from "./errors";
+import {
+  OptionsError,
+  pathErrorFields,
+  prefixIssues,
+  schemaPathErrorFields,
+  singleIssueFields,
+} from "./errors";
 import type { FeatureName } from "./feature-name";
 import {
   defaultEventPriorScale,
@@ -166,7 +172,7 @@ export type ChangepointSetting =
 export const checkExplicitChangepointBounds = (
   observations: Observations,
   options: ProphetOptions,
-): Effect.Effect<void, InputValidationError> => {
+): Effect.Effect<void, OptionsError> => {
   if (observations.length < 2 || options.map.changepoints.mode !== "explicit") {
     return Effect.void;
   }
@@ -181,16 +187,13 @@ export const checkExplicitChangepointBounds = (
   for (const [index, changepoint] of options.map.changepoints.timestamps.entries()) {
     if (changepoint < first.timestamp || changepoint > last.timestamp) {
       return Effect.fail(
-        new InputValidationError({
-          input: "options",
-          issues: [
-            {
-              path: ["map", "changepoints", "timestamps", index],
-              message: "Explicit changepoints must be inside the inclusive training range",
-            },
-          ],
-          message: "Explicit changepoints must be inside the inclusive training range",
-        }),
+        new OptionsError(
+          singleIssueFields(
+            "changepoint-out-of-range",
+            ["map", "changepoints", "timestamps", index],
+            "Explicit changepoints must be inside the inclusive training range",
+          ),
+        ),
       );
     }
   }
@@ -532,47 +535,28 @@ const freezeMapOptions = <Optimizer extends object>(
  * @param error - The internal seasonality parsing or layout failure.
  * @returns A public options validation failure with option-relative issue paths.
  */
-export const optionsValidationErrorFromSeasonality = (
-  error: InvalidSeasonality,
-): InputValidationError =>
-  new InputValidationError({
-    input: "options",
-    issues: error.issues.map((issue) => ({
-      message: issue.message,
-      path: ["seasonalities", ...(issue.path ?? [])],
-    })),
-    message: error.message,
-  });
+export const optionsValidationErrorFromSeasonality = (error: InvalidSeasonality): OptionsError =>
+  new OptionsError(
+    pathErrorFields(error.reason, prefixIssues(error.issues, ["seasonalities"]), error.message),
+  );
 
 /** Translate custom/country event merge failures at the public options seam. */
-export const optionsValidationErrorFromEvents = (
-  error: InvalidEventCalendar,
-): InputValidationError =>
-  new InputValidationError({
-    input: "options",
-    issues: error.issues.map((issue) => ({
-      message: issue.message,
-      path: ["events", ...(issue.path ?? [])],
-    })),
-    message: error.message,
-  });
+export const optionsValidationErrorFromEvents = (error: InvalidEventCalendar): OptionsError =>
+  new OptionsError(
+    pathErrorFields(error.reason, prefixIssues(error.issues, ["events"]), error.message),
+  );
 
-const optionsValidationErrorFromRegressors = (error: InvalidRegressors): InputValidationError =>
-  new InputValidationError({
-    input: "options",
-    issues: error.issues.map((issue) => ({
-      message: issue.message,
-      path: ["regressors", ...(issue.path ?? [])],
-    })),
-    message: error.message,
-  });
+const optionsValidationErrorFromRegressors = (error: InvalidRegressors): OptionsError =>
+  new OptionsError(
+    pathErrorFields("invalid-shape", prefixIssues(error.issues, ["regressors"]), error.message),
+  );
 
 /** Recheck global identities after training-derived seasonalities and events are resolved. */
 export const checkOptionFeatureNames = (
   seasonalities: ReadonlyArray<SeasonalityDefinition>,
   events: EventCalendar,
   regressors: ReadonlyArray<RegressorDefinition>,
-): Effect.Effect<void, InputValidationError> =>
+): Effect.Effect<void, OptionsError> =>
   Effect.gen(function* () {
     const seasonalityNames = new Set(seasonalities.map((seasonality) => seasonality.name));
     const conditionNames = new Set<string>();
@@ -585,16 +569,18 @@ export const checkOptionFeatureNames = (
       }
 
       if (seasonalityNames.has(conditionName)) {
-        return yield* new InputValidationError({
-          input: "options",
-          issues: [
-            {
-              path: ["seasonalities", index, "conditionName"],
-              message: `Condition name '${conditionName}' collides with a seasonality`,
-            },
-          ],
-          message: "Condition and seasonality names must be distinct",
-        });
+        return yield* new OptionsError(
+          pathErrorFields(
+            "name-collision",
+            [
+              {
+                path: ["seasonalities", index, "conditionName"],
+                message: `Condition name '${conditionName}' collides with a seasonality`,
+              },
+            ],
+            "Condition and seasonality names must be distinct",
+          ),
+        );
       }
 
       conditionNames.add(conditionName);
@@ -608,16 +594,18 @@ export const checkOptionFeatureNames = (
           : undefined;
 
       if (collision !== undefined) {
-        return yield* new InputValidationError({
-          input: "options",
-          issues: [
-            {
-              path: ["events", index, "name"],
-              message: `Feature name '${occurrence.name}' collides with ${collision}`,
-            },
-          ],
-          message: "Event names must be globally distinct",
-        });
+        return yield* new OptionsError(
+          pathErrorFields(
+            "name-collision",
+            [
+              {
+                path: ["events", index, "name"],
+                message: `Feature name '${occurrence.name}' collides with ${collision}`,
+              },
+            ],
+            "Event names must be globally distinct",
+          ),
+        );
       }
     }
 
@@ -633,33 +621,30 @@ export const checkOptionFeatureNames = (
             : undefined;
 
       if (collision !== undefined) {
-        return yield* new InputValidationError({
-          input: "options",
-          issues: [
-            {
-              path: ["regressors", index, "name"],
-              message: `Feature name '${regressor.name}' collides with ${collision}`,
-            },
-          ],
-          message: "Regressor names must be globally distinct",
-        });
+        return yield* new OptionsError(
+          pathErrorFields(
+            "name-collision",
+            [
+              {
+                path: ["regressors", index, "name"],
+                message: `Feature name '${regressor.name}' collides with ${collision}`,
+              },
+            ],
+            "Regressor names must be globally distinct",
+          ),
+        );
       }
     }
   });
 
 /** Move option issues under a path, such as the regressor whose model options they belong to. */
 export const prefixOptionsIssues = (
-  error: InputValidationError,
+  error: OptionsError,
   prefix: ReadonlyArray<PropertyKey>,
-): InputValidationError =>
-  new InputValidationError({
-    input: "options",
-    issues: error.issues.map((issue) => ({
-      message: issue.message,
-      path: [...prefix, ...(issue.path ?? [])],
-    })),
-    message: error.message,
-  });
+): OptionsError =>
+  new OptionsError(
+    pathErrorFields(error.reason, prefixIssues(error.issues, prefix), error.message),
+  );
 
 /**
  * Parse each requested regressor model's options with the main model's fit settings.
@@ -673,10 +658,7 @@ export const prefixOptionsIssues = (
 const parseRegressorModels = Effect.fnUntraced(function* (
   models: ReadonlyArray<RegressorModelSyntax>,
   map: typeof MapOptionsSchema.Type | undefined,
-): Effect.fn.Return<
-  ReadonlyArray<RegressorModelRequest>,
-  InputValidationError | CountryHolidayError
-> {
+): Effect.fn.Return<ReadonlyArray<RegressorModelRequest>, OptionsError | CountryHolidayError> {
   if (models.length === 0) {
     return emptyRegressorModels;
   }
@@ -697,7 +679,7 @@ const parseRegressorModels = Effect.fnUntraced(function* (
 
     const parsed = yield* decodeOptionsInput(inherited).pipe(
       Effect.mapError((error) =>
-        Predicate.isTagged("InputValidationError")(error)
+        error instanceof OptionsError
           ? prefixOptionsIssues(error, ["regressors", index, "predictor"])
           : error,
       ),
@@ -709,33 +691,36 @@ const parseRegressorModels = Effect.fnUntraced(function* (
   return Object.freeze(requests);
 });
 
-const mcmcConflict = (path: ReadonlyArray<PropertyKey>, message: string) =>
-  new InputValidationError({ input: "options", issues: [{ path, message }], message });
-
 /** Reject an optimizer with `mcmc` rather than ignoring it: sampling never optimizes. */
 const checkMcmcCombination = (
   map: typeof MapOptionsSchema.Type | undefined,
-): Effect.Effect<void, InputValidationError> =>
+): Effect.Effect<void, OptionsError> =>
   map?.optimizer === undefined
     ? Effect.void
     : Effect.fail(
-        mcmcConflict(["map", "optimizer"], "An optimizer does not apply when sampling with mcmc"),
+        new OptionsError(
+          singleIssueFields(
+            "conflicting-options",
+            ["map", "optimizer"],
+            "An optimizer does not apply when sampling with mcmc",
+          ),
+        ),
       );
 
 /** Decode optional, untrusted fitting options and apply the documented defaults. */
 export const decodeOptions = Effect.fn("Prophet.decodeOptions")(function* (
   input?: Parameters<typeof decodeProphetOptionsSyntax>[0],
-): Effect.fn.Return<ProphetOptions, InputValidationError | CountryHolidayError> {
+): Effect.fn.Return<ProphetOptions, OptionsError | CountryHolidayError> {
   return yield* decodeOptionsInput(input);
 });
 
 const decodeOptionsInput = Effect.fnUntraced(function* (
   input?: Parameters<typeof decodeProphetOptionsSyntax>[0],
-): Effect.fn.Return<ProphetOptions, InputValidationError | CountryHolidayError> {
+): Effect.fn.Return<ProphetOptions, OptionsError | CountryHolidayError> {
   const encoded = input === undefined ? emptyOptions : input;
 
   const syntax = yield* decodeProphetOptionsSyntax(encoded).pipe(
-    Effect.mapError((error) => inputValidationErrorFromIssue("options", error.issue)),
+    Effect.mapError((error) => new OptionsError(schemaPathErrorFields(error.issue))),
   );
 
   // Each component without its own prior scale takes the global one, as in Python.

@@ -18,6 +18,7 @@ import {
   selectOracleChecks,
   targetSpan,
   type DifferentialCaseResult,
+  type DifferentialFailure,
   type DifferentialOutcome,
   type PerturbedOutcome,
 } from "../differential.ts";
@@ -60,7 +61,7 @@ const fitted = (value: number, noiseScale = 0.1, componentName?: string): Differ
   seconds: 0.01,
 });
 
-const failed = (error: string, reason?: string): DifferentialOutcome => {
+const failed = (error: string, reason?: string): DifferentialFailure => {
   const outcome = {
     caseId: carrier.id,
     status: "failed" as const,
@@ -109,9 +110,10 @@ describe("differential judging", () => {
   it("separates Effect validation rejections from other one-sided failures", () => {
     const span = caseWithSpan(1);
 
-    expect(judgeCase(span, failed("InputValidationError"), fitted(1)).verdict).toBe(
-      "effect-rejected",
-    );
+    expect(
+      judgeCase(span, { ...failed("ObservationError", "invalid-shape"), rejected: true }, fitted(1))
+        .verdict,
+    ).toBe("effect-rejected");
 
     expect(judgeCase(span, failed("FittingError", "non-convergence"), fitted(1)).verdict).toBe(
       "effect-failed",

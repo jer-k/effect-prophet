@@ -1,7 +1,14 @@
 import { Effect } from "effect";
 
 import type { CountryHolidayError } from "./country-holidays";
-import { PredictionError, type FittingError, type InputValidationError } from "./errors";
+import {
+  PredictionError,
+  type FittingError,
+  type ObservationError,
+  type OptionsError,
+  type PredictionInputError,
+  type UncertaintyOptionsError,
+} from "./errors";
 import type { FittedProphet } from "./fitted-model";
 import type { FittingBackend } from "./internal/fitting-backend";
 import { decodeObservations } from "./observation";
@@ -84,7 +91,14 @@ export const detectAnomalies = Effect.fn("Prophet.detectAnomalies")(function* (
   model: FittedProphet,
   observationsInput: Parameters<typeof decodeObservations>[0],
   optionsInput: EncodedIntervalOptions,
-): Effect.fn.Return<AnomalyReport, InputValidationError | PredictionError | CountryHolidayError> {
+): Effect.fn.Return<
+  AnomalyReport,
+  | ObservationError
+  | UncertaintyOptionsError
+  | PredictionInputError
+  | PredictionError
+  | CountryHolidayError
+> {
   const observations = yield* decodeObservations(observationsInput);
 
   const options = yield* parseIntervalOptions(
@@ -155,7 +169,13 @@ export const anomalies = Effect.fn("Prophet.anomalies")(function* (
   modelOptionsInput?: EncodedProphetOptions,
 ): Effect.fn.Return<
   ReadonlyArray<number>,
-  InputValidationError | FittingError | PredictionError | CountryHolidayError,
+  | ObservationError
+  | OptionsError
+  | UncertaintyOptionsError
+  | PredictionInputError
+  | FittingError
+  | PredictionError
+  | CountryHolidayError,
   FittingBackend
 > {
   const observations = yield* decodeObservations(historyInput);

@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 
 import type { CountryHolidayError } from "./country-holidays";
-import { PredictionError, type InputValidationError } from "./errors";
+import { PredictionError, type PredictionInputError, type UncertaintyOptionsError } from "./errors";
 import { posteriorDrawCount, type FittedProphet } from "./fitted-model";
 import { decodePredictionRows } from "./prediction-row";
 import {
@@ -70,7 +70,7 @@ export const predictWithIntervals = Effect.fn("Prophet.predictWithIntervals")(fu
   optionsInput: EncodedIntervalOptions,
 ): Effect.fn.Return<
   ForecastsWithIntervals,
-  InputValidationError | PredictionError | CountryHolidayError
+  PredictionInputError | UncertaintyOptionsError | PredictionError | CountryHolidayError
 > {
   // Keep the constituents' precedence: malformed rows fail before malformed options.
   const rows = yield* decodePredictionRows(rowsInput);

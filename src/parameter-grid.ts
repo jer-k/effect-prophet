@@ -3,9 +3,13 @@ import { Effect, Equal, Schema } from "effect";
 import type { ComponentMode } from "./component-mode";
 import type { CountryHolidayError } from "./country-holidays";
 import {
-  InputValidationError,
-  inputValidationErrorFromIssue,
-  nestedInputValidationError,
+  OptionsError,
+  pathErrorFields,
+  prefixIssues,
+  schemaPathErrorFields,
+  SearchOptionsError,
+  singleIssueFields,
+  type SearchOptionsFailureReason,
   type ValidationIssue,
 } from "./errors";
 import { copyFrozen } from "./internal/owned-input";
@@ -104,8 +108,11 @@ const decodeGrid = Schema.decodeUnknownEffect(GridSchema, {
   onExcessProperty: "error",
 });
 
-const invalidGrid = (path: ReadonlyArray<PropertyKey>, message: string): InputValidationError =>
-  new InputValidationError({ input: "parameter-grid", issues: [{ path, message }], message });
+const invalidGrid = (
+  reason: SearchOptionsFailureReason,
+  path: ReadonlyArray<PropertyKey>,
+  message: string,
+): SearchOptionsError => new SearchOptionsError(singleIssueFields(reason, path, message));
 
 // Spreading keeps the base's growth, and the length check picks the seasonal or trend-only variant.
 const withSeasonalities = (
@@ -193,12 +200,9 @@ const startsWith = (path: ReadonlyArray<PropertyKey>, prefix: ReadonlyArray<Prop
  */
 export const makeParameterGrid = Effect.fn("Prophet.makeParameterGrid")(function* (
   input: ParameterGridInput,
-): Effect.fn.Return<
-  ReadonlyArray<SearchCandidateInput>,
-  InputValidationError | CountryHolidayError
-> {
+): Effect.fn.Return<ReadonlyArray<SearchCandidateInput>, SearchOptionsError | CountryHolidayError> {
   yield* decodeGrid(input).pipe(
-    Effect.mapError((error) => inputValidationErrorFromIssue("parameter-grid", error.issue)),
+    Effect.mapError((error) => new SearchOptionsError(schemaPathErrorFields(error.issue))),
   );
 
   const axes = axisOrder.filter((axis) => input.axes[axis] !== undefined);
@@ -212,6 +216,7 @@ export const makeParameterGrid = Effect.fn("Prophet.makeParameterGrid")(function
 
   if (count === undefined || count > maximumSearchCandidates) {
     return yield* invalidGrid(
+      "limit-exceeded",
       ["axes"],
       `Parameter grid exceeds ${maximumSearchCandidates} candidates`,
     );
@@ -228,15 +233,26 @@ export const makeParameterGrid = Effect.fn("Prophet.makeParameterGrid")(function
         .some((earlier) => Equal.equals(earlier.value, choice.value));
 
       if (repeated) {
-        return yield* invalidGrid(["axes", axis, index], "Parameter grid choice is repeated");
+        return yield* invalidGrid(
+          "duplicate-choice",
+          ["axes", axis, index],
+          "Parameter grid choice is repeated",
+        );
       }
     }
   }
 
   yield* decodeOptions(base).pipe(
     Effect.mapError((error) =>
-      error instanceof InputValidationError
-        ? nestedInputValidationError("parameter-grid", error, ["base"], "Invalid base options")
+      error instanceof OptionsError
+        ? new SearchOptionsError(
+            pathErrorFields(
+              "invalid-base-options",
+              prefixIssues(error.issues, ["base"]),
+              "Invalid base options",
+            ),
+            { cause: error },
+          )
         : error,
     ),
   );
@@ -280,12 +296,18 @@ export const makeParameterGrid = Effect.fn("Prophet.makeParameterGrid")(function
 
     yield* decodeOptions(options).pipe(
       Effect.mapError((error) =>
-        error instanceof InputValidationError
-          ? new InputValidationError({
-              input: "parameter-grid",
-              issues: error.issues.map(locate),
-              message: `Parameter grid candidate ${id} has invalid options`,
-            })
+        error instanceof OptionsError
+          ? new SearchOptionsError(
+              {
+                ...pathErrorFields(
+                  "invalid-candidate-options",
+                  error.issues.map(locate),
+                  `Parameter grid candidate ${id} has invalid options`,
+                ),
+                candidateIndex: ordinal,
+              },
+              { cause: error },
+            )
           : error,
       ),
     );

@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   crossValidate,
   fit,
+  OptionsError,
   prophetFittingBackendLayer,
   warmStartParameters,
   type EncodedMapOptions,
@@ -11,7 +12,7 @@ import {
   type Growth,
   type WarmStartParameters,
 } from "../src/index";
-import { expectInputValidationError } from "./helpers/input-validation-error";
+import { expectFailureOf } from "./helpers/expect-failure";
 import { collectTestSpans, requireEndedSpan } from "./internal/tracing-test-helpers";
 import { expectMapModel } from "./helpers/map-model";
 import type { FittedMapProphet } from "../src/fitted-model";
@@ -285,9 +286,9 @@ describe("map.warmStart", () => {
 
     if (!Exit.isFailure(exit)) throw new Error("Expected a validation failure");
 
-    const failure = expectInputValidationError(Option.getOrThrow(Exit.findErrorOption(exit)));
+    const failure = expectFailureOf(OptionsError, Option.getOrThrow(Exit.findErrorOption(exit)));
 
-    expect(failure.input).toBe("options");
+    expect(failure.reason).toBe("invalid-shape");
     expect(failure.issues[0]?.path?.slice(0, 3)).toEqual(["map", "warmStart", field]);
     expect(spans.some((span) => span.name === "effect-prophet.wasm.fit")).toBe(false);
   });

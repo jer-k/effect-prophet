@@ -1,11 +1,17 @@
-import { Effect, Schema } from "effect";
+import { Effect, Schema, type SchemaIssue } from "effect";
 
 import {
   EvaluationError,
+  EvaluationPlanError,
   FittingError,
-  InputValidationError,
   PredictionError,
-  inputValidationErrorFromIssue,
+  schemaPathErrorFields,
+  singleIssueFields,
+  type EvaluationPlanFailureReason,
+  type InputError,
+  type ObservationError,
+  type OptionsError,
+  type UncertaintyOptionsError,
 } from "./errors";
 import type { FittingBackend } from "./internal/fitting-backend";
 import {
@@ -200,12 +206,21 @@ const decodePlan = Schema.decodeUnknownEffect(RollingOriginPlanInputSchema, {
 
 type ParsedPlan = typeof RollingOriginPlanInputSchema.Type;
 
-const invalidPlan = (path: ReadonlyArray<PropertyKey>, message: string): InputValidationError =>
-  new InputValidationError({
-    input: "evaluation-plan",
-    issues: [{ path, message }],
-    message,
-  });
+/** Every input failure of cross-validation and rolling-origin planning. */
+type CrossValidationInputError =
+  | ObservationError
+  | OptionsError
+  | EvaluationPlanError
+  | UncertaintyOptionsError;
+
+const invalidPlan = (
+  reason: EvaluationPlanFailureReason,
+  path: ReadonlyArray<PropertyKey>,
+  message: string,
+): EvaluationPlanError => new EvaluationPlanError(singleIssueFields(reason, path, message));
+
+const planSchemaError = (error: { readonly issue: SchemaIssue.Issue }): EvaluationPlanError =>
+  new EvaluationPlanError(schemaPathErrorFields(error.issue));
 
 const upperBound = (observations: Observations, cutoff: number): number => {
   let lower = 0;
@@ -245,7 +260,7 @@ const generateCutoffs = (
   observations: Observations,
   longestPeriodMs: number | undefined,
   input: ParsedPlan,
-): ReadonlyArray<number> | InputValidationError => {
+): ReadonlyArray<number> | EvaluationPlanError => {
   if (input.cutoffs.mode === "explicit") {
     return input.cutoffs.timestamps;
   }
@@ -267,6 +282,7 @@ const generateCutoffs = (
 
   if (last === undefined || initial === undefined || initial > maximumDurationMs) {
     return invalidPlan(
+      "limit-exceeded",
       ["cutoffs", "initialMs"],
       "Generated initial window exceeds the duration limit",
     );
@@ -281,11 +297,19 @@ const generateCutoffs = (
     latest === undefined ||
     !validEpoch(latest)
   ) {
-    return invalidPlan(["cutoffs"], "Generated cutoff arithmetic exceeds the timestamp range");
+    return invalidPlan(
+      "timestamp-overflow",
+      ["cutoffs"],
+      "Generated cutoff arithmetic exceeds the timestamp range",
+    );
   }
 
   if (latest < first) {
-    return invalidPlan(["horizonMs"], "Less history than the forecast horizon");
+    return invalidPlan(
+      "horizon-exceeds-history",
+      ["horizonMs"],
+      "Less history than the forecast horizon",
+    );
   }
 
   const descending = [latest];
@@ -295,7 +319,11 @@ const generateCutoffs = (
     const previous = checkedAdd(cutoff, -period);
 
     if (previous === undefined || !validEpoch(previous)) {
-      return invalidPlan(["cutoffs", "periodMs"], "Generated cutoff exceeds the timestamp range");
+      return invalidPlan(
+        "timestamp-overflow",
+        ["cutoffs", "periodMs"],
+        "Generated cutoff exceeds the timestamp range",
+      );
     }
 
     cutoff = previous;
@@ -304,6 +332,7 @@ const generateCutoffs = (
 
     if (end === undefined || !validEpoch(end)) {
       return invalidPlan(
+        "timestamp-overflow",
         ["horizonMs"],
         "Generated assessment endpoint exceeds the timestamp range",
       );
@@ -316,7 +345,11 @@ const generateCutoffs = (
         closest === undefined ? undefined : checkedAdd(closest.timestamp, -input.horizonMs);
 
       if (adjusted === undefined || !validEpoch(adjusted)) {
-        return invalidPlan(["cutoffs"], "Gap adjustment exceeds the timestamp range");
+        return invalidPlan(
+          "timestamp-overflow",
+          ["cutoffs"],
+          "Gap adjustment exceeds the timestamp range",
+        );
       }
 
       cutoff = adjusted;
@@ -325,14 +358,18 @@ const generateCutoffs = (
     descending.push(cutoff);
 
     if (descending.length > maximumFolds + 1) {
-      return invalidPlan(["cutoffs"], "Generated fold count exceeds the limit");
+      return invalidPlan("limit-exceeded", ["cutoffs"], "Generated fold count exceeds the limit");
     }
   }
 
   descending.pop();
 
   if (descending.length === 0) {
-    return invalidPlan(["cutoffs"], "Less data than the horizon after the initial window");
+    return invalidPlan(
+      "insufficient-data-after-initial",
+      ["cutoffs"],
+      "Less data than the horizon after the initial window",
+    );
   }
 
   return descending.reverse();
@@ -343,12 +380,14 @@ export const planRollingOriginIndexes = (
   observations: Observations,
   options: ProphetOptions,
   input: ParsedPlan,
-): Effect.Effect<EvaluationFoldPlan, InputValidationError> => {
+): Effect.Effect<EvaluationFoldPlan, EvaluationPlanError | OptionsError> => {
   if (observations.length > maximumHistoryRows) {
-    return Effect.fail(invalidPlan(["history"], "History row count exceeds the limit"));
+    return Effect.fail(
+      invalidPlan("limit-exceeded", ["history"], "History row count exceeds the limit"),
+    );
   }
 
-  const resolution: Effect.Effect<ResolvedSeasonalities | undefined, InputValidationError> =
+  const resolution: Effect.Effect<ResolvedSeasonalities | undefined, OptionsError> =
     input.cutoffs.mode === "generated" && input.cutoffs.initialMs === undefined
       ? resolveSeasonalities(observations, options).pipe(
           Effect.mapError(optionsValidationErrorFromSeasonality),
@@ -363,12 +402,14 @@ export const planRollingOriginIndexes = (
         input,
       );
 
-      if (cutoffs instanceof InputValidationError) {
+      if (cutoffs instanceof EvaluationPlanError) {
         return Effect.fail(cutoffs);
       }
 
       if (cutoffs.length > maximumFolds) {
-        return Effect.fail(invalidPlan(["cutoffs"], "Fold count exceeds the limit"));
+        return Effect.fail(
+          invalidPlan("limit-exceeded", ["cutoffs"], "Fold count exceeds the limit"),
+        );
       }
 
       const first = observations[0].timestamp;
@@ -376,7 +417,9 @@ export const planRollingOriginIndexes = (
       const latest = last === undefined ? undefined : checkedAdd(last, -input.horizonMs);
 
       if (latest === undefined || !validEpoch(latest)) {
-        return Effect.fail(invalidPlan(["horizonMs"], "Horizon exceeds the timestamp range"));
+        return Effect.fail(
+          invalidPlan("timestamp-overflow", ["horizonMs"], "Horizon exceeds the timestamp range"),
+        );
       }
 
       const indexes: Array<EvaluationFoldIndexes> = [];
@@ -390,13 +433,21 @@ export const planRollingOriginIndexes = (
           input.cutoffs.mode === "explicit" ? ["cutoffs", "timestamps", index] : ["cutoffs", index];
 
         if (cutoff <= first || cutoff > latest) {
-          return Effect.fail(invalidPlan(path, "Cutoff is outside the legal history range"));
+          return Effect.fail(
+            invalidPlan("cutoff-out-of-range", path, "Cutoff is outside the legal history range"),
+          );
         }
 
         const end = checkedAdd(cutoff, input.horizonMs);
 
         if (end === undefined || !validEpoch(end)) {
-          return Effect.fail(invalidPlan(path, "Assessment endpoint exceeds the timestamp range"));
+          return Effect.fail(
+            invalidPlan(
+              "timestamp-overflow",
+              path,
+              "Assessment endpoint exceeds the timestamp range",
+            ),
+          );
         }
 
         while (true) {
@@ -424,13 +475,17 @@ export const planRollingOriginIndexes = (
         const assessmentCount = assessmentEndExclusive - trainingEndExclusive;
 
         if (assessmentCount === 0) {
-          return Effect.fail(invalidPlan(path, "Cutoff has no assessment observations"));
+          return Effect.fail(
+            invalidPlan("empty-assessment", path, "Cutoff has no assessment observations"),
+          );
         }
 
         const nextAssessmentTotal = checkedAdd(assessmentTotal, assessmentCount);
 
         if (nextAssessmentTotal === undefined || nextAssessmentTotal > maximumAssessmentRows) {
-          return Effect.fail(invalidPlan(["cutoffs"], "Assessment row count exceeds the limit"));
+          return Effect.fail(
+            invalidPlan("limit-exceeded", ["cutoffs"], "Assessment row count exceeds the limit"),
+          );
         }
 
         assessmentTotal = nextAssessmentTotal;
@@ -477,9 +532,7 @@ const prepareRollingOrigin = (
 
     yield* checkExplicitChangepointBounds(observations, originalOptions);
 
-    const plan = yield* decodePlan(input).pipe(
-      Effect.mapError((error) => inputValidationErrorFromIssue("evaluation-plan", error.issue)),
-    );
+    const plan = yield* decodePlan(input).pipe(Effect.mapError(planSchemaError));
 
     const controls = yield* parseCrossValidationInput(modeInput);
     const fitOptions = crossValidationFitOptions(optionsInput, controls);
@@ -505,6 +558,7 @@ const prepareRollingOrigin = (
           nextTotal > maximumIntervalCells
         ) {
           return yield* invalidPlan(
+            "limit-exceeded",
             ["uncertainty", "samples"],
             "Interval simulation exceeds the assessment work limit",
           );
@@ -529,8 +583,14 @@ export const planRollingOrigin = Effect.fn("Prophet.planRollingOrigin")(function
   observationsInput: Parameters<typeof decodeObservations>[0],
   optionsInput: EncodedProphetOptions,
   input: RollingOriginPlanInput,
-): Effect.fn.Return<RollingOriginPlanSummary, InputValidationError | CountryHolidayError> {
-  const { foldPlan } = yield* prepareRollingOrigin(observationsInput, optionsInput, input);
+): Effect.fn.Return<
+  RollingOriginPlanSummary,
+  ObservationError | OptionsError | EvaluationPlanError | CountryHolidayError
+> {
+  // Omitted controls select point mode, which has no uncertainty options to reject.
+  const { foldPlan } = yield* prepareRollingOrigin(observationsInput, optionsInput, input).pipe(
+    Effect.catchTag("UncertaintyOptionsError", (error) => Effect.die(error)),
+  );
 
   return foldPlan.summary;
 });
@@ -539,7 +599,7 @@ export const planRollingOrigin = Effect.fn("Prophet.planRollingOrigin")(function
 export const resolveBaselinePlan = (
   observations: Observations,
   summary: RollingOriginPlanSummary,
-): Effect.Effect<EvaluationFoldPlan, InputValidationError> =>
+): Effect.Effect<EvaluationFoldPlan, EvaluationPlanError> =>
   Effect.gen(function* () {
     if (
       !Number.isSafeInteger(summary?.horizonMs) ||
@@ -551,7 +611,11 @@ export const resolveBaselinePlan = (
       summary.folds.length !== summary.cutoffs.length ||
       summary.cutoffs.some((cutoff) => !validEpoch(cutoff))
     ) {
-      return yield* invalidPlan(["summary"], "Invalid rolling-origin plan summary");
+      return yield* invalidPlan(
+        "invalid-shape",
+        ["summary"],
+        "Invalid rolling-origin plan summary",
+      );
     }
 
     const plan = yield* decodePlan({
@@ -560,17 +624,15 @@ export const resolveBaselinePlan = (
         mode: "explicit",
         timestamps: summary.cutoffs.map((cutoff) => encodeTimestamp(cutoff)),
       },
-    }).pipe(
-      Effect.mapError((error) => inputValidationErrorFromIssue("evaluation-plan", error.issue)),
-    );
+    }).pipe(Effect.mapError(planSchemaError));
 
-    // Explicit planning shares the same fold-index and resource checks as model CV.
-    // Empty options select no country calendar, so only option validation can fail here.
-    const options = yield* decodeOptions({}).pipe(
-      Effect.catchTag("CountryHolidayError", (error) => Effect.die(error)),
-    );
+    // Explicit planning shares the same fold-index and resource checks as model CV. Empty options
+    // always decode, and explicit cutoffs never resolve seasonalities, so options cannot fail.
+    const options = yield* decodeOptions({}).pipe(Effect.orDie);
 
-    const resolved = yield* planRollingOriginIndexes(observations, options, plan);
+    const resolved = yield* planRollingOriginIndexes(observations, options, plan).pipe(
+      Effect.catchTag("OptionsError", (error) => Effect.die(error)),
+    );
 
     for (const [index, fold] of resolved.summary.folds.entries()) {
       const supplied = summary.folds[index];
@@ -582,6 +644,7 @@ export const resolveBaselinePlan = (
         supplied.assessmentCount !== fold.assessmentCount
       ) {
         return yield* invalidPlan(
+          "summary-mismatch",
           ["summary", "folds", index],
           "Fold summary does not match history",
         );
@@ -620,7 +683,7 @@ const foldOptions = (
 const foldFailure = (
   fold: EvaluationFoldIndexes,
   stage: "fit" | "predict" | "result" | "uncertainty" | "interval-result",
-  cause: InputValidationError | FittingError | PredictionError | CountryHolidayError,
+  cause: InputError | FittingError | PredictionError | CountryHolidayError,
   rowIndex?: number,
 ): EvaluationError => {
   const reason = {
@@ -651,7 +714,7 @@ const crossValidateOperation = Effect.fn("Prophet.crossValidate")(function* (
   candidateId = "",
 ): Effect.fn.Return<
   CrossValidationResult,
-  InputValidationError | EvaluationError | CountryHolidayError,
+  CrossValidationInputError | EvaluationError | CountryHolidayError,
   FittingBackend
 > {
   const { observations, options, fitOptions, controls, foldPlan, uncertainty } =
@@ -671,7 +734,11 @@ const crossValidateOperation = Effect.fn("Prophet.crossValidate")(function* (
         );
 
   if (seeds.some((seed) => seed === undefined)) {
-    return yield* invalidPlan(["cutoffs"], "Interval seed inputs exceed the integer range");
+    return yield* invalidPlan(
+      "limit-exceeded",
+      ["cutoffs"],
+      "Interval seed inputs exceed the integer range",
+    );
   }
 
   const rows: Array<CrossValidationPointRow> = [];
@@ -884,7 +951,7 @@ export const crossValidateCandidate = (
   modeInput?: CrossValidationInput,
 ): Effect.Effect<
   CrossValidationResult,
-  InputValidationError | EvaluationError | CountryHolidayError,
+  CrossValidationInputError | EvaluationError | CountryHolidayError,
   FittingBackend
 > => crossValidateOperation(observationsInput, optionsInput, input, modeInput, candidateId);
 
@@ -896,7 +963,7 @@ export function crossValidate(
   controls?: CrossValidationPointInput,
 ): Effect.Effect<
   PointCrossValidationResult,
-  InputValidationError | EvaluationError | CountryHolidayError,
+  CrossValidationInputError | EvaluationError | CountryHolidayError,
   FittingBackend
 >;
 export function crossValidate(
@@ -906,7 +973,7 @@ export function crossValidate(
   mode: CrossValidationIntervalInput,
 ): Effect.Effect<
   IntervalCrossValidationResult,
-  InputValidationError | EvaluationError | CountryHolidayError,
+  CrossValidationInputError | EvaluationError | CountryHolidayError,
   FittingBackend
 >;
 export function crossValidate(
@@ -916,7 +983,7 @@ export function crossValidate(
   controls?: CrossValidationInput,
 ): Effect.Effect<
   CrossValidationResult,
-  InputValidationError | EvaluationError | CountryHolidayError,
+  CrossValidationInputError | EvaluationError | CountryHolidayError,
   FittingBackend
 >;
 export function crossValidate(
@@ -926,7 +993,7 @@ export function crossValidate(
   mode?: CrossValidationInput,
 ): Effect.Effect<
   CrossValidationResult,
-  InputValidationError | EvaluationError | CountryHolidayError,
+  CrossValidationInputError | EvaluationError | CountryHolidayError,
   FittingBackend
 > {
   return crossValidateOperation(observationsInput, optionsInput, input, mode);

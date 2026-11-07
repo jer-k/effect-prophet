@@ -42,6 +42,9 @@ const FailedOutcomeSchema = Schema.Struct({
   stage: Schema.Literals(["fit", "predict"]),
   error: Schema.String,
   reason: Schema.optionalKey(Schema.String),
+
+  /** Effect rejected the input as invalid, rather than failing to fit or predict it. */
+  rejected: Schema.optionalKey(Schema.Boolean),
   message: Schema.String,
   seconds: NonNegativeFinite,
 });
@@ -379,7 +382,7 @@ export const judgeCase = (
         ? "both-failed"
         : python.status === "failed"
           ? "python-failed"
-          : effect.status === "failed" && effect.error === "InputValidationError"
+          : effect.status === "failed" && effect.rejected === true
             ? "effect-rejected"
             : "effect-failed";
 

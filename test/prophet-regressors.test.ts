@@ -2,7 +2,8 @@ import { Effect, Exit, Option, Predicate, Tracer } from "effect";
 import { describe, expect, it } from "vitest";
 
 import {
-  InputValidationError,
+  ObservationError,
+  PredictionInputError,
   decodeFittedModel,
   encodeFittedModel,
   fit,
@@ -174,15 +175,24 @@ describe("additional regressor public lifecycle", () => {
       "2025-01-09T00:00:00.000Z",
     ];
 
+    const reasons: Array<string> = [];
+
     for (const row of invalidRows) {
       const error = await Effect.runPromise(Effect.flip(predict(model, [row])));
 
-      expect(error).toBeInstanceOf(InputValidationError);
+      expect(error).toBeInstanceOf(PredictionInputError);
 
-      if (error instanceof InputValidationError) {
-        expect(error.input).toBe("prediction-rows");
+      if (error instanceof PredictionInputError) {
+        reasons.push(error.reason);
       }
     }
+
+    expect(reasons).toEqual([
+      "missing-regressor",
+      "unexpected-regressor",
+      "invalid-shape",
+      "missing-regressor",
+    ]);
   });
 
   it("records safe regressor fit and prediction boundaries", async () => {
@@ -275,7 +285,12 @@ describe("additional regressor public lifecycle", () => {
       ),
     );
 
-    expect(error).toBeInstanceOf(InputValidationError);
+    expect(error).toBeInstanceOf(ObservationError);
+    expect(error).toMatchObject({
+      reason: "missing-regressor",
+      rowIndex: 0,
+      field: "regressors",
+    });
     expect(spans.some((span) => span.name === "Prophet.fit")).toBe(true);
     expect(spans.some((span) => span.name === "effect-prophet.wasm.fit")).toBe(false);
   });
@@ -341,6 +356,7 @@ describe("additional regressor public lifecycle", () => {
       ),
     );
 
-    expect(error).toBeInstanceOf(InputValidationError);
+    expect(error).toBeInstanceOf(ObservationError);
+    expect(error).toMatchObject({ reason: "missing-regressor", name: "price" });
   });
 });

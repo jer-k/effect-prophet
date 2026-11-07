@@ -1,6 +1,10 @@
 import { Effect, Schema } from "effect";
 
-import { type InputValidationError, inputValidationErrorFromIssue } from "../errors";
+import {
+  EvaluationPlanError,
+  schemaPathErrorFields,
+  type UncertaintyOptionsError,
+} from "../errors";
 import type { EncodedProphetOptions } from "../options";
 import {
   defaultTargetScalingMode,
@@ -54,10 +58,10 @@ const decodeInput = Schema.decodeUnknownEffect(InputSchema, {
 /** Parse controls without entering any fitting, prediction or simulation boundary. */
 export const parseCrossValidationInput = (
   input?: CrossValidationInput,
-): Effect.Effect<ParsedCrossValidationInput, InputValidationError> =>
+): Effect.Effect<ParsedCrossValidationInput, EvaluationPlanError | UncertaintyOptionsError> =>
   Effect.gen(function* () {
     const syntax = yield* decodeInput(input === undefined ? {} : input).pipe(
-      Effect.mapError((error) => inputValidationErrorFromIssue("evaluation-plan", error.issue)),
+      Effect.mapError((error) => new EvaluationPlanError(schemaPathErrorFields(error.issue))),
     );
 
     if (syntax.mode === "point") {

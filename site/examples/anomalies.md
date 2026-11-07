@@ -53,9 +53,9 @@ except that the range defaults to 99% wide:
 | `samples`       | `1000`   | How many futures to simulate (up to 2,048)                      |
 | `intervalWidth` | `0.99`   | How wide the range is. A narrower range flags more measurements |
 
-`output: "samples"` is rejected with an `InputValidationError`. One call takes up to 10,000
-measurements; past that, or past the forecast-length limit, it fails with a `PredictionError`
-whose reason is `simulation-limit`.
+`output: "samples"` is rejected with an `UncertaintyOptionsError` whose `reason` is
+`unsupported-output`. One call takes up to 10,000 measurements; past that, or past the
+forecast-length limit, it fails with a `PredictionError` whose reason is `simulation-limit`.
 
 ## Looking back over a history
 

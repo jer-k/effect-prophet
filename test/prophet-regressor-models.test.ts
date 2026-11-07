@@ -3,8 +3,9 @@ import { describe, expect, it } from "vitest";
 
 import {
   FittingError,
-  InputValidationError,
+  OptionsError,
   PredictionError,
+  PredictionInputError,
   decodeFittedModel,
   encodeFittedModel,
   fit,
@@ -188,9 +189,12 @@ describe("regressor models", () => {
       Effect.flip(predict(model, [{ timestamp: between, regressors: { promotion: 0 } }])),
     );
 
-    expect(error).toBeInstanceOf(InputValidationError);
+    expect(error).toBeInstanceOf(PredictionInputError);
     expect(error).toMatchObject({
-      input: "prediction-rows",
+      reason: "missing-regressor",
+      rowIndex: 0,
+      field: "regressors",
+      name: "price",
       issues: [
         {
           path: [0, "regressors", "price"],
@@ -211,8 +215,10 @@ describe("regressor models", () => {
       Effect.flip(predict(model, [{ timestamp: timestamp(3), regressors: { promotion: 0 } }])),
     );
 
+    expect(error).toBeInstanceOf(PredictionInputError);
+
     expect(error).toMatchObject({
-      input: "prediction-rows",
+      reason: "missing-regressor",
       issues: [{ path: [0, "regressors", "price"] }],
     });
 
@@ -231,8 +237,10 @@ describe("regressor models", () => {
     const model = await fitModel();
     const error = await Effect.runPromise(Effect.flip(predict(model, futureTimestamps)));
 
+    expect(error).toBeInstanceOf(PredictionInputError);
+
     expect(error).toMatchObject({
-      input: "prediction-rows",
+      reason: "missing-regressor",
       issues: expect.arrayContaining([
         { path: [0, "regressors", "promotion"], message: "Missing required regressor 'promotion'" },
       ]),
@@ -280,9 +288,10 @@ describe("regressor models", () => {
       regressors: [{ name: "price", predictor: predictor as EncodedRegressorModelOptions }],
     });
 
-    expect(error).toBeInstanceOf(InputValidationError);
+    expect(error).toBeInstanceOf(OptionsError);
     expect(error).toMatchObject({
-      input: "options",
+      reason: "invalid-shape",
+      path: ["regressors", 0, "predictor", ...path],
       issues: [{ path: ["regressors", 0, "predictor", ...path] }],
     });
   });
@@ -295,8 +304,9 @@ describe("regressor models", () => {
       ],
     });
 
+    expect(error).toBeInstanceOf(OptionsError);
+
     expect(error).toMatchObject({
-      input: "options",
       issues: [{ path: ["regressors", 1, "predictor", "map", "changepointPriorScale"] }],
     });
   });
@@ -344,8 +354,10 @@ describe("regressor models", () => {
       ],
     });
 
+    expect(error).toBeInstanceOf(OptionsError);
+
     expect(error).toMatchObject({
-      input: "options",
+      reason: "changepoint-out-of-range",
       issues: [{ path: ["regressors", 0, "predictor", "map", "changepoints", "timestamps", 0] }],
     });
   });
