@@ -395,10 +395,11 @@ export const searchModels = Effect.fn("Prophet.searchModels")(function* (
   }
 
   yield* planRollingOrigin(observationsCopy, firstCandidate.options, input.plan).pipe(
-    Effect.catchTag("CountryHolidayError", (error) =>
-      Effect.fail(invalidCandidateCalendar(error, 0, firstCandidate.id)),
-    ),
-    Effect.catchTag("OptionsError", (error) => Effect.fail(invalidCandidateOptions(error, 0))),
+    Effect.catchTags({
+      CountryHolidayError: (error) =>
+        Effect.fail(invalidCandidateCalendar(error, 0, firstCandidate.id)),
+      OptionsError: (error) => Effect.fail(invalidCandidateOptions(error, 0)),
+    }),
   );
   const planInput = ownedInput(input.plan);
   let sharedPlan: RollingOriginPlanSummary | undefined;
@@ -407,12 +408,11 @@ export const searchModels = Effect.fn("Prophet.searchModels")(function* (
     // Python computes generated cutoffs using the model's seasonality settings. Preserve that
     // behavior per candidate, but refuse to compare scores on different resulting folds.
     const planned = yield* planRollingOrigin(observationsCopy, candidate.options, planInput).pipe(
-      Effect.catchTag("CountryHolidayError", (error) =>
-        Effect.fail(invalidCandidateCalendar(error, index, candidate.id)),
-      ),
-      Effect.catchTag("OptionsError", (error) =>
-        Effect.fail(invalidCandidateOptions(error, index)),
-      ),
+      Effect.catchTags({
+        CountryHolidayError: (error) =>
+          Effect.fail(invalidCandidateCalendar(error, index, candidate.id)),
+        OptionsError: (error) => Effect.fail(invalidCandidateOptions(error, index)),
+      }),
     );
 
     if (sharedPlan !== undefined && !planMatches(sharedPlan, planned)) {

@@ -91,9 +91,7 @@ describe("typed domain errors", () => {
       issues: [{ path: ["cutoffs", "timestamps", 0], message: "Cutoff has no assessment rows" }],
       message: "Cutoff has no assessment rows",
     });
-    expect(Schema.decodeUnknownSync(EvaluationPlanError)(encoded)).toBeInstanceOf(
-      EvaluationPlanError,
-    );
+    expect(Schema.decodeSync(EvaluationPlanError)(encoded)).toBeInstanceOf(EvaluationPlanError);
     expect(() =>
       Schema.decodeUnknownSync(EvaluationPlanError)({ ...encoded, reason: "unknown" }),
     ).toThrow();
@@ -176,7 +174,7 @@ describe("typed domain errors", () => {
     );
 
     expect(failure).toStrictEqual({ tag: "ObservationError", reason: "missing-regressor" });
-    expect(Schema.decodeUnknownSync(PortableEvaluationFailureSchema)(failure)).toEqual(failure);
+    expect(Schema.decodeSync(PortableEvaluationFailureSchema)(failure)).toEqual(failure);
     expect(() =>
       Schema.decodeUnknownSync(PortableEvaluationFailureSchema)({
         tag: "ObservationError",
