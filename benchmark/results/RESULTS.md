@@ -6,15 +6,15 @@ Recorded historical outcomes are not recomputed using current gates. Architectur
 
 | Scope | Run | Passed | Failed | Provenance | Report |
 | --- | --- | ---: | ---: | --- | --- |
-| flat-growth | `2026-11-05T054811-022Z-b7a56669` | 72 | 0 | clean tree | [results](retained/flat-growth/2026-11-05T054811-022Z-b7a56669/report.md) |
-| linear-growth | `2026-11-05T051506-488Z-b7a56669` | 53 | 2 | clean tree | [results](retained/linear-growth/2026-11-05T051506-488Z-b7a56669/report.md) |
-| logistic-growth | `2026-11-05T080220-274Z-b7a56669` | 58 | 0 | clean tree | [results](retained/logistic-growth/2026-11-05T080220-274Z-b7a56669/report.md) |
+| flat-growth | `2026-11-07T181422-912Z-3a5a6cec` | 72 | 0 | clean tree | [results](retained/flat-growth/2026-11-07T181422-912Z-3a5a6cec/report.md) |
+| linear-growth | `2026-11-07T174133-142Z-3a5a6cec` | 53 | 2 | clean tree | [results](retained/linear-growth/2026-11-07T174133-142Z-3a5a6cec/report.md) |
+| logistic-growth | `2026-11-07T184211-397Z-3a5a6cec` | 58 | 0 | clean tree | [results](retained/logistic-growth/2026-11-07T184211-397Z-3a5a6cec/report.md) |
 
 ## Case outcomes
 
 Only passed gates admit timing. Diagnostic invalid-domain cases remain failed; they are not relabeled as successful fits.
 
-### flat-growth/2026-11-05T054811-022Z-b7a56669
+### flat-growth/2026-11-07T181422-912Z-3a5a6cec
 
 | Case | Outcome | Contract |
 | --- | --- | --- |
@@ -91,7 +91,7 @@ Only passed gates admit timing. Diagnostic invalid-domain cases remain failed; t
 | `evaluation-flat-regressor-model-intervals` | passed | different-public-work |
 | `mcmc-flat-mixed-components` | passed | equivalent-posterior |
 
-### linear-growth/2026-11-05T051506-488Z-b7a56669
+### linear-growth/2026-11-07T174133-142Z-3a5a6cec
 
 | Case | Outcome | Contract |
 | --- | --- | --- |
@@ -151,7 +151,7 @@ Only passed gates admit timing. Diagnostic invalid-domain cases remain failed; t
 | `mcmc-linear-regressor-model` | passed | equivalent-posterior |
 | `mcmc-linear-sampled-regressor-model` | passed | equivalent-posterior |
 
-### logistic-growth/2026-11-05T080220-274Z-b7a56669
+### logistic-growth/2026-11-07T184211-397Z-3a5a6cec
 
 | Case | Outcome | Contract |
 | --- | --- | --- |

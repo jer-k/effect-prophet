@@ -58,6 +58,7 @@ the [five-minute introduction](../guide/effect-basics).
 | `seasonality_prior_scale`                                                         | `seasonalityPriorScale`: the prior for every seasonality without its own `priorScale`                                     |
 | `holidays_prior_scale`                                                            | `holidaysPriorScale`: the prior for every event, country holiday and regressor without its own `priorScale`               |
 | `fit(algorithm="Newton", iter=n)`                                                 | `map.optimizer: { algorithm: "newton", maxIterations: n }`                                                                |
+| `mcmc_samples=n`                                                                  | `mcmc: { samples: n, seed }`, with `chains` and `warmup`; see [Full Bayesian fitting](../examples/bayesian)               |
 | `fit(df, init=warm_start_params(m))`                                              | `map.warmStart: warmStartParameters(model)`                                                                               |
 | `yearly_seasonality`, `weekly_seasonality`, `daily_seasonality`                   | `builtInSeasonalities: { yearly, weekly, daily }`: `"auto"`, `"off"`, or `{ mode: "on", fourierOrder, priorScale }`       |
 | `seasonality_mode="multiplicative"`                                               | `seasonalityMode: "multiplicative"`                                                                                       |
@@ -112,5 +113,5 @@ The defaults are Prophet's, so a fit with no options produces the same model as 
   refit. See [Country holiday calendars](/guide/holiday-calendars).
 - **No plotting.** Forecasts are plain data for your own charts.
 
-See [What's different](./differences) for what isn't available yet and where behavior differs on
-purpose.
+See [What's different](./differences) for where behavior differs on purpose, and the limits
+Python doesn't have.

@@ -81,7 +81,7 @@ diagnostics. Logistic growth always samples.
   keep the default scales and smaller steps. This sampler does the same, to match Python.
 - **Sampling is slower than MAP fitting**: hundreds of gradient evaluations per draw instead of a
   few dozen in all. The 90-day example above takes about a second. Linear and flat fits take
-  about as long as Python's, but logistic fits take 3–4 times as long as Python's native CmdStan.
+  about as long as Python's, but logistic fits take 4–5 times as long as Python's native CmdStan.
   See the [benchmarks](/benchmarks/bayesian), which also time ranges from a posterior. Python's
   calls there also compute point forecasts and components, so those times aren't compared.
 - **Limits.** Up to 16 chains, 100,000 warmup iterations per chain and 20,000 kept draws in all,

@@ -4,7 +4,10 @@ Time-series forecasting for TypeScript. Give it your history; get back a forecas
 trend, weekly and yearly patterns, and holidays each broken out.
 
 Effect Prophet uses the same model as [Prophet](https://facebook.github.io/prophet/), Meta's
-forecasting library, and is tested against Python Prophet 1.4.0.
+forecasting library. It covers everything Python Prophet 1.4.0 does except plotting, and is checked
+against it case by case.
+[What's different](https://jer-k.github.io/effect-prophet/python/differences) lists every
+difference.
 
 - **One peer dependency.** [`effect`](https://effect.website) (`^4.0.0`) is the only package it
   needs, and you install it yourself so your app and this library share one copy.
