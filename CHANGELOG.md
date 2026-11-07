@@ -4,6 +4,67 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows
 [Semantic Versioning](https://semver.org/). Before 1.0, minor versions may include breaking changes.
 
+## [1.0.0] - 2026-11-07
+
+The first stable release. From now on, breaking changes to the public API wait for a new major
+version. Each kind of bad input now fails with its own typed error instead of one
+`InputValidationError`, so code that catches that error or reads its `input` field must move to
+the new errors.
+
+### Changed
+
+- **Typed input errors.** `InputValidationError` and `ValidationInput` are removed. Each kind of
+  input has its own error, with a fixed list of `reason` values: `ObservationError`,
+  `PredictionInputError`, `OptionsError`, `FutureTimestampsError`, `UncertaintyOptionsError`,
+  `EvaluationPlanError`, `MetricOptionsError`, `SearchOptionsError` and `HoldoutInputError`.
+  - Every input error keeps `issues` and `message`. Errors about rows also name the first
+    rejected row with `rowIndex`, `field` and `name`, and the others give its location in `path`.
+  - Rejected shapes have `reason: "invalid-shape"`, and an empty history `"empty"`.
+  - When the input has several kinds of problems, the error reports the first kind found and
+    every problem of that kind.
+  - `SearchOptionsError` names a failing candidate with `candidateIndex` and keeps the original
+    error in `cause`, which isn't saved when a report is encoded.
+  - The `InputError` union and `isInputError` match any of them, for example with
+    `Effect.catchIf`.
+  - Holdout reports record a candidate's input error as its error and `reason`. Saved reports
+    that recorded an `InputValidationError` no longer decode.
+
+  See [Input errors](https://jer-k.github.io/effect-prophet/examples/errors#input-errors).
+
+### Fixed
+
+- Automatic changepoints now match Prophet when a candidate lands exactly between two rows.
+  NumPy's `linspace` divides before it multiplies, and Effect Prophet multiplied first, so the two
+  could round to different rows and move a changepoint by one. On one 30-row history this changed
+  the trend by about 0.82; it now matches Python's.
+- `predictUncertainty` and `predictWithIntervals` given around 150,000 rows or more crashed with
+  `RangeError: Maximum call stack size exceeded`. They now fail with a `PredictionError` whose
+  `reason` is `"simulation-limit"`, like any request over the 10,000-row limit.
+- `decodeEvaluationReport` froze the caller's own `selected.options` object, so editing it
+  afterwards threw. It now returns a frozen copy.
+
+### Documentation
+
+- The [tracing guide](https://jer-k.github.io/effect-prophet/guide/tracing#what-is-recorded),
+  README and home page now say that the attributes Effect Prophet sets contain no user data. A
+  failed span still carries its error, and exporters such as `OtlpTracer` send its message and
+  stack trace, which can name your fields.
+- Benchmark pages no longer compare speeds when the two libraries do different work: Bayesian
+  `predict`, uncertainty with MAP or Bayesian fits, and evaluation cases. They show "Not compared:
+  different work" with a note, and keep both raw times.
+- [Regressors](https://jer-k.github.io/effect-prophet/examples/regressors) explains the units of
+  additive and multiplicative coefficients, and that `mode` defaults to `seasonalityMode`.
+- The seasonality and events guides no longer say an individual event takes its own `mode`.
+  `holidaysMode` sets one mode for every event.
+- The Bayesian guide and the Python differences page separate `mcmc` option limits, which fail
+  with an `OptionsError`, from the limit on kept values, which fails with
+  `FittingError("sampling-limit")`.
+
+### Verification against Python Prophet
+
+- **A new changepoint fixture** checks a history whose automatic changepoint candidate falls on a
+  rounding tie.
+
 ## [0.7.0] - 2026-11-05
 
 Full Bayesian fitting, like Python's `mcmc_samples`, for the main model and for regressors
@@ -476,6 +537,7 @@ These Python Prophet features are not implemented in this release:
 - Inputs that cannot define a trend, such as every row sharing one timestamp, return an error where
   Python returns `NaN` forecasts.
 
+[1.0.0]: https://github.com/jer-k/effect-prophet/compare/v0.7.0...v1.0.0
 [0.7.0]: https://github.com/jer-k/effect-prophet/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/jer-k/effect-prophet/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/jer-k/effect-prophet/compare/v0.5.0...v0.5.1
