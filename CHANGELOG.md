@@ -64,6 +64,11 @@ the new errors.
 
 - **A new changepoint fixture** checks a history whose automatic changepoint candidate falls on a
   rounding tie.
+- Refreshed benchmarks time logistic Bayesian fits at 4–5 times as long as Python's native
+  CmdStan, not the 3–4 times reported for 0.7.0: that run timed Python's slowest logistic case
+  while the machine was sleeping. The
+  [Bayesian guide](https://jer-k.github.io/effect-prophet/examples/bayesian) now says so. Linear
+  and flat fits still take about as long as Python's.
 
 ## [0.7.0] - 2026-11-05
 
