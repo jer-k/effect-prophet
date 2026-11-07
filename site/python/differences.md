@@ -32,6 +32,9 @@ smaller behavior differences, including limits Python doesn't have.
   [benchmarks](/benchmarks/linear/evaluation-linear-long-history-parallel) time Python's parallel
   modes next to Effect Prophet's sequential runs. The two return different outputs, so the times
   show each library's cost rather than a speed ranking.
+- Cross-validation rows have the cutoff, timestamp, horizon, actual value and forecast, plus the
+  range when you ask for intervals. There's no counterpart to `cross_validation`'s
+  `extra_output_columns`, which copies other `predict` columns, such as `trend`, into each row.
 - Custom metrics are definitions you pass to each call, not entries in a global registry, and
   can't replace a built-in metric. Each scores one forecast at a time and combines a group with
   a mean, median, quantile or ratio of means, using Prophet's windows. Python's

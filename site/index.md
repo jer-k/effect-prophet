@@ -18,7 +18,7 @@ hero:
 
 features:
   - title: Prophet's model, in TypeScript
-    details: Uses the same model as Prophet, the forecasting library from Meta, and is tested against Python Prophet 1.4.0 so the results match.
+    details: Uses the same model as Prophet, the forecasting library from Meta, and covers everything Python Prophet 1.4.0 does except plotting. Each case is checked against Python so the results match.
   - title: No Python, no servers
     details: The math runs in WebAssembly, in your Node.js process or your users' browser. Install one npm package and you are ready to go.
   - title: Explainable forecasts

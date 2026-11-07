@@ -14,13 +14,13 @@ trend type stands:
 | [Growth with a ceiling](../examples/saturating-growth) | <Badge type="tip" text="matches Python" /> | [Logistic growth benchmarks](/benchmarks/logistic) |
 
 All three trend types are ready to use. That covers changepoints, seasonality, events,
-regressors, multiplicative effects, uncertainty ranges, cross-validation and choosing settings. The
-benchmarks for [linear](/benchmarks/linear), [flat](/benchmarks/flat) and
-[logistic](/benchmarks/logistic) growth show every case: its input, both libraries' forecasts side
-by side, and how long each took. The feature pages gather the
-[seasonality, events and regressors](/benchmarks/features),
-[uncertainty](/benchmarks/uncertainty) and [cross-validation](/benchmarks/cross-validation) cases
-from all three trends.
+regressors and the models that forecast them, multiplicative effects, uncertainty ranges, full
+Bayesian fitting, cross-validation and choosing settings. The benchmarks for
+[linear](/benchmarks/linear), [flat](/benchmarks/flat) and [logistic](/benchmarks/logistic) growth
+show every case: its input, both libraries' forecasts side by side, and how long each took. The
+feature pages gather the [seasonality, events and regressors](/benchmarks/features),
+[uncertainty](/benchmarks/uncertainty), [Bayesian](/benchmarks/bayesian) and
+[cross-validation](/benchmarks/cross-validation) cases from all three trends.
 
 ## How we test
 

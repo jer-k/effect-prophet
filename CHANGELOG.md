@@ -6,8 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [1.0.0] - 2026-11-07
 
-The first stable release. From now on, breaking changes to the public API wait for a new major
-version. Each kind of bad input now fails with its own typed error instead of one
+The first stable release, covering everything Python Prophet 1.4.0 does except plotting. From now
+on, breaking changes to the public API wait for a new major version. Each kind of bad input now fails with its own typed error instead of one
 `InputValidationError`, so code that catches that error or reads its `input` field must move to
 the new errors.
 
@@ -56,6 +56,9 @@ the new errors.
   additive and multiplicative coefficients, and that `mode` defaults to `seasonalityMode`.
 - The seasonality and events guides no longer say an individual event takes its own `mode`.
   `holidaysMode` sets one mode for every event.
+- [Coming from Python](https://jer-k.github.io/effect-prophet/python/coming-from-python) maps
+  `mcmc_samples` to `mcmc`, and [What's different](https://jer-k.github.io/effect-prophet/python/differences)
+  notes that cross-validation has no counterpart to `extra_output_columns`.
 - The Bayesian guide and the Python differences page separate `mcmc` option limits, which fail
   with an `OptionsError`, from the limit on kept values, which fails with
   `FittingError("sampling-limit")`.
